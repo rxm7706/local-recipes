@@ -1,6 +1,12 @@
 # pyforge-atlas — EXPERIENCE.md (behavioral spine)
 
-**Produced by:** the CIS Carson/Maya planning pass (Story 20.4, CAP-7), closing `DW-D2-1`.
+**Produced by:** the CIS Carson/Maya planning pass (Story 20.4, CAP-7), closing `DW-D2-1`. Carson
+(`bmad-cis-agent-brainstorming-coach`) ran the divergent EMPATHIZE/IDEATE pass (recorded at
+`_bmad-output/brainstorming/brainstorm-atlas-19-page-spine-2026-08-28/`); Maya
+(`bmad-cis-agent-design-thinking-coach`) then ran the full `bmad-cis-design-thinking` workflow —
+EMPATHIZE through TEST — recorded verbatim at
+`_bmad-output/projects/pyforge-atlas/planning-artifacts/design-thinking-atlas-19-pages-2026-08-28.md`,
+this document's authoring source.
 **Companion:** `DESIGN.md` (technical/visual spine — BSL models, layouts, `PageDef` shapes).
 **Scope:** the same 19 pages as `DESIGN.md` § 3–5. **Personas** are the 4 already established
 in `reference/atlas-phases-overview.md` Part A — Maya's empathy pass deliberately reused them
@@ -12,14 +18,16 @@ Infrastructure**.
 
 Carson ran the divergent EMPATHIZE + IDEATE steps: for each of the 21 remaining CLI questions
 (`DESIGN.md` § 0), who asks it, when, and what wild/broad framing of "a page that answers
-this" comes to mind first — no filtering yet. Maya ran DEFINE + PROTOTYPE: turned each
-divergent idea into a "[Persona] needs [capability] because [insight]" POV statement, then
-picked the interaction pattern that serves that need with the fewest surprises (a filter +
-table for a triage list; a single headline card for a classifier; a report viewer, never a
-live query, for the three FR-9 exceptions). TEST is out of scope for this planning pass — no
-users exist to test with until Story 20.5 ports real pages — so each page's entry below ends
-with the success metric Story 20.5's implementation should be judged against instead of a
-usability-test writeup.
+this" comes to mind first — no filtering yet. Maya then ran the full `bmad-cis-design-thinking`
+workflow (EMPATHIZE through TEST) end to end — DEFINE turned each divergent idea into a
+"[Persona] needs [capability] because [insight]" POV statement; PROTOTYPE picked the
+interaction pattern that serves that need with the fewest surprises (a filter + table for a
+triage list; a single headline card for a classifier; a report viewer, never a live query, for
+the three FR-9 exceptions). No real pages are built yet — Story 20.5 is the first to port real
+code — so TEST ran as a **persona walkthrough** (each persona mentally walks their pages'
+journeys against the prototype spec) rather than live usability testing; full detail at
+`design-thinking-atlas-19-pages-2026-08-28.md` §§ TEST/Next Steps. Each page's entry below still
+ends with the success metric Story 20.5's implementation should be judged against.
 
 **Cross-cutting behavioral rules (apply to all 19 pages, not repeated per entry):**
 
@@ -36,7 +44,18 @@ usability-test writeup.
 - **Cross-page navigation follows the maintainer's real workflow**, not the CLI list's
   alphabetical order: triage (staleness/CVE/adoption) links to detail
   (`detail-cf-atlas`/`version-downloads`/`release-cadence`) links to remediation
-  (`find-alternative`/`add-handoff`).
+  (`find-alternative`/`add-handoff`). A second, distinct chain also exists: `cve-watcher` links
+  directly to `library-futures` (§ 1.1, § 2.6) — a security lead deciding whether a CVE-flagged
+  package is even worth keeping is a different decision from the detail/remediation chain above.
+- **Non-authoritative values get one consistent badge (cross-cutting, stated once).** Every
+  "likely / hint / report"-tier value — the 4 seed-gap suggesters (§ 3.1–3.4), `mapping-gap`
+  (§ 2.2), and `library-futures`' operator-override badges (§ 2.6) — renders with the same
+  visual marker, distinct from a verified/confirmed value. Not repeated per page below.
+- **Report-artifact and live-scan-artifact pages both carry a staleness stamp.** Every page
+  showing a cached or per-invocation report (`scan-project`, `env-inspect`, `inventory-match`,
+  `add-handoff`, `library-futures`) shows "as of `<timestamp>`" as prominently as the data
+  itself, and distinguishes three states: no-report-yet, report-available, and (for the two
+  live-scan-artifact pages) a failed/invalid-run state.
 
 ---
 
@@ -54,6 +73,9 @@ usability-test writeup.
 - **Interaction:** filter row always visible (not hidden behind an "advanced" toggle — this
   IS the primary interaction); delta column color-coded (red increase, gray flat, green
   decrease).
+- **Cross-link:** a direct link to `library-futures` (§ 2.6) for the security-lead decision
+  "is this CVE-flagged package even worth keeping" — a distinct chain from the
+  triage→detail→remediation flow above (see cross-cutting navigation rule).
 - **Edge case (UX):** zero new CVEs this window is a GOOD outcome — the empty state reads "No
   new CVEs in the selected window" with a neutral/positive tone, not the generic "no data"
   gap card (this is a real, expected, happy answer — distinct from an unmaterialized-dataset
@@ -110,9 +132,11 @@ usability-test writeup.
   committing to a migration.
 - **Interaction:** the similarity score renders as a visual bar (not a bare float) so ranking
   is scannable without reading numbers.
-- **Edge case (UX):** zero candidates found is a real, actionable answer ("no healthy
-  alternative exists yet") — the empty state should say that plainly rather than looking like
-  a broken query.
+- **Edge case (UX):** two distinct empty states, not one — (1) a recognized-but-orphaned
+  package with zero candidates found is a real, actionable answer ("no healthy alternative
+  exists yet"), and (2) a package name not recognized in the catalog at all gets its own
+  distinct message ("package not found — check the name"). Conflating the two would make a
+  typo look like a real, actionable "no alternative exists" answer.
 - **Success metric:** a consumer facing an archived dependency finds their next step without
   leaving the dashboard.
 
@@ -130,8 +154,9 @@ usability-test writeup.
   IS the filter control, per Maya's "make ideas tangible quickly" principle applied to
   navigation, not just prototyping.
 - **Edge case (UX):** a maintainer-scoped view with too few packages to make a meaningful
-  distribution chart (e.g. 1–2 packages) falls back to a simple label list instead of a
-  visually-empty stacked bar.
+  distribution chart (0, or 1–2) falls back to a simple label list instead of a visually-empty
+  or degenerate stacked bar — 0 packages states plainly "nothing in scope yet," distinct from
+  the 1–2-package label-list fallback.
 - **Success metric:** "where is my/the channel's portfolio trending" is answerable without
   per-package lookups.
 
@@ -148,9 +173,13 @@ usability-test writeup.
   rather than just filtering a catalog — the UI must make that distinction obvious (an
   upload/path control front-and-center, not buried under filters that look like the other
   pages' catalog filters).
-- **Edge case (UX):** no prior scan exists yet (fresh checkout) — the page shows an explicit
-  "no scan run yet, submit one above" state, distinct from the honest-empty catalog-gap card
-  used elsewhere (this is an INPUT-needed state, not a DATA-missing state).
+- **Edge case (UX):** three distinct states, not two — (1) no prior scan exists yet (fresh
+  checkout): an explicit "no scan run yet, submit one above" state, distinct from the
+  honest-empty catalog-gap card used elsewhere (an INPUT-needed state, not a DATA-missing
+  state); (2) a scan ran and produced results; (3) the submitted manifest/lock/image was
+  malformed or the scan itself errored — a distinct failed/invalid-run state, never silently
+  folded into either "no scan yet" or an empty results table (a scan error is not the same
+  answer as "nothing to report").
 - **Success metric:** a consumer gets a go/no-go signal on their project without leaving the
   browser tab.
 
@@ -165,7 +194,9 @@ usability-test writeup.
 - **Interaction:** the three Cards are equal-weight and side-by-side (no single "primary"
   metric) — license compliance and CVE exposure are both first-class outcomes of this page,
   not one subordinate to the other.
-- **Edge case (UX):** same "no scan run yet" input-needed state as `scan-project`.
+- **Edge case (UX):** the same three states as `scan-project` § 1.6 — no-scan-yet (input-
+  needed), report-available, and a distinct failed/invalid-run state (an unreadable environment
+  reference is not the same answer as "nothing to report").
 - **Success metric:** license + security exposure for a live env is visible in one screen,
   no separate `env-inspect --licenses` vs. `--security` invocations needed.
 
@@ -186,8 +217,10 @@ usability-test writeup.
   of three learned layouts.
 - **Edge case (UX):** the `--policy-check` sub-view is opt-in-by-facet (only appears under
   "python-version") rather than a fourth always-visible section — it answers a genuinely
-  different question ("should I bump python_min") from the other two facets' pure
-  reporting.
+  different question ("should I bump python_min") from the other two facets' pure reporting.
+  Because folding three CLIs into one page risks burying this mode entirely, the FIRST time a
+  user selects the python-version facet, a one-time onboarding tooltip calls out that the
+  `--policy-check` view exists here — shown once, not on every subsequent visit.
 - **Success metric:** a maintainer answers all three of "which platform," "which Python," and
   "which channel" questions from one page, one mental model.
 
@@ -278,8 +311,15 @@ usability-test writeup.
 - **Interaction:** license-blocker rows are visually distinguished (fail-closed blockers are
   a hard stop, not a soft warning) — matches the CLI's own "fail-closed license blockers"
   design.
-- **Edge case (UX):** an empty worklist (nothing in the ADD bucket right now) is a legitimate
-  "caught up" state.
+- **Edge case (UX):** two distinct states, not one — an empty worklist AFTER a real run
+  (nothing in the ADD bucket right now) is a legitimate "caught up" state; no cached run
+  existing AT ALL is a different state, with the same explicit "run `add-handoff` to populate
+  this view" instruction used by `inventory-match` (§ 2.4) and `library-futures` (§ 2.6).
+- **Forward-looking note (not implemented now):** the read-only constraint (FR-9) doesn't fully
+  solve multi-agent coordination — two packaging agents could both pick up the same worklist
+  row. A lightweight claim/lock sidecar (or at minimum a "last regenerated" + "in-progress
+  elsewhere" flag) is a legitimate future need, recorded here for a future story — implementing
+  it now would cross into write-path territory this story must not touch.
 - **Success metric:** the next packaging candidate is identifiable without a terminal.
 
 ### 2.6 `library-futures` — Library Futures (report-artifact)
@@ -295,6 +335,9 @@ usability-test writeup.
 - **Interaction:** tier badges use consistent color coding across THIS page and
   `recommend-2027` (they share the same tier vocabulary) so a user moving between the two
   doesn't have to relearn a legend.
+- **Cross-link:** direct navigation from `cve-watcher` (§ 1.1) — see that entry's cross-link
+  note. Tier and operator-override badges follow the non-authoritative-badge cross-cutting rule
+  (§ 0).
 - **Edge case (UX):** no cached run exists — explicit "run `library-futures` to populate this
   view" instruction, same pattern as `inventory-match`.
 - **Success metric:** the packages most urgently needing a migration plan are visible without
@@ -376,7 +419,6 @@ discipline as `mapping-gap` § 2.2.
 
 Per this story's Boundaries, this spine does not implement any page, does not touch
 `PAGE_INVENTORY`, and does not decide the exact Vizro widget wiring (that's `DESIGN.md`'s
-technical detail plus Story 20.5's implementation judgment). It also does not run a real
-usability TEST phase — Carson and Maya's own workflow structure (`bmad-cis-design-thinking`)
-reserves that step for when actual users exist to test with, which for a 19-page planning
-pass with zero pages built yet is Story 20.5's job, not this one's.
+technical detail plus Story 20.5's implementation judgment). Its TEST phase was a persona
+walkthrough, not live usability testing — real usability testing needs actual built pages,
+which for a 19-page planning pass with zero pages built yet is Story 20.5's job, not this one's.

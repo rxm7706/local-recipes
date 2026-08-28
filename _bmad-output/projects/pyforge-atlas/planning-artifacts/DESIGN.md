@@ -1,6 +1,12 @@
 # pyforge-atlas — DESIGN.md (technical/visual spine)
 
-**Produced by:** the CIS Carson/Maya planning pass (Story 20.4, CAP-7), closing `DW-D2-1`.
+**Produced by:** the CIS Carson/Maya planning pass (Story 20.4, CAP-7), closing `DW-D2-1`. Carson
+(`bmad-cis-agent-brainstorming-coach`) ran the divergent EMPATHIZE/IDEATE pass (recorded at
+`_bmad-output/brainstorming/brainstorm-atlas-19-page-spine-2026-08-28/`); Maya
+(`bmad-cis-agent-design-thinking-coach`) then ran the full `bmad-cis-design-thinking` workflow —
+EMPATHIZE through TEST — recorded verbatim at
+`_bmad-output/projects/pyforge-atlas/planning-artifacts/design-thinking-atlas-19-pages-2026-08-28.md`,
+this document's authoring source.
 **Companion:** `EXPERIENCE.md` (behavioral spine — personas, journeys, interaction patterns).
 **Scope:** the 19 Vizro pages NOT yet in `dashboard/app.py::PAGE_INVENTORY`, so Story 20.5 has
 a technical target to port against.
@@ -72,15 +78,27 @@ questions is answered by exactly one of the 19 pages below; none is dropped.
   (semantic markdown, deterministic layout) so browser/scraper agents can navigate without
   hallucinating, per the § 2.1 agent-legibility bar.
 - **`PageDef` shape.** Every page below is specified so it drops into the existing
-  `PageDef(id, title, cli, kind, note)` dataclass unchanged: `kind` is one of
-  `grounded-data` (BSL model + migrated dataset both exist), `bsl-shell` (model exists, dataset
-  not yet materialized), `no-bsl-shell` (model doesn't exist yet), or a new `kind` needed for
-  the 3 FR-9 artifact-viewer exceptions (§ 4.11–4.13) — this spine proposes `report-artifact`
-  as that fourth kind (Story 20.5 can rename it; the shape — a Card rendering the latest run's
-  report, no live query — is what matters).
+  `PageDef(id, title, cli, kind, note)` dataclass unchanged: `kind` is one of `grounded-data`
+  (BSL model + migrated dataset both exist), `bsl-shell` (model exists, dataset not yet
+  materialized), `no-bsl-shell` (model doesn't exist yet), `report-artifact` (renders the
+  LATEST cached run only — the dashboard never triggers a new run; the 3 FR-9 exceptions,
+  § 4.4–4.6), or `live-scan-artifact` (the dashboard itself submits a brand-new per-invocation
+  scan on user input — `scan-project` § 3.6 and `env-inspect` § 3.7). `report-artifact` and
+  `live-scan-artifact` both render "a report," but the dashboard's relationship to producing it
+  is opposite in each case, so Story 20.5 must not collapse them into one kind (Story 20.5 can
+  rename either; the shape each describes is what matters). Where a page's entry below reads
+  `no-bsl-shell → bsl-shell`, that arrow is a **lifecycle annotation**, not a sixth literal
+  value: the page ships today as the left value and becomes the right value once its named BSL
+  model lands — assign whichever single value is literally true at merge time.
 - **FR-9 exceptions stay CLI-first.** `add-handoff`, `inventory-match`, and `library-futures`
   are NOT full interactive query pages — FR-9 names them structurally-not-dashboard-pages.
-  Their pages surface the **latest report artifact only** (read-only), per § 4.11–4.13.
+  Their pages surface the **latest report artifact only** (read-only, `kind: report-artifact`),
+  per § 4.4–4.6.
+- **Non-authoritative-badge rule (cross-cutting, stated once).** Every page whose primary
+  content is a "likely / hint / report"-tier proposal — the 4 seed-gap suggesters (§ 5.1–5.4),
+  `mapping-gap` (§ 4.2), and `library-futures`' operator-override badges (§ 4.6) — renders that
+  value with one consistent, non-authoritative visual marker, distinct from a verified/confirmed
+  value. This is not repeated per page below; it applies uniformly to all six.
 
 ## 2. Per-page template
 
@@ -117,6 +135,9 @@ Each of the 19 pages below is specified with:
   `vuln_kev_affecting_current`.
 - **`kind`:** `no-bsl-shell` until the model ships, then `bsl-shell` until the snapshot-diff
   dataset materializes.
+- **Cross-link:** direct navigation to `library-futures` (§ 4.6) — a security lead deciding
+  whether a CVE-flagged package is even worth keeping needs that jump without a `detail-cf-atlas`
+  detour.
 
 ### 3.2 `version-downloads` — Version Downloads
 
@@ -177,14 +198,17 @@ Each of the 19 pages below is specified with:
   SBOM / container image / live env / GitOps resource), per FR-9's own read on why some CLIs
   are per-invocation. The model wraps the LATEST invocation's result, not a live catalog scan.
 - **Source dataset:** `scan_project.py`'s own CycloneDX/SPDX output, cached per-invocation
-  (mirrors the FR-9 `add-handoff`/`inventory-match` "surface the latest report artifact"
-  pattern — see § 4.11–4.13).
+  (a per-invocation shape, but NOT the FR-9 `add-handoff`/`inventory-match` "surface the latest
+  report artifact, never trigger a new run" pattern — see § 4.4–4.6; this page's dashboard DOES
+  trigger the scan, hence `kind: live-scan-artifact` below, not `report-artifact`).
 - **Layout:** an upload/path `Filter` (or a "most recent scan" `Card` when no fresh input is
   supplied) + an `AgGrid` of per-package CVE/license rows + a summary `Card`
   (Critical/High/KEV counts).
 - **Key columns:** `conda_name`, `severity`, `license_spdx`, `fix_available`.
-- **`kind`:** proposed `report-artifact` (per-invocation, not a standing catalog query — see
-  § 1's fourth `kind`).
+- **`kind`:** `live-scan-artifact` (the dashboard itself submits the new per-invocation scan on
+  user input — not a standing catalog query, and not the FR-9 "cached-only" shape either; see
+  § 1's `kind` taxonomy). States: no-scan-yet (input-needed) / report-available /
+  failed-invalid-run (a malformed manifest or scan error — see `EXPERIENCE.md` § 1.6).
 
 ### 3.7 `env-inspect` — Environment Inspect
 
@@ -196,7 +220,8 @@ Each of the 19 pages below is specified with:
   table.
 - **Key columns:** `conda_name`, `license_spdx`, `non_permissive_flag`, `vuln_critical`,
   `vuln_high`.
-- **`kind`:** `report-artifact`.
+- **`kind`:** `live-scan-artifact` (same per-invocation shape as `scan-project` § 3.6). States:
+  no-scan-yet / report-available / failed-invalid-run.
 
 ### 3.8 `distribution-breakdown` — Distribution Breakdown (merged: `platform-breakdown` +
 `pyver-breakdown` + `channel-split`)
@@ -249,7 +274,7 @@ Each of the 19 pages below is specified with:
 - **Ports:** `universe_sbom`.
 - **BSL model (NEW):** `build_universe_sbom_summary_model` — this page is a SUMMARY dashboard
   over the ~856k-component BOM, not a full component browser (rendering 856k rows in an
-  `AgGrid` is a UX non-starter — see EXPERIENCE.md § 4.3 for the paging/summary rationale).
+  `AgGrid` is a UX non-starter — see EXPERIENCE.md § 2.3 for the paging/summary rationale).
 - **Source dataset:** the full-universe CycloneDX 1.6 BOM (`derived` layer, 14-day freshness
   gate).
 - **Layout:** summary `Card`s (total components, actionable/mapped/conda-only/pypi-only
@@ -278,6 +303,11 @@ Each of the 19 pages below is specified with:
 - **Layout:** an `AgGrid` worklist (package, readiness, template, license-blocker flag).
 - **Key columns:** `conda_name`, `readiness`, `license_blocker`.
 - **`kind`:** `report-artifact`.
+- **Forward-looking note (not implemented now):** the read-only constraint (FR-9) doesn't fully
+  solve multi-agent coordination — two packaging agents could both pick up the same worklist row.
+  A lightweight claim/lock sidecar (or at minimum a "last regenerated" + "in-progress elsewhere"
+  flag) is a legitimate future need, but building it would cross into write-path territory this
+  story must not touch; recorded here for a future story to pick up.
 
 ### 4.6 `library-futures` — Library Futures (FR-9 exception — report-artifact only)
 
@@ -289,6 +319,9 @@ Each of the 19 pages below is specified with:
 - **Layout:** a `Card` per scored package (futures_score, tier badge) in a grid.
 - **Key columns:** `package_name`, `futures_score`, `futures_tier`, `py314_readiness`.
 - **`kind`:** `report-artifact`.
+- **Cross-link:** direct navigation from `cve-watcher` (§ 3.1) — see that entry's cross-link
+  note. Operator-override badges follow the non-authoritative-badge rule (§ 1) and carry their
+  own timestamp, decoupled from the compute run's timestamp.
 
 ### 4.7 `recommend-2027` — Recommend 2027
 
@@ -309,6 +342,7 @@ their inputs/outputs are distinct artifacts, even though the shape repeats.
 
 ### 5.1 `lts-registry-gap` — LTS Registry Gap
 
+- **Ports:** `lts_registry_gap`.
 - **BSL model (NEW):** `build_lts_registry_gap_model` — dimensions `product_name`, `tier`
   (exact/likely); measure `candidate_count`.
 - **Source dataset:** the endoflife.date product-list diff against `v_actionable_packages`.
@@ -318,6 +352,7 @@ their inputs/outputs are distinct artifacts, even though the shape repeats.
 
 ### 5.2 `cwe-seed-gap` — CWE Seed Gap
 
+- **Ports:** `cwe_seed_gap`.
 - **BSL model (NEW):** `build_cwe_seed_gap_model` — dimensions `cwe_id`, `tier`
   (strong/weak); measure `package_impact_count`.
 - **Source dataset:** keyword-classified `Other`-bucket MITRE CWEs.
@@ -327,6 +362,7 @@ their inputs/outputs are distinct artifacts, even though the shape repeats.
 
 ### 5.3 `spdx-schema-gap` — SPDX Schema Gap
 
+- **Ports:** `spdx_schema_gap`.
 - **BSL model (NEW):** `build_spdx_schema_gap_model` — dimensions `license_id`, `tier`
   (add-to-schema/non-standard); measure `package_usage_count`. Supports a `--drift`-only
   staleness view.
@@ -337,6 +373,7 @@ their inputs/outputs are distinct artifacts, even though the shape repeats.
 
 ### 5.4 `license-map-gap` — License Map Gap
 
+- **Ports:** `license_map_gap`.
 - **BSL model (NEW):** `build_license_map_gap_model` — dimensions `license_raw`, `tier`
   (likely/report); measure `package_count`.
 - **Source dataset:** `pypi_intelligence.license_raw` rows where `license_spdx IS NULL`.

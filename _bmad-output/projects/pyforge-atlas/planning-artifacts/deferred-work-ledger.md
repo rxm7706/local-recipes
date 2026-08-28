@@ -358,14 +358,19 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   resolution: **CLOSED 2026-08-28 by Story 20.4** (`spec-20-4-the-cis-two-spine-specs-exist.md`,
     CAP-7). Ran `bmad-cis-install` (the `bmad-creative-intelligence-suite` v0.3.1 conda package,
-    already resolved in the `local-recipes` env) to copy the Carson (`bmad-cis-agent-brainstorming-coach`)
-    and Maya (`bmad-cis-agent-design-thinking-coach`) skills plus the `bmad-cis-design-thinking`
-    workflow into `.claude/skills/`, then ran the design-thinking pass — divergent EMPATHIZE/IDEATE
-    over the full 28-CLI read surface (Carson), convergent DEFINE/PROTOTYPE into a 19-page
-    information architecture (Maya) — against the 21 CLI questions still unaddressed by any
-    shipped page (28 total minus the 7 of `PAGE_INVENTORY`'s 9 entries that are genuine CLI ports;
-    `estate-cache` is CAP-19/Lane-3 and `factory-status` is an observability page, neither a CLI
-    port). The two spine files land at
+    already resolved in the `local-recipes` env), which copies its full six-persona suite
+    (Carson, Dr. Quinn, Maya, Victor, Caravaggio, Sophia) plus all four of its workflow skills
+    (design-thinking, innovation-strategy, problem-solving, storytelling) into `.claude/skills/`
+    — this story activated two of those: Carson (`bmad-cis-agent-brainstorming-coach`) for the
+    divergent EMPATHIZE/IDEATE pass over the full 28-CLI read surface (recorded at
+    `_bmad-output/brainstorming/brainstorm-atlas-19-page-spine-2026-08-28/`), then Maya
+    (`bmad-cis-agent-design-thinking-coach`) for a genuine, full run of her own
+    `bmad-cis-design-thinking` workflow (EMPATHIZE through TEST) against the 21 CLI questions
+    still unaddressed by any shipped page (28 total minus the 7 of `PAGE_INVENTORY`'s 9 entries
+    that are genuine CLI ports; `estate-cache` is CAP-19/Lane-3 and `factory-status` is an
+    observability page, neither a CLI port) — recorded verbatim at
+    `_bmad-output/projects/pyforge-atlas/planning-artifacts/design-thinking-atlas-19-pages-2026-08-28.md`.
+    The two spine files land at
     `_bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md` (technical/visual — per-page
     BSL model, source dataset, Vizro layout) and `.../EXPERIENCE.md` (behavioral — per-page
     persona, user journey, interaction pattern, success metric), covering all 19 remaining pages
@@ -373,7 +378,10 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     into one `distribution-breakdown` page behind a dimension selector, bringing the 21-question
     backlog to exactly 19 pages with zero questions dropped — see `DESIGN.md` § 0 and § 6 for the
     full reconciliation). The full 28-page inventory + each page's detailed design is no longer
-    blocked; Story 20.5 ports against these two spines.
+    blocked; Story 20.5 ports against these two spines. **Carried forward, not re-litigated
+    here:** this story's own spec records a deferred item flagging the 19-vs-21 page mapping as
+    a design judgment call Story 20.5's implementer should re-verify before treating "19" as
+    fixed — see `spec-20-4-the-cis-two-spine-specs-exist.md` frontmatter `deferred`, second item.
 
   status: closed
 ## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas; behind-upstream / whodepends stay open under DW-D2-1)
