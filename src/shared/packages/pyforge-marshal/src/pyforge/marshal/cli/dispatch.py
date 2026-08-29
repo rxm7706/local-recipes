@@ -1416,6 +1416,15 @@ def run_dispatch_attach(
         return exit_code_for(compute_verdict(tuple(findings)))
     log_path = Path(str(data["log"]))
     try:
+        # Story 14.4, CAP-6: stays raw os.execvp, exempted file-level in
+        # test_process_sole_ownership.py -- REPLACES this process's own
+        # image with `tail -F` so `marshal attach` hands the user's
+        # terminal straight to the live dispatch log (Ctrl-C exits tail,
+        # not a subprocess). pyforge.core.process's ProcessPort has no
+        # analog: it launches and either waits (run) or detaches
+        # (spawn_detached) a CHILD, never replaces the caller's own
+        # process -- a fundamentally different primitive, not a second
+        # implementation of subprocess launching.
         os.execvp("tail", ["tail", "-F", str(log_path)])
     except OSError as exc:
         finding = Finding(

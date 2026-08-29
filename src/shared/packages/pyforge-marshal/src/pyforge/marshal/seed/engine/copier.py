@@ -95,7 +95,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import subprocess
 import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -109,6 +108,7 @@ from typing import Any
 import copier
 from packaging.specifiers import SpecifierSet
 from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..model.manifest import ArtifactClass, Manifest, load_manifest
 
@@ -239,17 +239,21 @@ def _git_clone_local(dst_path: Path, stage_path: Path) -> None:
     ``UPDATE``/``RECOPY``. ``dst_path`` is only ever READ here; nothing is
     written to it."""
     try:
-        subprocess.run(
+        result = PosixProcess().run(
             ["git", "clone", "--local", "--quiet", str(dst_path), str(stage_path)],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=_GIT_TIMEOUT_S,
+            cwd=Path.cwd(),
+            timeout_s=_GIT_TIMEOUT_S,
         )
-    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as err:
+    except ProcessError as exc:
         raise CopierEngineError(
-            f"could not stage {dst_path} for update/recopy via a local git clone: {err}"
-        ) from err
+            f"could not stage {dst_path} for update/recopy via a local git clone: "
+            f"{exc.__cause__ or exc}"
+        ) from exc
+    if result.returncode != 0:
+        raise CopierEngineError(
+            f"could not stage {dst_path} for update/recopy via a local git clone: "
+            f"{result.stderr}"
+        )
 
 
 def _git_changed_paths(stage_path: Path) -> list[str]:
@@ -261,14 +265,20 @@ def _git_changed_paths(stage_path: Path) -> list[str]:
     AST/text scanners): does not handle filenames containing a literal
     `` -> `` substring or requiring shell quoting -- real Genesis-managed
     paths never do."""
-    result = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all"],
-        cwd=stage_path,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=_GIT_TIMEOUT_S,
-    )
+    try:
+        result = PosixProcess().run(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=stage_path,
+            timeout_s=_GIT_TIMEOUT_S,
+        )
+    except ProcessError as exc:
+        raise CopierEngineError(
+            f"could not read staged changes in {stage_path}: {exc.__cause__ or exc}"
+        ) from exc
+    if result.returncode != 0:
+        raise CopierEngineError(
+            f"could not read staged changes in {stage_path}: {result.stderr}"
+        )
     changed: list[str] = []
     for line in result.stdout.splitlines():
         if len(line) < 4:

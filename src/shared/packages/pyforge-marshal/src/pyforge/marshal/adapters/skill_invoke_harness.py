@@ -129,6 +129,16 @@ class HarnessSkillInvoker:
         try:
             run_dir.mkdir(parents=True, exist_ok=True)
             with open(log_path, "wb") as log_file:
+                # Story 14.4, CAP-6: stays raw subprocess, exempted
+                # file-level in test_process_sole_ownership.py -- same
+                # capability gap as harness_bmadbuild.py's Popen site:
+                # PosixProcess.run has no env= override (by design, always
+                # inherits os.environ exactly) and does not redirect
+                # stdout/stderr to a file, both required here
+                # (BMAD_ACTIVE_PROJECT per invocation + a synchronous,
+                # file-logged wait-for-exit). Mutating process-global
+                # os.environ as a workaround would race a concurrent
+                # invocation for a different project.
                 completed = subprocess.run(
                     argv,
                     cwd=root,

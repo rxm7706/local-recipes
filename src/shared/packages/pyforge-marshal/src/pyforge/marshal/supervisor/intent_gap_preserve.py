@@ -12,9 +12,12 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..ports.harness import TaskPhaseSnapshot
 
@@ -58,7 +61,7 @@ class AttemptSnapshot:
     dirty_patch: str | None = None
 
 
-class GitPreserveError(Exception):
+class GitPreserveError(PyforgeError, Exception):
     """A git subprocess failed during capture or park."""
 
 
@@ -214,7 +217,7 @@ def append_preserve_notice(
             insert_at += 2
         new_text = text[:insert_at] + notice + text[insert_at:]
         try:
-            _atomic_write_text(spec_path, new_text)
+            atomic_write_text(spec_path, new_text)
         except OSError:
             return False
         return True
@@ -229,7 +232,7 @@ def append_preserve_notice(
         f"{notice}"
     )
     try:
-        _atomic_write_text(spec_path, text + section)
+        atomic_write_text(spec_path, text + section)
     except OSError:
         return False
     return True
@@ -256,27 +259,18 @@ def resolve_spec_path(home: Path, spec_file: str | None) -> Path | None:
     return candidate if candidate.is_file() else None
 
 
-def _atomic_write_text(path: Path, content: str) -> None:
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(content, encoding="utf-8")
-    os.replace(tmp, path)
-
-
 def _git(
     repo: Path, *args: str, timeout_s: float = _GIT_TIMEOUT_S
 ) -> tuple[int, str, str]:
     try:
-        proc = subprocess.run(
-            ["git", "-C", str(repo), *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
+        result = PosixProcess().run(
+            ["git", "-C", str(repo), *args], cwd=Path.cwd(), timeout_s=timeout_s
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise GitPreserveError(str(exc)) from exc
-    stdout = proc.stdout if proc.stdout else ""
-    stderr = proc.stderr.strip() if proc.stderr else ""
-    return proc.returncode, stdout.strip(), stderr
+    except ProcessError as exc:
+        raise GitPreserveError(str(exc.__cause__ or exc)) from exc
+    stdout = result.stdout if result.stdout else ""
+    stderr = result.stderr.strip() if result.stderr else ""
+    return result.returncode, stdout.strip(), stderr
 
 
 def _rev_parse_head(repo: Path) -> str:

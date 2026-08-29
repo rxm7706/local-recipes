@@ -31,6 +31,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..core.harness_profile import HarnessProfile, load_profiles
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
@@ -80,16 +81,11 @@ def _authcheck_failure(profile: HarnessProfile, binary_path: str) -> str | None:
         return None
     argv = [binary_path, *profile.authcheck_args]
     try:
-        result = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-            timeout=_AUTHCHECK_TIMEOUT_S,
-            stdin=subprocess.DEVNULL,
-            check=False,
+        result = PosixProcess().run(
+            argv, cwd=Path.cwd(), timeout_s=_AUTHCHECK_TIMEOUT_S
         )
-    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-        return f"authcheck {argv!r} could not run: {exc}"
+    except ProcessError as exc:
+        return f"authcheck {argv!r} could not run: {exc.__cause__ or exc}"
     output = (result.stdout or "") + (result.stderr or "")
     if result.returncode != 0:
         tail = output.strip().splitlines()[-1] if output.strip() else ""
@@ -209,6 +205,18 @@ class BmadBuildHarness:
             ) from exc
         with log_file:
             try:
+                # Story 14.4, CAP-6: stays raw subprocess, exempted
+                # file-level in test_process_sole_ownership.py -- needs a
+                # capability pyforge.core.process does NOT offer. Neither
+                # PosixProcess.run (waits synchronously, no file-redirected
+                # stdout) nor spawn_detached (no env= override -- inherits
+                # os.environ exactly, by design) supports a DETACHED launch
+                # with a per-invocation custom env (BMAD_ACTIVE_PROJECT +
+                # profile env + budget env). Mutating process-global
+                # os.environ as a workaround would race concurrent
+                # dispatches for different projects -- the exact class of
+                # bug the "never scripts/bmad-switch" convention exists to
+                # avoid.
                 process = subprocess.Popen(
                     list(argv),
                     cwd=worktree,

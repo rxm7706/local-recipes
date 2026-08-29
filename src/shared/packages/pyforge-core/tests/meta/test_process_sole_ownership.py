@@ -36,9 +36,24 @@ exclusion -- Doctor (``cli_bridge.py``, its own already-working sole-site
 guard), Warden (``engines.py``, the fleet's own confirmed-conforming single
 seam), Steward (``deploy.py``/``provision.py``/``keys.py``, CAP-6's
 sanctioned raw-``CalledProcessError`` opt-out, pinned by 11 tests) -- plus
-one file-level exclusion, Marshal's ``adapters/harness_bmadloop.py`` (4
-sanctioned call sites, each carrying its own inline comment naming the
-capability gap). Running the detector's real-tree scan against every OTHER
+five file-level exclusions, each carrying its own inline comment naming
+the capability gap: Marshal's ``adapters/harness_bmadloop.py`` (4 sanctioned
+call sites -- interactive stdio passthrough, append-mode log),
+``adapters/harness_bmadbuild.py`` (its one remaining raw site, a DETACHED
+launch needing both a per-invocation custom env and file-redirected
+stdout -- neither ``PosixProcess.run`` nor ``spawn_detached`` offers both
+together; the file's OTHER, cleanly-migratable site,
+``_authcheck_failure``, was migrated rather than folded into this
+exemption), ``adapters/skill_invoke_harness.py`` (the identical
+custom-env + file-redirect gap, synchronous rather than detached),
+``cli/dispatch.py`` (one ``os.execvp`` call that REPLACES the process's own
+image for ``marshal attach`` -- no ``ProcessPort`` method launches a child
+AND replaces the caller, so there is no analog, not merely a missing
+option), and Atlas's ``query_plane_boot.py`` (its one sanctioned
+``duckdb-server`` launch site, needing the live ``Popen`` handle's
+terminate/wait/kill lifecycle no ``ProcessPort`` method offers -- see the
+Atlas paragraph below). Running
+the detector's real-tree scan against every OTHER
 sibling station before shipping this guard surfaced three more real,
 pre-existing, un-migrated ``subprocess`` implementations this story's
 Boundaries never named and does not touch: Herald's
@@ -57,12 +72,20 @@ this story never asked to touch, or silently narrowing the scan without a
 record. A future story extending CAP-6 to any of the three removes its entry
 from this set in the same change that migrates it.
 
-Atlas is deliberately NOT excluded: its own ``tests/catalog/
-test_no_inline_io.py`` (the A2 no-inline-IO denylist) already independently
-bans every ``subprocess``/HTTP import fleet... er, package-wide, so it scans
-clean here today and serves as this guard's real-tree positive-coverage
-proof, the same role ``fs_local.py``'s clean scan plays for the atomic-write
-guard.
+Atlas is deliberately NOT excluded at the STATION level: its own ``tests/
+catalog/test_no_inline_io.py`` (the A2 no-inline-IO denylist) already
+independently bans every ``subprocess``/HTTP import package-wide, and every
+file but one scans clean here, serving as this guard's real-tree
+positive-coverage proof, the same role ``fs_local.py``'s clean scan plays
+for the atomic-write guard. The one exception, ``query_plane_boot.py``, gets
+its own file-level exemption below (fourth entry in ``_EXEMPT_RELATIVE_PATHS``):
+atlas's OWN ``NO_INLINE_IO_EXEMPT`` already sanctions it as "the ONE
+``duckdb-server`` launch site in the atlas surface" (governed by its own
+``tests/singularity/test_one_duckdb_server_launch_site.py``), and its
+``_shutdown`` helper needs the live ``Popen`` handle's
+terminate/wait(timeout)/kill/wait sequence -- a capability neither
+``PosixProcess.run`` (blocks to completion) nor ``spawn_detached`` (returns
+a bare pid, no handle at all) offers.
 
 Scans SOURCE trees (reads files from disk), not installed packages -- same
 convention as every other ``pyforge-core`` meta test.
@@ -96,21 +119,43 @@ _OUT_OF_SCOPE_STATIONS = frozenset(
     }
 )
 
-# Marshal's own sanctioned exception (this story's Always bullet): 4 call
-# sites (`attach`/`run_foreground`/`resume`'s Popen/`run_smoke`) each need a
-# capability `pyforge.core.process` does not offer (interactive stdio
-# passthrough, append-mode log) -- mirrors Doctor's own `_EXEMPT_RELATIVE_PATHS`
-# pattern, one level deeper (relative to PACKAGES_ROOT, not a single
-# package's own root, since this guard's scan surface spans stations).
+# Marshal's own sanctioned exceptions (this story's Always bullet):
+# harness_bmadloop.py's 4 call sites (`attach`/`run_foreground`/`resume`'s
+# Popen/`run_smoke`) each need a capability `pyforge.core.process` does not
+# offer (interactive stdio passthrough, append-mode log). harness_bmadbuild.py
+# and skill_invoke_harness.py each keep one raw site needing a per-invocation
+# custom env (`BMAD_ACTIVE_PROJECT`) COMBINED WITH file-redirected stdout --
+# `PosixProcess.run` never accepts an `env=` override (always inherits
+# `os.environ` exactly, by design) and captures to strings, never a file;
+# `spawn_detached` redirects to a file but likewise offers no `env=`
+# override. Mutating process-global `os.environ` as a workaround would race
+# a concurrent dispatch for a different project -- the class of bug the
+# "never scripts/bmad-switch" convention exists to avoid. cli/dispatch.py's
+# `marshal attach` keeps its one `os.execvp` call: it REPLACES this
+# process's own image with `tail -F` so the user's terminal follows the
+# live dispatch log directly -- `ProcessPort` launches and either waits or
+# detaches a CHILD, never replaces the caller's own process, so there is no
+# analog at all, not merely a missing option. Atlas's `query_plane_boot.py`
+# keeps its one `subprocess.Popen`: see the module docstring above for its
+# separate, live-handle-lifecycle reason. Mirrors Doctor's
+# own `_EXEMPT_RELATIVE_PATHS` pattern, one level deeper (relative to
+# PACKAGES_ROOT, not a single package's own root, since this guard's scan
+# surface spans stations).
 #
 # Bounded (stated, not aspirational, matching test_leaf_constraint.py's own
-# convention): this exemption is FILE-level, not scoped to the 4 named call
-# sites individually -- a fifth, unsanctioned `subprocess.*` call added
-# anywhere else in this same file would also go undetected. Matches Doctor's
-# own `_EXEMPT_RELATIVE_PATHS` precedent, which has the identical file-level
+# convention): each exemption is FILE-level, not scoped to its named call
+# site(s) individually -- an unsanctioned `subprocess.*` call added anywhere
+# else in one of these files would also go undetected. Matches Doctor's own
+# `_EXEMPT_RELATIVE_PATHS` precedent, which has the identical file-level
 # (not line-level) granularity.
 _EXEMPT_RELATIVE_PATHS = frozenset(
-    {Path("pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py")}
+    {
+        Path("pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py"),
+        Path("pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py"),
+        Path("pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py"),
+        Path("pyforge-marshal/src/pyforge/marshal/cli/dispatch.py"),
+        Path("pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"),
+    }
 )
 
 
@@ -226,6 +271,30 @@ def test_scan_surface_is_not_empty():
 
 def test_harness_bmadloop_is_excluded_from_the_scan():
     excluded = PACKAGES_ROOT / "pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py"
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_harness_bmadbuild_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / "pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py"
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_skill_invoke_harness_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / "pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py"
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_cli_dispatch_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / "pyforge-marshal/src/pyforge/marshal/cli/dispatch.py"
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_query_plane_boot_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / "pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"
     assert excluded.is_file(), f"expected {excluded} to exist"
     assert excluded not in _scannable_files()
 

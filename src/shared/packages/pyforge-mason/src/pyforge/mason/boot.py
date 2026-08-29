@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from pyforge.core.errors import PyforgeError
 
 _CREATE_INDEX = """
 CREATE TABLE IF NOT EXISTS mason_index (
@@ -34,8 +35,15 @@ VALUES (?, ?, ?)
 """
 
 
-class BootInterrupted(Exception):
-    """Test seam: reconcile stopped mid-flight. Resume with the same store."""
+class BootInterrupted(PyforgeError, Exception):
+    """Test seam: reconcile stopped mid-flight. Resume with the same store.
+
+    Multi-inherits ``PyforgeError`` directly (Story 14.3, CAP-5) rather than
+    ``MasonError``: ``MasonError.__init__`` requires ``(identifier,
+    message)``, which would break this class's bare ``raise
+    BootInterrupted`` call site -- ``PyforgeError`` is a no-``__init__``
+    marker, so re-parenting here changes nothing observable.
+    """
 
 
 class IndexStore(Protocol):
