@@ -124,7 +124,17 @@ def _server_argv(executable: str, db_path: Path) -> list[str]:
 
 
 def _launch_duckdb_server(argv: Sequence[str]) -> subprocess.Popen[bytes]:
-    """The ONE ``duckdb-server`` launch site in the whole atlas surface."""
+    """The ONE ``duckdb-server`` launch site in the whole atlas surface.
+
+    Story 14.4, CAP-6: stays raw ``subprocess.Popen``, exempted file-level
+    in ``test_process_sole_ownership.py`` -- ``_shutdown``'s graceful
+    terminate -> wait(timeout) -> kill -> wait sequence (below) needs the
+    LIVE ``Popen`` handle's own lifecycle methods. ``pyforge.core.process``
+    offers no equivalent: ``run`` blocks until completion,
+    ``spawn_detached`` returns a bare pid with no terminate/wait/kill at
+    all -- neither fits a supervised long-running server this module must
+    later shut down cleanly.
+    """
     return subprocess.Popen(list(argv))  # noqa: S603 — fixed argv, no shell
 
 

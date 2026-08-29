@@ -70,6 +70,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import CAPTURE_TYPES, GraphNode, GraphNodeKind, parse_capture_file
 from pyforge.scribe.transcripts import (
@@ -106,7 +107,7 @@ _DEFAULT_MAX_COMMITS = 100
 _MAX_DOC_TEXT_CHARS = 20_000  # bound lexical-scan/serialization cost per node
 
 
-class CompileInProgressError(RuntimeError):
+class CompileInProgressError(PyforgeError, RuntimeError):
     """Another `scribe graph compile` currently holds this store's lock
     (Story 3.3). Benign under a scheduler -- the CLI turns it into an
     exit-0 skip, mirroring the `flock -n` semantics the runbook's cron

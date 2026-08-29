@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
+
 from .dispatch import canonical_repo_root
 from .identity import MalformedStoryKeyError, StoryKey, normalize
 
@@ -63,7 +65,7 @@ class FleetCampaignMode(StrEnum):
 CAMPAIGN_MODES: tuple[str, ...] = tuple(mode.value for mode in FleetCampaignMode)
 
 
-class InvalidCampaignModeError(ValueError):
+class InvalidCampaignModeError(PyforgeError, ValueError):
     """Raised for a missing or unrecognized ``--mode`` -- never defaulted."""
 
 

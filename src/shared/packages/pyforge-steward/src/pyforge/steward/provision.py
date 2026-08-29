@@ -105,6 +105,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
+from pyforge.core.atomic_write import atomic_write
 
 from .interfaces import DutyResult
 
@@ -542,12 +543,14 @@ def _record_module_manifest(
         "installer": installer,
         "skills": list(skills),
     }
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    # Atomic replace so a crash mid-write cannot leave a truncated config.
-    tmp_path = config_path.with_suffix(config_path.suffix + ".tmp")
-    with tmp_path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(config, f, sort_keys=False)
-    tmp_path.replace(config_path)
+    # Atomic replace so a crash mid-write cannot leave a truncated config
+    # (Story 14.2, CAP-2: pyforge-core's atomic_write is the sole write-open
+    # + os.replace implementation -- also handles the parent mkdir).
+    def _dump_config(tmp: Path) -> None:
+        with tmp.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(config, f, sort_keys=False)
+
+    atomic_write(config_path, _dump_config)
 
 
 def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) -> dict[str, object]:

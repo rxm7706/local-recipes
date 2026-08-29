@@ -174,6 +174,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
+from pyforge.core.errors import PyforgeError
+
 from . import claims, errors, notices, progress
 
 logger = logging.getLogger(__name__)
@@ -1016,14 +1018,19 @@ def handle_on_pr_close(
 # --- the ASGI3 boundary (AD-8: "protocol, not framework") --------------------
 
 
-class _BodyTooLarge(Exception):
+class _BodyTooLarge(PyforgeError, Exception):
     """Raised by ``_read_body`` once the accumulated body exceeds
     ``MAX_BODY_BYTES`` -- caught by ``app()`` and turned into a 413
     response BEFORE the body is ever handed to ``verify_signature`` (see
-    the module docstring's "Body size cap" section)."""
+    the module docstring's "Body size cap" section).
+
+    Multi-inherits ``PyforgeError`` directly (Story 14.3, CAP-5) rather
+    than ``errors.HeraldError``: this is an internal ASGI body-read signal
+    caught by exact type at its own raise site, not a domain error that
+    should join ``HeraldError``'s retry/catch surface."""
 
 
-class _ClientDisconnected(Exception):
+class _ClientDisconnected(PyforgeError, Exception):
     """Raised by ``_read_body`` on an ``http.disconnect`` message -- the
     peer went away mid-body, so there is no complete request to act on and
     nobody left to answer.
