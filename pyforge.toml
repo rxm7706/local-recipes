@@ -1,0 +1,3 @@
+# scaffolded by steward initrepo — extend as the repo's conventions grow
+[project]
+name = "local-recipes"
