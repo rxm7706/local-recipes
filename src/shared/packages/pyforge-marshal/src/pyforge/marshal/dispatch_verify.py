@@ -71,8 +71,8 @@ def compose_dispatch_policy(slug: str, repo_root: Path) -> EffectivePolicy:
     project_data: dict[str, object] = {}
     if candidate.is_file():
         try:
-            project_data = dict(tomllib.loads(candidate.read_bytes()))
-        except (OSError, tomllib.TOMLDecodeError):
+            project_data = dict(tomllib.loads(candidate.read_text()))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
             project_data = {}
     effective, _findings = policy.compose(
         project_slug=slug, project=project_data, flags={}
