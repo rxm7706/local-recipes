@@ -90,6 +90,8 @@ MODULE_ALIASES: dict[str, frozenset[str]] = {
     "opentelemetry": frozenset({"opentelemetry-api", "opentelemetry-sdk"}),
     "packageurl": frozenset({"packageurl-python"}),
     "yaml": frozenset({"pyyaml"}),
+    "PIL": frozenset({"pillow"}),
+    "pptx": frozenset({"python-pptx"}),
 }
 
 # Conda run-deps with no `[project.dependencies]` counterpart, per package, and
