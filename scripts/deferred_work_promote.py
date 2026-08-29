@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Mutation-only: promote Tier-3 legacy deferred-work orphans into the
-tracked ledger (Story 8.3).
+"""Mutation-only: promote Tier-3 legacy deferred-work orphans AND
+already-identified-but-untracked entries into the tracked ledger (Story
+8.3, extended by Story 8.7).
 
 Story 8.1 (`classify_tier3_entries`) classifies every legacy Tier-3 shape;
 Story 8.2 (`mint_id_for_entry`) mints a collision-free id for any orphan.
@@ -15,9 +16,13 @@ orphan (`entry.id is None`) from `classify_tier3_entries(tier3_path)`,
 mints each one's id via `mint_id_for_entry` (threading ONE running
 `already_minted` set across the whole project's batch -- Story 8.2's own
 proven discipline; skipping this reproduces the exact duplicate-mint bug
-that story's review caught), validates the whole batch for id/summary
-collisions in memory, and -- only on a clean batch -- writes the tracked
-ledger once.
+that story's review caught). Story 8.7 adds a second, structurally
+different source to the SAME batch: entries that already carry a real
+`DW-*` id in Tier-3 (`entry.id is not None`) but whose id is not yet a
+`DW-` token anywhere in the tracked ledger -- no minting needed, the
+entry's own `entry.id` is used verbatim. Both kinds are validated for id/
+summary collisions in memory as ONE combined batch, and -- only on a clean
+batch -- the tracked ledger is written once.
 
 **Why this lives here, not in `pyforge.doctor`.** Doctor sources are
 deliberately READ-ONLY gathers (Charter Sec.6 -- the producing station keeps
@@ -122,20 +127,6 @@ else:
 TIER3_REL = Path("implementation-artifacts") / "deferred-work.md"
 TRACKED_REL = Path("planning-artifacts") / "deferred-work-ledger.md"
 
-#: Duplicated (not imported) from `chain.py`'s own private `_DW_RE` --
-#: reusing the TOKEN-HARVESTING approach per this story's Boundaries
-#: ("reuse `_ids`-style token harvesting"), not the private symbol itself.
-#: Matches `deferred_work_baseline.py`'s own established precedent of
-#: duplicating a private helper's SHAPE across the package boundary rather
-#: than importing an underscore-prefixed name.
-_DW_TOKEN_RE = re.compile(r"\bDW-[A-Za-z0-9][A-Za-z0-9-]*")
-
-
-def _dw_tokens(text: str) -> set[str]:
-    """Every `DW-` token mentioned anywhere in `text` -- same shape as
-    `chain.py::_ids`, applied to already-read text rather than a path."""
-    return {m.group(0).rstrip("-") for m in _DW_TOKEN_RE.finditer(text)}
-
 
 def _probe(p: Path) -> os.stat_result | None:
     """``p.stat()``, or ``None`` when ``p`` genuinely does not exist --
@@ -143,8 +134,8 @@ def _probe(p: Path) -> os.stat_result | None:
     2026-08-15, item 5). Duplicated in SHAPE from `chain.py`'s own private
     `_probe`/`_is_file` (not imported -- both are underscore-prefixed and
     absent from `chain.py`'s `__all__`), mirroring this script's own
-    established "reuse the approach, not the private symbol" precedent (see
-    `_dw_tokens`'s own docstring above). `Path.is_file()` swallows every
+    established "reuse the approach, not the private symbol" precedent.
+    `Path.is_file()` swallows every
     `OSError` and answers `False` for an unreadable ANCESTOR directory,
     indistinguishable from a genuinely absent file -- so a permission-denied
     `tier3_path` used to read as "nothing to promote", a dangerous false
@@ -258,15 +249,29 @@ def _format_promoted_entry(new_id: str, entry: LegacyEntry, tier3_rel: str) -> s
     the orphan carries no `status:` field of its own; when it does, that
     value is used verbatim rather than force-overwritten -- an
     already-resolved item must not resurface as freshly open with no trace
-    of why it was previously handled."""
+    of why it was previously handled.
+
+    `new_id` is `entry.id` itself, unchanged, for an already-identified
+    entry (Story 8.7) -- the `promoted:` note's own wording distinguishes
+    "no prior id" (orphan, Story 8.3) from "never previously copied" (had a
+    real id all along, just missing its tracked twin) so a reader of the
+    tracked ledger can tell the two provenances apart."""
     summary = entry.fields.get("summary", "").strip()
     source_spec = entry.fields.get("source_spec", "").strip()
     evidence = entry.fields.get("evidence", "").strip()
     status = entry.fields["status"].strip() if "status" in entry.fields else "open"
-    promoted = (
-        f"{date.today().isoformat()} — promoted from Tier-3 {tier3_rel} "
-        f"(legacy {entry.shape.value} entry, no prior id)"
-    )
+    today = date.today().isoformat()
+    if entry.id is None:
+        promoted = (
+            f"{today} — promoted from Tier-3 {tier3_rel} "
+            f"(legacy {entry.shape.value} entry, no prior id)"
+        )
+    else:
+        promoted = (
+            f"{today} — promoted from Tier-3 {tier3_rel} "
+            f"(already-identified {entry.shape.value} entry, never previously "
+            f"copied to the tracked ledger)"
+        )
     extra_fields = "".join(
         f"  {key}: {value.strip()}\n"
         for key, value in entry.fields.items()
@@ -397,17 +402,42 @@ def _read_tracked(tracked_path: Path) -> tuple[bool, str]:
     return existed, text
 
 
+def _describe_counts(minted: list[tuple[LegacyEntry, str]], *, qualifier: str = "") -> str:
+    """`"N orphan(s)"` / `"M already-identified entr(y|ies)"` / both joined
+    with `" + "` -- the shared count phrase used by the "promoted", "no
+    write -- already reached the tracked ledger", and "skipped" messages
+    (Story 8.7), built from a `(entry, id)` list so it works identically
+    whether called on `to_write` (the promoted subset), `minted` (the full
+    batch), or the already-tracked-skipped subset. Orphan-only input
+    renders EXACTLY as before Story 8.7 (`"N orphan(s)"`, no ` + ` suffix)
+    -- existing callers/tests that only ever see all-orphan batches see
+    byte-identical messages. `qualifier`, if given, is inserted before each
+    count noun (e.g. `qualifier="already-tracked "` ->
+    `"N already-tracked orphan(s)"`, matching the pre-Story-8.7 "skipped"
+    message's own wording exactly for an orphan-only skip)."""
+    orphan_n = sum(1 for entry, _ in minted if entry.id is None)
+    identified_n = len(minted) - orphan_n
+    parts = []
+    if orphan_n:
+        parts.append(f"{orphan_n} {qualifier}orphan(s)")
+    if identified_n:
+        parts.append(f"{identified_n} {qualifier}already-identified entr{'y' if identified_n == 1 else 'ies'}")
+    return " + ".join(parts)
+
+
 def _promote_project(slug: str, project_dir: Path) -> _Outcome:
     """Compute and (on a clean batch) write one project's promotion --
-    classify -> filter orphans -> mint with a running `already_minted` set
-    -> in-memory collision validation -> re-check-then-write on success.
-    Never touches `tier3_path`. A genuine `problems` collision (duplicate
-    id, blank summary, a genuinely new duplicate summary) still aborts
-    with NO write at all for this project (the tracked ledger, if any, is
-    left byte-identical to its pre-run state). An `already_tracked`
-    collision (DW-FU-8-4: an orphan whose content already reached the
-    tracked ledger by another path, under a different id) is excluded from
-    the write instead -- the REST of a clean batch still promotes."""
+    classify -> split into orphans (mint a fresh id) and already-identified-
+    but-untracked entries (Story 8.7: use `entry.id` verbatim, nothing to
+    mint) -> combine into ONE batch -> in-memory collision validation ->
+    re-check-then-write on success. Never touches `tier3_path`. A genuine
+    `problems` collision (duplicate id, blank summary, a genuinely new
+    duplicate summary) still aborts with NO write at all for this project
+    (the tracked ledger, if any, is left byte-identical to its pre-run
+    state). An `already_tracked` collision (DW-FU-8-4: an entry whose
+    content already reached the tracked ledger by another path, under a
+    different id) is excluded from the write instead -- the REST of a
+    clean batch still promotes."""
     tier3_path = project_dir / TIER3_REL
     tracked_path = project_dir / TRACKED_REL
 
@@ -415,25 +445,92 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         return _Outcome(slug, "no-op", f"{slug}: no Tier-3 file at {TIER3_REL.as_posix()} -- nothing to promote")
 
     entries = classify_tier3_entries(tier3_path)
-    orphans = [e for e in entries if e.id is None]
-    if not orphans:
-        return _Outcome(
-            slug, "no-op",
-            f"{slug}: no orphans to promote (0 of {len(entries)} Tier-3 entries need an id)",
-        )
 
     # Snapshot taken BEFORE minting/validation -- the window this story's
     # own review found a real, confirmed data-loss race in (Review Triage
     # Log 2026-08-15, item 1): a concurrent writer's change landing in this
     # window used to be silently destroyed by the terminal write below with
-    # no symptom. Re-checked immediately before that write.
+    # no symptom. Re-checked immediately before that write. Moved ahead of
+    # the orphans/identified split (Story 8.7): `tracked_header_ids` is now
+    # needed to even DETERMINE which already-identified entries are
+    # untracked, not just to validate the batch afterward.
     tracked_existed, tracked_text = _read_tracked(tracked_path)
     tracked_entries = classify_tier3_entries(tracked_path) if tracked_existed else ()
-    tracked_ids = _dw_tokens(tracked_text)
+    # Real `### DW-*:` headers only -- see the `_validate_batch` call below
+    # for why a loose token match (this script's own pre-Story-8.7
+    # `_dw_tokens`, removed: `mint_id_for_entry`'s own `_collect_dw_tokens`
+    # already performs the equivalent loose check at mint time for orphans,
+    # making a second loose check here redundant everywhere it was still
+    # called) is the wrong direction for an already-fixed identified id
+    # (Story 8.7 review finding).
+    tracked_header_ids = {e.id for e in tracked_entries if e.id is not None}
     tracked_summaries = {
         _normalize_summary(s) for e in tracked_entries
         if (s := e.fields.get("summary", "").strip())
     }
+
+    orphans = [e for e in entries if e.id is None]
+    # Story 8.7: an entry that already carries a real id in Tier-3 but whose
+    # id has never reached the tracked ledger as a `DW-` token -- a
+    # structurally different gap from an orphan (nothing to mint, the id is
+    # already fixed), `deferred_work_promote.py`'s original scope (Story
+    # 8.1-8.4) never touched these at all.
+    #
+    # Deliberately checked against `tracked_header_ids` (real `### DW-*:`
+    # headers only, from `classify_tier3_entries(tracked_path)`), NOT the
+    # loose `tracked_ids` token harvest `_validate_batch` uses below --
+    # live-confirmed HIGH-adjacent risk during this story's own adversarial
+    # review: `tracked_ids` matches ANY `DW-` shaped substring anywhere in
+    # the tracked file's raw text, including a plain prose MENTION inside an
+    # unrelated entry's own `promoted:`/summary text (a `PoC` reproduced this
+    # end to end: an id merely referenced in someone else's text was silently
+    # classified "already tracked" and permanently skipped, exit 0, no
+    # warning -- precisely the "silently never promoted" failure class this
+    # capability exists to close). A real header is unambiguous identity;
+    # a loose token is not. `_validate_batch`'s own separate `tracked_ids`
+    # duplicate-id defense-in-depth check is intentionally left as the loose
+    # match -- being OVER-cautious about refusing to mint/reuse an id that
+    # merely LOOKS taken is the safe direction there, unlike here.
+    #
+    # EXCLUDES any entry with a blank/whitespace-only `summary:` field --
+    # live-confirmed HIGH bug during this story's own adversarial review,
+    # widened during a follow-up fleet-wide dry check that found it was NOT
+    # limited to one origin. `Tier3Shape.IDENTIFIED_PLAIN` (a `### DW-<id>:`
+    # header with plain, non-bulleted `origin:`/`source_spec:`/`severity:`/
+    # `reason:`/`status:` fields) never populates `summary:` at all -- the
+    # real text lives only in the header TITLE, which `classify_tier3_
+    # entries` never captures. Two live, independently-emitted sub-shapes
+    # confirmed on the real fleet: bmad-loop's `_harvest_spec_deferrals`
+    # damping output (`origin: spec-deferred <fingerprint>` -- atlas 7,
+    # scribe 4) and its separate "follow-up review still recommended after
+    # the damping cap was spent" output (`origin: review-budget-followup` --
+    # doctor 4, marshal 9, mason 3, steward 2, warden 2). `_validate_batch`'s
+    # blank-summary guard hard-aborts the WHOLE project batch on just one
+    # such entry, not merely excludes it -- confirmed live for BOTH shapes:
+    # every one of doctor/marshal/mason/steward/warden's `--fix` runs would
+    # have aborted outright (blocking 76/234/25/93/41 real orphans
+    # respectively), not just atlas/scribe. Both sub-shapes also have their
+    # OWN dedicated reconciliation (fingerprint-matching for the harvest
+    # case, `scripts/deferred_work_intake.py`; content/history-based for the
+    # follow-up-review case) that this generic id/summary-matching promoter
+    # cannot safely replicate -- e.g. 6 of atlas's 7 harvest entries are
+    # already promoted elsewhere under a DIFFERENT id, invisible to this
+    # script, so promoting them here under their bare `DW-<n>` id would
+    # create a duplicate. Left for those dedicated mechanisms, not this
+    # generic promoter, regardless of which specific `origin:` value (if
+    # any) the entry carries.
+    identified_untracked = [
+        e for e in entries
+        if e.id is not None
+        and e.id not in tracked_header_ids
+        and e.fields.get("summary", "").strip()
+    ]
+    if not orphans and not identified_untracked:
+        return _Outcome(
+            slug, "no-op",
+            f"{slug}: nothing to promote (0 orphans, 0 already-identified-but-"
+            f"untracked, of {len(entries)} Tier-3 entries)",
+        )
 
     already_minted: set[str] = set()
     minted: list[tuple[LegacyEntry, str]] = []
@@ -448,8 +545,25 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
             )
         already_minted.add(new_id)
         minted.append((entry, new_id))
+    # Already-identified entries need no minting -- fold them into the SAME
+    # batch (their own `entry.id`, verbatim) so `_validate_batch` and the
+    # write below treat both kinds uniformly, one combined append.
+    minted.extend((entry, entry.id) for entry in identified_untracked)
 
-    validation = _validate_batch(minted, tracked_ids, tracked_summaries)
+    # Story 8.7: `tracked_header_ids` (strict, real headers), NOT the loose
+    # `tracked_ids` -- an already-identified entry's `new_id` is its OWN
+    # fixed `entry.id`, never freshly minted, so a loose prose MENTION of
+    # that same string elsewhere in the tracked ledger must not read as "id
+    # already exists" and hard-abort the entry that is precisely trying to
+    # give that mention a real header for the first time (the same bug
+    # class `identified_untracked`'s own membership check above was fixed
+    # for -- reproduced live in review when this call still passed the loose
+    # `tracked_ids`). Orphans lose nothing switching to the strict set here:
+    # `mint_id_for_entry`'s own `_collect_dw_tokens` already checked the
+    # SAME loose universe (both `tier3_path` and `tracked_path`) at mint
+    # time, so this call's own duplicate-id check was already unreachable
+    # defense-in-depth for orphans specifically (confirmed in review).
+    validation = _validate_batch(minted, tracked_header_ids, tracked_summaries)
     if validation.problems:
         detail = "; ".join(validation.problems)
         return _Outcome(
@@ -459,7 +573,7 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
 
     # DW-FU-8-4: entries already reached the tracked ledger by another path
     # are excluded here, never written again -- see `_BatchValidation`'s own
-    # docstring. If EVERY orphan in this batch is already-tracked, there is
+    # docstring. If EVERY entry in this batch is already-tracked, there is
     # nothing left to write; report that plainly rather than writing an
     # empty diff (and skip the race-check/write/baseline-restamp steps
     # below entirely, since nothing changes).
@@ -471,7 +585,7 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         already_ids = ", ".join(new_id for _, new_id in minted)
         return _Outcome(
             slug, "no-op",
-            f"{slug}: no write -- all {len(minted)} orphan(s) already reached the "
+            f"{slug}: no write -- all {_describe_counts(minted)} already reached the "
             f"tracked ledger by another path, none re-promoted: {already_ids}",
         )
 
@@ -531,10 +645,11 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         Path(tmp_name).unlink(missing_ok=True)
         raise
     ids_str = ", ".join(new_id for _, new_id in to_write)
-    message = f"{slug}: promoted {len(to_write)} orphan(s) -- {ids_str}"
+    message = f"{slug}: promoted {_describe_counts(to_write)} -- {ids_str}"
     if validation.already_tracked:
+        skipped = [minted[idx] for idx in sorted(validation.already_tracked)]
         message += (
-            f" (skipped {len(validation.already_tracked)} already-tracked orphan(s), "
+            f" (skipped {_describe_counts(skipped, qualifier='already-tracked ')}, "
             f"not re-promoted)"
         )
 
@@ -548,33 +663,46 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
     # warning naming the manual fallback instead (Boundaries "Block If"),
     # and `main()` still ends the overall run non-zero for it (item 2)
     # even though this project's own `status` stays "promoted".
+    #
+    # Story 8.7: the trigger stays "at least one ORPHAN actually landed in
+    # `to_write`" -- unchanged from Story 8.4's own original "promoted_count
+    # > 0 orphans" wording -- not merely "to_write is non-empty". The
+    # baseline exists solely to grandfather `_anonymous()`'s own orphan
+    # count for `tier3-entry-unidentified`; a run that promotes ONLY
+    # already-identified entries (0 orphans) changes nothing that count
+    # depends on, so re-stamping would be a needless write at best and, if
+    # this project's baseline had never been stamped before, would silently
+    # establish one for backlog this run never actually reviewed.
     baseline_warning = False
-    try:
-        if deferred_work_baseline is None:
-            # The sibling module itself failed to import (item 3) -- never
-            # reached the actual stamp call, so name that specifically
-            # rather than an opaque AttributeError on `None`.
-            raise RuntimeError(
-                f"baseline module unavailable: {_BASELINE_IMPORT_ERROR}"
+    orphan_written = sum(1 for entry, _ in to_write if entry.id is None)
+    if orphan_written > 0:
+        try:
+            if deferred_work_baseline is None:
+                # The sibling module itself failed to import (item 3) -- never
+                # reached the actual stamp call, so name that specifically
+                # rather than an opaque AttributeError on `None`.
+                raise RuntimeError(
+                    f"baseline module unavailable: {_BASELINE_IMPORT_ERROR}"
+                )
+            deferred_work_baseline.stamp_projects([project_dir.name])
+        except Exception as exc:  # noqa: BLE001 -- see the docstring above:
+            # this must degrade to a warning, never abort or unwind the
+            # already-successful promotion.
+            baseline_warning = True
+            message += (
+                f"; WARNING: baseline re-stamp failed -- "
+                f"{exc.__class__.__name__}: {exc} -- run `python "
+                f"scripts/deferred_work_baseline.py --write-baseline --project "
+                f"{project_dir.name}` by hand"
             )
-        deferred_work_baseline.stamp_projects([project_dir.name])
-    except Exception as exc:  # noqa: BLE001 -- see the docstring above:
-        # this must degrade to a warning, never abort or unwind the
-        # already-successful promotion.
-        baseline_warning = True
-        message += (
-            f"; WARNING: baseline re-stamp failed -- "
-            f"{exc.__class__.__name__}: {exc} -- run `python "
-            f"scripts/deferred_work_baseline.py --write-baseline --project "
-            f"{project_dir.name}` by hand"
-        )
     return _Outcome(slug, "promoted", message, baseline_warning=baseline_warning)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--fix", action="store_true",
-                    help="promote every target project's Tier-3 orphans into its tracked ledger")
+                    help="promote every target project's Tier-3 orphans AND already-identified-"
+                         "but-untracked entries into its tracked ledger")
     ap.add_argument("--project", action="append", metavar="SLUG", default=None,
                     help=("limit --fix to this project (repeatable). WITHOUT it, every "
                           "project under _bmad-output/projects/ with a Tier-3 file is "
@@ -587,10 +715,13 @@ def main() -> int:
     if not args.fix:
         print(
             "this script promotes Tier-3 legacy deferred-work orphans (Story 8.1/8.2's "
-            "classify_tier3_entries/mint_id_for_entry) into their project's tracked "
+            "classify_tier3_entries/mint_id_for_entry) AND already-identified-but-"
+            "untracked entries (Story 8.7: a real DW-* id already exists in Tier-3, "
+            "just never copied to the tracked ledger) into their project's tracked "
             "ledger -- never Tier-3 itself. A successful promotion also re-stamps "
             "that project's grandfather baseline (scripts/.deferred-work-baseline.json) "
-            "via deferred_work_baseline.py's stamp_projects (Story 8.4). Nothing is "
+            "via deferred_work_baseline.py's stamp_projects (Story 8.4), but only when "
+            "at least one orphan was freshly promoted. Nothing is "
             "written without --fix. Pass --fix [--project SLUG ...].",
             file=sys.stderr,
         )
