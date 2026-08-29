@@ -2101,6 +2101,10 @@ instead. A stamp is honest only after the judgment — measuring first and stamp
 reconciliation; the reverse is the laundering this Spec exists to end, and the two are
 indistinguishable in the resulting number, which is why the measurement is recorded.
 
+FR-174 (see § 7, "The producer reconciles the surface it drifts"), realizing **CAP-7**,
+closes the loop this whole Dream exists to end: without it, every fix above still relies on a
+human naming paths at landing.
+
 ---
 
 ## 17. The Marshal↔Steward seam

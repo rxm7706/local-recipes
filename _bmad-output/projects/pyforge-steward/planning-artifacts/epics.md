@@ -692,7 +692,7 @@ fake-transport-tested. Assignee and identity-link propagation shipped as Story 8
 (closes audit AF-5). The live-pair demonstration remains an open coverage-debt row.*
 
 ### Story 8.2: Zero-loop guarantee
-**FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1
+**FR/AD:** FR-28 (spec-jira-github-projects-sync CAP-2) • **Effort:** M • **Deps:** S-8.1
 **Given** one human change **Then** N round-trips produce exactly ONE propagation, not N —
 demonstrated by test, never asserted.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
@@ -711,7 +711,7 @@ already carried this as `done`; this inline line was simply never updated.*
 > corrected AND a third test is added with its own fixture — a delivery carrying a superseded
 > value arrives after the pair converged on a newer one, and the engine must converge to the
 > CURRENT value, writing nothing. **Nothing in the suite proves AD-9 rule 2 today.**
-**FR/AD:** FR-29 • **Effort:** S • **Deps:** S-8.1
+**FR/AD:** FR-29 (spec-jira-github-projects-sync CAP-3) • **Effort:** S • **Deps:** S-8.1
 **Given** an identical payload delivered twice **Then** both systems are byte-identical to
 a single delivery.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
@@ -729,14 +729,14 @@ the existing single-pair `reconcile()` engine, in one run, with no `--github-ite
 already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.5: Fail loud, fail alone
-**FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1, S-8.4
+**FR/AD:** FR-30 (spec-jira-github-projects-sync CAP-4) • **Effort:** XS • **Deps:** S-8.1, S-8.4
 **Given** a batch containing one unlinked item **Then** every other item completes and the
 unlinked one emits a named, greppable error.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
 already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.6: Explicit status-vocabulary translation
-**FR/AD:** FR-31 • **Effort:** S • **Deps:** S-8.1
+**FR/AD:** FR-31 (spec-jira-github-projects-sync CAP-5) • **Effort:** S • **Deps:** S-8.1
 **Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through inventing a state.
 **Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
@@ -1277,7 +1277,7 @@ container, zero improvised steps.
 
 ---
 
-# Chain: pyforge-unifying-strategy (Epics 18–30)
+# Chain: `spec-pyforge-unifying-strategy` (Epics 18–30)
 
 Headless/express 2026-08-24. Steward ledger already occupies Epics 1–17; this chain **appends**. Cite **parent AD-n** (python-agent-platform) vs **canopy AD-n** (unifying-strategy spine). Packaging FRs are **blocked on the operator** (canopy AD-16) — not sized as recipe stories. Phase 5 (`bmad-correct-course` × 8, Marshal retires `spec-factory-console`) is **not** an epic. Open question `lane1-serves-dw-h3` stayed out of stories and was **answered no** 2026-08-25.
 
