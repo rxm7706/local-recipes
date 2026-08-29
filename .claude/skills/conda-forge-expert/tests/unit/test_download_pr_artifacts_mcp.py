@@ -20,13 +20,13 @@ import pytest
 
 
 def _load_cfs():
-    """Load conda_forge_server.py with a stubbed fastmcp module so
-    @mcp.tool decorators are no-ops.
+    """Load conda_forge_server.py with a stubbed mcp.server.mcpserver module
+    so @mcp.tool decorators are no-ops.
     """
     if "cfs_under_test" in sys.modules:
         return sys.modules["cfs_under_test"]
 
-    fake = types.ModuleType("fastmcp")
+    fake = types.ModuleType("mcp.server.mcpserver")
 
     class _FakeMCP:
         def tool(self, *_a, **_k):
@@ -34,9 +34,9 @@ def _load_cfs():
                 return fn
             return deco
 
-    fake.FastMCP = lambda *_a, **_k: _FakeMCP()  # type: ignore[attr-defined]
+    fake.MCPServer = lambda *_a, **_k: _FakeMCP()  # type: ignore[attr-defined]
     fake.Context = object  # type: ignore[attr-defined]
-    sys.modules["fastmcp"] = fake
+    sys.modules["mcp.server.mcpserver"] = fake
 
     path = Path(__file__).resolve().parents[4] / "tools" / "conda_forge_server.py"
     spec = importlib.util.spec_from_file_location("cfs_under_test", path)

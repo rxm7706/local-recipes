@@ -3571,7 +3571,9 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-slim-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
@@ -4238,8 +4240,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.141.1-h76d476e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.141.1-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-3.4.7-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-slim-3.4.7-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/feedrattler-0.3.14-pyhcf101f3_10.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.32.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filetype-1.2.0-pyhd8ed1ab_0.tar.bz2
@@ -4304,7 +4304,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-0.28.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-sse-0.4.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/huggingface_hub-1.16.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/humanfriendly-10.0-pyh707e725_8.conda
@@ -4398,7 +4397,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markuppy-1.18-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/marshmallow-3.26.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.2.2-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-1.28.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.1.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mermaid-py-0.8.4-pyhcf101f3_0.conda
@@ -4712,7 +4712,9 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-slim-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
@@ -4899,8 +4901,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.141.1-h76d476e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.141.1-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-3.4.7-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-slim-3.4.7-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/feedrattler-0.3.14-pyhcf101f3_10.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.32.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filetype-1.2.0-pyhd8ed1ab_0.tar.bz2
@@ -4964,7 +4964,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-0.28.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-sse-0.4.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/huggingface_hub-1.16.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/humanfriendly-10.0-pyh707e725_8.conda
@@ -5057,7 +5056,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markuppy-1.18-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/marshmallow-3.26.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.2.2-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-1.28.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.1.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mermaid-py-0.8.4-pyhcf101f3_0.conda
@@ -5769,7 +5769,9 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-slim-4.0.0b5-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
@@ -5953,8 +5955,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.141.1-h76d476e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.141.1-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-3.4.7-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-slim-3.4.7-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/feedrattler-0.3.14-pyhcf101f3_10.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.32.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/filetype-1.2.0-pyhd8ed1ab_0.tar.bz2
@@ -6018,7 +6018,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-0.28.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/httpx-sse-0.4.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpx2-2.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/huggingface_hub-1.16.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/humanfriendly-10.0-pyh7428d3b_8.conda
@@ -6194,7 +6193,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/markuppy-1.18-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/marshmallow-3.26.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.2.2-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-1.28.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-2.1.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mcp-types-2.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.6.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mermaid-py-0.8.4-pyhcf101f3_0.conda
@@ -16515,16 +16515,106 @@ packages:
   license: MIT
   size: 53878
   timestamp: 1783874311940
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
-  sha256: 47ad9999b900083eae10fc6995218f0762c352ee4970b9e757153c3df110ce89
-  md5: b253fcc9d1b12d6bfbee6314a3f5d126
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
+  sha256: a5dd85bee915cc5e8944d580b4ab4d2a8dd8e1256604d2844200b4ec1f3ba123
+  md5: ef8870c4fec459658d0f44052ac54206
+  depends:
+  - python >=3.10,<4
+  - fastmcp-slim 4.0.0b5.*
+  - authlib >=1.6.11
+  - cyclopts >=4.0.0
+  - exceptiongroup >=1.2.2
+  - griffelib >=2.0.0
+  - httpx2 >=2.5.0
+  - joserfc >=1.5.0
+  - jsonref >=1.1.0
+  - jsonschema-path >=0.3.4
+  - mcp >=2.0.0,<3.0.0
+  - openapi-pydantic >=0.5.1
+  - opentelemetry-api >=1.28.0
+  - packaging >=24.0
+  - py-key-value-aio >=0.4.4,<0.5.0
+  - aiofile >=3.5.0
+  - anyio >=4.4.0
+  - cachetools >=5.0.0
+  - keyring >=25.6.0
+  - pyperclip >=1.9.0
+  - python-multipart >=0.0.26
+  - pyyaml >=6.0,<7.0
+  - starlette >=1.0.1
+  - uncalled-for >=0.4.0
+  - uvicorn >=0.35
+  - watchfiles >=1.0.0
+  - websockets >=15.0.1
+  - python
+  constrains:
+  - anthropic >=0.48.0,<1
+  - azure-identity >=1.16.0
+  - fastmcp-tasks ==4.0.0b5
+  - google-genai >=1.18.0
+  - openai >=1.102.0
+  - prefab-ui >=0.18.0
+  - pydantic-monty ==0.0.18
+  - pyjwt >=2.12.0
+  license: Apache-2.0
+  size: 25564
+  timestamp: 1788000704994
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-slim-4.0.0b5-pyhcba1bba_0.conda
+  sha256: 9256fa4d4ccaac55c7feb8eb8526e4a5db78fe91b7324fe3fce42765e7d5e328
+  md5: 7968ade379b3efb4fd33ca4301b92171
+  depends:
+  - python >=3.10,<4
+  - email-validator >=2.0.0
+  - mcp-types >=2.0.0,<3.0.0
+  - platformdirs >=4.0.0
+  - pydantic >=2.12.0
+  - pydantic-settings >=2.0.0
+  - python-dotenv >=1.1.0
+  - rich >=13.9.4
+  - typing_extensions >=4.0.0
+  - python
+  constrains:
+  - anthropic >=0.48.0,<1
+  - authlib >=1.6.11
+  - azure-identity >=1.16.0
+  - cyclopts >=4.0.0
+  - exceptiongroup >=1.2.2
+  - google-genai >=1.18.0
+  - griffelib >=2.0.0
+  - httpx2 >=2.5.0
+  - joserfc >=1.5.0
+  - jsonref >=1.1.0
+  - jsonschema-path >=0.3.4
+  - mcp >=2.0.0,<3.0.0
+  - openai >=1.102.0
+  - openapi-pydantic >=0.5.1
+  - opentelemetry-api >=1.28.0
+  - packaging >=24.0
+  - prefab-ui >=0.18.0
+  - pydantic-monty ==0.0.18
+  - py-key-value-aio >=0.4.4,<0.5.0
+  - pyjwt >=2.12.0
+  - pyperclip >=1.9.0
+  - python-multipart >=0.0.26
+  - pyyaml >=6.0,<7.0
+  - starlette >=1.0.1
+  - uncalled-for >=0.4.0
+  - uvicorn >=0.35
+  - watchfiles >=1.0.0
+  - websockets >=15.0.1
+  license: Apache-2.0
+  size: 592113
+  timestamp: 1788000704994
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcba1bba_1.conda
+  sha256: 918f0ddb146df5b627660e3461d7ddb34072923c9e25a79a18c6de9af5077aa2
+  md5: 9891d2d37b0fbfaf3e933588641a8afc
   depends:
   - python >=3.10
-  - fastmcp >=0.3
+  - mcp >=2.0.0
   - python
   license: Apache-2.0
-  size: 31266
-  timestamp: 1787698737478
+  size: 32960
+  timestamp: 1788003679104
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
   sha256: 3756f3da87ed6d3755ca28e709980c2d150d185a72e328ccb59d65e88021c34a
   md5: de1cd7374546199c2d7e115173dca23b
@@ -31562,100 +31652,6 @@ packages:
   run_exports: {}
   size: 48785
   timestamp: 1785300451609
-- conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-3.4.7-pyhcf101f3_0.conda
-  sha256: 018e99dccd1c876d314b9819b2ea73b9dc6c71c471ccb55cbb3d0f0557406ba4
-  md5: e8f59a8fbde020496de25427622c3fb6
-  depends:
-  - python >=3.10,<4
-  - fastmcp-slim 3.4.7.*
-  - authlib >=1.6.11
-  - cyclopts >=4.0.0
-  - exceptiongroup >=1.2.2
-  - griffelib >=2.0.0
-  - httpx >=0.28.1,<1.0
-  - joserfc >=1.1.0
-  - jsonref >=1.1.0
-  - jsonschema-path >=0.3.4
-  - mcp >=1.24.0,<2.0
-  - openapi-pydantic >=0.5.1
-  - opentelemetry-api >=1.20.0
-  - packaging >=24.0
-  - py-key-value-aio >=0.4.4,<0.5.0
-  - aiofile >=3.5.0
-  - anyio >=4.4.0
-  - cachetools >=5.0.0
-  - keyring >=25.6.0
-  - pyperclip >=1.9.0
-  - python-multipart >=0.0.26
-  - pyyaml >=6.0,<7.0
-  - starlette >=1.0.1
-  - uncalled-for >=0.2.0
-  - uvicorn >=0.35
-  - watchfiles >=1.0.0
-  - websockets >=15.0.1
-  - python
-  constrains:
-  - anthropic >=0.48.0
-  - azure-identity >=1.16.0
-  - google-genai >=1.18.0
-  - openai >=1.102.0
-  - prefab-ui >=0.18.0
-  - pydantic-monty ==0.0.17
-  - pydocket >=0.20.0
-  - pyjwt >=2.12.0
-  license: Apache-2.0
-  license_family: APACHE
-  run_exports: {}
-  size: 22864
-  timestamp: 1786417309806
-- conda: https://conda.anaconda.org/conda-forge/noarch/fastmcp-slim-3.4.7-pyhcf101f3_0.conda
-  sha256: 94a4492a48f239754b1785a49d422a75c5de12d820401a545725542d7c625073
-  md5: b3035c48cb40b1954315addfdb989cb8
-  depends:
-  - python >=3.10,<4
-  - email-validator >=2.0.0
-  - platformdirs >=4.0.0
-  - pydantic >=2.11.7
-  - pydantic-settings >=2.0.0
-  - python-dotenv >=1.1.0
-  - rich >=13.9.4
-  - typing_extensions >=4.0.0
-  - python
-  constrains:
-  - anthropic >=0.48.0
-  - authlib >=1.6.11
-  - azure-identity >=1.16.0
-  - cyclopts >=4.0.0
-  - exceptiongroup >=1.2.2
-  - google-genai >=1.18.0
-  - griffelib >=2.0.0
-  - httpx >=0.28.1,<1.0
-  - joserfc >=1.1.0
-  - jsonref >=1.1.0
-  - jsonschema-path >=0.3.4
-  - mcp >=1.24.0,<2.0
-  - openai >=1.102.0
-  - openapi-pydantic >=0.5.1
-  - opentelemetry-api >=1.20.0
-  - packaging >=24.0
-  - prefab-ui >=0.18.0
-  - pydantic-monty ==0.0.17
-  - pydocket >=0.20.0
-  - pyjwt >=2.12.0
-  - py-key-value-aio >=0.4.4,<0.5.0
-  - pyperclip >=1.9.0
-  - python-multipart >=0.0.26
-  - pyyaml >=6.0,<7.0
-  - starlette >=1.0.1
-  - uncalled-for >=0.2.0
-  - uvicorn >=0.35
-  - watchfiles >=1.0.0
-  - websockets >=15.0.1
-  license: Apache-2.0
-  license_family: APACHE
-  run_exports: {}
-  size: 516249
-  timestamp: 1786417309806
 - conda: https://conda.anaconda.org/conda-forge/noarch/feedrattler-0.3.14-pyhcf101f3_10.conda
   sha256: ec107264718e5372235c4952265e6c669e75ac40882b54f7fa43f0fe63ef09b8
   md5: 48f24af23d29dc200549d127feca6fa2

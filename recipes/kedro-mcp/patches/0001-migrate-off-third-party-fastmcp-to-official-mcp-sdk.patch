@@ -1,0 +1,25 @@
+--- a/pyproject.toml	2025-11-06 07:15:51.000000000 -0600
++++ b/pyproject.toml	2026-08-29 06:39:49.694392594 -0500
+@@ -28,7 +28,7 @@
+ ]
+ 
+ # Single runtime dependency: FastMCP (the server just returns Markdown guidance)
+-dependencies = ["fastmcp>=0.3"]
++dependencies = ["mcp>=2.0.0"]
+ 
+ [project.scripts]
+ # Local stdio entrypoint for MCP clients (run via `uvx kedro-mcp@latest`)
+--- a/src/kedro_mcp/server.py	2025-10-13 12:52:32.000000000 -0500
++++ b/src/kedro_mcp/server.py	2026-08-29 06:39:05.855049287 -0500
+@@ -1,8 +1,8 @@
+ from pathlib import Path
+-from fastmcp import FastMCP
+-from fastmcp.prompts.prompt import PromptMessage, TextContent
++from mcp.server.mcpserver import MCPServer
++from mcp.types import PromptMessage, TextContent
+ 
+-mcp = FastMCP("kedro")
++mcp = MCPServer("kedro")
+ 
+ # ---------- PROMPT ----------
+ @mcp.prompt(

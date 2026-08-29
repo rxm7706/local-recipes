@@ -44,7 +44,7 @@ def srv():
     try:
         import conda_forge_server
     except ImportError as e:
-        pytest.skip(f"MCP server not importable (missing fastmcp?): {e}")
+        pytest.skip(f"MCP server not importable (missing mcp?): {e}")
     return conda_forge_server
 
 

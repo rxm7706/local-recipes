@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conda-Forge FastMCP Server — exposes recipe validation and dependency checking as tools.
+"""Conda-Forge MCP Server — exposes recipe validation and dependency checking as tools.
 
 Allows Claude Code to programmatically validate recipes and check dependencies
 without needing to parse bash output.
@@ -14,9 +14,9 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-from fastmcp import FastMCP, Context
+from mcp.server.mcpserver import Context, MCPServer
 
-mcp = FastMCP("conda-forge-expert")
+mcp = MCPServer("conda-forge-expert")
 
 # Paths to the scripts relative to this file
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "skills" / "conda-forge-expert" / "scripts"

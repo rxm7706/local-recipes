@@ -46,7 +46,7 @@ import json
 import os
 import urllib.request
 import urllib.error
-from fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # Prefer requests for more robust HTTP; fall back to the stdlib urllib (imported
 # unconditionally above) when requests is not installed.
@@ -56,7 +56,7 @@ except ImportError:
     requests = None
 
 
-mcp = FastMCP("gemini")
+mcp = MCPServer("gemini")
 
 _BASE = "https://generativelanguage.googleapis.com/v1beta"
 

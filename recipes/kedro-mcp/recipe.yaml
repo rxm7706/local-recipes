@@ -11,9 +11,11 @@ package:
 source:
   url: https://pypi.org/packages/source/k/kedro-mcp/kedro_mcp-${{ version }}.tar.gz
   sha256: 73a6a14b50d03a97da3d8728450e06bf83642a28ae61b8aa59c54c5a93524c35
+  patches:
+    - patches/0001-migrate-off-third-party-fastmcp-to-official-mcp-sdk.patch
 
 build:
-  number: 0
+  number: 1  # bumped from 0: same-version rebuild with real content changes (the fastmcp->mcp source patch below)
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -28,7 +30,8 @@ requirements:
     - wheel
   run:
     - python >=${{ python_min }}
-    - fastmcp >=0.3
+    - mcp >=2.0.0
+    - fastmcp >=4.0.0b5
 
 tests:
   - python:
@@ -51,3 +54,31 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kedro-mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kedro-mcp
+  cfe-purls:
+    - pkg:conda/kedro-mcp@${{ version }}?channel=SelfExplainML
+    - pkg:pypi/kedro-mcp@${{ version }}
+  cfe-upstream-repo: https://github.com/kedro-org/kedro-mcp
+  cfe-upstream-homepage: https://github.com/kedro-org/kedro-mcp
+  cfe-import-names: [kedro_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pypi-only
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: "n/a -- carries a local-only source patch (see below), not submittable upstream as-is"
+  cfe-forge-blocker-list:
+    - "Source patch replaces upstream's third-party `fastmcp` dependency with the official `mcp` SDK's `mcp.server.mcpserver.MCPServer` (fastmcp's own API, renamed, per https://py.sdk.modelcontextprotocol.io/v2/migration/#fastmcp-renamed-to-mcpserver). Motivation: kedro-org/kedro discussion #5387 confirms MCP support stays out of Kedro core and experimentation continues in kedro-mcp -- so this package's own fastmcp compatibility is not going to be fixed upstream any time soon. Root cause: kedro-mcp's `fastmcp>=0.3` floor is so loose the solver can land on ANY fastmcp build; every conda-forge fastmcp 3.x build (ceiling 3.4.7) hard-requires mcp<2.0 (conflicting with this workspace's mcp>=2.1.1 floor), and fastmcp 2.14.3 has no mcp upper bound but is runtime-broken (ImportError: cannot import name 'McpError') -- so no available fastmcp release worked here at all. The patched server.py verified functionally identical to upstream (same @mcp.tool()/@mcp.prompt() decorator API, same PromptMessage/TextContent construction) via a live stdio initialize handshake."
+  cfe-last-checked: "2026-08-29T11:40:45Z"
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: "2026-08-29T11:40:45Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-29T11:40:45Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
