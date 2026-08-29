@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 102
+# stories: 103
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -76,6 +76,7 @@ development_status:
   8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op: done
   8-5-the-detector-recognizes-content-that-already-reached-the-ledger-by-another-path: done
   8-6-dw-fu-8-4-closes-the-collision-abort-redesign-plus-the-parsing-gap-it-surfaced: done
+  8-7-the-promoter-learns-to-copy-already-identified-but-untracked-entries-too: done
   9-1-the-five-hygiene-finding-classes-get-testable-definitions: done
   9-2-the-sweep-runs-against-all-eight-stations: done
   9-3-hygiene-findings-report-and-never-mutate: done

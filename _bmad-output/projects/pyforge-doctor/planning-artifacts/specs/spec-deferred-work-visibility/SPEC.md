@@ -1,6 +1,6 @@
 ---
 spec: deferred-work-visibility
-status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..10 (Epic 9) queued, not dispatched; CAP-11..12 shipped (Story 8.5/8.6, 2026-08-28)
+status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..10 (Epic 9) queued, not dispatched; CAP-11..13 shipped (Story 8.5/8.6/8.7, 2026-08-28)
 owner-dream: docs/dreams/deferred-work-visibility.md
 covers-dreams:
   - docs/dreams/deferred-work-audit-completeness.md   # folded in 2026-08-15 as CAP-4..9 (see § Why below); satisfies INV-1 for this Dream
@@ -215,9 +215,48 @@ keep one big process instead of several small ones.
     across all 8 projects (previously every one would abort). Running it a second time
     immediately is a true no-op (0 writes, 0 findings delta) — Story 8.4's own discipline
     preserved. `pixi run -e local-recipes deferred-work-check`'s `tier3-only-deferral` +
-    `tier3-entry-unidentified` combined count drops from 111 (post-CAP-11) to the count of
-    already-identified Tier-3 entries that were never copied to any tracked ledger — a
-    DIFFERENT, out-of-scope gap this capability does not address (see Non-goals).
+    `tier3-entry-unidentified` combined count drops from 111 (post-CAP-11) to 70 — the count of
+    already-identified Tier-3 entries that were never copied to any tracked ledger, closed by
+    CAP-13 below.
+
+- **CAP-13** *(added 2026-08-28, same session as CAP-12 — closes the "already-identified Tier-3
+  entries never copied to a tracked ledger" gap CAP-12's own success note named as out of scope)*
+  - **intent:** `deferred_work_promote.py` (Story 8.1-8.4) was scoped to orphans only
+    (`entry.id is None`) by design — an entry that already carries a real `DW-*` id in Tier-3 but
+    has no tracked twin (`entry.id is not None and entry.id not in tracked_header_ids`) was never
+    touched by any tool. Extended the SAME batch/validate/write pipeline to cover both: an
+    already-identified entry needs no minting, its own `entry.id` is used verbatim. Two real bugs
+    found and fixed during this capability's own adversarial review, BEFORE the real fleet-wide
+    run: (a) `Tier3Shape.IDENTIFIED_PLAIN` entries (bmad-loop's own harvest-damping and
+    follow-up-review-budget outputs — `origin: spec-deferred <fingerprint>` and
+    `origin: review-budget-followup`, two independently-emitted sub-shapes) carry no `summary:`
+    field at all (the real text lives only in the header title), and `_validate_batch`'s
+    pre-existing blank-summary guard hard-aborted the WHOLE project batch on just one — live-
+    confirmed this would have blocked 5 of 8 projects' entire orphan batches, not merely excluded
+    the malformed entries. Fixed by excluding any blank-summary identified entry from this
+    capability's own scope entirely (that class has its own dedicated fingerprint-based
+    reconciliation, `scripts/deferred_work_intake.py`, which this generic id/summary-matching
+    promoter cannot safely replicate — some of those entries are already promoted elsewhere under
+    a DIFFERENT id, invisible to raw id/summary matching). (b) the untracked-membership check
+    itself used a loose `DW-`-shaped token harvest over the tracked ledger's whole raw text
+    (matching a bare prose MENTION inside an unrelated entry, not just a real header) — reproduced
+    live: a genuinely never-promoted entry whose id merely appeared in someone else's text was
+    silently classified "already tracked" and permanently skipped, no warning. Fixed by checking
+    real `### DW-*:` headers (`classify_tier3_entries(tracked_path)`) instead.
+  - **success:** Confirmed live, all 8 projects, one clean `--fix` run, zero `ABORTED` outputs, zero
+    duplicate ids (heading-count-added matches promotion-count exactly per project): atlas +5,
+    doctor +25, marshal +12, mason +12, steward +11 already-identified entries promoted (65 total);
+    herald/scribe/warden clean no-ops (everything already tracked). `tier3-only-deferral` +
+    `tier3-entry-unidentified` drops from 70 to 5. **Explicitly bounded, not a full-closure
+    claim:** the remaining 5 (atlas `DW-6`, scribe `DW-1..4`) are genuinely different work —
+    traced to fingerprint drift, not a promotion gap: the underlying spec-frontmatter finding was
+    edited after the original Tier-3 harvest, so `discover_spec_frontmatter_deferrals` now derives
+    a DIFFERENT fingerprint for the SAME finding (confirmed live: atlas's `DW-6` carries fingerprint
+    `81ca01b1f565`, but the live spec's own current frontmatter for the byte-identical summary text
+    now derives `5682282eafff` — already promoted under that new fingerprint via
+    `deferred_work_intake.py`, which reports "all N spec-frontmatter deferral(s) already in tracked
+    ledger" for both projects). Reconciling stale-fingerprint references against edited specs is a
+    fingerprint-algorithm or fuzzy-matching design question, out of this capability's own scope.
 
 ## Constraints
 
@@ -276,12 +315,16 @@ keep one big process instead of several small ones.
   individual entry is still worth keeping, still accurate, or already resolved is the
   resolution-sweep's question, not this Spec's.
 - **Not exemplar/quality-bar conformance checking** (see Constraints).
-- **Not promotion of already-identified Tier-3 entries that were never copied to a tracked
-  ledger.** CAP-12's `--fix` only mints ids for genuine orphans (`entry.id is None`); an entry
-  that already carries a real `DW-*` id in Tier-3 but has no tracked twin (70 live, fleet-wide,
-  post-CAP-12) is a structurally different gap — `deferred_work_promote.py`'s own
-  `orphans = [e for e in entries if e.id is None]` filter excludes it by design. A future
-  capability, not this one.
+- **Not reconciliation of a Tier-3 harvest entry whose fingerprint has drifted from spec edits.**
+  CAP-13 promotes already-identified-but-untracked entries generically, but deliberately excludes
+  any entry with a blank `summary:` field (bmad-loop's `IDENTIFIED_PLAIN` harvest/damping shapes)
+  — that class belongs to `scripts/deferred_work_intake.py`'s own fingerprint-based
+  reconciliation, which matches against the spec's CURRENT frontmatter, not the Tier-3 bullet's
+  ORIGINAL harvest-time fingerprint. When a spec is edited after harvest, the two fingerprints
+  diverge for the same underlying finding (5 live, fleet-wide, post-CAP-13: atlas `DW-6`, scribe
+  `DW-1..4` — all already promoted elsewhere under their spec's current fingerprint). Reconciling
+  a stale Tier-3 reference against its own already-promoted twin is a fingerprint-algorithm or
+  fuzzy-matching design question. A future capability, not this one.
 
 ## Resolved Questions
 

@@ -318,15 +318,20 @@ def test_clean_batch_against_a_fresh_project_with_no_pre_existing_tracked_ledger
     assert entries[0].id == "DW-FU-1-8"  # doctor is non-mason: bare DW-FU-<story>
 
 
-# --- I/O matrix row: no orphans -- no-op ---
+# --- I/O matrix row: an already-identified entry with no tracked twin -- Story 8.7 promotes it ---
 
 
-def test_project_with_only_identified_entries_is_a_noop(tmp_path: Path):
+def test_project_with_only_a_new_identified_entry_promotes_it_verbatim(tmp_path: Path):
+    """Story 8.7: an entry that already carries a real `DW-*` id in Tier-3
+    but has no tracked twin is no longer treated as a no-op (pre-8.7
+    behavior, when this exact fixture was `test_project_with_only_
+    identified_entries_is_a_noop`) -- it promotes, using its own id
+    verbatim, no minting involved."""
     repo = _fixture_repo(tmp_path)
     herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
     _write_tier3(
         herald,
-        "### DW-9-1: already identified, nothing to promote\n\n"
+        "### DW-9-1: already identified, never copied to the tracked ledger\n\n"
         "- source_spec: `spec-9-1-fixture.md`\n"
         "  summary: already has an id.\n"
         "  evidence: fixture.\n"
@@ -336,8 +341,295 @@ def test_project_with_only_identified_entries_is_a_noop(tmp_path: Path):
 
     r = _run(promoter, repo, "--project", "herald")
     assert r.returncode == 0, r.stderr
-    assert "no orphans to promote" in r.stdout
-    assert _tracked_text(repo, "pyforge-herald") is None
+    assert "promoted 1 already-identified entry -- DW-9-1" in r.stdout
+
+    tracked = _tracked_text(repo, "pyforge-herald")
+    assert tracked is not None
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-herald" / TRACKED_REL
+    )
+    assert len(entries) == 1
+    assert entries[0].id == "DW-9-1"  # verbatim, never re-minted
+    assert entries[0].fields["status"] == "open"
+    assert "never previously copied to the tracked ledger" in entries[0].fields["promoted"]
+
+
+def test_project_with_only_an_already_tracked_identified_entry_is_a_true_noop(tmp_path: Path):
+    """The genuinely-nothing-to-promote case Story 8.7 carves out of the old
+    "no orphans to promote" no-op: an identified entry whose id is ALREADY a
+    `DW-` token in the tracked ledger. 0 orphans, 0 untracked identified
+    entries -- a true no-op, tracked ledger byte-identical."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    body = (
+        "### DW-9-1: already identified AND already tracked\n\n"
+        "- source_spec: `spec-9-1-fixture.md`\n"
+        "  summary: already has an id and a tracked twin.\n"
+        "  evidence: fixture.\n"
+        "  status: open\n"
+    )
+    _write_tier3(herald, body)
+    _write_tracked(herald, body)
+    promoter = _patched_promoter(repo)
+    tracked_before = _tracked_text(repo, "pyforge-herald")
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stderr
+    assert "nothing to promote" in r.stdout
+    assert _tracked_text(repo, "pyforge-herald") == tracked_before
+
+
+# --- I/O matrix row: a mixed batch -- orphans AND already-identified-but-untracked entries together (Story 8.7) ---
+
+
+_REAL_IDENTIFIED_UNTRACKED = """### DW-FU-9-9: a real already-identified entry with no tracked twin (fixture)
+
+- source_spec: `spec-fixture-identified.md`
+  summary: An already-identified Tier-3 entry that was never copied to the tracked ledger.
+  evidence: fixture-only content, exercising Story 8.7's promotion path for identified entries.
+  status: open
+"""
+
+
+def test_mixed_batch_promotes_orphans_and_identified_entries_together(tmp_path: Path):
+    """Story 8.7's own core claim: a batch mixing a genuine orphan with an
+    already-identified-but-untracked entry promotes BOTH in the SAME write
+    -- the orphan minted, the identified entry copied verbatim under its
+    own id -- one combined message, one combined append."""
+    repo = _fixture_repo(tmp_path)
+    doctor = repo / "_bmad-output" / "projects" / "pyforge-doctor"
+    _write_tier3(doctor, _REAL_ORPHAN_C + "\n" + _REAL_IDENTIFIED_UNTRACKED)
+    promoter = _patched_promoter(repo)
+
+    r = _run(promoter, repo, "--project", "doctor")
+    assert r.returncode == 0, r.stderr
+    assert "promoted 1 orphan(s) + 1 already-identified entry -- " in r.stdout
+
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
+    )
+    assert len(entries) == 2
+    ids = {e.id for e in entries}
+    assert "DW-FU-1-8" in ids  # the minted orphan, same id `_REAL_ORPHAN_C` mints elsewhere
+    assert "DW-FU-9-9" in ids  # the identified entry, verbatim, never re-minted
+
+
+def test_identified_entry_already_matching_a_tracked_summary_is_skipped_not_aborted(
+    tmp_path: Path,
+):
+    """The Story 8.7 analogue of DW-FU-8-4's own `already_tracked` routing:
+    an already-identified-but-untracked entry whose SUMMARY already exists
+    in the tracked ledger under a DIFFERENT id is silently excluded from
+    the write, not aborted -- mirrors `test_orphan_already_matching_a_
+    tracked_entry_is_skipped_not_aborted` above, but for an entry that
+    already carries its own real id rather than an orphan."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    existing = (
+        "### DW-1-1-1: An unrelated pre-existing tracked entry\n\n"
+        "- source_spec: `spec-fixture.md`\n"
+        "  summary: Duplicate summary text used to test the collision guard.\n"
+        "  evidence: fixture-only content.\n"
+        "  status: open\n"
+    )
+    _write_tracked(herald, existing)
+    _write_tier3(
+        herald,
+        "### DW-9-1: identified, content already tracked under a different id\n\n"
+        "- source_spec: `spec-9-1-fixture.md`\n"
+        "  summary: Duplicate summary text used to test the collision guard.\n"
+        "  evidence: fixture.\n"
+        "  status: open\n",
+    )
+    promoter = _patched_promoter(repo)
+    tracked_before = _tracked_text(repo, "pyforge-herald")
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stdout
+    assert "ABORTED" not in r.stdout
+    assert "already reached the tracked ledger" in r.stdout
+
+    assert _tracked_text(repo, "pyforge-herald") == tracked_before
+
+
+# Verbatim excerpt (trimmed for fixture size), pyforge-doctor's own live
+# Tier-3 backlog (`_bmad-output/projects/pyforge-doctor/implementation-
+# artifacts/deferred-work.md`, lines 573-583, 2026-08-28) -- a REAL
+# already-identified entry with no tracked twin (Story 8.6's own fleet-wide
+# `--fix` run confirmed this class fleet-wide: 70 such entries remained
+# live across 6 projects immediately after Story 8.6 landed).
+_REAL_IDENTIFIED_FLEET_EXCERPT = """### DW-FU-10-1: The declared floor is taken as the max across every pixi.toml environment, not scoped to which environment is actually active
+- source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported.md`
+  summary: `_declared_floors` walks every `dependencies`/`feature.*.dependencies`/target-scoped table in `pixi.toml` and `gather` compares the installed core against the MAXIMUM floor found across all of them, regardless of which pixi environment an operator actually resolves/activates.
+  evidence: Found by Blind Hunter during Story 10.1's own review pass (2026-08-15).
+  severity: medium
+  status: open
+"""
+
+
+def test_real_fleet_identified_entry_promotes_with_every_field_preserved_verbatim(
+    tmp_path: Path,
+):
+    """Real excerpt (trimmed), pyforge-doctor's own live Tier-3 backlog --
+    proves the identified-entry promotion path preserves a real extra
+    field (`severity:`) verbatim, the same discipline `_format_promoted_
+    entry` already keeps for orphans (Review Triage Log 2026-08-15, item
+    3)."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    _write_tier3(herald, _REAL_IDENTIFIED_FLEET_EXCERPT)
+    promoter = _patched_promoter(repo)
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stderr
+    assert "promoted 1 already-identified entry -- DW-FU-10-1" in r.stdout
+
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-herald" / TRACKED_REL
+    )
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.id == "DW-FU-10-1"
+    assert entry.fields["severity"] == "medium"
+    assert entry.fields["status"] == "open"
+    assert "MAXIMUM floor" in entry.fields["summary"]
+
+
+# --- HIGH (2026-08-28, this story's own adversarial review): a bmad-loop
+# `_harvest_spec_deferrals` damping entry (IDENTIFIED_PLAIN, no `summary:`
+# field of its own -- the real text lives only in the header title, which
+# `classify_tier3_entries` never captures) must be excluded from Story
+# 8.7's `identified_untracked`, not treated as a blank-summary hard-abort
+# for the WHOLE batch. Verbatim excerpt, pyforge-atlas's own live Tier-3
+# backlog (`_bmad-output/projects/pyforge-atlas/implementation-artifacts/
+# deferred-work.md`, `DW-6`, 2026-08-28) -- one of 7 real entries of this
+# shape that, before this exclusion, aborted atlas's entire batch and
+# blocked 57 real orphans in the same run.
+_REAL_HARVEST_DAMPING_ENTRY = """### DW-6: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the
+origin: spec-deferred 81ca01b1f565
+location: scripts/openteams_identity_dashboards.py:write_ops_canvas
+source_spec: `spec-17-2-handoffs-are-execution-ready.md`
+severity: low
+reason: Mirrors a pre-existing pattern already present in this same file's render() function.
+status: open
+"""
+
+
+# A second, independently-emitted blank-summary `IDENTIFIED_PLAIN` sub-shape
+# found during a follow-up fleet-wide dry check, AFTER the first exclusion
+# (scoped only to `origin: spec-deferred ...`) landed: bmad-loop's OWN
+# "follow-up review still recommended after the damping cap was spent"
+# output. Verbatim excerpt, pyforge-doctor's own live Tier-3 backlog
+# (`_bmad-output/projects/pyforge-doctor/implementation-artifacts/
+# deferred-work.md`, `DW-1`, 2026-08-28) -- confirmed live to exist on 5 of
+# 8 projects (doctor 4, marshal 9, mason 3, steward 2, warden 2), which is
+# why the exclusion was generalized from "origin starts with spec-deferred"
+# to "blank/whitespace-only summary", regardless of origin.
+_REAL_FOLLOWUP_BUDGET_ENTRY = """### DW-1: Follow-up review still recommended for 6-4-the-ledger-verdicts-come-home after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-6-4-the-ledger-verdicts-come-home.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up.
+status: open
+"""
+
+
+def test_followup_review_budget_entry_is_also_excluded_not_promoted(tmp_path: Path):
+    """The SAME class of bug as `_REAL_HARVEST_DAMPING_ENTRY`'s own test
+    below, but a DIFFERENT real origin value -- proves the exclusion is
+    genuinely scoped to "blank summary", not merely "spec-deferred origin"."""
+    repo = _fixture_repo(tmp_path)
+    doctor = repo / "_bmad-output" / "projects" / "pyforge-doctor"
+    _write_tier3(doctor, _REAL_ORPHAN_C + "\n" + _REAL_FOLLOWUP_BUDGET_ENTRY)
+    promoter = _patched_promoter(repo)
+
+    r = _run(promoter, repo, "--project", "doctor")
+    assert r.returncode == 0, r.stdout
+    assert "ABORTED" not in r.stdout
+    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
+    )
+    assert len(entries) == 1
+    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-1 excluded entirely
+
+
+def test_harvest_damping_entry_is_excluded_not_promoted_and_does_not_block_a_sibling_orphan(
+    tmp_path: Path,
+):
+    """The real bug found in review: `_REAL_HARVEST_DAMPING_ENTRY` has no
+    `summary:` field at all -- pre-fix, this hard-aborted the WHOLE batch
+    (blank-summary guard), taking down a perfectly clean sibling orphan
+    with it. Post-fix: the harvest-damping entry is silently excluded
+    (never promoted here -- it belongs to `deferred_work_intake.py`'s own
+    fingerprint-based pipeline), and the sibling orphan promotes normally."""
+    repo = _fixture_repo(tmp_path)
+    doctor = repo / "_bmad-output" / "projects" / "pyforge-doctor"
+    _write_tier3(doctor, _REAL_ORPHAN_C + "\n" + _REAL_HARVEST_DAMPING_ENTRY)
+    promoter = _patched_promoter(repo)
+
+    r = _run(promoter, repo, "--project", "doctor")
+    assert r.returncode == 0, r.stdout
+    assert "ABORTED" not in r.stdout
+    assert "promoted 1 orphan(s) -- DW-FU-1-8" in r.stdout
+
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-doctor" / TRACKED_REL
+    )
+    assert len(entries) == 1
+    assert entries[0].id == "DW-FU-1-8"  # only the orphan promoted; DW-6 excluded entirely
+
+
+# --- MEDIUM (2026-08-28, this story's own adversarial review): a bare id
+# mention in unrelated PROSE elsewhere in the tracked ledger must not count
+# as "already tracked" for Story 8.7's identified-entry membership check ---
+
+
+def test_identified_entry_promotes_even_when_its_id_is_merely_mentioned_in_unrelated_prose(
+    tmp_path: Path,
+):
+    """`tracked_ids` (`_dw_tokens`, a loose token harvest over the WHOLE
+    tracked file's raw text) matches ANY `DW-`-shaped substring, including a
+    plain prose mention inside an UNRELATED entry's own text -- reproduced
+    live in review: an id merely referenced in someone else's `promoted:`
+    note was silently classified "already tracked" and permanently skipped
+    (exit 0, no warning), the exact "silently never promoted" failure class
+    this capability exists to close. Fixed by checking `identified_
+    untracked` membership against `tracked_header_ids` (real `### DW-*:`
+    headers only) instead. This entry's real id (`DW-9-1`) is mentioned in
+    an UNRELATED tracked entry's own summary text, but has no header of its
+    own -- it must still promote."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    _write_tracked(
+        herald,
+        "### DW-1-1-1: An unrelated tracked entry that merely MENTIONS DW-9-1 in prose\n\n"
+        "- source_spec: `spec-fixture.md`\n"
+        "  summary: This entry references DW-9-1 in passing, but DW-9-1 has no header of its own here.\n"
+        "  evidence: fixture-only content.\n"
+        "  status: open\n",
+    )
+    _write_tier3(
+        herald,
+        "### DW-9-1: genuinely never promoted, only mentioned in someone else's prose\n\n"
+        "- source_spec: `spec-9-1-fixture.md`\n"
+        "  summary: A real, still-open finding that must not be swallowed by a false-positive prose match.\n"
+        "  evidence: fixture.\n"
+        "  status: open\n",
+    )
+    promoter = _patched_promoter(repo)
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stderr
+    assert "nothing to promote" not in r.stdout
+    assert "promoted 1 already-identified entry -- DW-9-1" in r.stdout
+
+    entries = classify_tier3_entries(
+        repo / "_bmad-output" / "projects" / "pyforge-herald" / TRACKED_REL
+    )
+    ids = {e.id for e in entries}
+    assert ids == {"DW-1-1-1", "DW-9-1"}  # DW-9-1 landed as its own real entry
 
 
 # --- I/O matrix row: missing Tier-3 file -- no-op, not an error ---
@@ -1027,15 +1319,18 @@ def test_successful_promotion_restamps_baseline_and_clears_anonymous_backlog(
     )
 
 
-def test_no_orphans_project_leaves_baseline_absent(tmp_path: Path):
-    """`--fix` finding 0 orphans for a project must never touch its
-    baseline -- re-grandfathering a genuinely still-open backlog that was
-    never actually promoted would hide real findings."""
+def test_promoting_only_identified_entries_never_touches_the_baseline(tmp_path: Path):
+    """Story 8.7: the baseline exists solely to grandfather ORPHAN counts
+    for `tier3-entry-unidentified`. A run that promotes ONLY an already-
+    identified entry (0 orphans) must never touch it -- even though a real
+    promotion (and a real ledger write) did happen this time, unlike the
+    old `test_no_orphans_project_leaves_baseline_absent` this replaces,
+    where nothing was written at all."""
     repo = _fixture_repo(tmp_path)
     herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
     _write_tier3(
         herald,
-        "### DW-9-1: already identified, nothing to promote\n\n"
+        "### DW-9-1: already identified, never copied to the tracked ledger\n\n"
         "- source_spec: `spec-9-1-fixture.md`\n"
         "  summary: already has an id.\n"
         "  evidence: fixture.\n"
@@ -1046,19 +1341,22 @@ def test_no_orphans_project_leaves_baseline_absent(tmp_path: Path):
 
     r = _run(promoter, repo, "--project", "herald")
     assert r.returncode == 0, r.stderr
-    assert "no orphans to promote" in r.stdout
-    assert _baseline(repo) is None
+    assert "promoted 1 already-identified entry" in r.stdout
+    assert _tracked_text(repo, "pyforge-herald") is not None  # the promotion DID happen
+    assert _baseline(repo) is None  # but the baseline stays untouched
 
 
-def test_no_orphans_project_leaves_an_existing_baseline_byte_identical(tmp_path: Path):
-    """Same guarantee as above, but against an ALREADY-stamped baseline
-    (from a sibling project's own clean promotion) -- proves byte-identical
+def test_promoting_only_identified_entries_leaves_an_existing_baseline_byte_identical(
+    tmp_path: Path,
+):
+    """Same guarantee as above, against an ALREADY-stamped baseline (from a
+    sibling project's own clean orphan promotion) -- proves byte-identical
     preservation, not merely "still absent"."""
     repo = _fixture_repo(tmp_path)
     herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
     _write_tier3(
         herald,
-        "### DW-9-1: already identified, nothing to promote\n\n"
+        "### DW-9-1: already identified, never copied to the tracked ledger\n\n"
         "- source_spec: `spec-9-1-fixture.md`\n"
         "  summary: already has an id.\n"
         "  evidence: fixture.\n"
@@ -1072,7 +1370,7 @@ def test_no_orphans_project_leaves_an_existing_baseline_byte_identical(tmp_path:
 
     r = _run(promoter, repo, "--project", "herald")
     assert r.returncode == 0, r.stderr
-    assert "no orphans to promote" in r.stdout
+    assert "promoted 1 already-identified entry" in r.stdout
     assert _baseline_path(repo).read_bytes() == before
     assert "pyforge-herald" not in _baseline(repo)
 

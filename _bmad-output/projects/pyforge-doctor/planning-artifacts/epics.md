@@ -956,15 +956,18 @@ permanently blocked, because the whole-batch-abort fires on the old, already-pro
 own now-expected collision. Confirmed live against all 8 real fleet projects. Logged as
 `DW-FU-8-4`, not fixed here -- needs a per-entry skip/promote redesign as its own future story.
 
-**Epic 8 complete (6/6 stories, updated 2026-08-28).** The legacy deferred-work backlog now has a
+**Epic 8 complete (7/7 stories, updated 2026-08-28).** The legacy deferred-work backlog now has a
 real, mutation-tested tool (`classify_tier3_entries` + `mint_id_for_entry` +
 `deferred_work_promote.py --fix` + baseline lockstep) replacing the error-prone by-hand process
 that shipped two real bugs during the 2026-08-15 audit. Story 8.6 closed `DW-FU-8-4` and ran
-`--fix` for real, fleet-wide, against all 8 live projects: 373 orphans promoted across 5 projects
-(doctor/herald/marshal/mason/steward), 3 clean no-ops (atlas/scribe/warden). 70 findings remain
-open in `deferred-work-check` — already-identified Tier-3 entries never copied to a tracked
-ledger, a structurally different gap outside `deferred_work_promote.py`'s orphan-only scope (see
-the spec's Non-goals) — named as future work, not carried forward silently.
+`--fix` for real, fleet-wide: 373 orphans promoted across 5 projects (doctor/herald/marshal/
+mason/steward), 3 clean no-ops (atlas/scribe/warden). Story 8.7 extended the same tool to
+already-identified-but-untracked entries and ran it again: 65 more promoted across 5 projects
+(atlas/doctor/marshal/mason/steward), 3 clean no-ops (herald/scribe/warden). `deferred-work-check`
+dropped from 111 (session start) to **5** — atlas `DW-6`, scribe `DW-1..4`, traced to
+spec-frontmatter fingerprint drift after the original Tier-3 harvest (see Story 8.7's own Outcome
+and the spec's Non-goals), a fingerprint-algorithm/fuzzy-matching design question, not a
+promotion-tool gap — named as future work, not carried forward silently.
 
 ### Story 8.5: The detector recognizes content that already reached the ledger by another path
 **Type:** bug • **Effort:** S • **Deps:** S-8.1 • **FR/AD:** FR-15 (spec-deferred-work-visibility, CAP-11)
@@ -1040,6 +1043,59 @@ all 70 remaining are already-identified Tier-3 entries (real `DW-*` ids, real `s
 `severity:`/`source_spec:` fields) that were simply never copied to any tracked ledger, a
 structurally different gap `deferred_work_promote.py`'s orphan-only scope does not cover (see
 the spec's Non-goals) — not claimed resolved by this story, named as a future capability.
+
+### Story 8.7: The promoter learns to copy already-identified-but-untracked entries too
+**Type:** feature • **Effort:** M • **Deps:** S-8.6 • **FR/AD:** FR-15 (spec-deferred-work-visibility, CAP-13)
+**Surface:** `scripts/deferred_work_promote.py` (`_promote_project`, `_format_promoted_entry`,
+`_describe_counts`), `tests/scripts/test_deferred_work_promote.py`
+**Note:** closes the gap Story 8.6's own closing note named as future work: an entry that
+already carries a real `DW-*` id in Tier-3 but has no tracked twin was never touched by any
+tool — `deferred_work_promote.py`'s `orphans = [e for e in entries if e.id is None]` filter
+excluded it by design (Story 8.1-8.4's own stated scope).
+**Given** an already-identified Tier-3 entry whose id is not yet a real `### DW-*:` header
+anywhere in the tracked ledger **When** `--fix` runs **Then** it promotes verbatim under its own
+id (no minting), folded into the SAME batch/validate/write pipeline orphans already use — one
+combined message, one combined atomic write.
+**Given** the fixed tool run for real **When** it processes the live fleet **Then** two real
+bugs surface before the run ever touches real data, both caught by this story's own adversarial
+review: (a) `Tier3Shape.IDENTIFIED_PLAIN` entries (bmad-loop's harvest-damping AND
+follow-up-review-budget outputs, two independently-emitted shapes) carry no `summary:` field —
+the pre-existing blank-summary guard hard-aborts the WHOLE project batch on just one, not merely
+excludes it; live-confirmed this would have blocked 5 of 8 projects' entire batches (not just the
+2 the first review pass found — a follow-up dry check across all 8 projects, run AFTER the first
+review's fix landed, found the SAME bug under a second, independently-emitted origin value on 3
+more projects). Fixed by generalizing the exclusion from "origin starts with spec-deferred" to
+"blank/whitespace-only summary", regardless of origin. (b) the untracked-membership check used a
+LOOSE `DW-`-shaped token harvest over the tracked ledger's raw text (matching a bare prose
+mention, not just a real header) — reproduced live: an id merely referenced in someone else's
+text was silently classified "already tracked" and permanently skipped, no warning, the exact
+"silently never promoted" failure class this story exists to close. Fixed by checking real
+`### DW-*:` headers instead.
+**Status:** done
+
+**Outcome (2026-08-28).** Two rounds of 2-agent adversarial review (round 1: general correctness
++ live fleet-safety, both isolated to `tmp_path` fixtures per explicit instruction, no repeat of
+Story 8.6's own concurrent-writer incident; round 2: not re-reviewed, self-verified via a direct
+read-only dry simulation against all 8 real projects after generalizing the blank-summary fix,
+confirming zero remaining blank summaries and zero in-batch duplicate summaries anywhere before
+running `--fix` for real) found and fixed one HIGH (independently reproduced by both round-1
+reviewers) and one MEDIUM, both above, plus a real gap the round-1 reviews did not catch (the
+`review-budget-followup` origin, found only by a broader post-fix fleet-wide dry check). Real
+fleet-wide `--fix` run, all 8 projects, one clean pass, zero `ABORTED` outputs, zero duplicate
+ids (heading-count-added matches promotion-count exactly per project): atlas +5, doctor +25,
+marshal +12, mason +12, steward +11 already-identified entries promoted (65 total);
+herald/scribe/warden clean no-ops (everything already tracked). Baseline correctly untouched
+(0 orphans freshly promoted this run — the trigger stays scoped to "at least one orphan actually
+landed in `to_write`", unchanged from Story 8.4's own intent, confirmed by a round-1 reviewer).
+**Explicitly bounded:** `deferred-work-check`'s combined `tier3-only-deferral`/
+`tier3-entry-unidentified` count drops from 70 to **5** (atlas `DW-6`, scribe `DW-1..4`) — traced
+to spec-frontmatter fingerprint drift (the underlying finding was edited after the original
+Tier-3 harvest, so the LIVE spec now derives a different fingerprint for the byte-identical
+summary text than the one embedded in the stale Tier-3 bullet; `deferred_work_intake.py`
+confirms it already promoted the current version under the new fingerprint). Reconciling a
+stale-fingerprint Tier-3 reference against its own already-promoted twin is a fingerprint-
+algorithm or fuzzy-matching design question — named as a future capability, not claimed resolved
+by this story.
 
 ## Epic 9: The hygiene sweep generalizes, and staleness surfaces itself
 
