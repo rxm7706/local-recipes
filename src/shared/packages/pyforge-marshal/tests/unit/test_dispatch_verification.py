@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 from pyforge.core.process import ProcessResult
-from pyforge.marshal.dispatch_verify import evaluate_dispatch_verification
+from pyforge.marshal.dispatch_verify import (
+    compose_dispatch_policy,
+    evaluate_dispatch_verification,
+)
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_verification import (
     DispatchVerificationInput,
@@ -20,6 +23,29 @@ from pyforge.marshal.core.dispatch_verification import (
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
+
+
+def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
+    """Regression: `tomllib.loads` takes `str`, not the `bytes` `read_bytes()`
+    returns -- a live TypeError crashed the dispatch supervisor for any
+    project with a real `marshal-policy.toml` (2026-08-29, atlas Story 21.1's
+    dispatch)."""
+    project_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    project_dir.mkdir(parents=True)
+    (project_dir / "marshal-policy.toml").write_text(
+        'gate_mode = "none"\n', encoding="utf-8"
+    )
+    effective = compose_dispatch_policy("acme", tmp_path)
+    assert effective.seed_view()["gate_mode"].value == "none"
+    assert effective.seed_view()["gate_mode"].layer.value == "project"
+
+
+def test_compose_dispatch_policy_degrades_on_a_malformed_toml(tmp_path: Path) -> None:
+    project_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    project_dir.mkdir(parents=True)
+    (project_dir / "marshal-policy.toml").write_text("not = [valid toml", encoding="utf-8")
+    effective = compose_dispatch_policy("acme", tmp_path)
+    assert effective.seed_view()["gate_mode"].layer.value == "default"
 
 
 def test_judge_verified_when_gate_findings_clean() -> None:
