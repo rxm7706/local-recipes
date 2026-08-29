@@ -5,6 +5,7 @@ owner-dream: docs/dreams/django-accelerator-framework.md
 surface:
   - src/platform/**
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/**
+  - scripts/emit_wagtailcore_schema_delta.py
 sources:
   - ../../../../../../docs/dreams/django-accelerator-framework.md
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md

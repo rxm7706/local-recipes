@@ -97,3 +97,5 @@ scripts/bump_pixi_version.py         # mutator (pixi task bump-pixi-version)
 scripts/apply_verification_verdicts.py  # DW verification-campaign verdict applier
 scripts/cfe_rebuild_guard_check.py   # mason Story 6.2 detector awaiting surface claim
 scripts/apply_actions_policy.py      # repo-governance script (applies .github/actions-policy.toml to GitHub Actions permissions) — no owning station, no pixi task, no DETECTOR marker; allowlisted pending a governance-tier home
+scripts/build-pixi-mirror.py         # steward Story 12.3 tool (spec-12-3-air-gap-parity-is-a-failing-check, AD-13/CAP-6) — owning spec is a flat specs/*.md file, not specs/spec-*/SPEC.md, so SPEC_GLOB cannot discover it as a surface; allowlisted pending steward claiming it via a proper folder-format spec
+scripts/failure_catalog_check.py     # mason Story 7.1 detector (DETECTOR = {"scope": "repo"}, pixi task failure-catalog-check) — owning spec is a flat specs/*.md file, same SPEC_GLOB gap as build-pixi-mirror.py above; allowlisted pending mason claiming it via a proper folder-format spec
