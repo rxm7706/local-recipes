@@ -2126,7 +2126,9 @@ def _consume_bulleted_field_block(
     an ``IDENTIFIED_*`` header's own first bulleted field need not lead with
     it) plus every subsequent line that opens one of ``_KNOWN_FIELD_KEYS``'s
     known field names (a fresh key) or wraps the CURRENT key's value --
-    stopping at the first blank line, heading, or sibling bulleted line.
+    stopping at the first blank line, heading, or sibling bulleted line
+    that does NOT open a known field of an entry_id-owned (header-owned)
+    block (see the ``entry_id is not None`` branch below).
 
     A line is a continuation of the current key iff it is non-blank, not a
     heading, not a sibling bulleted line, and does not itself open a KNOWN
@@ -2136,7 +2138,36 @@ def _consume_bulleted_field_block(
     truncated ``summary``/``evidence`` and misattributed the remainder to a
     spurious key (Story 8.1 review patch; see ``_KNOWN_FIELD_KEYS``'s own
     docstring for the live examples). Returns the index of the first line
-    NOT consumed."""
+    NOT consumed.
+
+    A HEADER-OWNED block's own dashed field convention (2026-08-28): a real,
+    live Tier-3 shape writes every field of an ``IDENTIFIED_*`` entry as its
+    own top-level ``- <key>: value`` bullet (``- origin:``, ``- source_spec:``,
+    ``- summary:``, ``- status:``, ...) rather than one leading bulleted
+    field plus 2-space-indented continuations -- confirmed live in doctor's
+    own Tier-3 (``DW-FU-12-4``/``DW-FU-12-5``/``DW-FU-12-5-2``) and steward's
+    (``DW-FU-11-4``). Before this fix, a dashed line matching a KNOWN field
+    key unconditionally ended the block (the generic "sibling bulleted line"
+    rule above), silently truncating the header's own real content to just
+    its first field -- directly contradicting ``_consume_identified_entry``'s
+    own documented promise that a header's claim "scans FORWARD... up to the
+    next heading" -- and then mis-parsing the truncated remainder (including
+    ``source_spec:``, which also happens to be the LEGACY_FLAT entry-start
+    marker) as a spurious, unrelated headerless orphan with no ``summary:``
+    field of its own (live: 202 real `--fix` collisions fleet-wide, 4 of
+    which were actually this truncation, not a real "already tracked"
+    collision). Fixed: when ``entry_id is not None`` (a header genuinely
+    owns this block -- its span is already bounded by the next HEADING, per
+    ``_consume_identified_entry``), a dashed line whose key is in
+    ``_KNOWN_FIELD_KEYS`` is a continuation, exactly like an indented one.
+    A HEADERLESS (``entry_id is None``, LEGACY_FLAT/LEGACY_HEADER) block
+    keeps the ORIGINAL behavior unchanged -- it has no heading to bound its
+    own span, so a dashed ``source_spec:`` (or any other known-keyed dashed
+    line) still, deliberately, ends it: that is the ONLY signal available to
+    tell "this is a fresh headerless entry" from "this is a continuation",
+    and changing it would merge genuinely separate stacked LEGACY_FLAT
+    entries (the dominant real shape fleet-wide, e.g. atlas's own Tier-3)
+    into one, a strictly worse regression than the truncation this fixes."""
     n = len(lines)
     fields: dict[str, str] = {first_key: first_value.strip()}
     current_key = first_key
@@ -2144,7 +2175,17 @@ def _consume_bulleted_field_block(
     i += 1
     while i < n:
         line = lines[i]
-        if not line.strip() or _HEADING_RE.match(line) or _BULLET_START_RE.match(line):
+        if not line.strip() or _HEADING_RE.match(line):
+            break
+        if entry_id is not None:
+            owned_bullet = _BULLETED_FIELD_RE.match(line)
+            if owned_bullet is not None and owned_bullet.group(1) in _KNOWN_FIELD_KEYS:
+                current_key = owned_bullet.group(1)
+                fields[current_key] = owned_bullet.group(2).strip()
+                end_lineno = i + 1
+                i += 1
+                continue
+        if _BULLET_START_RE.match(line):
             break
         cont_match = _CONT_KEY_RE.match(line)
         if cont_match:

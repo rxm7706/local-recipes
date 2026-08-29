@@ -284,13 +284,39 @@ def _format_promoted_entry(new_id: str, entry: LegacyEntry, tier3_rel: str) -> s
     )
 
 
+@dataclass(frozen=True)
+class _BatchValidation:
+    """Per-entry outcome of validating a project's full to-be-appended
+    batch -- PURE, no I/O. ``problems`` non-empty means ABORT the whole
+    batch, no write at all (unchanged from before this story).
+    ``already_tracked`` names indices into ``minted`` whose normalized
+    summary already exists in the tracked ledger under a DIFFERENT,
+    independently-minted id -- these are silently EXCLUDED from the write
+    (never re-promoted, never counted as a problem), closing DW-FU-8-4
+    (2026-08-28): before this split, a project promoted once could never
+    promote a genuinely NEW orphan added later, because every subsequent
+    ``--fix`` run's batch always ALSO contained the OLD, already-promoted
+    orphan (Tier-3 is append-only, so its bullet is unchanged and still
+    classifies as an orphan), which always re-collided against its own
+    tracked twin, which always aborted the WHOLE batch, forever -- live-
+    confirmed against all 8 real fleet projects at landing. An orphan
+    whose collision is anything else (a genuinely new, ambiguous
+    duplicate) still hard-aborts, per this dataclass's own ``problems``
+    field -- this split narrows the ONE specific case DW-FU-8-4 named,
+    not a general loosening of the collision guard."""
+
+    problems: tuple[str, ...]
+    already_tracked: frozenset[int]
+
+
 def _validate_batch(
     minted: list[tuple[LegacyEntry, str]],
     tracked_ids: set[str],
     tracked_summaries: set[str],
-) -> list[str]:
-    """Every collision problem found in `minted` (a project's full
-    to-be-appended batch), or `[]` for a clean batch -- PURE, no I/O.
+) -> _BatchValidation:
+    """Validate `minted` (a project's full to-be-appended batch) -- PURE,
+    no I/O. See `_BatchValidation`'s own docstring for the problems/
+    already_tracked split.
 
     Checks, per this story's Boundaries: (a)/(b) no two entries in the
     batch share an id, and no batch id already exists as a `DW-` token in
@@ -298,13 +324,14 @@ def _validate_batch(
     `already_minted` threading through `mint_id_for_entry` (each call sees
     every id minted so far in this batch AND every id already in
     `tier3_path`/`tracked_path`), so these two checks are defense-in-depth,
-    not the primary guard; (c)/(d) no two entries share the same `summary`
-    text, within the batch or against the tracked ledger's existing
-    entries -- THIS pair is the reachable, load-bearing guard: a genuine
-    copy-pasted Tier-3 duplicate, or an orphan whose content was already
-    promoted by the by-hand process without Tier-3 ever growing a header
-    for it (both confirmed live in the real fleet backlog), mint to
-    DIFFERENT ids (no id collision) but carry the SAME summary text.
+    not the primary guard; (c) no two entries share the same `summary`
+    text WITHIN the batch -- a genuine copy-pasted Tier-3 duplicate,
+    ambiguous which (if either) is legitimate, still hard-aborts (DW-FU-8-4
+    itself: "still hard-abort on a genuinely NEW collision"); (d) a
+    `summary` matching the TRACKED ledger's existing entries -- an orphan
+    whose content was already promoted by some other path without Tier-3
+    ever growing a header for it (confirmed live in the real fleet
+    backlog) -- routes to `already_tracked`, not `problems`.
 
     `summary` comparison is NORMALIZED (casefold + collapse internal
     whitespace, `_normalize_summary`) rather than byte-exact -- catches a
@@ -317,11 +344,15 @@ def _validate_batch(
     FAILURE (blocks that entry's promotion) rather than silently exempted
     from dedup -- exempting it let two blank-summary orphans promote as if
     they were distinct findings, defeating the collision guard entirely
-    (Review Triage Log 2026-08-15, item 7)."""
+    (Review Triage Log 2026-08-15, item 7). Deliberately NOT routed to
+    `already_tracked`: a blank summary cannot be content-matched against
+    anything, tracked or otherwise, so there is no signal to skip it
+    safely -- it stays a hard problem, unchanged."""
     problems: list[str] = []
+    already_tracked: set[int] = set()
     seen_ids: dict[str, LegacyEntry] = {}
     seen_summaries: dict[str, LegacyEntry] = {}
-    for entry, new_id in minted:
+    for idx, (entry, new_id) in enumerate(minted):
         if new_id in seen_ids:
             problems.append(
                 f"duplicate id {new_id!r} within this batch "
@@ -351,11 +382,8 @@ def _validate_batch(
         else:
             seen_summaries[norm_summary] = entry
         if norm_summary in tracked_summaries:
-            problems.append(
-                f"summary text at Tier-3 line {entry.start_line} already exists "
-                f"in the tracked ledger: {summary[:80]!r}"
-            )
-    return problems
+            already_tracked.add(idx)
+    return _BatchValidation(tuple(problems), frozenset(already_tracked))
 
 
 def _read_tracked(tracked_path: Path) -> tuple[bool, str]:
@@ -373,9 +401,13 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
     """Compute and (on a clean batch) write one project's promotion --
     classify -> filter orphans -> mint with a running `already_minted` set
     -> in-memory collision validation -> re-check-then-write on success.
-    Never touches `tier3_path`; on any collision, aborts with NO write at
-    all for this project (the tracked ledger, if any, is left byte-identical
-    to its pre-run state)."""
+    Never touches `tier3_path`. A genuine `problems` collision (duplicate
+    id, blank summary, a genuinely new duplicate summary) still aborts
+    with NO write at all for this project (the tracked ledger, if any, is
+    left byte-identical to its pre-run state). An `already_tracked`
+    collision (DW-FU-8-4: an orphan whose content already reached the
+    tracked ledger by another path, under a different id) is excluded from
+    the write instead -- the REST of a clean batch still promotes."""
     tier3_path = project_dir / TIER3_REL
     tracked_path = project_dir / TRACKED_REL
 
@@ -417,12 +449,30 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         already_minted.add(new_id)
         minted.append((entry, new_id))
 
-    problems = _validate_batch(minted, tracked_ids, tracked_summaries)
-    if problems:
-        detail = "; ".join(problems)
+    validation = _validate_batch(minted, tracked_ids, tracked_summaries)
+    if validation.problems:
+        detail = "; ".join(validation.problems)
         return _Outcome(
             slug, "aborted",
-            f"{slug}: ABORTED, no write -- {len(problems)} collision(s): {detail}",
+            f"{slug}: ABORTED, no write -- {len(validation.problems)} collision(s): {detail}",
+        )
+
+    # DW-FU-8-4: entries already reached the tracked ledger by another path
+    # are excluded here, never written again -- see `_BatchValidation`'s own
+    # docstring. If EVERY orphan in this batch is already-tracked, there is
+    # nothing left to write; report that plainly rather than writing an
+    # empty diff (and skip the race-check/write/baseline-restamp steps
+    # below entirely, since nothing changes).
+    to_write = [
+        (entry, new_id) for idx, (entry, new_id) in enumerate(minted)
+        if idx not in validation.already_tracked
+    ]
+    if not to_write:
+        already_ids = ", ".join(new_id for _, new_id in minted)
+        return _Outcome(
+            slug, "no-op",
+            f"{slug}: no write -- all {len(minted)} orphan(s) already reached the "
+            f"tracked ledger by another path, none re-promoted: {already_ids}",
         )
 
     # A `tracked_path` that already resolves to a DIRECTORY gets a friendly,
@@ -453,7 +503,7 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         )
 
     tier3_rel_str = TIER3_REL.as_posix()
-    blocks = [_format_promoted_entry(new_id, entry, tier3_rel_str) for entry, new_id in minted]
+    blocks = [_format_promoted_entry(new_id, entry, tier3_rel_str) for entry, new_id in to_write]
     new_blocks_text = "\n".join(blocks)
     if tracked_text:
         prefix = tracked_text if tracked_text.endswith("\n") else tracked_text + "\n"
@@ -480,8 +530,13 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
     except BaseException:
         Path(tmp_name).unlink(missing_ok=True)
         raise
-    ids_str = ", ".join(new_id for _, new_id in minted)
-    message = f"{slug}: promoted {len(minted)} orphan(s) -- {ids_str}"
+    ids_str = ", ".join(new_id for _, new_id in to_write)
+    message = f"{slug}: promoted {len(to_write)} orphan(s) -- {ids_str}"
+    if validation.already_tracked:
+        message += (
+            f" (skipped {len(validation.already_tracked)} already-tracked orphan(s), "
+            f"not re-promoted)"
+        )
 
     # Story 8.4: re-stamp THIS project's grandfather baseline to its
     # current anonymous-entry count, now that the promotion above landed
