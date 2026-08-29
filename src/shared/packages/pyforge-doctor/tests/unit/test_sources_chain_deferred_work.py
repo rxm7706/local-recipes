@@ -195,6 +195,87 @@ def test_tier3_only_id_with_a_different_fingerprint_still_reports_fail(
     assert any(f.check == "tier3-only-deferral" for f in findings), findings
 
 
+def test_tier3_only_plain_entry_with_truncated_title_matching_tracked_prefix_reports_nothing(
+    tmp_path: Path,
+) -> None:
+    """Real shape, confirmed live 2026-08-29 (pyforge-atlas's own ``DW-6``,
+    fingerprint ``81ca01b1f565``): an ``IDENTIFIED_PLAIN`` entry with NO
+    ``summary:`` field of its own -- the heading holds the only summary
+    text there is, truncated to a fixed character budget -- and whose
+    ``origin:`` fingerprint no longer matches (the underlying spec was
+    edited after harvest, changing the hash). The LATER promotion
+    (``deferred_work_intake.py``, re-reading the spec's current frontmatter)
+    carries the full, untruncated text under a fresh fingerprint the old
+    heading predates. Neither check 1 (no ``summary:`` field) nor check 2
+    (fingerprint mismatch) can fire; only the truncated-title-prefix check
+    (3) recognizes this as already-promoted content."""
+    title = (
+        'write_ops_canvas: records whose P/Work falls back to the "?" '
+        "sentinel are counted in the total but invisible in every "
+        "per-bucket breakdown table; build_by_type silently drops recipe "
+        "types outside the"
+    )
+    assert len(title) >= chain._TRUNCATED_TITLE_MIN_LEN
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(
+        tmp_path, "proj",
+        f"### DW-6: {title}\n"
+        "origin: spec-deferred 81ca01b1f565\n"
+        "location: scripts/openteams_identity_dashboards.py:write_ops_canvas\n"
+        "source_spec: `x`\n"
+        "status: open\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "### DW-FU-17-2-3: "
+        f"{title} fixed RECIPE_TYPE_ORDER list.\n\n"
+        "- source_spec: `x`\n"
+        f"  summary: {title} fixed RECIPE_TYPE_ORDER list.\n"
+        "  origin: spec-deferred 5682282eafff -- ingested from spec frontmatter\n"
+        "  status: open\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
+def test_tier3_only_plain_entry_with_unrelated_title_still_reports_fail(
+    tmp_path: Path,
+) -> None:
+    """Mutation guard: a Tier-3 ``IDENTIFIED_PLAIN`` entry whose title does
+    NOT appear anywhere in the tracked ledger -- even one long enough to
+    clear ``_TRUNCATED_TITLE_MIN_LEN`` -- must still report
+    ``tier3-only-deferral``. Proves check 3 is a real prefix match against
+    genuine tracked content, not a blanket exemption for every
+    ``IDENTIFIED_PLAIN`` entry that merely lacks a ``summary:`` field."""
+    title = (
+        "an entirely unrelated finding about a completely different module "
+        "that has never been promoted anywhere, long enough on its own to "
+        "clear the truncated-title length floor with room to spare"
+    )
+    assert len(title) >= chain._TRUNCATED_TITLE_MIN_LEN
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(
+        tmp_path, "proj",
+        f"### DW-7: {title}\n"
+        "origin: spec-deferred ffffffffffff\n"
+        "source_spec: `x`\n"
+        "status: open\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "### DW-FU-1-1: Something else entirely\n\n"
+        "- source_spec: `x`\n"
+        "  summary: Something else entirely, sharing no text with the other finding.\n"
+        "  status: open\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
 def test_anonymous_tier3_entry_with_matching_summary_reports_nothing(
     tmp_path: Path,
 ) -> None:

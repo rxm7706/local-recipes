@@ -1785,6 +1785,25 @@ _ENTRY_RE = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)", re.M)
 _ANON_RE = re.compile(r"^-\s+source_spec:", re.M)
 _STATUS_RE = re.compile(r"^\s*status:", re.M)
 
+#: The separator a ``DW-<id>`` heading uses before its own trailing title
+#: text, if any -- ``### DW-6: <text>`` (colon) and ``## DW-FU-12-4 —
+#: <text>`` (em dash) both occur live fleet-wide; a bare ``### DW-FU-11-4``
+#: with no title at all is also live, in which case there is nothing here
+#: for ``_heading_title`` to strip.
+_TITLE_SEP_RE = re.compile(r"^\s*[:—-]\s*")
+
+
+def _heading_title(line: str, dw_match: re.Match[str]) -> str:
+    """The trailing title text on a ``DW-<id>`` heading line, after the id
+    and its separator -- ``""`` for a bare heading with no title. Used by
+    ``_tier3_entry_already_promoted`` to recognize an ``IDENTIFIED_PLAIN``
+    entry (Boundaries: no ``summary:`` field of its own; the summary text
+    lives only in the heading) whose content already reached the tracked
+    ledger under a different id -- see that function's own docstring for
+    why the heading, not a ``summary:`` field, is sometimes the only
+    signal available."""
+    return _TITLE_SEP_RE.sub("", line[dw_match.end():]).strip()
+
 
 def _ids(path: Path) -> set[str]:
     """Every ``DW-*`` id mentioned in ``path`` -- verbatim from the
@@ -1949,7 +1968,13 @@ class LegacyEntry:
     ``None`` for a ``LEGACY_*`` shape (Boundaries). ``fields`` holds every
     ``key: value`` pair the entry carries, with wrapped continuation lines
     already joined into a single string per key -- see
-    ``classify_tier3_entries``'s own docstring.
+    ``classify_tier3_entries``'s own docstring. ``title`` is an
+    ``IDENTIFIED_*`` heading's own trailing text (``""`` for a bare heading
+    with no title, and always ``""`` for a ``LEGACY_*`` shape, which has no
+    owning heading at all) -- see ``_heading_title``'s own docstring for why
+    this is sometimes the ONLY summary text an entry carries (a real,
+    dominant live shape: ``IDENTIFIED_PLAIN`` with no ``summary:`` field of
+    its own).
     """
 
     shape: Tier3Shape
@@ -1957,6 +1982,7 @@ class LegacyEntry:
     start_line: int
     end_line: int
     fields: dict[str, str]
+    title: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "shape", Tier3Shape(self.shape))
@@ -2036,7 +2062,10 @@ def classify_tier3_entries(path: Path) -> tuple[LegacyEntry, ...]:
 
         dw_match = _ENTRY_RE.match(line)
         if dw_match:
-            i = _consume_identified_entry(lines, i + 1, dw_match.group(1), lineno, entries)
+            title = _heading_title(line, dw_match)
+            i = _consume_identified_entry(
+                lines, i + 1, dw_match.group(1), lineno, entries, title,
+            )
             scope = None
             continue
 
@@ -2069,13 +2098,19 @@ def _consume_identified_entry(
     entry_id: str,
     header_lineno: int,
     entries: list[LegacyEntry],
+    title: str = "",
 ) -> int:
     """Resolve and consume ONE ``### DW-<id>:`` header's own field block --
     ``IDENTIFIED_BULLETED`` if the first field-shaped line found is a
     bulleted ``- <key>: value`` (any key -- marshal's real shape leads with
     ``origin:``, not ``source_spec:``), ``IDENTIFIED_PLAIN`` if it is a
     plain ``key: value`` line, else an empty ``IDENTIFIED_PLAIN`` entry when
-    no recognizable field is found before the next heading or EOF.
+    no recognizable field is found before the next heading or EOF. ``title``
+    (the heading's own trailing text, ``_heading_title``) is carried onto
+    every ``LegacyEntry`` this call produces, regardless of shape -- an
+    ``IDENTIFIED_BULLETED``/``IDENTIFIED_PLAIN`` entry with fields can still
+    lack a ``summary:`` field of its own (the dominant live shape), in which
+    case the heading is the only summary text that exists at all.
 
     The search window scans FORWARD past blank lines and non-field content
     (e.g. an interposed ``<!-- id assigned ... -->`` HTML comment -- a real
@@ -2101,12 +2136,18 @@ def _consume_identified_entry(
             return _consume_bulleted_field_block(
                 lines, j, bullet_match.group(1), bullet_match.group(2),
                 entry_id, Tier3Shape.IDENTIFIED_BULLETED, header_lineno, entries,
+                title=title,
             )
         if _PLAIN_KEY_RE.match(line):
-            return _consume_plain_field_block(lines, j, entry_id, header_lineno, entries)
+            return _consume_plain_field_block(
+                lines, j, entry_id, header_lineno, entries, title=title,
+            )
         j += 1
     entries.append(
-        LegacyEntry(Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, header_lineno, {}),
+        LegacyEntry(
+            Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, header_lineno, {},
+            title=title,
+        ),
     )
     return j
 
@@ -2120,6 +2161,8 @@ def _consume_bulleted_field_block(
     shape: Tier3Shape,
     start_lineno: int,
     entries: list[LegacyEntry],
+    *,
+    title: str = "",
 ) -> int:
     """Consume one bulleted entry's own field block -- its own first
     ``- <key>: value`` line (any key, not hardcoded to ``source_spec:`` --
@@ -2195,7 +2238,7 @@ def _consume_bulleted_field_block(
             fields[current_key] = f"{fields[current_key]} {line.strip()}".strip()
         end_lineno = i + 1
         i += 1
-    entries.append(LegacyEntry(shape, entry_id, start_lineno, end_lineno, fields))
+    entries.append(LegacyEntry(shape, entry_id, start_lineno, end_lineno, fields, title=title))
     return i
 
 
@@ -2205,6 +2248,8 @@ def _consume_plain_field_block(
     entry_id: str,
     header_lineno: int,
     entries: list[LegacyEntry],
+    *,
+    title: str = "",
 ) -> int:
     """Consume an ``IDENTIFIED_PLAIN`` header's own plain (non-bulleted)
     ``key: value`` lines -- stopping at the first blank line, heading, or
@@ -2234,7 +2279,10 @@ def _consume_plain_field_block(
         end_lineno = i + 1
         i += 1
     entries.append(
-        LegacyEntry(Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, end_lineno, fields),
+        LegacyEntry(
+            Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, end_lineno, fields,
+            title=title,
+        ),
     )
     return i
 
@@ -2912,14 +2960,29 @@ _TIER3_ORIGIN_FINGERPRINT_RE = re.compile(
     rf"^{re.escape(HARVEST_ORIGIN)}\s+([0-9a-f]{{12}})\b"
 )
 
+#: A truncated heading ``title`` (check 3 below) must be at least this long
+#: before it is trusted as a prefix match. Live measurement (2026-08-29,
+#: pyforge-atlas's own ``DW-6`` and pyforge-scribe's ``DW-1``..``DW-4``):
+#: bmad-loop's harvest-damping writer truncates a long summary to a hard
+#: ~199-200 character budget when it has no room left for a full
+#: ``summary:`` field and folds the text into the heading instead. This
+#: threshold sits well below that observed floor (room for a differently
+#: configured harvester elsewhere) while staying far above any length two
+#: UNRELATED real findings could plausibly share as an identical prefix by
+#: coincidence -- natural-language prose this specific for 120+ characters
+#: is not an accident. A short title (a genuinely short summary, not a
+#: truncation artifact) still matches via the exact-equality branch below;
+#: this constant only gates the PREFIX branch.
+_TRUNCATED_TITLE_MIN_LEN = 120
+
 
 def _tier3_entry_already_promoted(
     entry: LegacyEntry, *, tracked_summaries: frozenset[str], tracked_text: str,
 ) -> bool:
     """True when ``entry`` (a Tier-3 entry the position/id-based checks
     below are about to flag) already reached the tracked ledger by some
-    OTHER path than the one that would flag it -- two independent signals,
-    tried in order:
+    OTHER path than the one that would flag it -- three independent
+    signals, tried in order:
 
     1. Its normalized ``summary:`` text already appears in the tracked
        ledger (``_tracked_summaries``'s own docstring) -- the
@@ -2940,6 +3003,26 @@ def _tier3_entry_already_promoted(
        matching ``source_spec:``, is already present in the tracked
        ledger, promoted via the spec-frontmatter path (Story 25.6) under a
        different id entirely.
+    3. Its heading ``title`` (``_heading_title``) -- for an
+       ``IDENTIFIED_PLAIN`` entry with no ``summary:`` field AND an
+       ``origin:`` fingerprint that no longer matches (checks 1/2 both
+       miss) -- against the tracked summaries, two ways: an exact
+       normalized match (a short, untruncated title that IS the whole
+       summary), or, only when the title is at least
+       ``_TRUNCATED_TITLE_MIN_LEN`` characters, a normalized PREFIX match
+       (the harvest-time heading was truncated to a fixed character budget
+       but the LATER promotion — ``deferred_work_intake.py``, re-reading
+       the spec's current, possibly-edited frontmatter — carries the full,
+       untruncated text under a fresh fingerprint the old heading predates).
+       Live 2026-08-29: pyforge-atlas's ``DW-6`` (fingerprint
+       ``81ca01b1f565``) and pyforge-scribe's ``DW-1``..``DW-4`` all
+       reached the tracked ledger this way, as ``DW-FU-17-2-3`` /
+       ``DW-FU-3-2``..``DW-FU-3-2-4`` respectively — same finding, edited
+       spec, changed fingerprint, unrelated new id. This is deliberately
+       NOT a substring-anywhere or fuzzy/edit-distance match (Boundaries):
+       only a PREFIX relationship, which is what truncation actually
+       produces, and only above the length floor that makes a coincidental
+       collision between two unrelated findings implausible.
     """
     summary = entry.fields.get("summary", "").strip()
     if summary and _normalize_summary(summary) in tracked_summaries:
@@ -2951,6 +3034,14 @@ def _tier3_entry_already_promoted(
         source_spec = entry.fields.get("source_spec", "").strip().strip("`")
         if needle in tracked_text and source_spec and _source_spec_cited_in(
             source_spec, tracked_text,
+        ):
+            return True
+    if not summary and entry.title:
+        title_norm = _normalize_summary(entry.title)
+        if title_norm in tracked_summaries:
+            return True
+        if len(title_norm) >= _TRUNCATED_TITLE_MIN_LEN and any(
+            tracked.startswith(title_norm) for tracked in tracked_summaries
         ):
             return True
     return False
