@@ -37,7 +37,7 @@ python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.78.0"                 # Pixi package & environment manager
 gh = ">=2.98.0"                   # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.61"            # Pythonic Git wrapper for complex repo interactions
-nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
+nodejs = ">=24.16.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 bmad-method = ">=6.11.0"          # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=1.0.1"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
@@ -1584,7 +1584,7 @@ hf-transfer = ">=0.1.9"           # 3x faster GGUF/safetensors downloads at firs
 lxml = ">=6.1.2"                  # Fast XML / HTML parser (libxml2 bindings)
 mammoth = ">=1.12.1"              # Focused .docx → Markdown converter (used in markitdown's Word loader)
 markitdown = ">=0.1.7"            # Microsoft's document → Markdown converter
-marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering
+marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering. conda-forge's marp-cli-feedstock tops out here (nodejs 22/24 builds only). 4.5.0 built locally against nodejs 26.6.0 and published to SelfExplainML (recipes/marp-cli) -- NOT adopted as this env's floor yet: nodejs 26 forces libabseil >=20260526.0, which conflicts with a2a-sdk's protobuf (max libabseil epoch ~20260107 across its whole build matrix). Bump once that ecosystem gap closes.
 matplotlib = ">=3.11.1"           # General-purpose 2D plotting library
 mermaid-py= ">=0.8.4"             # Python wrapper around the Mermaid diagram renderer
 markdown = ">=3.10.3"             # Markdown parser (used in markitdown)

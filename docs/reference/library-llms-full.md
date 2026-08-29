@@ -83,7 +83,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 - `tomlkit <0.13.3` (dagster-dg-core pin), `structlog >24.2.0,<26` (xorq/BSL pin),
   `sqlglot >26.32.0,<28.7.0`.
 - LTS pins: `django 5.2.x`, `wagtail 7.4.x`, `coderedcms 6.x`, `channels 4.x`,
-  `daphne 4.x`, `nodejs 24.x`.
+  `daphne 4.x`, `nodejs 24.x or 26.x`.
 - `pydantic` is not pinned directly but is present transitively (pydantic-ai, fastmcp,
   agno, etc. all pull pydantic v2).
 
@@ -106,7 +106,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **pip** (>=26.2) — standard Python installer (prefer `uv` for speed).
 - **uv** (>=0.12.7) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
-- **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
+- **nodejs** (>=24.16.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
 - **gh** (>=2.98.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
 - **gitpython** (>=3.1.61) — `import git`; programmatic Git (repos, diffs, commits,

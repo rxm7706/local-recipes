@@ -9,7 +9,7 @@ dependencies:
 - pixi >=0.78.0
 - gh >=2.98.0
 - gitpython >=3.1.61
-- nodejs >=24.16.0,24.*,<25.0
+- nodejs >=24.16.0,<27.0,!=25.*
 - bmad-method >=6.11.0
 - spec-kit >=1.0.1
 - truststore >=0.10.4
