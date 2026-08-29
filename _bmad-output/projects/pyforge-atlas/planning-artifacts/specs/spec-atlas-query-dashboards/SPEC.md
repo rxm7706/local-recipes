@@ -5,6 +5,7 @@ updated: "2026-08-27"
 owner-dream: docs/dreams/atlas-query-dashboards.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/  # Epic 14 landed the Panel/Bokeh views module here; Epic 20 (CAP-5..7) extends the same package surface
+  - scripts/dashboard_serve.py  # Story 20.5's DW-D2-3 local-serve entrypoint (CAP-7)
 sources:
   - ../../../../../../docs/dreams/atlas-query-dashboards.md
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md  # § Open Questions — the three 2026-08-26 operator query-plane rulings that bind CAP-5..CAP-7
