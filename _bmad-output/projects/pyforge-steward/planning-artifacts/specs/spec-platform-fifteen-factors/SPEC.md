@@ -2,7 +2,11 @@
 spec: platform-fifteen-factors
 status: ready
 owner-dream: docs/dreams/platform-fifteen-factors.md
-surface: []
+surface:
+  # CAP-5 realization, Story 16.1: the drift guard proving pixi stays the
+  # sole platform dependency authority (retired requirements/*.txt cannot
+  # be resurrected as an install source).
+  - scripts/platform_ci_test_requirements_check.py
 companions: []
 sources:
   - ../../../../../../docs/dreams/platform-fifteen-factors.md

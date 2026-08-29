@@ -6,6 +6,9 @@ updated: "2026-08-26"
 owner-dream: docs/dreams/mcp-era-isolation.md
 surface:
   - docs/dreams/mcp-era-isolation.md
+  # CAP-1 realized 2026-08-26 per this Spec's own memlog (operator-scheduled
+  # slice 2 implementation, no GHA): the stdio wrap itself.
+  - scripts/mcp_factory_stdio_translator.py
 companions:
   - io-matrix.md
 sources:
