@@ -3027,7 +3027,9 @@ baseline is precisely the laundering S-13.2 exists to end
 eight stations become one enforced leaf. **SEQUENCING (PRD § 16.8): S-14.1 and S-14.2 land
 BEFORE seed stories S-7.2/S-7.3**, which would otherwise mint copy #21 of atomic write and
 copy #6 of the verdict lattice. Decomposed 2026-08-10 from the audit's AF-R8 finding
-(operator-directed); convergence-checked — nothing here is already covered.
+(operator-directed); convergence-checked — nothing here is already covered. Realizes
+`spec-pyforge-core` CAP-1..CAP-7: FR-157→CAP-1, FR-158→CAP-2, FR-159..161→CAP-3/CAP-4/CAP-5,
+FR-162..163→CAP-6/CAP-7.
 
 ### Story 14.1: The leaf exists and is provably a leaf
 **Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** FR-157; AD-66
@@ -3068,7 +3070,7 @@ ledger-regression detector) — only its lock rides along; FR-137/138 are PARTIA
 covers feed-vs-git; the landed-but-unpromoted direction is the gap).
 
 ### Story 15.1: One command refreshes the fleet's homes
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-133, FR-134, FR-135; AD-21
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-133, FR-134, FR-135; AD-21 — realizes spec-loop-home-fleet-refresh CAP-1..CAP-3
 **Surface:** `cli/factory.py` or new `cli/refresh.py`, `core/context.py`
 **Given** the 8 loop homes **Then** one command reports each home's behind-count (an
 unreadable home is reported, never skipped), fast-forwards clean trees only (dirty homes
@@ -3077,7 +3079,7 @@ checked step — each step `done | skipped | failed`; an FF-without-render repor
 incompletely refreshed.
 
 ### Story 15.2: Landing promotes the ledger, and staleness is its own check
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-136, FR-137, FR-138, FR-139 (lock residual); AD-71
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-136, FR-137, FR-138, FR-139 (lock residual); AD-71 — realizes spec-sprint-status-auto-promote CAP-1..CAP-4 (named explicitly in that Spec's own memlog as this story)
 **Surface:** `cli/land.py`, `scripts/promote_sprint_status.py`, `pyforge.doctor.sources` (ledger direction)
 **Given** a story landing **Then** ledger promotion runs mechanically from the landing
 itself (deterministic trigger, never memory); a standalone check reports ledger-vs-git drift
@@ -3096,7 +3098,7 @@ FR-140..143 set is genuinely undelivered — `index.html` still carries a retire
 special case.
 
 ### Story 16.1: One resolver, derived sources, loud failures
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-140, FR-141, FR-142, FR-143
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-140, FR-141, FR-142, FR-143 — realizes spec-dashboard-project-path-derivation CAP-1..CAP-4 (that Spec's own owning surface)
 **Surface:** `pyforge.doctor.sources.fleet_scan`, `docs/dashboard/index.html`, `docs/dashboard/data.js`
 **Given** the dashboard build **Then** slug→path resolution lives in ONE function with one
 exception table; `PROJECT_SOURCES` is discovered (a new station appears with no hand edit; a
@@ -3158,14 +3160,14 @@ through one governed, typed surface. Convergence: FR-154's mechanism is ALREADY 
 (2026-07-28 measurement: 2-of-6 stations, Marshal at zero).
 
 ### Story 18.1: Marshal's capabilities become named, typed tools
-**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** FR-153, FR-154 (mechanism already covered — marshal init's rendered .mcp.json)
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** FR-153, FR-154 (mechanism already covered — marshal init's rendered .mcp.json) — realizes spec-agent-tool-surface CAP-1, CAP-2
 **Surface:** new `pyforge/marshal/mcp/` (or tools module), rendered per-home registration
 **Given** marshal's CLI surface **Then** its capabilities are exposed as named tools with
 typed arguments and structured answers, registered per-home via the existing rendered
 `.mcp.json` pattern — never a machine-absolute hand edit.
 
 ### Story 18.2: Parity and coverage are gated numbers
-**Type:** test • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-155, FR-156
+**Type:** test • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-155, FR-156 — realizes spec-agent-tool-surface CAP-3, CAP-4
 **Surface:** meta-test + a per-station coverage report
 **Given** the CLI and tool surfaces **Then** a capability present in one and absent from the
 other fails a check, and per-station tool-surface coverage is reported as a number — the

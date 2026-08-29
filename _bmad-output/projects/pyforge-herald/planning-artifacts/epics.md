@@ -433,7 +433,7 @@ an existing station deck renders to a .pptx whose every text run edits cleanly i
 PowerPoint (round-trip proven).
 
 ### Story 15.2: Dense content renders as shapes that fit
-**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-pptx-custom-shapes CAP-1
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-pptx-custom-shapes CAP-1, spec-pptx-deck-generation CAP-2 (owned-by cross-reference per that Spec's own CAP-2 declaration)
 **Given** content no placeholder anticipates **Then** card/metric-box/table/section-label
 calls render editable objects into 15.1's decks with Pillow real-font-measured autofit
 (wrap, shrink, orphan rebalancing) — the densest six-act appendix slide fits, measured
