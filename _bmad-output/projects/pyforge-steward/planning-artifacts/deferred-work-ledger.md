@@ -777,6 +777,7 @@ surface. Pre-existing; Story 11.4 treated the file as read-only. Remedy: None-gu
 consider widening the mypy surface to the integration test modules. Severity: low. Status:
 open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
 
+  status: open
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-12-2: The "395-package `python-agent-platform` env" figure embedded in timeout-justification comments has no mechanism keeping it accurate.

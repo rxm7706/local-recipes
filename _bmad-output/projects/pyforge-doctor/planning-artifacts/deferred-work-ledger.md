@@ -316,6 +316,7 @@ deferred rather than fixed cross-station. Remedy: fix the entry in the owning sp
 glob or the file list), then re-stamp that spec's surface baseline. Severity: low. Status:
 open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
 
+  status: open
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-FU-12-5 — Corrupt committed baseline dies with a raw JSONDecodeError on scoped stamps
@@ -326,6 +327,7 @@ the file and the re-stamp recovery path — never an `except -> {}` fallback (re
 12.5's review as reintroducing the drop-every-other-spec hazard). Severity: low. Status: open.
 Relayed from the story worktree's ephemeral Tier-3 at landing, 2026-08-21.
 
+  status: open
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-FU-12-5-2 — Zero-discoverable-specs full stamp silently wipes the baseline to `{}` at exit 0
@@ -335,6 +337,7 @@ spec discovery returning nothing it replaces the whole baseline with `{}`, exit 
 refuse (or gate behind a flag) when the live snapshot is empty and the existing baseline is
 not. Severity: low. Status: open. Relayed 2026-08-21.
 
+  status: open
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-1-1: GitHub-releases fallback for the 6 npm-invisible bmad-suite packages — RESOLVED
