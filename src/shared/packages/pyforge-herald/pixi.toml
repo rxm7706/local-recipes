@@ -44,3 +44,9 @@ pyforge-core = { path = "../pyforge-core" }
 playwright = ">=1.62.1"          # CLI + browser driver
 playwright-python = ">=1.62.0"   # the `import playwright` bindings
 pillow = ">=12.3.0"              # render_gate's contact-sheet compositing
+# Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never
+# hand-written OOXML). Floor matches pyproject.toml's own `python-pptx` pin;
+# was already declared there and in root pixi.toml's
+# [feature.pyforge-herald.dependencies], just missing from this package's
+# own run-dependencies (the table that actually feeds the built .conda).
+python-pptx = ">=1.0.2"

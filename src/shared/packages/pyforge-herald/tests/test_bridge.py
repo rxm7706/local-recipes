@@ -26,6 +26,7 @@ from pyforge.herald import (
     deck_qa,
     errors,
     evidence,
+    exporters,
     locking,
     notices,
     progress,
@@ -151,6 +152,7 @@ _BRIDGE_CORE_MODULES = (
     webhook,
     webhook_host,
     deck_qa,
+    exporters,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -202,6 +204,11 @@ command line), no transport call, no inference SDK, no argv parsing.
 visual-QA gate report schema and its ``run()`` entrypoint are pure local
 computation over a caller-supplied gate mapping -- no transport call, no
 inference SDK, no argv parsing (that's ``cli.py``'s ``_run_deck_qa``).
+``exporters.py`` (Story 16.1) joins for the same reason once more: it
+registers Marp/PPTX/``.dc.html`` export plugins on the shared
+``pyforge.core.hooks`` contract, importing nothing but ``pyforge.core.hooks``
+itself -- no transport call, no inference SDK, no argv parsing, and (unlike
+``pptx_pipeline.py`` below) no ``importlib.resources`` reach either.
 
 ``pptx_pipeline.py`` (Story 15.1) does NOT join here -- unlike every module
 above, it is not part of the Design<->Code bridge at all: the spec's own Why
