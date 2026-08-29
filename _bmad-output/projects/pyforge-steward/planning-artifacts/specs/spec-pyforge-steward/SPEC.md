@@ -20,6 +20,10 @@ surface:
   - .steward/keys-inventory.yaml
   - .steward/*.age
   - .steward/sync-config.example.yaml
+  # Epic 13 / Story 13.3: the repo-set registry example, same per-kind convention as
+  # sync-config.example.yaml above — not a blanket .steward/** (see the rationale note
+  # immediately above this list).
+  - .steward/repo-sets.example.yaml
 id: SPEC-steward
 owner-dream: docs/dreams/pyforge-steward.md
 companions:

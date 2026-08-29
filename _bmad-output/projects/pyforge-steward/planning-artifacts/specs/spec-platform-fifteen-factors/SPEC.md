@@ -2,7 +2,10 @@
 spec: platform-fifteen-factors
 status: ready
 owner-dream: docs/dreams/platform-fifteen-factors.md
-surface: []
+surface:
+  # Story 16.1 (CAP-5): pixi becomes the sole dependency authority, retiring
+  # src/platform/requirements/*.txt. This CI gate is that story's own governed file.
+  - scripts/platform_ci_test_requirements_check.py
 companions: []
 sources:
   - ../../../../../../docs/dreams/platform-fifteen-factors.md
