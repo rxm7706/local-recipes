@@ -13,6 +13,7 @@ import ibis
 import pandas as pd
 
 from pyforge.atlas.semantic import models
+from pyforge.atlas.semantic.query_helpers import bsl_query
 
 NOW = 1_700_000_000
 
@@ -110,9 +111,11 @@ def test_maintainer_filter_reproduces_maintainer_scoped_list(parquet_table):
     """
     pm = models.build_package_maintainers_model(parquet_table(_pm_df(), "pm"))
 
-    res = pm.query(
-        dimensions=["conda_name"], filters=[ibis._.maintainer == "alice"]
-    ).execute()
+    res = bsl_query(
+        pm,
+        dimensions=["conda_name"],
+        filters=[ibis._.maintainer == "alice"],
+    )
     got = set(res["conda_name"])
     expected = set(_pm_df().loc[_pm_df()["maintainer"] == "alice", "conda_name"])
     assert got == expected == {"a", "b"}

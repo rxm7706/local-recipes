@@ -51,7 +51,10 @@ from .request_datasets import (
     BigQueryDownloadsDataset,
     GitHubRequestDataset,
     PhasePCostAbort,
+    PyPIJsonFanOutDataset,
     PyPIJsonRequestDataset,
+    PyPIBigQueryDownloadsDataset,
+    seed_pypi_json_from_cf_atlas,
 )
 from .vdb_boundary import coerce_cvss_score
 from .basilisk import (
@@ -76,12 +79,46 @@ from .upstream_discovery import (
     parse_search_api_response,
     parse_trending_html,
 )
+from .vcs_sources import (
+    RegistryUpstreamDataset,
+    VcsHostSeedDataset,
+    seed_github_from_cf_atlas,
+    seed_registry_from_cf_atlas,
+    seed_vcs_host_from_cf_atlas,
+)
+from .vulnerability_feeds import (
+    CisaKevDataset,
+    CweCatalogDataset,
+    EpssFeedDataset,
+    parse_cisa_kev_catalog,
+    parse_cwe_catalog_zip,
+    parse_epss_csv_gz,
+)
+from .core_sources import (
+    CfGraphTarballDataset,
+    CondaChanneldataDataset,
+    CondaRepodataDataset,
+    FeedstockOutputsArchiveDataset,
+    CrossChannelRepodataDataset,
+    ParselmouthMappingDataset,
+    PyPISimpleIndexDataset,
+    S3DownloadStatsDataset,
+    channeldata_json_to_rows,
+    parse_cf_graph_tarball,
+    parse_feedstock_outputs_zip,
+    parse_pypi_simple_index,
+    repodata_json_to_rows,
+    seed_parselmouth_mapping_from_cf_atlas,
+)
 
 __all__ = [
     "IncrementalParquetDataset",
     "AnacondaDownloadsDataset",
     "GitHubRequestDataset",
     "PyPIJsonRequestDataset",
+    "PyPIJsonFanOutDataset",
+    "PyPIBigQueryDownloadsDataset",
+    "seed_pypi_json_from_cf_atlas",
     "BigQueryDownloadsDataset",
     "PhasePCostAbort",
     "coerce_cvss_score",
@@ -130,4 +167,27 @@ __all__ = [
     "TrendingSnapshotDataset",
     "parse_trending_html",
     "parse_search_api_response",
+    # Core raw-source parsers + datasets (B1 ingest gap)
+    "FeedstockOutputsArchiveDataset",
+    "CondaRepodataDataset",
+    "CondaChanneldataDataset",
+    "CfGraphTarballDataset",
+    "S3DownloadStatsDataset",
+    "parse_feedstock_outputs_zip",
+    "repodata_json_to_rows",
+    "channeldata_json_to_rows",
+    "parse_cf_graph_tarball",
+    # Vulnerability side-catalog feeds (KEV / EPSS / CWE)
+    "CisaKevDataset",
+    "EpssFeedDataset",
+    "CweCatalogDataset",
+    "parse_cisa_kev_catalog",
+    "parse_epss_csv_gz",
+    "parse_cwe_catalog_zip",
+    # VCS / registry seeds (vcs_health)
+    "VcsHostSeedDataset",
+    "RegistryUpstreamDataset",
+    "seed_github_from_cf_atlas",
+    "seed_vcs_host_from_cf_atlas",
+    "seed_registry_from_cf_atlas",
 ]

@@ -33,15 +33,132 @@ from __future__ import annotations
 
 import logging
 import os
+import sqlite3
+import time
+from pathlib import Path
 from typing import Any, Callable
 
+import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 from pyforge.core.errors import PyforgeError
 
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
+from .vcs_sources import seed_github_from_cf_atlas
 
 logger = logging.getLogger(__name__)
+
+_PYPI_JSON_FRAME_COLUMNS = [
+    "pypi_name",
+    "version",
+    "pypi_last_serial",
+    "pypi_version_serial_at_fetch",
+    "fetched_at",
+    "upload_time_iso_8601",
+    "conda_name",
+    "license_spdx",
+    "license_raw",
+    "packaging_shape",
+    "notes",
+    "pure_python",
+    "has_ext_modules",
+    "cython",
+    "rust",
+    "wheel_tags",
+]
+
+
+def _coerce_api_json(raw: Any) -> Any:
+    """``APIDataset.load()`` returns a ``requests.Response`` for JSON endpoints."""
+    if hasattr(raw, "json") and callable(raw.json):
+        try:
+            return raw.json()
+        except Exception:  # noqa: BLE001 — malformed body stays as-is for callers
+            return raw
+    return raw
+
+
+def _cf_atlas_db_path() -> Path:
+    for key in ("CF_ATLAS_DB", "CF_ATLAS_DB_PATH"):
+        raw = os.environ.get(key)
+        if raw:
+            return Path(raw).expanduser()
+    return Path(".claude/data/conda-forge-expert/cf_atlas.db")
+
+
+def _empty_pypi_json_frame() -> pd.DataFrame:
+    return pd.DataFrame(columns=_PYPI_JSON_FRAME_COLUMNS)
+
+
+def seed_pypi_json_from_cf_atlas(db_path: Path | None = None) -> pd.DataFrame:
+    """Build the actionable ``pypi_json_raw`` slice from a post-bootstrap ``cf_atlas.db``.
+
+    After legacy bootstrap (Phase H via cf-graph + Phase R bulk enrichment), the
+    conda-side version stamps and ``pypi_intelligence`` enrichment already live in
+    SQLite — this avoids re-fetching ~20k ``/pypi/<name>/json`` endpoints on the
+    first Kedro ``pypi_intelligence`` run (attended live fan-out remains opt-in via
+    ``PYPI_JSON_LIVE_FANOUT=1``).
+    """
+    path = db_path if db_path is not None else _cf_atlas_db_path()
+    if not path.is_file():
+        return _empty_pypi_json_frame()
+    sql = """
+        SELECT
+          p.pypi_name,
+          p.pypi_current_version AS version,
+          p.pypi_last_serial,
+          p.pypi_version_serial_at_fetch,
+          p.pypi_version_fetched_at AS fetched_at,
+          pi.latest_upload_at AS upload_time_iso_8601,
+          p.conda_name,
+          pi.license_spdx,
+          pi.license_raw,
+          pi.packaging_shape,
+          pi.notes,
+          pi.has_wheel,
+          pi.python_tags AS wheel_tags,
+          pi.classifiers
+        FROM v_actionable_packages v
+        JOIN packages p ON p.conda_name = v.conda_name
+        LEFT JOIN pypi_intelligence pi ON pi.pypi_name = p.pypi_name
+        WHERE p.pypi_name IS NOT NULL
+    """
+    with sqlite3.connect(path) as conn:
+        df = pd.read_sql_query(sql, conn)
+    if df.empty:
+        return _empty_pypi_json_frame()
+    shape = df.get("packaging_shape")
+    df["pure_python"] = shape.eq("pure-python") if shape is not None else False
+    df["has_ext_modules"] = shape.isin(["c-extension", "cython"]) if shape is not None else False
+    df["cython"] = shape.eq("cython") if shape is not None else False
+    df["rust"] = shape.eq("rust-pyo3") if shape is not None else False
+    for col in _PYPI_JSON_FRAME_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.NA
+    return df[_PYPI_JSON_FRAME_COLUMNS].reset_index(drop=True)
+
+
+def _payload_to_pypi_json_row(name: str, payload: Any) -> dict[str, Any]:
+    """Normalize one ``/pypi/<name>/json`` document to the node-facing row shape."""
+    row: dict[str, Any] = {col: pd.NA for col in _PYPI_JSON_FRAME_COLUMNS}
+    row["pypi_name"] = name
+    row["fetched_at"] = int(time.time())
+    if not isinstance(payload, dict):
+        return row
+    info = payload.get("info") or {}
+    version = info.get("version")
+    row["version"] = version
+    if version:
+        rel = (payload.get("releases") or {}).get(version) or []
+        if isinstance(rel, list) and rel and isinstance(rel[0], dict):
+            row["upload_time_iso_8601"] = rel[0].get("upload_time")
+    row["license_raw"] = info.get("license")
+    classifiers = info.get("classifiers") or []
+    tag_str = " ".join(classifiers) if isinstance(classifiers, list) else str(classifiers)
+    row["wheel_tags"] = tag_str
+    row["pure_python"] = "Programming Language :: Python :: 3" in tag_str and "none-any" in tag_str.lower()
+    row["has_ext_modules"] = bool(info.get("has_ext_modules"))
+    return row
 
 
 class _RequestParameterizedAPIDataset(AbstractDataset):
@@ -143,7 +260,13 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
     The A2 interim declared a single ``.../package`` URL; the real feed is
     per-package path-parameterized (``/package/<owner>/<name>``). :meth:`request_path`
     builds that path so the NODE never does (AC-2). ``core_anaconda_downloads_raw``.
+
+    A bare :meth:`load` returns an empty but correctly-columned frame — the per-package
+    fan-out is dataset-owned via :meth:`load_many` (credentialed, attended). The Kedro
+    DAG's catalog load must not hit the unparameterized base URL (404).
     """
+
+    _EMPTY_COLUMNS = ["conda_name", "version", "downloads"]
 
     def request_path(self, owner: str, name: str) -> str:
         """Build the per-package request path — the parameterization a node may NOT
@@ -151,6 +274,55 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
         owner = (owner or "conda-forge").strip("/")
         name = name.strip("/")
         return f"{self._base_url.rstrip('/')}/{owner}/{name}"
+
+    def load(self) -> pd.DataFrame:
+        """No-op stub until the attended per-package fan-out is wired.
+
+        ``compute_downloads`` / ``compute_version_download_history`` treat an empty
+        frame as "anaconda-api path absent" and degrade gracefully (s3-parquet or empty
+        outputs). Drive live stats via :meth:`load_many`.
+        """
+        return pd.DataFrame(columns=self._EMPTY_COLUMNS)
+
+    def load_many(
+        self,
+        names: list[str],
+        *,
+        owner: str = "conda-forge",
+        fetcher: Callable[[str], Any] | None = None,
+    ) -> pd.DataFrame:
+        """Per-package fan-out (Phase F/I): one request per ``conda_name``.
+
+        Returns a flat frame with ``conda_name``, ``version``, ``downloads`` rows
+        (one row per file version in the anaconda.org payload). ``fetcher`` is
+        injectable for fixtures; the default routes each path through the composed
+        ``APIDataset``.
+        """
+        rows: list[dict[str, Any]] = []
+        for name in names:
+            if name is None or (isinstance(name, float) and name != name):
+                continue
+            path = self.request_path(owner, str(name))
+            payload = self.fetch_one(path, fetcher=fetcher)
+            if not isinstance(payload, dict):
+                continue
+            for f in payload.get("files") or []:
+                if not isinstance(f, dict):
+                    continue
+                ver = f.get("version")
+                dl = f.get("ndownloads")
+                if ver is None:
+                    continue
+                rows.append(
+                    {
+                        "conda_name": str(name),
+                        "version": str(ver),
+                        "downloads": int(dl or 0),
+                    }
+                )
+        if not rows:
+            return pd.DataFrame(columns=self._EMPTY_COLUMNS)
+        return pd.DataFrame(rows)[self._EMPTY_COLUMNS]
 
 
 class GitHubRequestDataset(_RequestParameterizedAPIDataset):
@@ -161,7 +333,28 @@ class GitHubRequestDataset(_RequestParameterizedAPIDataset):
     ``load_args.json`` a node may NOT build (AC-2). The Phase K single-worker 3-RPS
     token bucket + ``Retry-After`` discipline are attached here (dataset level), not
     in the node body. ``vcs_github_api_raw``.
+
+    A bare :meth:`load` does NOT issue the catalog placeholder GraphQL POST (``APIDataset``
+    rejects non-GET ``load()``). After legacy bootstrap, seeds from ``cf_atlas.db``; live
+    fan-out remains opt-in via :meth:`with_query` / attended GraphQL batches.
     """
+
+    _GITHUB_SEED_COLUMNS = [
+        "feedstock_name",
+        "archived",
+        "conda_name",
+        "upstream_version",
+        "last_error",
+        "stars",
+        "last_commit",
+        "open_issues",
+    ]
+
+    def load(self) -> pd.DataFrame:
+        seeded = seed_github_from_cf_atlas()
+        if not seeded.empty:
+            return seeded
+        return pd.DataFrame(columns=self._GITHUB_SEED_COLUMNS)
 
     def with_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """Build the GraphQL POST body for a single query — dataset-owned request
@@ -196,6 +389,25 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
             raise ValueError("request_path requires a project name, got None")
         return f"{self._base_url.rstrip('/')}/pypi/{str(name).strip('/')}/json"
 
+    def fetch_one(self, request_key: str, *, fetcher: Callable[[str], Any] | None = None) -> Any:
+        """Fetch one per-project JSON URL, acquiring a rate-limit token first."""
+        self.scheduler.acquire()
+        if fetcher is not None:
+            return fetcher(request_key)
+        url = (
+            request_key
+            if str(request_key).startswith("http")
+            else self.request_path(str(request_key).split("/")[-2] if "/pypi/" in str(request_key) else request_key)
+        )
+        inner = APIDataset(
+            url=url,
+            method=self._method,
+            load_args=self._load_args,
+            credentials=self._credentials,
+            metadata=self.metadata,
+        )
+        return _coerce_api_json(inner.load())
+
     def load(self) -> Any:
         """The per-project fan-out is NOT a single-URL load — the DAG must drive it via
         :meth:`load_many` with the resolved actionable project names (credentialed +
@@ -204,7 +416,9 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
         DW-B1-2 ``acquire()`` into :meth:`load_many` / :meth:`fetch_one`; the concrete
         DAG-load fan-out (resolving names -> N gated requests) is dataset-owned +
         attended, mirroring B1's deferral of the anaconda/github fan-out."""
-        raise NotImplementedError(
+        from kedro.io.core import DatasetError
+
+        raise DatasetError(
             "PyPIJsonRequestDataset is a per-project fan-out source: drive it via "
             "load_many(names) (the scheduler-gated per-project loop), not a single "
             "load(). Credentialed live fan-out is attended-only (NFR-2/AD-11)."
@@ -233,6 +447,71 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
             key = self.request_path(name)
             out[name] = self.fetch_one(key, fetcher=fetcher)
         return out
+
+
+class PyPIJsonFanOutDataset(PyPIJsonRequestDataset):
+    """Catalog entry for ``pypi_json_raw``: seed from ``cf_atlas.db``, optional live fan-out.
+
+    Kedro's catalog calls :meth:`load` directly — this class materializes the actionable
+    per-project JSON slice dataset-owned (AC-2): by default it reads the post-bootstrap
+    conda/PyPI stamps already in ``cf_atlas.db``; set ``PYPI_JSON_LIVE_FANOUT=1`` to
+    issue scheduler-gated ``/pypi/<name>/json`` requests for names still missing a
+    ``version`` after seeding (attended-only, NFR-2/AD-11).
+    """
+
+    def load(self) -> pd.DataFrame:
+        seeded = seed_pypi_json_from_cf_atlas()
+        if os.environ.get("PYPI_JSON_LIVE_FANOUT") != "1":
+            return seeded
+        missing = seeded.loc[seeded["version"].isna(), "pypi_name"].dropna().astype(str).tolist()
+        if not missing:
+            return seeded
+        limit = int(os.environ.get("PYPI_JSON_FANOUT_LIMIT", "0") or "0")
+        if limit > 0:
+            missing = missing[:limit]
+        payloads = self.load_many(missing)
+        live_rows = [_payload_to_pypi_json_row(name, payloads.get(name)) for name in missing]
+        live = pd.DataFrame(live_rows, columns=_PYPI_JSON_FRAME_COLUMNS)
+        if seeded.empty:
+            return live.reset_index(drop=True)
+        merged = seeded.set_index("pypi_name", drop=False)
+        merged.update(live.set_index("pypi_name"))
+        return merged.reset_index(drop=True)[_PYPI_JSON_FRAME_COLUMNS]
+
+
+class PyPIBigQueryDownloadsDataset(AbstractDataset):
+    """Catalog entry for ``pypi_bigquery_downloads_raw`` — Phase P admin opt-in stub.
+
+    ``PHASE_P_ENABLED=1`` runs are attended-only (NFR-2/AD-11); the default pipeline
+    path returns an empty but correctly-columned frame so ``fetch_pypi_downloads``
+    no-ops (AD-6, never a default BigQuery job).
+    """
+
+    _COLS = ["pypi_name", "month", "downloads"]
+
+    def __init__(self, *, metadata: dict[str, Any] | None = None, **kwargs: Any) -> None:
+        _ = kwargs  # url/credentials kept in catalog for credentialed materialization flip
+        self.metadata = metadata
+
+    def load(self) -> pd.DataFrame:
+        if BigQueryDownloadsDataset.is_enabled():
+            from kedro.io.core import DatasetError
+
+            raise DatasetError(
+                "PHASE_P_ENABLED=1 but BigQuery Phase P requires an attended "
+                "credentialed run via BigQueryDownloadsDataset.run_gated(); "
+                "the default Kedro catalog load path stays offline-safe."
+            )
+        return pd.DataFrame(columns=self._COLS)
+
+    def save(self, data: Any) -> None:
+        raise NotImplementedError(f"{type(self).__name__} is read-only")
+
+    def _describe(self) -> dict[str, Any]:
+        return {
+            "parameterization": type(self).__name__,
+            "enabled": BigQueryDownloadsDataset.is_enabled(),
+        }
 
 
 # --- Phase P — the BigQuery cost-gate request dataset (THE CRUX) -------------

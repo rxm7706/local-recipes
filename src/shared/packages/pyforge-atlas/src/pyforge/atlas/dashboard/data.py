@@ -125,7 +125,13 @@ def _bsl_query_or_empty(
     table = models.duckdb_table_from_parquet(str(parquet), connection=connection)
     model = build_model(table, **(model_kwargs or {}))
     try:
-        return model.query(dimensions=dimensions, measures=measures).execute()
+        from pyforge.atlas.semantic.query_helpers import bsl_query
+
+        return bsl_query(
+            model,
+            dimensions=dimensions,
+            measures=measures,
+        )
     except TypeError:
         # A PRESENT but degenerate Parquet — e.g. a 0-row store whose column round-tripped
         # untyped/all-null, so a metric predicate like `latest_status.fill_null("active")`

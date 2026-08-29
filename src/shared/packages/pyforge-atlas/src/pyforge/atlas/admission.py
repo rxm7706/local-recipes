@@ -262,6 +262,11 @@ def default_lock_root(project_path: Any = None) -> Path:
     message recommends this override, the data root is exactly what cannot be resolved, and
     an unresolvable data root must not turn the escape hatch back off.
     """
+    if project_path is not None and str(project_path) != "" and not Path(project_path).is_absolute():
+        raise AdmissionConfigError(
+            f"project_path must be absolute so the lock root cannot become "
+            f"CWD-relative; got {project_path!r}"
+        )
     override = (os.environ.get("PYFORGE_ATLAS_LOCK_ROOT") or "").strip()
     if not override:
         return _beside(_data_root(project_path))

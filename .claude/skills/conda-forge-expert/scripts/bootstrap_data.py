@@ -1022,8 +1022,14 @@ def main() -> int:
             results.append(("cf-atlas-build", aggregate_ok))
 
     # Step 5 — Phase G' per-version vuln scoring (opt-in)
-    if args.with_pgp and not args.no_vdb:
-        cmd = ["pixi", "run", "-e", "vuln-db", "build-cf-atlas"]
+    # Run atlas_phase.py directly: `build-cf-atlas` re-runs the full pipeline
+    # and pixi/task shell quoting breaks on the G' apostrophe in `--only G'`.
+    if args.with_pgp:
+        cmd = [
+            "pixi", "run", "-e", "vuln-db", "--",
+            "python", ".claude/scripts/conda-forge-expert/atlas_phase.py",
+            "G'",
+        ]
         env = {"PHASE_GP_ENABLED": "1"}
         ok = _run("Phase G' — per-version vuln scoring (vuln-db env)",
                   cmd, env_overrides=env, dry_run=args.dry_run,

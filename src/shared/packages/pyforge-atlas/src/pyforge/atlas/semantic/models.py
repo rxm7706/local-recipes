@@ -65,7 +65,7 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
         table=table,
         name="packages",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "is_actionable": Dimension(expr=metrics.is_actionable),
             "staleness_age_days": Dimension(
                 expr=lambda t: metrics.staleness_age_days(t, now)
@@ -104,7 +104,7 @@ def build_feedstock_health_model(table: Any) -> SemanticModel:
         table=table,
         name="feedstock_health",
         dimensions={
-            "feedstock_name": Dimension(expr=lambda t: t.feedstock_name, is_entity=True),
+            "feedstock_name": Dimension(expr=lambda t: t.feedstock_name),
             "ci_red": Dimension(expr=metrics.ci_red),
             "has_open_prs": Dimension(expr=metrics.has_open_prs),
             "has_open_issues": Dimension(expr=metrics.has_open_issues),
@@ -135,12 +135,15 @@ def build_package_maintainers_model(table: Any) -> SemanticModel:
 
     ``maintainer`` is a FIRST-CLASS declared dimension (AC-2) — the anchor that turns
     the raw-SQL ``package_maintainers`` JOINs into declared BSL queries.
+
+    Duplicate ``(conda_name, maintainer)`` rows in the upstream long form are collapsed
+    before any join so maintainer-scoped download sums cannot double-count a package.
     """
     return SemanticModel(
-        table=table,
+        table=table.distinct(),
         name="package_maintainers",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "maintainer": Dimension(expr=lambda t: t.maintainer),
         },
         measures={
@@ -156,7 +159,7 @@ def build_maintainers_model(table: Any) -> SemanticModel:
         table=table,
         name="maintainers",
         dimensions={
-            "maintainer": Dimension(expr=lambda t: t.maintainer, is_entity=True),
+            "maintainer": Dimension(expr=lambda t: t.maintainer),
         },
         measures={"maintainer_count": Measure(expr=lambda t: t.maintainer.nunique())},
     )
@@ -168,7 +171,7 @@ def build_estate_cache_model(table: Any) -> SemanticModel:
         table=table,
         name="estate_cache",
         dimensions={
-            "sku": Dimension(expr=lambda t: t.sku, is_entity=True),
+            "sku": Dimension(expr=lambda t: t.sku),
         },
         measures={
             "units_total": Measure(expr=lambda t: t.units.sum()),
@@ -191,7 +194,9 @@ def join_packages_by_maintainer(
     maintainers — the long-form ``package_maintainers`` is the many side keyed on
     ``conda_name``.
     """
-    return package_maintainers.join_many(packages, on="conda_name")
+    return package_maintainers.join_many(
+        packages, left_on="conda_name", right_on="conda_name"
+    )
 
 
 # ===========================================================================
@@ -217,7 +222,7 @@ def build_vuln_history_model(table: Any) -> SemanticModel:
         table=table,
         name="vuln_history",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "severity": Dimension(expr=lambda t: t.severity),
             "since_days": Dimension(expr=lambda t: t.since_days),
             "vuln_kev_affecting_current": Dimension(expr=lambda t: t.vuln_kev_affecting_current),
@@ -241,7 +246,7 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
         table=table,
         name="version_downloads",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
             "upload_date": Dimension(expr=lambda t: t.upload_date),
         },
@@ -263,7 +268,7 @@ def build_release_cadence_model(table: Any) -> SemanticModel:
         table=table,
         name="release_cadence",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "trend_label": Dimension(expr=metrics.release_trend_label),
         },
         measures={
@@ -291,7 +296,7 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
         table=table,
         name="alternative_candidates",
         dimensions={
-            "archived_name": Dimension(expr=lambda t: t.archived_name, is_entity=True),
+            "archived_name": Dimension(expr=lambda t: t.archived_name),
             "candidate_name": Dimension(expr=lambda t: t.candidate_name),
             "adoption_stage": Dimension(expr=lambda t: t.adoption_stage),
         },
@@ -313,7 +318,7 @@ def build_scan_result_model(table: Any) -> SemanticModel:
         table=table,
         name="scan_result",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "severity": Dimension(expr=lambda t: t.severity),
             "license_spdx": Dimension(expr=lambda t: t.license_spdx),
             "fix_available": Dimension(expr=lambda t: t.fix_available),
@@ -331,7 +336,7 @@ def build_env_inspect_model(table: Any) -> SemanticModel:
         table=table,
         name="env_inspect",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "license_spdx": Dimension(expr=lambda t: t.license_spdx),
             "non_permissive_flag": Dimension(expr=lambda t: t.non_permissive_flag),
         },
@@ -358,7 +363,7 @@ def build_distribution_breakdown_model(table: Any) -> SemanticModel:
         table=table,
         name="distribution_breakdown",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "facet": Dimension(expr=lambda t: t.facet),
             "bucket": Dimension(expr=lambda t: t.bucket),
             "python_min_bump_status": Dimension(expr=metrics.python_min_bump_status),
@@ -380,7 +385,7 @@ def build_purl_export_model(table: Any) -> SemanticModel:
         table=table,
         name="purl_export",
         dimensions={
-            "artifact_name": Dimension(expr=lambda t: t.artifact_name, is_entity=True),
+            "artifact_name": Dimension(expr=lambda t: t.artifact_name),
             "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
         },
         measures={
@@ -395,7 +400,7 @@ def build_mapping_gap_model(table: Any) -> SemanticModel:
         table=table,
         name="mapping_gap",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "classification": Dimension(expr=lambda t: t.classification),
             "match_source": Dimension(expr=lambda t: t.match_source),
             "match_confidence": Dimension(expr=lambda t: t.match_confidence),
@@ -412,7 +417,7 @@ def build_universe_sbom_summary_model(table: Any) -> SemanticModel:
         table=table,
         name="universe_sbom_summary",
         dimensions={
-            "component_purl": Dimension(expr=lambda t: t.component_purl, is_entity=True),
+            "component_purl": Dimension(expr=lambda t: t.component_purl),
             "slice": Dimension(expr=lambda t: t.slice),
         },
         measures={
@@ -428,7 +433,7 @@ def build_inventory_match_report_model(table: Any) -> SemanticModel:
         table=table,
         name="inventory_match_report",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "bucket": Dimension(expr=lambda t: t.bucket),
             "freshness_percentile": Dimension(expr=lambda t: t.freshness_percentile),
             "match_confidence": Dimension(expr=lambda t: t.match_confidence),
@@ -445,7 +450,7 @@ def build_add_handoff_report_model(table: Any) -> SemanticModel:
         table=table,
         name="add_handoff_report",
         dimensions={
-            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
             "readiness": Dimension(expr=lambda t: t.readiness),
             "license_blocker": Dimension(expr=lambda t: t.license_blocker),
         },
@@ -462,7 +467,7 @@ def build_library_futures_report_model(table: Any) -> SemanticModel:
         table=table,
         name="library_futures_report",
         dimensions={
-            "package_name": Dimension(expr=lambda t: t.package_name, is_entity=True),
+            "package_name": Dimension(expr=lambda t: t.package_name),
             "futures_tier": Dimension(expr=lambda t: t.futures_tier),
             "py314_readiness": Dimension(expr=lambda t: t.py314_readiness),
         },
@@ -478,7 +483,7 @@ def build_recommend_2027_model(table: Any) -> SemanticModel:
         table=table,
         name="recommend_2027",
         dimensions={
-            "package_name": Dimension(expr=lambda t: t.package_name, is_entity=True),
+            "package_name": Dimension(expr=lambda t: t.package_name),
             "futures_tier": Dimension(expr=lambda t: t.futures_tier),
             "lts_status": Dimension(expr=lambda t: t.lts_status),
             "eol_date": Dimension(expr=lambda t: t.eol_date),
@@ -501,7 +506,7 @@ def build_lts_registry_gap_model(table: Any) -> SemanticModel:
         table=table,
         name="lts_registry_gap",
         dimensions={
-            "product_name": Dimension(expr=lambda t: t.product_name, is_entity=True),
+            "product_name": Dimension(expr=lambda t: t.product_name),
             "tier": Dimension(expr=lambda t: t.tier),
             "matched_conda_name": Dimension(expr=lambda t: t.matched_conda_name),
         },
@@ -517,7 +522,7 @@ def build_cwe_seed_gap_model(table: Any) -> SemanticModel:
         table=table,
         name="cwe_seed_gap",
         dimensions={
-            "cwe_id": Dimension(expr=lambda t: t.cwe_id, is_entity=True),
+            "cwe_id": Dimension(expr=lambda t: t.cwe_id),
             "tier": Dimension(expr=lambda t: t.tier),
             "suggested_category": Dimension(expr=lambda t: t.suggested_category),
         },
@@ -533,7 +538,7 @@ def build_spdx_schema_gap_model(table: Any) -> SemanticModel:
         table=table,
         name="spdx_schema_gap",
         dimensions={
-            "license_id": Dimension(expr=lambda t: t.license_id, is_entity=True),
+            "license_id": Dimension(expr=lambda t: t.license_id),
             "tier": Dimension(expr=lambda t: t.tier),
         },
         measures={
@@ -549,7 +554,7 @@ def build_license_map_gap_model(table: Any) -> SemanticModel:
         table=table,
         name="license_map_gap",
         dimensions={
-            "license_raw": Dimension(expr=lambda t: t.license_raw, is_entity=True),
+            "license_raw": Dimension(expr=lambda t: t.license_raw),
             "tier": Dimension(expr=lambda t: t.tier),
             "suggested_spdx": Dimension(expr=lambda t: t.suggested_spdx),
         },

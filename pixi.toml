@@ -1335,6 +1335,7 @@ platforms = ["linux-64", "osx-arm64-min", "win-64"]
 [feature.vuln-db.dependencies]
 python = "3.14.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.16.1"  # so --deep also works in this env
+pyarrow = ">=24.0.0"              # Phase F S3 parquet reads when build-cf-atlas runs from vuln-db
 apsw = ">=3.53.4.0"               # SQLite bindings for Python (vdb backend)
 appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
 cyclonedx-bom = ">=7.3.1"         # CycloneDX Software Bill of Materials (SBOM) generation utility.

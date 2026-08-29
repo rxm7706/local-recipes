@@ -50,6 +50,30 @@ def test_github_with_query_builds_the_request_body():
     assert "variables" not in ds.with_query("query {}")
 
 
+def test_anaconda_load_returns_empty_stub_not_base_url():
+    ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package")
+    frame = ds.load()
+    assert list(frame.columns) == ["conda_name", "version", "downloads"]
+    assert frame.empty
+
+
+def test_anaconda_load_many_uses_injected_fetcher():
+    ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package")
+
+    def fake_fetch(path: str) -> dict:
+        assert path.endswith("/conda-forge/numpy")
+        return {
+            "files": [
+                {"version": "1.26.0", "ndownloads": 100},
+                {"version": "1.25.0", "ndownloads": 50},
+            ]
+        }
+
+    out = ds.load_many(["numpy"], fetcher=fake_fetch)
+    assert len(out) == 2
+    assert out["downloads"].sum() == 150
+
+
 def test_request_datasets_are_read_only_sources():
     from kedro.io.core import DatasetError
 

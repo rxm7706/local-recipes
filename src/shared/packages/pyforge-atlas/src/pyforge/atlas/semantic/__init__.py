@@ -31,6 +31,7 @@ from .models import (
     duckdb_table_from_parquet,
     join_packages_by_maintainer,
 )
+from .query_helpers import bsl_query
 
 __all__ = [
     "DEFERRED_FEEDSTOCK_HEALTH_FILTERS",
@@ -47,5 +48,6 @@ __all__ = [
     "has_open_prs",
     "is_actionable",
     "join_packages_by_maintainer",
+    "bsl_query",
     "staleness_age_days",
 ]
