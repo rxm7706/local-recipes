@@ -4,7 +4,8 @@ status: ready
 created: "2026-08-26"
 updated: "2026-08-26"
 owner-dream: docs/dreams/chain-currency-sweep.md
-surface: []
+surface:
+  - scripts/chain_currency_sweep_check.py   # CAP-1's shipped as-built detector; ungoverned since spec creation, surfaced 2026-08-28
 companions:
   - ../../../CHAIN-CURRENCY-RUNBOOK.md
 sources:
