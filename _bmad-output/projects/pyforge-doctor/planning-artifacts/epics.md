@@ -8,8 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
+updated: '2026-08-29'
+currency_review: "Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -1523,5 +1523,27 @@ spine as reconciled 2026-08-26 and the tracked ledger:
 - **Known open at this stamp:** the `chain-currency-sweep` Dream (owner: doctor)
   reports `dream-without-spec` in the chain audit's orphans checkpoint; its Spec is
   being authored separately this same pass and is deliberately not an epic here yet.
+- No epic or story content above was restructured; this note and the frontmatter
+  `updated:` bump are the whole edit.
+
+## Currency validation — 2026-08-29
+
+Chain-currency sweep cascade continues (`arch→epics` edge, fired by the spine's
+2026-08-29 re-dating, itself fired by the PRD's 2026-08-29 re-dating, itself fired by
+`spec-pyforge-doctor`'s memlog moving):
+
+- **Ledger agreement, re-measured (not copied forward):** the tracked ledger reports
+  **67/67 stories done across 18/18 epics** as of this stamp. (The 2026-08-26 note
+  above cited 82 — this pass measured directly rather than repeating that figure
+  unchecked; every `### Story` heading still maps 1:1 to a `sprint-status-ledger.yaml`
+  key with no orphan either direction.)
+- **The four `sources/` modules PRs #903/#904/#906/#907 touched** (`chain.py`,
+  `marshal.py`, `factory.py`, `board.py`): `chain.py`'s fixes back Stories 8.5/8.6
+  above; `marshal.py` (PR #904, story-status's landing-evidence grammar) and
+  `factory.py` (PR #903, a bmad-drift classifier rule) are bug fixes with no
+  dedicated story or Spec of their own — hand-driven, not bmad-loop-dispatched — but
+  within `spec-pyforge-doctor`'s own already-described scope (the source-registry
+  CAPs above), same class as the umbrella catch-up entries this file already carries.
+  Not a gap this pass needs to close; named here rather than silently folded in.
 - No epic or story content above was restructured; this note and the frontmatter
   `updated:` bump are the whole edit.

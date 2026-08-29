@@ -1,9 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-08-26'
+updated: '2026-08-29'
 status: final
-currency_review: "Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
+currency_review: "Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
@@ -633,3 +633,29 @@ prescriptions; the §2.1 "Operability exit code" framing above is now a fleet-wi
 constraint: **findings stay advisory or Warden inputs — never a second PR-gate
 verdict.** None of these reopen §5's non-goals; the read-only boundary (NFR-1) holds
 with the sole sanctioned widening AD-12 records (a `run_git` leg inside `cli_bridge`).
+
+## Currency reconciliation — 2026-08-29
+
+*Chain-currency sweep re-fired: `specs/spec-pyforge-doctor/`'s `.memlog` moved to
+2026-08-29T02:15 while this PRD sat at 2026-08-26, past the runbook's 2-day grace
+window. Reconciled against the spec's own memlog entries, `spec-chain-currency-sweep`
+(the sibling Spec this sweep runs from), and the as-built package.*
+
+**What moved, and why none of it is a new FR.** `sources/chain.py` (deferred-work-check
+content-comparison fix + fleet-wide promotion unblock, doctor Stories 8.5/8.6, PRs
+#906/#907) and `sources/marshal.py` (story-status's landing-evidence grammar fix, PR
+#904) are bug fixes to detector infrastructure this PRD's FR-14/FR-15 already describes
+(the source registry; the ten re-homed detectors, each barred from importing the
+station it judges) — a detector getting more accurate is not a new capability.
+`sources/factory.py` gained one classifier rule for marshal's own dispatch-run records
+inside `bmad-drift` (PR #903), same class. The `DEFERRED_SPECS` registration itself
+(`sources/board.py`) is `chain-completeness` bookkeeping, not a Doctor capability.
+
+**`spec-chain-currency-sweep`** declared its real surface
+(`scripts/chain_currency_sweep_check.py`, previously `surface: []`) and was itself
+registered in `DEFERRED_SPECS` as workflow-shaped — its companion
+`CHAIN-CURRENCY-RUNBOOK.md` is the procedure of record, not an epic backlog. Already
+inside this PRD's own "decompose-directly" FR-inventory boundary (above): sibling
+doctor Specs (this one included) are referenced by CAP-N, never minted as a new PRD FR.
+
+**No FR/content change required.** `updated:` bumped to record that the check ran.
