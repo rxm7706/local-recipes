@@ -554,9 +554,18 @@ Agentic engines (**`python-agent-platform` env only**, CAP-5, Story 10.2 — the
   `local-recipes` and this env).
 
 Model Context Protocol (MCP):
-- **mcp** (>=1.28.1) — official MCP Python SDK (clients + servers, stdio/SSE).
-- **fastmcp** (>=3.4.7) — decorator-style framework for building MCP servers fast
-  (this repo's `conda_forge_server` is built on it).
+- **mcp** (>=2.1.1) — official MCP Python SDK (clients + servers, stdio/SSE).
+  This repo's `conda_forge_server` / `gemini_server` (`.claude/tools/`) and the
+  local `kedro-mcp` build are all on the SDK's own `mcp.server.mcpserver.MCPServer`
+  (the renamed, current-era successor to `mcp.server.fastmcp.FastMCP`) — not
+  third-party fastmcp (2026-08-29).
+- **fastmcp** (>=4.0.0b5; SelfExplainML — conda-forge tops out at 3.4.7, which
+  hard-requires `mcp <2.0`) — decorator-style third-party framework for building
+  MCP servers fast. Nothing in this repo imports it anymore; kept pinned purely
+  as a forward-looking placeholder so the solver picks up conda-forge's own
+  fastmcp automatically once it ships a real >=4.0 release.
+- **fastmcp-slim** (>=4.0.0b5; SelfExplainML) — fastmcp's own exact-pinned dep;
+  declared explicitly for the same channel-priority reason as fastmcp above.
 - **langchain-mcp-adapters** (>=0.3.1) — expose MCP tools/resources as LangChain
   tools and vice versa.
 - **django-mcp-server** (>=0.5.7) — serve MCP from a Django app.
