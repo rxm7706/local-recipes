@@ -870,3 +870,10 @@ manticore/engines/audio-lab/.venv/
 manticore/engines/audio-lab/models/
 manticore/engines/audio-lab/hf-cache/
 manticore/engines/bin/
+
+# skf-audit-skill / skf-campaign compilation workspace (ccc-bridge.md calls it
+# exactly that -- a scratch workspace excluded from context collection, same
+# class as `_skf-learn` and the skills output folder). Timestamped audit
+# results, drift reports, and snapshots are regenerated per run, never
+# governed by a spec surface -- never git-tracked.
+forge-data/
