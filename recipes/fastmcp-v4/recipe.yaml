@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "4.0.0b1"
+  version: "4.0.0b5"
 
 recipe:
   name: ${{ name|lower }}
@@ -11,16 +11,16 @@ recipe:
 
 source:
   - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
-    sha256: f98d69588a73e1672840558641d5d0f111e207baffe001f3465713a53ebb6b4c
+    sha256: 39e970a556872e90eed7e34972477eeef24d1a0949be05e0ed57045d474a4608
     target_directory: fastmcp/
   - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
-    sha256: 158efb25720e0cb301711146b2d05d181de95cd91fe70e87c251ad14b123d665
+    sha256: 548677ab0859a0e2dc6fe78602ac6d235d3dce2355d885933cdfd4268f9f429e
     target_directory: fastmcp-slim/
   - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-remote/fastmcp_remote-${{ version }}.tar.gz
-    sha256: c868b084c8d3f66ba691cca5801ceeba3ef3cdd4cd85a4e540c627e8779b3801
+    sha256: 9830760439650848739cf546029845f12eb95208c8ca759a14ef61f791504816
     target_directory: fastmcp-remote/
   - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-tasks/fastmcp_tasks-${{ version }}.tar.gz
-    sha256: 44f3a70a4241f82ff81c9fce477969aeb8cc06430985d7c37cb393eba791360e
+    sha256: 113176c39007d4099fea296358261e949220315a88dc702022917e701296d458
     target_directory: fastmcp-tasks/
 
 build:
@@ -55,7 +55,7 @@ outputs:
         - rich >=13.9.4
         - typing_extensions >=4.0.0
       run_constraints:
-        - anthropic >=0.48.0
+        - anthropic >=0.48.0,<1
         - authlib >=1.6.11
         - azure-identity >=1.16.0
         - cyclopts >=4.0.0
@@ -63,7 +63,7 @@ outputs:
         - google-genai >=1.18.0
         - griffelib >=2.0.0
         - httpx2 >=2.5.0
-        - joserfc >=1.1.0
+        - joserfc >=1.5.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
         - mcp >=2.0.0,<3.0.0
@@ -72,7 +72,7 @@ outputs:
         - opentelemetry-api >=1.28.0
         - packaging >=24.0
         - prefab-ui >=0.18.0
-        - pydantic-monty ==0.0.17
+        - pydantic-monty ==0.0.18
         #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
         - py-key-value-aio >=0.4.4,<0.5.0
         - pyjwt >=2.12.0
@@ -80,7 +80,7 @@ outputs:
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
@@ -123,7 +123,7 @@ outputs:
         - exceptiongroup >=1.2.2
         - griffelib >=2.0.0
         - httpx2 >=2.5.0
-        - joserfc >=1.1.0
+        - joserfc >=1.5.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
         - mcp >=2.0.0,<3.0.0
@@ -140,16 +140,24 @@ outputs:
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
 
     tests:
+      # pip_check disabled: conda-forge's ONLY build of importlib-metadata
+      # 9.0.0 and zipp 4.1.0 (both single build_number 0, no fix available)
+      # ship dist-info METADATA reporting version 0.0.0 for both packages --
+      # a feedstock bug external to this recipe (G80/G28-class), pulled in
+      # transitively via keyring -> importlib-metadata/importlib_resources
+      # -> zipp. Verified: the conda packages themselves are the correct
+      # 9.0.0/4.1.0; only pip's METADATA read is wrong. Re-enable once either
+      # feedstock ships a metadata-fixed rebuild.
       - python:
           imports:
             - fastmcp_remote
-          pip_check: true
+          pip_check: false
           python_version:
             - ${{ python_min }}.*
             - "*"
@@ -182,11 +190,12 @@ outputs:
         - python >=${{ python_min }},<4
         - fastmcp-slim =${{ version }}
         - authlib >=1.6.11
+        - cryptography >=43.0.0
         - cyclopts >=4.0.0
         - exceptiongroup >=1.2.2
         - griffelib >=2.0.0
         - httpx2 >=2.5.0
-        - joserfc >=1.1.0
+        - joserfc >=1.5.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
         - mcp >=2.0.0,<3.0.0
@@ -199,30 +208,24 @@ outputs:
         - anyio >=4.4.0
         - cachetools >=5.0.0
         - keyring >=25.6.0
-        - pydocket >=0.20.0
+        - pydocket >=0.24.1
         - pyperclip >=1.9.0
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
-        - if: win
-          then:
-            # burner-redis 0.1.7's Windows build crashes the interpreter
-            # (native fault) under pytest-xdist; pydocket floors it at
-            # >=0.1.6 only, so the solver is free to pick 0.1.7 unless
-            # capped here. See recipes/burner-redis (built locally at 0.1.6
-            # specifically to satisfy this - conda-forge's channel only
-            # retains 0.1.7).
-            - burner-redis <0.1.7
 
     tests:
+      # pip_check disabled: same external importlib-metadata/zipp dist-info
+      # bug as fastmcp-remote (see its output for the full explanation) --
+      # pulled in via this output's own keyring dep.
       - python:
           imports:
             - fastmcp_tasks
-          pip_check: true
+          pip_check: false
           python_version:
             - ${{ python_min }}.*
             - "*"
@@ -253,7 +256,7 @@ outputs:
         - exceptiongroup >=1.2.2
         - griffelib >=2.0.0
         - httpx2 >=2.5.0
-        - joserfc >=1.1.0
+        - joserfc >=1.5.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
         - mcp >=2.0.0,<3.0.0
@@ -270,25 +273,28 @@ outputs:
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
       run_constraints:
-        - anthropic >=0.48.0
+        - anthropic >=0.48.0,<1
         - azure-identity >=1.16.0
         - fastmcp-tasks ==${{ version }}
         - google-genai >=1.18.0
         - openai >=1.102.0
         - prefab-ui >=0.18.0
-        - pydantic-monty ==0.0.17
+        - pydantic-monty ==0.0.18
         - pyjwt >=2.12.0
 
     tests:
+      # pip_check disabled: same external importlib-metadata/zipp dist-info
+      # bug as fastmcp-remote (see its output for the full explanation) --
+      # pulled in via this output's own keyring dep.
       - python:
           imports:
             - fastmcp
-          pip_check: true
+          pip_check: false
           python_version:
             - ${{ python_min }}.*
             - "*"
@@ -335,21 +341,21 @@ extra:
   cfe-import-names: [fastmcp, fastmcp_remote, fastmcp_tasks]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: true
+  cfe-pip-check: "false:importlib-metadata-zipp-0.0.0-dist-info-G80 (fastmcp-slim keeps pip_check: true; fastmcp/fastmcp-remote/fastmcp-tasks disabled it -- see their per-output test comments)"
   cfe-on-conda-forge-status: pypi-only
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: "n/a - this is a local-only pre-release preview, not the deployed feedstock (which stays at the stable 3.4.5 line in recipes/fastmcp/)"
   cfe-forge-blocker-list:
-    - "PRE-RELEASE: 4.0.0b1 is not a stable/GA release. Per the skill's security boundary (Ask First on pinning to a pre-release), this recipe is local-only and must NOT be submitted to staged-recipes until fastmcp ships a v4.0.0 stable tag."
+    - "PRE-RELEASE: 4.0.0b5 is not a stable/GA release. Per the skill's security boundary (Ask First on pinning to a pre-release), this recipe is local-only and must NOT be submitted to staged-recipes until fastmcp ships a v4.0.0 stable tag."
     - "fastmcp-remote and fastmcp-tasks have NO existing conda-forge feedstocks (lookup_feedstock: exists=False for both) - a real submission would need two net-new feedstocks alongside fastmcp/fastmcp-slim's own v4 update, not just a version bump."
     - "RESOLVED locally: prefab-ui (the fastmcp-slim 'apps' extra's sole dep) was absent from conda-forge under every checked spelling - now packaged at recipes/prefab-ui (0.20.2), built+tested GREEN locally. Still not on the real conda-forge channel, so a staged-recipes submission of this fastmcp-v4 preview would still need prefab-ui submitted first."
-    - "RESOLVED locally: fastmcp-tasks' upstream pyproject.toml pins burner-redis<0.1.7 on sys_platform=='win32' only (a native-crash workaround in 0.1.7). conda-forge's channel only retains 0.1.7 (no older build kept), so recipes/burner-redis (0.1.6) was packaged locally to backfill it - built+tested GREEN (abi3audit + upstream's own BurnerRedis() smoke test, both python_min and latest Python legs). The `if: win` selector is now wired into this recipe's fastmcp-tasks output, gated by this directory's conda-forge.yml `noarch_platforms` (G12) - only linux-64 has actually been built/tested here."
+    - "b1->b5 bump (2026-08-29): upstream fastmcp-tasks DROPPED its own burner-redis<0.1.7 win32 pin, and pydocket (bumped >=0.20.0 -> >=0.24.1) now hard-requires burner-redis>=0.1.7 directly -- the two are contradictory, so the recipe's win-only burner-redis<0.1.7 workaround (and its dependency on the locally-built recipes/burner-redis 0.1.6 backfill) was REMOVED to match upstream's own resolution. conda-forge's channel currently carries 0.1.5/0.1.6/0.1.7 on every platform anyway, so the backfill recipe was never strictly required. Also added: cryptography>=43.0.0 (new fastmcp-tasks hard dep, on conda-forge); anthropic gained a <1 upper bound; joserfc/uncalled-for/pydantic-monty floors bumped in the server/code-mode extras. Only linux-64 has been built/tested locally for this bump."
     - "bot.run_deps_from_wheel: true (present on the DEPLOYED fastmcp-feedstock's conda-forge.yml) would be unsafe if copied onto this recipe unmodified - fastmcp/fastmcp-remote/fastmcp-tasks run: all manually flatten PEP 508 extras (client/server/mcp) that are NOT unconditional in the wheel's own METADATA, so an autotick regen from wheel metadata would silently drop them (G86-class risk). The conda-forge.yml added alongside this recipe deliberately omits any `bot:` block for that reason."
-  cfe-last-checked: "2026-08-05T00:00:00Z"
-  cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
+  cfe-last-checked: "2026-08-29T10:47:05Z"
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: "2026-08-29T10:47:05Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-datetime: "2026-08-29T10:47:05Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
