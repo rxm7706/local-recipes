@@ -383,14 +383,19 @@ def test_manufactured_duplicate_summary_within_batch_aborts_with_no_write(tmp_pa
     assert _tracked_text(repo, "pyforge-mason") == tracked_before
 
 
-def test_manufactured_duplicate_summary_against_existing_tracked_entry_aborts_with_no_write(
+def test_orphan_already_matching_a_tracked_entry_is_skipped_not_aborted(
     tmp_path: Path,
 ):
-    """The real-world case found live in pyforge-mason's own backlog during
-    this story's own research: an orphan whose content was already
-    promoted by the by-hand process, without Tier-3 ever growing a header
-    for it -- mints a FRESH id (no id collision) but carries the SAME
-    summary text as an already-tracked entry."""
+    """DW-FU-8-4 (2026-08-28, this collision's own real-world discovery
+    session): an orphan whose content was already promoted by the by-hand
+    process, without Tier-3 ever growing a header for it -- mints a FRESH
+    id (no id collision) but carries the SAME summary text as an already-
+    tracked entry. This must NOT abort (the original bug this fix closes:
+    a project promoted once could never promote a genuinely new orphan
+    added later, because this exact re-collision aborted the WHOLE batch
+    forever, every single run) -- it is silently excluded from the write
+    instead. With nothing else in the batch, there is nothing new to
+    write, so this is a clean no-op (exit 0), not a failure."""
     repo = _fixture_repo(tmp_path)
     mason = repo / "_bmad-output" / "projects" / "pyforge-mason"
     existing_with_dup = _MASON_EXISTING_TRACKED.replace(
@@ -406,12 +411,51 @@ def test_manufactured_duplicate_summary_against_existing_tracked_entry_aborts_wi
     tracked_before = _tracked_text(repo, "pyforge-mason")
 
     r = _run(promoter, repo, "--project", "mason")
-    assert r.returncode != 0
-    assert "ABORTED" in r.stdout
-    assert "already exists in the tracked ledger" in r.stdout
+    assert r.returncode == 0, r.stdout
+    assert "ABORTED" not in r.stdout
+    assert "already reached the tracked ledger" in r.stdout
 
     assert _tier3_text(repo, "pyforge-mason") == tier3_before
     assert _tracked_text(repo, "pyforge-mason") == tracked_before
+
+
+def test_a_genuinely_new_orphan_promotes_while_an_already_tracked_sibling_is_skipped(
+    tmp_path: Path,
+):
+    """The actual DW-FU-8-4 fix, proven end to end: a batch mixing one
+    already-tracked orphan (would have aborted the WHOLE batch before this
+    fix) with one genuinely new orphan (no collision at all) promotes the
+    new one -- the tracked ledger gains exactly one new entry -- while the
+    already-tracked one is silently excluded, not re-promoted, not
+    counted as a problem."""
+    repo = _fixture_repo(tmp_path)
+    mason = repo / "_bmad-output" / "projects" / "pyforge-mason"
+    existing_with_dup = _MASON_EXISTING_TRACKED.replace(
+        "An unrelated pre-existing tracked entry, used only to prove appends "
+        "land after existing content.",
+        "Duplicate summary text used to test the collision guard.",
+    )
+    assert existing_with_dup != _MASON_EXISTING_TRACKED
+    _write_tracked(mason, existing_with_dup)
+    # _DUP_SUMMARY_A already reached the tracked ledger above; _REAL_ORPHAN_A
+    # is genuinely new (verified collision-free against pyforge-mason's real
+    # backlog per this file's own module docstring).
+    _write_tier3(mason, _DUP_SUMMARY_A + "\n" + _REAL_ORPHAN_A)
+    promoter = _patched_promoter(repo)
+    tier3_before = _tier3_text(repo, "pyforge-mason")
+
+    r = _run(promoter, repo, "--project", "mason")
+    assert r.returncode == 0, r.stdout
+    assert "promoted 1 orphan(s)" in r.stdout
+    assert "skipped 1 already-tracked orphan(s)" in r.stdout
+
+    tracked_after = _tracked_text(repo, "pyforge-mason")
+    assert "render_text" in tracked_after  # _REAL_ORPHAN_A's own content landed
+    assert tracked_after.count("Duplicate summary text used to test") == 1, (
+        "the already-tracked orphan must not be re-promoted as a second copy"
+    )
+    # Tier-3 itself is never touched, success or partial-skip alike.
+    assert _tier3_text(repo, "pyforge-mason") == tier3_before
 
 
 # --- multi-project independence: one project's collision must not block another's clean batch ---
@@ -567,8 +611,9 @@ def test_validate_batch_catches_a_manufactured_id_collision():
     })
     minted = [(entry_1, "DW-FU-COLLIDE"), (entry_2, "DW-FU-COLLIDE")]
 
-    problems = mod._validate_batch(minted, tracked_ids=set(), tracked_summaries=set())
-    assert any("duplicate id" in p and "DW-FU-COLLIDE" in p for p in problems)
+    validation = mod._validate_batch(minted, tracked_ids=set(), tracked_summaries=set())
+    assert any("duplicate id" in p and "DW-FU-COLLIDE" in p for p in validation.problems)
+    assert validation.already_tracked == frozenset()
 
 
 def test_validate_batch_catches_an_id_already_in_the_tracked_ledger():
@@ -578,12 +623,33 @@ def test_validate_batch_catches_an_id_already_in_the_tracked_ledger():
     entry = LegacyEntry(Tier3Shape.LEGACY_FLAT, None, 3, 5, {
         "source_spec": "`spec-a.md`", "summary": "an entry", "evidence": "e1",
     })
-    problems = mod._validate_batch(
+    validation = mod._validate_batch(
         [(entry, "DW-FU-ALREADY-TRACKED")],
         tracked_ids={"DW-FU-ALREADY-TRACKED"},
         tracked_summaries=set(),
     )
-    assert any("already exists in the tracked ledger" in p for p in problems)
+    assert any("already exists in the tracked ledger" in p for p in validation.problems)
+
+
+def test_validate_batch_routes_a_summary_match_to_already_tracked_not_problems():
+    """DW-FU-8-4's own split, at the pure-function level: a minted entry
+    whose normalized summary already exists in the tracked ledger is NOT a
+    `problems` entry (which would abort the whole batch) -- it is named in
+    `already_tracked` by its own index into `minted`, silently excludable
+    by the caller instead."""
+    mod = _import_promoter_module()
+    from pyforge.doctor.sources.chain import LegacyEntry, Tier3Shape
+
+    entry = LegacyEntry(Tier3Shape.LEGACY_FLAT, None, 3, 5, {
+        "source_spec": "`spec-a.md`", "summary": "Already tracked finding.", "evidence": "e1",
+    })
+    validation = mod._validate_batch(
+        [(entry, "DW-FU-NEW-ID")],
+        tracked_ids=set(),  # the ID itself is fresh -- only the summary collides
+        tracked_summaries={mod._normalize_summary("Already tracked finding.")},
+    )
+    assert validation.problems == ()
+    assert validation.already_tracked == frozenset({0})
 
 
 # --- HIGH 1: the data-loss race -- re-check before write, abort on drift ---
@@ -1041,7 +1107,18 @@ def test_second_fix_run_against_the_same_fixture_is_a_true_noop(tmp_path: Path):
     duplicate-summary collision guard fires, since the first run's
     promotions are now in the tracked ledger) AND 0 baseline writes
     (nothing newly promoted the second time) -- confirmed byte-identical
-    on BOTH files across the two runs."""
+    on BOTH files across the two runs.
+
+    Pre-DW-FU-8-4 (2026-08-28), a true no-op ACHIEVED this byte-identical
+    result via a whole-batch ABORT (exit 1) -- this test originally
+    asserted that as correct, which is precisely the bug DW-FU-8-4 names:
+    a project that reaches this state can never again promote a
+    genuinely NEW orphan added later, because every subsequent run's
+    batch always also contains this same, now-permanently-re-colliding
+    old orphan. Post-fix, the identical byte-for-byte outcome is achieved
+    via a clean no-op (exit 0) instead -- the invariant this test exists
+    to prove (0 writes, both files byte-identical) is unchanged; only the
+    exit-code/message shape by which that invariant is reached is."""
     repo = _fixture_repo(tmp_path)
     promoter = _patched_promoter(repo)
 
@@ -1068,10 +1145,12 @@ def test_second_fix_run_against_the_same_fixture_is_a_true_noop(tmp_path: Path):
 
     r2 = _run(promoter, repo)
     # Both projects' re-classified orphans now share a summary with their
-    # own just-promoted tracked twin -- the batch correctly aborts.
-    assert r2.returncode != 0
-    assert "mason: ABORTED" in r2.stdout
-    assert "doctor: ABORTED" in r2.stdout
+    # own just-promoted tracked twin -- DW-FU-8-4: skipped as already-
+    # tracked, a clean no-op, never an abort.
+    assert r2.returncode == 0, r2.stdout
+    assert "mason: no write -- all 2 orphan(s) already reached the tracked ledger" in r2.stdout
+    assert "doctor: no write -- all 1 orphan(s) already reached the tracked ledger" in r2.stdout
+    assert "ABORTED" not in r2.stdout
 
     assert _tracked_text(repo, "pyforge-mason") == mason_tracked_after_1
     assert _tracked_text(repo, "pyforge-doctor") == doctor_tracked_after_1

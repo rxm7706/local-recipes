@@ -956,14 +956,15 @@ permanently blocked, because the whole-batch-abort fires on the old, already-pro
 own now-expected collision. Confirmed live against all 8 real fleet projects. Logged as
 `DW-FU-8-4`, not fixed here -- needs a per-entry skip/promote redesign as its own future story.
 
-**Epic 8 complete (4/4 stories).** The legacy deferred-work backlog now has a real,
-mutation-tested tool (`classify_tier3_entries` + `mint_id_for_entry` + `deferred_work_promote.py
---fix` + baseline lockstep) replacing the error-prone by-hand process that shipped two real
-bugs during the 2026-08-15 audit. It has not yet been run for real against the live,
-300+-entry fleet-wide backlog (only tmp copies during development) -- and per `DW-FU-8-4`,
-running it for real today would abort on every one of the 8 real projects until that
-follow-on redesign lands. That first real run, and `DW-FU-8-4`'s redesign, are both explicitly
-out of this epic's own scope -- future work, not carried forward silently.
+**Epic 8 complete (6/6 stories, updated 2026-08-28).** The legacy deferred-work backlog now has a
+real, mutation-tested tool (`classify_tier3_entries` + `mint_id_for_entry` +
+`deferred_work_promote.py --fix` + baseline lockstep) replacing the error-prone by-hand process
+that shipped two real bugs during the 2026-08-15 audit. Story 8.6 closed `DW-FU-8-4` and ran
+`--fix` for real, fleet-wide, against all 8 live projects: 373 orphans promoted across 5 projects
+(doctor/herald/marshal/mason/steward), 3 clean no-ops (atlas/scribe/warden). 70 findings remain
+open in `deferred-work-check` — already-identified Tier-3 entries never copied to a tracked
+ledger, a structurally different gap outside `deferred_work_promote.py`'s orphan-only scope (see
+the spec's Non-goals) — named as future work, not carried forward silently.
 
 ### Story 8.5: The detector recognizes content that already reached the ledger by another path
 **Type:** bug • **Effort:** S • **Deps:** S-8.1 • **FR/AD:** FR-15 (spec-deferred-work-visibility, CAP-11)
@@ -986,6 +987,59 @@ CAP-8's own `frontmatter_deferral_in_tracked` (fingerprint) exactly, no new mech
 shrinking, not an ongoing leak" framing already covers them as known, deliberately-deferred
 backlog (the first real fleet-wide `--fix` run, blocked on `DW-FU-8-4`'s own redesign), not a new
 gap this story leaves open.
+
+### Story 8.6: DW-FU-8-4 closes — the collision-abort redesign, plus the parsing gap it surfaced
+**Type:** bug • **Effort:** M • **Deps:** S-8.4, S-8.5 • **FR/AD:** FR-15 (spec-deferred-work-visibility, CAP-12)
+**Surface:** `scripts/deferred_work_promote.py` (`_BatchValidation`, `_validate_batch`,
+`_promote_project`), `pyforge-doctor` `sources/chain.py` (`_consume_bulleted_field_block`),
+`tests/scripts/test_deferred_work_promote.py`, `tests/unit/test_sources_chain_deferred_work.py`
+**Note:** completes the "real fleet-wide `--fix` run" Epic 8's own closing note left explicitly
+out of scope, blocked on `DW-FU-8-4` (logged at Story 8.4's landing): once a project promotes
+once, the whole-batch-abort guard fires forever on the OLD, already-promoted orphan's own
+now-expected re-collision, permanently blocking any genuinely NEW orphan added later. Live-
+confirmed against all 8 real fleet projects at Story 8.4's landing — every one would abort
+outright if `--fix` were run unscoped.
+**Given** a project's orphan batch where some entries' content already reached the tracked
+ledger by another path (an old, already-promoted orphan re-colliding against its own tracked
+twin) **When** `--fix` runs **Then** those entries are silently excluded from the write (never
+re-promoted) while the REST of a clean batch — including a genuinely new orphan added since the
+last run — still promotes; any OTHER collision (duplicate id, blank summary, a genuinely new
+duplicate summary within the batch) still hard-aborts the whole batch, unchanged.
+**Given** the fixed tool run for real **When** it processes doctor's/steward's live Tier-3 files
+**Then** a second, independent parsing bug surfaces: `_consume_bulleted_field_block` truncates a
+header-owned entry whose fields are EVERY ONE its own dashed bullet (no indented-continuation
+lines) at the second bullet, because any `_BULLET_START_RE` match is treated as a block-ending
+sibling — even one whose own key is a recognized field of the SAME entry (doctor's
+`DW-FU-12-4/5/5-2`, steward's `DW-FU-11-4`, all real, live-confirmed truncations). Fixed:
+`entry_id is not None` (header-owned) now checks `_KNOWN_FIELD_KEYS` first — a known-keyed
+dashed bullet is a continuation, not a new sibling; headerless blocks (`entry_id is None`) are
+untouched.
+**Status:** done
+
+**Outcome (2026-08-28).** Both fixes landed together (the parsing bug was found investigating
+why 4 real entries misclassified after the collision-abort redesign already worked in isolation
+on synthetic fixtures). Adversarial review (2 independent agents, mutation-tested against the
+true pre-fix code on both files) found no HIGH/MEDIUM defects in either change; confirmed the
+`already_minted` id-reservation set is populated before validation, so an excluded
+already-tracked entry's id stays correctly reserved for the rest of the batch; confirmed
+`to_write` empty short-circuits before the race-check/write/baseline-restamp block, so a
+fully-already-tracked project has zero side effects. One LOW residual (not live, not exercised
+anywhere in the fleet's 8 real files) documented in the review: a header-owned block ending in a
+known-keyed bullet immediately followed (no blank line) by a genuinely separate headerless entry
+whose own first bullet also uses a known key would be misabsorbed as a continuation — no such
+shape exists live today. **Process note, not a code defect:** the two review agents ran real,
+mutating `--fix` commands against the SAME shared (non-isolated) working tree concurrently,
+producing a transient "unreproducible collision" and a duplicate write that looked like a race
+in the script — actually two of my own agents stepping on each other's writes/reverts in shared
+state. Resolved by re-running the fleet-wide `--fix` once, cleanly, myself, in this session, no
+concurrent agents: doctor +72, herald +12, marshal +196, mason +21, steward +72 promoted
+(zero duplicate ids, heading counts match promotion counts exactly); atlas/scribe/warden clean
+no-ops (all orphans already tracked). **Explicitly bounded:** `deferred-work-check`'s combined
+`tier3-only-deferral`/`tier3-entry-unidentified` count drops from 111 (post-Story-8.5) to 70 —
+all 70 remaining are already-identified Tier-3 entries (real `DW-*` ids, real `status:`/
+`severity:`/`source_spec:` fields) that were simply never copied to any tracked ledger, a
+structurally different gap `deferred_work_promote.py`'s orphan-only scope does not cover (see
+the spec's Non-goals) — not claimed resolved by this story, named as a future capability.
 
 ## Epic 9: The hygiene sweep generalizes, and staleness surfaces itself
 
