@@ -7,8 +7,8 @@ paradigm: 'facade over existing instruments (pipes-and-filters gather → normal
 scope: 'pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo pixi workspace member consolidating pyforge-warden + cf_atlas'
 status: final
 created: '2026-07-25'
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-26 — chain-currency sweep cascade (the PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh). Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/ grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6 verified held, AD-11..AD-13's standing confirmed, Epic 17 hooks + Epic 18 Canopy tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier section (AD-7..AD-10)."
+updated: '2026-08-29'
+currency_review: "Reviewed 2026-08-29 — chain-currency sweep cascade (the PRD re-dated 2026-08-29 after its own spec-pyforge-doctor reconciliation, five bookkeeping entries, no new capability). Appended § Currency reconciliation — 2026-08-29: the four sources/ modules named (chain.py, marshal.py, factory.py, board.py) are already in the as-built inventory below; PRs #903/#904/#906/#907 are bug fixes inside them, no module boundary moved, no AD reopened. No content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep cascade (the PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh). Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/ grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6 verified held, AD-11..AD-13's standing confirmed, Epic 17 hooks + Epic 18 Canopy tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier section (AD-7..AD-10)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13]
 sources:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md'
@@ -437,4 +437,21 @@ shared AST alias-resolution helper for meta-test guards (3 recurrences; the shar
 atlas label/JSON-shape coupling guarded by convention rather than a label-subset smoke
 assertion; per-call MCP session spawn (deliberate, unmeasured); `_default_repo_root`'s
 `parents[8]` fallback.
+
+## Currency reconciliation — 2026-08-29
+
+*Chain-currency sweep cascade: the PRD re-dated 2026-08-29 (its own `spec-pyforge-doctor`
+reconciliation, five bookkeeping entries, no new capability), which fires the `prd→arch`
+edge. This section is the as-built check: does the spine above still describe the
+package after that PRD stamp.*
+
+**No structural divergence.** The four `sources/` modules the PRD's reconciliation named
+— `chain.py`, `marshal.py`, `factory.py`, `board.py` — are already listed above in the
+as-built `sources/` inventory (the fleet's conformance-verdict home, 14 addressable
+dispatcher entries including `deferred-work`, `story-status`, `bmad-drift`,
+`chain-completeness`). PRs #903/#904/#906/#907 are bug fixes and one classifier-rule
+addition *inside* those already-architected modules — none of AD-1..AD-6/NFR-1..5
+reopen, no module boundary moved, nothing to add to the divergence list above.
+
+**No content change required.** `updated:` bumped to record that the cascade ran.
 
