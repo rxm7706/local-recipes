@@ -154,6 +154,14 @@ _PRUNED_DIR_NAMES = frozenset(
         # first-party source; both re-truncated the walk exactly as the
         # Story-6.1 regression test predicted.
         "worktrees",
+        # Root-level `.worktrees/<name>` (bmad-loop's own dispatch worktrees,
+        # gitignored) is a SEPARATE basename from `.claude/worktrees/<agent>`
+        # above, so the entry immediately above never matched it. Measured
+        # 2026-08-29: 2 subdirectories alone held 5.26M entries — over 100x
+        # the whole cap — and, sorting before `src`, reproduced the exact
+        # Story-6.1 truncation (this scanner's own module unreached) with a
+        # single order of magnitude worse blast radius.
+        ".worktrees",
         "SDKs",
         # Build output
         "build_artifacts",  # conda-build / rattler-build

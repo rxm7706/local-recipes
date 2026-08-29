@@ -198,8 +198,23 @@ def test_context_files_unchanged():
     changed = [line for line in named.splitlines() if line.strip()]
     assert not changed, f"CLAUDE.md/AGENTS.md must stay unchanged: {changed}"
     for name in ("CLAUDE.md", "AGENTS.md"):
-        text = (root / name).read_text(encoding="utf-8")
-        assert "<!-- SKF:BEGIN" not in text
+        # skf-export-skill (3d745c2c31, 2026-08-26) made the SKF:BEGIN/END managed
+        # section the legitimate, tool-generated content of these files — a flat
+        # ban on the marker is stale. The invariant is "not hand-edited", checked
+        # via the exporter's own well-formedness gate, not marker absence.
+        result = json.loads(
+            subprocess.check_output(
+                [
+                    sys.executable,
+                    str(root / ".claude" / "skills" / "shared" / "scripts" / "skf-rebuild-managed-sections.py"),
+                    str(root / name),
+                    "check",
+                ],
+                text=True,
+            )
+        )
+        if result["has_managed_section"]:
+            assert result["markers_valid"], f"{name}: malformed SKF managed section"
 
 
 def test_conda_forge_expert_not_replaced():

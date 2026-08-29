@@ -114,8 +114,23 @@ def test_cli_is_the_sole_pr_gate_publisher():
 def test_context_files_not_hand_edited():
     root = _repo_root()
     for name in ("CLAUDE.md", "AGENTS.md"):
-        text = (root / name).read_text(encoding="utf-8")
-        assert "<!-- SKF:BEGIN" not in text
+        # skf-export-skill (3d745c2c31, 2026-08-26) made the SKF:BEGIN/END managed
+        # section the legitimate, tool-generated content of these files — a flat
+        # ban on the marker is stale. The invariant is "not hand-edited", checked
+        # via the exporter's own well-formedness gate, not marker absence.
+        result = json.loads(
+            subprocess.check_output(
+                [
+                    sys.executable,
+                    str(root / ".claude" / "skills" / "shared" / "scripts" / "skf-rebuild-managed-sections.py"),
+                    str(root / name),
+                    "check",
+                ],
+                text=True,
+            )
+        )
+        if result["has_managed_section"]:
+            assert result["markers_valid"], f"{name}: malformed SKF managed section"
 
 
 def test_conda_forge_expert_not_replaced():
