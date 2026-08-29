@@ -42,7 +42,7 @@ dependencies = ["PyYAML", "pyforge-core"]
 # remember (review pass 2 found the previous comment here had already
 # drifted from the file it named).
 dashboard = [
-    "django>=5.2,<6",
+    "django>=5.2.17,<6",
     "channels>=4.3.2,<5.0",
     "daphne>=4.2.3,<5.0",
     "asgiref>=3.11.1,<4.0",

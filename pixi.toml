@@ -174,7 +174,7 @@ python = "3.12.*"                 # env-scoped python floor -- CAP-5's one inter
 langflow = ">=1.11.4"             # agentic engine 1/3 (langflow-suite feedstock, python_min 3.11 -- compatible with our 3.12 floor)
 dbgpt = ">=0.8.2"                 # agentic engine 2/3 (db-gpt feedstock)
 dbgpt-serve = ">=0.8.2"           # agentic engine 3/3 (db-gpt feedstock)
-django = ">=5.2.15,<6"            # the host web framework the engines mount into (Epic 11)
+django = ">=5.2.17,<6"            # the host web framework the engines mount into (Epic 11)
 fastapi = ">=0.141.1"             # Story 10.1's ASGI/FastAPI-integration seam; also arrives transitively via langflow-base's fastapi >=0.135.0,<1.0.0 -- explicit pin documents intent
 django-health-check = ">=4.5.1"   # Story 10.1's K8s liveness/readiness requirement (CAP-1); needs django>=5.2, matching this env's floor -- a DIFFERENT install from Story 10.1's pip-pinned django-health-check==3.24.0
 psycopg2 = ">=2.9.10"             # Django sync driver; 2.9.10 added PostgreSQL 17 errorcodes (NEWS). Server is postgresql >=17 in platform-dev.
@@ -281,11 +281,11 @@ uvicorn-worker = ">=0.4.0"
 platforms = ["linux-64", "osx-arm64-min"]
 
 [feature.platform-dev.dependencies]
-postgresql = ">=17.11,<18"           # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
-pgvector = ">=0.8.1"          # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
-redis-server = ">=8.10.1"        # per-user local Redis server process -- cache + Celery broker (AD-1)
-kubernetes-helm = ">=4.2.4"    # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
-kubernetes-client = ">=1.34.3"  # kubectl, for the same chart/deploy work
+postgresql = ">=17.11,<18"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
+pgvector = ">=0.8.1"              # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
+redis-server = ">=8.10.1"         # per-user local Redis server process -- cache + Celery broker (AD-1)
+kubernetes-helm = ">=4.2.4"       # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
+kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 
 [feature.dbgpt-sidecar]
 # --- dbgpt-sidecar (Story 10.5, AD-14 Pattern B deviation) ---
@@ -359,13 +359,13 @@ hiredis = ">=3.4.1"
 celery = ">=5.6.3"
 django-celery-beat = ">=2.9.0"
 uvicorn = ">=0.52.4"
-httptools = ">=0.8.0"                   # uvicorn[standard]
-uvloop = ">=0.22.1"                      # uvicorn[standard]
-websockets = ">=17.1"                  # uvicorn[standard]
+httptools = ">=0.8.0"             # uvicorn[standard]
+uvloop = ">=0.22.1"               # uvicorn[standard]
+websockets = ">=17.1"             # uvicorn[standard]
 uvicorn-worker = ">=0.4.0"
 fastapi = ">=0.141.1"
 django-health-check = ">=4.5.1"
-django = "==5.2.15"  # steward 20.1: wagtail 7.4.3 requires django>=5.2 (was 5.1.11)
+django = ">=5.2.17,<6"            # steward 20.1: wagtail 7.4.3 requires django>=5.2 (was 5.1.11)
 django-environ = ">=0.14.0"
 django-model-utils = ">=5.0.0"
 django-allauth = ">=65.19.1"
@@ -487,11 +487,11 @@ pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
-django = ">=5.2,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.15,<6.0" (line ~1241) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
+django = ">=5.2.17,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 channels = ">=4.3.2,<5.0"                 # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
 daphne = ">=4.2.3,<5.0"                   # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-asgiref = ">=3.11.1"                    # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-channels_redis = ">=4.3.0"           # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+asgiref = ">=3.11.1,<4.0"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+channels_redis = ">=4.3.0,<5.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -561,11 +561,11 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # St
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
 copier = ">=9.17.2"
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
-pytest-cov = ">=7.1.0"                   # Story 19.3 / FR-131: coverage JSON for named-module gates
-import-linter = ">=2.14"                 # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 19.3 / FR-131: coverage JSON for named-module gates
+import-linter = ">=2.14"          # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
 description = "Build the pyforge-marshal conda package via pixi-build-python. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
@@ -642,12 +642,12 @@ cmd = "marshal config"
 # truth. STILL MISSING for JFrog conda uploads: anaconda-client or a jfrog CLI —
 # absent from every feature today, so that target is a real gap, not just here.
 [feature.pyforge-ci.dependencies]
-hatchling = ">=1.32.0"                    # Python build backend (conda + wheel/sdist)
-python-build = ">=1.6.0"                  # PyPA `python -m build` frontend
-pytest = ">=9.1.1"                        # test runner
-pixi-build-python = ">=0.8.6"             # pixi build backend -> .conda from the hatchling wheel
-pixi-build-rattler-build = ">=0.4.6"      # pixi build backend -> recipe-driven .conda
-twine = ">=7.0.0"                         # PyPI upload
+hatchling = ">=1.32.0"            # Python build backend (conda + wheel/sdist)
+python-build = ">=1.6.0"          # PyPA `python -m build` frontend
+pytest = ">=9.1.1"                # test runner
+pixi-build-python = ">=0.8.6"     # pixi build backend -> .conda from the hatchling wheel
+pixi-build-rattler-build = ">=0.4.6"  # pixi build backend -> recipe-driven .conda
+twine = ">=7.0.0"                 # PyPI upload
 
 # The dependency-completeness + manifest-parity gate for ALL `pyforge-*` packages
 # (AUD-REPO-001, the permanent form of the auditor that found AUD-ATLAS-010 and
@@ -1557,7 +1557,7 @@ graphviz = ">=14.1.2"             # Graph layout engine (the `dot` binary) — d
 python-graphviz = ">=0.21"        # Python interface to graphviz (imports as `graphviz`) — used by the prototype's DAG-image generator
 numpy = ">=2.5.2"                 # Numerical computing
 polars = ">=1.44.1"               # Rust-backed columnar DataFrame library
-tablib = ">=3.10.0"                # Tabular data handling
+tablib = ">=3.10.0"               # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
 # Category 8: Visualization & Dashboards
 # See: docs/reference/package-taxonomy.md#8-visualization--dashboards
@@ -1689,7 +1689,7 @@ azure-identity = ">=1.25.3"       # Azure identity management and authentication
 #microsoft-agents-m365copilot = "*"  # NOT FOUND - Add to conda-forge
 msgraph-sdk = ">=1.48.0"          # Microsoft Graph REST API SDK for Python
 #kedro-dagster = ">=0.5.4,<0.6"
-django = ">=5.2.15,<6.0"          # Web framework for Python # Pin to LTS version for Django
+django = ">=5.2.17,<6.0"          # Web framework for Python # Pin to LTS version for Django
 channels = ">=4.3.2,<5.0"         # Pin to LTS version for Django
 daphne = ">=4.2.3,<5.0"           # Pin to LTS version for Django
 wagtail = ">=7.4.3,<8.0"          # Content Management System (CMS) framework for Django # Pin to LTS version for Django

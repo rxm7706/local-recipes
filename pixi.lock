@@ -7323,7 +7323,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/dependency-groups-1.3.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/deprecated-1.3.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/distlib-0.4.3-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/django-5.2.15-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/django-5.2.17-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-allauth-65.19.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-anymail-15.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/django-appconf-1.2.0-pyhd8ed1ab_0.conda
@@ -30547,18 +30547,6 @@ packages:
   run_exports: {}
   size: 41773
   timestamp: 1734729953882
-- conda: https://conda.anaconda.org/conda-forge/noarch/django-5.2.15-pyhd8ed1ab_0.conda
-  sha256: 1c372fea238c18e15c796a22fddb7733bb841614fb54bb5a8001e8ba989c911c
-  md5: 64ab235cf3a70e5e6379c3a33de6f3f5
-  depends:
-  - asgiref >=3.8.1
-  - python >=3.10
-  - sqlparse >=0.3.1
-  license: BSD-3-Clause
-  license_family: BSD
-  run_exports: {}
-  size: 3876866
-  timestamp: 1780757220228
 - conda: https://conda.anaconda.org/conda-forge/noarch/django-5.2.17-pyhd8ed1ab_0.conda
   sha256: b8e04a998cc4e5d9688bd1dc140c51b06e0a6173f52e25fd01f7237d04b36ded
   md5: 612476a46bb1cfae8ff8fbfd8d4ea15c
