@@ -926,6 +926,130 @@ def test_identified_bulleted_shape_from_doctor_tracked_ledger_real_excerpt(
     assert entry.fields["promoted"] == "2026-08-11 (landing pass for doctor 7-1)"
 
 
+def test_identified_bulleted_shape_with_every_field_as_its_own_dashed_bullet_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """``_bmad-output/projects/pyforge-doctor/implementation-artifacts/
+    deferred-work.md`` lines 573-580 (verbatim) -- a real, live shape the
+    doctor tracked-ledger excerpt above does NOT cover: every field of an
+    ``IDENTIFIED_BULLETED`` entry written as its OWN top-level
+    ``- <key>: value`` bullet (``- origin:``, ``- source_spec:``,
+    ``- summary:``, ``- status:``), never as 2-space-indented
+    continuations. Before the 2026-08-28 fix, the block-ending "sibling
+    bulleted line" rule fired on ``- source_spec:`` even inside a
+    header-owned block, truncating this entry to just its ``origin``
+    field and misreading the rest (``source_spec``/``summary``/``status``)
+    as a spurious, unrelated ``LEGACY_FLAT`` orphan with no ``summary`` of
+    its own -- live-confirmed as 3 of the 4 real "blank/whitespace-only
+    summary" collisions ``deferred_work_promote.py --fix`` reported
+    fleet-wide that session (the other 1 was steward's ``DW-FU-11-4``,
+    the identical shape)."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""### DW-FU-12-4: A glob-less, trailing-slash spec-surface entry that can never match — foreign defect surfaced by Story 12.4's review
+
+- origin: review-deferred (Story 12.4 pass 2, Blind Hunter, low)
+- source_spec: `spec-12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block.md`
+- summary: `spec-dream-to-code-model-self-verification/SPEC.md:13` declares the glob-less, trailing-slash surface entry `.claude/skills/conda-forge-expert/tests/meta/`, which `chain.py::_glob_to_re`'s exact-match rule can never match — the directory is actually governed by pyforge-mason's `spec-packaging-factory` blanket glob. Pre-existing foreign defect (that spec is marshal-owned), surfaced incidentally; not this story's fix to make.
+- status: open
+- relayed: 2026-08-21 — minted in the story worktree's ephemeral Tier-3 file, re-appended to the shared checkout at landing per the spec's Auto Run Result instruction.
+
+### DW-FU-12-5: A corrupt/hand-mangled committed baseline dies with a raw JSONDecodeError on scoped stamps
+
+- origin: review-deferred (Story 12.5, low, both hunters)
+- source_spec: `spec-12-5-the-spec-surface-baseline-write-race-is-closed.md`
+- summary: `_read_baseline()` (and the pre-fix expression before it) raises a raw `json.JSONDecodeError` when `scripts/.spec-surface-baseline.json` is corrupt — pre-existing; a friendly diagnostic naming the file and the recover path (re-stamp) is the remedy. Deliberately NOT an `except -> {}` fallback, which would reintroduce the drop-every-other-spec hazard the review rejected.
+- status: open
+- relayed: 2026-08-21 — re-appended to the shared checkout at landing (story-worktree Tier-3 is ephemeral).
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 2, entries
+    first, second = entries
+    assert first.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert first.id == "DW-FU-12-4"
+    assert list(first.fields.keys()) == ["origin", "source_spec", "summary", "status"]  # "relayed:" is not in _KNOWN_FIELD_KEYS, correctly ends the block there (pre-existing, deliberate)
+    assert "chain.py::_glob_to_re" in first.fields["summary"]
+    assert first.fields["status"] == "open"
+
+    assert second.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert second.id == "DW-FU-12-5"
+    assert "JSONDecodeError" in second.fields["summary"]
+
+    # The regression proof: neither entry's real content spilled out as a
+    # separate, spurious LEGACY_FLAT orphan.
+    assert not any(e.id is None for e in entries), entries
+
+
+def test_identified_bulleted_all_dashed_fields_does_not_swallow_a_real_trailing_orphan(
+    tmp_path: Path,
+) -> None:
+    """The header-owned block's own claim must still end at the next
+    HEADING (per ``_consume_identified_entry``'s own documented promise) --
+    not run away and swallow a genuinely separate, TRAILING headerless
+    entry that also happens to use the all-dashed-fields shape. Mirrors
+    ``_bmad-output/projects/pyforge-steward/implementation-artifacts/
+    deferred-work.md`` lines 702-712 (verbatim): ``DW-FU-11-4`` (all-dashed)
+    immediately followed by a headerless ``- source_spec:`` orphan using
+    the ORIGINAL, correct (indented-continuation) shape."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""### DW-FU-11-4: `langflow_integration/tests.py` keeps an unguarded `cursor.fetchone()[0]`
+
+- origin: review-deferred (Story 11.4, low)
+- source_spec: `spec-11-4-isolation-and-statelessness-proven.md`
+- summary: the identical `cursor.fetchone()[0]` pattern Story 11.4's own gates forced a None-guard for (mypy `[index]`) survives unguarded in `langflow_integration/tests.py` — latent only because that file sits outside the `mypy platformapp config tests` surface. Pre-existing; the story treated the file as read-only.
+- status: open
+- relayed: 2026-08-21 — re-appended to the shared checkout at landing (story-worktree Tier-3 is ephemeral).
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md`
+  summary: Federated-read and write-refused tests skip when the DuckDB `postgres` extension is not already in the local cache, so a CI image without that cache can stay green without proving FR-46 live ATTACH.
+  evidence: `requires_postgres_ext` skipif in `test_read_only_live_attach.py`. Spec allowed AST/string gates for INSTALL; live ATTACH still needs a provisioned cache. Not a 34.1 product-path change.
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 2, entries
+    header, trailing_orphan = entries
+
+    assert header.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert header.id == "DW-FU-11-4"
+    assert list(header.fields.keys()) == ["origin", "source_spec", "summary", "status"]  # "relayed:" is not in _KNOWN_FIELD_KEYS, correctly ends the block there (pre-existing, deliberate)
+    assert "cursor.fetchone()[0]" in header.fields["summary"]
+
+    # The genuinely separate trailing entry is its OWN orphan, not absorbed.
+    assert trailing_orphan.shape is chain.Tier3Shape.LEGACY_FLAT
+    assert trailing_orphan.id is None
+    assert "spec-34-1-read-only-live-attach" in trailing_orphan.fields["source_spec"]
+    assert "FR-46 live ATTACH" in trailing_orphan.fields["summary"]
+
+
+def test_headerless_stacked_entries_still_end_at_the_next_dashed_bullet(
+    tmp_path: Path,
+) -> None:
+    """The fix is scoped to HEADER-owned blocks only -- a headerless
+    (LEGACY_FLAT) block has no heading to bound its own span, so a dashed
+    ``- source_spec:`` bullet must still, deliberately, end it exactly as
+    before. Two back-to-back headerless entries (the dominant real shape
+    fleet-wide, e.g. atlas's own Tier-3) must classify as TWO separate
+    entries, never merged into one."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""- source_spec: `spec-one.md`
+  summary: First entry's summary.
+  evidence: First entry's evidence.
+- source_spec: `spec-two.md`
+  summary: Second entry's summary.
+  evidence: Second entry's evidence.
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 2, entries
+    assert all(e.shape is chain.Tier3Shape.LEGACY_FLAT for e in entries)
+    assert all(e.id is None for e in entries)
+    assert entries[0].fields["summary"] == "First entry's summary."
+    assert entries[1].fields["summary"] == "Second entry's summary."
+
+
 def test_identified_plain_shape_and_marshal_swallow_regression_real_excerpt(
     tmp_path: Path,
 ) -> None:

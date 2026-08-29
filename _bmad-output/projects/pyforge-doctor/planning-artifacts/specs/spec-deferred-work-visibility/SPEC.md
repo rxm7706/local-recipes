@@ -1,6 +1,6 @@
 ---
 spec: deferred-work-visibility
-status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..10 (Epic 9) queued, not dispatched
+status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..10 (Epic 9) queued, not dispatched; CAP-11..12 shipped (Story 8.5/8.6, 2026-08-28)
 owner-dream: docs/dreams/deferred-work-visibility.md
 covers-dreams:
   - docs/dreams/deferred-work-audit-completeness.md   # folded in 2026-08-15 as CAP-4..9 (see § Why below); satisfies INV-1 for this Dream
@@ -189,6 +189,36 @@ keep one big process instead of several small ones.
     or a further, not-yet-identified detector gap, and are explicitly out of this capability's own
     scope.
 
+- **CAP-12** *(added 2026-08-28 — closes `DW-FU-8-4`, the real fleet-wide `--fix` run Epic 8's
+  own closing note left explicitly out of scope, plus a parsing gap that run surfaced)*
+  - **intent:** Two fixes needed together to actually run `--fix` for real against all 8 live
+    projects. (a) `_promote_project`'s collision guard (Story 8.3) aborts the WHOLE batch when
+    ANY orphan's content already reached the tracked ledger by another path — since Tier-3 is
+    append-only, an already-promoted orphan re-collides FOREVER, permanently blocking every
+    subsequent genuinely-new orphan in the same project (`DW-FU-8-4`, logged at Story 8.4's own
+    landing, confirmed against all 8 real projects). `_validate_batch` now returns a
+    `_BatchValidation(problems, already_tracked)` split: an already-tracked content collision
+    routes to `already_tracked` (silently excluded from the write, batch still promotes) instead
+    of `problems` (hard-abort) — every OTHER collision (duplicate id, blank summary, a genuinely
+    new duplicate summary within the batch) still hard-aborts, unchanged. (b) Running the fixed
+    tool against the real fleet exposed a live parsing bug in `_consume_bulleted_field_block`:
+    a header-owned entry where EVERY field is its own dashed bullet (`- origin:` / `- source_spec:`
+    / `- summary:` / `- status:`, no indented-continuation lines) had its field block truncated
+    at the second bullet, because the loop treated any line matching `_BULLET_START_RE` as a
+    block-ending sibling — even one whose own key is a recognized field of the SAME entry. Fixed
+    by checking `_KNOWN_FIELD_KEYS` first when `entry_id is not None` (header-owned): a
+    known-keyed dashed bullet is a continuation, not a new sibling. Headerless blocks
+    (`entry_id is None`) are untouched — this shape only exists under a real `### DW-<id>:`
+    header live (doctor's `DW-FU-12-4/5/5-2`, steward's `DW-FU-11-4`).
+  - **success:** `for p in atlas doctor herald marshal mason scribe steward warden; do python3
+    scripts/deferred_work_promote.py --fix --project "$p"; done` produces zero `ABORTED` outputs
+    across all 8 projects (previously every one would abort). Running it a second time
+    immediately is a true no-op (0 writes, 0 findings delta) — Story 8.4's own discipline
+    preserved. `pixi run -e local-recipes deferred-work-check`'s `tier3-only-deferral` +
+    `tier3-entry-unidentified` combined count drops from 111 (post-CAP-11) to the count of
+    already-identified Tier-3 entries that were never copied to any tracked ledger — a
+    DIFFERENT, out-of-scope gap this capability does not address (see Non-goals).
+
 ## Constraints
 
 - **Both sides move, and the order is load-bearing.** Emitter first (`bmad-dev-auto` writes
@@ -246,6 +276,12 @@ keep one big process instead of several small ones.
   individual entry is still worth keeping, still accurate, or already resolved is the
   resolution-sweep's question, not this Spec's.
 - **Not exemplar/quality-bar conformance checking** (see Constraints).
+- **Not promotion of already-identified Tier-3 entries that were never copied to a tracked
+  ledger.** CAP-12's `--fix` only mints ids for genuine orphans (`entry.id is None`); an entry
+  that already carries a real `DW-*` id in Tier-3 but has no tracked twin (70 live, fleet-wide,
+  post-CAP-12) is a structurally different gap — `deferred_work_promote.py`'s own
+  `orphans = [e for e in entries if e.id is None]` filter excludes it by design. A future
+  capability, not this one.
 
 ## Resolved Questions
 
