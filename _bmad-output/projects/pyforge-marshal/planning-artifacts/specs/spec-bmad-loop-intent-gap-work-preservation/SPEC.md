@@ -5,6 +5,7 @@ owner-dream: docs/dreams/bmad-loop-intent-gap-work-preservation.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/
+  - scripts/missing_preserve_check.py    # Story 20.5/FR-189 CAP-3 detector, added 2026-08-29 surface reconcile
 sources:
   - ../../../../../../docs/dreams/bmad-loop-intent-gap-work-preservation.md
 open_questions:
