@@ -4,7 +4,8 @@ status: ready
 created: "2026-08-26"
 updated: "2026-08-26"
 owner-dream: docs/dreams/chain-currency-sweep.md
-surface: []
+surface:
+  - scripts/chain_currency_sweep_check.py
 companions:
   - ../../../CHAIN-CURRENCY-RUNBOOK.md
 sources:
