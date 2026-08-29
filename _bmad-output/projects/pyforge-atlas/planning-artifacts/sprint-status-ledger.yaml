@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 102
+# stories: 132
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -51,6 +51,29 @@ development_status:
   20-3-named-pipeline-derivation-of-the-dashboard-stores: done
   20-4-the-cis-two-spine-specs-exist: done
   20-5-port-the-remaining-nineteen-vizro-pages: done
+  21-1-relocate-atlas-data-defaults-and-add-pyforge-atlas-bootstrap: backlog
+  21-10-kedro-viz-ci-path-sync-optional-cap-6: backlog
+  21-2-remove-cf_atlas-db-seeds-from-production-datasets: backlog
+  21-3-tier-0-harden-and-live-catalog-contract: backlog
+  21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss: backlog
+  21-5-tier-2-sources-about-curated-orgs-artifactory-names: backlog
+  21-6-upstream_discovery-identity-join-and-export-parquet: backlog
+  21-7-quartet-thin-out-and-gist-wrapper: backlog
+  21-8-end-to-end-verification-gate: backlog
+  21-9-vizro-bootstrap-health-pages-optional-cap-5: backlog
+  22-1-ranked-export-bridge-quartet-vizro-feed: backlog
+  22-2-vizro-identity-catalog-page: backlog
+  22-3-vizro-identity-ops-page: backlog
+  22-4-vizro-identity-workbook-page: backlog
+  22-5-canvas-vs-vizro-parity-gate: backlog
+  22-6-canvas-deprecation-switch: backlog
+  23-1-tier-3-bulk-os-indexes: backlog
+  23-2-enterprise-jfrog-consumption-parquet: backlog
+  23-3-priority-rules-in-kedro-inventory_priority_assignments: backlog
+  23-4-deliverable-a-packaging_candidate_status: backlog
+  23-5-identity_complete_export-parquet-canonical: backlog
+  23-6-bsl-gist-aggregates-cap-8d: backlog
+  23-7-zero-deferred-e2e-gate: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done
@@ -101,7 +124,14 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
-  epic-20: backlog
+  epic-20: done
+  epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
+  epic-22: backlog
+  epic-22-retrospective: optional
+  epic-23: backlog
+  epic-23-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done
