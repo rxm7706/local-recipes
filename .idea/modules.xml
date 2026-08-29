@@ -427,6 +427,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/asyncer.iml" filepath="$PROJECT_DIR$/.idea/asyncer.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/asyncssh.iml" filepath="$PROJECT_DIR$/.idea/asyncssh.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/asyncstdlib.iml" filepath="$PROJECT_DIR$/.idea/asyncstdlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/atproto-mcp.iml" filepath="$PROJECT_DIR$/.idea/atproto-mcp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/atpublic.iml" filepath="$PROJECT_DIR$/.idea/atpublic.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/attrs.iml" filepath="$PROJECT_DIR$/.idea/attrs.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/audioread.iml" filepath="$PROJECT_DIR$/.idea/audioread.iml" />
@@ -722,6 +723,14 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/fastlite@2.iml" filepath="$PROJECT_DIR$/.idea/fastlite@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/fastlite@3.iml" filepath="$PROJECT_DIR$/.idea/fastlite@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/fastlite@4.iml" filepath="$PROJECT_DIR$/.idea/fastlite@4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp.iml" filepath="$PROJECT_DIR$/.idea/fastmcp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-app-examples.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-app-examples.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-remote.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-remote.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-remote@1.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-remote@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-slim.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-slim.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-slim@1.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-slim@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-tasks.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-tasks.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-tasks@1.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-tasks@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/fastprogress.iml" filepath="$PROJECT_DIR$/.idea/fastprogress.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/fasttransform.iml" filepath="$PROJECT_DIR$/.idea/fasttransform.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/fasttransform@1.iml" filepath="$PROJECT_DIR$/.idea/fasttransform@1.iml" />
@@ -1588,6 +1597,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/sklearn-compat.iml" filepath="$PROJECT_DIR$/.idea/sklearn-compat.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/sktime.iml" filepath="$PROJECT_DIR$/.idea/sktime.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/small_fake_with_pyproject.iml" filepath="$PROJECT_DIR$/.idea/small_fake_with_pyproject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/smart-home.iml" filepath="$PROJECT_DIR$/.idea/smart-home.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/smart_open.iml" filepath="$PROJECT_DIR$/.idea/smart_open.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/smbprotocol.iml" filepath="$PROJECT_DIR$/.idea/smbprotocol.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/sniffio.iml" filepath="$PROJECT_DIR$/.idea/sniffio.iml" />
@@ -1723,6 +1733,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/testcontainers@1.iml" filepath="$PROJECT_DIR$/.idea/testcontainers@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/testfixtures.iml" filepath="$PROJECT_DIR$/.idea/testfixtures.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/testfixtures@1.iml" filepath="$PROJECT_DIR$/.idea/testfixtures@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/testing-demo.iml" filepath="$PROJECT_DIR$/.idea/testing-demo.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/testpath.iml" filepath="$PROJECT_DIR$/.idea/testpath.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/textblob.iml" filepath="$PROJECT_DIR$/.idea/textblob.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/timm.iml" filepath="$PROJECT_DIR$/.idea/timm.iml" />
