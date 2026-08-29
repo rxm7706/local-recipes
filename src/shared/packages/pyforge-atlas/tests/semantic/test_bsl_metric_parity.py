@@ -23,6 +23,7 @@ import pandas as pd
 import pytest
 
 from pyforge.atlas.semantic import models
+from pyforge.atlas.semantic.query_helpers import bsl_query
 
 
 # ===========================================================================
@@ -105,7 +106,7 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
     t = parquet_table(df, "adoption")
     model = models.build_packages_model(t, now_unix=NOW)
     got = _by_key(
-        model.query(dimensions=["conda_name", "adoption_stage"]).execute(),
+        bsl_query(model, dimensions=["conda_name", "adoption_stage"]),
         "conda_name",
         "adoption_stage",
     )
@@ -161,7 +162,7 @@ def test_staleness_age_days_matches_legacy(parquet_table):
     t = parquet_table(df, "stale")
     model = models.build_packages_model(t, now_unix=NOW)
     got = _by_key(
-        model.query(dimensions=["conda_name", "staleness_age_days"]).execute(),
+        bsl_query(model, dimensions=["conda_name", "staleness_age_days"]),
         "conda_name",
         "staleness_age_days",
     )
@@ -201,7 +202,7 @@ def test_is_actionable_matches_legacy_view(parquet_table):
     t = parquet_table(df, "actionable")
     model = models.build_packages_model(t, now_unix=NOW)
     got = _by_key(
-        model.query(dimensions=["conda_name", "is_actionable"]).execute(),
+        bsl_query(model, dimensions=["conda_name", "is_actionable"]),
         "conda_name",
         "is_actionable",
     )
@@ -264,7 +265,7 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
     model = models.build_feedstock_health_model(t)
 
     ci = _by_key(
-        model.query(dimensions=["feedstock_name", "ci_red"]).execute(),
+        bsl_query(model, dimensions=["feedstock_name", "ci_red"]),
         "feedstock_name",
         "ci_red",
     )
@@ -272,7 +273,7 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
         assert bool(ci[r["feedstock_name"]]) == _legacy_ci_red(r["ci_status"]), r["feedstock_name"]
 
     prs = _by_key(
-        model.query(dimensions=["feedstock_name", "has_open_prs"]).execute(),
+        bsl_query(model, dimensions=["feedstock_name", "has_open_prs"]),
         "feedstock_name",
         "has_open_prs",
     )
@@ -281,7 +282,7 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
         assert bool(prs[r["feedstock_name"]]) == exp, r["feedstock_name"]
 
     issues = _by_key(
-        model.query(dimensions=["feedstock_name", "has_open_issues"]).execute(),
+        bsl_query(model, dimensions=["feedstock_name", "has_open_issues"]),
         "feedstock_name",
         "has_open_issues",
     )

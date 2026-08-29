@@ -29,6 +29,7 @@ from pyforge.atlas.dashboard import app
 from pyforge.atlas.dashboard import data as dash_data
 from pyforge.atlas.dashboard import factory_status as fs
 from pyforge.atlas.semantic import models
+from pyforge.atlas.semantic.query_helpers import bsl_query
 
 NOW = 1_700_000_000
 STAMP = "2026-07-18T12:00:00Z"
@@ -120,10 +121,9 @@ def test_feedstock_health_page_is_bsl_driven(feedstock_health_parquet):
     proving the page data flows through the BSL model, not a re-implemented metric (AD-8)."""
     got = dash_data.load_feedstock_health(feedstock_health_parquet)
     table = models.duckdb_table_from_parquet(feedstock_health_parquet)
-    expected = (
-        models.build_feedstock_health_model(table)
-        .query(dimensions=["feedstock_name", "ci_red", "has_open_prs", "has_open_issues"])
-        .execute()
+    expected = bsl_query(
+        models.build_feedstock_health_model(table),
+        dimensions=["feedstock_name", "ci_red", "has_open_prs", "has_open_issues"],
     )
     pd.testing.assert_frame_equal(
         got.sort_values("feedstock_name").reset_index(drop=True),
@@ -162,10 +162,9 @@ def test_estate_cache_page_is_in_inventory(dashboard):
 def test_my_feedstocks_page_is_bsl_driven(package_maintainers_parquet):
     got = dash_data.load_my_feedstocks(package_maintainers_parquet)
     table = models.duckdb_table_from_parquet(package_maintainers_parquet)
-    expected = (
-        models.build_package_maintainers_model(table)
-        .query(dimensions=["maintainer", "conda_name"])
-        .execute()
+    expected = bsl_query(
+        models.build_package_maintainers_model(table),
+        dimensions=["maintainer", "conda_name"],
     )
     pd.testing.assert_frame_equal(
         got.sort_values(["maintainer", "conda_name"]).reset_index(drop=True),
@@ -178,10 +177,9 @@ def test_packages_shell_pages_are_bsl_wired_and_light_up_with_data(packages_parq
     build_packages_model — given the composed store they produce the BSL query result."""
     got = dash_data.load_staleness(packages_parquet, now=NOW)
     table = models.duckdb_table_from_parquet(packages_parquet)
-    expected = (
-        models.build_packages_model(table, now_unix=NOW)
-        .query(dimensions=["conda_name", "staleness_age_days", "adoption_stage"])
-        .execute()
+    expected = bsl_query(
+        models.build_packages_model(table, now_unix=NOW),
+        dimensions=["conda_name", "staleness_age_days", "adoption_stage"],
     )
     pd.testing.assert_frame_equal(
         got.sort_values("conda_name").reset_index(drop=True),

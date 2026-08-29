@@ -720,6 +720,16 @@ Thumbs.db
 # Generated CVE database and skill-scoped data (refreshed via `pixi run update-cve-db`)
 .claude/data/
 
+# pyforge-atlas run-admission lock store (AD-23, admission.py). Sibling of the Kedro
+# data root: when PYFORGE_ATLAS_DATA_ROOT=<repo>/data, locks land in <repo>/data.locks/
+# (not under src/shared/packages/pyforge-atlas/, where the member .gitignore already
+# ignores data.locks/). Zero-byte *.lock markers + optional *.holder.json sidecars;
+# ephemeral — recreated on every kedro run, never commit.
+data.locks/
+
+# Repo-root Kedro data when PYFORGE_ATLAS_DATA_ROOT=<repo>/data (bootstrap chain default).
+data/
+
 # Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)
 .claude/scheduled_tasks.lock
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 
 from pyforge.atlas.datasets import PyPIJsonRequestDataset, RateLimitedScheduler
+from pyforge.atlas.datasets.request_datasets import _cf_atlas_db_path
 
 
 class _AdvancingClock:
@@ -100,3 +101,18 @@ def test_load_many_skips_missing_names():
     ds = PyPIJsonRequestDataset(url="https://pypi.org", scheduler=frozen)
     result = ds.load_many(["a", None, float("nan"), "b"], fetcher=lambda k: k)
     assert set(result.keys()) == {"a", "b"}  # None / NaN skipped, no crash
+
+
+def test_fanout_dataset_seeds_from_cf_atlas_when_present():
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset, seed_pypi_json_from_cf_atlas
+
+    db = _cf_atlas_db_path()
+    if not db.is_file():
+        pytest.skip("cf_atlas.db not present")
+    seeded = seed_pypi_json_from_cf_atlas(db)
+    if seeded.empty:
+        pytest.skip("no actionable pypi rows in cf_atlas.db")
+    ds = PyPIJsonFanOutDataset(url="https://pypi.org")
+    out = ds.load()
+    assert not out.empty
+    assert "pypi_name" in out.columns and "version" in out.columns

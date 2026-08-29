@@ -47,13 +47,13 @@
 # --- external sources (layer raw) ---
 
 core_repodata_raw:
-  type: api.APIDataset
-  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}/noarch/current_repodata.json
+  type: pyforge.atlas.datasets.CondaRepodataDataset
+  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}
   metadata:
     layer: raw
 
 core_channeldata_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.CondaChanneldataDataset
   url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}/channeldata.json
   metadata:
     layer: raw
@@ -63,7 +63,7 @@ core_channeldata_raw:
 # archive main.zip) — the drafting inventory's GITHUB_RAW claim is corrected
 # (recorded in the Dev Agent Record).
 core_feedstock_outputs_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.FeedstockOutputsArchiveDataset
   url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/feedstock-outputs/archive/refs/heads/main.zip
   metadata:
     layer: raw
@@ -84,7 +84,7 @@ core_anaconda_downloads_raw:
 
 # Phase F alternative source / consumer profile (PHASE_F_SOURCE=s3-parquet).
 core_s3_download_stats_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.S3DownloadStatsDataset
   url: ${globals:endpoint_bases.S3_PARQUET_BASE_URL}/conda/monthly
   metadata:
     layer: raw
@@ -92,7 +92,7 @@ core_s3_download_stats_raw:
 # regro/cf-graph tarball (Phases J/M; consumed cross-pipeline by E per AD-3 —
 # declared ONCE here by the core producer). Cached with ttls.core_cf_graph_raw.
 core_cf_graph_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.CfGraphTarballDataset
   url: ${globals:endpoint_bases.GITHUB_BASE_URL}/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz
   metadata:
     layer: raw
@@ -174,7 +174,7 @@ core_feedstock_health:
 # --- external sources (layer raw) ---
 
 pypi_simple_index_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.PyPISimpleIndexDataset
   url: ${globals:endpoint_bases.PYPI_BASE_URL}
   metadata:
     layer: raw
@@ -186,7 +186,7 @@ pypi_simple_index_raw:
 # scheduler-gated fan-out, so a NODE never builds a request URL (AC-2). The `url:`
 # stays the PyPI JSON host base (request_path appends `/pypi/<name>/json`).
 pypi_json_raw:
-  type: pyforge.atlas.datasets.PyPIJsonRequestDataset
+  type: pyforge.atlas.datasets.PyPIJsonFanOutDataset
   url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}
   metadata:
     layer: raw
@@ -205,15 +205,14 @@ pypi_json_raw:
 # (NFR-2/AD-11), so the FLIP marker stays as an interim attributed to B2.
 # FLIP(B2): pandas.GBQQueryDataset (credentialed materialization; cost gate authored in B2)
 pypi_bigquery_downloads_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.PyPIBigQueryDownloadsDataset
   url: ${globals:extra_overrides.BIGQUERY_BASE_URL}/projects
-  credentials: bigquery_adc
   metadata:
     layer: raw
 
 # Phase C parselmouth mapping (cf-graph + conda-forge-metadata).
 pypi_parselmouth_mapping_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.ParselmouthMappingDataset
   url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/regro/cf-graph-countyfair/master/mappings/pypi
   metadata:
     layer: raw
@@ -222,7 +221,7 @@ pypi_parselmouth_mapping_raw:
 # the dynamic `{CHANNEL}_BASE_URL` pattern (gap A2-G3: counted as ONE override
 # point, the resolve_anaconda_channel_urls helper).
 pypi_cross_channel_repodata_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.CrossChannelRepodataDataset
   url: ${globals:endpoint_bases.ANACONDA_CHANNEL_BASE_URL}/${runtime_params:cross_channel,bioconda}/noarch/current_repodata.json
   metadata:
     layer: raw
@@ -325,19 +324,19 @@ pypi_intelligence_scored:
 # --- external sources (layer raw) ---
 
 vulnerability_cisa_kev_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.CisaKevDataset
   url: ${globals:fetcher_urls.CISA_KEV_URL}
   metadata:
     layer: raw
 
 vulnerability_epss_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.EpssFeedDataset
   url: ${globals:fetcher_urls.EPSS_FEED_URL}
   metadata:
     layer: raw
 
 vulnerability_cwe_catalog_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.CweCatalogDataset
   url: ${globals:fetcher_urls.CWE_CATALOG_URL}
   metadata:
     layer: raw
@@ -479,64 +478,74 @@ vcs_github_api_raw:
     layer: raw
 
 vcs_gitlab_api_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.VcsHostSeedDataset
   url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}/projects
+  host: gitlab
   metadata:
     layer: raw
 
 vcs_codeberg_api_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.VcsHostSeedDataset
   url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}/repos
+  host: codeberg
   metadata:
     layer: raw
 
 # Phase L cross-ecosystem registries — one entry per registry, one override
 # point each (the 8 registry resolve_*_urls helpers).
 vcs_registry_npm_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NPM_BASE_URL}
+  registry: npm
   metadata:
     layer: raw
 
 vcs_registry_cran_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRAN_BASE_URL}
+  registry: cran
   metadata:
     layer: raw
 
 vcs_registry_cpan_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CPAN_BASE_URL}
+  registry: cpan
   metadata:
     layer: raw
 
 vcs_registry_luarocks_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.LUAROCKS_BASE_URL}
+  registry: luarocks
   metadata:
     layer: raw
 
 vcs_registry_crates_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
+  registry: crates
   metadata:
     layer: raw
 
 vcs_registry_rubygems_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
+  registry: rubygems
   metadata:
     layer: raw
 
 vcs_registry_maven_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.MAVEN_BASE_URL}
+  registry: maven
   metadata:
     layer: raw
 
 vcs_registry_nuget_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NUGET_BASE_URL}
+  registry: nuget
   metadata:
     layer: raw
 
