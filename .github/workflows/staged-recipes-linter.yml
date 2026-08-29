@@ -47,7 +47,7 @@ jobs:
             conda-smithy
             pygithub
             requests
-            pixi>=0.77.0
+            pixi>=0.78.0
 
       - name: lint
         run: |
