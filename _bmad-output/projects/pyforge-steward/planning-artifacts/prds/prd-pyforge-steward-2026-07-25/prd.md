@@ -1,9 +1,9 @@
 ---
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-08-26"
+updated: "2026-08-29"
 status: final
-currency_review: Reviewed 2026-08-26 — reconciled against the refreshed brief, the story-spec estate's latest motion (2026-08-22 spec-folder pass), and as-built code; FR-1..31 all shipped; deltas recorded in § Currency reconciliation — 2026-08-26.
+currency_review: Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
 ---
 
 # PRD: Steward (`pyforge-steward`)
@@ -398,17 +398,50 @@ semantics intact, FR-8's wrapped task gone with the console. SM-2 was met for th
 period the manual loop existed.
 
 **Scope boundary, restated for downstream readers.** This PRD decomposes FR-1..31 and is
-the durable record of them. Everything the station shipped past FR-31 — Epics 9–37:
+the durable record of them. Everything the station shipped past FR-31 — Epics 9–38:
 secure live dashboards, the python-agent-platform host, the Canopy chain (18–30),
-install-class wiring, CAP-18 plugins, skill/persona, the query plane (34), Lane 3, and the
-five-tier roster drain (37.1, 2026-08-26) — decomposes from its own owned specs
+install-class wiring, CAP-18 plugins, skill/persona, the query plane (34), Lane 3, the
+five-tier roster drain (37.1, 2026-08-26), and the factory stdio MCP translator (38.1,
+retroactive, 2026-08-29) — decomposes from its own owned specs
 (`spec-secure-live-dashboards`, `spec-python-agent-platform`,
-`spec-pyforge-unifying-strategy` with `prd-pyforge-unifying-strategy-2026-08-24`, and
-siblings), per this PRD's own 2026-08-08 rule: a capability decomposes here iff its Dream
-is `owner: steward` **and** no later chain owns it. As of 2026-08-26 the station ledger
-reads 37/37 epics, 131/131 stories `done`.
+`spec-pyforge-unifying-strategy` with `prd-pyforge-unifying-strategy-2026-08-24`,
+`spec-mcp-factory-stdio-translator`, and siblings), per this PRD's own 2026-08-08 rule: a
+capability decomposes here iff its Dream is `owner: steward` **and** no later chain owns
+it. As of 2026-08-26 the station ledger reads 37/37 epics, 131/131 stories `done`.
 
 **Fact updates in place this pass:** the §3 pixi-estate count (~14 → 27, annotated), and
 the FR-27..31 preamble's "greenfield / nothing exists today" claim (now dated and closed
 by Epic 8). No FR text was altered.
+
+## Currency reconciliation — 2026-08-29
+
+Fired by the same `spec→prd` staleness edge, a second time: `spec-pyforge-steward`'s
+`.memlog.md` moved to 2026-08-29 while this PRD's stamp sat at 2026-08-26. Two separate
+motions moved it, both checked against this PRD's FR-1..31 and its `owner: steward`
+decomposition rule above — neither adds or changes an FR here:
+
+**Spec-surface drift reconciliation (marshal Epic 13's ongoing maintenance practice).**
+16 files governed by `spec-pyforge-steward`'s blanket glob had drifted since the last
+baseline stamp. Each was traced individually (not bulk-stamped) to a contract that
+already exists elsewhere: the fresh-clone/provision/CLI cluster to
+`spec-bmad-suite-install-class-wiring`; the suite-report cluster to Story 15.1's own spec;
+the five-tier cluster to Stories 29.3/37.1's own specs; the deploy-profile-plugins cluster
+to Story 32.2's own spec (real, tracked growth beyond this PRD's original FR-8..11
+Pages-dashboard-only scope, but the contract for it already lives in that dedicated
+spec, not here); the remaining two files (portal-slice provision list, SKF skill/persona)
+to Stories 33.1/33.2's own specs; and two files (the library catalog, a pyproject.toml pin)
+to routine dependency upkeep this PRD's own surface note already anticipates. Zero new
+capability against FR-1..31 or against the `owner: steward` boundary rule.
+
+**Epic 38 — retroactive decomposition of an already-shipped spec.** `spec-mcp-factory-
+stdio-translator` (Dream `owner: steward`, via `mcp-era-isolation.md`) shipped its CAP-1/
+CAP-2 translator on 2026-08-26 — the same day the operator authorized it, once slice 1
+(`#858`) landed — but no epic ever cited it, so `chain-completeness` flagged the Spec as
+undecomposed for three days. Filed as Epic 38/Story 38.1 on 2026-08-29, paperwork only, no
+new code. Per the scope-boundary rule restated above, this capability decomposes from its
+own owned spec, not from this PRD's FR list — Epic 38 is named in the restated boundary
+paragraph for the same completeness reason Epic 37 was.
+
+**No FR text altered.** As of 2026-08-29 the station ledger reads 38/38 epics, 132/132
+stories `done`.
 

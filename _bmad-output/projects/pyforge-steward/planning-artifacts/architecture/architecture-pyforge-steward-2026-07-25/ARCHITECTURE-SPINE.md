@@ -7,8 +7,8 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (same date), as-built code, and the strategy chain's own spine. AD-4 amended (dashboard-gen retired, Story 30.2); both Deferred items that were owed to Epic A/E are closed (age pin landed, Duty protocol landed); deltas in § Currency reconciliation — 2026-08-26."
+updated: '2026-08-29'
+currency_review: "Reviewed 2026-08-29 — cascade pass after the re-cut PRD (spec-surface drift catch-up + retroactive Epic 38); no AD altered, package scope unchanged (FR-1..18); deltas in § Currency reconciliation — 2026-08-29 (prior: 2026-08-26)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
 sources:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md (binding contract — the PRD's Decisions D1-D6 are read-only inputs here, not re-derived)"
@@ -243,9 +243,21 @@ the Canopy host (`src/platform/`), and the strategy chain's own spine. Deltas:
   `architecture-unified-container-2026-08-09` and siblings) governs the Canopy, the Helm
   chart + OCP overlay (Epic 12, `/ht/` 200 on CRC 2026-08-25), and the platform image.
   **This spine remains authoritative for the CLI package only** (scope line unchanged:
-  FR-1..18); it is not the decomposition surface for Epics 9–37.
+  FR-1..18); it is not the decomposition surface for Epics 9–38.
 - **One retro-fed gap worth carrying forward** (from `retro-steward-2026-08-08.md`): the
   scaffold standardized exit codes (AD-8) but not error *rendering*, and the
   `--json`-error-path bug recurred twice before being patched per-module. If a further
   duty module is added, establish the shared `render_error(ns, message)` helper in
   `interfaces.py` first — the retro's action item, recorded here so the spine owns it.
+
+## Currency reconciliation — 2026-08-29
+
+Cascade pass after the PRD re-dated (`spec→prd` fired from `spec-pyforge-steward`'s
+spec-surface drift catch-up + the retroactive Epic 38 decomposition, both zero-new-
+capability per the PRD's own § Currency reconciliation — 2026-08-29). Re-checked against
+the as-built package: no AD changed, no duty module count changed since the 2026-08-26
+pass (still ~12 adapters), and neither motion touches the CLI-package scope line
+(FR-1..18) this spine governs. Epic 38 (`mcp_factory_stdio_translator.py`, a root-level
+`scripts/` entrypoint, not a `pyforge.steward` module) is outside this spine's package
+boundary entirely — same non-decomposition-surface treatment as Epics 9–37, folded into
+the scope note above. No AD text altered.
