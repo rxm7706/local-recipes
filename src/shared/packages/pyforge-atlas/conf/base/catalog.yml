@@ -207,6 +207,7 @@ pypi_json_raw:
 pypi_bigquery_downloads_raw:
   type: pyforge.atlas.datasets.PyPIBigQueryDownloadsDataset
   url: ${globals:extra_overrides.BIGQUERY_BASE_URL}/projects
+  credentials: bigquery_adc
   metadata:
     layer: raw
 
