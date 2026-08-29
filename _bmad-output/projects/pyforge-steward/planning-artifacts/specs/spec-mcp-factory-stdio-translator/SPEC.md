@@ -6,6 +6,7 @@ updated: "2026-08-26"
 owner-dream: docs/dreams/mcp-era-isolation.md
 surface:
   - docs/dreams/mcp-era-isolation.md
+  - scripts/mcp_factory_stdio_translator.py
 companions:
   - io-matrix.md
 sources:
