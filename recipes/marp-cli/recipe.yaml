@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.5.0"
+
+package:
+  name: marp-cli
+  version: ${{ version }}
+
+source:
+  url: https://github.com/marp-team/marp-cli/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 075829ab03c391460a49f2e39279b3037a6300fb6484a2c79d63879704105eff
+
+build:
+  number: 1  # bumped from 0: this build sources the GitHub tag (see below) instead of the npm registry tarball -- distinct provenance under the same 4.5.0 version already uploaded to SelfExplainML as build 0
+  script:
+    - if: unix
+      then:
+        - set -ex
+        - npm install --ignore-scripts
+        - npm run build
+        - npm pack --ignore-scripts
+        - npm install --global "${SRC_DIR}/marp-team-marp-cli-${{ version }}.tgz"
+        - rm -rf node_modules
+        - pnpm install --ignore-scripts
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm install --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm run build
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --global %SRC_DIR%/marp-team-marp-cli-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - rd /s /q node_modules
+        - call pnpm install --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - nodejs
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - marp --help
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: A CLI interface for Marp and Marpit based converters
+  description: |
+    **A CLI interface, for [Marp](https://github.com/marp-team/marp)** (using [@marp-team/marp-core](https://github.com/marp-team/marp-core)) and any slide deck converter based on [Marpit](https://marpit.marp.app/) framework.
+  homepage: https://github.com/marp-team/marp-cli
+  repository: https://github.com/marp-team/marp-cli
+
+extra:
+  recipe-maintainers:
+    - kklein
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marp-cli
+  cfe-upstream-registry: npm
+  cfe-upstream-name: "@marp-team/marp-cli"
+  cfe-purls:
+    - pkg:conda/marp-cli@${{ version }}?channel=conda-forge
+    - pkg:npm/@marp-team/marp-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/marp-team/marp-cli
+  cfe-upstream-homepage: https://github.com/marp-team/marp-cli
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/marp-cli-feedstock
+  cfe-forge-recipe-updates-needed: version-bump-4.2.3-to-4.5.0-needs-nodejs-26-variant
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-08-29T10:00:44Z"
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: "2026-08-29T10:00:44Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-29T10:00:44Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#   conda-forge's marp-cli-feedstock tops out at 4.2.3 (nodejs 22/24 builds
+#   only); this repo bumped its own `nodejs` floor to allow the 26.x LTS
+#   line, which the feedstock has no build for yet. Built locally at the
+#   latest upstream (4.5.0) and published to the SelfExplainML channel as a
+#   stop-gap until the feedstock's autotick bot catches up. Not submitted
+#   upstream -- this is a routine version-catch-up, not a new package.
+# source:
+#   The npm-published tarball ships a pre-built `lib/` (rollup bundle); the
+#   GitHub tag ships only raw `src/` TypeScript. Switched to the GitHub tag
+#   per explicit request -- added `npm install` (full deps, incl.
+#   devDependencies) + `npm run build` (== `npm run clean && rollup -c`)
+#   before `npm pack`, so `lib/` exists when packing. Deliberately skipped
+#   `npm run types` (declaration output under `types/src/`, listed in
+#   package.json's `files` but not needed by the CLI binary itself, which
+#   only requires `lib/{prepare,patch,marp-cli}.js`) -- simplicity: no
+#   consumer of this recipe imports marp-cli as a TS library. `--ignore-
+#   scripts` on the first `npm install` skips the `prepare` hook (which
+#   would otherwise run patch-package against a jsdom dev-only patch used
+#   for jest tests we never run) -- irrelevant to producing `lib/`.
+# build:
+#   node_modules is wiped between the npm-based build and the pnpm-based
+#   license-enumeration install (mixing npm's and pnpm's node_modules
+#   layouts in one directory is asking for trouble); pnpm-licenses then
+#   reports off a clean pnpm-installed tree, matching the npm-registry-
+#   sourced version of this recipe's original pattern.
+####
