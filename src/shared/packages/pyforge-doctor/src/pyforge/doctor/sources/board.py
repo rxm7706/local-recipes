@@ -97,6 +97,19 @@ DEFERRED_SPECS: dict[str, str] = {
         "tracked and detector-checked there. Revisit if the audit becomes a standing "
         "practice (its own open question) — a recurring cadence would deserve board "
         "representation",
+    "spec-chain-currency-sweep":
+        "same structural class as spec-artifact-chain-reconciliation above: CAP-1 is "
+        "explicitly titled '(SHIPPED)', and the actual procedure of record is its own "
+        "companion CHAIN-CURRENCY-RUNBOOK.md, executed directly by an operator rather than "
+        "dispatched as station epics/stories. Decomposing it into doctor's PRD/epics would "
+        "manufacture stories for a runbook, not describe undone work. Revisit if the sweep "
+        "becomes a station-dispatched recurring duty rather than an operator-run runbook",
+    "spec-build-league-scorecard":
+        "explicitly self-parked by its own SPEC.md: 'Parked contract... Do not implement a "
+        "board until the operator drafts the measure set.' Unifying Strategy Q5 named the "
+        "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
+        "describe undone work an epic could pick up today. De-register once the operator "
+        "publishes the human/agent/team measure set CAP-1 needs",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
