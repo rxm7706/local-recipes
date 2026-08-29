@@ -15,9 +15,10 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Parked slice 2. This SPEC is **not** the CRC
-> ImportError fix. Do not implement until slice 1 is shipped and a dedicated
-> factory-stdio Dream/build is scheduled.
+> **Canonical contract.** Slice 2, shipped `2026-08-26` (`ba4ae74f73`) once slice 1
+> (`#858`) landed and the operator scheduled this build the same day. This SPEC is
+> **not** the CRC ImportError fix — see CAP-2. Decomposed retroactively as steward
+> Epic 38 / Story 38.1 (chain-completeness caught the missing citation, not missing work).
 
 # SPEC — Factory stdio MCP translator (slice 2)
 
