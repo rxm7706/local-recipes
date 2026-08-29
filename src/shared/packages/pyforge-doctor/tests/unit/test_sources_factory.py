@@ -263,6 +263,103 @@ def test_pin_behind_on_a_snapshot_doc_reports_ok(tmp_path: Path) -> None:
     assert finding.evidence["severity"] == "INFO"
 
 
+def _pinned_md_raw(repo: Path, rel: str, pin_line: str, body: str = "body\n") -> Path:
+    """Like ``_pinned_md``, but the caller supplies the WHOLE ``source_pin``
+    value verbatim -- for pin shapes ``_pinned_md``'s single-version
+    convenience wrapper cannot express (a compound pin naming two
+    versions)."""
+    path = factory._proj(repo) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"---\n{pin_line}\n---\n{body}", encoding="utf-8")
+    return path
+
+
+def test_compound_pin_with_matching_live_version_reports_clean(tmp_path: Path) -> None:
+    """``architecture-bmad-infra.md``'s own real, deliberate format (Story
+    25-7): a compound ``source_pin`` naming BOTH the BMAD-core version and
+    the conda-forge-expert skill version, e.g. ``'BMAD 6.11.0 / conda-forge-
+    expert v8.84.0'``. When the skill-version half matches live exactly,
+    this must read as a fully clean pin -- neither ``pin-missing`` (the bug
+    this test guards: the pre-fix regex could not parse this shape at all
+    and reported the doc as unpinned) nor ``pin-behind`` on a WRONG number
+    (a naive fix that made ``conda-forge-expert`` optional in front of a
+    lazy prefix-skip would latch onto ``6.11.0``, BMAD's own version, and
+    since 6.11 > the live skill version used here would misreport this
+    doc as fine for the wrong reason on this particular live version --
+    the sibling test below pins live below 6.11 specifically to catch
+    that instead)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo, "8.84.0")
+    _pinned_md_raw(
+        repo, "planning-artifacts/architecture-bmad-infra.md",
+        "source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'",
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_compound_pin_behind_reports_the_conda_forge_expert_version_not_bmad_core(
+    tmp_path: Path,
+) -> None:
+    """Same compound-pin shape as above, but the live skill version (9.0.0)
+    sits ABOVE the pinned conda-forge-expert version (8.84.0) while sitting
+    BELOW the pinned BMAD-core number (6.11.0 lexically looks unrelated, but
+    a landmine fix could still latch onto it) -- the discriminating case:
+    a correct parse reports ``pin-behind`` naming ``8.84.0``; a landmine fix
+    that captured ``6.11.0`` instead would report EITHER no finding at all
+    (6.11 > nothing meaningful to compare cleanly) or a differently-worded
+    finding citing the wrong number. Asserting the exact version substrings
+    in the message pins the fix to reading the RIGHT half of the compound
+    value, not merely "some version was found"."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo, "9.0.0")
+    _pinned_md_raw(
+        repo, "planning-artifacts/architecture-bmad-infra.md",
+        "source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'",
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "pin-behind"
+    assert finding.status is DoctorStatus.WARN
+    assert "8.84.0" in finding.message
+    assert "6.11.0" not in finding.message
+
+
+def test_pin_naming_conda_forge_expert_with_no_version_after_it_still_reports_missing(
+    tmp_path: Path,
+) -> None:
+    """A corrupt pin that mentions ``conda-forge-expert`` but never actually
+    states its version (or states only an unrelated BMAD-core version with
+    no ``conda-forge-expert`` marker at all) must still report
+    ``pin-missing`` -- the two-phase parse must not become a blanket "find
+    ANY version-shaped text somewhere in the value" that papers over real
+    corruption, which is exactly the failure mode this module's own
+    docstring already records history of (`"fabricated FALSE pin-missing
+    HARD findings"` / `"manufactured FOURTEEN FALSE pin-missing HARD
+    findings"`) in the opposite direction."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md_raw(
+        repo, "planning-artifacts/architecture-bmad-infra.md",
+        "source_pin: 'BMAD 6.11.0'",
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "pin-missing"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["subject"] == "planning-artifacts/architecture-bmad-infra.md"
+
+
 # ---------------------------------------------------------- archive hygiene
 
 

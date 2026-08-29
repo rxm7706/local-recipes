@@ -233,10 +233,24 @@ STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
 NONTERMINAL_STATUS = re.compile(r"\b(in[-\s]?flight|in[-\s]?progress|wip|pending|draft)\b", re.I)
 TERMINAL_STATUS = re.compile(r"\b(done|shipped|complete|completed|cancelled|canceled|merged)\b", re.I)
 
-_PIN_RE = re.compile(
-    r"(?:source_pin|last_synced_skill_version)[\"']?\s*:\s*"
-    r"['\"]?(?:conda-forge-expert\s+)?v?(\d+)\.(\d+)\.(\d+)",
+# Two-phase pin parsing (Story 25-7 follow-up): a single backtracking regex
+# for "the version after an optional conda-forge-expert prefix" cannot
+# safely support a COMPOUND pin like `'BMAD 6.11.0 / conda-forge-expert
+# v8.84.0'` (architecture-bmad-infra.md's own new, deliberate format) --
+# making `conda-forge-expert` optional in front of the version capture means
+# a lazy `.*?` skip-prefix would happily stop at the FIRST version-shaped
+# text it finds, which is `6.11.0` (BMAD's own version, appearing earlier in
+# the string), silently returning the wrong number instead of ever reaching
+# `conda-forge-expert v8.84.0`. Splitting into "find the key's value text"
+# then "find `conda-forge-expert` in it and read the version right after"
+# (falling back to a bare version only when `conda-forge-expert` is absent
+# entirely) cannot make that mistake: the anchor is a literal substring
+# search, not backtracking priority.
+_PIN_KEY_RE = re.compile(
+    r"(?:source_pin|last_synced_skill_version)[\"']?\s*:\s*(.+)"
 )
+_PIN_VER_AFTER_CFE_RE = re.compile(r"conda-forge-expert\s+v?(\d+)\.(\d+)\.(\d+)")
+_PIN_BARE_VER_RE = re.compile(r"^['\"]?v?(\d+)\.(\d+)\.(\d+)")
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
 
 FINGERPRINT_KEYS = ("skill_version", "schema_version", "mcp_tools", "atlas_phases",
@@ -595,10 +609,15 @@ def _fingerprint(target: Path) -> dict:
 # ----------------------------------------------------------------- doc parsing
 def _doc_pin(path: Path, text: str) -> Ver | None:
     """Return (major, minor, patch) from the frontmatter pin, or ``None`` if
-    absent/corrupt -- verbatim from the original's own ``doc_pin``, except
-    that the caller supplies the already-read text: an unreadable doc must
-    reach ``check_pins``' own per-file WARN rather than being read here as
-    ``""`` (i.e. "this doc states no pin") and slandered as ``pin-missing``."""
+    absent/corrupt -- adapted from the original's own ``doc_pin`` (the caller
+    supplies the already-read text: an unreadable doc must reach
+    ``check_pins``' own per-file WARN rather than being read here as ``""``
+    i.e. "this doc states no pin" and slandered as ``pin-missing``), extended
+    to a two-phase parse (see ``_PIN_KEY_RE``'s own comment) so a compound pin
+    naming BOTH a BMAD-core version and the skill version -- e.g.
+    ``'BMAD 6.11.0 / conda-forge-expert v8.84.0'`` -- reads the skill version
+    that actually follows ``conda-forge-expert``, never an earlier, unrelated
+    version number in the same value."""
     if not text:
         return None
     if path.suffix == ".json":
@@ -606,7 +625,11 @@ def _doc_pin(path: Path, text: str) -> Ver | None:
     else:
         parts = text.split("---", 2)
         scope = parts[1] if len(parts) >= 3 and text.lstrip().startswith("---") else text[:1500]
-    m = _PIN_RE.search(scope)
+    key_match = _PIN_KEY_RE.search(scope)
+    if key_match is None:
+        return None
+    value = key_match.group(1)
+    m = _PIN_VER_AFTER_CFE_RE.search(value) or _PIN_BARE_VER_RE.match(value)
     return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
 
 
