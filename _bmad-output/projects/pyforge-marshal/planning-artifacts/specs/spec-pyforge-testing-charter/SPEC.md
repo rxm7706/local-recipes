@@ -6,6 +6,8 @@ surface:
   - _bmad/scripts/bmad_tea_playwright.py
   - pyforge.doctor.sources.fleet_scan
   - src/shared/packages/pyforge-testing-kit/**    # net-new, not yet created
+  - scripts/coverage_gates_ci.py    # Story 19.3/FR-131 CI driver, added 2026-08-29 surface reconcile
+  - scripts/run_station_coverage_gate.py    # Story 19.3/FR-131 per-station gate, added 2026-08-29 surface reconcile
 companions:
   - station-tea-status.md
   - ../../../../../../docs/reference/test-charter.md    # adopted — the Guild's per-Smith mottos, testing hierarchy, and Phase 1-4 roadmap; not duplicated here
