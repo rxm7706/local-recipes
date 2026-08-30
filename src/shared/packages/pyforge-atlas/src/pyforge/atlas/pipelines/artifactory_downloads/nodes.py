@@ -211,3 +211,38 @@ def format_artifactory_purl_export(artifactory_downloads_joined: pd.DataFrame) -
             )
     content = "".join(f"{line}\n" for line in lines)
     return {_PARTITION_KEY: content}
+
+
+# ---------------------------------------------------------------------------
+# project_artifactory_names (Story 21.5, Tier 2: Artifactory/CDO names, not telemetry)
+# ---------------------------------------------------------------------------
+
+# Names-only projection -- deliberately EXCLUDES download_count/version/match_source.
+# enterprise_jfrog_consumption.parquet (Story 23.2) is where those live; Story 23.2
+# depends on THIS story landing first so the names-only identity key exists to extend
+# (spec-21-5-tier-2-sources.md Boundaries "Never").
+_ENTERPRISE_JFROG_NAMES_COLS = ["pypi_name", "conda_name", "is_internal"]
+
+
+def project_artifactory_names(artifactory_downloads_joined: pd.DataFrame) -> pd.DataFrame:
+    """Project ``artifactory_downloads_joined`` down to ``pypi_name``/``conda_name``/
+    ``is_internal`` ONLY -- ``enterprise_jfrog_names``, the Tier 2 Artifactory/CDO
+    names-only universe (catalog-sources.md Tier 2). Correct whether the upstream
+    fetch is empty (today, ``params:artifactory.virtual_repos: []``) or populated
+    later by a live, attended bring-up -- no live call is made here either way.
+
+    An empty/malformed ``artifactory_downloads_joined`` (missing one of the three
+    projected columns) degrades to an empty frame carrying the names-only schema --
+    never raises. Distinct ``(pypi_name, conda_name)`` pairs only (mirrors
+    ``join_artifactory_identity``'s own never-raise/degrade-to-empty-schema style)."""
+    if (
+        artifactory_downloads_joined is None
+        or getattr(artifactory_downloads_joined, "empty", True)
+        or not set(_ENTERPRISE_JFROG_NAMES_COLS) <= set(getattr(artifactory_downloads_joined, "columns", []))
+    ):
+        return pd.DataFrame(columns=_ENTERPRISE_JFROG_NAMES_COLS)
+    return (
+        artifactory_downloads_joined[_ENTERPRISE_JFROG_NAMES_COLS]
+        .drop_duplicates(subset=["pypi_name", "conda_name"])
+        .reset_index(drop=True)
+    )

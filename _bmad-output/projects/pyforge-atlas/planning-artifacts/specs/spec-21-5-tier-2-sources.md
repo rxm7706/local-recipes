@@ -2,7 +2,8 @@
 title: 'Tier 2 sources: about, curated orgs, Artifactory names (Story 21.5, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 'd230e7fce20037f7f44134aa8fe765fae597102e'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'

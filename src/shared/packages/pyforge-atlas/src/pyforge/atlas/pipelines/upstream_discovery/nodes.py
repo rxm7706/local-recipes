@@ -22,11 +22,14 @@ of ``trending_candidates``."""
 
 from __future__ import annotations
 
+import logging
 import re
 
 import pandas as pd
 
 from ...datasets.refresh import DAILY_SECONDS, WEEKLY_SECONDS, RefreshRequest
+
+logger = logging.getLogger(__name__)
 
 
 def _coerce_cadence(ttls: dict, key: str, default: int = DAILY_SECONDS) -> int:
@@ -106,6 +109,124 @@ def refresh_aoss_premium_python(ttls: dict) -> RefreshRequest:
         store="discovery_aoss_premium_python_raw",
         cadence_seconds=_coerce_cadence(ttls, "discovery_aoss_premium_python_raw", WEEKLY_SECONDS),
     )
+
+
+# ---------------------------------------------------------------------------
+# Story 21.5 — Tier 2 catalog sources (spec-21-5-tier-2-sources.md): rxm7706/about
+# maintainer universe (CDO-ENT-CONDA)
+# ---------------------------------------------------------------------------
+
+
+def refresh_about_maintainers(ttls: dict) -> RefreshRequest:
+    # Story 21.5 — rxm7706/about maintainer + co-maintainer feedstock lists
+    """External-refresh trigger for ``discovery_about_maintainers_raw``. PURE: emits
+    the ``RefreshRequest`` ``AboutMaintainersDataset.save()`` honors; the single-URL
+    fetch + parse is dataset-owned (AD-2). Cadence WEEKLY (not daily): the about README
+    maintainer lists change on a manual maintainer-list refresh cadence, not
+    continuously — mirrors the sibling Tier-1 ``discovery_*_raw`` cadence, not
+    ``trending_candidates``'s daily one."""
+    return RefreshRequest(
+        store="discovery_about_maintainers_raw",
+        cadence_seconds=_coerce_cadence(ttls, "discovery_about_maintainers_raw", WEEKLY_SECONDS),
+    )
+
+
+# The `conda-forge/` prefix and `-feedstock` suffix parse_about_readme's
+# `feedstock_slug` column carries (the FULL matched slug, e.g.
+# "conda-forge/dbt-bigquery-feedstock") — stripped here, at JOIN time, before
+# comparing against `core_feedstock_attribution.feedstock_name` (a bare name, e.g.
+# "dbt-bigquery"). Never done at parse time: the raw dataset preserves exactly what
+# the README said (spec Boundaries).
+_FEEDSTOCK_SLUG_PREFIX = "conda-forge/"
+_FEEDSTOCK_SLUG_SUFFIX = "-feedstock"
+
+# The complete-export-contract.md §1 "CDO-ENT-CONDA maintainer universe" column
+# contract (also this story's I/O Matrix), in order.
+_ENTERPRISE_CONDA_MAINTAINERS_COLS = [
+    "core_python_package_name",
+    "role",
+    "feedstock_slug",
+    "repository_source",
+]
+
+REPOSITORY_SOURCE_CDO_ENT_CONDA = "CDO-ENT-CONDA"
+
+
+def _strip_feedstock_slug(slug) -> str | None:
+    """Strip the ``conda-forge/`` prefix and ``-feedstock`` suffix from an
+    about-parsed ``feedstock_slug`` for comparison against
+    ``core_feedstock_attribution.feedstock_name``. A non-string/blank slug (or one
+    that strips down to nothing) returns ``None`` — never matches, never raises."""
+    if not isinstance(slug, str):
+        return None
+    value = slug.strip()
+    if value.startswith(_FEEDSTOCK_SLUG_PREFIX):
+        value = value[len(_FEEDSTOCK_SLUG_PREFIX) :]
+    if value.endswith(_FEEDSTOCK_SLUG_SUFFIX):
+        value = value[: -len(_FEEDSTOCK_SLUG_SUFFIX)]
+    return value or None
+
+
+def join_enterprise_conda_maintainers(
+    discovery_about_maintainers_raw: pd.DataFrame,
+    core_feedstock_attribution: pd.DataFrame,
+) -> pd.DataFrame:
+    # CDO-ENT-CONDA enterprise-consumption universe (Story 21.5, Tier 2)
+    """Join ``discovery_about_maintainers_raw`` against ``core_feedstock_attribution``
+    (``conda_name``/``feedstock_name``) on the STRIPPED feedstock slug
+    (:func:`_strip_feedstock_slug`), producing the ``enterprise_conda_maintainers``
+    CDO-ENT-CONDA universe (complete-export-contract.md §1's exact column contract).
+
+    An about row whose stripped slug has no ``core_feedstock_attribution`` match (a
+    renamed/retired feedstock) is DROPPED — never fabricated with a null
+    ``core_python_package_name`` — and logged at WARN, not raised. An
+    empty/malformed ``discovery_about_maintainers_raw`` or an
+    empty/unusable ``core_feedstock_attribution`` degrades to an empty frame carrying
+    the full output schema; never raises."""
+    if (
+        discovery_about_maintainers_raw is None
+        or getattr(discovery_about_maintainers_raw, "empty", True)
+        or not {"feedstock_slug", "role"} <= set(getattr(discovery_about_maintainers_raw, "columns", []))
+    ):
+        return pd.DataFrame(columns=_ENTERPRISE_CONDA_MAINTAINERS_COLS)
+
+    attribution_index: dict[str, str] = {}
+    if (
+        core_feedstock_attribution is not None
+        and not getattr(core_feedstock_attribution, "empty", True)
+        and {"conda_name", "feedstock_name"} <= set(getattr(core_feedstock_attribution, "columns", []))
+    ):
+        for row in core_feedstock_attribution.itertuples(index=False):
+            feedstock_name = getattr(row, "feedstock_name", None)
+            conda_name = getattr(row, "conda_name", None)
+            if not isinstance(feedstock_name, str) or not isinstance(conda_name, str):
+                continue
+            # first-seen wins on a duplicate feedstock_name (should not happen
+            # upstream, but never silently overwrite a resolved mapping).
+            attribution_index.setdefault(feedstock_name, conda_name)
+
+    rows: list[dict] = []
+    for row in discovery_about_maintainers_raw.itertuples(index=False):
+        raw_slug = getattr(row, "feedstock_slug", None)
+        stripped = _strip_feedstock_slug(raw_slug)
+        conda_name = attribution_index.get(stripped) if stripped is not None else None
+        if conda_name is None:
+            logger.warning(
+                "enterprise_conda_maintainers: no core_feedstock_attribution match "
+                "for feedstock_slug=%r (stripped=%r) — dropped, not fabricated",
+                raw_slug,
+                stripped,
+            )
+            continue
+        rows.append(
+            {
+                "core_python_package_name": conda_name,
+                "role": getattr(row, "role", None),
+                "feedstock_slug": raw_slug,
+                "repository_source": REPOSITORY_SOURCE_CDO_ENT_CONDA,
+            }
+        )
+    return pd.DataFrame(rows, columns=_ENTERPRISE_CONDA_MAINTAINERS_COLS)
 
 
 # ---------------------------------------------------------------------------
@@ -433,42 +554,80 @@ def classify_trending_candidates(
 _ORG_AUDIT_COLS = ["repo_full_name"]
 
 
-def load_org_audit_candidates(org_audit_candidates: list | None) -> pd.DataFrame:
-    # CAP-4 — fixed-source audit track ingest (Story 13.4, FR-67; spec-upstream-discovery)
-    """PURE ``params:org_audit_candidates -> pd.DataFrame`` loader: builds a
-    ``repo_full_name``-column frame from the git-tracked, hand-curated declared list
-    (``conf/base/parameters.yml``). No HTTP/parse import — the source is config, not a
-    live fetch, so there is no dataset-owned IO seam to inject (Boundaries &
-    Constraints).
+def _add_org_audit_row(rows: list[dict], seen: set[str], repo_full_name) -> None:
+    """Shared row-building rule for BOTH ``org_audit_candidates`` entries and
+    ``discovery_curated_groups_seed`` repos (Story 21.5): a non-string value degrades
+    to ``None`` (visible skip, never excluded); a resolved value that repeats an
+    earlier one case-insensitively is deduped, keeping the first occurrence's casing."""
+    if not isinstance(repo_full_name, str):
+        repo_full_name = None
+    if repo_full_name is not None:
+        key = repo_full_name.casefold()
+        if key in seen:
+            return
+        seen.add(key)
+    rows.append({"repo_full_name": repo_full_name})
 
-    Every list entry produces exactly one row — never a silent drop (review finding,
-    Story 13.4: matches :func:`classify_trending_candidates`'s own stated "never a
-    silent drop" invariant, which this loader must not violate one step upstream). A
-    non-dict entry, a missing ``repo_full_name`` key, or a non-string value degrades
+
+def _flatten_curated_groups(discovery_curated_groups_seed) -> list:
+    # Story 21.5 — curated org sweeps (Tier 2 catalog-sources.md; a git-tracked,
+    # hand-curated air-gap seed, NEVER a live GitHub-org-enumeration crawl)
+    """Flatten ``{"groups": [{"org": ..., "repos": [...]}]}`` into a flat list of repo
+    entries (possibly malformed — validated by :func:`_add_org_audit_row`). NEVER
+    raises: a missing/non-dict seed, a missing/non-list ``groups``, a non-dict group,
+    or a non-list ``repos`` degrades that portion to contributing ZERO entries —
+    exactly like a malformed ``params:org_audit_candidates`` entry degrades today."""
+    if not isinstance(discovery_curated_groups_seed, dict):
+        return []
+    groups = discovery_curated_groups_seed.get("groups")
+    if not isinstance(groups, list):
+        return []
+    entries: list = []
+    for group in groups:
+        repos = group.get("repos") if isinstance(group, dict) else None
+        if not isinstance(repos, list):
+            continue
+        entries.extend(repos)
+    return entries
+
+
+def load_org_audit_candidates(
+    org_audit_candidates: list | None,
+    discovery_curated_groups_seed: dict | None = None,
+) -> pd.DataFrame:
+    # CAP-4 — fixed-source audit track ingest (Story 13.4, FR-67; spec-upstream-discovery)
+    # Story 21.5 (Tier 2) extends this with a SECOND source: discovery_curated_groups_seed.
+    """PURE ``(params:org_audit_candidates, discovery_curated_groups_seed) ->
+    pd.DataFrame`` loader: builds a ``repo_full_name``-column frame from the UNION of
+    the git-tracked, hand-curated declared list (``conf/base/parameters.yml``) and the
+    NEW git-tracked curated-org-sweep seed (``conf/base/curated_groups.json``,
+    flattened by :func:`_flatten_curated_groups`). No HTTP/parse import — both sources
+    are config, not a live fetch, so there is no dataset-owned IO seam to inject
+    (Boundaries & Constraints).
+
+    Every entry from EITHER source produces exactly one row — never a silent drop
+    (review finding, Story 13.4, preserved unchanged by Story 21.5: matches
+    :func:`classify_trending_candidates`'s own stated "never a silent drop" invariant).
+    A non-dict entry, a missing ``repo_full_name`` key, or a non-string value degrades
     that row's ``repo_full_name`` to ``None`` rather than being excluded — the
     downstream classifier already resolves a ``None``/non-string ``repo_full_name`` to
     a visible ``skip``/``no-pypi-artifact`` (or ``unclassified-needs-human``) row via
-    its existing ``_repo_segment`` guard, so a hand-edit typo in ``parameters.yml``
-    surfaces as a reasoned skip instead of vanishing. A resolved ``repo_full_name``
-    that repeats an earlier one (case-insensitively) is deduped, keeping the first
-    occurrence's original casing — a literal or case-variant duplicate in the
-    hand-curated list must not double-count in ``org_audit_candidates_classified``. A
-    ``None``/non-list ``org_audit_candidates`` (or an empty list) degrades to an empty
-    frame carrying the ``repo_full_name`` column, matching
-    :func:`classify_trending_candidates`'s own empty-input schema so the downstream
-    classify node's empty-input guard fires cleanly rather than KeyError-ing on a
-    missing column."""
+    its existing ``_repo_segment`` guard, so a hand-edit typo surfaces as a reasoned
+    skip instead of vanishing. A resolved ``repo_full_name`` that repeats an earlier
+    one (case-insensitively, ACROSS both sources — ``org_audit_candidates`` processed
+    first) is deduped, keeping the first occurrence's original casing — a literal or
+    case-variant duplicate must not double-count in ``org_audit_candidates_classified``.
+    ``None``/non-list ``org_audit_candidates`` and a missing/malformed
+    ``discovery_curated_groups_seed`` each independently degrade to contributing ZERO
+    rows (never raises); if BOTH are empty/malformed the result is an empty frame
+    carrying the ``repo_full_name`` column, matching
+    :func:`classify_trending_candidates`'s own empty-input schema."""
     rows: list[dict] = []
     seen: set[str] = set()
     if isinstance(org_audit_candidates, list):
         for entry in org_audit_candidates:
             repo_full_name = entry.get("repo_full_name") if isinstance(entry, dict) else None
-            if not isinstance(repo_full_name, str):
-                repo_full_name = None
-            if repo_full_name is not None:
-                key = repo_full_name.casefold()
-                if key in seen:
-                    continue
-                seen.add(key)
-            rows.append({"repo_full_name": repo_full_name})
+            _add_org_audit_row(rows, seen, repo_full_name)
+    for repo_full_name in _flatten_curated_groups(discovery_curated_groups_seed):
+        _add_org_audit_row(rows, seen, repo_full_name)
     return pd.DataFrame(rows, columns=_ORG_AUDIT_COLS)

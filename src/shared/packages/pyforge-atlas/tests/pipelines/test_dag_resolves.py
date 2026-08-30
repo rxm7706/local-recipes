@@ -235,13 +235,15 @@ def test_v_current_version_vulns_is_backed_by_per_version_vulns():
     assert "vulnerability_package_version_vulns" in vuln.outputs()
 
 
-# -- Story 21.4: upstream_discovery (7 nodes) + Tier-1 single-writer wiring -----
+# -- Story 21.4/21.5: upstream_discovery (9 nodes) + Tier-1/Tier-2 single-writer wiring -----
 
-def test_upstream_discovery_pipeline_has_seven_nodes():
+def test_upstream_discovery_pipeline_has_nine_nodes():
     # Stories 13.1/13.2/13.4 landed the original four; Story 21.4 added the three Tier-1
-    # external-refresh triggers (single writers of the discovery_*_raw stores).
+    # external-refresh triggers (single writers of the discovery_*_raw stores); Story
+    # 21.5 added the two Tier-2 nodes (refresh_about_maintainers +
+    # join_enterprise_conda_maintainers).
     discovery = discovery_create()
-    assert len(discovery.nodes) == 7
+    assert len(discovery.nodes) == 9
     assert {n.name for n in discovery.nodes} == {
         "refresh_trending_candidates",
         "classify_trending_candidates",
@@ -250,6 +252,8 @@ def test_upstream_discovery_pipeline_has_seven_nodes():
         "refresh_anaconda_dist_2026x",
         "refresh_basilisk_packages",
         "refresh_aoss_premium_python",
+        "refresh_about_maintainers",
+        "join_enterprise_conda_maintainers",
     }
 
 
@@ -265,6 +269,7 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
         "discovery_basilisk_packages_raw": "refresh_basilisk_packages",
         "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
+        "discovery_about_maintainers_raw": "refresh_about_maintainers",
         "core_anaconda_main_packages": "enumerate_anaconda_main_packages",
     }
     for store, expected in writers.items():
