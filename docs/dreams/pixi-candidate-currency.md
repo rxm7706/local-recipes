@@ -88,6 +88,28 @@ inferred from comments:
   upstream feedstock PR (conda-forge/pngquant-feedstock#16) — once that merges and pngquant
   ships win-64/osx-arm64, `ocrmypdf`'s own gate can be revisited.
 
+**Addendum 2026-08-30 — the click wall fell, and caveman got a patched build (all
+solver-verified, landed):**
+
+- **`headroom-ai` ACTIVE (0.37.0, all platforms) + `dbt-core`/`dbt-duckdb`/`dbt-postgres`
+  ACTIVE**: the shared `conda-recipe-manager` `click==8.2.1` wall was removed rather than
+  waited out — nothing in this repo invokes `crm`/`conda_recipe_manager`/`feedrattler`
+  (verified: zero task/script/source hits), so `conda-recipe-manager` + `feedrattler` (which
+  transitively requires it) moved out of `feature.grayskull`/`feature.local-recipes` into a
+  new grayskull-env-only `[feature.crm.dependencies]`. Migration tooling still runs via
+  `pixi run -e grayskull …`; the upstream fix (conda-forge/conda-recipe-manager-feedstock#44)
+  remains the long-term path back if local-recipes ever grows a real crm call. Note the
+  false-dawn on the way: headroom-ai 0.37.0's `pixi search` listing appeared click-free, but
+  anaconda.org repodata shows every 0.37.0 build carries `click >=8.3.3` — the wall was real
+  until crm left the env.
+- **`caveman` ACTIVE (2.4.0 build 2, linux-64 target)** via a patched SelfExplainML rebuild:
+  the blocker was SHARPENED first — not (only) marp-cli's nodejs, but `codegraph` 1.6.0's own
+  `nodejs >=24.19,<25` run-export makes caveman (build 1: `nodejs >=26.6,<27` run-export from
+  a host that resolved 26.6.0) mutually exclusive with an active Layer-2 instrument. Upstream's
+  true floor is `engines >=18`, so build 2 holds host nodejs at `24.*` and its run-export lands
+  inside codegraph's window (`recipes/caveman` documents the hold + lift trigger: the env
+  moving to nodejs 26 once the marp-cli/a2a-sdk libabseil gap closes).
+
 **Active-dependency version currency** (the other half of this Dream): a full audit pass, same
 session, grounded entirely in live solver output and repodata — not guessed. Parsed `pixi.lock`'s
 `local-recipes` environment (1147 packages on linux-64), diffed against fresh conda-forge

@@ -14,7 +14,35 @@
 #   22.6 needs 22.5 | 21.9/21.10 need 21.8
 # Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
 # if the operator decides to scope them out -- that is a scope decision, not made here.
+# pyforge-marshal (2026-08-30, Epic 28 token economy): tracked-ledger story-key order
+# would run 28-10/28-11 BEFORE their deps (28-1..28-4) because "28-10" sorts before
+# "28-2" lexically. Explicit topological order below, every epics.md `Deps:` edge
+# respected: 28.2/28.3/28.8 need 28.1 | 28.4 needs 28.2 | 28.5 needs 28.2+28.3
+# 28.6 needs 28.4 | 28.7 needs 28.3 | 28.10 needs 28.1+28.4 | 28.11 needs 28.10
+# 28.9 needs 28.8. 28.8/28.9 sit LAST: they consume Scribe's Story 6.1/6.2
+# compile_surface extras (scribe drains AFTER marshal in the alphabetical station
+# order, so an operator draining both stations in one session should either drain
+# scribe's 6.1/6.2 first by hand, or rely on 28.8/28.9's specced fallback: implement
+# the consumer side against Scribe's declared grammar when the extra isn't shipped).
+#
+# pyforge-scribe (2026-08-30): 6.2 needs 6.1 (epics.md Deps) — same as story-key
+# order; declared explicitly so the edge survives any future key renames.
 order_overrides:
+  pyforge-marshal:
+    - 28-1-the-context-policy-block-rendered-once-for-both-engines
+    - 28-2-wire-compression-at-the-harness-seam
+    - 28-3-genesis-seeds-the-token-economy-kit
+    - 28-4-savings-telemetry-in-journals-and-status
+    - 28-5-the-pinned-wrapped-vs-unwrapped-benchmark
+    - 28-6-the-graduated-compression-ladder
+    - 28-7-index-freshness-is-an-advisory-finding
+    - 28-10-the-model-cost-catalog-makes-spend-legible-in-dollars
+    - 28-11-difficulty-tiers-route-across-providers-and-pools
+    - 28-8-derived-context-recomputes-only-on-source-change
+    - 28-9-planning-graph-retrieval-behind-the-scribe-seam
+  pyforge-scribe:
+    - 6-1-the-graphify-ingest-extra-and-its-move-list-verbs
+    - 6-2-the-cocoindex-incremental-ingest-extra
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
     - 21-5-tier-2-sources-about-curated-orgs-artifactory-names

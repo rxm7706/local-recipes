@@ -87,7 +87,15 @@ MINIFORGE_HOME = "$CONDA_PREFIX"
 
 [feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
+[feature.crm.dependencies]
+# crm+feedrattler isolated from the grayskull FEATURE 2026-08-30 so local-recipes
+# (which composes grayskull) stops inheriting conda-recipe-manager's exact
+# click==8.2.1 pin (feedstock bug, conda-forge/conda-recipe-manager-feedstock#44) —
+# that pin walled headroom-ai + the dbt trio out of local-recipes. Only the
+# standalone grayskull ENV includes this feature; migrations still run via
+# `pixi run -e grayskull conda-recipe-manager convert …` / `… feedrattler …`.
 conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
+feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format (moved here with crm — it requires conda-recipe-manager >=0.4.0)
 [feature.grayskull.tasks.pypi]
 description = "generate a v1 (rattler-build) recipe for a PyPI package name with `grayskull`"
 cmd = "cd recipes && grayskull pypi --strict-conda-forge --use-v1-format"
@@ -686,7 +694,7 @@ linux = ["linux", "python"]
 osx = ["osx", "python", "build"]
 win = ["win", "python", "build"]
 build = ["python", "build"]
-grayskull = ["python", "grayskull"]
+grayskull = ["python", "grayskull", "crm"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 vuln-db = ["python", "vuln-db"]
@@ -1421,7 +1429,7 @@ frozendict = "*"                  # immutable dict (transitive build dep)
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 ##[feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
-conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes # TODO NOTE conflict with click ==8.2.1, for dbt-core
+#conda-recipe-manager = ">=0.8.0" # REMOVED from local-recipes 2026-08-30 (disposition: stale-here): nothing in this repo invokes crm/conda_recipe_manager (verified — zero task/script/source hits), and its feedstock's click==8.2.1 exact pin (feedstock bug, upstream pyproject declares click unpinned; conda-forge/conda-recipe-manager-feedstock#44) was the wall blocking headroom-ai + the dbt trio in THIS env. Still available via `pixi run -e grayskull crm …` ([feature.grayskull.dependencies] keeps it, isolated). Restore here only if a local-recipes task grows a real crm call — and then via a SelfExplainML rebuild with click unpinned (recipes/conda-recipe-manager is ready) or after feedstock#44 merges.
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 ##[feature.shellcheck]
@@ -1454,7 +1462,7 @@ conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda 
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
 conda-pypi = ">=0.11.0"           # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
-feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
+#feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0, transitively re-importing the click==8.2.1 wall this pass removed from local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.78.0"                 # Pixi package & environment manager
 # pixitainer moved to [feature.local-recipes.target.linux-64.dependencies] (Story 10.2):
@@ -1503,9 +1511,11 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #bmalph = ">=2.11.0"               # BMAD phases + Ralph loop CLI  current # PR #33557 # https://github.com/LarsCowe/bmalph
 #bmad-autopilot = ">=0.1.0"        # community precursor loop w/ PR-lifecycle automation # unix-only (skip: win) # https://github.com/martin-janci/autopilot
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
-#caveman = "*"                     # Claude Code token-compression skill that cuts ~65% of output tokens by talking like caveman.
-#headroom-ai = ">=0.31.0"          # Context-optimization layer (lib+CLI, Rust core)
+#caveman = "*"                     # moved to [feature.local-recipes.target.linux-64.dependencies] 2026-08-30 (SelfExplainML build is linux-64-only, like codegraph)
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
+cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
+graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ppt-master = ">=5.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
 pptxgenjs = ">=4.0.1"             # JavaScript library for creating PowerPoint presentations (used by ppt-master)
 pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.node >=24). NODE_PATH=$CONDA_PREFIX/lib/node_modules
@@ -1519,18 +1529,16 @@ dagster-pipes = ">=1.13.20"       # Toolkit for Dagster integrations with transf
 dagster-webserver = ">=1.13.20"   # Web UI for dagster.
 dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 # --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
-# dbt trio: NOT blocked by python 3.14 (they solve fine on 3.14 in isolation).
-# Blocked by a `click` conflict inside THIS env: dbt-core >=1.11.11 requires
-# click >=8.3.0,<9.0, but conda-recipe-manager 0.10.5 (line ~809) pins
-# `click ==8.2.1` exactly, so the two can never coexist.
-# That exact pin is a FEEDSTOCK BUG, not upstream intent: conda/conda-recipe-manager
-# v0.10.5's pyproject.toml declares plain `"click"` (unpinned) — the ==8.2.1 was
-# copied from their DEV environment.yaml into the recipe's run deps. Fix path:
-# one-line conda-recipe-manager-feedstock PR relaxing `click ==8.2.1` -> `click`,
-# then uncomment these three.
-#dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
-#dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
-#dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
+# dbt trio: UNBLOCKED 2026-08-30. Was blocked by a `click` conflict inside THIS
+# env: dbt-core >=1.11.11 requires click >=8.3.0,<9.0, but conda-recipe-manager
+# 0.10.5 pinned `click ==8.2.1` exactly (a FEEDSTOCK BUG — upstream pyproject
+# declares plain `"click"`; conda-forge/conda-recipe-manager-feedstock#44 is the
+# unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
+# (nothing here invokes it; it lives on in the grayskull env) rather than
+# waiting on the feedstock fix.
+dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
+dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
+dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
 # dlt: genuinely blocked on python 3.14, in two stages.
 # (1) conda-forge dlt is 1.28.2, which caps `python >=3.10,<3.14`. Upstream dlt
 #     1.29.1 already declares requires-python `<3.15,>=3.10`, so a feedstock bump
@@ -1622,8 +1630,6 @@ speechrecognition = ">=3.10.4"    # Speech recognition library for Python (suppo
 tesseract = ">=5.5.3"             # Google's OCR engine (binary; pairs with pytesseract)
 transformers = ">=5.16.1"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
-cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.44.0" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -1733,7 +1739,11 @@ pixitainer = ">=0.8.3"            # Containerize your Pixi workspace with a sing
                                   # its own recipe is `build.skip: "not linux"` -- placing it in the cross-platform
                                   # [feature.local-recipes.dependencies] table (its former, stale ">=0.7.1" home)
                                   # breaks win-64/osx-arm64-min solves (Story 10.2, Story 10.3's pixitainer eval).
+caveman = ">=2.4.0"               # Claude Code token-compression skill (~65% output-token cut). linux-64 only: SelfExplainML build. UNBLOCKED 2026-08-30 via patched rebuild: build 1's host resolved nodejs 26.6.0, whose run-export (`>=26.6,<27`) made it mutually exclusive with codegraph (nodejs >=24.19,<25); build 2 (ha52a1c0_2) holds host nodejs at 24.* so the run-export lands in codegraph's window (upstream engines floor is >=18 — see recipes/caveman). Lift the hold when the env moves to nodejs 26 (marp-cli/a2a-sdk libabseil gap).
+cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
 codegraph = ">=1.6.0"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local. linux-64 only: SelfExplainML build is linux-64-only.
+graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, conda-forge/conda-recipe-manager-feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. linux-64 here by operator preference (grouped with the token-economy instruments; solves cross-platform if ever promoted).
 
 [feature.local-recipes.target.win-64.dependencies]
 

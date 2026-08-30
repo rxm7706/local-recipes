@@ -13,7 +13,7 @@ source:
   sha256: 3e487f5b3b0916cc5594f2bf4973b47cf5711995be68eae4ae92f4698444756f
 
 build:
-  number: 1
+  number: 2
   # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
   # platform's npm global install lays down its native bin shims (symlinks
   # on unix, .cmd on win), which a single noarch artifact cannot provide.
@@ -33,7 +33,15 @@ build:
 
 requirements:
   host:
-    - nodejs >=18
+    # nodejs held to the 24.x LTS line (build 2, 2026-08-30): nodejs's
+    # run_exports pins the major of whatever host resolves, and build 1's
+    # host resolved 26.6.0, stamping `nodejs >=26.6.0,<27.0a0` into run —
+    # which made caveman mutually exclusive with codegraph (whose own
+    # build pins nodejs >=24.19,<25) in the local-recipes env. Upstream's
+    # true floor is engines >=18; caveman-install verified clean on node 24.
+    # Lift this hold when the env itself moves to nodejs 26 (i.e. when the
+    # marp-cli/a2a-sdk libabseil gap closes and codegraph rebuilds on 26).
+    - nodejs 24.*
   run:
     - nodejs >=18
 

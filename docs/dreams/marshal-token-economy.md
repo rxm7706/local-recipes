@@ -192,12 +192,16 @@ altered, only the encoding of what flows through.
 
 ## Gates and open questions
 
-- **Availability gate:** `headroom-ai` and `caveman` are packaged but
-  commented-out in `pixi.toml` — root-caused as blocked in
-  [`pixi-candidate-currency.md`](pixi-candidate-currency.md) (the
-  `conda-recipe-manager==8.2.1` pin chain). Unblocking that candidate row is a
-  prerequisite for Layers 0–1. `codegraph` is linux-64-only today; the loop
-  fleet is linux, so acceptable, but the policy block must degrade gracefully.
+- **Availability gate — RESOLVED 2026-08-30:** `headroom-ai` (0.37.0, all
+  platforms) and `caveman` (2.4.0 patched build 2, linux-64) are now ACTIVE in
+  `pixi.toml`. The `conda-recipe-manager` `click==8.2.1` pin chain fell by
+  moving crm+feedrattler into a grayskull-only `crm` feature (nothing in
+  local-recipes invokes them), and caveman was rebuilt against nodejs 24 so its
+  run-export coexists with codegraph's `nodejs >=24.19,<25` pin (details in
+  [`pixi-candidate-currency.md`](pixi-candidate-currency.md)). Layers 0–1 no
+  longer degrade on the linux loop fleet. `codegraph` and `caveman` are
+  linux-64-only; the loop fleet is linux, so acceptable, but the policy block
+  must still degrade gracefully on other platforms.
 - **Ownership seam:** Layer 4 must land as Scribe's `GraphStore` with Marshal
   as consumer — building a second graph inside Marshal would violate the
   station charters.

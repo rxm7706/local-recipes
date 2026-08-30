@@ -147,9 +147,15 @@ Recipe generation & migration:
   `--use-v1-format` for rattler-build recipes; also the source of the PyPI↔conda name
   mapping the factory caches.
 - **conda-recipe-manager** (>=0.8.0) — parse, lint, and migrate recipes v0 ↔ v1
-  programmatically (CRM library + `crm` CLI).
+  programmatically (CRM library + `crm` CLI). **grayskull env only** since
+  2026-08-30 (`[feature.crm.dependencies]`): its feedstock's exact click==8.2.1
+  pin (feedstock bug, conda-forge/conda-recipe-manager-feedstock#44) walled
+  headroom-ai + the dbt trio out of local-recipes. Run via
+  `pixi run -e grayskull crm …`.
 - **feedrattler** (>=0.3.14) — convert an existing conda-forge feedstock from v0
-  `meta.yaml` to v1 `recipe.yaml` end-to-end.
+  `meta.yaml` to v1 `recipe.yaml` end-to-end. **grayskull env only** since
+  2026-08-30 (requires conda-recipe-manager; moved with it). Run via
+  `pixi run -e grayskull feedrattler …`.
 
 Linting & feedstock management:
 - **conda-smithy** (>=3.44.6,<4) — feedstock generator + `conda-smithy recipe-lint`
@@ -232,7 +238,7 @@ All in `local-recipes`.
   `.claude/data/conda-forge-expert/vdb/` (built via `pixi run -e vuln-db vdb-refresh`).
 - **go-sops** (>=3.13.3) — `sops` binary; encrypted-secrets editor (YAML/JSON/env
   files; age/KMS/PGP backends).
-- **age** (>=1.3.1) — `age` / `age-keygen`; modern simple file encryption (the
+- **age** (>=1.3.2) — `age` / `age-keygen`; modern simple file encryption (the
   default sops backend here).
 
 ---
@@ -277,6 +283,10 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
+- **dbt-core** (>=1.11.11) + **dbt-duckdb** (>=1.9.4) + **dbt-postgres** (>=1.10.0) —
+  SQL transformation framework + adapters. Unblocked 2026-08-30: the click conflict
+  that pinned the trio out fell when conda-recipe-manager (exact click==8.2.1
+  feedstock pin) moved to the grayskull-only `crm` feature.
 - **duckdb-server** (>=0.31.0) — Mosaic's DuckDB HTTP/Arrow server (`duckdb-server`
   CLI; the import package is `pkg`, NOT `duckdb_server`). **pyforge-atlas env,
   linux-64 only** (hard-deps `socketify`, which conda-forge lacks on
@@ -498,6 +508,18 @@ Knowledge & indexing for agents:
   long-horizon agents (recompute only what changed).
 - **graphifyy** (>=0.9.51) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
+- **codegraph** (>=1.6.0) — pre-indexed code knowledge graph for coding agents
+  (fewer tokens, fewer tool calls, 100% local). **linux-64 only** (SelfExplainML
+  build); its build pins `nodejs >=24.19,<25`.
+- **headroom-ai** (>=0.37.0) — context-optimization layer (`headroom` CLI + lib,
+  Rust core): prompt/context compression middleware for agent loops. Unblocked
+  2026-08-30 (needed click >=8.3.3; see conda-recipe-manager note in § 3).
+  All platforms. Do NOT re-declare it as a pypi-dependency: tested 2026-08-30,
+  a pypi entry evicts the pyforge-core/pyforge-doctor conda path-packages.
+- **caveman** (>=2.4.0) — Claude Code output-token compression skill installer
+  (`caveman-install`; ~65% output-token cut). **linux-64 only** (SelfExplainML
+  patched build 2, host nodejs held at 24.* to coexist with codegraph — see
+  recipes/caveman).
 
 ---
 
@@ -623,7 +645,7 @@ Django stack (LTS-pinned):
 - **django** (5.2 LTS) — the web framework.
 - **channels** (4.x) + **daphne** (4.x) — WebSockets/async protocol layer + ASGI
   server for Django.
-- **asgiref** (>=3.11.1) + **channels_redis** (4.x) — **pyforge-steward env only**:
+- **asgiref** (>=3.12.1,<4.0) + **channels_redis** (4.x) — **pyforge-steward env only**:
   daphne's WSGI->ASGI adapter (`asgiref`, incl. `database_sync_to_async`) and the
   cross-worker channel-layer backend for `channels` (`channels_redis`, needed once
   workers > 1), Story 9.5.
@@ -813,7 +835,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **pyjwt** (>=2.13.0) — JSON Web Tokens.
 - **pytest-django** (>=4.13.0) — pytest plugin for Django.
 - **pytest-sugar** (>=1.1.1) — prettier pytest progress.
-- **python-crontab** (>=3.3.0) — crontab parse/edit (celery-beat).
+- **python-crontab** (>=3.4.0) — crontab parse/edit (celery-beat).
 - **python-ipware** (>=3.0.0) — client IP extraction.
 - **python-multipart** (>=0.0.32) — multipart form parser (Starlette/FastAPI).
 - **python-slugify** (>=8.0.4) — slugify strings.
@@ -840,8 +862,8 @@ depending on them without adding them first:
 
 - **streamlit, chainlit, pygwalker, django-pygwalker, perspective** — dashboard tools
   excluded (jupyter deps, platform gaps, or staleness).
-- **dbt-core / dbt-duckdb / dbt-postgres, dlt** — dbt pinned out by a click conflict;
-  dlt blocked on dlt-pendulum platform coverage / py3.14.
+- **dlt** — blocked on dlt-pendulum platform coverage / py3.14. (The dbt trio is
+  NO LONGER here — unblocked 2026-08-30, see § 4.)
 - **crewai** — agent framework, not resolvable here yet.
 - **litellm** — LLM router/proxy; deliberately not added (breaks on the repo's
   Python 3.14 floor).
@@ -856,8 +878,9 @@ depending on them without adding them first:
   parked — it is live in the `bmad-ui` env; see § 12. `bmad-story-automator` is
   gone entirely: retired upstream in favor of bmad-loop, recipe removed
   2026-08-21.)
-- **claude-mem, caveman, headroom-ai, codegraph, ppt-master, aichat** — parked
-  agent-tooling candidates.
+- **claude-mem, aichat** — parked agent-tooling candidates. (caveman, headroom-ai,
+  codegraph, and ppt-master are NO LONGER parked — all live; caveman/headroom-ai
+  unblocked 2026-08-30, see § 10.)
 - **ffmpeg** — never listed; pydub/audio work beyond WAV needs it added first.
 
 ---

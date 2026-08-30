@@ -4128,8 +4128,10 @@ Constraints binding every story (spec § Constraints): never compress the contra
 (specs/ACs/verdicts/escalation), never break the provider prompt cache (prefix
 byte-identical), reversible-or-absent (CCR), BSL boundary (`@caveman-ai/cli` stays out),
 telemetry advisory only (no second gate), per-layer graceful degradation (an unavailable
-instrument disables its layer with a named finding, never blocks a run — headroom-ai and
-caveman are pixi-blocked today per `docs/dreams/pixi-candidate-currency.md`).
+instrument disables its layer with a named finding, never blocks a run — all five
+instruments are pixi-ACTIVE since 2026-08-30 per `docs/dreams/pixi-candidate-currency.md`;
+degradation now governs non-linux platforms — caveman/codegraph are linux-64-only — and
+future regressions).
 
 ### Story 28.1: The context policy block, rendered once for both engines
 

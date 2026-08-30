@@ -11,9 +11,11 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings:
-  - headroom-ai is packaged (recipes/headroom-ai, Apache-2.0) but commented-out in pixi.toml
-    (pixi-candidate-currency blocker) — the seam must be fully testable with an injectable
-    wrapper and must degrade gracefully when the instrument is absent.
+  - headroom-ai is ACTIVE in pixi since 2026-08-30 (0.37.0, all platforms — the
+    pixi-candidate-currency click wall fell; `headroom` CLI verified live). The seam must
+    STILL be fully testable with an injectable wrapper and degrade gracefully when the
+    instrument is absent (non-linux fleets, future regressions) — availability changed,
+    the design constraint did not.
 ---
 
 <intent-contract>

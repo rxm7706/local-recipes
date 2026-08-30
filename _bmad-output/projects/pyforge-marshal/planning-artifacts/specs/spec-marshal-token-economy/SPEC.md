@@ -150,9 +150,11 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   review stage below the policy-declared review floor — review misses ship false-greens,
   the one place the strongest model pays for itself.
 - **Graceful degradation per layer:** an unavailable instrument (platform gap, pixi
-  blocker) disables its layer with a named finding, never blocks a run — the
-  headroom-ai/caveman pixi activation is a prerequisite tracked in
-  `docs/dreams/pixi-candidate-currency.md`, not silently assumed.
+  blocker) disables its layer with a named finding, never blocks a run. The
+  headroom-ai/caveman pixi activation LANDED 2026-08-30 (headroom-ai 0.37.0 all
+  platforms; caveman 2.4.0 build 2 linux-64 — see `docs/dreams/pixi-candidate-currency.md`),
+  so on the linux loop fleet all five layers are live; degradation still governs
+  non-linux platforms (caveman/codegraph are linux-64-only) and any future regression.
 
 ## Non-goals
 

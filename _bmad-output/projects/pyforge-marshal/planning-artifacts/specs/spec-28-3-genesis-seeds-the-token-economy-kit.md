@@ -11,9 +11,11 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings:
-  - caveman is packaged (recipes/caveman, MIT installer `caveman-install`) but commented-out
-    in pixi.toml; codegraph is linux-64-only. Seeding must treat each instrument as
-    optional-with-named-finding.
+  - caveman is ACTIVE in pixi since 2026-08-30 (2.4.0 patched build 2, linux-64 —
+    `caveman-install` verified live; see recipes/caveman for the nodejs-24 hold);
+    codegraph is likewise linux-64-only. Seeding must STILL treat each instrument as
+    optional-with-named-finding (non-linux fleets, future regressions) — availability
+    changed, the design constraint did not.
 ---
 
 <intent-contract>
