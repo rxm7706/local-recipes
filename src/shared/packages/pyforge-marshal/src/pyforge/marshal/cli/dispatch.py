@@ -422,13 +422,28 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict(journal.completion_verdict)
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    if journal.baseline_head_sha is None:
-        return DispatchSessionVerdict.LIVE if (
-            journal.session_pid is not None and process.is_alive(journal.session_pid)
-        ) else None
     session_alive = (
         journal.session_pid is not None and process.is_alive(journal.session_pid)
     )
+    # Independent verification (Story 22.3's dispatch_verify.py -- real gate
+    # commands re-run against the worktree, never a self-report) already
+    # judged this dispatch REFUSED. Combined with a confirmed-dead process,
+    # that is strong, non-self-reported evidence the session is gone, not
+    # merely idle -- git.changed_paths staying nonzero forever (once ANY
+    # real edit landed before the crash) must not keep judge_dispatch_
+    # completion's has_git_progress() reading this LIVE, or a crashed
+    # supervisor's last-known-good evidence blocks redispatch indefinitely
+    # (live 2026-08-29: atlas Story 21.1's dispatch supervisor crashed on
+    # compose_dispatch_policy's tomllib bug, and MRS-DISP-011 kept refusing
+    # redispatch on the same 8-changed-paths evidence for hours after).
+    # Deliberately gated on session_alive being False too: a session that
+    # IS still running with a currently-refused gate (mid-development, not
+    # yet green) must stay LIVE -- verification_verdict alone is not proof
+    # of death, only the conjunction with a confirmed-dead process is.
+    if not session_alive and journal.verification_verdict == "refused":
+        return DispatchSessionVerdict.FAILED
+    if journal.baseline_head_sha is None:
+        return DispatchSessionVerdict.LIVE if session_alive else None
     try:
         git_facts = gather_dispatch_git_facts(
             vcs,
