@@ -1850,7 +1850,7 @@ without `cf_atlas.db` on the Kedro path. **Renumbered 2026-08-29** from draft Ep
 collision with Epic 18 (Kedro hooks) in this file.
 
 ### Story 21.1: Relocate atlas data defaults and add pyforge-atlas-bootstrap
-**Type:** feature • **Effort:** M • **Deps:** — • **Status:** ready
+**Type:** feature • **Effort:** M • **Deps:** — • **Status:** done
 **Given** an empty `PYFORGE_ATLAS_DATA_ROOT` **When** `pixi run pyforge-atlas-bootstrap` runs
 **Then** `globals.yml` store paths resolve under `${paths.data_root}/stores/` (not
 `.claude/data/conda-forge-expert/`) **And** the documented operator env block ships with the
@@ -1858,7 +1858,7 @@ pixi task **And** bootstrap smoke passes on an empty data root (Phase A only —
 unchanged).
 
 ### Story 21.2: Remove cf_atlas.db seeds from production datasets
-**Type:** feature • **Effort:** L • **Deps:** S-21.1 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.1 • **Status:** done
 **Given** no `CF_ATLAS_DB` on the Kedro path **When** production datasets load **Then** no
 dataset defaults to `cf_atlas.db`; `parity-diff` passes.
 
