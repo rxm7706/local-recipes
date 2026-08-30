@@ -27,6 +27,27 @@ backend only — no ``lxml`` / ``requests`` / ``httpx`` dependency is added.
 ``GITHUB_API_BASE_URL`` override points (no new override point). Staying uncredentialed
 (rate-limited but functional) keeps this pipeline schedule-eligible without triggering
 AD-11's attended-only-credentialed-run rule.
+
+**Story 21.4 (Tier 1 catalog sources, CAP-2)** adds three more dataset classes here,
+co-located with :class:`TrendingSnapshotDataset` because they share its exact shape:
+
+- :class:`AnacondaDist2026Dataset` (``discovery_anaconda_dist_2026x_raw``) — HTML-scrape
+  primary (:func:`parse_anaconda_dist_html`, the anaconda.com 2026.x release-notes package
+  table) with a LOCAL git-tracked seed fallback on a scrape layout break (not a second
+  HTTP call), then the inherited keep-last-good Parquet degrade.
+- :class:`AossPremiumPythonDataset` (``discovery_aoss_premium_python_raw``) — the live
+  Google Assured OSS premium-tier doc (:func:`parse_aoss_premium_doc`); on failure the
+  inherited ``ExternalRefreshDataset.save()`` keep-last-good + mark-stale applies
+  unchanged ("Wayback last-good" in catalog-sources.md is read as exactly that — there is
+  no Internet Archive integration here; see the story spec's Design Notes).
+- :class:`TrackedSeedDataset` (``discovery_aoss_free_python_raw``) — a small, generic,
+  read-only reader over a git-tracked JSON-array seed under ``conf/base/seeds/`` (the
+  air-gap contract: zero network, survives a fresh clone). No refresh-trigger node:
+  its ``load()`` reads the file directly, so there is no ``save()``-gated emptiness to
+  be dormant relative to.
+
+All three parse with the same ``beautifulsoup4`` + stdlib ``html.parser`` backend already
+imported above — no new dependency — and every parser NEVER raises.
 """
 
 from __future__ import annotations
@@ -40,11 +61,13 @@ from typing import Any, Callable
 
 import pandas as pd
 from bs4 import BeautifulSoup
+from kedro.io import AbstractDataset
 
 from .refresh import (
     DAILY_SECONDS,
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
+    WEEKLY_SECONDS,
     ExternalRefreshDataset,
 )
 
@@ -348,3 +371,446 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
             )
             self._mark_stale("trending candidates store unreadable", only_if_absent=True)
             return pd.DataFrame()
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — Tier 1 catalog sources (CAP-2): tracked seeds, Anaconda Dist 2026.x,
+# Google AOSS premium Python
+# ---------------------------------------------------------------------------
+
+# The `source` stamp every tracked-seed-derived row carries.
+TRACKED_SEED_SOURCE = "tracked_seed"
+
+# The package member dir (src/shared/packages/pyforge-atlas) — the second place a
+# RELATIVE seed path is resolved against (after the process CWD), so
+# `conf/base/seeds/<file>.json` resolves both for the documented `kedro run` from the
+# member dir AND for a caller sitting at the repo root / in a test.
+_MEMBER_DIR = Path(__file__).resolve().parents[4]
+
+
+def _resolve_seed_path(seed_path: str | Path) -> Path:
+    path = Path(seed_path)
+    if path.is_absolute() or path.exists():
+        return path
+    candidate = _MEMBER_DIR / path
+    return candidate if candidate.exists() else path
+
+
+def read_tracked_seed(seed_path: str | Path) -> list:
+    """Read a git-tracked JSON-array seed file. NEVER raises: a missing / unreadable /
+    non-JSON / non-array file (none of which should happen in a real clone — the seeds
+    are tracked under ``conf/base/seeds/``, not the gitignored ``data/`` root) degrades
+    to ``[]`` + a WARN log."""
+    path = _resolve_seed_path(seed_path)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:  # ValueError covers JSONDecodeError + UnicodeDecodeError
+        logger.warning("tracked seed %s unreadable, degrading to empty: %s", path, exc)
+        return []
+    if not isinstance(raw, list):
+        logger.warning("tracked seed %s is not a JSON array, degrading to empty", path)
+        return []
+    return raw
+
+
+class TrackedSeedDataset(AbstractDataset):
+    """A generic, READ-ONLY git-tracked-JSON-array reader (Story 21.4 — backs
+    ``discovery_aoss_free_python_raw``, the "tracked seed" fetch mode).
+
+    ``load()`` returns a ``<name_column>`` / ``source="tracked_seed"`` frame — one row per
+    array entry (a bare string, or a dict carrying ``name_column``); blank / non-string /
+    duplicate names are dropped. No network, ever. A missing or corrupt file degrades to
+    an EMPTY frame + a WARN (never raises); ``save()`` raises ``NotImplementedError``
+    like every other read-only dataset in this package (the seed is edited by hand
+    under git review, never written by a pipeline).
+    """
+
+    def __init__(
+        self,
+        *,
+        filepath: str,
+        name_column: str = "pypi_name",
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        # No **kwargs sink: an unrecognized catalog key must raise loudly.
+        self._filepath = str(filepath)
+        self._name_column = str(name_column)
+        self.metadata = metadata
+
+    @property
+    def _columns(self) -> list[str]:
+        return [self._name_column, "source"]
+
+    def load(self) -> pd.DataFrame:
+        rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for entry in read_tracked_seed(self._filepath):
+            name = entry.get(self._name_column) if isinstance(entry, dict) else entry
+            if not isinstance(name, str):
+                continue
+            name = name.strip()
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            rows.append({self._name_column: name, "source": TRACKED_SEED_SOURCE})
+        return pd.DataFrame(rows, columns=self._columns)
+
+    def save(self, data: Any) -> None:
+        raise NotImplementedError(f"{type(self).__name__} is read-only (git-tracked seed)")
+
+    def _describe(self) -> dict[str, Any]:
+        return {
+            "filepath": self._filepath,
+            "resolved": str(_resolve_seed_path(self._filepath)),
+            "name_column": self._name_column,
+            "source": TRACKED_SEED_SOURCE,
+        }
+
+
+# -- Anaconda Distribution 2026.x ---------------------------------------------
+
+# The release-notes page's package table starts with this header cell (live shape
+# 2026-08-30: ``Package Name | linux-64 | linux-aarch64 | osx-arm64 | win-64``, 639
+# rows; three further per-platform tables follow — the FIRST all-platform table wins).
+_ANACONDA_DIST_NAME_HEADER = "package name"
+_ANACONDA_DIST_COLUMNS: tuple[str, ...] = ("conda_name", "version", "platforms", "source", "fetched_at")
+
+
+def parse_anaconda_dist_html(html: str) -> list[dict]:
+    """Parse the anaconda.com Anaconda Distribution 2026.x release-notes page
+    (BeautifulSoup + stdlib ``html.parser``). Finds the FIRST ``<table>`` whose header
+    row begins with ``Package Name`` and reads one row per package: ``conda_name``,
+    ``version`` (the ``linux-64`` column when present, else the first non-empty
+    platform cell), ``platforms`` (the header columns carrying a version), tagged
+    ``source="html_scrape"`` + ``fetched_at``.
+
+    Returns ``[]`` — NEVER raises — on a layout break (no such table, an empty table, a
+    malformed document): the dataset then falls back to its tracked seed."""
+    if not html:
+        return []
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+        tables = soup.find_all("table")
+    except Exception as exc:  # a malformed document must never crash the run (AD-13)
+        logger.warning("anaconda dist HTML parse failed: %s", exc)
+        return []
+
+    fetched_at = int(time.time())
+    for table in tables:
+        trs = table.find_all("tr")
+        if not trs:
+            continue
+        header = [c.get_text(strip=True) for c in trs[0].find_all(["th", "td"])]
+        if not header or header[0].strip().lower() != _ANACONDA_DIST_NAME_HEADER:
+            continue
+        platforms = header[1:]
+        rows: list[dict[str, Any]] = []
+        for tr in trs[1:]:
+            cells = [c.get_text(strip=True) for c in tr.find_all(["th", "td"])]
+            if not cells or not cells[0]:
+                continue
+            versions = dict(zip(platforms, cells[1:]))
+            present = [p for p in platforms if versions.get(p)]
+            version = versions.get("linux-64") or (versions[present[0]] if present else None)
+            rows.append(
+                {
+                    "conda_name": cells[0],
+                    "version": version or None,
+                    "platforms": present,
+                    "source": "html_scrape",
+                    "fetched_at": fetched_at,
+                }
+            )
+        if rows:
+            return rows
+    return []
+
+
+class AnacondaDist2026Dataset(ExternalRefreshDataset):
+    """Story 21.4 — Anaconda Distribution 2026.x package list
+    (``discovery_anaconda_dist_2026x_raw``; catalog-sources.md Tier 1, "HTML extractor +
+    seed fallback").
+
+    Mirrors :class:`TrendingSnapshotDataset._do_refresh`'s "try the live source; if it
+    yields zero rows, fall back" shape exactly — but the fallback is a LOCAL read of the
+    git-tracked ``conf/base/seeds/discovery_anaconda_dist_2026x_seed.json`` file (never a
+    second HTTP call). If BOTH the scrape and the seed are empty, the inherited
+    ``save()`` keep-last-good + mark-stale applies (AD-13). ``fetcher=None`` == offline:
+    construction is network-free; a DUE refresh keeps last-good + marks stale.
+    """
+
+    STORE_FILENAME = "anaconda_dist_2026x.parquet"
+    _REQUIRED_COLUMNS = ("conda_name", "source", "fetched_at")
+
+    def __init__(
+        self,
+        *,
+        filepath: str,
+        url: str,
+        seed_path: str,
+        fetcher: Callable[[str], str] | None = None,
+        cadence_seconds: int | None = None,
+        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._url = str(url)
+        self._seed_path = str(seed_path)
+        self._fetcher = fetcher
+        super().__init__(
+            filepath=filepath,
+            refresher=self._do_refresh if fetcher is not None else None,
+            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            required_resource=None,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            metadata=metadata,
+        )
+
+    def _seed_rows(self) -> list[dict]:
+        """The tracked seed as rows in the SAME shape the scraper emits, tagged
+        ``source="tracked_seed"``. Entries may be bare names or
+        ``{conda_name, version, platforms}`` dicts; anything else is skipped."""
+        fetched_at = int(time.time())
+        rows: list[dict[str, Any]] = []
+        for entry in read_tracked_seed(self._seed_path):
+            if isinstance(entry, str):
+                name, version, platforms = entry, None, []
+            elif isinstance(entry, dict):
+                name = entry.get("conda_name")
+                version = entry.get("version")
+                platforms = entry.get("platforms") or []
+            else:
+                continue
+            if not isinstance(name, str) or not name.strip():
+                continue
+            rows.append(
+                {
+                    "conda_name": name.strip(),
+                    "version": version if isinstance(version, str) else None,
+                    "platforms": list(platforms) if isinstance(platforms, (list, tuple)) else [],
+                    "source": TRACKED_SEED_SOURCE,
+                    "fetched_at": fetched_at,
+                }
+            )
+        return rows
+
+    def _do_refresh(self) -> pd.DataFrame:
+        """Scrape; on zero rows (fetch failure OR layout break) fall back to the tracked
+        seed. Never raises."""
+        rows: list[dict] = []
+        try:
+            html = self._fetcher(self._url)
+        except Exception as exc:  # AD-13: a fetch failure degrades, never aborts.
+            logger.warning("anaconda dist scrape fetch failed: %s", exc)
+            html = None
+        if html is not None:
+            rows = parse_anaconda_dist_html(html)
+        if not rows:
+            logger.warning(
+                "anaconda dist scrape yielded zero rows (fetch failure / layout break) — "
+                "falling back to the tracked seed %s",
+                self._seed_path,
+            )
+            rows = self._seed_rows()
+        return pd.DataFrame(rows, columns=list(_ANACONDA_DIST_COLUMNS))
+
+    @property
+    def _store_path(self) -> Path:
+        return Path(self._filepath) / self.STORE_FILENAME
+
+    def _store_exists(self) -> bool:
+        return self._store_path.is_file()
+
+    def _store_mtime(self) -> float:
+        return self._store_path.stat().st_mtime
+
+    def _write(self, fetched: Any) -> None:
+        frame = fetched if isinstance(fetched, pd.DataFrame) else pd.DataFrame(fetched)
+        missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]
+        if missing:
+            raise ValueError(f"anaconda dist refresh frame missing required columns: {missing}")
+        self._atomic_write(self._store_path, lambda p: frame.to_parquet(p, index=False))
+
+    def load(self) -> pd.DataFrame:
+        if not self._store_exists():
+            self._mark_stale(
+                "anaconda dist 2026.x store absent (never refreshed / offline)",
+                only_if_absent=True,
+            )
+            return pd.DataFrame(columns=list(_ANACONDA_DIST_COLUMNS))
+        try:
+            return pd.read_parquet(self._store_path)
+        except Exception as exc:
+            logger.warning(
+                "anaconda dist 2026.x store unreadable (%s), degrading to empty: %s",
+                self._store_path,
+                exc,
+            )
+            self._mark_stale("anaconda dist 2026.x store unreadable", only_if_absent=True)
+            return pd.DataFrame(columns=list(_ANACONDA_DIST_COLUMNS))
+
+    def _describe(self) -> dict[str, Any]:
+        base = super()._describe()
+        base.update({"url": self._url, "seed_path": self._seed_path})
+        return base
+
+
+# -- Google Assured OSS premium-tier Python ------------------------------------
+
+# Both AOSS "supported packages" docs (free tier: assured-open-source-software/docs/
+# supported-packages; premium tier: security-command-center/docs/
+# aoss-supported-packages-premium) share one shape (live-verified 2026-08-30): an
+# ``<h2 id="python">Supported Python packages</h2>`` heading followed by a ``<ul>`` of one
+# ``<li>`` per package name (free 1,474 / premium 2,156 incl. 2 duplicates).
+_AOSS_PYTHON_HEADING_ID = "python"
+_AOSS_PREMIUM_COLUMNS: tuple[str, ...] = ("pypi_name", "tier", "source", "fetched_at")
+
+
+def _as_text(payload: Any) -> str | None:
+    if isinstance(payload, bytes):
+        try:
+            return payload.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+    return payload if isinstance(payload, str) else None
+
+
+def parse_aoss_python_package_names(html: Any) -> list[str]:
+    """The Python package names an AOSS "supported packages" doc lists: the ``<ul>``
+    right after the ``#python`` heading (fallback: any ``h2``/``h3`` mentioning "Python
+    packages"), one ``<li>`` per name, de-duplicated in page order. ``[]`` — never
+    raises — on a layout break or a non-text payload. Shared by
+    :func:`parse_aoss_premium_doc` and the one-off acquisition of the free-tier seed."""
+    text = _as_text(html)
+    if not text:
+        return []
+    try:
+        soup = BeautifulSoup(text, "html.parser")
+        heading = soup.find(id=_AOSS_PYTHON_HEADING_ID)
+        if heading is None:
+            heading = next(
+                (
+                    h
+                    for h in soup.find_all(["h2", "h3"])
+                    if "python packages" in h.get_text(" ", strip=True).lower()
+                ),
+                None,
+            )
+        listing = heading.find_next("ul") if heading is not None else None
+        items = listing.find_all("li") if listing is not None else []
+    except Exception as exc:  # AD-13: a malformed document never crashes the run.
+        logger.warning("AOSS supported-packages HTML parse failed: %s", exc)
+        return []
+    names: list[str] = []
+    seen: set[str] = set()
+    for li in items:
+        name = li.get_text(" ", strip=True)
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        names.append(name)
+    return names
+
+
+def parse_aoss_premium_doc(payload: Any) -> list[dict]:
+    """PURE parser for the live AOSS premium-tier Python doc -> one row per package:
+    ``pypi_name`` / ``tier="premium"`` / ``source="html_scrape"`` / ``fetched_at``.
+    ``[]`` (never raises) on a layout break."""
+    fetched_at = int(time.time())
+    return [
+        {"pypi_name": name, "tier": "premium", "source": "html_scrape", "fetched_at": fetched_at}
+        for name in parse_aoss_python_package_names(payload)
+    ]
+
+
+class AossPremiumPythonDataset(ExternalRefreshDataset):
+    """Story 21.4 — Google Assured OSS premium-tier Python catalog
+    (``discovery_aoss_premium_python_raw``; catalog-sources.md Tier 1, "Live doc").
+
+    One live-doc fetch via the injected ``fetcher`` + :func:`parse_aoss_premium_doc`. On
+    a fetch failure / layout break the INHERITED ``ExternalRefreshDataset.save()``
+    keep-last-good-Parquet + mark-stale behavior applies unchanged — no extra fallback
+    tier (the "Wayback last-good" note is read as this same AD-13 degrade; a literal
+    Internet Archive fetch is NOT built here — story spec Design Notes).
+    """
+
+    STORE_FILENAME = "aoss_premium_python.parquet"
+    _REQUIRED_COLUMNS = ("pypi_name", "source", "fetched_at")
+
+    def __init__(
+        self,
+        *,
+        filepath: str,
+        url: str,
+        fetcher: Callable[[str], str] | None = None,
+        cadence_seconds: int | None = None,
+        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._url = str(url)
+        self._fetcher = fetcher
+        super().__init__(
+            filepath=filepath,
+            refresher=self._do_refresh if fetcher is not None else None,
+            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            required_resource=None,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            metadata=metadata,
+        )
+
+    def _do_refresh(self) -> pd.DataFrame:
+        """Fetch + parse the live doc. Never raises — a fetch failure WARNs and returns
+        an empty frame (which ``save()`` turns into keep-last-good + mark stale)."""
+        try:
+            payload = self._fetcher(self._url)
+        except Exception as exc:  # AD-13
+            logger.warning("AOSS premium doc fetch failed: %s", exc)
+            return pd.DataFrame(columns=list(_AOSS_PREMIUM_COLUMNS))
+        rows = parse_aoss_premium_doc(payload)
+        if not rows:
+            logger.warning("AOSS premium doc parsed zero packages (layout break?) — keeping last-good")
+        return pd.DataFrame(rows, columns=list(_AOSS_PREMIUM_COLUMNS))
+
+    @property
+    def _store_path(self) -> Path:
+        return Path(self._filepath) / self.STORE_FILENAME
+
+    def _store_exists(self) -> bool:
+        return self._store_path.is_file()
+
+    def _store_mtime(self) -> float:
+        return self._store_path.stat().st_mtime
+
+    def _write(self, fetched: Any) -> None:
+        frame = fetched if isinstance(fetched, pd.DataFrame) else pd.DataFrame(fetched)
+        missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]
+        if missing:
+            raise ValueError(f"AOSS premium refresh frame missing required columns: {missing}")
+        self._atomic_write(self._store_path, lambda p: frame.to_parquet(p, index=False))
+
+    def load(self) -> pd.DataFrame:
+        if not self._store_exists():
+            self._mark_stale(
+                "AOSS premium python store absent (never refreshed / offline)",
+                only_if_absent=True,
+            )
+            return pd.DataFrame(columns=list(_AOSS_PREMIUM_COLUMNS))
+        try:
+            return pd.read_parquet(self._store_path)
+        except Exception as exc:
+            logger.warning(
+                "AOSS premium python store unreadable (%s), degrading to empty: %s",
+                self._store_path,
+                exc,
+            )
+            self._mark_stale("AOSS premium python store unreadable", only_if_absent=True)
+            return pd.DataFrame(columns=list(_AOSS_PREMIUM_COLUMNS))
+
+    def _describe(self) -> dict[str, Any]:
+        base = super()._describe()
+        base.update({"url": self._url})
+        return base
+

@@ -225,3 +225,31 @@ def test_nodes_tolerate_missing_required_columns():
     assert build_dependency_graph(pd.DataFrame({"x": [1]})).empty
     assert compute_feedstock_health(pd.DataFrame({"x": [1]})).empty
     assert enumerate_conda_packages(pd.DataFrame({"x": [1]}), pd.DataFrame()).empty
+
+
+# -- Story 21.4: enumerate_anaconda_main_packages (Tier-1 materializer) ------
+
+from pyforge.atlas.pipelines.core.nodes import enumerate_anaconda_main_packages  # noqa: E402
+
+
+def test_enumerate_anaconda_main_packages_passes_through_channeldata_shape():
+    raw = pd.DataFrame(
+        {"conda_name": ["numpy", "pandas", "numpy", None], "subdirs": [["linux-64"], ["noarch"], ["osx-64"], ["win-64"]]}
+    )
+    out = enumerate_anaconda_main_packages(raw)
+    assert list(out.columns) == ["conda_name", "subdirs"]
+    assert out["conda_name"].tolist() == ["numpy", "pandas"]  # null dropped, duplicate collapsed
+    assert out.iloc[0]["subdirs"] == ["linux-64"]
+
+
+def test_enumerate_anaconda_main_packages_empty_or_offline_degraded_is_columned_empty(caplog):
+    for degraded in (None, pd.DataFrame(), pd.DataFrame(columns=["conda_name", "subdirs"]), pd.DataFrame({"other": [1]})):
+        out = enumerate_anaconda_main_packages(degraded)
+        assert out.empty and list(out.columns) == ["conda_name", "subdirs"]
+    assert "empty" in caplog.text  # WARN, never a crash
+
+
+def test_enumerate_anaconda_main_packages_adds_missing_subdirs_column():
+    out = enumerate_anaconda_main_packages(pd.DataFrame({"conda_name": ["a"]}))
+    assert list(out.columns) == ["conda_name", "subdirs"]
+    assert out.iloc[0]["subdirs"] is None

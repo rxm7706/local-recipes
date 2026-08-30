@@ -294,3 +294,195 @@ def test_detail_staleness_sidecar_is_valid_json(tmp_path):
     assert marker_file.is_file()
     raw = json.loads(marker_file.read_text())
     assert raw["stale"] is True and "reason" in raw
+
+
+# --- BasiliskPackagesDataset (Story 21.4: GET /v1/packages catalog, ExternalRefreshDataset)
+
+import pandas as pd  # noqa: E402
+
+from pyforge.atlas.datasets.basilisk import (  # noqa: E402
+    BasiliskPackagesDataset,
+    parse_basilisk_packages_response,
+)
+from pyforge.atlas.datasets.refresh import RefreshRequest  # noqa: E402
+
+_PKG_URL = "https://api.basilisk.prefix.dev/v1/packages"
+
+
+def _page(offset: int, size: int, total: int) -> str:
+    items = [
+        {
+            "name": f"pkg-{i}",
+            "browse_ecosystem": "conda-forge",
+            "latest_version": f"{i}.0",
+            "version_count": 3,
+            "status": "affected",
+            "mapping_state": "mapped",
+            "coverage_status": "no_match",
+            "highest_cvss": None,
+        }
+        for i in range(offset, min(offset + size, total))
+    ]
+    return json.dumps({"total": total, "offset": offset, "limit": size, "items": items})
+
+
+def _paged_fetcher(total: int, size: int, calls: list[str] | None = None):
+    def fetcher(url: str) -> str:
+        if calls is not None:
+            calls.append(url)
+        offset = int(url.rsplit("offset=", 1)[-1])
+        return _page(offset, size, total)
+
+    return fetcher
+
+
+def _pkgs(tmp_path, **kw) -> BasiliskPackagesDataset:
+    return BasiliskPackagesDataset(url=_PKG_URL, filepath=str(tmp_path / "packages"), **kw)
+
+
+def test_parse_basilisk_packages_response_projects_catalog_columns():
+    frame = parse_basilisk_packages_response(_page(0, 2, 2))
+    assert frame["conda_name"].tolist() == ["pkg-0", "pkg-1"]
+    assert frame["ecosystem"].tolist() == ["conda-forge", "conda-forge"]
+    assert (frame["source"] == "basilisk_packages").all()
+    assert frame["fetched_at"].map(lambda v: isinstance(v, int)).all()
+
+
+def test_parse_basilisk_packages_response_accepts_dict_bytes_and_bare_list():
+    assert len(parse_basilisk_packages_response({"items": [{"name": "a"}]})) == 1
+    assert len(parse_basilisk_packages_response(b'{"items": [{"name": "a"}]}')) == 1
+    assert len(parse_basilisk_packages_response([{"name": "a"}, {"name": "b"}])) == 2
+
+
+def test_parse_basilisk_packages_response_malformed_never_raises():
+    for bad in (None, "", "not json", {}, {"items": "nope"}, {"items": [1, {"name": ""}, {"nope": 1}]}, 42):
+        frame = parse_basilisk_packages_response(bad)
+        assert isinstance(frame, pd.DataFrame) and frame.empty
+        assert "conda_name" in frame.columns
+
+
+def test_packages_constructs_offline_no_refresher(tmp_path):
+    ds = _pkgs(tmp_path)
+    desc = ds._describe()
+    assert desc["refresher_wired"] is False and desc["fetcher_wired"] is False
+    assert desc["url"] == _PKG_URL
+
+
+def test_packages_page_url_is_dataset_built():
+    ds = BasiliskPackagesDataset(url=_PKG_URL + "/", filepath="x", page_size=200)
+    assert ds.page_url(400) == f"{_PKG_URL}?limit=200&offset=400"
+
+
+def test_packages_fetch_success_walks_every_page_and_persists(tmp_path):
+    calls: list[str] = []
+    ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200, calls=calls), page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert ds.is_stale() is False
+    out = ds.load()
+    assert len(out) == 450
+    assert out["conda_name"].is_unique
+    # exactly 3 pages (200 + 200 + 50); the short last page stops the walk
+    assert [u.rsplit("offset=", 1)[-1] for u in calls] == ["0", "200", "400"]
+
+
+def test_packages_stops_at_total_when_pages_are_exact_multiples(tmp_path):
+    calls: list[str] = []
+    ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=400, size=200, calls=calls), page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 400
+    assert len(calls) == 2  # offset 400 >= total -> never requested
+
+
+def test_packages_acquires_one_scheduler_token_per_page(tmp_path):
+    sched = RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
+    start = sched.tokens
+    ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200), page_size=200, scheduler=sched)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert sched.tokens == start - 3
+
+
+def test_packages_page_cap_never_hangs_and_keeps_collected(tmp_path):
+    # a server that keeps returning full pages regardless of offset, and reports no total
+    def endless(url: str) -> str:
+        return json.dumps({"items": [{"name": f"p-{url.rsplit('offset=', 1)[-1]}-{i}"} for i in range(5)]})
+
+    ds = _pkgs(tmp_path, fetcher=endless, page_size=5, max_pages=4)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 20  # 4 pages x 5 rows, then the cap trips
+    assert ds.is_stale() is False
+
+
+def test_packages_first_run_no_last_good_fetch_failure_marks_stale_empty(tmp_path):
+    def boom(url: str):
+        raise ConnectionError("endpoint down")
+
+    ds = _pkgs(tmp_path, fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))  # never raises
+    assert ds.is_stale() is True
+    marker = ds.staleness()
+    assert marker is not None and marker.last_good_exists is False
+    out = ds.load()
+    assert out.empty and "conda_name" in out.columns
+
+
+def test_packages_fetch_failure_keeps_last_good_and_marks_stale(tmp_path):
+    p = tmp_path / "packages"
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=10, size=200)).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    assert p.is_dir()
+
+    def boom(url: str):
+        raise ConnectionError("endpoint down")
+
+    ds = _pkgs(tmp_path, fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is True
+    assert len(ds.load()) == 10  # prior catalog untouched
+
+
+def test_packages_mid_walk_failure_persists_pages_collected_so_far(tmp_path):
+    def flaky(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        if offset >= 200:
+            raise ConnectionError("page 2 down")
+        return _page(offset, 200, 450)
+
+    ds = _pkgs(tmp_path, fetcher=flaky, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 200  # a partial catalog is still real data
+    assert ds.is_stale() is False
+
+
+def test_packages_offline_no_fetcher_marks_stale_and_keeps_last_good(tmp_path):
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=10, size=200)).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    offline = _pkgs(tmp_path)
+    offline.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert offline.is_stale() is True
+    assert len(offline.load()) == 10
+
+
+def test_packages_empty_payload_keeps_last_good(tmp_path):
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=10, size=200)).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    ds = _pkgs(tmp_path, fetcher=lambda url: json.dumps({"total": 0, "items": []}))
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert ds.is_stale() is True
+    assert len(ds.load()) == 10
+
+
+def test_packages_unreadable_store_degrades_to_empty(tmp_path):
+    ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=10, size=200))
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    ds._store_path.write_bytes(b"not a parquet")
+    out = _pkgs(tmp_path).load()
+    assert out.empty and ds.is_stale() is True
+
+
+def test_packages_write_rejects_frame_missing_required_columns(tmp_path):
+    with pytest.raises(ValueError):
+        _pkgs(tmp_path)._write(pd.DataFrame({"nonsense": [1]}))

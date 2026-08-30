@@ -9,17 +9,24 @@
 # NEVER hardcode a host. New sources add exactly one override point
 # (spine "Endpoint overrides" row).
 #
-# `endpoint_bases` carries EXACTLY the 20 override points of Story A2
-# AC-4, pinned as a 19+1 STRUCTURE (review-pass P7): 19 LIVE
+# `endpoint_bases` carries EXACTLY the 22 override points, pinned as a
+# 19+1+2 STRUCTURE (review-pass P7, extended by Story 21.4): 19 LIVE
 # `resolve_*_urls` helpers (cf-atlas-legacy @ b18cbb5; spot-verified
-# against the live tree 2026-07-17) plus the RESERVED 20th,
-# BASILISK_BASE_URL (FR-19 — no live helper backs it; Story B8 lands the
-# nodes). `kedro-catalog-check` asserts the 19-live set and the 1-reserved
-# set separately, never a bare 20.
+# against the live tree 2026-07-17), the RESERVED 20th, BASILISK_BASE_URL
+# (FR-19 — no legacy helper backed it; Story B8 landed the nodes), plus the
+# 2 Story 21.4 Tier-1 discovery points (ANACONDA_DIST_BASE_URL,
+# AOSS_PREMIUM_BASE_URL — genuinely new v1 work with no legacy helper
+# either way, following this header's own "new sources add exactly one
+# override point" rule, the same path BASILISK_BASE_URL took). Anaconda
+# main channeldata and Basilisk /v1/packages REUSE existing points
+# (ANACONDA_CHANNEL_BASE_URL / BASILISK_BASE_URL) — no new global.
+# `kedro-catalog-check` asserts the 21-live set and the 1-reserved set
+# separately, never a bare 22.
 #
 # Total env-override surface of this file (P7 accounting, +1 by P9's
-# data_root): endpoint_bases 20 + extra_overrides 3 + fetcher_urls 3 +
-# paths 5 = 31. Pinned by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
+# data_root, +2 by Story 21.4): endpoint_bases 22 + extra_overrides 3 +
+# fetcher_urls 3 + paths 5 = 33. Pinned by tests/catalog
+# (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
   CONDA_FORGE_BASE_URL: ${env_or:CONDA_FORGE_BASE_URL,https://conda.anaconda.org/conda-forge}
@@ -45,6 +52,17 @@ endpoint_bases:
   ANACONDA_CHANNEL_BASE_URL: ${env_or:ANACONDA_CHANNEL_BASE_URL,https://conda.anaconda.org}
   S3_PARQUET_BASE_URL: ${env_or:S3_PARQUET_BASE_URL,https://anaconda-package-data.s3.amazonaws.com}
   BASILISK_BASE_URL: ${env_or:BASILISK_BASE_URL,https://api.basilisk.prefix.dev}
+  # Story 21.4 (Tier 1, CAP-2). ANACONDA_DIST_BASE_URL: the anaconda.com docs host
+  # whose /docs/getting-started/anaconda/release/2026.x page carries the Anaconda
+  # Distribution 2026.x package table (live-verified 2026-08-30: 639 rows).
+  # AOSS_PREMIUM_BASE_URL: the Google Cloud docs host whose
+  # /security-command-center/docs/aoss-supported-packages-premium page lists the
+  # Assured OSS premium-tier Python packages (live 2026-08-30: 2,156 names — the
+  # live page works; the inventory quartet's Wayback snapshot URL is not needed).
+  # The free-tier list on the same host is a git-tracked seed (air-gap), not a
+  # fetch, so it declares no override point.
+  ANACONDA_DIST_BASE_URL: ${env_or:ANACONDA_DIST_BASE_URL,https://www.anaconda.com}
+  AOSS_PREMIUM_BASE_URL: ${env_or:AOSS_PREMIUM_BASE_URL,https://docs.cloud.google.com}
 
 # Additional overrides that ARE current data access but are NOT among the
 # 20 helper-backed points. kedro-catalog-check asserts these separately:

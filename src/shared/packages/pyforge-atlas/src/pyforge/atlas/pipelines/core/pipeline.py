@@ -18,6 +18,7 @@ from .nodes import (
     compute_feedstock_health,
     compute_version_download_history,
     detect_latest_status,
+    enumerate_anaconda_main_packages,
     enumerate_conda_packages,
 )
 
@@ -30,6 +31,16 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["core_repodata_raw", "core_channeldata_raw"],
                 outputs="core_packages_enumerated",
                 name="enumerate_conda_packages",
+            ),
+            # Story 21.4 (Tier 1): the ONLY consumer of the live
+            # core_anaconda_main_channeldata_raw entry — without it the raw entry is
+            # never touched by any `kedro run` (mirrors how core_channeldata_raw is
+            # always consumed by enumerate_conda_packages / detect_latest_status).
+            node(
+                func=enumerate_anaconda_main_packages,
+                inputs="core_anaconda_main_channeldata_raw",
+                outputs="core_anaconda_main_packages",
+                name="enumerate_anaconda_main_packages",
             ),
             node(
                 func=attribute_feedstocks,

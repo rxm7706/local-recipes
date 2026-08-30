@@ -219,6 +219,7 @@ BOOTSTRAP_CRON = "0 2 * * 0"  # weekly, Sunday 02:00
 NODE_TIMEOUTS: dict[str, int] = {
     # -- core -------------------------------------------------------------- #
     "enumerate_conda_packages": 600,
+    "enumerate_anaconda_main_packages": 300,  # Story 21.4 — Anaconda main channeldata materializer
     "attribute_feedstocks": 300,
     "detect_latest_status": 300,
     "compute_downloads": 600,  # Phase F
@@ -272,6 +273,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "classify_trending_candidates": 120,  # CAP-2 (pure in-memory join, no network)
     "load_org_audit_candidates": 30,  # CAP-4 (pure in-memory params->DataFrame, no network)
     "classify_org_audit_candidates": 120,  # CAP-4 (reuses CAP-2's classifier, no network)
+    "refresh_anaconda_dist_2026x": 300,  # Story 21.4 — one HTML page + tracked-seed fallback
+    "refresh_basilisk_packages": 1200,  # Story 21.4 — ~171 paginated GETs under the rate limit
+    "refresh_aoss_premium_python": 300,  # Story 21.4 — one live doc page
     # -- artifactory_downloads --------------------------------------------- #
     "fetch_artifactory_downloads": 600,  # Story 15.3 CAP-4 (network-capable once configured; inert by default)
     "join_artifactory_identity": 120,  # Story 15.3 CAP-4 (pure in-memory join, no network)

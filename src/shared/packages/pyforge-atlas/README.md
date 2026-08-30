@@ -179,7 +179,7 @@ endpoint.
 | Task (root workspace) | What it does |
 |---|---|
 | `kedro-test` | Wave A deterministic gate (AD-11): `pytest src/shared/packages/pyforge-atlas/tests -q` — `pyforge.atlas` + `pyforge.warden` + `kedro_dagster` import smokes, the Kedro bootstrap/session seam on the dotted package, scaffold-layout invariants (also collects `tests/catalog/`) |
-| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 20 override points (+`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
+| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 22 override points (19 live + 1 reserved + 2 Story 21.4; +`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
 | `pyforge-atlas-bootstrap` | Story 21.1 (CAP-1): fresh-clone Kedro bootstrap — creates the `stores/{vdb,osv}` dirs + a credentials stub, then runs the seven self-contained pipelines as one combined `kedro run --pipelines <list>` under `PYFORGE_ATLAS_DATA_ROOT` (see the section above) |
 | `pyforge-atlas-build-conda` | conda package via `pixi build` (pixi-build-python wraps the hatchling wheel) |
 | `pyforge-atlas-build-dist` | wheel + sdist via `python -m build --no-isolation` |

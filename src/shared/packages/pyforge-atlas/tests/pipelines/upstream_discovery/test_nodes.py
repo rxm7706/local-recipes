@@ -590,3 +590,64 @@ def test_org_audit_candidates_malformed_entry_reaches_classifier_as_a_visible_sk
     row = out.iloc[0]
     assert row["tier"] == "skip"
     assert row["reason"] == "no-pypi-artifact"
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — the three Tier-1 external-refresh triggers (mirror
+# refresh_trending_candidates: params:ttls -> RefreshRequest, weekly default)
+# ---------------------------------------------------------------------------
+
+from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS  # noqa: E402
+from pyforge.atlas.pipelines.upstream_discovery.nodes import (  # noqa: E402
+    refresh_anaconda_dist_2026x,
+    refresh_aoss_premium_python,
+    refresh_basilisk_packages,
+)
+
+# (trigger, ttls key, store) — the ttls key IS the catalog entry name (kedro-catalog-check
+# rejects any ttls key that is not a catalog entry).
+_TIER_1_TRIGGERS = [
+    (refresh_anaconda_dist_2026x, "discovery_anaconda_dist_2026x_raw", "discovery_anaconda_dist_2026x_raw"),
+    (refresh_basilisk_packages, "discovery_basilisk_packages_raw", "discovery_basilisk_packages_raw"),
+    (refresh_aoss_premium_python, "discovery_aoss_premium_python_raw", "discovery_aoss_premium_python_raw"),
+]
+
+
+@pytest.mark.parametrize(("trigger", "ttl_key", "store"), _TIER_1_TRIGGERS)
+def test_tier_1_trigger_reads_its_own_ttls_cadence(trigger, ttl_key, store):
+    req = trigger({ttl_key: 12345})
+    assert isinstance(req, RefreshRequest)
+    assert req.store == store
+    assert req.cadence_seconds == 12345
+    assert req.force is False
+    assert req.resource is None
+
+
+@pytest.mark.parametrize(("trigger", "ttl_key", "store"), _TIER_1_TRIGGERS)
+def test_tier_1_trigger_missing_or_non_numeric_falls_back_to_weekly(trigger, ttl_key, store):
+    # weekly — NOT the daily default refresh_trending_candidates falls back to
+    assert trigger({}).cadence_seconds == WEEKLY_SECONDS
+    assert trigger(None).cadence_seconds == WEEKLY_SECONDS
+    assert trigger({ttl_key: "nope"}).cadence_seconds == WEEKLY_SECONDS
+    assert trigger({ttl_key: None}).cadence_seconds == WEEKLY_SECONDS
+    assert trigger("not-a-dict").cadence_seconds == WEEKLY_SECONDS
+
+
+def test_tier_1_triggers_read_the_shipped_parameters_yml_ttls():
+    import pathlib
+
+    import yaml
+
+    params = yaml.safe_load(
+        (pathlib.Path(__file__).resolve().parents[3] / "conf" / "base" / "parameters.yml").read_text(encoding="utf-8")
+    )
+    ttls = params["ttls"]
+    for trigger, ttl_key, _store in _TIER_1_TRIGGERS:
+        assert ttl_key in ttls, ttl_key
+        assert trigger(ttls).cadence_seconds == ttls[ttl_key] == WEEKLY_SECONDS
+    assert "discovery_aoss_free_python_raw" not in ttls  # tracked seed: config, no ttl
+
+
+def test_coerce_cadence_default_is_still_daily_for_the_existing_caller():
+    assert N._coerce_cadence({}, "trending_candidates") == DAILY_SECONDS
+    assert N._coerce_cadence({}, "x", WEEKLY_SECONDS) == WEEKLY_SECONDS

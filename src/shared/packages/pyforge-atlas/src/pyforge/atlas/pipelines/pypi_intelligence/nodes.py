@@ -32,7 +32,9 @@ _PROTECTED_MATCH_SOURCES = ("parselmouth", "recipe_source_url", "g10_spelling")
 _PHASE_H_SAFETY_RECHECK_SECONDS = 30 * 24 * 3600
 
 # Phase Q channels whose bulk repodata yields the per-channel `in_<channel>` BOOLs.
-_CROSS_CHANNELS = ("bioconda", "pytorch", "nvidia", "robostack")
+# Story 21.4 (Tier 1): + selfexplainml — the 5th `_CROSS_CHANNEL_SPECS` tuple in
+# datasets/core_sources.py drives a 5th `in_selfexplainml` column here automatically.
+_CROSS_CHANNELS = ("bioconda", "pytorch", "nvidia", "robostack", "selfexplainml")
 
 
 def _is_missing(v) -> bool:
@@ -416,8 +418,9 @@ def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.Data
     runtime-parameterized entry + a dataset-owned loop over the channels), so the node
     receives ONE already-combined frame carrying a ``channel`` column and stays pure —
     no factory/partitioned dataset needed. Input: ``conda_name``, ``channel`` (one of
-    bioconda/pytorch/nvidia/robostack). Output: ``conda_name`` + ``in_bioconda`` /
-    ``in_pytorch`` / ``in_nvidia`` / ``in_robostack`` BOOLs (one row per conda_name)."""
+    bioconda/pytorch/nvidia/robostack/selfexplainml). Output: ``conda_name`` +
+    ``in_bioconda`` / ``in_pytorch`` / ``in_nvidia`` / ``in_robostack`` /
+    ``in_selfexplainml`` BOOLs (one row per conda_name)."""
     out_cols = ["conda_name"] + [f"in_{c}" for c in _CROSS_CHANNELS]
     df = pypi_cross_channel_repodata_raw
     if df is None or df.empty or not {"conda_name", "channel"} <= set(df.columns):

@@ -26,19 +26,21 @@ import re
 
 import pandas as pd
 
-from ...datasets.refresh import DAILY_SECONDS, RefreshRequest
+from ...datasets.refresh import DAILY_SECONDS, WEEKLY_SECONDS, RefreshRequest
 
 
-def _coerce_cadence(ttls: dict, key: str) -> int:
+def _coerce_cadence(ttls: dict, key: str, default: int = DAILY_SECONDS) -> int:
     """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
     value, OR a non-dict ``ttls`` (review finding, Story 13.1 — the precedent
     ``vulnerability/nodes.py::_coerce_cadence`` this mirrors only guards a falsy value,
-    not a truthy non-dict), falls back to the daily default rather than crashing."""
+    not a truthy non-dict), falls back to ``default`` (daily unless the caller says
+    otherwise — Story 21.4's weekly package-catalog triggers pass ``WEEKLY_SECONDS``)
+    rather than crashing."""
     raw = ttls.get(key) if isinstance(ttls, dict) else None
     try:
         return int(raw)
     except (TypeError, ValueError):
-        return DAILY_SECONDS
+        return default
 
 
 def refresh_trending_candidates(ttls: dict) -> RefreshRequest:
@@ -52,6 +54,57 @@ def refresh_trending_candidates(ttls: dict) -> RefreshRequest:
     return RefreshRequest(
         store="trending_candidates",
         cadence_seconds=_coerce_cadence(ttls, "trending_candidates"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — Tier 1 external-refresh triggers (spec-atlas-kedro-catalog-expansion CAP-2)
+# ---------------------------------------------------------------------------
+#
+# Three PURE ``params:ttls -> RefreshRequest`` triggers mirroring
+# ``refresh_trending_candidates`` exactly — each is the SINGLE writer of its named
+# catalog entry (AD-3/AD-10). Their datasets (``AnacondaDist2026Dataset`` /
+# ``BasiliskPackagesDataset`` / ``AossPremiumPythonDataset``, all
+# ``ExternalRefreshDataset`` subclasses) have a ``load()`` that is a read-only
+# projection of a persisted store — EMPTY forever unless some node's ``outputs=``
+# binding calls ``save()``. These nodes are that binding (the Story 21.2 pass-1
+# pipeline-dormancy lesson). ``discovery_aoss_free_python_raw`` (``TrackedSeedDataset``)
+# deliberately has NO trigger: its ``load()`` reads the git-tracked seed directly.
+# Cadence: weekly (``ttls.discovery_*_raw`` — keyed by the catalog entry name, as
+# kedro-catalog-check requires — matching the sibling ``vcs_registry_versions`` weekly
+# default for slow-moving package catalogs).
+
+
+def refresh_anaconda_dist_2026x(ttls: dict) -> RefreshRequest:
+    # Story 21.4 — Anaconda Distribution 2026.x package list (HTML scrape + seed fallback)
+    """External-refresh trigger for ``discovery_anaconda_dist_2026x_raw``. PURE: emits
+    the ``RefreshRequest`` ``AnacondaDist2026Dataset.save()`` honors (cadence/force) and
+    which invokes the dataset-owned injected scrape — NO HTTP/parse import here."""
+    return RefreshRequest(
+        store="discovery_anaconda_dist_2026x_raw",
+        cadence_seconds=_coerce_cadence(ttls, "discovery_anaconda_dist_2026x_raw", WEEKLY_SECONDS),
+    )
+
+
+def refresh_basilisk_packages(ttls: dict) -> RefreshRequest:
+    # Story 21.4 — Basilisk GET /v1/packages catalog (distinct from vulnerability_basilisk_*)
+    """External-refresh trigger for ``discovery_basilisk_packages_raw``. PURE: emits the
+    ``RefreshRequest`` ``BasiliskPackagesDataset.save()`` honors; the paginated GET walk
+    is dataset-owned."""
+    return RefreshRequest(
+        store="discovery_basilisk_packages_raw",
+        cadence_seconds=_coerce_cadence(ttls, "discovery_basilisk_packages_raw", WEEKLY_SECONDS),
+    )
+
+
+def refresh_aoss_premium_python(ttls: dict) -> RefreshRequest:
+    # Story 21.4 — Google Assured OSS premium-tier Python catalog (live doc)
+    """External-refresh trigger for ``discovery_aoss_premium_python_raw``. PURE: emits
+    the ``RefreshRequest`` ``AossPremiumPythonDataset.save()`` honors; on failure the
+    dataset's inherited keep-last-good + mark-stale applies."""
+    return RefreshRequest(
+        store="discovery_aoss_premium_python_raw",
+        cadence_seconds=_coerce_cadence(ttls, "discovery_aoss_premium_python_raw", WEEKLY_SECONDS),
     )
 
 

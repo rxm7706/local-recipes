@@ -489,12 +489,24 @@ class PyPISimpleIndexDataset(AbstractDataset):
         return {"parameterization": type(self).__name__}
 
 
+# Phase Q cross-channel specs: ``(short_name, channel, subdirs)``. Story 21.4 hardened
+# every channel to a 2-subdir FALLBACK list (the first subdir that yields repodata
+# wins — see ``_fetch_channel_repodata``): a channel that publishes under only one of
+# ``noarch``/``linux-64`` no longer reads as "unavailable" just because the first
+# guess 404s. The ``_REPDATA_FILENAMES`` current_repodata.json -> repodata.json
+# fallback below is the second axis (selfexplainml + robostack-staging publish NO
+# current_repodata.json at all — live-verified 2026-08-30). Order per channel is the
+# subdir most likely to carry the bulk of the package names first.
 _CROSS_CHANNEL_SPECS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
-    ("bioconda", "bioconda", ("noarch",)),
-    ("pytorch", "pytorch", ("noarch",)),
-    ("nvidia", "nvidia", ("noarch",)),
-    # robostack-staging: packages live under linux-64; channel may omit current_repodata.json.
-    ("robostack", "robostack-staging", ("linux-64",)),
+    ("bioconda", "bioconda", ("noarch", "linux-64")),
+    ("pytorch", "pytorch", ("noarch", "linux-64")),
+    ("nvidia", "nvidia", ("noarch", "linux-64")),
+    # robostack-staging: packages live under linux-64; channel omits current_repodata.json.
+    ("robostack", "robostack-staging", ("linux-64", "noarch")),
+    # Story 21.4 (Tier 1, catalog-sources.md): SelfExplainML publishes noarch + linux-64,
+    # repodata.json only (no current_repodata.json), on conda.anaconda.org only (the
+    # prefix.dev mirror 404s, so the mirror chain falls through to anaconda.org).
+    ("selfexplainml", "selfexplainml", ("noarch", "linux-64")),
 )
 _REPDATA_FILENAMES = ("current_repodata.json", "repodata.json")
 
@@ -565,7 +577,9 @@ def _fetch_channel_repodata(
 
 
 class CrossChannelRepodataDataset(AbstractDataset):
-    """Phase Q: bulk repodata from bioconda/pytorch/nvidia/robostack → ``conda_name``, ``channel``."""
+    """Phase Q: bulk repodata from bioconda/pytorch/nvidia/robostack/selfexplainml →
+    ``conda_name``, ``channel`` (Story 21.4 added selfexplainml as the 5th
+    ``_CROSS_CHANNEL_SPECS`` tuple — same entry, same parser, no new catalog entry)."""
 
     def __init__(
         self,

@@ -19,8 +19,10 @@ from .basilisk import (
     BASILISK_QUERYBATCH_MAX,
     BasiliskBatchDataset,
     BasiliskDetailDataset,
+    BasiliskPackagesDataset,
     build_conda_purl,
     chunk_queries,
+    parse_basilisk_packages_response,
 )
 from .core_sources import (
     CfGraphTarballDataset,
@@ -88,9 +90,16 @@ from .sbom_intake import (
     parse_requirements_txt,
 )
 from .upstream_discovery import (
+    AnacondaDist2026Dataset,
+    AossPremiumPythonDataset,
+    TrackedSeedDataset,
     TrendingSnapshotDataset,
+    parse_anaconda_dist_html,
+    parse_aoss_premium_doc,
+    parse_aoss_python_package_names,
     parse_search_api_response,
     parse_trending_html,
+    read_tracked_seed,
 )
 from .vcs_sources import (
     RegistryUpstreamDataset,
@@ -161,6 +170,17 @@ __all__ = [
     "TrendingSnapshotDataset",
     "parse_trending_html",
     "parse_search_api_response",
+    # Story 21.4 — Tier 1 catalog sources (CAP-2): Basilisk packages, Anaconda Dist,
+    # AOSS premium (external-refresh) + the generic tracked-seed reader (AOSS free)
+    "BasiliskPackagesDataset",
+    "parse_basilisk_packages_response",
+    "AnacondaDist2026Dataset",
+    "parse_anaconda_dist_html",
+    "AossPremiumPythonDataset",
+    "parse_aoss_premium_doc",
+    "parse_aoss_python_package_names",
+    "TrackedSeedDataset",
+    "read_tracked_seed",
     # Core raw-source parsers + datasets (B1 ingest gap)
     "FeedstockOutputsArchiveDataset",
     "CondaRepodataDataset",

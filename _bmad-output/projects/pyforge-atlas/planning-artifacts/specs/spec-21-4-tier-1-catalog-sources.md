@@ -2,8 +2,9 @@
 title: 'Tier 1 catalog sources: SelfExplainML, Anaconda, Basilisk packages, AOSS (Story 21.4, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
+baseline_revision: '7b87803db5180c591211e2f97d539bff77bc61f7'
 followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
@@ -484,3 +485,68 @@ here to research items instead of pins).
 - Manual: `git diff --stat` shows the 2 new tracked seed files under
   `conf/base/seeds/` (never under `data/`), confirming they survive a fresh
   clone.
+
+## Spec Change Log
+
+- 2026-08-30 (implementation pass 1): the intent contract is implemented as written;
+  the deviations below are all outside the `<intent-contract>` block and are recorded
+  because the Code Map / Tasks named something more specific than the live sources or
+  the machine-enforced gates allow.
+  - **Step-03 research resolved with real sourced values (no placeholders remain):**
+    (1) `ANACONDA_DIST_BASE_URL` = `https://www.anaconda.com`; the 2026.x page
+    (`/docs/getting-started/anaconda/release/2026.x`) carries a
+    `Package Name | linux-64 | linux-aarch64 | osx-arm64 | win-64` table — 639 rows live
+    2026-08-30 — which `parse_anaconda_dist_html` reads (first table whose header
+    starts `Package Name`). (2) `AOSS_PREMIUM_BASE_URL` = `https://docs.cloud.google.com`;
+    the premium doc (`/security-command-center/docs/aoss-supported-packages-premium`)
+    is a LIVE HTML page (200, 2,156 names incl. 2 duplicates) shaped
+    `<h2 id="python">` + `<ul><li>name</li>…</ul>` — the inventory quartet's Wayback
+    snapshot URL is not needed, and `parse_aoss_premium_doc` reads that shape.
+    (3) `conf/base/seeds/discovery_aoss_free_python_seed.json` = the 1,474 names from the
+    live free-tier doc (`/assured-open-source-software/docs/supported-packages#python`,
+    identical `<ul>` shape, extracted with the same `parse_aoss_python_package_names`
+    helper) — above the ≥1,000 floor. (4) `discovery_anaconda_dist_2026x_seed.json` =
+    the 639-row table above as `{conda_name, version, platforms}` objects.
+  - **Basilisk `/v1/packages` is paginated, not a single bulk GET** (live-verified: the
+    server clamps `limit` to 200 whatever is requested; `total` = 34,105 → ~171 pages).
+    `BasiliskPackagesDataset` therefore takes a per-URL `fetcher: Callable[[str], Any]`
+    (the `TrendingSnapshotDataset` seam, not the Code Map's zero-arg callable), builds
+    the `?limit=&offset=` page URL itself (AC-2), walks pages under one
+    `RateLimitedScheduler` token each with a `max_pages` never-hang cap, and persists
+    the union (a mid-walk failure keeps the pages already collected). The named pure
+    parser `parse_basilisk_packages_response(payload) -> pd.DataFrame` handles ONE page.
+  - **Anaconda main routes through `ANACONDA_CHANNEL_BASE_URL/anaconda/channeldata.json`**
+    (conda.anaconda.org's `anaconda` channel mirror of `repo.anaconda.com/pkgs/main`;
+    5,401 packages live vs. 5,474 on repo.anaconda.com — both above the ≥5,000 floor).
+    The repo.anaconda.com host the inventory quartet scrapes is NOT reachable through
+    any existing override point, and the contract caps new override points at 2, so
+    the mirror is the reuse-an-existing-point route.
+  - **`ttls:` keys are the CATALOG ENTRY names** (`discovery_anaconda_dist_2026x_raw`
+    etc., not the Code Map's `discovery_anaconda_dist_2026x`): `kedro-catalog-check`'s
+    `test_every_ttl_gated_entry_has_a_ttl_parameter` rejects any `ttls` key that is not a
+    catalog entry, and `test_orphan_ttls_name_their_future_consumer` requires a
+    `[future_consumer: 21.4]` annotation on each — both applied. The trigger nodes read
+    those `_raw` keys; `_coerce_cadence` gained a `default` parameter so they fall back
+    to WEEKLY (the existing daily caller is unchanged).
+  - **Cross-channel hardening subdir order** (from live probes): bioconda / pytorch /
+    nvidia `("noarch", "linux-64")`; robostack-staging `("linux-64", "noarch")`;
+    selfexplainml `("noarch", "linux-64")` — selfexplainml + robostack publish
+    `repodata.json` only (the existing filename fallback covers it) and selfexplainml
+    404s on the prefix.dev mirror (the mirror chain falls through to anaconda.org).
+  - **Files touched beyond the Code Map:** `orchestration/definitions.py` (4
+    `NODE_TIMEOUTS` entries so "every real node IS mapped" stays true);
+    `tests/parity/test_parity_complete.py` (core node pin 7→8 and
+    `enumerate_anaconda_main_packages` added to the AD-14 new-signal set, so the
+    26-node parity surface is unchanged); `test_dag_resolves.py` also gained an
+    `upstream_discovery` 7-node pin + a Tier-1 single-writer test. Public helpers added
+    beyond the named ones: `parse_aoss_python_package_names`, `read_tracked_seed`.
+  - **Offline full-run AC is bounded by the Tier-0 live contract:** the reused-unchanged
+    `CondaChanneldataDataset` (like `core_channeldata_raw`) RAISES on an unreachable
+    host — verified with `ANACONDA_CHANNEL_BASE_URL=http://127.0.0.1:9` — so a `kedro
+    run --pipelines core,…` with literally no network fails inside Tier 0 exactly as it
+    did before this story (Story 21.3's axis). What this story's offline verification
+    proves instead: the 3 new trigger nodes complete offline and mark their stores
+    stale; `discovery_aoss_free_python_raw` loads 1,474 rows from the tracked seed with
+    zero network; `enumerate_anaconda_main_packages` materializes 5,401 rows live.
+  - Nothing was wired into the identity export / metrics runner / `--live-catalog`
+    (Stories 21.6–21.8); Tier 2 (`about`, curated orgs) untouched (Story 21.5).

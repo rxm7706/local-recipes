@@ -30,6 +30,14 @@ marker. It NEVER hard-fails the run. No live Basilisk call in any test (AD-11).
 ``${{globals:endpoint_bases.BASILISK_BASE_URL}}`` (the reserved 20th ``resolve_*_urls`` override
 point A2 pre-declared; ``env_or`` custom resolver). No network at ``__init__`` — the entries
 materialize under ``kedro-catalog-check`` with stub config.
+
+**Story 21.4 (Tier 1 catalog source, CAP-2).** :class:`BasiliskPackagesDataset` is the THIRD
+Basilisk dataset — the ``GET /v1/packages`` package CATALOG (``discovery_basilisk_packages_raw``,
+``upstream_discovery`` pipeline), distinct from the two ``vulnerability_basilisk_*`` advisory
+sources above. It is co-located here for cohesion but built on
+:class:`~pyforge.atlas.datasets.refresh.ExternalRefreshDataset` (the base those two do NOT use):
+``/v1/packages`` is a plain paginated GET over the whole catalog, not the ≤1,000-query-chunked
+batch shape. Same ``BASILISK_BASE_URL`` override point — no new global.
 """
 
 from __future__ import annotations
@@ -55,7 +63,14 @@ from .rate_limit import (
     parse_retry_after,
     resolve_worker_count,
 )
-from .refresh import StalenessMarker, _safe_int
+from .refresh import (
+    DEFAULT_REFRESH_MAX_RETRIES,
+    DEFAULT_REFRESH_TIMEOUT_SECONDS,
+    WEEKLY_SECONDS,
+    ExternalRefreshDataset,
+    StalenessMarker,
+    _safe_int,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -439,3 +454,263 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         if not last_good:
             self._mark_stale("wired fetcher but store not yet populated (attended fan-out pending)")
         return last_good
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — GET /v1/packages package catalog (discovery_basilisk_packages_raw)
+# ---------------------------------------------------------------------------
+
+# ``GET /v1/packages`` is PAGINATED: ``{"total", "offset", "limit", "items": [...]}``.
+# Live-verified 2026-08-30: the server clamps ``limit`` to 200 regardless of the value
+# requested (``?limit=1000`` still returns 200 items) and reported ``total`` = 34,105 —
+# so the full catalog is ~171 sequential pages, never one bulk GET. Both constants are
+# constructor-overridable; the page cap is the "never hang" guard (a server that keeps
+# returning full pages past ``total`` can never spin this loop forever).
+BASILISK_PACKAGES_PAGE_SIZE = 200
+BASILISK_PACKAGES_MAX_PAGES = 1000
+
+# The catalog columns projected from each ``/v1/packages`` item. ``name`` is renamed to
+# ``conda_name`` (the identity column every other conda-side dataset carries);
+# ``browse_ecosystem`` (e.g. ``conda-forge``) is the channel the package was matched in.
+_BASILISK_PACKAGE_FIELDS: tuple[tuple[str, str], ...] = (
+    ("name", "conda_name"),
+    ("browse_ecosystem", "ecosystem"),
+    ("latest_version", "latest_version"),
+    ("version_count", "version_count"),
+    ("status", "status"),
+    ("mapping_state", "mapping_state"),
+    ("coverage_status", "coverage_status"),
+    ("highest_cvss", "highest_cvss"),
+)
+_BASILISK_PACKAGE_COLUMNS: tuple[str, ...] = tuple(dst for _, dst in _BASILISK_PACKAGE_FIELDS) + (
+    "source",
+    "fetched_at",
+)
+
+
+def _coerce_payload(payload: Any) -> Any:
+    """Normalize an injected-fetcher return value to parsed JSON (dict / list). The
+    fetcher contract is "GET this URL, return the response" — text, bytes, or an
+    already-parsed object are all accepted; anything unparseable -> ``None``."""
+    if isinstance(payload, (bytes, str)):
+        try:
+            return json.loads(payload)
+        except (TypeError, ValueError):
+            return None
+    return payload
+
+
+def parse_basilisk_packages_response(payload: Any) -> pd.DataFrame:
+    """PURE parser for ONE ``GET /v1/packages`` page -> a ``conda_name``-keyed frame
+    (:data:`_BASILISK_PACKAGE_COLUMNS`). Accepts the documented
+    ``{"items": [...]}`` envelope OR a bare list of items, as JSON text/bytes or
+    already-parsed. NEVER raises: a malformed / non-JSON / non-list ``items`` payload,
+    or items without a ``name``, degrade to an EMPTY (but correctly-columned) frame —
+    the same "layout break -> empty, never a crash" contract
+    :func:`~pyforge.atlas.datasets.upstream_discovery.parse_trending_html` carries."""
+    data = _coerce_payload(payload)
+    if isinstance(data, dict):
+        items = data.get("items")
+    elif isinstance(data, list):
+        items = data
+    else:
+        items = None
+    if not isinstance(items, list):
+        return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+
+    fetched_at = int(time.time())
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        row = {dst: item.get(src) for src, dst in _BASILISK_PACKAGE_FIELDS}
+        row["conda_name"] = name.strip()
+        row["source"] = "basilisk_packages"
+        row["fetched_at"] = fetched_at
+        rows.append(row)
+    if not rows:
+        return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+    return pd.DataFrame(rows, columns=_BASILISK_PACKAGE_COLUMNS)
+
+
+def _payload_total(payload: Any) -> int | None:
+    """The ``total`` the page envelope reports (``None`` when absent/malformed)."""
+    data = _coerce_payload(payload)
+    if not isinstance(data, dict):
+        return None
+    total = data.get("total")
+    try:
+        return int(total) if total is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+class BasiliskPackagesDataset(ExternalRefreshDataset):
+    """Story 21.4 — the Basilisk ``GET /v1/packages`` package catalog
+    (``discovery_basilisk_packages_raw``; catalog-sources.md Tier 1, "Distinct from
+    ``vulnerability_basilisk_*``").
+
+    Subclasses :class:`ExternalRefreshDataset` (the same base ``TrendingSnapshotDataset``
+    / ``VDBStoreDataset`` use) to get the cadence-check / atomic-write / never-clobber /
+    :class:`StalenessMarker` machinery for free (AD-13):
+
+    - ``save`` (inherited, the SINGLE writer — the ``refresh_basilisk_packages`` trigger
+      node): when a refresh is DUE, invokes :meth:`_do_refresh`.
+    - :meth:`_do_refresh`: walks the paginated endpoint via the injected low-level
+      ``fetcher: Callable[[str], Any]`` (``GET {BASILISK_BASE_URL}/v1/packages?limit=N&offset=M``,
+      one :class:`RateLimitedScheduler` token per page — the standard atlas rate-limit
+      discipline the two advisory datasets above bind too) and parses each page with
+      :func:`parse_basilisk_packages_response`. A page fetch failure stops the walk and
+      KEEPS the pages already collected (a partial catalog is still real data; the
+      inherited ``save()`` only refuses an EMPTY result). Never raises.
+    - :meth:`_write` / :meth:`load`: Parquet at ``<filepath>/basilisk_packages.parquet``;
+      a missing / unreadable store degrades to an empty frame + staleness marker.
+
+    ``fetcher=None`` (the shipped default) == OFFLINE: construction is network-free
+    (``kedro-catalog-check``), and a DUE refresh keeps last-good + marks stale.
+    """
+
+    STORE_FILENAME = "basilisk_packages.parquet"
+    _REQUIRED_COLUMNS = ("conda_name", "source", "fetched_at")
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        filepath: str,
+        fetcher: Callable[[str], Any] | None = None,
+        page_size: int = BASILISK_PACKAGES_PAGE_SIZE,
+        max_pages: int = BASILISK_PACKAGES_MAX_PAGES,
+        scheduler: RateLimitedScheduler | None = None,
+        cadence_seconds: int | None = None,
+        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._url = str(url).rstrip("/")
+        # Injected IO (None == offline) — NEVER imported here; supplied by the Dagster
+        # resource / an attended run (DW-B8-1), exactly like the two datasets above.
+        self._fetcher = fetcher
+        self._page_size = max(1, int(page_size))
+        self._max_pages = max(1, int(max_pages))
+        self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler()
+        super().__init__(
+            filepath=filepath,
+            # Bind our own zero-arg refresh ONLY when a fetcher is wired, so construction
+            # stays offline and ``refresher_wired`` reports the truth.
+            refresher=self._do_refresh if fetcher is not None else None,
+            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            required_resource=None,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            metadata=metadata,
+        )
+
+    # -- refresh (dataset-owned IO; the injected fetcher is the ONLY seam) --
+
+    def page_url(self, offset: int) -> str:
+        """The ``?limit=&offset=`` page URL — built HERE (a node never builds one, AC-2)."""
+        return f"{self._url}?limit={self._page_size}&offset={int(offset)}"
+
+    def _do_refresh(self) -> pd.DataFrame:
+        """Walk every page until ``total`` is reached, a short/empty page arrives, or the
+        page cap trips. Never raises — a page failure WARNs and returns what was
+        collected so far (possibly nothing, which ``save()`` treats as keep-last-good)."""
+        frames: list[pd.DataFrame] = []
+        collected = 0
+        total: int | None = None
+        for page in range(self._max_pages):
+            offset = page * self._page_size
+            if total is not None and offset >= total:
+                break
+            try:
+                self.scheduler.acquire()
+                payload = self._fetcher(self.page_url(offset))
+            except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
+                logger.warning(
+                    "Basilisk /v1/packages page at offset=%s failed (%s); keeping %s rows "
+                    "collected so far",
+                    offset,
+                    exc,
+                    collected,
+                )
+                break
+            if total is None:
+                total = _payload_total(payload)
+            frame = parse_basilisk_packages_response(payload)
+            if frame.empty:
+                if page == 0:
+                    logger.warning("Basilisk /v1/packages first page parsed zero rows (layout break?)")
+                break
+            frames.append(frame)
+            collected += len(frame)
+            if len(frame) < self._page_size:
+                break  # a short page is the last page
+        else:
+            logger.warning(
+                "Basilisk /v1/packages page cap (%s pages) reached with total=%s — "
+                "persisting the %s rows collected",
+                self._max_pages,
+                total,
+                collected,
+            )
+        if not frames:
+            return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+        out = pd.concat(frames, ignore_index=True)
+        return out.drop_duplicates(subset=["conda_name", "ecosystem"]).reset_index(drop=True)
+
+    # -- store (Parquet under filepath/STORE_FILENAME) -----------------------
+
+    @property
+    def _store_path(self) -> Path:
+        return Path(self._filepath) / self.STORE_FILENAME
+
+    def _store_exists(self) -> bool:
+        return self._store_path.is_file()
+
+    def _store_mtime(self) -> float:
+        return self._store_path.stat().st_mtime
+
+    def _write(self, fetched: Any) -> None:
+        frame = fetched if isinstance(fetched, pd.DataFrame) else pd.DataFrame(fetched)
+        missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]
+        if missing:
+            # A malformed refresh must not persist a store that reads as "no packages"
+            # downstream — reject it so save() keeps last-good + marks stale.
+            raise ValueError(f"basilisk packages refresh frame missing required columns: {missing}")
+        self._atomic_write(self._store_path, lambda p: frame.to_parquet(p, index=False))
+
+    def load(self) -> pd.DataFrame:
+        if not self._store_exists():
+            self._mark_stale(
+                "basilisk packages store absent (never refreshed / offline)",
+                only_if_absent=True,
+            )
+            return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+        try:
+            return pd.read_parquet(self._store_path)
+        except Exception as exc:  # corrupt/truncated store must not crash the consumer.
+            logger.warning(
+                "basilisk packages store unreadable (%s), degrading to empty: %s",
+                self._store_path,
+                exc,
+            )
+            self._mark_stale("basilisk packages store unreadable", only_if_absent=True)
+            return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+
+    def _describe(self) -> dict[str, Any]:
+        base = super()._describe()
+        base.update(
+            {
+                "url": self._url,
+                "page_size": self._page_size,
+                "max_pages": self._max_pages,
+                "rps": self.scheduler.rps,
+                "fetcher_wired": self._fetcher is not None,
+            }
+        )
+        return base
+

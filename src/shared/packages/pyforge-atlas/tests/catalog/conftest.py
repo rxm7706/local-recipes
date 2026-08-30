@@ -76,6 +76,7 @@ PREFIX_TO_PIPELINE = {
     "derived": "derived_artifacts",
     "trending": "upstream_discovery",
     "org_audit": "upstream_discovery",
+    "discovery": "upstream_discovery",  # Story 21.4: Tier 1 discovery-shaped sources
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
     "semantic": "semantic_packages",
@@ -86,19 +87,19 @@ PREFIX_TO_PIPELINE = {
 # collapse into ONE partitioned dataset and the repo-scope sbom report is
 # deferred to F4 per AD-12; recorded in the Dev Agent Record).
 EXPECTED_PIPELINE_COUNTS = {
-    "core": 16,
+    "core": 18,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages
     "pypi_intelligence": 15,
     "vulnerability": 14,  # B8: + vulnerability_basilisk_detail_raw + vulnerability_basilisk_details (FR-19)
     "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 2,
-    "upstream_discovery": 4,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67)
+    "upstream_discovery": 8,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1)
     "artifactory_downloads": 2,  # Story 15.3 (CAP-4, Epic 15): artifactory_downloads_raw + artifactory_downloads_joined
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 95  # Story 20.3: 94 + semantic_packages
+EXPECTED_TOTAL = 101  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
@@ -142,8 +143,9 @@ EXPECTED_FLIP_MARKERS = {
 }
 
 # AC-4 accounting (review-pass P7: pinned as 19 live + 1 reserved, not a
-# bare 20): the 19 live resolve_*_urls helpers (verified at b18cbb5 AND
-# against the live tree 2026-07-17)...
+# bare 20; Story 21.4 extended it to 19+1+2 = 22): the 19 live
+# resolve_*_urls helpers (verified at b18cbb5 AND against the live tree
+# 2026-07-17) plus the 2 Story 21.4 Tier-1 discovery points at the end...
 EXPECTED_LIVE_OVERRIDE_POINTS = {
     "CONDA_FORGE_BASE_URL",
     "PYPI_BASE_URL",  # live name (corrected from the drafting inventory's PYPI_SIMPLE_BASE_URL)
@@ -164,7 +166,16 @@ EXPECTED_LIVE_OVERRIDE_POINTS = {
     "CODEBERG_API_BASE_URL",
     "ANACONDA_CHANNEL_BASE_URL",
     "S3_PARQUET_BASE_URL",
+    # Story 21.4 (Tier 1, CAP-2) — the ONLY 2 new override points the story adds
+    # (Anaconda main + Basilisk /v1/packages reuse ANACONDA_CHANNEL_BASE_URL /
+    # BASILISK_BASE_URL). No legacy resolve_*_urls helper either way — they follow
+    # globals.yml's "new sources add exactly one override point" rule.
+    "ANACONDA_DIST_BASE_URL",
+    "AOSS_PREMIUM_BASE_URL",
 }
+# The Story 21.4 additions, named so test_override_points can assert the
+# 19 + 2 split inside the "live" set explicitly.
+STORY_21_4_OVERRIDE_POINTS = {"ANACONDA_DIST_BASE_URL", "AOSS_PREMIUM_BASE_URL"}
 # ...plus the reserved 20th (A2-A2 / FR-19; nodes = B8 — no live helper
 # backs it yet, which is exactly why it is pinned SEPARATELY).
 RESERVED_OVERRIDE_POINTS = {"BASILISK_BASE_URL"}
@@ -206,10 +217,10 @@ DERIVED_STORE_PATHS = {
 }
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
-# data_root): endpoint_bases 20 (19 live + 1 reserved) + extra_overrides 3
-# + fetcher_urls 3 + paths 5 (2 env_or-wrapped + 3 data_root-derived,
-# Story 21.1) = 31. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 31
+# data_root, +2 by Story 21.4): endpoint_bases 22 (19 live + 1 reserved + 2
+# Story 21.4) + extra_overrides 3 + fetcher_urls 3 + paths 5 (2 env_or-wrapped
+# + 3 data_root-derived, Story 21.1) = 33. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 33
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the

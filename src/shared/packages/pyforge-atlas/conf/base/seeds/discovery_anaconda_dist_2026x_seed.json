@@ -1,0 +1,6090 @@
+[
+ {
+  "conda_name": "_anaconda_depends",
+  "version": "2026.07",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "_libgcc_mutex",
+  "version": "0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "_openmp_mutex",
+  "version": "5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aiobotocore",
+  "version": "3.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aiodns",
+  "version": "3.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aiohappyeyeballs",
+  "version": "2.6.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aiohttp",
+  "version": "3.14.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aioitertools",
+  "version": "0.12.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aiosignal",
+  "version": "1.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "alabaster",
+  "version": "1.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "alsa-lib",
+  "version": "1.2.15.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "altair",
+  "version": "6.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-anon-usage",
+  "version": "0.8.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-auth",
+  "version": "0.15.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-catalogs",
+  "version": "0.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-channel-guide",
+  "version": "0.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-cli-base",
+  "version": "0.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-client",
+  "version": "1.14.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-navigator",
+  "version": "2.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda-project",
+  "version": "0.13.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda_powershell_prompt",
+  "version": "1.1.1",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anaconda_prompt",
+  "version": "1.1.1",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "annotated-doc",
+  "version": "0.0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "annotated-types",
+  "version": "0.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "anyio",
+  "version": "4.12.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aom",
+  "version": "3.13.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "applaunchservices",
+  "version": "0.3.0",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "appnope",
+  "version": "0.1.4",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "appscript",
+  "version": "1.4.0",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "archspec",
+  "version": "0.2.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "argon2-cffi",
+  "version": "25.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "argon2-cffi-bindings",
+  "version": "25.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "arrow",
+  "version": "1.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "arrow-cpp",
+  "version": "23.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "astroid",
+  "version": "4.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "astropy",
+  "version": "8.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "astropy-iers-data",
+  "version": "0.2026.7.13.0.54.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "asttokens",
+  "version": "3.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "async-lru",
+  "version": "2.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "asyncssh",
+  "version": "2.21.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "attrs",
+  "version": "26.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "autopep8",
+  "version": "2.0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-auth",
+  "version": "0.10.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-cal",
+  "version": "0.9.13",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-common",
+  "version": "0.12.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-compression",
+  "version": "0.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-event-stream",
+  "version": "0.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-http",
+  "version": "0.10.13",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-io",
+  "version": "0.26.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-mqtt",
+  "version": "0.15.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-s3",
+  "version": "0.12.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-c-sdkutils",
+  "version": "0.2.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-checksums",
+  "version": "0.2.10",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-crt-cpp",
+  "version": "0.37.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "aws-sdk-cpp",
+  "version": "1.11.774",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "babel",
+  "version": "2.17.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "bcrypt",
+  "version": "5.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "beautifulsoup4",
+  "version": "4.15.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "binaryornot",
+  "version": "0.6.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "black",
+  "version": "26.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "blas",
+  "version": "1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "bleach",
+  "version": "6.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "blinker",
+  "version": "1.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "blosc",
+  "version": "1.21.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "bokeh",
+  "version": "3.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "boltons",
+  "version": "25.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "botocore",
+  "version": "1.43.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "brotlicffi",
+  "version": "1.2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "bzip2",
+  "version": "1.0.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "c-ares",
+  "version": "1.34.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "c-blosc2",
+  "version": "2.22.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ca-certificates",
+  "version": "2026.7.16",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cachetools",
+  "version": "6.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cairo",
+  "version": "1.18.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cattrs",
+  "version": "26.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cctools",
+  "version": "1030.6.3",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "certifi",
+  "version": "2026.6.17",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cffi",
+  "version": "2.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "chardet",
+  "version": "5.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "charset-normalizer",
+  "version": "3.4.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "click",
+  "version": "8.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cloudpickle",
+  "version": "3.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "colorama",
+  "version": "0.4.6",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "colorcet",
+  "version": "3.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "comm",
+  "version": "0.2.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda",
+  "version": "26.5.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-anaconda-telemetry",
+  "version": "0.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-anaconda-tos",
+  "version": "0.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-build",
+  "version": "26.5.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-content-trust",
+  "version": "0.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-index",
+  "version": "0.12.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-libmamba-solver",
+  "version": "26.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-lockfiles",
+  "version": "0.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-pack",
+  "version": "0.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-package-handling",
+  "version": "2.5.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-package-streaming",
+  "version": "0.13.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-pypi",
+  "version": "0.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-rattler-solver",
+  "version": "0.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-repo-cli",
+  "version": "1.0.173",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conda-self",
+  "version": "0.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "conpty",
+  "version": "1.23.20211.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "contourpy",
+  "version": "1.3.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cookiecutter",
+  "version": "2.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cpp-expected",
+  "version": "1.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cryptography",
+  "version": "49.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "curl",
+  "version": "8.21.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cycler",
+  "version": "0.12.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "cyrus-sasl",
+  "version": "2.1.28",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "dask",
+  "version": "2026.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "dask-core",
+  "version": "2026.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "datashader",
+  "version": "0.19.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "dav1d",
+  "version": "1.5.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "dbus",
+  "version": "1.16.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "debugpy",
+  "version": "1.8.21",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "decorator",
+  "version": "5.3.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "defusedxml",
+  "version": "0.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "diff-match-patch",
+  "version": "20200713",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "dill",
+  "version": "0.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "distributed",
+  "version": "2026.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "distro",
+  "version": "1.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "dmglib",
+  "version": "0.9.5",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "docstring-to-markdown",
+  "version": "0.17",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "docutils",
+  "version": "0.21.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "entrypoints",
+  "version": "0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "et_xmlfile",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "evalidate",
+  "version": "2.1.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "executing",
+  "version": "2.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "expat",
+  "version": "2.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "filelock",
+  "version": "3.29.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "flake8",
+  "version": "7.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "flask",
+  "version": "3.1.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "fmt",
+  "version": "12.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "fontconfig",
+  "version": "2.17.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "fonttools",
+  "version": "4.63.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "freeglut",
+  "version": "3.8.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "freetype",
+  "version": "2.14.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "frozendict",
+  "version": "2.4.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "frozenlist",
+  "version": "1.8.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "fsspec",
+  "version": "2026.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "gettext",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "gettext-tools",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "gflags",
+  "version": "2.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "gitdb",
+  "version": "4.0.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "gitpython",
+  "version": "3.1.50",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "glog",
+  "version": "0.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "gmp",
+  "version": "6.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "gmpy2",
+  "version": "2.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "graphite2",
+  "version": "1.3.15",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "greenlet",
+  "version": "3.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "h11",
+  "version": "0.16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "h5py",
+  "version": "3.16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "harfbuzz",
+  "version": "12.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "hdf5",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "heapdict",
+  "version": "1.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "holoviews",
+  "version": "1.23.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "httpcore",
+  "version": "1.0.9",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "httptools",
+  "version": "0.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "httpx",
+  "version": "0.28.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "hvplot",
+  "version": "0.12.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "icu",
+  "version": "78.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "idna",
+  "version": "3.18",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "imageio",
+  "version": "2.37.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "imagesize",
+  "version": "1.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "imbalanced-learn",
+  "version": "0.14.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "importlib-metadata",
+  "version": "8.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "inflection",
+  "version": "0.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "iniconfig",
+  "version": "2.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "intake",
+  "version": "2.0.9",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "intel-openmp",
+  "version": "2025.0.0",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "intervaltree",
+  "version": "3.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ipykernel",
+  "version": "6.31.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ipympl",
+  "version": "0.9.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ipython",
+  "version": "9.15.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ipython_pygments_lexers",
+  "version": "1.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ipywidgets",
+  "version": "8.1.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "isort",
+  "version": "8.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "itsdangerous",
+  "version": "2.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jansson",
+  "version": "2.15.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "jaraco.classes",
+  "version": "3.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jaraco.context",
+  "version": "6.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jaraco.functools",
+  "version": "4.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jedi",
+  "version": "0.19.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jeepney",
+  "version": "0.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "jellyfish",
+  "version": "1.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jinja2",
+  "version": "3.1.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jmespath",
+  "version": "1.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "joblib",
+  "version": "1.5.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jq",
+  "version": "1.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "json5",
+  "version": "0.12.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jsonpatch",
+  "version": "1.33",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jsonpointer",
+  "version": "3.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jsonschema",
+  "version": "4.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jsonschema-specifications",
+  "version": "2025.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter",
+  "version": "1.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter-lsp",
+  "version": "2.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_client",
+  "version": "8.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_console",
+  "version": "6.6.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_core",
+  "version": "5.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_events",
+  "version": "0.12.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_server",
+  "version": "2.20.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyter_server_terminals",
+  "version": "0.5.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyterlab",
+  "version": "4.5.9",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyterlab-variableinspector",
+  "version": "3.2.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyterlab_pygments",
+  "version": "0.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyterlab_server",
+  "version": "2.28.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "jupyterlab_widgets",
+  "version": "3.0.16",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "keyring",
+  "version": "25.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "kiwisolver",
+  "version": "1.4.9",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lazy_loader",
+  "version": "0.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lcms2",
+  "version": "2.19.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ld64",
+  "version": "956.6",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "ld_impl_linux-64",
+  "version": "2.44",
+  "platforms": [
+   "linux-64"
+  ]
+ },
+ {
+  "conda_name": "ld_impl_linux-aarch64",
+  "version": "2.44",
+  "platforms": [
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "lerc",
+  "version": "4.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libabseil",
+  "version": "20260107.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libarchive",
+  "version": "3.8.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libasprintf",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libasprintf-devel",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libavif",
+  "version": "1.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libbrotlicommon",
+  "version": "1.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libbrotlidec",
+  "version": "1.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libbrotlienc",
+  "version": "1.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libclang13",
+  "version": "22.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libcups",
+  "version": "2.4.15",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libcurl",
+  "version": "8.21.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libcxx",
+  "version": "22.1.2",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libdeflate",
+  "version": "1.22",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libdrm",
+  "version": "2.4.134",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libedit",
+  "version": "3.1.20230828",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libegl",
+  "version": "1.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libev",
+  "version": "4.33",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libevent",
+  "version": "2.1.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libexpat",
+  "version": "2.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libffi",
+  "version": "3.4.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libgcc",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libgcc-ng",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libgettextpo",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libgettextpo-devel",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libgfortran",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libgfortran5",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libgl",
+  "version": "1.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libglib",
+  "version": "2.86.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libglvnd",
+  "version": "1.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libglx",
+  "version": "1.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libgomp",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libgrpc",
+  "version": "1.78.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libhwloc",
+  "version": "2.13.0",
+  "platforms": [
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libiconv",
+  "version": "1.18",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libidn2",
+  "version": "2.3.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libintl",
+  "version": "0.25.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libintl-devel",
+  "version": "0.25.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libjpeg-turbo",
+  "version": "3.1.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libkrb5",
+  "version": "1.22.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "liblief",
+  "version": "0.17.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libllvm21",
+  "version": "21.1.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libllvm22",
+  "version": "22.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libmamba",
+  "version": "2.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libmambapy",
+  "version": "2.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libmpdec",
+  "version": "4.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libnghttp2",
+  "version": "1.69.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libopenblas",
+  "version": "0.3.31",
+  "platforms": [
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libopengl",
+  "version": "1.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libopenjpeg",
+  "version": "2.5.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libopus",
+  "version": "1.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libpciaccess",
+  "version": "0.18",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libpng",
+  "version": "1.6.56",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libpq",
+  "version": "17.10",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libprotobuf",
+  "version": "6.33.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libre2-11",
+  "version": "2025.11.05",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libsodium",
+  "version": "1.0.21",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libsolv",
+  "version": "0.7.39",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libspatialindex",
+  "version": "2.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libssh2",
+  "version": "1.11.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libstdcxx",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libstdcxx-ng",
+  "version": "15.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libthrift",
+  "version": "0.22.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libtiff",
+  "version": "4.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libunistring",
+  "version": "1.4.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libuuid",
+  "version": "1.41.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libuv",
+  "version": "1.52.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libvpx",
+  "version": "1.16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libwebp-base",
+  "version": "1.6.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libxcb",
+  "version": "1.17.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "libxkbcommon",
+  "version": "1.13.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libxkbfile",
+  "version": "1.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "libxml2",
+  "version": "2.14.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libxslt",
+  "version": "1.1.43",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "libzlib",
+  "version": "1.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "linkify-it-py",
+  "version": "2.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "llvm-openmp",
+  "version": "20.1.8",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "llvmlite",
+  "version": "0.47.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lmdb",
+  "version": "1.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "locket",
+  "version": "1.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lsprotocol",
+  "version": "2025.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lxml",
+  "version": "6.1.0",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "lz4",
+  "version": "4.4.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lz4-c",
+  "version": "1.9.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "lzo",
+  "version": "2.10",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "m2w64-gcc-libgfortran",
+  "version": "5.3.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "m2w64-gcc-libs",
+  "version": "5.3.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "m2w64-gcc-libs-core",
+  "version": "5.3.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "m2w64-gmp",
+  "version": "6.1.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "m2w64-libwinpthread-git",
+  "version": "5.0.0.4634.697f757",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "markdown",
+  "version": "3.10.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "markdown-it-py",
+  "version": "4.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "markupsafe",
+  "version": "3.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "matplotlib",
+  "version": "3.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "matplotlib-base",
+  "version": "3.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "matplotlib-inline",
+  "version": "0.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mbedtls",
+  "version": "3.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mccabe",
+  "version": "0.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mdit-py-plugins",
+  "version": "0.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mdurl",
+  "version": "0.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "menuinst",
+  "version": "2.5.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mesalib",
+  "version": "25.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "mistune",
+  "version": "3.3.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mkl",
+  "version": "2025.0.0",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mkl-service",
+  "version": "2.7.2",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mkl_fft",
+  "version": "2.2.0",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mkl_random",
+  "version": "1.4.1",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "more-itertools",
+  "version": "11.0.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mpc",
+  "version": "1.3.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mpfr",
+  "version": "4.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mpi",
+  "version": "1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mpi4py",
+  "version": "4.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mpich",
+  "version": "4.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "mpmath",
+  "version": "1.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msgpack-python",
+  "version": "1.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msmpi",
+  "version": "10.1.1",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-conda-epoch",
+  "version": "20160418",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-gcc-libs",
+  "version": "13.3.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-libiconv",
+  "version": "1.17",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-libintl",
+  "version": "0.22.4",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-msys-mutex",
+  "version": "1.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-msys2-runtime",
+  "version": "3.5.4",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-patch",
+  "version": "2.7.6",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "msys2-zlib",
+  "version": "1.3.1",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "multidict",
+  "version": "6.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "multipledispatch",
+  "version": "1.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mypy",
+  "version": "1.20.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mypy_extensions",
+  "version": "1.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mysql-common",
+  "version": "9.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "mysql-libs",
+  "version": "9.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "narwhals",
+  "version": "2.23.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "navigator-updater",
+  "version": "0.6.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nbclient",
+  "version": "0.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nbconvert",
+  "version": "7.17.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nbconvert-core",
+  "version": "7.17.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nbconvert-pandoc",
+  "version": "7.17.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nbformat",
+  "version": "5.10.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ncurses",
+  "version": "6.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "nest-asyncio",
+  "version": "1.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "networkx",
+  "version": "3.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nh3",
+  "version": "0.3.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nlohmann_json",
+  "version": "3.11.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nltk",
+  "version": "3.10.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "notebook",
+  "version": "7.5.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "notebook-shim",
+  "version": "0.2.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "nspr",
+  "version": "4.39",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "nss",
+  "version": "3.121",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "numba",
+  "version": "0.65.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "numexpr",
+  "version": "2.14.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "numpy",
+  "version": "2.4.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "numpy-base",
+  "version": "2.4.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "numpydoc",
+  "version": "1.10.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "oniguruma",
+  "version": "6.9.10",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "openldap",
+  "version": "2.6.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "openpyxl",
+  "version": "3.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "openssl",
+  "version": "3.5.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "orc",
+  "version": "2.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "packaging",
+  "version": "26.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pandas",
+  "version": "3.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pandoc",
+  "version": "3.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pandocfilters",
+  "version": "1.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "panel",
+  "version": "1.9.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "panel-core",
+  "version": "1.9.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "panel-material-ui",
+  "version": "0.14.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "param",
+  "version": "2.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "parso",
+  "version": "0.8.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "partd",
+  "version": "1.4.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "patch",
+  "version": "2.8",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "patchelf",
+  "version": "0.17.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "pathspec",
+  "version": "1.0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "patsy",
+  "version": "1.0.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pcre2",
+  "version": "10.46",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pexpect",
+  "version": "4.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pickleshare",
+  "version": "0.7.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pillow",
+  "version": "12.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pip",
+  "version": "26.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pixman",
+  "version": "0.46.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pkce",
+  "version": "1.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pkginfo",
+  "version": "1.12.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "platformdirs",
+  "version": "4.9.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "plotly",
+  "version": "6.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pluggy",
+  "version": "1.6.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "prometheus_client",
+  "version": "0.24.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "prompt-toolkit",
+  "version": "3.0.52",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "prompt_toolkit",
+  "version": "3.0.52",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "propcache",
+  "version": "0.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "protobuf",
+  "version": "6.33.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "psutil",
+  "version": "7.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pthread-stubs",
+  "version": "0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "ptyprocess",
+  "version": "0.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pure_eval",
+  "version": "0.2.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "py-cpuinfo",
+  "version": "9.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "py-lief",
+  "version": "0.17.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "py-rattler",
+  "version": "0.25.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "py-rattler-build",
+  "version": "0.65.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyarrow",
+  "version": "23.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pybind11-abi",
+  "version": "5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pycares",
+  "version": "4.10.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pycodestyle",
+  "version": "2.14.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pycosat",
+  "version": "0.6.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pycparser",
+  "version": "3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyct",
+  "version": "0.6.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pydantic",
+  "version": "2.13.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pydantic-core",
+  "version": "2.46.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pydantic-settings",
+  "version": "2.14.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pydocstyle",
+  "version": "6.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyerfa",
+  "version": "2.0.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyflakes",
+  "version": "3.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pygithub",
+  "version": "2.9.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pygments",
+  "version": "2.20.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyjwt",
+  "version": "2.13.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pylint",
+  "version": "4.0.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pylint-venv",
+  "version": "3.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyls-spyder",
+  "version": "0.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pynacl",
+  "version": "1.6.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyobjc-core",
+  "version": "12.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "pyobjc-framework-cocoa",
+  "version": "12.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "pyobjc-framework-coreservices",
+  "version": "12.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "pyobjc-framework-fsevents",
+  "version": "12.1",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "pyodbc",
+  "version": "5.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyparsing",
+  "version": "3.2.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyproject_hooks",
+  "version": "1.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyqt",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyqt6-sip",
+  "version": "13.11.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyqtwebengine",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyside6",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pysocks",
+  "version": "1.7.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pytables",
+  "version": "3.11.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pytest",
+  "version": "9.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python",
+  "version": "3.14.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-build",
+  "version": "1.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-dateutil",
+  "version": "2.9.0post0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-dotenv",
+  "version": "1.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-fastjsonschema",
+  "version": "2.21.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-installer",
+  "version": "1.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-json-logger",
+  "version": "4.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-libarchive-c",
+  "version": "5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-librt",
+  "version": "0.8.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-lmdb",
+  "version": "1.7.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-lsp-black",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-lsp-jsonrpc",
+  "version": "1.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-lsp-ruff",
+  "version": "2.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-lsp-server",
+  "version": "1.14.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-multipart",
+  "version": "0.0.32",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-slugify",
+  "version": "8.0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python-tzdata",
+  "version": "2026.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "python.app",
+  "version": "3",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "python_abi",
+  "version": "3.14",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pytokens",
+  "version": "0.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pytoolconfig",
+  "version": "1.3.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pytz",
+  "version": "2026.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyuca",
+  "version": "1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyviz_comms",
+  "version": "3.0.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pywavelets",
+  "version": "1.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pywin32",
+  "version": "312",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pywin32-ctypes",
+  "version": "0.2.3",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pywinpty",
+  "version": "3.0.2",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyxdg",
+  "version": "0.27",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "pyyaml",
+  "version": "6.0.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "pyzmq",
+  "version": "27.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qdarkstyle",
+  "version": "3.2.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qstylizer",
+  "version": "0.2.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtawesome",
+  "version": "1.4.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtbase",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtconsole",
+  "version": "5.7.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtdeclarative",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtpy",
+  "version": "2.4.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtshadertools",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtsvg",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qttools",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtwayland",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "qtwebchannel",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtwebengine",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "qtwebsockets",
+  "version": "6.11.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rattler-build",
+  "version": "0.55.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "re2",
+  "version": "2025.11.05",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "readchar",
+  "version": "4.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "readline",
+  "version": "8.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "referencing",
+  "version": "0.37.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "regex",
+  "version": "2026.5.9",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "reproc",
+  "version": "14.2.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "reproc-cpp",
+  "version": "14.2.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "requests",
+  "version": "2.34.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "requests-toolbelt",
+  "version": "1.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rfc3339-validator",
+  "version": "0.1.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rfc3986-validator",
+  "version": "0.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rich",
+  "version": "15.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "roman-numerals",
+  "version": "3.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rope",
+  "version": "1.14.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rpds-py",
+  "version": "0.28.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "rtree",
+  "version": "1.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ruamel.yaml",
+  "version": "0.18.16",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ruamel.yaml.clib",
+  "version": "0.2.14",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ruff",
+  "version": "0.15.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "s2n",
+  "version": "1.6.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "s3fs",
+  "version": "2026.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "scikit-image",
+  "version": "0.26.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "scikit-learn",
+  "version": "1.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "scipy",
+  "version": "1.18.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "seaborn",
+  "version": "0.13.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "secretstorage",
+  "version": "3.5.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "semver",
+  "version": "3.0.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "send2trash",
+  "version": "1.8.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "setuptools",
+  "version": "83.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "shellingham",
+  "version": "1.5.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "simdjson",
+  "version": "3.10.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sip",
+  "version": "6.15.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "six",
+  "version": "1.17.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sklearn-compat",
+  "version": "0.1.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "smmap",
+  "version": "4.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "snappy",
+  "version": "1.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "snowballstemmer",
+  "version": "3.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sortedcontainers",
+  "version": "2.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "soupsieve",
+  "version": "2.8.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinx",
+  "version": "9.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-applehelp",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-devhelp",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-htmlhelp",
+  "version": "2.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-jsmath",
+  "version": "1.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-qthelp",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sphinxcontrib-serializinghtml",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "spirv-tools",
+  "version": "2026.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "spyder",
+  "version": "6.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "spyder-kernels",
+  "version": "3.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sqlalchemy",
+  "version": "2.0.51",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sqlite",
+  "version": "3.53.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "stack_data",
+  "version": "0.6.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "starlette",
+  "version": "1.3.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "statsmodels",
+  "version": "0.14.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "streamlit",
+  "version": "1.58.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "superqt",
+  "version": "0.8.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "sympy",
+  "version": "1.14.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tabulate",
+  "version": "0.10.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tapi",
+  "version": "1100.0.11",
+  "platforms": [
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "tbb",
+  "version": "2022.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tbb-devel",
+  "version": "2022.0.0",
+  "platforms": [
+   "linux-64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tblib",
+  "version": "3.2.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tenacity",
+  "version": "9.1.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "terminado",
+  "version": "0.18.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "text-unidecode",
+  "version": "1.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "textdistance",
+  "version": "4.6.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "threadpoolctl",
+  "version": "3.5.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "three-merge",
+  "version": "0.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tifffile",
+  "version": "2026.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tinycss2",
+  "version": "1.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tk",
+  "version": "8.6.15",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "toml",
+  "version": "0.10.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tomli",
+  "version": "2.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tomli-w",
+  "version": "1.2.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tomlkit",
+  "version": "0.15.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "toolz",
+  "version": "1.1.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tornado",
+  "version": "6.5.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tqdm",
+  "version": "4.68.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "traitlets",
+  "version": "5.15.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "truststore",
+  "version": "0.10.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "typer",
+  "version": "0.25.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "typing-extensions",
+  "version": "4.16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "typing-inspection",
+  "version": "0.4.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "typing_extensions",
+  "version": "4.16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "tzdata",
+  "version": "2026c",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "uc-micro-py",
+  "version": "2.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ucrt",
+  "version": "10.0.22621.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "ujson",
+  "version": "5.13.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "unearth",
+  "version": "0.18.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "unixodbc",
+  "version": "2.3.14",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "urllib3",
+  "version": "2.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "utf8proc",
+  "version": "2.6.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "uvicorn",
+  "version": "0.40.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "uvloop",
+  "version": "0.22.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "vc",
+  "version": "14.42",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "vc14_runtime",
+  "version": "14.44.35208",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "vcomp14",
+  "version": "14.44.35208",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "vs2015_runtime",
+  "version": "14.44.35208",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "watchdog",
+  "version": "6.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "wayland",
+  "version": "1.24.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "wcwidth",
+  "version": "0.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "webencodings",
+  "version": "0.5.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "websocket-client",
+  "version": "1.8.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "websockets",
+  "version": "16.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "werkzeug",
+  "version": "3.1.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "whatthepatch",
+  "version": "1.0.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "wheel",
+  "version": "0.47.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "widgetsnbextension",
+  "version": "4.0.14",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "win_inet_pton",
+  "version": "1.1.0",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "winloop",
+  "version": "0.6.3",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "winpty",
+  "version": "0.4.3",
+  "platforms": [
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "wrapt",
+  "version": "2.2.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "wurlitzer",
+  "version": "3.1.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "xarray",
+  "version": "2026.7.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util",
+  "version": "0.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util-cursor",
+  "version": "0.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util-image",
+  "version": "0.4.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util-keysyms",
+  "version": "0.4.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util-renderutil",
+  "version": "0.3.10",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xcb-util-wm",
+  "version": "0.4.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xkeyboard-config",
+  "version": "2.44",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xlwings",
+  "version": "0.36.0",
+  "platforms": [
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libice",
+  "version": "1.1.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libsm",
+  "version": "1.2.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libx11",
+  "version": "1.8.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxau",
+  "version": "1.0.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxcomposite",
+  "version": "0.4.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxdamage",
+  "version": "1.1.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxdmcp",
+  "version": "1.1.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxext",
+  "version": "1.3.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxfixes",
+  "version": "6.0.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxi",
+  "version": "1.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxrandr",
+  "version": "1.5.4",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxrender",
+  "version": "0.9.12",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxshmfence",
+  "version": "1.3.3",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxtst",
+  "version": "1.2.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-libxxf86vm",
+  "version": "1.1.6",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xorg-xorgproto",
+  "version": "2024.1",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64"
+  ]
+ },
+ {
+  "conda_name": "xyzservices",
+  "version": "2026.3.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "xz",
+  "version": "5.8.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "yaml",
+  "version": "0.2.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "yaml-cpp",
+  "version": "0.9.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "yapf",
+  "version": "0.43.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "yarl",
+  "version": "1.24.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zeromq",
+  "version": "4.3.5",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zict",
+  "version": "3.0.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zipp",
+  "version": "3.23.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zlib",
+  "version": "1.3.2",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zlib-ng",
+  "version": "2.0.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zstandard",
+  "version": "0.25.0",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ },
+ {
+  "conda_name": "zstd",
+  "version": "1.5.7",
+  "platforms": [
+   "linux-64",
+   "linux-aarch64",
+   "osx-arm64",
+   "win-64"
+  ]
+ }
+]

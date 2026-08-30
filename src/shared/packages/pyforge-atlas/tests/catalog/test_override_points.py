@@ -1,11 +1,12 @@
 """Gate check 5 (AC-4): endpoint-override accounting.
 
-Exactly 20 `<HOST>_BASE_URL` override points — pinned as a 19-live +
-1-reserved STRUCTURE (review-pass P7), never a bare 20 — survive as
-dataset-level endpoint config, each env-var-overridable with a public
-default. The A2-G2 extras, the fetcher URLs, and the paths section are
-set-pinned separately; the total env-override surface is 31
-(20 + 3 + 3 + 5, paths incl. the P9-added PYFORGE_ATLAS_DATA_ROOT).
+Exactly 22 `<HOST>_BASE_URL` override points — pinned as a 19-live +
+1-reserved + 2-Story-21.4 STRUCTURE (review-pass P7, extended by Story
+21.4), never a bare 22 — survive as dataset-level endpoint config, each
+env-var-overridable with a public default. The A2-G2 extras, the fetcher
+URLs, and the paths section are set-pinned separately; the total
+env-override surface is 33 (22 + 3 + 3 + 5, paths incl. the P9-added
+PYFORGE_ATLAS_DATA_ROOT).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from .conftest import (
     PATHS_ENV_VARS,
     REPO_ROOT,
     RESERVED_OVERRIDE_POINTS,
+    STORY_21_4_OVERRIDE_POINTS,
     make_config_loader,
 )
 
@@ -34,15 +36,20 @@ from .conftest import (
 _ENV_OR_RE = re.compile(r"^\$\{env_or:([A-Z0-9_]+),([^,{}]+)\}$")
 
 
-def test_override_points_are_19_live_plus_1_reserved(globals_raw):
-    """P7: assert the 19+1 structure, not a bare 20 — the reserved point
+def test_override_points_are_19_live_plus_1_reserved_plus_2_story_21_4(globals_raw):
+    """P7: assert the 19+1+2 structure, not a bare 22 — the reserved point
     (BASILISK_BASE_URL) has NO live helper behind it and must stay visibly
-    reserved until B8 lands the nodes."""
+    reserved; Story 21.4's 2 Tier-1 discovery points (ANACONDA_DIST_BASE_URL /
+    AOSS_PREMIUM_BASE_URL) are pinned by name inside the live set so a new
+    override point that is not added here fails by construction."""
     bases = set(globals_raw.get("endpoint_bases") or {})
-    assert len(EXPECTED_LIVE_OVERRIDE_POINTS) == 19
+    assert STORY_21_4_OVERRIDE_POINTS == {"ANACONDA_DIST_BASE_URL", "AOSS_PREMIUM_BASE_URL"}
+    assert STORY_21_4_OVERRIDE_POINTS <= EXPECTED_LIVE_OVERRIDE_POINTS
+    assert len(EXPECTED_LIVE_OVERRIDE_POINTS - STORY_21_4_OVERRIDE_POINTS) == 19
+    assert len(EXPECTED_LIVE_OVERRIDE_POINTS) == 21
     assert RESERVED_OVERRIDE_POINTS == {"BASILISK_BASE_URL"}
     assert bases == EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POINTS
-    assert len(bases) == 20  # 19 + 1, by the two set pins above
+    assert len(bases) == 22  # 19 + 1 + 2, by the set pins above
 
 
 def test_extra_overrides_and_fetcher_urls_are_set_pinned(globals_raw):
@@ -52,7 +59,8 @@ def test_extra_overrides_and_fetcher_urls_are_set_pinned(globals_raw):
 
 
 def test_total_env_override_surface_is_pinned(globals_raw):
-    """P7 accounting (adjusted +1 by P9's data_root): 20 + 3 + 3 + 5 = 31."""
+    """P7 accounting (adjusted +1 by P9's data_root, +2 by Story 21.4):
+    22 + 3 + 3 + 5 = 33."""
     total = sum(
         len(globals_raw.get(section) or {})
         for section in ("endpoint_bases", "extra_overrides", "fetcher_urls", "paths")

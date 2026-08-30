@@ -13,15 +13,19 @@ from pyforge.atlas.pipelines.derived_artifacts import create_pipeline as derived
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
 from pyforge.atlas.pipelines.seed_gaps import create_pipeline as seed_create
 from pyforge.atlas.pipelines.universal_sbom import create_pipeline as sbom_create
+from pyforge.atlas.pipelines.upstream_discovery import create_pipeline as discovery_create
 from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
 
 
-def test_core_pipeline_has_seven_nodes():
+def test_core_pipeline_has_eight_nodes():
+    # Story 21.4 added enumerate_anaconda_main_packages (the Tier-1 Anaconda main
+    # channeldata materializer — the only consumer of core_anaconda_main_channeldata_raw).
     core = core_create()
-    assert len(core.nodes) == 7
+    assert len(core.nodes) == 8
     assert {n.name for n in core.nodes} == {
         "enumerate_conda_packages",
+        "enumerate_anaconda_main_packages",
         "attribute_feedstocks",
         "detect_latest_status",
         "compute_downloads",
@@ -62,12 +66,13 @@ def test_combined_dag_resolves_topologically_with_no_procedural_order():
     # declared inputs/outputs alone (no PHASES list driver). B9's
     # derive_release_velocity reads the pypi_intelligence Phase H/Phase C datasets as
     # FREE inputs here (produced in the full 7-pipeline DAG) — Kedro allows free
-    # inputs. Story 21.2 added 3 external-refresh trigger nodes to vcs_health (14 -> 17).
+    # inputs. Story 21.2 added 3 external-refresh trigger nodes to vcs_health (14 -> 17);
+    # Story 21.4 added enumerate_anaconda_main_packages to core (17 -> 18).
     combined = core_create() + vcs_create()
-    assert len(combined.nodes) == 17
+    assert len(combined.nodes) == 18
     # grouped_nodes is the topological grouping the runner uses
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 17
+    assert sum(len(g) for g in grouped) == 18
 
 
 def test_phase_i_output_is_declared_by_name():
@@ -178,18 +183,19 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + sbom_create()
         + derived_create()
     )
-    # 7 core + 10 vcs + 11 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 1 derived_artifacts = 46 nodes (B7 added the SBOM intake/match + universe
+    # 8 core + 10 vcs + 11 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 1 derived_artifacts = 47 nodes (B7 added the SBOM intake/match + universe
     # BOM; B8 added the two Basilisk ingestion nodes, FR-19; B9 added
     # derive_release_velocity, FR-20; B10 added classify_migration_readiness, FR-21;
     # F4 added the deptry hygiene node + the four-axis policy gate, FR-16/FR-18;
     # Story 21.2 added 3 external-refresh trigger nodes to vcs_health (7 -> 10) and
-    # 1 to pypi_intelligence (10 -> 11, review fix #6).
+    # 1 to pypi_intelligence (10 -> 11, review fix #6); Story 21.4 added
+    # enumerate_anaconda_main_packages to core (7 -> 8).
     # The runner orders them from declared inputs/outputs alone (no PHASES list driver,
     # FR-2/AD-3).
-    assert len(combined.nodes) == 46
+    assert len(combined.nodes) == 47
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 46
+    assert sum(len(g) for g in grouped) == 47
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
@@ -227,3 +233,45 @@ def test_v_current_version_vulns_is_backed_by_per_version_vulns():
     # query-time-correct vuln source (v_current_version_vulns).
     vuln = vuln_create()
     assert "vulnerability_package_version_vulns" in vuln.outputs()
+
+
+# -- Story 21.4: upstream_discovery (7 nodes) + Tier-1 single-writer wiring -----
+
+def test_upstream_discovery_pipeline_has_seven_nodes():
+    # Stories 13.1/13.2/13.4 landed the original four; Story 21.4 added the three Tier-1
+    # external-refresh triggers (single writers of the discovery_*_raw stores).
+    discovery = discovery_create()
+    assert len(discovery.nodes) == 7
+    assert {n.name for n in discovery.nodes} == {
+        "refresh_trending_candidates",
+        "classify_trending_candidates",
+        "load_org_audit_candidates",
+        "classify_org_audit_candidates",
+        "refresh_anaconda_dist_2026x",
+        "refresh_basilisk_packages",
+        "refresh_aoss_premium_python",
+    }
+
+
+def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
+    # The Story 21.2 pipeline-dormancy lesson, pinned: each save()-gated Tier-1 store is
+    # written by EXACTLY ONE trigger node across the full DAG; the tracked-seed entry
+    # (discovery_aoss_free_python_raw) is deliberately written by none.
+    combined = (
+        core_create() + vcs_create() + pypi_create() + vuln_create()
+        + seed_create() + sbom_create() + derived_create() + discovery_create()
+    )
+    writers = {
+        "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
+        "discovery_basilisk_packages_raw": "refresh_basilisk_packages",
+        "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
+        "core_anaconda_main_packages": "enumerate_anaconda_main_packages",
+    }
+    for store, expected in writers.items():
+        producers = [n.name for n in combined.nodes if store in n.outputs]
+        assert producers == [expected], (store, producers)
+    assert not [n.name for n in combined.nodes if "discovery_aoss_free_python_raw" in n.outputs]
+    # the materializer is the ONLY consumer of the live Anaconda main raw entry
+    consumers = [n.name for n in combined.nodes if "core_anaconda_main_channeldata_raw" in n.inputs]
+    assert consumers == ["enumerate_anaconda_main_packages"]
+
