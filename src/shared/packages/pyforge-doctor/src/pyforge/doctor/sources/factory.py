@@ -1017,6 +1017,13 @@ def classify(path: Path, target: Path) -> str:
         # (`dispatch-runs/`) the existing rule doesn't match. Same Tier-3,
         # gitignored, engine-written, never hand-edited, never pin-gated shape.
         return "local:run-journal"
+    if re.fullmatch(r"implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*", rel):
+        # Marshal `factory drain` campaign records (fleet-drain-supervisor.log,
+        # journal.jsonl) — a third sibling of the `runs/`/`dispatch-runs/` shapes
+        # above, at yet another directory name the existing rules don't match.
+        # Same Tier-3, gitignored, engine-written, never hand-edited, never
+        # pin-gated shape.
+        return "local:run-journal"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
         return "local:sprint-feed"     # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):

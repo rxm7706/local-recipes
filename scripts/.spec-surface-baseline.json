@@ -6,7 +6,7 @@
  "pyforge-atlas/spec-atlas-kedro-catalog-expansion": {
   "files": {
    ".github/workflows/kedro-viz-publish.yml": "b93c9b87e273352b366f57c6ee797631a86e10f9",
-   "pixi.toml": "148aef2ee71bf9f42cfe9f7385e963e4d0d331ec",
+   "pixi.toml": "4755eda2d9a88f5859037f30b341246a6ca9a585",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "c0645ea07925eb29493af0235c5cef58d7f5b813",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "d906126173351bec5600580d05d039f23cb1f901",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py": "6e5df03381817681a17de5e0d0f4b50343f7566e",
@@ -36,7 +36,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "04f921cd2a78287a4498006c3c83862992a4d98c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/pipeline.py": "af5c6f896f05a0ef9b6c699447f0c56b220646bb"
   },
-  "memlog": "cff59c7118c1fd99ca1dbb8049142376713e3ebf"
+  "memlog": "87bb447f01267c59329af90682bfc9e7544903d8"
  },
  "pyforge-atlas/spec-atlas-query-dashboards": {
   "files": {
@@ -4324,11 +4324,11 @@
  "pyforge-steward/spec-mcp-era-isolation": {
   "files": {
    "docs/dreams/mcp-era-isolation.md": "cca1f3115b264c84423921d24b12004a4ce80ba5",
-   "pixi.toml": "148aef2ee71bf9f42cfe9f7385e963e4d0d331ec",
+   "pixi.toml": "4755eda2d9a88f5859037f30b341246a6ca9a585",
    "src/platform/config/asgi.py": "6d5a842ceb495daf210f38e07bd4be4fb84e76bf",
    "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py": "48b572528eeb48b43e2611e6a85dd114c094461a"
   },
-  "memlog": "0063c1c90f884e65f7e05b6c111cc731b5453f64"
+  "memlog": "0a5da8e9715afde8c159f6c93cd1bcb00df66683"
  },
  "pyforge-steward/spec-mcp-factory-stdio-translator": {
   "files": {
@@ -4353,12 +4353,12 @@
  },
  "pyforge-steward/spec-platform-image-one-pixi-env": {
   "files": {
-   "pixi.lock": "9031f31765cc7f349475166a5350b5b09cab474c",
-   "pixi.toml": "148aef2ee71bf9f42cfe9f7385e963e4d0d331ec",
+   "pixi.lock": "e13771942725767e74384fccba7faa9f2fe0a448",
+   "pixi.toml": "4755eda2d9a88f5859037f30b341246a6ca9a585",
    "scripts/platform_image_pip_layer.py": "10b16d060483c3f6ca4ef20e321a2ca832d0c0a7",
    "src/platform/Containerfile": "7ad5f14506f8987c2fca995dbc89127d1d0f55fe"
   },
-  "memlog": "b49d917bc2a8dfccadc3bc220b0bdc289c345f95"
+  "memlog": "b04cc5fa32e229281701919ff07d7893d64402a6"
  },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
@@ -4515,7 +4515,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "0efbb95594e97fd5bc778ff765b43a89d396fb5f",
-   "pixi.toml": "148aef2ee71bf9f42cfe9f7385e963e4d0d331ec",
+   "pixi.toml": "4755eda2d9a88f5859037f30b341246a6ca9a585",
    "recipes/liquibase/liquibase.bat": "ac190f5bc21c8d478c2d90d5ca4c82ced814caee",
    "recipes/liquibase/liquibase.sh": "9e5c72090c4afdb3dcf82bba291f3bb41c855066",
    "recipes/liquibase/recipe.yaml": "d5c96e89942e9582266681615d31c889b958d03f",
@@ -5339,7 +5339,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "13adaac3a4f0b230990bffc63fdd339f2928c5fe",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "19c0babdee92d3761f6f64f7343b706eac883f5c"
+  "memlog": "f8b55a88a3c8b1a8eea9f369e533cfe2fe0734b1"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {

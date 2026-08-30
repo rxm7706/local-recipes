@@ -2780,3 +2780,91 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   evidence: `tests/factory/test_lasuite.py`'s in-memory `MockWagtail` and `tests/factory/test_lasuite_live_rehearsal.py`'s loopback stub both implement the same four routes (create/get/list/patch under Bearer auth), independently. They already match differently — `MockWagtail` routes on `request.url.split("/api/v1")[-1]`, the stub prefix-matches full paths — so a future route change in `factory/lasuite.py` can leave one green and the other red, or leave both green against subtly different contracts. This is real duplication rather than churn (the earlier review pass rejected only the narrower suggestion to restyle the stub's matching to look like the mock's, which changes no behavior). Story 16.2 could not consolidate them: its intent contract makes `tests/factory/test_lasuite.py` read-only at zero diff, so extracting a shared route table is structurally out of reach there and needs its own story.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+### DW-FU-21-2: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
+  evidence: Reproduces identically on baseline_revision f71b388ab783f9b584f9e90f2d6d6c67d96c2ba8 with none of this story's changes applied -- pre-existing, unrelated to the 3 target files (core_sources.py, request_datasets.py, vcs_sources.py).
+  location: src/shared/packages/pyforge-atlas (seed_gaps pipeline / kedro-catalog-check path-containment assertion, likely a Story 21.1 gap)
+  origin: spec-deferred 6706c5adfb66 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-2: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
+  evidence: Confirmed by the Intent Alignment auditor (pass 2): `enrich_maintainers(core_cf_graph_raw)` in the same pipelines/vcs_health/nodes.py already reads identifier-bearing data one node up, but none of the 3 new trigger nodes take it as input. Explicitly out of THIS story's scope per the verbatim intent ("Checklist in identity-contract.md not in scope") -- identifier resolution is Story 21.6's ("upstream_discovery identity join") territory.
+  location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (refresh_vcs_github_store, refresh_vcs_host_stores, refresh_vcs_registry_stores); owning follow-up: Story 21.6
+  origin: spec-deferred 6cd9ca77f8dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-3: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
+  evidence: Not exercised today since every current trigger call uses an empty identifier batch (see the identifier-source-gap entry above); becomes live risk only once that gap is closed.
+  location: src/pyforge/atlas/pipelines/vcs_health/nodes.py (_ttl_cadence)
+  origin: spec-deferred 4930f71255e3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-4: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
+  evidence: Not reachable today (every current caller passes an empty batch), but will matter as soon as Story 21.6 wires a real, possibly-partial identifier batch per refresh cycle.
+  location: src/pyforge/atlas/datasets/vcs_sources.py (_ParquetRefreshStore._persist), src/pyforge/atlas/datasets/request_datasets.py (GitHubRequestDataset.fetch_repo_health persistence)
+  origin: spec-deferred 0d2251687650 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-5: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
+  evidence: Confirmed by 2 independent reviewers on the pass-2 diff; non-blocking code-organization nit, not a correctness issue.
+  location: src/pyforge/atlas/datasets/vcs_sources.py
+  origin: spec-deferred 8308c3e7cd86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-6: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
+  evidence: Code-organization suggestion from the Blind Hunter review; not a correctness issue.
+  location: src/pyforge/atlas/datasets/vcs_sources.py, src/pyforge/atlas/datasets/request_datasets.py
+  origin: spec-deferred 113618547533 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-7: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
+  evidence: Reviewer itself notes this may be deliberate for a v1; flagging so it is a documented choice, not a silent gap.
+  location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vcs_gitlab_api_raw, vcs_codeberg_api_raw, vcs_registry_*_raw)
+  origin: spec-deferred 17952db39aec — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-8: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
+  summary: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
+  evidence: Real data-quality concern flagged by Blind Hunter; not required by this story's AC (no cf_atlas.db default, safe degrade) and adds meaningful stateful-rotation complexity beyond this story's scope.
+  location: src/pyforge/atlas/datasets/request_datasets.py (PyPIJsonFanOutDataset.load)
+  origin: spec-deferred 1b65e2207963 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
