@@ -846,6 +846,48 @@ def test_claimed_unused_now_referenced_gets_mechanical_verdict_escalate(
     assert item["mechanical_call_sites"] == 2
 
 
+# --- Regression: a pruned-dir untracked reference never forces escalate ---------
+
+
+def test_untracked_reference_inside_a_pruned_dir_does_not_force_escalate(
+    tmp_path: Path,
+) -> None:
+    """2026-08-30: `_call_site_count`'s `--untracked --no-exclude-standard`
+    git grep un-ignores `.gitignore` entirely -- against a real fleet with a
+    32GB `.pixi/`, an unbounded scan of every pruned vendor/cache dir made
+    this check hard-timeout every real invocation. A reference sitting only
+    inside a pruned dir (here `.pixi/`, from `env_hygiene.py`'s own
+    `_PRUNED_DIR_NAMES`) must not count as a live call site -- proving the
+    fix's pathspec excludes are wired into the actual git grep call, not
+    just present in a docstring."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    # Untracked, inside a pruned dir -- no .gitignore needed: the exclude
+    # pathspec is unconditional, independent of what .gitignore says.
+    decoy = target / ".pixi" / "decoy.py"
+    decoy.parent.mkdir(parents=True, exist_ok=True)
+    decoy.write_text("y = _foo(1)\nz = _foo(2)\n", encoding="utf-8")
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # Without the pruned-dir excludes, the two decoy references would force
+    # `escalate` with `mechanical_call_sites == 2`.
+    assert item["mechanical_verdict"] == "still-open"
+    assert item["mechanical_call_sites"] == 0
+
+
 # --- Regression: async def is recognized as a declaration -----------------------
 
 

@@ -188,17 +188,30 @@ def sibling_dreams_drift_findings(
 
 
 def verification_staleness_findings(
-    repo: pathlib.Path = REPO, timeout: int = 90
-    # 90s, not `bmad_core_drift_findings`'s 25s: measured live against this
-    # repo's own real fleet (`time python -m pyforge.doctor.sources
-    # due-for-verification --json`) at ~48s -- the due-for-verification
-    # source, unlike the cheap bmad-method-version-drift check, does real
+    repo: pathlib.Path = REPO, timeout: int = 180
+    # Originally 90s (~2x margin over a ~48s measured baseline) -- not
+    # `bmad_core_drift_findings`'s 25s, since due-for-verification does real
     # per-entry `git log`/`git grep` churn and mechanical-verdict work
-    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 25s
-    # bound would degrade EVERY real invocation, defeating this story's own
-    # "ambient, always-visible" Intent. 90s carries a ~2x margin over the
-    # measured cost, the same proportional margin `bmad_core_drift_findings`
-    # itself carries over its own inner HTTP bound.
+    # (Stories 11.2/11.3) across the fleet's 600+ tracked entries today, so a
+    # 25s bound would degrade EVERY real invocation, defeating this story's
+    # own "ambient, always-visible" Intent.
+    #
+    # Bumped to 180s 2026-08-30: `chain.py::_call_site_count`'s mechanical-
+    # verdict git grep ran `--untracked --no-exclude-standard` (necessarily
+    # un-ignoring `.gitignore`) with NO further exclusion -- against this
+    # repo's live `.pixi/` (measured 32GB), a single call did not return
+    # within 4 minutes, and `due-for-verification` hard-timed-out at 90s on
+    # every real invocation (the "could not check verification staleness"
+    # degrade this whole comment chain exists to prevent). Fixed in
+    # `chain.py` by excluding `env_hygiene.py`'s own `_PRUNED_DIR_NAMES`
+    # (the same curated "never first-party source" list the discovery-walk
+    # pruning already trusts) from that git grep. Re-measured post-fix at
+    # ~86s -- fleet growth (600+ tracked entries today vs. the original
+    # ~400 this docstring's 48s baseline was measured against) means even
+    # the now-BOUNDED cost sits close to the old 90s ceiling; 180s restores
+    # this function's own documented ~2x-margin design intent over the new
+    # measured cost, rather than leaving a razor-thin margin that the next
+    # session's fleet growth trips again.
 ) -> list[dict]:
     """``verification-coverage`` items from ``pyforge.doctor``'s due-for-
     verification source (Story 11.7/CAP-7 -- the AGGREGATE picture, "N% of a
