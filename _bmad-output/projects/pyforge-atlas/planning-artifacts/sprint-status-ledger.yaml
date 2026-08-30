@@ -56,7 +56,7 @@ development_status:
   21-2-remove-cf_atlas-db-seeds-from-production-datasets: done
   21-3-tier-0-harden-and-live-catalog-contract: done
   21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss: done
-  21-5-tier-2-sources-about-curated-orgs-artifactory-names: backlog
+  21-5-tier-2-sources-about-curated-orgs-artifactory-names: done
   21-6-upstream_discovery-identity-join-and-export-parquet: backlog
   21-7-quartet-thin-out-and-gist-wrapper: backlog
   21-8-end-to-end-verification-gate: backlog
