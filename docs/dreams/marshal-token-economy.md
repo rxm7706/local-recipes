@@ -208,3 +208,39 @@ altered, only the encoding of what flows through.
 - **Where does compression config live** when a run spans engines (bmad-loop
   multi-story vs bmad-build-auto dispatch)? The policy block must be rendered
   identically for both adapters or the savings comparison is meaningless.
+
+## Addendum (2026-08-30) — the price sheet becomes an instrument
+
+The operator supplied the live 2026 model/cost catalog across the four active
+subscriptions (Cursor Ultra, Anthropic Claude Max, GitHub Copilot Basic,
+Google Gemini API). Snapshot + analysis:
+`spec-marshal-token-economy/model-economics.md`. It changes the Dream in four
+ways:
+
+1. **Spend becomes legible in dollars.** The supervisor's weighted-token tally
+   can be multiplied through a *declared* price table (input / output /
+   cache-read / cache-write per provider/model), so journals, `marshal status`,
+   and the benchmark artifact report estimated dollars next to weighted
+   tokens. Declared data only — no live billing fetch, still advisory.
+2. **The difficulty ladder gets a real price ladder.** Input rates span ~50×
+   (Flash-Lite/Luna-class \$0.10–0.20 → Fable-class \$10 per 1M), output ~125×.
+   Feeding FR-51's tier map with cross-provider (harness, model) entries —
+   easy → economy class, medium → standard class, heavy → frontier class — is
+   worth more than any single compression layer, and it is the same shipped
+   seam, just a richer vocabulary.
+3. **Subscription pools are the cheapest marginal token.** Cursor Ultra's
+   included allowance and the Claude Max plan make some tokens effectively
+   pre-paid; routing prefers those pools before metered API, journals which
+   pool served, and falls through when a pool is exhausted — never blocks.
+   (Copilot is Pro today with a downgrade pending — a transitional fall-through
+   candidate only, never a preferred pool; GitHub Pro itself is repo features,
+   not a model pool.)
+4. **The 0.1 cache weight is provider-specific, not universal.** Anthropic,
+   OpenAI, and Gemini all publish cache-read at 10% of input — NFR-14's
+   `cache_read_weight = 0.1` is exactly right there — but Cursor first-party
+   models sit at 0.25–0.40. Weights derive from the declared catalog, global
+   constant as fallback.
+
+Landed as CAP-11/CAP-12 in the spec and Stories 28.10/28.11 in Epic 28. The
+review-stage floor is explicitly protected under routing: review misses ship
+false-greens, so economy routing never touches the review model floor.

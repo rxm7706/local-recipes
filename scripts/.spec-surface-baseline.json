@@ -2625,6 +2625,8 @@
  "pyforge-marshal/spec-marshal-token-economy": {
   "files": {
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py": "cbdf66d1791921139221a7a78376f4a9032380c2",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py": "d05375f8d6e8e758dbddfdc8f0e8e8139412d82b",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py": "8b76ba6d8b937e1c35d94de32550d48274bc626f",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py": "e5d1a52b6f4503697f6a22d97a495c3b88b3b526",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "32d3b2fd4612dcf63e9ffb5265a7a1ded44e6bff",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py": "62d6eb15a2d06fbff8121be1c739a47f57787e79",
@@ -2690,7 +2692,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/durability.py": "215cccd6f62ef3b43c2bb6e3e4d3075dfaded444",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/intent_gap_preserve.py": "bf4f8926a5d78b15b9a9466c856f185b00304ed5"
   },
-  "memlog": "e21dd51fa191b2ef8de8ed44b6f6c830e028a718"
+  "memlog": "a096a929a6b876992e9b7c33e60d158cb0f506f9"
  },
  "pyforge-marshal/spec-multi-loop-isolation": {
   "files": {

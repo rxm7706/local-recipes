@@ -12,8 +12,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
 epicCount: 28  # 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
-storyCount: 179  # 2026-08-30: ledger-verified post-sync (rg -c '^  [0-9]+-[0-9]+' on the tracked twin = 179 = the `### Story` heading count). The 2026-08-27 stamp of 166 had gone stale by four (20.11, 22.8, 22.9, 22.10 landed without a restamp); Stories 28.1-28.9 added this pass. The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-08-30"  # Epic 28 (Stories 28.1-28.9) added via the Dream/Spec-chain convention: spec-marshal-token-economy CAP-1..CAP-10.
+storyCount: 181  # 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
+updated: "2026-08-30"  # Epic 28 (Stories 28.1-28.9) added via the Dream/Spec-chain convention: spec-marshal-token-economy CAP-1..CAP-10; same-day second pass added 28.10/28.11 (CAP-11/CAP-12 model economics) and made 28.6 compression-only.
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4230,3 +4230,27 @@ So that an epic-path iteration never loads `epics.md`/`prd.md` wholesale.
 **Given** the Scribe-owned GraphStore seam is available **When** step-01 routes an epic story **Then** the iteration completes within the epic-context token target with zero full-document loads
 **And** disabling the seam proves the epic-context-file fallback
 **And** marshal consumes the graph — it does not build a second one
+
+### Story 28.10: The model-cost catalog makes spend legible in dollars
+
+As a marshal operator,
+I want a declared price table rendered from policy and consumed by telemetry and the benchmark,
+So that spend and savings read in estimated dollars, not just weighted tokens.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.1, S-28.4 • **FR/AD:** token-economy CAP-11
+**Given** a policy with the cost catalog declared (seed: `spec-marshal-token-economy/model-economics.md`) **When** the supervisor journals **Then** per-story spend and savings carry dollar estimates derived from declared prices
+**And** with no catalog declared, dollar fields are absent — never fabricated
+**And** per-provider token weights (e.g. cache-read) derive from declared ratios, global constants as fallback
+**And** no code path fetches prices from a network; figures stay advisory (no verdict, no exit-code change)
+
+### Story 28.11: Difficulty tiers route across providers and pools
+
+As a marshal operator,
+I want tier entries to name (harness, model) pairs across providers with subscription pools preferred,
+So that easy stories run on economy-class models and flat-rate pools drain before metered API.
+
+**Type:** feature • **Effort:** L • **Deps:** S-28.10 • **FR/AD:** token-economy CAP-12
+**Given** a populated cross-provider tier map **When** a story with a declared difficulty launches on either engine **Then** the launched (harness, model) pair matches the map — proven by rendered-launch diff
+**And** subscription-marked pools are preferred and the serving pool is journaled; an exhausted or unavailable pool falls through, never blocks
+**And** this remains the FR-51 seam — no second selection mechanism, run-level batching unchanged
+**And** the review stage never routes below the policy-declared review floor

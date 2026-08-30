@@ -5,6 +5,7 @@ status: ready
 owner-dream: docs/dreams/marshal-token-economy.md
 companions:
   - integration-layers.md
+  - model-economics.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py
@@ -13,13 +14,15 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
 sources:
   - ../../../../../../docs/dreams/marshal-token-economy.md
 open_questions: []
 ---
 
-> **Canonical contract.** This SPEC and `integration-layers.md` are the complete,
-> preservation-validated contract for what to build, test, and validate.
+> **Canonical contract.** This SPEC, `integration-layers.md`, and `model-economics.md` are
+> the complete, preservation-validated contract for what to build, test, and validate.
 > `docs/dreams/marshal-token-economy.md` is listed in `sources:` for narrative
 > rationale this contract intentionally omits.
 
@@ -105,6 +108,27 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     codegraph/cocoindex staleness findings.
   - **success:** A stale index yields a named finding; the exit-code domain
     `{0, 1, 2, 3, 4, 130}` is unchanged; the finding never blocks a run by itself.
+- **CAP-11**
+  - **intent:** A declared model-cost catalog: policy carries a price table (per
+    provider/model: input / output / cache-read / cache-write per 1M, subscription-pool
+    membership; seed snapshot in `model-economics.md`); telemetry (CAP-7) and the benchmark
+    (CAP-9) render estimated dollar figures alongside weighted tokens, and per-provider
+    token weights (e.g. `cache_read_weight`) derive from the declared ratios — the global
+    constant stays the fallback for undeclared providers.
+  - **success:** Journals, `marshal status`, and the benchmark artifact show dollar
+    estimates when the catalog is declared and omit them (never fabricate) when absent; a
+    Cursor-pool run provably weighs cache reads at its declared ratio (0.25–0.40) instead
+    of the Anthropic 0.10 constant; no code path fetches prices from a network.
+- **CAP-12**
+  - **intent:** Difficulty tiers route across providers and pools: the `model_tier_map`
+    vocabulary extends so a tier's stage entry can name a (harness profile, model) pair —
+    easy stories launch on economy-class models, medium on standard-class, heavy on
+    frontier-class (ladder in `model-economics.md`) — preferring subscription-covered pools
+    before metered API where the catalog marks them.
+  - **success:** A declared difficulty demonstrably launches different provider/model pairs
+    per the map on both engines (rendered-launch diff); the serving pool is journaled; an
+    exhausted or unavailable pool falls through to the next preference, never blocks; the
+    FR-51 seam remains the only selection mechanism and run-level batching is unchanged.
 
 ## Constraints
 
@@ -118,8 +142,13 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   not — a compressed FATAL line must be recoverable byte-exact.
 - **BSL boundary:** the caveman input proxy (`@caveman-ai/cli`, BSL-1.1) stays unpackaged
   and unwired; headroom-ai (Apache-2.0) is the input side.
-- **Telemetry stays advisory:** savings numbers inform ceilings and tiering, never a
-  pass/fail verdict — no second PR gate.
+- **Telemetry stays advisory:** savings numbers and dollar estimates inform ceilings and
+  tiering, never a pass/fail verdict — no second PR gate.
+- **Declared prices only:** the cost catalog is hand-refreshed policy data (dated snapshot
+  in `model-economics.md`) — never a live price/billing fetch (air-gap).
+- **The review floor holds under routing:** cross-provider tier routing never places the
+  review stage below the policy-declared review floor — review misses ship false-greens,
+  the one place the strongest model pays for itself.
 - **Graceful degradation per layer:** an unavailable instrument (platform gap, pixi
   blocker) disables its layer with a named finding, never blocks a run — the
   headroom-ai/caveman pixi activation is a prerequisite tracked in
@@ -134,6 +163,10 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   marshal consumes it.
 - **Not** the pixi unblocking work itself (owned by the pixi-candidate-currency ledger).
 - **Not** review-depth scheduling (owned by `spec-risk-tiered-review-depth`).
+- **Not** a billing integration: dollar figures are estimates from declared prices ×
+  observed token counts, never reconciled live against provider dashboards.
+- **Not** multimodal surfaces: the catalog's audio/TTS/video/music/robotics/embedding
+  models are out of scope.
 
 ## Success signal
 
