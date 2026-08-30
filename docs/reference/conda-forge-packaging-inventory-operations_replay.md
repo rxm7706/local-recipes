@@ -150,6 +150,16 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
    output written) if any of the three required datasets is missing or unreadable, or
    (for the two floored datasets — the Parselmouth mapping has no documented floor,
    existence/readability only) below its scale floor.
+   **Scope (Story 21.3):** `--live-catalog` replaces exactly the three Tier 0
+   verification sets (conda-forge names, PyPI names, Parselmouth conda names). The
+   package universe itself (`records`), per-tab membership (`tab_packages` —
+   `CDO-ENT-JFROG` / `CDO-ENT-CONDA` / `10kOpen` / `10kClosed`), CDO-ENT-CONDA
+   roles, and the Tier 1 sheet fallbacks still come from `--analysis-xlsx`, which
+   stays required. `--live-catalog-only` means "fail unless the Tier 0 Parquet is
+   present", not "workbook-free". The workbook-free run is Story 23.8 (universe from
+   Parquet, `--analysis-xlsx` optional) + 23.9 (identity/priority/dashboards) —
+   see `sprint-change-proposal-2026-08-30.md` under the pyforge-atlas planning
+   artifacts.
 
 ```bash
 python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
