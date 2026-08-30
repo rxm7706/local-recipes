@@ -476,3 +476,395 @@ def test_malformed_refresh_is_rejected_and_keeps_last_good(tmp_path, monkeypatch
     ds.save(RefreshRequest(store="trending_candidates", force=True))  # must not raise
     assert ds.is_stale() is True
     assert ds.load()["repo_full_name"].tolist() == ["psf/requests", "pallets/flask"]
+
+
+# ===========================================================================
+# Story 21.4 — Tier 1 catalog sources: TrackedSeedDataset / AnacondaDist2026Dataset /
+# AossPremiumPythonDataset (+ their pure parsers)
+# ===========================================================================
+
+import json as _json  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from kedro.io.core import DatasetError  # noqa: E402
+
+from pyforge.atlas.datasets import (  # noqa: E402
+    AnacondaDist2026Dataset,
+    AossPremiumPythonDataset,
+    TrackedSeedDataset,
+    parse_anaconda_dist_html,
+    parse_aoss_premium_doc,
+    parse_aoss_python_package_names,
+    read_tracked_seed,
+)
+
+_MEMBER = Path(__file__).resolve().parents[2]
+_SEEDS = _MEMBER / "conf" / "base" / "seeds"
+AOSS_FREE_SEED = _SEEDS / "discovery_aoss_free_python_seed.json"
+ANACONDA_DIST_SEED = _SEEDS / "discovery_anaconda_dist_2026x_seed.json"
+
+DIST_URL = "https://www.anaconda.com/docs/getting-started/anaconda/release/2026.x"
+AOSS_PREMIUM_URL = "https://docs.cloud.google.com/security-command-center/docs/aoss-supported-packages-premium"
+
+# Captured-shape fixtures mirroring the live pages closely enough to exercise every
+# extracted field (live 2026-08-30).
+DIST_HTML = """
+<html><body>
+<h1>Anaconda Distribution 2026.x release notes</h1>
+<p>Packages</p>
+<table>
+  <tr><th>Package Name</th><th>linux-64</th><th>linux-aarch64</th><th>osx-arm64</th><th>win-64</th></tr>
+  <tr><td>_anaconda_depends</td><td>2026.07</td><td>2026.07</td><td>2026.07</td><td>2026.07</td></tr>
+  <tr><td>_libgcc_mutex</td><td>0.1</td><td>0.1</td><td></td><td></td></tr>
+  <tr><td>aiodns</td><td></td><td></td><td>3.6.1</td><td>3.6.1</td></tr>
+  <tr><td></td><td>x</td><td></td><td></td><td></td></tr>
+</table>
+<table>
+  <tr><th>Package Name</th><th>linux-64</th></tr>
+  <tr><td>only-in-second-table</td><td>9.9</td></tr>
+</table>
+</body></html>
+"""
+DIST_BROKEN_HTML = "<html><body><table><tr><th>Something else</th></tr><tr><td>x</td></tr></table></body></html>"
+
+AOSS_HTML = """
+<html><body>
+<h2 id="java">Supported Java packages</h2>
+<ul><li>com.google.guava:guava</li></ul>
+<h2 id="python" data-text="Supported Python packages">Supported Python packages</h2>
+<p>The premium tier of Assured Open Source Software supports the following Python packages:</p>
+<ul>
+  <li>APScheduler</li>
+  <li>Adafruit-Blinka</li>
+  <li>zope.interface</li>
+  <li>APScheduler</li>
+  <li></li>
+</ul>
+</body></html>
+"""
+AOSS_BROKEN_HTML = "<html><body><div>no python heading here</div></body></html>"
+
+
+# -- read_tracked_seed / TrackedSeedDataset ----------------------------------
+
+
+def test_read_tracked_seed_missing_or_corrupt_degrades_to_empty(tmp_path, caplog):
+    assert read_tracked_seed(tmp_path / "missing.json") == []
+    corrupt = tmp_path / "corrupt.json"
+    corrupt.write_text("{not json", encoding="utf-8")
+    assert read_tracked_seed(corrupt) == []
+    not_array = tmp_path / "obj.json"
+    not_array.write_text('{"a": 1}', encoding="utf-8")
+    assert read_tracked_seed(not_array) == []
+    assert "degrading to empty" in caplog.text
+
+
+def test_read_tracked_seed_resolves_member_relative_path_from_any_cwd(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # a CWD where conf/base/seeds/... does not exist
+    seed = read_tracked_seed("conf/base/seeds/discovery_aoss_free_python_seed.json")
+    assert len(seed) >= 1_000
+
+
+def test_tracked_seed_dataset_loads_the_real_committed_aoss_free_seed():
+    ds = TrackedSeedDataset(filepath=str(AOSS_FREE_SEED))
+    out = ds.load()
+    assert list(out.columns) == ["pypi_name", "source"]
+    assert len(out) >= 1_000
+    assert out["pypi_name"].is_unique
+    assert (out["source"] == "tracked_seed").all()
+    assert "APScheduler" in set(out["pypi_name"])
+
+
+def test_tracked_seed_dataset_missing_file_degrades_to_empty_never_raises(tmp_path):
+    out = TrackedSeedDataset(filepath=str(tmp_path / "nope.json")).load()
+    assert out.empty and list(out.columns) == ["pypi_name", "source"]
+
+
+def test_tracked_seed_dataset_dict_entries_blank_and_duplicates(tmp_path):
+    seed = tmp_path / "seed.json"
+    seed.write_text(_json.dumps(["a", {"pypi_name": "b"}, {"other": "c"}, "", "  a ", 7, None]))
+    out = TrackedSeedDataset(filepath=str(seed)).load()
+    assert out["pypi_name"].tolist() == ["a", "b"]
+
+
+def test_tracked_seed_dataset_custom_name_column(tmp_path):
+    seed = tmp_path / "seed.json"
+    seed.write_text(_json.dumps([{"conda_name": "numpy"}]))
+    out = TrackedSeedDataset(filepath=str(seed), name_column="conda_name").load()
+    assert list(out.columns) == ["conda_name", "source"]
+    assert out["conda_name"].tolist() == ["numpy"]
+
+
+def test_tracked_seed_dataset_is_read_only(tmp_path):
+    with pytest.raises(DatasetError, match="read-only"):
+        TrackedSeedDataset(filepath=str(tmp_path / "x.json")).save(["a"])
+
+
+def test_tracked_seed_dataset_rejects_unexpected_kwargs():
+    with pytest.raises(TypeError):
+        TrackedSeedDataset(filepath="x", url="https://example.invalid")
+
+
+# -- parse_anaconda_dist_html --------------------------------------------------
+
+
+def test_parse_anaconda_dist_html_reads_the_first_package_table():
+    rows = parse_anaconda_dist_html(DIST_HTML)
+    by_name = {r["conda_name"]: r for r in rows}
+    assert set(by_name) == {"_anaconda_depends", "_libgcc_mutex", "aiodns"}  # blank name skipped
+    assert by_name["_libgcc_mutex"]["version"] == "0.1"
+    assert by_name["_libgcc_mutex"]["platforms"] == ["linux-64", "linux-aarch64"]
+    # no linux-64 cell -> first non-empty platform's version
+    assert by_name["aiodns"]["version"] == "3.6.1"
+    assert by_name["aiodns"]["platforms"] == ["osx-arm64", "win-64"]
+    assert all(r["source"] == "html_scrape" and isinstance(r["fetched_at"], int) for r in rows)
+    assert "only-in-second-table" not in by_name
+
+
+def test_parse_anaconda_dist_html_layout_break_returns_empty_never_raises():
+    assert parse_anaconda_dist_html(DIST_BROKEN_HTML) == []
+    assert parse_anaconda_dist_html("") == []
+    assert parse_anaconda_dist_html(None) == []
+
+
+# -- AnacondaDist2026Dataset -----------------------------------------------------
+
+
+def _dist(path, *, fetcher=None, seed_path=str(ANACONDA_DIST_SEED)) -> AnacondaDist2026Dataset:
+    return AnacondaDist2026Dataset(filepath=str(path), url=DIST_URL, seed_path=seed_path, fetcher=fetcher)
+
+
+def test_dist_constructs_offline_no_refresher(tmp_path):
+    ds = _dist(tmp_path / "dist")
+    desc = ds._describe()
+    assert desc["refresher_wired"] is False
+    assert desc["url"] == DIST_URL and desc["seed_path"].endswith("discovery_anaconda_dist_2026x_seed.json")
+
+
+def test_dist_scrape_success_persists_and_not_stale(tmp_path):
+    ds = _dist(tmp_path / "dist", fetcher=lambda url: DIST_HTML)
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    assert ds.is_stale() is False
+    out = ds.load()
+    assert set(out["conda_name"]) == {"_anaconda_depends", "_libgcc_mutex", "aiodns"}
+    assert set(out["source"]) == {"html_scrape"}
+
+
+def test_dist_scrape_empty_falls_back_to_the_real_tracked_seed(tmp_path):
+    calls: list[str] = []
+
+    def fetcher(url):
+        calls.append(url)
+        return DIST_BROKEN_HTML  # layout break: zero rows
+
+    ds = _dist(tmp_path / "dist", fetcher=fetcher)
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    assert calls == [DIST_URL]  # ONE fetch; the fallback is a LOCAL read, never a second HTTP call
+    assert ds.is_stale() is False
+    out = ds.load()
+    assert len(out) >= 600  # the real committed 2026.x seed (639 rows live 2026-08-30)
+    assert set(out["source"]) == {"tracked_seed"}
+    assert "numpy" in set(out["conda_name"])
+
+
+def test_dist_fetch_exception_falls_back_to_seed_never_raises(tmp_path):
+    def boom(url):
+        raise ConnectionError("down")
+
+    ds = _dist(tmp_path / "dist", fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    assert set(ds.load()["source"]) == {"tracked_seed"}
+
+
+def test_dist_both_scrape_and_seed_empty_keeps_last_good_and_marks_stale(tmp_path):
+    p = tmp_path / "dist"
+    _dist(p, fetcher=lambda url: DIST_HTML).save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    ds = _dist(p, fetcher=lambda url: DIST_BROKEN_HTML, seed_path=str(tmp_path / "missing-seed.json"))
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))  # must not raise
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is True
+    assert set(ds.load()["conda_name"]) == {"_anaconda_depends", "_libgcc_mutex", "aiodns"}
+
+
+def test_dist_seed_rows_accept_bare_names_and_dicts(tmp_path):
+    seed = tmp_path / "seed.json"
+    seed.write_text(_json.dumps(["bare", {"conda_name": "full", "version": "1.2", "platforms": ["linux-64"]}, {"nope": 1}, 3]))
+    ds = _dist(tmp_path / "dist", fetcher=lambda url: "", seed_path=str(seed))
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    out = ds.load().set_index("conda_name")
+    assert set(out.index) == {"bare", "full"}
+    assert out.loc["full", "version"] == "1.2"
+    assert out.loc["bare", "version"] is None or pd.isna(out.loc["bare", "version"])
+
+
+def test_dist_offline_missing_store_load_returns_empty_and_marks_stale(tmp_path):
+    ds = _dist(tmp_path / "never")
+    out = ds.load()
+    assert out.empty and "conda_name" in out.columns
+    assert ds.is_stale() is True
+
+
+def test_dist_write_rejects_frame_missing_required_columns(tmp_path):
+    with pytest.raises(ValueError):
+        _dist(tmp_path / "dist")._write(pd.DataFrame({"nonsense": [1]}))
+
+
+# -- parse_aoss_python_package_names / parse_aoss_premium_doc -----------------
+
+
+def test_parse_aoss_python_package_names_reads_the_python_ul_deduped():
+    names = parse_aoss_python_package_names(AOSS_HTML)
+    assert names == ["APScheduler", "Adafruit-Blinka", "zope.interface"]  # java <ul> skipped, dupe + blank dropped
+    assert parse_aoss_python_package_names(AOSS_HTML.encode("utf-8")) == names  # bytes accepted
+
+
+def test_parse_aoss_python_package_names_falls_back_to_heading_text_without_id():
+    html = AOSS_HTML.replace('id="python" ', "")
+    assert parse_aoss_python_package_names(html) == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
+
+
+def test_parse_aoss_premium_doc_rows_and_layout_break():
+    rows = parse_aoss_premium_doc(AOSS_HTML)
+    assert [r["pypi_name"] for r in rows] == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
+    assert all(r["tier"] == "premium" and r["source"] == "html_scrape" and isinstance(r["fetched_at"], int) for r in rows)
+    assert parse_aoss_premium_doc(AOSS_BROKEN_HTML) == []
+    assert parse_aoss_premium_doc("") == []
+    assert parse_aoss_premium_doc(None) == []
+    assert parse_aoss_premium_doc({"not": "text"}) == []
+
+
+def test_free_seed_was_sourced_with_the_same_parser_shape():
+    """The committed free-tier seed is the free doc's <ul> under #python — the SAME
+    shape parse_aoss_python_package_names reads for the premium tier. Pin that the seed
+    still looks like that parser's output (unique, non-blank, no whitespace)."""
+    seed = read_tracked_seed(AOSS_FREE_SEED)
+    assert len(seed) >= 1_000
+    assert all(isinstance(n, str) and n == n.strip() and n for n in seed)
+    assert len(set(seed)) == len(seed)
+
+
+# -- AossPremiumPythonDataset --------------------------------------------------
+
+
+def _aoss(path, *, fetcher=None) -> AossPremiumPythonDataset:
+    return AossPremiumPythonDataset(filepath=str(path), url=AOSS_PREMIUM_URL, fetcher=fetcher)
+
+
+def test_aoss_premium_constructs_offline_no_refresher(tmp_path):
+    ds = _aoss(tmp_path / "aoss")
+    assert ds._describe()["refresher_wired"] is False
+    assert ds._describe()["url"] == AOSS_PREMIUM_URL
+
+
+def test_aoss_premium_fetch_success_persists_and_not_stale(tmp_path):
+    ds = _aoss(tmp_path / "aoss", fetcher=lambda url: AOSS_HTML)
+    ds.save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    assert ds.is_stale() is False
+    out = ds.load()
+    assert out["pypi_name"].tolist() == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
+    assert set(out["tier"]) == {"premium"}
+
+
+def test_aoss_premium_first_run_no_last_good_fetch_failure_marks_stale_empty(tmp_path):
+    def boom(url):
+        raise ConnectionError("4xx/5xx")
+
+    ds = _aoss(tmp_path / "aoss", fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))  # never raises
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is False
+    out = ds.load()
+    assert out.empty and "pypi_name" in out.columns
+
+
+def test_aoss_premium_fetch_failure_keeps_last_good_and_marks_stale(tmp_path):
+    p = tmp_path / "aoss"
+    _aoss(p, fetcher=lambda url: AOSS_HTML).save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+
+    def boom(url):
+        raise ConnectionError("unreachable")
+
+    ds = _aoss(p, fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is True
+    assert len(ds.load()) == 3  # last-good never clobbered with empty
+
+
+def test_aoss_premium_layout_break_keeps_last_good(tmp_path):
+    p = tmp_path / "aoss"
+    _aoss(p, fetcher=lambda url: AOSS_HTML).save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    ds = _aoss(p, fetcher=lambda url: AOSS_BROKEN_HTML)
+    ds.save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    assert ds.is_stale() is True
+    assert len(ds.load()) == 3
+
+
+def test_aoss_premium_offline_no_fetcher_marks_stale_and_keeps_last_good(tmp_path):
+    p = tmp_path / "aoss"
+    _aoss(p, fetcher=lambda url: AOSS_HTML).save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    offline = _aoss(p)
+    offline.save(RefreshRequest(store="discovery_aoss_premium_python_raw", force=True))
+    assert offline.is_stale() is True
+    assert len(offline.load()) == 3
+
+
+def test_aoss_premium_write_rejects_frame_missing_required_columns(tmp_path):
+    with pytest.raises(ValueError):
+        _aoss(tmp_path / "aoss")._write(pd.DataFrame({"nonsense": [1]}))
+
+
+# -- review-pass 1: Response-like payloads + largest-table selection -----------
+
+
+class _StubTextResponse:
+    def __init__(self, *, text=None, content=None):
+        if text is not None:
+            self.text = text
+        if content is not None:
+            self.content = content
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        _StubTextResponse(text=AOSS_HTML),
+        _StubTextResponse(content=AOSS_HTML.encode("utf-8")),
+        AOSS_HTML.encode("utf-8"),
+    ],
+)
+def test_parse_aoss_accepts_response_like_objects(payload):
+    assert parse_aoss_python_package_names(payload) == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
+
+
+def test_parse_aoss_response_like_without_text_or_content_is_empty():
+    assert parse_aoss_python_package_names(_StubTextResponse()) == []
+    assert parse_aoss_python_package_names(_StubTextResponse(content=b"\\xff\\xfe")) == []
+
+
+def test_parse_anaconda_dist_html_prefers_the_largest_matching_table():
+    """A small changelog table with the same `Package Name` header precedes the full
+    list: the LARGEST matching table wins, not the first."""
+    html = """
+    <html><body>
+    <table>
+      <tr><th>Package Name</th><th>linux-64</th></tr>
+      <tr><td>changelog-only</td><td>1.0</td></tr>
+    </table>
+    <table>
+      <tr><th>Package Name</th><th>linux-64</th><th>win-64</th></tr>
+      <tr><td>numpy</td><td>2.0</td><td>2.0</td></tr>
+      <tr><td>pandas</td><td>3.0</td><td></td></tr>
+      <tr><td>scipy</td><td>1.15</td><td>1.15</td></tr>
+    </table>
+    </body></html>
+    """
+    rows = parse_anaconda_dist_html(html)
+    assert [r["conda_name"] for r in rows] == ["numpy", "pandas", "scipy"]
+    assert rows[1]["platforms"] == ["linux-64"]
+
+
+def test_dist_dataset_accepts_response_like_fetcher_payload(tmp_path):
+    ds = _dist(tmp_path / "dist", fetcher=lambda url: _StubTextResponse(text=DIST_HTML))
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    assert set(ds.load()["source"]) == {"html_scrape"}

@@ -1,7 +1,10 @@
 """``upstream_discovery`` pipeline wiring (Story 13.1 CAP-1 + Story 13.2 CAP-2 +
-Story 13.4 CAP-4).
+Story 13.4 CAP-4 + Story 21.4 Tier 1 catalog sources).
 
-Four nodes:
+Seven nodes — the original four plus Story 21.4's three external-refresh triggers
+(``refresh_anaconda_dist_2026x`` / ``refresh_basilisk_packages`` /
+``refresh_aoss_premium_python``, each ``params:ttls -> RefreshRequest`` and the SINGLE
+writer of its ``discovery_*_raw`` entry, mirroring ``refresh_trending_candidates``):
 - ``refresh_trending_candidates``: PURE trigger, ``inputs=`` binds to ``params:ttls``
   (the daily discovery cadence); ``outputs=`` is the ``trending_candidates`` catalog
   entry (``TrendingSnapshotDataset``), the SINGLE writer (AD-3/AD-10).
@@ -24,6 +27,9 @@ from kedro.pipeline import Pipeline, node
 from .nodes import (
     classify_trending_candidates,
     load_org_audit_candidates,
+    refresh_anaconda_dist_2026x,
+    refresh_aoss_premium_python,
+    refresh_basilisk_packages,
     refresh_trending_candidates,
 )
 
@@ -64,6 +70,25 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="org_audit_candidates_classified",
                 name="classify_org_audit_candidates",
+            ),
+            # Story 21.4 — Tier 1 external-refresh triggers (single writers).
+            node(
+                func=refresh_anaconda_dist_2026x,
+                inputs="params:ttls",
+                outputs="discovery_anaconda_dist_2026x_raw",
+                name="refresh_anaconda_dist_2026x",
+            ),
+            node(
+                func=refresh_basilisk_packages,
+                inputs="params:ttls",
+                outputs="discovery_basilisk_packages_raw",
+                name="refresh_basilisk_packages",
+            ),
+            node(
+                func=refresh_aoss_premium_python,
+                inputs="params:ttls",
+                outputs="discovery_aoss_premium_python_raw",
+                name="refresh_aoss_premium_python",
             ),
         ]
     )

@@ -51,6 +51,17 @@ ttls:
   vcs_live_health: 86400                        # 1 d (PHASE_N_TTL_DAYS; live signals change fast)
   # -- upstream_discovery
   trending_candidates: 86400                    # 1 d (daily discovery cadence, no legacy equivalent) [future_consumer: 13.1]
+  # Story 21.4 Tier 1 external-refresh cadences: WEEKLY, matching the sibling
+  # vcs_registry_versions / vcs_upstream_versions default for slow-moving
+  # package-catalog sources (no legacy equivalent to cite — documented as such).
+  # Keyed by the CATALOG ENTRY name (kedro-catalog-check rejects a ttls key that
+  # is not a catalog entry — the trending_candidates precedent). Consumed by the
+  # three refresh_* trigger nodes in pipelines/upstream_discovery/nodes.py.
+  # discovery_aoss_free_python_raw deliberately has NO entry: it is a git-tracked
+  # seed (config, not a live fetch — mirrors org_audit_candidates having no ttl).
+  discovery_anaconda_dist_2026x_raw: 604800     # 7 d (Anaconda Dist 2026.x release-notes scrape + seed fallback) [future_consumer: 21.4]
+  discovery_basilisk_packages_raw: 604800       # 7 d (Basilisk GET /v1/packages catalog walk) [future_consumer: 21.4]
+  discovery_aoss_premium_python_raw: 604800     # 7 d (Google AOSS premium-tier Python live doc) [future_consumer: 21.4]
 
 # AD-15 consumer-side freshness contract on derived-layer datasets — a
 # CONSUMER gate (refuse-stale), distinct from the fetch TTLs above; never

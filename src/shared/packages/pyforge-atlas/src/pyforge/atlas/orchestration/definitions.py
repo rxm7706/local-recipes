@@ -173,11 +173,19 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
             "refresh_vcs_github_store",
             "refresh_vcs_host_stores",
             "refresh_vcs_registry_stores",
+            # Story 21.4 — the three weekly Tier-1 discovery-store triggers (single
+            # writers of discovery_anaconda_dist_2026x_raw / discovery_basilisk_packages_raw /
+            # discovery_aoss_premium_python_raw); without them here only the whole-DAG
+            # bootstrap job would ever refresh those stores (review-pass 1).
+            "refresh_anaconda_dist_2026x",
+            "refresh_basilisk_packages",
+            "refresh_aoss_premium_python",
         ],
         "0 1 * * 0",
         "weekly",
         "refresh assets (vdb-refresh / update-cve-db / update-mapping-cache / "
-        "GitHub+GitLab+Codeberg+registry live-fetch stores, Story 21.2)",
+        "GitHub+GitLab+Codeberg+registry live-fetch stores, Story 21.2 / "
+        "Tier-1 discovery stores, Story 21.4)",
     ),
     (
         "upstream_discovery_trending",
@@ -219,6 +227,7 @@ BOOTSTRAP_CRON = "0 2 * * 0"  # weekly, Sunday 02:00
 NODE_TIMEOUTS: dict[str, int] = {
     # -- core -------------------------------------------------------------- #
     "enumerate_conda_packages": 600,
+    "enumerate_anaconda_main_packages": 300,  # Story 21.4 — Anaconda main channeldata materializer
     "attribute_feedstocks": 300,
     "detect_latest_status": 300,
     "compute_downloads": 600,  # Phase F
@@ -272,6 +281,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "classify_trending_candidates": 120,  # CAP-2 (pure in-memory join, no network)
     "load_org_audit_candidates": 30,  # CAP-4 (pure in-memory params->DataFrame, no network)
     "classify_org_audit_candidates": 120,  # CAP-4 (reuses CAP-2's classifier, no network)
+    "refresh_anaconda_dist_2026x": 300,  # Story 21.4 — one HTML page + tracked-seed fallback
+    "refresh_basilisk_packages": 1200,  # Story 21.4 — ~171 paginated GETs under the rate limit
+    "refresh_aoss_premium_python": 300,  # Story 21.4 — one live doc page
     # -- artifactory_downloads --------------------------------------------- #
     "fetch_artifactory_downloads": 600,  # Story 15.3 CAP-4 (network-capable once configured; inert by default)
     "join_artifactory_identity": 120,  # Story 15.3 CAP-4 (pure in-memory join, no network)

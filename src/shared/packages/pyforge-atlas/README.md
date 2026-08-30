@@ -40,7 +40,15 @@ The Python package is the dotted namespace package `pyforge.atlas`
 `[tool.kedro] package_name = "pyforge.atlas"`. `conf/local/` is gitignored;
 `conf/base/catalog.yml` declares every API source + persisted output of the
 seven pipelines (Story A2), with endpoint bases in `conf/base/globals.yml`
-and per-dataset TTLs in `conf/base/parameters.yml`.
+and per-dataset TTLs in `conf/base/parameters.yml`. `conf/base/seeds/` holds
+the git-tracked JSON seeds behind the air-gap "tracked seed" fetch mode
+(Story 21.4: `discovery_aoss_free_python_seed.json`, the Google AOSS free-tier
+Python list, and `discovery_anaconda_dist_2026x_seed.json`, the Anaconda
+Distribution 2026.x package table used as the scrape fallback). They are NOT
+written by any pipeline — re-acquire them by running the two pure parsers
+(`pyforge.atlas.datasets.parse_aoss_python_package_names` /
+`parse_anaconda_dist_html`) over the live docs and hand-commit the result
+under git review.
 
 Relative dataset paths (the `data/<layer>/<dataset_name>/` outputs and the
 store/seed defaults in `globals.yml paths:`) resolve against the **process
@@ -179,7 +187,7 @@ endpoint.
 | Task (root workspace) | What it does |
 |---|---|
 | `kedro-test` | Wave A deterministic gate (AD-11): `pytest src/shared/packages/pyforge-atlas/tests -q` — `pyforge.atlas` + `pyforge.warden` + `kedro_dagster` import smokes, the Kedro bootstrap/session seam on the dotted package, scaffold-layout invariants (also collects `tests/catalog/`) |
-| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 20 override points (+`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
+| `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 22 override points (19 live + 1 reserved + 2 Story 21.4; +`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
 | `pyforge-atlas-bootstrap` | Story 21.1 (CAP-1): fresh-clone Kedro bootstrap — creates the `stores/{vdb,osv}` dirs + a credentials stub, then runs the seven self-contained pipelines as one combined `kedro run --pipelines <list>` under `PYFORGE_ATLAS_DATA_ROOT` (see the section above) |
 | `pyforge-atlas-build-conda` | conda package via `pixi build` (pixi-build-python wraps the hatchling wheel) |
 | `pyforge-atlas-build-dist` | wheel + sdist via `python -m build --no-isolation` |

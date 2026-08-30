@@ -13,9 +13,12 @@ per-phase contracts are cf-atlas-legacy ``references/engineering-contracts.md``.
 
 from __future__ import annotations
 
+import logging
 import re
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 # Clean Python-version token (Phase F ``pkg_python`` regex-filter — the dirty column
 # carries values like "", "unknown", "3" that must be dropped before aggregation).
@@ -93,6 +96,36 @@ def enumerate_conda_packages(
     else:
         latest["subdirs"] = None
     return latest.reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — Anaconda main channeldata materializer (Tier 1, CAP-2)
+# ---------------------------------------------------------------------------
+
+def enumerate_anaconda_main_packages(core_anaconda_main_channeldata_raw: pd.DataFrame) -> pd.DataFrame:
+    # Story 21.4 (Tier 1 catalog source; catalog-sources.md "Anaconda main channeldata")
+    """Materialize the Anaconda ``main`` channel's package list.
+
+    A thin, near-identity materializer (mirrors :func:`attribute_feedstocks`'s
+    minimal-transform style): ``core_anaconda_main_channeldata_raw`` already arrives in
+    the exact ``conda_name`` / ``subdirs`` shape via the REUSED
+    ``CondaChanneldataDataset`` + ``channeldata_json_to_rows`` (zero new dataset code).
+    This node exists so the live-mode raw entry is actually consumed by a ``kedro run``
+    (a raw entry with no consumer is never touched — the Story 21.2 pipeline-dormancy
+    lesson) and persists it as an intermediate Parquet. Validates the shape, drops
+    null/duplicate names, and passes through; an empty / offline-degraded input yields
+    an empty (but correctly-columned) frame + a WARN, never a crash — the scale-sanity
+    floor (≥5,000 packages) is asserted by the catalog test suite, not here."""
+    cols = ["conda_name", "subdirs"]
+    src = core_anaconda_main_channeldata_raw
+    if src is None or getattr(src, "empty", True) or "conda_name" not in getattr(src, "columns", []):
+        logger.warning("core_anaconda_main_channeldata_raw is empty — materializing an empty frame")
+        return pd.DataFrame(columns=cols)
+    out = src.copy()
+    if "subdirs" not in out.columns:
+        out["subdirs"] = None
+    out = out[out["conda_name"].notna()].drop_duplicates("conda_name")
+    return out[cols].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------

@@ -21,7 +21,8 @@
         "in_bioconda": false,
         "in_pytorch": true,
         "in_nvidia": true,
-        "in_robostack": false
+        "in_robostack": false,
+        "in_selfexplainml": false
       }
     ]
   }

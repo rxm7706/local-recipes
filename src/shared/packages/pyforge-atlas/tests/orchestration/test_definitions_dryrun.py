@@ -716,3 +716,33 @@ def test_compile_sensor_survives_a_corrupt_cursor(defs):
     sensor = D.build_wiki_compile_sensor(job=_compile_job(defs), raw_lister=lambda: ["a.md"])
     results = list(sensor(dg.build_sensor_context(cursor='[{"x": 1}]')))  # must not raise
     assert any(isinstance(r, dg.RunRequest) for r in results)
+
+
+# --------------------------------------------------------------------------- #
+# Story 21.4 (review-pass 1) — the weekly refresh_assets job carries the Tier-1
+# discovery-store triggers, not only the whole-DAG bootstrap job.
+# --------------------------------------------------------------------------- #
+
+_STORY_21_2_REFRESH_OPS = {
+    "refresh_vcs_github_store",
+    "refresh_vcs_host_stores",
+    "refresh_vcs_registry_stores",
+}
+_STORY_21_4_REFRESH_OPS = {
+    "refresh_anaconda_dist_2026x",
+    "refresh_basilisk_packages",
+    "refresh_aoss_premium_python",
+}
+
+
+def test_refresh_assets_job_lists_the_21_2_and_21_4_refresh_triggers(defs):
+    ops = next(ops for job_name, ops, *_ in D.SCHEDULED_JOBS if job_name == "refresh_assets")
+    assert _STORY_21_2_REFRESH_OPS <= set(ops), sorted(set(ops))
+    assert _STORY_21_4_REFRESH_OPS <= set(ops), sorted(set(ops))
+    job = next(j for j in defs.jobs if j.name == "refresh_assets")
+    graph_ops = {n.name for n in job.graph.nodes}
+    assert _STORY_21_2_REFRESH_OPS | _STORY_21_4_REFRESH_OPS <= graph_ops, sorted(graph_ops)
+    # and it stays the WEEKLY cadence
+    _, _, _cron, cadence, label = next(row for row in D.SCHEDULED_JOBS if row[0] == "refresh_assets")
+    assert cadence == "weekly"
+    assert "Story 21.4" in label

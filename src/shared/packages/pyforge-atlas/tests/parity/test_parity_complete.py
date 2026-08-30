@@ -13,7 +13,7 @@ from .harness import NODE_REGISTRY
 
 _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
-    "core": 7,
+    "core": 8,  # Story 21.4 +enumerate_anaconda_main_packages (Tier-1 materializer, new-signal — AD-14, not parity-gated)
     "vcs_health": 10,  # B9 +derive_release_velocity (FR-20); B10 +classify_migration_readiness (FR-21) — new-signal, AD-14; Story 21.2 +3 external-refresh trigger nodes (§ 3.4 boundary)
     "pypi_intelligence": 11,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset); Story 21.2 review fix #6 added refresh_pypi_json_store (same § 3.4 boundary)
     "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
@@ -47,6 +47,9 @@ _NEW_SIGNAL_NODES = {
     "derive_release_velocity",
     # Story B10 migration-readiness classification (FR-21) — same AD-14 boundary.
     "classify_migration_readiness",
+    # Story 21.4 Anaconda-main materializer (Tier 1, CAP-2) — a NEW source with no
+    # legacy cf_atlas.db surface to diff against; same AD-14 additive-rider boundary.
+    "enumerate_anaconda_main_packages",
 }
 
 

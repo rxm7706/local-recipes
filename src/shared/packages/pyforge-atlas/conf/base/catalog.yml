@@ -6,9 +6,12 @@
 #
 # Conventions (spine Consistency rows; asserted by tests/catalog/):
 #   - names: `<domain>_<entity>` snake_case; the domain prefix maps 1:1 to a
-#     § 5.2 pipeline (core / pypi_intelligence / vulnerability / vcs_health /
-#     universal_sbom / seed_gaps / derived_artifacts — map declared once in
-#     tests/catalog/conftest.py).
+#     pipeline (core / pypi_intelligence / vulnerability / vcs_health /
+#     universal_sbom / seed_gaps / derived_artifacts, plus the later
+#     trending_ + org_audit_ + discovery_ -> upstream_discovery,
+#     artifactory_ -> artifactory_downloads, query_plane_ -> query_plane_cache,
+#     semantic_ -> semantic_packages — map declared once in
+#     tests/catalog/conftest.py PREFIX_TO_PIPELINE).
 #   - layers: raw / intermediate / primary / derived via `metadata.layer`.
 #   - persisted outputs: Parquet under `data/<layer>/<dataset_name>/`
 #     (nodes never choose physical layout).
@@ -58,6 +61,25 @@ core_channeldata_raw:
   metadata:
     layer: raw
 
+# Story 21.4 (Tier 1, CAP-2) — Anaconda `main` channeldata, catalog-sources.md's
+# "Same parser as core_channeldata_raw": CondaChanneldataDataset REUSED UNCHANGED,
+# only the `url:` differs. Routes through the EXISTING ANACONDA_CHANNEL_BASE_URL
+# override point: conda.anaconda.org's `anaconda` channel is a MIRROR of
+# repo.anaconda.com/pkgs/main with a small count gap (5,401 vs 5,474 live
+# 2026-08-30) — the mirror is the only route reachable through an existing
+# override point (the story caps new points at 2), and both sit above the ≥5,000
+# scale-sanity floor. That floor is FIXTURE-asserted in
+# tests/catalog/test_scale_floors.py; the live count is NOT observed at runtime.
+# Consumed ONLY by the enumerate_anaconda_main_packages node (core/pipeline.py) —
+# the materializer that keeps this live entry from being a bare, never-touched raw
+# entry.
+# fetch mode: live
+core_anaconda_main_channeldata_raw:
+  type: pyforge.atlas.datasets.CondaChanneldataDataset
+  url: ${globals:endpoint_bases.ANACONDA_CHANNEL_BASE_URL}/anaconda/channeldata.json
+  metadata:
+    layer: raw
+
 # Phase B.5 canonical 1:N package->feedstock source. Live route verified:
 # _download_feedstock_outputs_archive() -> resolve_github_urls (GITHUB_BASE_URL,
 # archive main.zip) — the drafting inventory's GITHUB_RAW claim is corrected
@@ -102,6 +124,15 @@ core_cf_graph_raw:
 core_packages_enumerated:
   type: pandas.ParquetDataset
   filepath: data/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
+  metadata:
+    layer: intermediate
+
+# Story 21.4 — the materialized Anaconda `main` package list (conda_name / subdirs),
+# written by enumerate_anaconda_main_packages from core_anaconda_main_channeldata_raw.
+# Derived, not itself a fetch-mode entry.
+core_anaconda_main_packages:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/core_anaconda_main_packages/core_anaconda_main_packages.parquet
   metadata:
     layer: intermediate
 
@@ -230,7 +261,12 @@ pypi_parselmouth_mapping_raw:
 
 # Phase Q bulk cross-channel repodata — ONE runtime-parameterized entry covers
 # the dynamic `{CHANNEL}_BASE_URL` pattern (gap A2-G3: counted as ONE override
-# point, the resolve_anaconda_channel_urls helper).
+# point, the resolve_anaconda_channel_urls helper). Story 21.4 (Tier 1): the
+# SelfExplainML channel rides THIS entry (the 5th `_CROSS_CHANNEL_SPECS` tuple in
+# datasets/core_sources.py — noarch + linux-64, repodata.json only), and every
+# channel's subdir list is now a 2-subdir fallback (the hardening pass); the
+# `in_selfexplainml` flag falls out of flag_cross_channel automatically.
+# fetch mode: live (unchanged — extended, not new)
 pypi_cross_channel_repodata_raw:
   type: pyforge.atlas.datasets.CrossChannelRepodataDataset
   url: ${globals:endpoint_bases.ANACONDA_CHANNEL_BASE_URL}/${runtime_params:cross_channel,bioconda}/noarch/current_repodata.json
@@ -916,6 +952,75 @@ org_audit_candidates_classified:
   filepath: data/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet
   metadata:
     layer: derived
+
+# -----------------------------------------------------------------------------
+# Story 21.4 — Tier 1 catalog sources (spec-atlas-kedro-catalog-expansion CAP-2;
+# catalog-sources.md Tier 1). The `discovery_` prefix routes to upstream_discovery
+# (PREFIX_TO_PIPELINE). Three external-refresh entries each have EXACTLY ONE
+# refresh-trigger node in upstream_discovery/pipeline.py (their SINGLE writer —
+# a save()-gated load() with no writer node is the Story 21.2 pipeline-dormancy
+# defect); the tracked-seed entry needs none. Every live fetch is an INJECTED
+# fetcher (default None == offline: keep last-good + mark stale, AD-13) — no
+# credentials, no new dependency.
+# -----------------------------------------------------------------------------
+
+# Anaconda Distribution 2026.x package list: the anaconda.com release-notes page's
+# "Package Name | linux-64 | linux-aarch64 | osx-arm64 | win-64" table (live
+# 2026-08-30: 639 rows), parsed by parse_anaconda_dist_html. On a scrape layout break
+# (zero rows) the dataset falls back to the git-tracked seed below (a LOCAL read, not
+# a second HTTP call); only if BOTH are empty does the inherited keep-last-good apply.
+# Routed to upstream_discovery (not core) by its own `discovery_` name — see the story
+# spec's Design Notes for why the machine-enforced prefix gate settles
+# catalog-sources.md's "core or upstream_discovery".
+# fetch mode: external-refresh (HTML scrape primary; tracked-seed fallback on a scrape layout break; local last-good Parquet fallback thereafter)
+discovery_anaconda_dist_2026x_raw:
+  type: pyforge.atlas.datasets.AnacondaDist2026Dataset
+  url: ${globals:endpoint_bases.ANACONDA_DIST_BASE_URL}/docs/getting-started/anaconda/release/2026.x
+  seed_path: conf/base/seeds/discovery_anaconda_dist_2026x_seed.json
+  filepath: ${globals:paths.data_root}/raw/discovery_anaconda_dist_2026x_raw
+  metadata:
+    layer: raw
+
+# Basilisk GET /v1/packages — the conda-native package CATALOG (distinct from the
+# vulnerability_basilisk_* advisory sources). Paginated (server-clamped limit=200,
+# total 34,105 live 2026-08-30); BasiliskPackagesDataset walks every page under the
+# standard rate-limit discipline and persists the union. Same BASILISK_BASE_URL point.
+# fetch mode: external-refresh
+discovery_basilisk_packages_raw:
+  type: pyforge.atlas.datasets.BasiliskPackagesDataset
+  url: ${globals:endpoint_bases.BASILISK_BASE_URL}/v1/packages
+  filepath: ${globals:paths.data_root}/raw/discovery_basilisk_packages_raw
+  metadata:
+    layer: raw
+
+# Google Assured OSS FREE-tier Python packages — a git-tracked JSON-array seed under
+# conf/base/seeds/ (NOT the gitignored data/ root), so a fresh clone loads it with
+# ZERO network (catalog-sources.md's "Tracked seed for air-gap"). Sourced 2026-08-30
+# from the live doc (docs.cloud.google.com/assured-open-source-software/docs/
+# supported-packages#python, the <ul> after the #python heading — the same
+# parse_aoss_python_package_names parser the premium entry uses): 1,474 names,
+# above the ≥1,000 scale-sanity floor. Re-acquire by hand under git review; no
+# refresh-trigger node (load() reads the file directly, nothing is save()-gated).
+# fetch mode: tracked seed
+discovery_aoss_free_python_raw:
+  type: pyforge.atlas.datasets.TrackedSeedDataset
+  filepath: conf/base/seeds/discovery_aoss_free_python_seed.json
+  name_column: pypi_name
+  metadata:
+    layer: raw
+
+# Google Assured OSS PREMIUM-tier Python packages — the live doc (the same <h2
+# id="python"> + <ul> shape as the free tier; 2,156 names live 2026-08-30), parsed by
+# parse_aoss_premium_doc. catalog-sources.md's "Wayback last-good" is read as the
+# ordinary AD-13 keep-last-good-Parquet + mark-stale the inherited
+# ExternalRefreshDataset.save() already provides — no Internet Archive integration.
+# fetch mode: external-refresh (live doc; keep-last-good on failure)
+discovery_aoss_premium_python_raw:
+  type: pyforge.atlas.datasets.AossPremiumPythonDataset
+  url: ${globals:endpoint_bases.AOSS_PREMIUM_BASE_URL}/security-command-center/docs/aoss-supported-packages-premium
+  filepath: ${globals:paths.data_root}/raw/discovery_aoss_premium_python_raw
+  metadata:
+    layer: raw
 
 # =============================================================================
 # artifactory_downloads — Artifactory download intelligence (Story 15.3, CAP-4;
