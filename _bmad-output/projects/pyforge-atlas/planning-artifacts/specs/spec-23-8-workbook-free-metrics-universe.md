@@ -2,9 +2,10 @@
 title: 'Workbook-free metrics universe: Kedro `inventory_universe` + `--analysis-xlsx` optional (Story 23.8, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'c9db13fa23cc9d39e2a149b3cfc47bc7a1f77690'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/change-history/sprint-change-proposal-2026-08-30.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'

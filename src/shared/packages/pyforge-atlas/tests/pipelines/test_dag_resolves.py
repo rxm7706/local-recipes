@@ -167,11 +167,12 @@ def test_universal_sbom_pipeline_has_four_nodes():
     }
 
 
-def test_derived_artifacts_pipeline_has_one_node():
+def test_derived_artifacts_pipeline_has_two_nodes():
     # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
+    # Story 23.8 added build_inventory_universe (the workbook-free metrics universe).
     derived = derived_create()
-    assert len(derived.nodes) == 1
-    assert {n.name for n in derived.nodes} == {"build_universe_sbom"}
+    assert len(derived.nodes) == 2
+    assert {n.name for n in derived.nodes} == {"build_universe_sbom", "build_inventory_universe"}
 
 
 def test_combined_seven_pipeline_dag_resolves_topologically():
@@ -185,18 +186,21 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + derived_create()
     )
     # 8 core + 10 vcs + 11 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 1 derived_artifacts = 47 nodes (B7 added the SBOM intake/match + universe
+    # + 2 derived_artifacts = 48 nodes (B7 added the SBOM intake/match + universe
     # BOM; B8 added the two Basilisk ingestion nodes, FR-19; B9 added
     # derive_release_velocity, FR-20; B10 added classify_migration_readiness, FR-21;
     # F4 added the deptry hygiene node + the four-axis policy gate, FR-16/FR-18;
     # Story 21.2 added 3 external-refresh trigger nodes to vcs_health (7 -> 10) and
     # 1 to pypi_intelligence (10 -> 11, review fix #6); Story 21.4 added
-    # enumerate_anaconda_main_packages to core (7 -> 8).
+    # enumerate_anaconda_main_packages to core (7 -> 8); Story 23.8 added
+    # build_inventory_universe to derived_artifacts (1 -> 2) -- most of its 9 inputs
+    # (upstream_discovery/artifactory_downloads outputs) are FREE inputs in this
+    # narrower 7-pipeline combination, same pattern derive_release_velocity uses.
     # The runner orders them from declared inputs/outputs alone (no PHASES list driver,
     # FR-2/AD-3).
-    assert len(combined.nodes) == 47
+    assert len(combined.nodes) == 48
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 47
+    assert sum(len(g) for g in grouped) == 48
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():

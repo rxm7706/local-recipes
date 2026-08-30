@@ -885,6 +885,29 @@ derived_universe_sbom:
   metadata:
     layer: derived
 
+# Story 23.8 (spec-23-8-workbook-free-metrics-universe.md) -- the ~38k-row
+# full-inventory package universe that replaces
+# docs/Analysis_Dataset-2026-08-12.xlsx as the source of the legacy inventory
+# metrics runner's package universe. build_inventory_universe unions 9 already-
+# cataloged Parquet sources (core_packages_enumerated, core_anaconda_main_packages,
+# discovery_anaconda_dist_2026x_raw, discovery_basilisk_packages_raw,
+# discovery_aoss_free_python_raw, discovery_aoss_premium_python_raw,
+# enterprise_jfrog_names, enterprise_conda_maintainers,
+# openteams_project_1_board_raw) into one row per PEP-503
+# core_python_package_name, carrying package_input_names, sources (the SAME
+# tab:<Sheet> provenance vocabulary the legacy PackageRecord.sources uses --
+# byte-identical to today's Repository_Source values on the same package, no
+# longer literal sheet names), per-source in_<source> BOOLs, role, and
+# openteams_universe_member (= CDO-ENT-JFROG union CDO-ENT-CONDA). 10kOpen (a
+# stale CDO-ENT-JFROG clone) and 10kClosed (no catalog source) are NOT
+# reproduced -- neither is one of the 9 inputs (see the story spec's Design
+# Notes for the accepted 10kClosed delta).
+inventory_universe:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_universe/inventory_universe.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # upstream_discovery — GitHub-trending discovery ingest (Story 13.1, CAP-1; FR-64)
 # =============================================================================
