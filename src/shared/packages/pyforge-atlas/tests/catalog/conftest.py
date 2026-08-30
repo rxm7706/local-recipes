@@ -185,18 +185,30 @@ EXPECTED_FETCHER_URLS = {
 }
 
 # globals.yml `paths` — exact key -> env-var map (P6/P9; data_root became
-# env-overridable in the review pass, P9).
+# env-overridable in the review pass, P9). Story 21.1 (CAP-1): only the two
+# ROOT paths are individually `${env_or:...}`-wrapped now — the three store
+# paths below were demoted to plain `${paths.data_root}/stores/…` self-
+# references (DERIVED_STORE_PATHS), so PYFORGE_ATLAS_DATA_ROOT is their
+# ONLY override point (spec "Always" row).
 PATHS_ENV_VARS = {
     "data_root": "PYFORGE_ATLAS_DATA_ROOT",
     "seed_root": "PYFORGE_ATLAS_SEED_ROOT",
-    "vdb_store": "VDB_STORE_PATH",
-    "osv_offline_store": "OSV_OFFLINE_STORE_PATH",
-    "pypi_conda_map": "PYPI_CONDA_MAP_PATH",
+}
+
+# Story 21.1: the three § 3.4 external-refresh store paths — exact key ->
+# expected `${paths.data_root}/<suffix>` suffix. No dedicated env var of
+# their own any more (superseded VDB_STORE_PATH / OSV_OFFLINE_STORE_PATH /
+# PYPI_CONDA_MAP_PATH — nothing in the codebase reads those names any more).
+DERIVED_STORE_PATHS = {
+    "vdb_store": "stores/vdb",
+    "osv_offline_store": "stores/osv",
+    "pypi_conda_map": "stores/pypi_conda_map.json",
 }
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root): endpoint_bases 20 (19 live + 1 reserved) + extra_overrides 3
-# + fetcher_urls 3 + paths 5 = 31. Mirrored by a comment in globals.yml.
+# + fetcher_urls 3 + paths 5 (2 env_or-wrapped + 3 data_root-derived,
+# Story 21.1) = 31. Mirrored by a comment in globals.yml.
 EXPECTED_ENV_OVERRIDE_SURFACE = 31
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential

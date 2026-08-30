@@ -73,9 +73,7 @@ fetcher_urls:
   EPSS_FEED_URL: ${env_or:EPSS_FEED_URL,https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}
   CWE_CATALOG_URL: ${env_or:CWE_CATALOG_URL,https://cwe.mitre.org/data/csv/1000.csv.zip}
 
-# Filesystem roots. External stores + git-tracked seeds live OUTSIDE the
-# member (legacy homes; B5 wraps store refresh) — their paths are
-# env-overridable. Pipeline-owned persisted outputs live under the
+# Filesystem roots. Pipeline-owned persisted outputs live under the
 # `data/<layer>/<dataset_name>/` root (spine Parquet-layout row; nodes
 # never choose physical layout).
 #
@@ -85,9 +83,27 @@ fetcher_urls:
 # old `../../../../` escapes silently depended on a member-dir CWD nobody
 # uses). kedro-catalog-check asserts no resolved default escapes the repo
 # root. `data_root` is env-overridable like every other path (P9).
+#
+# Story 21.1 (CAP-1, "relocate atlas data defaults"): the three § 3.4
+# external-refresh stores used to default OUTSIDE the member, at the
+# legacy conda-forge-expert homes (`.claude/data/conda-forge-expert/…`),
+# each with its OWN dedicated env override (`VDB_STORE_PATH`, etc.). That
+# made Kedro a passenger on a legacy store a fresh clone doesn't have.
+# They now live UNDER `${paths.data_root}/stores/…` — a plain (non-
+# `env_or`) OmegaConf self-reference to the `data_root` key above, resolved
+# within this SAME globals.yml document before the `${globals:...}`
+# resolver in catalog.yml ever sees it. There is deliberately no dedicated
+# `VDB_STORE_PATH`-style override left for these three any more: the ONE
+# override point is `PYFORGE_ATLAS_DATA_ROOT` (spec Boundaries "Always" —
+# "All store paths resolve under override"). `pyforge-atlas-bootstrap`
+# creates the two directory stores (`stores/vdb`, `stores/osv`) up front;
+# the flat `stores/pypi_conda_map.json` file is created on first export.
+# Legacy `.claude/data/conda-forge-expert/` keeps working for
+# conda-forge-expert's OWN tooling — this only removes Kedro's dependency
+# on it (Story 21.2 removes the `cf_atlas.db` SEED dependency separately).
 paths:
   data_root: ${env_or:PYFORGE_ATLAS_DATA_ROOT,data}
   seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,.claude/skills/conda-forge-expert/data}
-  vdb_store: ${env_or:VDB_STORE_PATH,.claude/data/conda-forge-expert/vdb}
-  osv_offline_store: ${env_or:OSV_OFFLINE_STORE_PATH,.claude/data/conda-forge-expert/cve}
-  pypi_conda_map: ${env_or:PYPI_CONDA_MAP_PATH,.claude/data/conda-forge-expert/pypi_conda_map.json}
+  vdb_store: ${paths.data_root}/stores/vdb
+  osv_offline_store: ${paths.data_root}/stores/osv
+  pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json
