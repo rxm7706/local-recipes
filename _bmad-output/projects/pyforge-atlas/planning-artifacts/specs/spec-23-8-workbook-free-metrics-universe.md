@@ -2,7 +2,7 @@
 title: 'Workbook-free metrics universe: Kedro `inventory_universe` + `--analysis-xlsx` optional (Story 23.8, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'c9db13fa23cc9d39e2a149b3cfc47bc7a1f77690'
@@ -207,6 +207,35 @@ workbook, or a hand-written seed.
 - 2026-08-30: Initial draft, minted by `change-history/sprint-change-proposal-2026-08-30.md` (course
   correction after Story 21.3's hold). Owns the metrics-side workbook cutover the plan had
   no story for; Story 23.4's row grain is corrected to consume this dataset.
+- 2026-08-30 (implementation pass): implemented as written. Two decisions worth recording,
+  both resolved in favor of exact behavioral parity with the workbook path rather than the
+  simpler-looking alternative:
+  1. **OpenTeams-sourced `package_input_names` is the full title text, not the extracted
+     package name.** `parse_sheet_sources()`'s raw-name fallback chain
+     (`Package_Name`/`name`/`raw_names`/`Item`/`Title`) falls through to the whole `Title`
+     string for an OpenTeams row (it has none of the first four columns) — so
+     `build_inventory_universe`'s `_touch()` helper takes an explicit `input_name=` override
+     for the OpenTeams branch, distinct from the value used for PEP-503 normalization.
+     Verified via the frozen fixture pair's parity test, which caught the mismatch on the
+     first run (bare "anotherpkg" vs. the correct "[Conda-Forge Packaging] anotherpkg").
+  2. **`Priority_Bucket` genuinely diverges for CDO-ENT-CONDA-sourced rows when no Story 23.3
+     priority source exists yet (true for this story).** The legacy `priority_bucket()`
+     grants an unconditional `P4` to any row whose `sources` include `about:*` or
+     `tab:CDO-ENT-CONDA`; this story's own I/O & Edge-Case Matrix mandates an unconditional
+     `P9` for every row when the priority source is absent — a direct, spec-authored
+     contradiction between the Approach prose ("today's behavior when a row carries no
+     prior-run hint") and the I/O matrix's literal wording. Resolved in favor of the I/O
+     matrix (the frozen, machine-checked table) — workbook-free mode always defaults to `P9`
+     until Story 23.3 lands `inventory_priority_assignments.parquet`. Documented and asserted
+     explicitly (not merely excluded) in `test_parity_workbook_vs_live_catalog_universe`.
+     `Packaging_Candidate_Status` is unaffected for the two test rows this touches (both
+     resolve to `Not on PyPI` regardless of the bucket).
+  3. Workbook-free mode reproduces the workbook path's own redundant `external:*`
+     `source_sets` bookkeeping (`external:anaconda-main-channel`/`external:anaconda-2026x`/
+     `external:aoss-free`/`external:aoss-premium`/`external:basilisk`, sourced from
+     `tab_packages` instead of a live/sheet fallback) purely so the MD per-source matrix has
+     the same row set in both modes — these labels never win `primary_source()` over their
+     `tab:*` sibling, so CSV output is unaffected either way.
 
 ## Design Notes
 
@@ -245,3 +274,31 @@ worth a one-line note in the replay doc, not a fix to the xlsx path.
   conf/conda-forge-packaging-inventory-operations_curated_groups.json --output-csv /tmp/a.csv
   --output-md /tmp/a.md --skip-revised-prompt` — expected: exit 0, no `.xlsx` opened,
   row count within 10 % of the last workbook run minus the reported `10kClosed` delta.
+
+**Attended run performed 2026-08-30** (this worktree's fresh, un-bootstrapped
+`src/shared/packages/pyforge-atlas/data/` — `kedro run --pipelines
+core,pypi_intelligence,upstream_discovery,artifactory_downloads` then `kedro run
+--pipeline derived_artifacts --nodes build_inventory_universe`, all against live
+network, no injected fetchers for the credentialed/attended-only Story 21.4/21.5
+sources — matches those stories' own documented residual risk, not a new gap):
+`inventory_universe.parquet` materialized with **35,612 rows** —
+`in_conda_forge`=33,947, `in_anaconda_main`=5,385, `in_aoss_free`=1,474 (tracked
+seed), and 0 for `in_basilisk`/`in_anaconda_dist`/`in_aoss_premium`/
+`in_cdo_ent_jfrog`/`in_cdo_ent_conda`/`in_openteams` (those 6 sources need an
+injected fetcher / GitHub credential no unattended `kedro run` provides today —
+the same gap Story 21.4's Design Section already documents, not new). The
+`metrics.py --live-catalog ... --live-catalog-only` command above then ran
+against that real root: **exit 0**, no `.xlsx` opened, **35,627** final unique
+packages (the +15 over the universe's own count come from
+`conf/conda-forge-packaging-inventory-operations_curated_groups.json`'s curated
+groups, unioned in after the universe read, same as the workbook path), AOSS-Free
+queue 334 rows, `Priority_Bucket` = `P9` for every row (no
+`inventory_priority_assignments.parquet` yet — Story 23.3) with the one counted
+warning. `10kClosed` delta: **not computed** (no catalog source exists to compute
+it from, per Design Notes) — reported instead as the fixed informational note in
+the run summary ("~10,000 rows on 2026-08-12 ... not represented"). The "row
+count within 10% of the last workbook run" comparison itself could not be made in
+this pass (no `docs/Analysis_Dataset-2026-08-12.xlsx` present in this worktree to
+run the workbook-mode baseline against); the frozen fixture pair's own parity test
+(`test_parity_workbook_vs_live_catalog_universe`) is the byte-level proof this
+story's `done_checkpoint` actually relies on.

@@ -216,12 +216,18 @@ def build_inventory_universe(
     Design Notes: the known, accepted delta)."""
     acc: dict[str, dict[str, Any]] = {}
 
-    def _touch(raw_value: str, label: str, flag: str) -> None:
+    def _touch(raw_value: str, label: str, flag: str, *, input_name: str | None = None) -> None:
         pkg = norm_pkg(str(raw_value))
         if not looks_like_pkg(pkg):
             return
         entry = acc.setdefault(pkg, {"input_names": set(), "sources": set(), "flags": set()})
-        raw_str = str(raw_value).strip()
+        # metrics.py's parse_sheet_sources() falls back through Package_Name /
+        # name / raw_names / Item / Title (in that order) for the RAW input
+        # name it records -- an OpenTeams-sourced row has none of the first
+        # four, so its raw input name is the FULL title text, not the
+        # extracted package name. Callers pass `input_name` for that case;
+        # every other source's raw value already IS the package name.
+        raw_str = str(input_name if input_name is not None else raw_value).strip()
         if raw_str:
             entry["input_names"].add(raw_str)
         entry["sources"].add(label)
@@ -272,11 +278,12 @@ def build_inventory_universe(
     if openteams_project_1_board_raw is not None and not getattr(openteams_project_1_board_raw, "empty", True):
         if "title" in openteams_project_1_board_raw.columns:
             for raw_title in openteams_project_1_board_raw["title"].dropna():
-                rule, pkgs = parse_openteams_title(str(raw_title))
+                title_str = str(raw_title)
+                rule, pkgs = parse_openteams_title(title_str)
                 if rule == "c":
                     continue
                 for pkg in pkgs:
-                    _touch(pkg, _TAB_OPENTEAMS, "in_openteams")
+                    _touch(pkg, _TAB_OPENTEAMS, "in_openteams", input_name=title_str)
 
     if not acc:
         return pd.DataFrame(columns=list(_INVENTORY_UNIVERSE_COLUMNS))
