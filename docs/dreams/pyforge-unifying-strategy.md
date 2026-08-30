@@ -160,7 +160,15 @@ This section is the ruling. Do not cite a Cursor `.canvas.tsx` as the seed.
   to Warden; new top-level CLI follows a named idiom (document the
   exception if it cannot). **Always:** one authoritative source per fleet
   status fact — extra dashboards read it or refuse, they do not derive a
-  fourth answer. **Never:** a second plugin loader beside
+  fourth answer. **Always:** state-storage choice is declared, not silent
+  — flat JSON, SQLite, DuckDB, journals, or a pluggable port (Scribe's
+  `graph_store` is the only one today) each name the station that picked
+  them and why; a new station states its choice the same way instead of
+  adding a sixth undocumented answer. **Always:** a boundary claim about
+  another station lives next to the code it describes — a docstring or
+  comment naming the rule, not only this Dream's prose — so a third
+  undocumented boundary claim does not recur the way the two below did.
+  **Never:** a second plugin loader beside
   `pyforge.core.hooks`; skill-index “Lane 1 CMS” — Steward owns `/console/`
   (read surface over Marshal + Doctor), not a CMS; Warden `scan --doctor`
   is a local operability flag, not `pyforge-doctor`.
@@ -170,7 +178,8 @@ This section is the ruling. Do not cite a Cursor `.canvas.tsx` as the seed.
   the host mounts the route. Reconcile Atlas’s standalone server module
   against this ruling (fold into the host mount, or name why it stays);
   do not treat silence as “not built yet.”
-- **Fleet dossier (2026-08-30), verified synthesis — not a line-count CAP.**
+- **Fleet dossier (2026-08-30), verified synthesis — not a line-count CAP**
+  (full citations: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-pyforge-station-dossier-2026-08-30.md`).
   Spine: `pyforge-core` is the stdlib leaf (`dispatch`, `Lattice`,
   `atomic_write`, `hooks`, `PyforgeError`, `process`, `report`,
   `landing_evidence`; `assertion` is host-signed). Atlas provides data
@@ -186,6 +195,15 @@ This section is the ruling. Do not cite a Cursor `.canvas.tsx` as the seed.
   is the PR-gate lattice (seven rungs; commercial scanners optional
   plugins). README/skill undercount is a fleet-wide drift finding — each
   station remediates its own row, not one sweep commit.
+- **Herald's write-gate is a known stub, not a ruling gap.** `progress` /
+  `success` / `notice` writes pass through one auth check that is today an
+  env-var-or-local-config role read with no real credential or signature
+  verification — Herald's own docstring already names it an open
+  assumption. The rebuild does not inherit it silently: once Herald's
+  portal mounts on the host ASGI behind real `django-allauth` OIDC identity
+  (see The Host, above), that identity layer replaces the stub check —
+  it is not carried forward as a second, weaker gate beside it. Track as a
+  pre-production gap on Herald's own row, not a style note.
 - **Python floor.** No silent raise. Atlas/Doctor `>=3.14` is declared;
   other stations `>=3.12` until a named policy says otherwise.
 
@@ -1785,3 +1803,29 @@ graph TD
   **Never:** hexagonal/`services/` regen as this cutover. Directory-map
   *seed* minted as [[pyforge-target-monorepo]] so the tree is git-tracked
   and `[[wikilink]]`-able (the Cursor canvas is a viewer only).
+- **2026-08-30 (later)** — Completeness pass against the fleet dossier
+  (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-pyforge-station-dossier-2026-08-30.md`),
+  requested directly: does the absorption hold up, and does this Dream have
+  what a from-scratch rebuild in a new repo needs. Cross-checked line by
+  line against the dossier and [[pyforge-target-monorepo]]. Result: the
+  2026-08-30 absorption already carried nine of ten fleet-convention rows
+  as real rulings and the target-monorepo tree/phases were already
+  coherent with the dossier's confirmed station layout — no contradiction
+  found. Two gaps closed: **(1)** state-storage choice had no fleet-wide
+  ruling (fixed same day, above); **(2)** the dossier itself was not cited
+  by path anywhere in this file (fixed same day, above). This pass adds
+  two more: a forward rule that a boundary claim about another station
+  must live next to the code it describes, not only in this Dream's prose
+  — closing the gap between "we fixed the two we found" and "a third one
+  doesn't happen the same way" — and a named flag on Herald's write-gate
+  auth (confirmed a stub in the dossier, not previously ruled on here):
+  the rebuild replaces it with real Canopy OIDC identity once Herald
+  mounts, rather than carrying a known-weak parallel check forward
+  unexamined. Everything else checked and found either already adequately
+  ruled (exit-code domain scoping deliberately stays a stated relationship,
+  not a forced single reference, because no station's domain is a strict
+  superset of the others') or correctly left at Spec/code altitude rather
+  than added here (Scribe's cross-station-maintained backends, Atlas's
+  legacy-`cf_atlas.db` handling during the CFE-home move — both already
+  structurally covered by existing Grounding bullets without needing
+  file-level detail in a Dream).
