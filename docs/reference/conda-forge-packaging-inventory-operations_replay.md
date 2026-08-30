@@ -49,7 +49,11 @@ Parsing requirements:
 6. Deduplicate package names case-insensitively after normalization (identity only — do not drop a `CDO-ENT-JFROG` or `CDO-ENT-CONDA` library).
 
 Verification and classification:
-1. Verify PyPI (`PyPI_Verified`) and conda-forge (`CondaForge_Verified`).
+1. Verify PyPI (`PyPI_Verified`) and conda-forge (`CondaForge_Verified`). These may
+   source from live HTTP fetches, local snapshot files (`--cf-channeldata` /
+   `--pypi-simple` / `--parselmouth`), or (Story 21.3) directly from the
+   pyforge-atlas Kedro data plane's Parquet outputs via `--live-catalog` —
+   see execution mode 4 below.
 2. Assign `Packaging_Candidate_Status`:
    - Already Packaged: PyPI = Yes and conda-forge = Yes
    - High Priority Candidate: PyPI = Yes and conda-forge = No and Priority P1–P8
@@ -133,6 +137,40 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
   --verify-mode fast \
   --skip-revised-prompt \
   --use-live-html-sources
+```
+
+4. `--live-catalog` (Story 21.3): read `PyPI_Verified`/`CondaForge_Verified` from the
+   pyforge-atlas Kedro data plane's Parquet outputs instead of live HTTP fetches or
+   local snapshot files. Point `--live-catalog` at your `PYFORGE_ATLAS_DATA_ROOT`
+   (it is a plain path argument — not auto-detected from the environment). Still
+   pass `--cf-channeldata` pointing at a real snapshot: it is not one of the three
+   sets `--live-catalog` replaces — it independently drives
+   `git_url_from_channeldata_meta()`/`has_src`, which decides which `10kClosed`/
+   `10kOpen` rows get dropped. Add `--live-catalog-only` to fail fast (exit 2, no
+   output written) if any of the three required datasets is missing or unreadable, or
+   (for the two floored datasets — the Parselmouth mapping has no documented floor,
+   existence/readability only) below its scale floor.
+   **Scope (Story 21.3):** `--live-catalog` replaces exactly the three Tier 0
+   verification sets (conda-forge names, PyPI names, Parselmouth conda names). The
+   package universe itself (`records`), per-tab membership (`tab_packages` —
+   `CDO-ENT-JFROG` / `CDO-ENT-CONDA` / `10kOpen` / `10kClosed`), CDO-ENT-CONDA
+   roles, and the Tier 1 sheet fallbacks still come from `--analysis-xlsx`, which
+   stays required. `--live-catalog-only` means "fail unless the Tier 0 Parquet is
+   present", not "workbook-free". The workbook-free run is Story 23.8 (universe from
+   Parquet, `--analysis-xlsx` optional) + 23.9 (identity/priority/dashboards) —
+   see `sprint-change-proposal-2026-08-30.md` under the pyforge-atlas planning
+   artifacts.
+
+```bash
+python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
+  --analysis-xlsx "docs/Analysis_Dataset-2026-08-12.xlsx" \
+  --curated-config "conf/conda-forge-packaging-inventory-operations_curated_groups.json" \
+  --output-csv "cdao_consolidated_inventory_verified_all_packages.csv" \
+  --output-md "cdao_consolidated_inventory_verified_all_packages.md" \
+  --skip-revised-prompt \
+  --verify-mode fast \
+  --cf-channeldata "/tmp/ext-src/cf-channeldata.json" \
+  --live-catalog "src/shared/packages/pyforge-atlas/data"
 ```
 
 Terminal summary format must still include:

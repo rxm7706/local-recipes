@@ -5,6 +5,13 @@ Prompt sync contract:
 - Replay prompt doc: docs/reference/conda-forge-packaging-inventory-operations_replay.md
 - Any behavior/source/rule/metric/output change must update both this script and
   the replay prompt doc in the same commit.
+
+Story 21.3 (--live-catalog): when set, the acquisition of exactly three
+verification sets (cf_packages / pypi_index / parselmouth_pypi) is replaced by
+direct pandas.read_parquet reads of the pyforge-atlas Kedro data plane's Tier 0
+outputs instead of live HTTP fetches or local snapshot files. See
+load_live_catalog() below. pandas/pyarrow are imported lazily inside that
+function only -- the default (no --live-catalog) path stays stdlib-only.
 """
 
 from __future__ import annotations
@@ -142,6 +149,17 @@ class OpenTeamsSummary:
     rows_used_b: int = 0
     rows_ignored_c: int = 0
     unique_packages: set[str] = field(default_factory=set)
+
+
+@dataclass
+class LiveCatalogResult:
+    """Result of load_live_catalog() -- the --live-catalog Story 21.3 loader."""
+
+    cf_packages: set[str] = field(default_factory=set)
+    pypi_index: set[str] = field(default_factory=set)
+    parselmouth_pypi: set[str] = field(default_factory=set)
+    warnings: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
 
 
 class XlsxReader:
@@ -464,6 +482,82 @@ def load_parselmouth_pypi_names(path: Path | None) -> set[str]:
     return out
 
 
+_LIVE_CATALOG_FLOORS: dict[str, tuple[str, str, int | None]] = {
+    # key -> (relative Parquet path under PYFORGE_ATLAS_DATA_ROOT, column, floor)
+    "core_packages_enumerated": (
+        "intermediate/core_packages_enumerated/core_packages_enumerated.parquet",
+        "conda_name",
+        30_000,
+    ),
+    "pypi_universe": (
+        "intermediate/pypi_universe/pypi_universe.parquet",
+        "pypi_name",
+        1,
+    ),
+    # No documented scale floor (catalog-sources.md) -- existence/readability only.
+    "pypi_conda_mapping": (
+        "primary/pypi_conda_mapping/pypi_conda_mapping.parquet",
+        "pypi_name",
+        None,
+    ),
+}
+
+
+def load_live_catalog(root: Path) -> LiveCatalogResult:
+    """Read the three --live-catalog verification sets directly from the
+    pyforge-atlas Kedro data plane's already-populated Tier 0 Parquet outputs
+    under ``root`` (a ``PYFORGE_ATLAS_DATA_ROOT``), instead of live HTTP
+    fetches or --cf-channeldata/--pypi-simple/--parselmouth snapshot files
+    (Story 21.3, verification-matrix.md).
+
+    Lazily imports pandas -- the default (no --live-catalog) path stays
+    stdlib-only. Per dataset: a missing file, an unreadable/corrupt Parquet
+    file, or (for the two floored datasets) a sub-floor distinct-value count
+    degrades ONLY that one set to an empty set, records the dataset key in
+    ``.failed``, and appends a one-line message to ``.warnings`` -- never
+    raises.
+    """
+    import pandas as pd
+
+    result = LiveCatalogResult()
+
+    for key, (rel_path, column, floor) in _LIVE_CATALOG_FLOORS.items():
+        path = root / rel_path
+        try:
+            # path.exists() itself can raise (e.g. PermissionError on a parent
+            # dir) -- keep it inside the same try/except as the Parquet read
+            # so any such failure also degrades this dataset instead of
+            # propagating uncaught, per this loader's "never raises" contract.
+            if not path.exists():
+                result.failed.append(key)
+                result.warnings.append(f"--live-catalog: {key} missing at {path}")
+                continue
+            df = pd.read_parquet(path, columns=[column])
+            non_null = df[column].dropna()
+            distinct = non_null.nunique()
+        except Exception as exc:
+            result.failed.append(key)
+            result.warnings.append(f"--live-catalog: {key} unreadable at {path}: {exc}")
+            continue
+        if floor is not None and distinct < floor:
+            result.failed.append(key)
+            result.warnings.append(
+                f"--live-catalog: {key} below floor ({distinct:,} distinct "
+                f"{column} < {floor:,} required)"
+            )
+            continue
+        values = {norm_pkg(str(v)) for v in non_null}
+        values.discard("")
+        if key == "core_packages_enumerated":
+            result.cf_packages = values
+        elif key == "pypi_universe":
+            result.pypi_index = values
+        else:
+            result.parselmouth_pypi = values
+
+    return result
+
+
 def parse_channeldata_url(url: str, timeout: int) -> set[str]:
     data = fetch_json(url, timeout)
     pkgs = data.get("packages") or {}
@@ -741,6 +835,16 @@ def write_markdown(
 
 
 def write_revised_prompt(path: Path, args: argparse.Namespace) -> None:
+    # Story 21.3: this is a hardcoded f-string template over a fixed, explicit
+    # list of args.* fields -- it does not dynamically echo every parsed
+    # argument, so --live-catalog/--live-catalog-only must be appended
+    # explicitly or a --live-catalog run's regenerated prompt silently omits
+    # the flags actually used.
+    extra_lines = ""
+    if args.live_catalog is not None:
+        extra_lines += f' \\\n  --live-catalog "{args.live_catalog}"'
+    if args.live_catalog_only:
+        extra_lines += " \\\n  --live-catalog-only"
     text = f"""# docs/reference/conda-forge-packaging-inventory-operations_prompt.md
 
 Run consolidated verified package inventory generation from local exports.
@@ -754,7 +858,7 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \\
   --output-md "{args.output_md}" \\
   --output-revised-prompt "{args.output_revised_prompt}" \\
   --verify-mode {args.verify_mode} \\
-  --strict-max-live-checks {args.strict_max_live_checks}
+  --strict-max-live-checks {args.strict_max_live_checks}{extra_lines}
 ```
 """
     path.write_text(text, encoding="utf-8")
@@ -763,7 +867,13 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \\
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="conda-forge-packaging-inventory-operations-metrics",
-        description="Build consolidated verified package inventory + metrics output.",
+        description=(
+            "Build consolidated verified package inventory + metrics output. "
+            "--live-catalog reads PyPI/conda-forge verification from the "
+            "pyforge-atlas Kedro Parquet data plane instead of live HTTP "
+            "fetches or --cf-channeldata/--pypi-simple/--parselmouth snapshot "
+            "files."
+        ),
     )
     parser.add_argument("--analysis-xlsx", type=Path, required=True)
     parser.add_argument("--openteams-tsv", type=Path, default=None)
@@ -803,7 +913,36 @@ def main() -> int:
         help="Use live HTML scraping for AOSS/Basilisk/Anaconda-release pages (default uses workbook snapshots).",
     )
     parser.add_argument("--repodata-subdirs", default="noarch,linux-64,osx-64,osx-arm64,win-64")
+    parser.add_argument(
+        "--live-catalog",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Read conda-forge package names, PyPI package names, and the "
+            "Parselmouth conda<->PyPI name mapping from the pyforge-atlas "
+            "Kedro Parquet data plane under PATH (a PYFORGE_ATLAS_DATA_ROOT) "
+            "instead of live HTTP fetches or --pypi-simple/--parselmouth "
+            "snapshot files (fully unused when this is set). --cf-channeldata "
+            "stays accepted and is NOT replaced by this flag -- it is still "
+            "read independently for has_src/the 10k-tab drop filter."
+        ),
+    )
+    parser.add_argument(
+        "--live-catalog-only",
+        action="store_true",
+        help=(
+            "Require --live-catalog and all three of its required datasets "
+            "present, readable, and above their scale floors (no floor for "
+            "the Parselmouth mapping); exit 2 before writing any output "
+            "otherwise."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.live_catalog_only and args.live_catalog is None:
+        print("--live-catalog-only requires --live-catalog", file=sys.stderr)
+        return 2
 
     if not args.analysis_xlsx.exists():
         print(f"missing analysis workbook: {args.analysis_xlsx}", file=sys.stderr)
@@ -815,8 +954,17 @@ def main() -> int:
         print(f"missing curated config: {args.curated_config}", file=sys.stderr)
         return 2
 
-    subdirs = [s.strip() for s in args.repodata_subdirs.split(",") if s.strip()]
     warnings: list[str] = []
+    live_catalog: LiveCatalogResult | None = None
+    if args.live_catalog is not None:
+        live_catalog = load_live_catalog(args.live_catalog)
+        if args.live_catalog_only and live_catalog.failed:
+            for w in live_catalog.warnings:
+                print(w, file=sys.stderr)
+            return 2
+        warnings.extend(live_catalog.warnings)
+
+    subdirs = [s.strip() for s in args.repodata_subdirs.split(",") if s.strip()]
     xlsx = XlsxReader(args.analysis_xlsx)
     try:
         records, tab_packages, analysis_cf_availability, analysis_not_on_cf = parse_sheet_sources(xlsx)
@@ -845,12 +993,16 @@ def main() -> int:
             source_sets[key] = s
             return s
 
-        cf_packages = try_source(
-            "external:conda-forge-channel",
-            lambda: load_channeldata_names(args.cf_channeldata)
-            or parse_channeldata_url("https://conda.anaconda.org/conda-forge/channeldata.json", args.timeout),
-            lambda: parse_sheet_pkg_set(xlsx, "Conda-Forge", "Package_Name"),
-        )
+        if args.live_catalog is not None:
+            cf_packages = live_catalog.cf_packages
+            source_sets["external:conda-forge-channel"] = cf_packages
+        else:
+            cf_packages = try_source(
+                "external:conda-forge-channel",
+                lambda: load_channeldata_names(args.cf_channeldata)
+                or parse_channeldata_url("https://conda.anaconda.org/conda-forge/channeldata.json", args.timeout),
+                lambda: parse_sheet_pkg_set(xlsx, "Conda-Forge", "Package_Name"),
+            )
         anaconda_main = try_source(
             "external:anaconda-main-channel",
             lambda: load_channeldata_names(args.main_channeldata)
@@ -906,11 +1058,15 @@ def main() -> int:
         for key, pkgs in source_sets.items():
             add_source_set(records, key, pkgs)
 
-        parselmouth_pypi = load_parselmouth_pypi_names(args.parselmouth)
+        if args.live_catalog is not None:
+            parselmouth_pypi = live_catalog.parselmouth_pypi
+            pypi_index = live_catalog.pypi_index
+        else:
+            parselmouth_pypi = load_parselmouth_pypi_names(args.parselmouth)
+            pypi_index = load_pypi_simple_names(args.pypi_simple)
+            if not pypi_index:
+                warnings.append("pypi simple index missing; falling back to live JSON for unresolved names")
         cf_or_pm = cf_packages | parselmouth_pypi
-        pypi_index = load_pypi_simple_names(args.pypi_simple)
-        if not pypi_index:
-            warnings.append("pypi simple index missing; falling back to live JSON for unresolved names")
 
         timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         pypi_cache: dict[str, bool] = {}
