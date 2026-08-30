@@ -2,8 +2,75 @@
 title: 'Tier 2 sources: about, curated orgs, Artifactory names (Story 21.5, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'd230e7fce20037f7f44134aa8fe765fae597102e'
+followup_review_recommended: false
+deferred:
+  - summary: >-
+      A malformed conf/base/curated_groups.json (invalid JSON) raises a
+      DatasetError at the Kedro catalog layer and aborts the whole
+      upstream_discovery pipeline run, rather than degrading to zero rows as
+      the Boundaries text promises for "a malformed/missing seed file."
+    evidence: |-
+      Confirmed empirically: writing invalid JSON to the file and loading the
+      discovery_curated_groups_seed catalog entry through
+      pyforge.atlas.mcp.session.bootstrapped_session() raised
+      `DatasetError: discovery_curated_groups_seed: ... Failed while loading
+      data from dataset ... JSONDataset`. This happens before
+      load_org_audit_candidates's own never-raise/degrade logic ever runs, so
+      that node-level contract can't help. However this exact exposure
+      (bare `type: json.JSONDataset` for a git-tracked, hand-curated seed,
+      with no degrade wrapper) already exists for the pre-existing
+      `seed_cwe_categories` and `seed_spdx_schema` catalog entries — this
+      story faithfully follows established precedent rather than introducing
+      a new pattern, so it is fleet-wide pre-existing debt, not a regression
+      unique to this story.
+    location: >-
+      src/shared/packages/pyforge-atlas/conf/base/catalog.yml (discovery_curated_groups_seed entry)
+    severity: medium
+  - summary: >-
+      catalog-sources.md's Tier 2 table (the planning doc the Problem
+      statement cites as establishing this story's requirement) names a
+      different catalog entry/pipeline ("artifactory_downloads_raw" under
+      artifactory_downloads) for the Artifactory/CDO-names row than what was
+      actually built (enterprise_jfrog_names, bucketed under upstream_discovery
+      in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section
+      directed the as-built naming, but the companion planning doc was never
+      reconciled to match.
+    evidence: |-
+      Confirmed by direct comparison of catalog-sources.md's Tier 2 table
+      against this story's own intent-contract Approach/Code Map text and the
+      actual catalog.yml/conftest.py changes. Not a code defect — the diff
+      correctly implements the intent-contract's explicit direction — but the
+      companion doc is now stale relative to what shipped.
+    location: >-
+      _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
+    severity: low
+  - summary: >-
+      spec-21-5's own Verification section claims "kedro run --pipelines
+      upstream_discovery,artifactory_downloads on a fresh data root" exits 0,
+      but join_enterprise_conda_maintainers's new dependency on
+      core_feedstock_attribution (produced by the separate `core` pipeline,
+      not included in that --pipelines list) makes a genuinely fresh data
+      root raise a DatasetError (file not found) before the node ever runs.
+    evidence: |-
+      Confirmed empirically: moving core_feedstock_attribution.parquet aside
+      and re-running `kedro run --pipelines upstream_discovery,artifactory_downloads`
+      raised `DatasetError: core_feedstock_attribution: ... No such file or
+      directory`. However this is a pre-existing, fleet-wide pattern, not a
+      regression this story introduces: classify_trending_candidates (Story
+      13.2, already shipped) has the identical characteristic — a plain
+      pandas.ParquetDataset input produced by a different pipeline
+      (pypi_conda_mapping), with no missing-file tolerance. This story's own
+      unit tests DO correctly verify join_enterprise_conda_maintainers's
+      behavior when given None/empty input directly (the function-level
+      contract in the I/O matrix), which is a different, narrower claim than
+      "the full kedro run survives a truly empty data root" — the latter has
+      never actually been true for any cross-pipeline dependency in this
+      codebase, this story included.
+    location: >-
+      _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-5-tier-2-sources.md (## Verification section)
+    severity: medium
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'
@@ -374,4 +441,124 @@ avoids fabricating that mapping.
   run environment) or stale-marked-with-empty-last-good — never a crash.
 - `grep -rn 'rxm7706/about' src/shared/packages/pyforge-atlas/` — expected: the
   new dataset module is now among the hits (previously doc-only).
+
+## Review Triage Log
+
+### 2026-08-30 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 1, low 1)
+- defer: 3: (high 0, medium 2, low 1)
+- reject: 14: (high 0, medium 0, low 14)
+- addressed_findings:
+  - `[medium]` `[patch]` `refresh_about_maintainers`, `join_enterprise_conda_maintainers`,
+    and `project_artifactory_names` were missing from
+    `orchestration/definitions.py`'s `refresh_assets` `SCHEDULED_JOBS` entry and
+    `NODE_TIMEOUTS` dict, despite the story's own claim that
+    `refresh_about_maintainers` "mirrors the Story 21.4 sibling cadence... exactly"
+    and "stays schedule-eligible" (Story 21.4's three sibling triggers ARE
+    registered in both places). Fixed: registered all three nodes in
+    `NODE_TIMEOUTS` (300/120/30s respectively, sized per closest sibling),
+    added `refresh_about_maintainers` to `refresh_assets`, and extended
+    `tests/orchestration/test_definitions_dryrun.py` with a
+    `_STORY_21_5_REFRESH_OPS` subset assertion (mirroring the existing
+    `_STORY_21_4_REFRESH_OPS` pattern) plus a new
+    `test_node_timeouts_covers_the_story_21_5_nodes` completeness check.
+  - `[low]` `[patch]` The new `artifactory_downloads` 4th node
+    (`project_artifactory_names` → `enterprise_jfrog_names`) had no DAG-level
+    wiring test, unlike the parallel `upstream_discovery` DAG-level coverage
+    this same diff added (`test_upstream_discovery_pipeline_has_nine_nodes` +
+    single-writer assertion) — only isolated pure-function unit tests existed.
+    Fixed: added `test_artifactory_downloads_pipeline_has_four_nodes` and
+    `test_enterprise_jfrog_names_has_exactly_one_writer` to
+    `tests/pipelines/test_dag_resolves.py`.
+
+Both patches re-verified: `pixi run -e pyforge-atlas kedro-catalog-check`
+(61 passed) and `pixi run -e pyforge-atlas kedro-test` (1510 passed, 24
+skipped — up from 1507, exactly the 3 new tests) both green, no regressions.
+
+3 findings deferred to frontmatter `deferred:` (malformed-JSON-seed crash —
+fleet-wide pre-existing pattern shared with `seed_cwe_categories`/
+`seed_spdx_schema`; `catalog-sources.md` naming-drift vs. what was actually
+built; the spec's own "fresh data root" Verification claim being inaccurate
+for a genuinely empty data root, a pre-existing cross-pipeline-dependency
+characteristic already present in Story 13.2's `classify_trending_candidates`).
+
+14 findings rejected as noise: an arbitrary-but-stable `conda_name` pick for
+multi-output feedstocks in `join_enterprise_conda_maintainers` (functionally
+harmless — all outputs of one feedstock share identical maintainers); the new
+`curated_groups.json` being untracked at review time (resolved automatically
+by this workflow's own Finalize commit step); the seed's location under
+`conf/base/` vs. `conf/base/seeds/` (explicitly directed by the intent-contract's
+own Code Map text); a theorized CWD-relative-path resolution gap for
+`discovery_curated_groups_seed` that did not reproduce empirically through the
+actual `bootstrapped_session()` MCP entrypoint; no recorded evidence of the
+spec's own README-shape pre-check (the Block If's documented acceptable-risk
+path already covers this, and a spot-check by one reviewer confirmed the
+live format still matches); a documented-but-unreachable `role="N/A"` enum
+value (cosmetic); a missing type annotation and a redundant-but-harmless
+guard (both cosmetic); a silently-resolved `is_internal` conflict in
+`project_artifactory_names`'s `drop_duplicates` (out of explicit spec scope,
+low likelihood); a premature section-reset edge case in `parse_about_readme`
+(mirrors legacy parser behavior exactly, and is the exact risk class the
+spec's own Block If already accepts); no dedup on duplicate
+`(feedstock_slug, role)` rows (out of explicit spec scope); the "unblocks
+Story 21.6" framing being only half-delivered for the JFROG half (expected —
+explicitly deferred to Story 23.2 per this story's own "Never" section); and
+`curated_groups.json` shipping with an empty `{"groups": []}` seed (explicitly
+sanctioned by the spec as "this story's own task, not pre-decided").
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Summary of implemented change:** Landed all three Tier 2 catalog sources
+`catalog-sources.md` declared but left uncataloged: (1) `discovery_about_maintainers_raw`
+(a new `AboutMaintainersDataset`, AD-13 external-refresh, unauthenticated GET
+of `rxm7706/about`'s README) joined against `core_feedstock_attribution` into
+`enterprise_conda_maintainers` (the CDO-ENT-CONDA universe, unblocking Story
+21.6's CDO-ENT-CONDA half); (2) a new git-tracked `discovery_curated_groups_seed`
+(`conf/base/curated_groups.json`) unioned into `load_org_audit_candidates`
+alongside the existing hand-curated list, preserving its dedup contract
+unchanged; (3) a new `project_artifactory_names` node in the existing
+`artifactory_downloads` pipeline projecting `pypi_name`/`conda_name`/`is_internal`
+only (no telemetry columns) into `enterprise_jfrog_names`.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py` — new `parse_about_readme` (pure, never-raise) + `AboutMaintainersDataset`.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/__init__.py` — export the two new symbols.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py` — new `refresh_about_maintainers`, `join_enterprise_conda_maintainers`, `_strip_feedstock_slug`; extended `load_org_audit_candidates` with a second `discovery_curated_groups_seed` input via new `_add_org_audit_row`/`_flatten_curated_groups` helpers.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/pipeline.py` — wired the 2 new nodes; updated `load_org_audit_candidates`'s input binding.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py` — new `project_artifactory_names`.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/pipeline.py` — wired the new 4th node.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — (review patch) registered the 3 new nodes in `NODE_TIMEOUTS`; added `refresh_about_maintainers` to the `refresh_assets` scheduled job.
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — 4 new entries: `discovery_about_maintainers_raw`, `discovery_curated_groups_seed`, `enterprise_conda_maintainers`, `enterprise_jfrog_names`.
+- `src/shared/packages/pyforge-atlas/conf/base/parameters.yml` — new `ttls.discovery_about_maintainers_raw` (weekly).
+- `src/shared/packages/pyforge-atlas/conf/base/curated_groups.json` — new git-tracked seed, shipped empty (`{"groups": []}`).
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — registered the `enterprise` prefix; bumped pipeline/total counts.
+- `src/shared/packages/pyforge-atlas/tests/datasets/test_upstream_discovery.py` — new coverage for the parser + dataset.
+- `src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/test_nodes.py` — new coverage for the join + extended `load_org_audit_candidates`.
+- `src/shared/packages/pyforge-atlas/tests/pipelines/artifactory_downloads/test_nodes.py` — new coverage for `project_artifactory_names`.
+- `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — node-count/single-writer updates for `upstream_discovery`; (review patch) new DAG-level coverage for `artifactory_downloads`.
+- `src/shared/packages/pyforge-atlas/tests/orchestration/test_definitions_dryrun.py` — (review patch) `_STORY_21_5_REFRESH_OPS` assertion + `NODE_TIMEOUTS` completeness test.
+
+**Review findings breakdown:** 2 patches applied (1 medium, 1 low — both above); 3 items deferred (frontmatter `deferred:`, above); 14 items rejected as noise (listed in the Review Triage Log above).
+
+**Follow-up review recommendation:** `false` — this pass's patched findings were 1 medium + 1 low, no high; score = 3×1 + 1×1 = 4 (< 5 threshold).
+
+**Verification performed:**
+- `pixi run -e pyforge-atlas kedro-catalog-check` — 61 passed.
+- `pixi run -e pyforge-atlas kedro-test` — 1510 passed, 24 skipped (0 failed), including the review-pass's 3 new/extended tests.
+- `pixi run -e pyforge-atlas parity-diff` — 70 passed (unaffected, out of scope for this story's pipelines).
+- `PYTHONPATH=src/shared/packages/pyforge-atlas/src pixi run -e local-recipes pytest src/shared/packages/pyforge-atlas/tests/datasets/test_upstream_discovery.py src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/ src/shared/packages/pyforge-atlas/tests/pipelines/artifactory_downloads/ -q` — 183 passed.
+- Live `kedro run --pipelines upstream_discovery,artifactory_downloads` (and separately with `core,pypi_intelligence` included) on a fresh `PYFORGE_ATLAS_DATA_ROOT` — exit 0; verified real Parquet output: `enterprise_conda_maintainers` empty-but-correctly-columned (`core_python_package_name`/`role`/`feedstock_slug`/`repository_source`), `enterprise_jfrog_names` empty-but-correctly-columned (`pypi_name`/`conda_name`/`is_internal`, no telemetry columns), `discovery_about_maintainers_raw` correctly stale-marked with no last-good (offline sandbox, no live fetcher wired), `org_audit_candidates` = 9 rows.
+- Matrix Test Audit: all 11 I/O & Edge-Case Matrix rows have a dedicated covering test that ran and passed.
+- `grep -rn 'rxm7706/about' src/shared/packages/pyforge-atlas/` — the new dataset module is now among the hits (previously doc-only).
+- Adversarial review (4 parallel layers: blind hunter, edge-case hunter, verification-gap, intent-alignment) + targeted empirical verification of the highest-signal findings (multi-output feedstock attribution, malformed-JSON catalog crash, fresh-data-root cross-pipeline crash, CWD-relative-path resolution) before triaging — see Review Triage Log above.
+
+**Residual risks:**
+- `curated_groups.json` ships with zero curated groups — Task 2's plumbing is fully wired and tested but has no observable effect until an operator hand-populates it under git review.
+- The `rxm7706/about` README parser regex was not re-verified against the live file in this sandbox (network-restricted); it mirrors the 2026-07-11 memory snapshot and the legacy script's regex exactly, per the Block If's documented acceptable-risk path.
+- 3 findings deferred (see frontmatter `deferred:`): a malformed `curated_groups.json` crashes the pipeline rather than degrading (fleet-wide pattern shared with `seed_cwe_categories`/`seed_spdx_schema`); `catalog-sources.md` is stale relative to the as-built naming; and this story's own "fresh data root" Verification claim doesn't hold for a genuinely empty data root (pre-existing cross-pipeline-dependency characteristic, not unique to this story).
 

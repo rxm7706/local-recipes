@@ -8,6 +8,7 @@ same invariants offline.
 
 from __future__ import annotations
 
+from pyforge.atlas.pipelines.artifactory_downloads import create_pipeline as artifactory_create
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.derived_artifacts import create_pipeline as derived_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
@@ -279,4 +280,26 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
     # the materializer is the ONLY consumer of the live Anaconda main raw entry
     consumers = [n.name for n in combined.nodes if "core_anaconda_main_channeldata_raw" in n.inputs]
     assert consumers == ["enumerate_anaconda_main_packages"]
+
+
+# -- Story 21.5: artifactory_downloads (4 nodes) + enterprise_jfrog_names wiring ----
+
+
+def test_artifactory_downloads_pipeline_has_four_nodes():
+    # Story 15.3 landed the original three; Story 21.5 added project_artifactory_names
+    # (the names-only enterprise_jfrog_names projection).
+    artifactory = artifactory_create()
+    assert len(artifactory.nodes) == 4
+    assert {n.name for n in artifactory.nodes} == {
+        "fetch_artifactory_downloads",
+        "join_artifactory_identity",
+        "format_artifactory_purl_export",
+        "project_artifactory_names",
+    }
+
+
+def test_enterprise_jfrog_names_has_exactly_one_writer():
+    artifactory = artifactory_create()
+    producers = [n.name for n in artifactory.nodes if "enterprise_jfrog_names" in n.outputs]
+    assert producers == ["project_artifactory_names"]
 
