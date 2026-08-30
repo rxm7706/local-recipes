@@ -1863,9 +1863,11 @@ unchanged).
 dataset defaults to `cf_atlas.db`; `parity-diff` passes.
 
 ### Story 21.3: Tier 0 harden and `--live-catalog` contract
-**Type:** feature • **Effort:** M • **Deps:** S-21.2 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.2 • **Status:** done
 **Given** Tier 0 Parquet materialized **When** `metrics.py --live-catalog` runs **Then**
-verification BOOLs read Parquet only; scale gates pass.
+verification BOOLs read Parquet only; scale gates pass. *(Landed PR #941, 2026-08-30. Scope
+is exactly the three Tier 0 verification sets; the package universe still comes from
+`--analysis-xlsx` until Story 23.8 — see the 2026-08-30 course-correction note below.)*
 
 ### Story 21.4: Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS)
 **Type:** feature • **Effort:** L • **Deps:** S-21.3 • **Status:** backlog
@@ -1963,9 +1965,10 @@ BOOLs land on verification export.
 `priority.py`.
 
 ### Story 23.4: Deliverable A + `Packaging_Candidate_Status`
-**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-23.3 • **Status:** backlog
-**Given** verification + priority Parquet **When** derived export writes **Then**
-`inventory_verified_packages.parquet` has exact 14-column order.
+**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-23.3, S-23.8 • **Status:** backlog
+**Given** verification + priority Parquet **And** `inventory_universe` (S-23.8) as the row
+grain **When** derived export writes **Then** `inventory_verified_packages.parquet` has exact
+14-column order at the full-inventory grain (~38k rows), not the OpenTeams-universe grain.
 
 ### Story 23.5: `identity_complete_export.parquet` (canonical)
 **Type:** feature • **Effort:** L • **Deps:** S-23.3, S-23.4 • **Status:** backlog
@@ -1978,9 +1981,26 @@ GIST_SCHEMA + handoff columns; supersedes Story 22.1 bridge.
 files on fixture; `gh gist edit` is thin actuator only.
 
 ### Story 23.7: Zero-deferred E2E gate
-**Type:** feature • **Effort:** M • **Deps:** S-23.5, S-23.6 • **Status:** backlog
-**Given** no workbook ingest **When** bootstrap + Vizro + gist **Then** quartet data logic
-retired; dream fully closed.
+**Type:** feature • **Effort:** M • **Deps:** S-23.5, S-23.6, S-23.8, S-23.9 • **Status:** backlog
+**Given** no workbook ingest — by the bootstrap **and** by the quartet (`openpyxl` absent
+from `scripts/`) **When** bootstrap + Vizro + gist **Then** quartet data logic retired; dream
+fully closed.
+
+### Story 23.8: Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx` optional)
+**Type:** feature • **Effort:** L • **Deps:** S-21.4, S-21.5 • **Status:** backlog
+**Given** Tier 0–2 Parquet + the OpenTeams board dataset **When** `derived_artifacts` runs
+**Then** `inventory_universe.parquet` holds one row per PEP-503 name with the workbook's
+provenance labels, `role`, and `openteams_universe_member` **And** `metrics.py --live-catalog`
+without `--analysis-xlsx` produces CSV/MD identical to the workbook run on a fixture (the
+`10kClosed`-only rows are the one reported delta). *(Minted 2026-08-30 course correction.)*
+
+### Story 23.9: Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`)
+**Type:** feature • **Effort:** L • **Deps:** S-23.4, S-23.5, S-23.6, S-23.8, S-22.1 • **Status:** backlog
+**Given** the Atlas exports **When** the four quartet scripts run **Then** identity/priority/
+dashboards/metrics read only Parquet (`identity_complete_export`, `inventory_priority_assignments`,
+`enterprise_jfrog_consumption`, `inventory_verified_packages`), every workbook flag refuses with
+a pointer, and `grep openpyxl|load_workbook|XlsxReader scripts/` is empty. *(Minted 2026-08-30
+course correction.)*
 
 ---
 
@@ -2015,3 +2035,29 @@ heading or status change:
   attended live-execution verification carried on the Spec, which reads
   `in-progress`): no rollup drift found in this pass. `epics→sprint` currency
   self-heals via the daily ledger stamp.
+
+---
+
+## Course-correction note — 2026-08-30 (workbook retirement)
+
+Trigger: Story 21.3 (PR #941), the first story on any station to reach marshal's automated
+`dispatch → verify → land` path, was held because `--live-catalog-only` read as "workbook-
+free" while `records`/`tab_packages` still came from `docs/Analysis_Dataset-2026-08-12.xlsx`
+(an untracked 11 MB local file). Findings and changes (`change-history/sprint-change-proposal-2026-08-30.md`):
+
+- **21.3 landed at its contracted scope** (three Tier 0 verification sets — `stories.yaml`:
+  "Thin metrics.py only"); the help text was accurate. Marked `done`.
+- **Gap 1 — no story owned the metrics-side universe cutover.** Minted **23.8**
+  (`inventory_universe` Kedro dataset + `--analysis-xlsx` optional; Deps S-21.4, S-21.5).
+- **Gap 2 — 23.4's row grain.** Its spec names `identity_packages_primary` (~7.5k OpenTeams
+  universe) but deliverable A is the ~38k full-inventory union; 23.4 now depends on 23.8.
+- **Gap 3 — nothing removed the workbook code.** Minted **23.9** (identity/priority/
+  dashboards/metrics thin-out, `openpyxl` gone from `scripts/`; Deps S-23.4, S-23.5, S-23.6,
+  S-23.8, S-22.1). 23.7 now depends on 23.8 + 23.9 and gates the quartet as well as bootstrap.
+- **Known residue, operator decision:** `10kClosed` (10,000 rows) has no catalog source; 23.8
+  reports the delta instead of seeding it (SPEC Non-goal: no workbook mirror).
+- **Drain order** (marshal `fleet-drain-queue.yaml`, xlsx-elimination critical path first, deps
+  respected): 21.4 → 21.5 → 21.6 → **23.8** → 21.7 → 21.8 → 23.1 → 23.2 → 23.3 → 23.4 → 22.1 →
+  23.5 → 23.6 → **23.9** → 22.2 → 22.3 → 22.4 → 22.5 → 23.7 → 22.6 → 21.9 → 21.10.
+- Epic 21's `Deps:` chain is unchanged; stories 21.4–21.10 were never blocked by scope, only by
+  21.3's hold.

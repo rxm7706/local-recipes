@@ -182,7 +182,7 @@ stories:
   - id: "23.4"
     title: "Deliverable A + Packaging_Candidate_Status derived export"
     epic: 23
-    depends_on: ["21.3", "23.3"]
+    depends_on: ["21.3", "23.3", "23.8"]
     caps: [CAP-8]
     spec_checkpoint: "complete-export-contract.md §2–§3.1"
     done_checkpoint: "inventory_verified_packages.parquet 14-column order + aoss_free_queue sibling"
@@ -209,8 +209,27 @@ stories:
   - id: "23.7"
     title: "Zero-deferred E2E gate (quartet data logic retired)"
     epic: 23
-    depends_on: ["23.5", "23.6"]
+    depends_on: ["23.5", "23.6", "23.8", "23.9"]
     caps: [CAP-8]
     spec_checkpoint: "complete-export-contract.md §7"
-    done_checkpoint: "Bootstrap without CF_ATLAS_DB or workbook; metrics --live-catalog has no verification logic; Epic 22 reads complete export"
+    done_checkpoint: "Bootstrap without CF_ATLAS_DB or workbook; quartet without openpyxl; metrics --live-catalog has no verification logic; Epic 22 reads complete export"
     invoke_dev_with: "Parity tests + operator runbook update; optional INVENTORY_USE_LEGACY_SCRIPTS=false flag"
+
+  # Minted 2026-08-30 by change-history/sprint-change-proposal-2026-08-30.md (workbook retirement).
+  - id: "23.8"
+    title: "Workbook-free metrics universe (Kedro inventory_universe + --analysis-xlsx optional)"
+    epic: 23
+    depends_on: ["21.4", "21.5"]
+    caps: [CAP-4, CAP-8]
+    spec_checkpoint: "complete-export-contract.md §9 + spec-23-8-workbook-free-metrics-universe.md"
+    done_checkpoint: "inventory_universe.parquet materializes; metrics.py --live-catalog without --analysis-xlsx matches the workbook run on fixture (10kClosed delta reported)"
+    invoke_dev_with: "One pure derived_artifacts node + metrics.py plumbing; consume 21.4/21.5 Parquet as landed; no new fetch code; do not retire the xlsx path (23.9)"
+
+  - id: "23.9"
+    title: "Quartet workbook retirement (thin actuators, no openpyxl in scripts/)"
+    epic: 23
+    depends_on: ["23.4", "23.5", "23.6", "23.8", "22.1"]
+    caps: [CAP-4, CAP-8]
+    spec_checkpoint: "complete-export-contract.md §9 + spec-23-9-quartet-workbook-retirement.md"
+    done_checkpoint: "identity/priority/dashboards/metrics read only Atlas exports; retired flags refuse with a pointer; grep openpyxl|load_workbook|XlsxReader scripts/ is empty; outputs byte-identical on fixture except provenance lines"
+    invoke_dev_with: "Script-side + docs only; priority.py becomes a shim over inventory_priority_assignments; close DW-FU-17-2-4/5/6"

@@ -122,6 +122,13 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
     reads complete export only; `--live-catalog` / `--gist-only` are thin actuators.
   - **enterprise handoff:** Story 23.2 column contract is the build target for
     [[artifactory-download-intelligence]] live bring-up — see companion §1.
+  - **workbook retirement (added 2026-08-30 course correction):** the inventory
+    quartet no longer needs `docs/Analysis_Dataset-2026-08-12.xlsx` at any step —
+    Story 23.8 lands the `inventory_universe` Parquet (the ~38k full-inventory row
+    grain with the workbook's provenance labels) and makes `--analysis-xlsx`
+    optional; Story 23.9 removes every workbook code path (`openpyxl` absent from
+    `scripts/`); Story 23.7 gates both the bootstrap and the quartet on zero
+    `.xlsx` reads. See companion §9.
 
 ## Constraints
 
@@ -155,7 +162,10 @@ identity join; the inventory quartet thins to ranking and enterprise overlays.
 ## Non-goals
 
 - Tier 3 bulk OS indexes in Epic 21 v1 — deferred to **Epic 23.1** (CAP-8).
-- Excel workbook ingest or mirror.
+- Excel workbook ingest or mirror — Kedro never reads the workbook and no catalog
+  entry mirrors a sheet. (Clarified 2026-08-30: *retiring* the quartet's own
+  workbook inputs IS in scope — Stories 23.8/23.9; the `10kClosed` sheet has no
+  upstream and is reported as a delta, not seeded.)
 - `universal_sbom` in the default bootstrap chain.
 - OpenTeams issue creation inside Atlas.
 - Retiring legacy atlas or conda-forge-expert tooling.

@@ -373,6 +373,15 @@ def classify(path: Path) -> str:
         # verify command and gate posture, which track that project's own
         # surface rather than the skill's.
         return "tracked:marshal-policy"
+    if rel == "planning-artifacts/fleet-drain-queue.yaml":
+        # Marshal's OPTIONAL fleet-drain order-override / skip-policy file
+        # (pyforge.marshal.core.dispatch_fleet.QUEUE_CONFIG_FILENAME), added
+        # 2026-08-30 by the atlas workbook-retirement course correction. Tracked
+        # on purpose: it is the one place a station's cross-story dependency
+        # order is made explicit to `marshal factory drain`, which otherwise
+        # walks the tracked ledger in story-key order. Hand-authored and not
+        # pin-gated -- it tracks a station's backlog, not the skill surface.
+        return "tracked:marshal-queue"
     if rel == "planning-artifacts/sprint-status-ledger.yaml":
         # The DURABLE twin of the Tier-3 sprint feed above, promoted 2026-07-30 for
         # the same reason as deferred-work-ledger.md: implementation-artifacts/ is

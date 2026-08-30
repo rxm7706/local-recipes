@@ -48,12 +48,13 @@
   "files": {
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
-   "scripts/conda-forge-packaging-inventory-operations_metrics.py": "ecff44f8a55ba74e0123863d868e1b19c9f2cb7b",
+   "scripts/conda-forge-packaging-inventory-operations_metrics.py": "ef0b9e7513e64ee9947d07748c68d3dc95f3899f",
    "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "a2dc4d8facd2686a6ddd5d1edbf9cdd85a075a7c",
    "scripts/conda-forge-packaging-inventory-operations_priority.py": "fe4b53df7c08d63aabdf06cfb0462498ed534663",
-   "scripts/openteams_identity_dashboards.py": "0b0bcf2ccddbefade59b4f9578af4513b418a204"
+   "scripts/openteams_identity_dashboards.py": "0b0bcf2ccddbefade59b4f9578af4513b418a204",
+   "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": "7840c1ac605e4562a8190806af2366b0274a53e5"
   },
-  "memlog": "4931b7bbaf092f6970937b8d49a6e4fbb205be2d"
+  "memlog": "1e32a25dbf527da57567bde40441a87a4bb3bc8e"
  },
  "pyforge-atlas/spec-enterprise-data-models-and-apis": {
   "files": {},
@@ -462,7 +463,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "d8f6cad8889d14b447859dbdaa078571e20c2cf7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "d6fe5c39121b9947e2a9f76b718d4d4c5624e35c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "d9bccb7f7067e994caa2d1c89a06f9afdb234824",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "6b7196c7c0804dcbf8651dcb802579f44f05fc8d",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "3bba72cf83e3d2bae966ef7001007974c4924939",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "a2f345dda29fabecb348e5547328a7c121e0b5eb",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "b3bc95ce6af94149e261a06064d3a725ed1fe5b5",
@@ -532,7 +533,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "91b88711fc10c70f997ed3dc9908afad3cbb7198"
+  "memlog": "bc22897c00a4523428c0bbf52a050c567447f561"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
