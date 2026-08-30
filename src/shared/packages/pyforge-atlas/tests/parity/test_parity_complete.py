@@ -14,19 +14,26 @@ from .harness import NODE_REGISTRY
 _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 7,
-    "vcs_health": 7,  # B9 +derive_release_velocity (FR-20); B10 +classify_migration_readiness (FR-21) — new-signal, AD-14
-    "pypi_intelligence": 10,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset)
+    "vcs_health": 10,  # B9 +derive_release_velocity (FR-20); B10 +classify_migration_readiness (FR-21) — new-signal, AD-14; Story 21.2 +3 external-refresh trigger nodes (§ 3.4 boundary)
+    "pypi_intelligence": 11,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset); Story 21.2 review fix #6 added refresh_pypi_json_store (same § 3.4 boundary)
     "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
 }
 
-# Story B5 external-refresh assets (§ 3.4) — these write the three separately-built
-# external stores (vdb / OSV / mapping cache), NOT the legacy-surface data outputs B4
-# parity-diffs. They are the § 3.4 MIGRATION BOUNDARY, so they are deliberately OUT of
-# the parity harness's NODE_REGISTRY (mirrors AD-14's "not parity-gated" discipline).
+# Story B5 external-refresh assets (§ 3.4) — these write the separately-built
+# external stores (vdb / OSV / mapping cache / GitHub / GitLab / Codeberg / registry /
+# PyPI-JSON live-fetch stores), NOT the legacy-surface data outputs B4 parity-diffs.
+# They are the § 3.4 MIGRATION BOUNDARY, so they are deliberately OUT of the parity
+# harness's NODE_REGISTRY (mirrors AD-14's "not parity-gated" discipline). Story 21.2
+# adds the GitHub/GitLab+Codeberg/registry/PyPI-JSON trigger nodes — same boundary as
+# refresh_vdb_store.
 _REFRESH_ASSETS = {
     "refresh_vdb_store",
     "refresh_osv_offline_store",
     "export_pypi_conda_map",
+    "refresh_vcs_github_store",
+    "refresh_vcs_host_stores",
+    "refresh_vcs_registry_stores",
+    "refresh_pypi_json_store",
 }
 
 # Story B8 Basilisk ingestion nodes (FR-19) — ADDITIVE new-signal riders, NEVER

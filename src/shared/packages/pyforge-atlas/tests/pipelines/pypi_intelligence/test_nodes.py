@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pandas as pd
 
+from pyforge.atlas.datasets.refresh import RefreshRequest, WEEKLY_SECONDS
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
+    _ttl_cadence,
     apply_readiness_scores,
     enumerate_pypi_universe,
     fetch_pypi_downloads,
@@ -12,6 +14,7 @@ from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
     map_pypi_conda,
     match_source_urls,
     phase_r_upsert_one,
+    refresh_pypi_json_store,
     score_pypi_readiness,
     snapshot_pypi_serials,
     v_pypi_intelligence_valid,
@@ -219,3 +222,28 @@ def test_notes_operator_override_survives_rescore():
     prior = pd.DataFrame({"pypi_name": ["pkg"], "notes": ["do-not-package: license review pending"]})
     out = apply_readiness_scores(enriched, prior_scored=prior)
     assert out.iloc[0]["notes"] == "do-not-package: license review pending"  # NOT clobbered
+
+
+# -- refresh_pypi_json_store trigger node (Story 21.2 review fix #6/#10) -----
+
+
+def test_ttl_cadence_reads_the_key():
+    assert _ttl_cadence({"pypi_current_versions": 12345}, "pypi_current_versions") == 12345
+
+
+def test_ttl_cadence_falls_back_to_weekly_on_missing_or_non_numeric():
+    assert _ttl_cadence({}, "pypi_current_versions") == WEEKLY_SECONDS
+    assert _ttl_cadence(None, "pypi_current_versions") == WEEKLY_SECONDS
+    assert _ttl_cadence({"pypi_current_versions": "nope"}, "pypi_current_versions") == WEEKLY_SECONDS
+
+
+def test_refresh_pypi_json_store_returns_a_refresh_request_for_its_own_store():
+    req = refresh_pypi_json_store({"pypi_current_versions": 4242})
+    assert isinstance(req, RefreshRequest)
+    assert req.store == "pypi_json_raw"
+    assert req.cadence_seconds == 4242
+
+
+def test_refresh_pypi_json_store_defaults_cadence_to_weekly():
+    req = refresh_pypi_json_store({})
+    assert req.cadence_seconds == WEEKLY_SECONDS

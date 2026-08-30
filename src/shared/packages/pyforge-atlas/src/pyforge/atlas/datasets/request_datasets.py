@@ -31,22 +31,38 @@ rate-limit *contract* is fixture-tested against a stub in ``tests/datasets`` /
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import sqlite3
 import time
-from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 from pyforge.core.errors import PyforgeError
 
+from .basilisk import chunk_queries
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
-from .vcs_sources import seed_github_from_cf_atlas
+from .refresh import (
+    DEFAULT_REFRESH_MAX_RETRIES,
+    DEFAULT_REFRESH_TIMEOUT_SECONDS,
+    MappingCacheDataset,
+    RefreshRequest,
+)
+from .vcs_sources import _ParquetRefreshStore, _retry_backoff_seconds
 
 logger = logging.getLogger(__name__)
+
+# GitHub GraphQL practical complexity/node-count ceiling per aliased batch request —
+# unlike Basilisk's documented 1,000-query REST batch endpoint, GitHub's GraphQL API
+# has no single published number, but a large number of aliased sub-selections in one
+# query risks tripping the node-limit / query-cost analyzer. Chunk larger batches
+# using the SAME chunk_queries() precedent Basilisk already established (review
+# fix #5), issuing one POST per chunk rather than one unbounded POST for the whole
+# repos sequence.
+GITHUB_BATCH_QUERY_MAX = 100
 
 _PYPI_JSON_FRAME_COLUMNS = [
     "pypi_name",
@@ -78,64 +94,38 @@ def _coerce_api_json(raw: Any) -> Any:
     return raw
 
 
-def _cf_atlas_db_path() -> Path:
-    for key in ("CF_ATLAS_DB", "CF_ATLAS_DB_PATH"):
-        raw = os.environ.get(key)
-        if raw:
-            return Path(raw).expanduser()
-    return Path(".claude/data/conda-forge-expert/cf_atlas.db")
+_DEFAULT_PYPI_JSON_FANOUT_LIMIT = 200
 
 
-def _empty_pypi_json_frame() -> pd.DataFrame:
-    return pd.DataFrame(columns=_PYPI_JSON_FRAME_COLUMNS)
+def _pypi_json_fanout_limit() -> int:
+    """``PYPI_JSON_FANOUT_LIMIT`` — bounded, non-unlimited default (review finding:
+    the prior amendment dropped the attended-only ``PYPI_JSON_LIVE_FANOUT`` gate
+    without giving the limit a real ceiling, which would have made the fan-out
+    unbounded by default).
 
-
-def seed_pypi_json_from_cf_atlas(db_path: Path | None = None) -> pd.DataFrame:
-    """Build the actionable ``pypi_json_raw`` slice from a post-bootstrap ``cf_atlas.db``.
-
-    After legacy bootstrap (Phase H via cf-graph + Phase R bulk enrichment), the
-    conda-side version stamps and ``pypi_intelligence`` enrichment already live in
-    SQLite — this avoids re-fetching ~20k ``/pypi/<name>/json`` endpoints on the
-    first Kedro ``pypi_intelligence`` run (attended live fan-out remains opt-in via
-    ``PYPI_JSON_LIVE_FANOUT=1``).
+    Returns:
+    - a positive int: the bounded fan-out batch size.
+    - ``0``: the operator explicitly disabled fan-out THIS cycle (review fix #7 —
+      the literal ``"0"`` is distinct from unset/blank/non-numeric/negative, all of
+      which degrade to the bounded default rather than being treated as "disabled";
+      an operator writing ``PYPI_JSON_FANOUT_LIMIT=0`` almost certainly means
+      "skip the live fetch this cycle", the opposite of "use the default").
     """
-    path = db_path if db_path is not None else _cf_atlas_db_path()
-    if not path.is_file():
-        return _empty_pypi_json_frame()
-    sql = """
-        SELECT
-          p.pypi_name,
-          p.pypi_current_version AS version,
-          p.pypi_last_serial,
-          p.pypi_version_serial_at_fetch,
-          p.pypi_version_fetched_at AS fetched_at,
-          pi.latest_upload_at AS upload_time_iso_8601,
-          p.conda_name,
-          pi.license_spdx,
-          pi.license_raw,
-          pi.packaging_shape,
-          pi.notes,
-          pi.has_wheel,
-          pi.python_tags AS wheel_tags,
-          pi.classifiers
-        FROM v_actionable_packages v
-        JOIN packages p ON p.conda_name = v.conda_name
-        LEFT JOIN pypi_intelligence pi ON pi.pypi_name = p.pypi_name
-        WHERE p.pypi_name IS NOT NULL
-    """
-    with sqlite3.connect(path) as conn:
-        df = pd.read_sql_query(sql, conn)
-    if df.empty:
-        return _empty_pypi_json_frame()
-    shape = df.get("packaging_shape")
-    df["pure_python"] = shape.eq("pure-python") if shape is not None else False
-    df["has_ext_modules"] = shape.isin(["c-extension", "cython"]) if shape is not None else False
-    df["cython"] = shape.eq("cython") if shape is not None else False
-    df["rust"] = shape.eq("rust-pyo3") if shape is not None else False
-    for col in _PYPI_JSON_FRAME_COLUMNS:
-        if col not in df.columns:
-            df[col] = pd.NA
-    return df[_PYPI_JSON_FRAME_COLUMNS].reset_index(drop=True)
+    raw = os.environ.get("PYPI_JSON_FANOUT_LIMIT")
+    if raw is None or raw.strip() == "":
+        return _DEFAULT_PYPI_JSON_FANOUT_LIMIT
+    try:
+        limit = int(raw)
+    except (TypeError, ValueError):
+        logger.warning(
+            "PYPI_JSON_FANOUT_LIMIT=%r is not a valid int — using default %s",
+            raw,
+            _DEFAULT_PYPI_JSON_FANOUT_LIMIT,
+        )
+        return _DEFAULT_PYPI_JSON_FANOUT_LIMIT
+    if limit == 0:
+        return 0
+    return limit if limit > 0 else _DEFAULT_PYPI_JSON_FANOUT_LIMIT
 
 
 def _payload_to_pypi_json_row(name: str, payload: Any) -> dict[str, Any]:
@@ -325,8 +315,8 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
         return pd.DataFrame(rows)[self._EMPTY_COLUMNS]
 
 
-class GitHubRequestDataset(_RequestParameterizedAPIDataset):
-    """Per-query GitHub GraphQL/REST request-body source (Phases E.5 / K / N).
+class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset):
+    """Per-query GitHub GraphQL request-body source (Phases E.5 / K / N).
 
     Gap G-2: authored in B1 (E.5/K/N are ``vcs_health`` B1 phases), not B2. One
     dataset = one request body; :meth:`with_query` produces the parameterized
@@ -334,36 +324,220 @@ class GitHubRequestDataset(_RequestParameterizedAPIDataset):
     token bucket + ``Retry-After`` discipline are attached here (dataset level), not
     in the node body. ``vcs_github_api_raw``.
 
-    A bare :meth:`load` does NOT issue the catalog placeholder GraphQL POST (``APIDataset``
-    rejects non-GET ``load()``). After legacy bootstrap, seeds from ``cf_atlas.db``; live
-    fan-out remains opt-in via :meth:`with_query` / attended GraphQL batches.
+    ``load()`` is a read-only projection of the persisted store (mirrors
+    :class:`~pyforge.atlas.datasets.vcs_sources.VcsHostSeedDataset`) — the real
+    batched GraphQL fetch (:meth:`fetch_repo_health`) runs only via
+    ``save(RefreshRequest(...))``, the pipeline's refresh-trigger node being the
+    single writer (Story 21.2).
     """
 
-    _GITHUB_SEED_COLUMNS = [
+    _COLUMNS = (
         "feedstock_name",
-        "archived",
         "conda_name",
+        "archived",
         "upstream_version",
         "last_error",
         "stars",
         "last_commit",
         "open_issues",
-    ]
+    )
 
-    def load(self) -> pd.DataFrame:
-        seeded = seed_github_from_cf_atlas()
-        if not seeded.empty:
-            return seeded
-        return pd.DataFrame(columns=self._GITHUB_SEED_COLUMNS)
+    def __init__(
+        self,
+        *,
+        url: str,
+        filepath: str,
+        method: str = "POST",
+        load_args: dict[str, Any] | None = None,
+        save_args: dict[str, Any] | None = None,
+        credentials: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        rps: float = DEFAULT_RPS,
+        scheduler: RateLimitedScheduler | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+    ) -> None:
+        super().__init__(
+            url=url,
+            method=method,
+            load_args=load_args,
+            save_args=save_args,
+            credentials=credentials,
+            metadata=metadata,
+            rps=rps,
+            scheduler=scheduler,
+        )
+        self._filepath = str(filepath)
+        self._timeout_seconds = int(timeout_seconds)
+        self._max_retries = int(max_retries)
+        self._sleep = sleep
+        # review fix #8: there is exactly ONE GitHub catalog entry, so the expected
+        # store is a fixed literal (unlike VcsHostSeedDataset/RegistryUpstreamDataset,
+        # which are parameterized per host/registry) — validated in save().
+        self._expected_store = "vcs_github_api_raw"
 
     def with_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """Build the GraphQL POST body for a single query — dataset-owned request
-        parameterization (AC-2). Returns the ``load_args.json`` payload; the concrete
-        POST fan-out through :attr:`scheduler` is dataset-owned and deferred."""
+        parameterization (AC-2)."""
         body: dict[str, Any] = {"query": query}
         if variables:
             body["variables"] = dict(variables)
         return body
+
+    def build_batch_query(self, repos: Sequence[tuple[str, str]]) -> dict[str, Any]:
+        """Build ONE batched GraphQL query (aliased sub-selections) covering every
+        ``(owner, name)`` pair in ``repos`` — the Phase K batched-query design
+        (KEEP). Dataset-owned request parameterization (AC-2): a node may never build
+        this. Callers are responsible for pre-chunking ``repos`` to
+        :data:`GITHUB_BATCH_QUERY_MAX` (review fix #5 — this method builds exactly
+        one query for whatever it is given, unbounded). An empty ``repos`` falls back
+        to the harmless rate-limit probe query."""
+        if not repos:
+            return self.with_query("query { rateLimit { remaining } }")
+        parts = [
+            f"r{i}: repository(owner: {json.dumps(str(owner))}, name: {json.dumps(str(name))}) "
+            "{ isArchived stargazerCount pushedAt issues(states: OPEN) { totalCount } }"
+            for i, (owner, name) in enumerate(repos)
+        ]
+        return self.with_query("query { " + " ".join(parts) + " }")
+
+    def _fetch_batch_with_retry(
+        self,
+        chunk: Sequence[tuple[str, str]],
+        *,
+        fetcher: Callable[[dict[str, Any]], Any] | None = None,
+    ) -> tuple[Any, Exception | None]:
+        """One chunk's batched POST, retried up to ``max_retries`` times. The
+        rate-limit token is acquired on EVERY attempt (review fix #3/#4 — mirrors
+        ``VcsHostSeedDataset.fetch_one``), with a short injectable backoff between
+        retries. Building the query lives INSIDE the try (review finding) so a
+        query-build failure degrades the same way a network failure does. Returns
+        ``(payload, None)`` on success or ``(None, exc)`` after exhausting retries —
+        never raises (AD-13)."""
+        attempt = 0
+        while True:
+            try:
+                self.scheduler.acquire()
+                body = self.build_batch_query(chunk)
+                if fetcher is not None:
+                    return fetcher(body), None
+                inner = APIDataset(
+                    url=self._base_url,
+                    method="POST",
+                    load_args={"json": body, "timeout": self._timeout_seconds},
+                    credentials=self._credentials,
+                    metadata=self.metadata,
+                )
+                return _coerce_api_json(inner.load()), None
+            except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
+                attempt += 1
+                if attempt > self._max_retries:
+                    return None, exc
+                self._sleep(_retry_backoff_seconds(attempt))
+
+    def fetch_repo_health(
+        self,
+        repos: Sequence[tuple[str, str]],
+        *,
+        fetcher: Callable[[dict[str, Any]], Any] | None = None,
+    ) -> pd.DataFrame:
+        """The real GraphQL fetch (Phase K/N): one batched POST per
+        :data:`GITHUB_BATCH_QUERY_MAX`-sized chunk of ``repos`` (review fix #5,
+        mirrors the Basilisk ``chunk_queries`` precedent), each retried under
+        :meth:`_fetch_batch_with_retry` (review fix #3/#4). An EMPTY ``repos`` makes
+        ZERO network calls — not even the harmless rate-limit probe (review fix #2;
+        mirrors ``VcsHostSeedDataset``/``RegistryUpstreamDataset``'s empty-batch
+        no-op: their ``for`` loop over an empty identifier list never calls
+        ``fetch_one``). A chunk that fails after retries degrades to per-repo error
+        rows for just that chunk (never the whole batch) rather than raising.
+        Persists through the same last-good + ``StalenessMarker`` pattern as
+        :class:`~pyforge.atlas.datasets.vcs_sources.VcsHostSeedDataset`, including its
+        total-failure clobber-safety fix."""
+        empty = pd.DataFrame(columns=list(self._COLUMNS))
+        if not repos:
+            self._persist(empty)
+            return empty
+        rows: list[dict[str, Any]] = []
+        for chunk in chunk_queries(list(repos), GITHUB_BATCH_QUERY_MAX):
+            payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher)
+            if exc is not None:
+                logger.warning("GitHub batch fetch failed, keeping last-good: %s", exc)
+                for owner, name in chunk:
+                    rows.append(
+                        {
+                            "feedstock_name": name,
+                            "conda_name": pd.NA,
+                            "archived": pd.NA,
+                            "upstream_version": pd.NA,
+                            "last_error": f"batch fetch failed: {type(exc).__name__}: {exc}",
+                            "stars": pd.NA,
+                            "last_commit": pd.NA,
+                            "open_issues": pd.NA,
+                        }
+                    )
+                continue
+            data = payload.get("data") if isinstance(payload, dict) else None
+            for i, (owner, name) in enumerate(chunk):
+                repo = data.get(f"r{i}") if isinstance(data, dict) else None
+                if not isinstance(repo, dict):
+                    rows.append(
+                        {
+                            "feedstock_name": name,
+                            "conda_name": pd.NA,
+                            "archived": pd.NA,
+                            "upstream_version": pd.NA,
+                            "last_error": "repository not found in response",
+                            "stars": pd.NA,
+                            "last_commit": pd.NA,
+                            "open_issues": pd.NA,
+                        }
+                    )
+                    continue
+                issues = repo.get("issues") if isinstance(repo.get("issues"), dict) else {}
+                rows.append(
+                    {
+                        "feedstock_name": name,
+                        "conda_name": pd.NA,
+                        "archived": bool(repo.get("isArchived")),
+                        "upstream_version": pd.NA,
+                        "last_error": None,
+                        "stars": repo.get("stargazerCount"),
+                        "last_commit": repo.get("pushedAt"),
+                        "open_issues": issues.get("totalCount"),
+                    }
+                )
+        frame = pd.DataFrame(rows, columns=list(self._COLUMNS))
+        # AD-13 clobber-safety: a batch where every repo failed must not overwrite
+        # last-good with an all-error result (mirrors the VcsHost/Registry fix).
+        has_success = bool(rows) and frame["last_error"].isna().any()
+        self._persist(frame if has_success else empty)
+        return frame
+
+    def load(self) -> pd.DataFrame:
+        return self._read_store(self._COLUMNS)
+
+    def save(self, data: Any) -> None:
+        if not isinstance(data, RefreshRequest):
+            raise NotImplementedError(
+                f"{type(self).__name__} only accepts a RefreshRequest trigger; it is "
+                "otherwise a read-only request source."
+            )
+        if data.store != self._expected_store:
+            # review fix #8: see VcsHostSeedDataset.save.
+            raise ValueError(
+                f"{type(self).__name__} is configured for store {self._expected_store!r} "
+                f"but received a RefreshRequest for {data.store!r} — pipeline wiring has "
+                "drifted out of sync."
+            )
+        if not data.force and not self._refresh_due(data.cadence_seconds):
+            self._clear_stale()
+            return
+        # Story 21.2 scope: no production repo-identifier source is wired yet; an
+        # empty batch makes zero network calls and degrades cleanly to keep-last-good
+        # + mark stale (AD-13, review fix #2). Real identifier wiring is deferred to
+        # Story 21.6 (upstream_discovery identity join).
+        self.fetch_repo_health(())
 
 
 class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
@@ -449,34 +623,128 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
         return out
 
 
-class PyPIJsonFanOutDataset(PyPIJsonRequestDataset):
-    """Catalog entry for ``pypi_json_raw``: seed from ``cf_atlas.db``, optional live fan-out.
+class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
+    """Catalog entry for ``pypi_json_raw``: live per-project fan-out over the
+    candidate names already resolved by ``pypi_conda_map_store`` (Story 21.2 —
+    replaces the ``cf_atlas.db`` seed; ``PYPI_JSON_LIVE_FANOUT`` is no longer a hard
+    gate, so live fan-out is the default fetch path).
 
-    Kedro's catalog calls :meth:`load` directly — this class materializes the actionable
-    per-project JSON slice dataset-owned (AC-2): by default it reads the post-bootstrap
-    conda/PyPI stamps already in ``cf_atlas.db``; set ``PYPI_JSON_LIVE_FANOUT=1`` to
-    issue scheduler-gated ``/pypi/<name>/json`` requests for names still missing a
-    ``version`` after seeding (attended-only, NFR-2/AD-11).
+    ``load()`` is a read-only projection of the persisted store (review fix #6 —
+    mirrors ``GitHubRequestDataset``/``VcsHostSeedDataset``: the AD-13 last-good +
+    staleness pattern every other class in this diff follows, rather than doing an
+    unbounded, ungated live fetch on every ``load()`` call with no fallback). The
+    real per-project fan-out (:meth:`fetch_candidates`) runs only via
+    ``save(RefreshRequest(...))``, the ``pypi_intelligence`` pipeline's
+    ``refresh_pypi_json_store`` trigger node being the single writer — a network
+    hiccup during that refresh keeps the previous last-good slice rather than
+    degrading every downstream consumer to nothing.
+
+    The candidate ``pypi_name`` universe comes from the already-populated
+    ``pypi_conda_map_store`` flat cache (read via a composed
+    :class:`~.refresh.MappingCacheDataset`, never a second fetch); both the key
+    (``pypi_name``) and value (``conda_name``) are filtered to real strings (review
+    fix #12, matching ``ParselmouthMappingDataset``'s filter). ``PYPI_JSON_FANOUT_LIMIT``
+    bounds the batch (default 200; ``0`` explicitly disables the fetch this cycle —
+    review fix #7; see :func:`_pypi_json_fanout_limit`).
     """
 
+    _COLUMNS = tuple(_PYPI_JSON_FRAME_COLUMNS)
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        filepath: str,
+        mapping_filepath: str,
+        method: str = "GET",
+        load_args: dict[str, Any] | None = None,
+        save_args: dict[str, Any] | None = None,
+        credentials: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        rps: float = DEFAULT_RPS,
+        scheduler: RateLimitedScheduler | None = None,
+    ) -> None:
+        # review fix #9: a fully explicit signature (no **kwargs sink) — matches the
+        # no-kwargs-sink principle already applied to ParselmouthMappingDataset; an
+        # unrecognized catalog key raises TypeError loudly instead of being silently
+        # forwarded/swallowed.
+        super().__init__(
+            url=url,
+            method=method,
+            load_args=load_args,
+            save_args=save_args,
+            credentials=credentials,
+            metadata=metadata,
+            rps=rps,
+            scheduler=scheduler,
+        )
+        self._filepath = str(filepath)  # this dataset's OWN persisted store (_ParquetRefreshStore)
+        self._mapping_cache = MappingCacheDataset(filepath=mapping_filepath)
+        # review fix #8: exactly one catalog entry — validated in save().
+        self._expected_store = "pypi_json_raw"
+
+    def _candidate_names(self) -> tuple[list[str], dict[str, str]]:
+        try:
+            mapping = self._mapping_cache.load()
+        except Exception as exc:  # never raise: degrade to an empty candidate set.
+            logger.warning("pypi_conda_map_store unreadable, degrading to empty: %s", exc)
+            mapping = {}
+        if not isinstance(mapping, dict):
+            mapping = {}
+        # review fix #12: filter BOTH key and value to real strings (matches
+        # ParselmouthMappingDataset's filter) — a malformed entry must not crash the
+        # fan-out or surface a non-string conda_name downstream.
+        names = sorted(
+            k for k, v in mapping.items() if isinstance(k, str) and k and isinstance(v, str)
+        )
+        return names, mapping
+
+    def fetch_candidates(self, *, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
+        """The real per-project fan-out (Story 21.2, dataset-owned IO, AD-2): bounded
+        by ``PYPI_JSON_FANOUT_LIMIT`` (``0`` explicitly disables it this cycle —
+        review fix #7). Persists through the AD-13 last-good pattern; :meth:`load_many`
+        (KEEP as-is) does the actual per-project requests — this method only sources
+        the candidate list and persists the result."""
+        empty = pd.DataFrame(columns=list(self._COLUMNS))
+        limit = _pypi_json_fanout_limit()
+        if limit == 0:
+            self._mark_stale("fan-out disabled this cycle (PYPI_JSON_FANOUT_LIMIT=0)")
+            return empty
+        names, mapping = self._candidate_names()
+        if not names:
+            self._persist(empty)
+            return empty
+        names = names[:limit]
+        payloads = self.load_many(names, fetcher=fetcher)
+        rows: list[dict[str, Any]] = []
+        for name in names:
+            row = _payload_to_pypi_json_row(name, payloads.get(name))
+            row["conda_name"] = mapping.get(name)
+            rows.append(row)
+        frame = pd.DataFrame(rows, columns=_PYPI_JSON_FRAME_COLUMNS).reset_index(drop=True)
+        self._persist(frame)
+        return frame
+
     def load(self) -> pd.DataFrame:
-        seeded = seed_pypi_json_from_cf_atlas()
-        if os.environ.get("PYPI_JSON_LIVE_FANOUT") != "1":
-            return seeded
-        missing = seeded.loc[seeded["version"].isna(), "pypi_name"].dropna().astype(str).tolist()
-        if not missing:
-            return seeded
-        limit = int(os.environ.get("PYPI_JSON_FANOUT_LIMIT", "0") or "0")
-        if limit > 0:
-            missing = missing[:limit]
-        payloads = self.load_many(missing)
-        live_rows = [_payload_to_pypi_json_row(name, payloads.get(name)) for name in missing]
-        live = pd.DataFrame(live_rows, columns=_PYPI_JSON_FRAME_COLUMNS)
-        if seeded.empty:
-            return live.reset_index(drop=True)
-        merged = seeded.set_index("pypi_name", drop=False)
-        merged.update(live.set_index("pypi_name"))
-        return merged.reset_index(drop=True)[_PYPI_JSON_FRAME_COLUMNS]
+        return self._read_store(self._COLUMNS)
+
+    def save(self, data: Any) -> None:
+        if not isinstance(data, RefreshRequest):
+            raise NotImplementedError(
+                f"{type(self).__name__} only accepts a RefreshRequest trigger; it is "
+                "otherwise a read-only request source."
+            )
+        if data.store != self._expected_store:
+            # review fix #8: see VcsHostSeedDataset.save.
+            raise ValueError(
+                f"{type(self).__name__} is configured for store {self._expected_store!r} "
+                f"but received a RefreshRequest for {data.store!r} — pipeline wiring has "
+                "drifted out of sync."
+            )
+        if not data.force and not self._refresh_due(data.cadence_seconds):
+            self._clear_stale()
+            return
+        self.fetch_candidates()
 
 
 class PyPIBigQueryDownloadsDataset(AbstractDataset):

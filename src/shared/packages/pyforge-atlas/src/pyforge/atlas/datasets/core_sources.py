@@ -12,15 +12,15 @@ import json
 import logging
 import os
 import re
-import sqlite3
 import tarfile
 import zipfile
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
+
+from .refresh import MappingCacheDataset
 
 logger = logging.getLogger(__name__)
 
@@ -609,44 +609,47 @@ class CrossChannelRepodataDataset(AbstractDataset):
         return {"parameterization": type(self).__name__, "channels": list(_CROSS_CHANNEL_SPECS)}
 
 
-def seed_parselmouth_mapping_from_cf_atlas(db_path: Path | None = None) -> pd.DataFrame:
-    """Phase C parselmouth mapping from post-bootstrap ``packages`` rows."""
-    path = db_path if db_path is not None else Path(
-        os.environ.get("CF_ATLAS_DB", ".claude/data/conda-forge-expert/cf_atlas.db")
-    )
-    cols = ["pypi_name", "conda_name", "match_source"]
-    if not path.is_file():
-        return pd.DataFrame(columns=cols)
-    sql = """
-        SELECT pypi_name, conda_name, match_source
-        FROM packages
-        WHERE pypi_name IS NOT NULL AND conda_name IS NOT NULL
-          AND match_source IN ('parselmouth', 'g10_spelling', 'recipe_source_url', 'name_coincidence')
-    """
-    with sqlite3.connect(path) as conn:
-        df = pd.read_sql_query(sql, conn)
-    if df.empty:
-        return pd.DataFrame(columns=cols)
-    if "match_source" not in df.columns:
-        df["match_source"] = "parselmouth"
-    return df[cols].drop_duplicates(subset=["pypi_name", "conda_name"]).reset_index(drop=True)
-
-
 class ParselmouthMappingDataset(AbstractDataset):
-    """Phase C: parselmouth / verified mapping slice for ``pypi_parselmouth_mapping_raw``."""
+    """Phase C: parselmouth / verified mapping slice for ``pypi_parselmouth_mapping_raw``.
 
-    def __init__(self, *, url: str, metadata: dict[str, Any] | None = None, **kwargs: Any) -> None:
-        _ = (url, kwargs)
+    Story 21.2: reads the already-populated ``pypi_conda_map_store`` flat cache
+    (produced by the ``export_pypi_conda_map`` node, Story 21.1's bootstrap chain) via
+    a composed :class:`~.refresh.MappingCacheDataset` pointed at the SAME ``filepath``
+    — never a second fetch (the intent's "Parselmouth reads from the existing
+    pypi_conda_map_store rather than a new fetch"). The composed dataset ALREADY owns
+    the AD-13 last-good/staleness discipline; this class only reprojects its flat
+    ``{pypi_name: conda_name}`` map to the 3-column shape Phase C nodes expect.
+    """
+
+    _COLUMNS = ("pypi_name", "conda_name", "match_source")
+    _MATCH_SOURCE = "pypi_conda_map_store"
+
+    def __init__(self, *, filepath: str, metadata: dict[str, Any] | None = None) -> None:
+        # No **kwargs sink: an unrecognized catalog key must raise loudly (a stale
+        # catalog misconfiguration) rather than be silently discarded.
+        self._filepath = filepath
         self.metadata = metadata
+        self._cache = MappingCacheDataset(filepath=filepath)
 
     def load(self) -> pd.DataFrame:
-        seeded = seed_parselmouth_mapping_from_cf_atlas()
-        if not seeded.empty:
-            return seeded
-        return pd.DataFrame(columns=["pypi_name", "conda_name", "match_source"])
+        try:
+            mapping = self._cache.load()
+        except Exception as exc:  # never raise (AD-13): degrade to empty.
+            logger.warning("pypi_conda_map_store unreadable, degrading to empty: %s", exc)
+            mapping = {}
+        if not isinstance(mapping, dict):
+            mapping = {}
+        if not mapping:
+            return pd.DataFrame(columns=self._COLUMNS)
+        rows = [
+            {"pypi_name": k, "conda_name": v, "match_source": self._MATCH_SOURCE}
+            for k, v in sorted(mapping.items())
+            if isinstance(k, str) and isinstance(v, str)
+        ]
+        return pd.DataFrame(rows, columns=self._COLUMNS).reset_index(drop=True)
 
     def save(self, data: Any) -> None:
         raise NotImplementedError(f"{type(self).__name__} is read-only")
 
     def _describe(self) -> dict[str, Any]:
-        return {"parameterization": type(self).__name__}
+        return {"parameterization": type(self).__name__, "filepath": self._filepath}

@@ -22,6 +22,7 @@ from .nodes import (
     flag_cross_channel,
     map_pypi_conda,
     match_source_urls,
+    refresh_pypi_json_store,
     score_pypi_readiness,
     snapshot_pypi_serials,
 )
@@ -30,6 +31,18 @@ from .nodes import (
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
+            # Story 21.2 review fix #6 — external-refresh trigger node: the SINGLE
+            # writer of the pypi_json_raw live-fetch store (mirrors
+            # refresh_vcs_github_store, pipelines/vcs_health/pipeline.py).
+            # match_source_urls / fetch_pypi_current_versions / enrich_pypi_intelligence
+            # then consume the SAME catalog entry as an input — the DAG resolves
+            # refresh -> consume automatically.
+            node(
+                func=refresh_pypi_json_store,
+                inputs="params:ttls",
+                outputs="pypi_json_raw",
+                name="refresh_pypi_json_store",
+            ),
             node(
                 func=map_pypi_conda,
                 inputs=["pypi_parselmouth_mapping_raw", "core_packages_enumerated"],

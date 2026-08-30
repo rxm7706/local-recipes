@@ -11,9 +11,9 @@ import json
 import tarfile
 import zipfile
 
-import pandas as pd
-
+import pytest
 from pyforge.atlas.datasets import (
+    ParselmouthMappingDataset,
     channeldata_json_to_rows,
     parse_cf_graph_tarball,
     parse_feedstock_outputs_zip,
@@ -115,3 +115,45 @@ def test_parse_cf_graph_tarball_empty():
     df = parse_cf_graph_tarball(_multi_file_tar(("other/readme.json", {})))
     assert df.empty
     assert "feedstock_name" in df.columns
+
+
+# -- ParselmouthMappingDataset (Story 21.2: reads pypi_conda_map_store) ------
+
+
+def test_parselmouth_reads_pypi_conda_map_store(tmp_path):
+    cache_path = tmp_path / "pypi_conda_map.json"
+    cache_path.write_text(json.dumps({"numpy": "numpy", "beautifulsoup4": "beautifulsoup4"}))
+    ds = ParselmouthMappingDataset(filepath=str(cache_path))
+    out = ds.load()
+    assert set(out["pypi_name"]) == {"numpy", "beautifulsoup4"}
+    assert (out["match_source"] == "pypi_conda_map_store").all()
+
+
+def test_parselmouth_absent_store_returns_empty_frame_not_stale_crash(tmp_path):
+    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "never-written.json"))
+    out = ds.load()
+    assert out.empty
+    assert list(out.columns) == ["pypi_name", "conda_name", "match_source"]
+
+
+def test_parselmouth_corrupt_store_degrades_to_empty_never_raises(tmp_path):
+    cache_path = tmp_path / "pypi_conda_map.json"
+    cache_path.write_text("{not valid json")
+    ds = ParselmouthMappingDataset(filepath=str(cache_path))
+    out = ds.load()  # never raises (AD-13)
+    assert out.empty
+
+
+def test_parselmouth_rejects_unexpected_kwargs():
+    """Catches stale catalog misconfiguration loudly rather than silently
+    discarding an unrecognized key (review finding)."""
+    with pytest.raises(TypeError):
+        ParselmouthMappingDataset(filepath="whatever", url="https://example.invalid")
+
+
+def test_parselmouth_save_is_read_only(tmp_path):
+    from kedro.io.core import DatasetError
+
+    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
+    with pytest.raises(DatasetError, match="read-only"):
+        ds.save({"a": "b"})

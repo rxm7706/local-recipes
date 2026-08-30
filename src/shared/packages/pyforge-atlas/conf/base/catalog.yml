@@ -184,10 +184,17 @@ pypi_simple_index_raw:
 # `acquire()` wiring now live in PyPIJsonRequestDataset (datasets/request_datasets.py,
 # AD-2) — request_path(name) builds the per-project path + load_many() is the
 # scheduler-gated fan-out, so a NODE never builds a request URL (AC-2). The `url:`
-# stays the PyPI JSON host base (request_path appends `/pypi/<name>/json`).
+# stays the PyPI JSON host base (request_path appends `/pypi/<name>/json`). Story
+# 21.2 review fix #6: `filepath:` is THIS entry's own AD-13 last-good store
+# (${paths.data_root}/raw/pypi_json_raw — the refresh_pypi_json_store trigger node,
+# pipelines/pypi_intelligence/pipeline.py, is the single writer); `mapping_filepath:`
+# points at the SAME `pypi_conda_map_store` file the candidate `pypi_name` universe
+# is sourced from (no cf_atlas.db seed, never a second fetch).
 pypi_json_raw:
   type: pyforge.atlas.datasets.PyPIJsonFanOutDataset
   url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}
+  filepath: ${globals:paths.data_root}/raw/pypi_json_raw
+  mapping_filepath: ${globals:paths.pypi_conda_map}
   metadata:
     layer: raw
 
@@ -211,10 +218,13 @@ pypi_bigquery_downloads_raw:
   metadata:
     layer: raw
 
-# Phase C parselmouth mapping (cf-graph + conda-forge-metadata).
+# Phase C parselmouth / verified mapping slice. Story 21.2: reads the already-
+# populated `pypi_conda_map_store` flat cache (export_pypi_conda_map's single-writer
+# output) instead of a live cf-graph-countyfair fetch — no cf_atlas.db seed, no
+# second fetch (AD-13 last-good/staleness already owned by MappingCacheDataset).
 pypi_parselmouth_mapping_raw:
   type: pyforge.atlas.datasets.ParselmouthMappingDataset
-  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/regro/cf-graph-countyfair/master/mappings/pypi
+  filepath: ${globals:paths.pypi_conda_map}
   metadata:
     layer: raw
 
@@ -466,7 +476,9 @@ vulnerability_basilisk_details:
 # HERE. It owns the per-query request-body parameterization (with_query()) +
 # the Phase K single-worker 3-RPS token bucket + Retry-After discipline at
 # dataset level, so a NODE never builds a request (AC-2). The query below is
-# a benign placeholder for the concrete per-query fan-out (dataset-owned).
+# the DEFAULT `load_args.json` (unused by the real fetch — build_batch_query()
+# builds its own body); Story 21.2 adds `filepath:` for the last-good store the
+# `refresh_vcs_github_store` trigger node (vcs_health/pipeline.py) writes to.
 vcs_github_api_raw:
   type: pyforge.atlas.datasets.GitHubRequestDataset
   url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql
@@ -475,29 +487,39 @@ vcs_github_api_raw:
     json:
       query: "query { rateLimit { remaining } }"
   credentials: github_token
+  filepath: ${globals:paths.data_root}/raw/vcs_github_api_raw
   metadata:
     layer: raw
 
+# Story 21.2: `url:` is the bare GITLAB_API_BASE_URL — VcsHostSeedDataset builds the
+# per-project `/projects/<id>/repository/tags` path itself (AC-2, a node may never
+# build a request URL); `filepath:` is the last-good store the
+# `refresh_vcs_host_stores` trigger node writes to.
 vcs_gitlab_api_raw:
   type: pyforge.atlas.datasets.VcsHostSeedDataset
-  url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}/projects
+  url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}
   host: gitlab
+  filepath: ${globals:paths.data_root}/raw/vcs_gitlab_api_raw
   metadata:
     layer: raw
 
 vcs_codeberg_api_raw:
   type: pyforge.atlas.datasets.VcsHostSeedDataset
-  url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}/repos
+  url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}
   host: codeberg
+  filepath: ${globals:paths.data_root}/raw/vcs_codeberg_api_raw
   metadata:
     layer: raw
 
 # Phase L cross-ecosystem registries — one entry per registry, one override
-# point each (the 8 registry resolve_*_urls helpers).
+# point each (the 8 registry resolve_*_urls helpers). Story 21.2: `filepath:` is
+# each registry's last-good store, written by the `refresh_vcs_registry_stores`
+# trigger node (vcs_health/pipeline.py).
 vcs_registry_npm_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NPM_BASE_URL}
   registry: npm
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_npm_raw
   metadata:
     layer: raw
 
@@ -505,6 +527,7 @@ vcs_registry_cran_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRAN_BASE_URL}
   registry: cran
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_cran_raw
   metadata:
     layer: raw
 
@@ -512,6 +535,7 @@ vcs_registry_cpan_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CPAN_BASE_URL}
   registry: cpan
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_cpan_raw
   metadata:
     layer: raw
 
@@ -519,6 +543,7 @@ vcs_registry_luarocks_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.LUAROCKS_BASE_URL}
   registry: luarocks
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_luarocks_raw
   metadata:
     layer: raw
 
@@ -526,6 +551,7 @@ vcs_registry_crates_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
   registry: crates
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_crates_raw
   metadata:
     layer: raw
 
@@ -533,6 +559,7 @@ vcs_registry_rubygems_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
   registry: rubygems
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_rubygems_raw
   metadata:
     layer: raw
 
@@ -540,6 +567,7 @@ vcs_registry_maven_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.MAVEN_BASE_URL}
   registry: maven
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_maven_raw
   metadata:
     layer: raw
 
@@ -547,6 +575,7 @@ vcs_registry_nuget_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NUGET_BASE_URL}
   registry: nuget
+  filepath: ${globals:paths.data_root}/raw/vcs_registry_nuget_raw
   metadata:
     layer: raw
 

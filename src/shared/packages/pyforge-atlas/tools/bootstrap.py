@@ -26,10 +26,12 @@ exit 0 (the spec's "Bootstrap smoke" row):
    `kedro run` fail immediately with `KeyError: Unable to find credentials
    '...'`, before a single node runs (verified empirically against this
    catalog, 2026-08-29). Both datasets that reference these keys already
-   degrade to an offline no-op by DEFAULT (`GitHubRequestDataset.load()`
-   seeds-then-empty; `PyPIBigQueryDownloadsDataset.load()` returns an empty
-   frame unless `PHASE_P_ENABLED=1`) -- neither reads the credential VALUE
-   on that default path, so a genuinely empty stub satisfies the
+   degrade to an offline no-op by DEFAULT (`GitHubRequestDataset`'s
+   refresh-trigger node hands it an empty repo-identifier batch by default,
+   Story 21.2 -- `save()` short-circuits to zero network calls before the
+   credential is ever touched; `PyPIBigQueryDownloadsDataset.load()` returns
+   an empty frame unless `PHASE_P_ENABLED=1`) -- neither reads the
+   credential VALUE on that default path, so a genuinely empty stub satisfies the
    catalog-construction gate without fabricating a fake-looking token. A
    real operator's own `conf/local/credentials.yml` (with real tokens) is
    NEVER overwritten -- this step is a no-op the moment a non-empty file
@@ -54,9 +56,9 @@ _CREDENTIALS_STUB = """\
 # Kedro's catalog construction (which resolves every entry's `credentials:` key
 # eagerly, for the WHOLE catalog, regardless of --pipeline) does not KeyError on
 # a fresh clone. Both referencing datasets degrade to an offline no-op by
-# default and never read these values unless you opt into a live/attended fetch
-# (PYPI_JSON_LIVE_FANOUT=1 / PHASE_P_ENABLED=1) -- fill in real values only if
-# you need that path.
+# default and never read these values unless you wire real repo identifiers
+# (Story 21.6) / opt into PHASE_P_ENABLED=1 -- fill in real values only if you
+# need that path.
 github_token: {}
 bigquery_adc: {}
 """

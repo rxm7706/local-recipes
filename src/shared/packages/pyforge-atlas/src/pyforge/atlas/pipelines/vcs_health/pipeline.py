@@ -15,6 +15,9 @@ from .nodes import (
     detect_archived_feedstocks,
     enrich_maintainers,
     fetch_live_health,
+    refresh_vcs_github_store,
+    refresh_vcs_host_stores,
+    refresh_vcs_registry_stores,
     track_registry_versions,
     track_upstream_versions,
 )
@@ -23,6 +26,39 @@ from .nodes import (
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
+            # Story 21.2 — external-refresh trigger nodes: the SINGLE writers of the
+            # GitHub/GitLab/Codeberg/registry live-fetch stores (mirrors
+            # refresh_vdb_store/refresh_osv_offline_store, vulnerability/pipeline.py).
+            # track_upstream_versions / track_registry_versions / detect_archived_
+            # feedstocks / fetch_live_health then consume the SAME catalog entries as
+            # inputs — the DAG resolves refresh -> consume automatically.
+            node(
+                func=refresh_vcs_github_store,
+                inputs="params:ttls",
+                outputs="vcs_github_api_raw",
+                name="refresh_vcs_github_store",
+            ),
+            node(
+                func=refresh_vcs_host_stores,
+                inputs="params:ttls",
+                outputs=["vcs_gitlab_api_raw", "vcs_codeberg_api_raw"],
+                name="refresh_vcs_host_stores",
+            ),
+            node(
+                func=refresh_vcs_registry_stores,
+                inputs="params:ttls",
+                outputs=[
+                    "vcs_registry_npm_raw",
+                    "vcs_registry_cran_raw",
+                    "vcs_registry_cpan_raw",
+                    "vcs_registry_luarocks_raw",
+                    "vcs_registry_crates_raw",
+                    "vcs_registry_rubygems_raw",
+                    "vcs_registry_maven_raw",
+                    "vcs_registry_nuget_raw",
+                ],
+                name="refresh_vcs_registry_stores",
+            ),
             node(
                 func=enrich_maintainers,
                 inputs="core_cf_graph_raw",
