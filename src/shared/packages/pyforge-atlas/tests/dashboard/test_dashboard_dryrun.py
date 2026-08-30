@@ -262,6 +262,12 @@ def test_registered_data_functions_are_callable_and_return_frames(dashboard):
 def test_factory_status_reads_the_real_sprint_status():
     """The factory-status frame reads the REAL tracked sprint-status.yaml (default path)
     and surfaces known story keys + their statuses."""
+    sprint_status_path = fs._default_paths()["sprint_status_path"]
+    if not sprint_status_path.exists():
+        pytest.skip(
+            f"{sprint_status_path} is a gitignored, locally-generated Tier-3 file "
+            "(sprint-ledger-sync) -- absent in a fresh worktree/clone"
+        )
     frame = fs.build_factory_status_frame(build_stamp=STAMP)
     sprint = frame[frame["source"] == "sprint-status.yaml"]
     keyed = dict(zip(sprint["key"], sprint["status"]))
