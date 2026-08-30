@@ -14,6 +14,7 @@ import re
 
 from .conftest import (
     CATALOG_YML,
+    DERIVED_STORE_PATHS,
     EXPECTED_ENV_OVERRIDE_SURFACE,
     EXPECTED_EXTRA_OVERRIDES,
     EXPECTED_FETCHER_URLS,
@@ -73,16 +74,59 @@ def test_each_override_point_is_env_overridable_with_default(globals_raw):
 
 
 def test_paths_are_env_overridable_with_the_declared_var_names(globals_raw):
-    """P6/P9: the paths section follows the same env_or wiring, with an
-    EXACT lowercase-key -> ENV_VAR map (incl. data_root, P9)."""
+    """P6/P9: the two ROOT paths follow the env_or wiring, with an EXACT
+    lowercase-key -> ENV_VAR map (incl. data_root, P9). Story 21.1: the
+    three store paths are asserted separately (below) — they derive from
+    `data_root` rather than carrying their own `env_or` wrapper, so the
+    full `paths` section is PATHS_ENV_VARS | DERIVED_STORE_PATHS keys."""
     paths = globals_raw.get("paths") or {}
-    assert set(paths) == set(PATHS_ENV_VARS)
+    assert set(paths) == set(PATHS_ENV_VARS) | set(DERIVED_STORE_PATHS)
     bad = {}
     for key, value in paths.items():
+        if key in DERIVED_STORE_PATHS:
+            continue
         m = _ENV_OR_RE.match(str(value))
         if not m or m.group(1) != PATHS_ENV_VARS[key]:
             bad[f"paths.{key}"] = value
     assert not bad, f"paths wiring violations (want ${{env_or:<VAR>,<default>}}): {bad}"
+
+
+def test_store_paths_derive_from_data_root(globals_raw):
+    """Story 21.1 (CAP-1): `vdb_store` / `osv_offline_store` / `pypi_conda_map`
+    are plain `${paths.data_root}/<suffix>` self-references — no dedicated
+    `env_or`-wrapped override of their own (PYFORGE_ATLAS_DATA_ROOT is the
+    ONE override point for all three, per the spec's "Always" row)."""
+    paths = globals_raw.get("paths") or {}
+    bad = {}
+    for key, suffix in DERIVED_STORE_PATHS.items():
+        expected = f"${{paths.data_root}}/{suffix}"
+        if str(paths.get(key)) != expected:
+            bad[f"paths.{key}"] = paths.get(key)
+    assert not bad, f"store paths must be '${{paths.data_root}}/<suffix>' literally: {bad}"
+
+
+def test_store_paths_resolve_under_data_root(monkeypatch):
+    """Story 21.1 AC: end-to-end (through the SAME `${globals:...}` resolver
+    catalog.yml uses) the three store paths resolve under `data_root` — both
+    the shipped default AND an explicit `PYFORGE_ATLAS_DATA_ROOT` override
+    (the I/O matrix's "Env override" row: no hardcoded `.claude/data/` left
+    in the resolved catalog)."""
+    entries = {
+        "vulnerability_vdb_store": "stores/vdb",
+        "vulnerability_osv_offline_store": "stores/osv",
+        "pypi_conda_map_store": "stores/pypi_conda_map.json",
+    }
+
+    loader = make_config_loader()
+    catalog = dict(loader["catalog"])
+    for entry, suffix in entries.items():
+        assert catalog[entry]["filepath"] == f"data/{suffix}"
+
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "/tmp/atlas-catalog-check-override")
+    loader = make_config_loader()
+    catalog = dict(loader["catalog"])
+    for entry, suffix in entries.items():
+        assert catalog[entry]["filepath"] == f"/tmp/atlas-catalog-check-override/{suffix}"
 
 
 def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
@@ -91,15 +135,25 @@ def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
     shipped default must stay inside the repo when resolved from there
     (the pre-review `../../../../` escapes silently depended on a
     member-dir CWD nobody uses). The seed root (git-tracked) must exist on
-    disk; the `.claude/data/` stores are gitignored runtime state and may
+    disk; the store defaults are gitignored runtime state and may
     legitimately be absent in a fresh container, so they get the
     containment assertion only."""
     paths = globals_raw.get("paths") or {}
     # A plain-string path (no ${env_or:...} wrapper) is still a valid default —
     # fall back to the raw value so it gets containment-checked instead of
-    # crashing on `None.group(2)` (Gemini PR-71).
+    # crashing on `None.group(2)` (Gemini PR-71). Story 21.1: the three
+    # DERIVED_STORE_PATHS keys are `${paths.data_root}/<suffix>` self-
+    # references rather than `${env_or:...}` — substitute data_root's OWN
+    # resolved default rather than containment-checking the literal
+    # unresolved `${paths.data_root}` text (which would be vacuous: the
+    # real end-to-end resolution is covered by
+    # test_store_paths_resolve_under_data_root above).
+    data_root_default = _ENV_OR_RE.match(str(paths["data_root"])).group(2)
     defaults = {}
     for key, value in paths.items():
+        if key in DERIVED_STORE_PATHS:
+            defaults[key] = f"{data_root_default}/{DERIVED_STORE_PATHS[key]}"
+            continue
         m = _ENV_OR_RE.match(str(value))
         defaults[key] = m.group(2) if m else str(value)
     escapees = {}

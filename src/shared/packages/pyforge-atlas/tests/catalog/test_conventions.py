@@ -40,7 +40,12 @@ def test_output_filepaths_follow_data_layer_name_convention(catalog_config):
     """Persisted outputs live under data/<layer>/<dataset_name>/ — nodes
     never choose physical layout (spine Parquet-layout row). External raw
     inputs (legacy stores / seeds / API feeds) are exempt unless they
-    already point under data/ (then the same rule applies)."""
+    already point under data/ (then the same rule applies). Story 21.1
+    (CAP-1): the three § 3.4 external-refresh stores now live under
+    `${paths.data_root}/stores/…` (relocated off `.claude/data/…`, so they
+    DO start with `data/`) but are a distinct concept from a pipeline's
+    layered Parquet output — no dataset_name subdirectory, no `raw`/etc.
+    layer folder — so `data/stores/` is a second, narrower exempt prefix."""
     bad = {}
     for name, spec in catalog_config.items():
         layer = (spec.get("metadata") or {}).get("layer")
@@ -50,6 +55,8 @@ def test_output_filepaths_follow_data_layer_name_convention(catalog_config):
                 bad[name] = "output entry with no filepath/path"
             continue
         path = str(path)
+        if path.startswith("data/stores/"):
+            continue
         is_local_data = path.startswith("data/")
         if layer in OUTPUT_LAYERS or is_local_data:
             prefix = f"data/{layer}/{name}"
