@@ -25,9 +25,12 @@ cache-validity hunch inside bmad-build-auto: a stale cache silently misleads, an
 over-eager recompile re-reads the 65k-token `epics.md` / 46k-token `prd.md` for nothing.
 
 **Approach:** Make epic-context and continuity distills incrementally-maintained derived
-artifacts driven by a cocoindex flow: recompute exactly when their declared planning sources
-change, never otherwise. Marshal renders the layer flag (Story 28.1); the flow owns
-freshness.
+artifacts: recompute exactly when their declared planning sources change, never otherwise.
+The incremental engine is **Scribe's `compile_surface` cocoindex extra** (scribe Story 6.2;
+unifying-strategy Grounding 2026-08-30: cocoindex is a `compile_surface` extra that writes
+*through* `GraphStore`, not a GraphStore engine) — marshal consumes it via the scribe
+grammar, never a marshal-private cocoindex flow. Marshal renders the layer flag
+(Story 28.1); the extra owns freshness.
 
 ## Acceptance Criteria
 
@@ -49,18 +52,20 @@ literally. `BMAD_ACTIVE_PROJECT=pyforge-marshal` only — never `scripts/bmad-sw
 key `28-8-derived-context-recomputes-only-on-source-change`.
 
 **Block If:** A change would alter the epic-context content contract, compress the story
-spec, or import cocoindex into `pyforge.marshal.core` (AD-4 purity — the flow lives at the
-seam, not in core).
+spec, or import cocoindex anywhere in `pyforge.marshal` (the engine lives behind Scribe's
+`compile_surface` extra; marshal consumes by grammar only).
 
 **Never:** A background daemon the supervisor doesn't own. Rewriting bmad-build-auto's
-routing semantics.
+routing semantics. A marshal-private cocoindex flow — if scribe Story 6.2's extra is not
+yet shipped when this dispatches, implement the consumer side against its declared grammar
+with the layer-off fallback proven, and record the dependency in the story record.
 
 </intent-contract>
 
 ## Code Map
 
 - `.claude/skills/bmad-build-auto/compile-epic-context.md` + `step-01-clarify-and-route.md` (freshness consumers)
-- cocoindex flow definition (new, station-owned; cocoindex ≥1.0.20 is active in pixi)
+- Scribe `compile_surface` cocoindex extra (producer — scribe Story 6.2; consumer side only here, grammar per pyforge-scribe SKILL.md)
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (layer flag from Story 28.1)
 
 ## Tasks & Acceptance
@@ -75,10 +80,13 @@ routing semantics.
 
 Bind to epics.md Story 28.8 and spec-marshal-token-economy CAP-5. cocoindex is the
 incremental-derivation engine (keeps derived indexes fresh with minimal recomputation) —
-use its flow model rather than hand-rolled hash checks. Read the pyforge-atlas SKILL.md
-gotchas before touching anything Kedro-adjacent; this story does not enter atlas's pipeline
-surface.
+use its flow model rather than hand-rolled hash checks, but only through the scribe extra:
+the same extra also serves the foundry-cutover move-list refresh (unifying-strategy
+stack.md § Estate leverage), so one binding serves both consumers. Read the pyforge-atlas
+SKILL.md gotchas before touching anything Kedro-adjacent; this story does not enter atlas's
+pipeline surface.
 
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
+- 2026-08-30: bound the incremental engine to Scribe's `compile_surface` cocoindex extra (scribe Story 6.2) per the unifying-strategy Grounding 2026-08-30 ruling — no marshal-private cocoindex flow; one binding shared with the cutover move-list consumer

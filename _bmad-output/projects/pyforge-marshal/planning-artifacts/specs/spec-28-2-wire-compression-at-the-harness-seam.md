@@ -55,6 +55,10 @@ rewrite the prompt prefix (NFR-14 violation), or wire the BSL-1.1 `@caveman-ai/c
 
 **Never:** Silently-lossy compression (reversible-or-absent). A second gate verdict. Editing
 `pixi.toml` to force-activate headroom-ai (that unblock belongs to pixi-candidate-currency).
+Enabling headroom's cross-agent SharedContext memory feature — a second memory
+store-of-record by the back door; Scribe's capture/recall (`.claude/memory/` +
+`graph_store`) is the fleet's only sanctioned memory face (unifying-strategy Grounding
+2026-08-30: agents do not write to a side memory instead of `scribe capture`).
 
 </intent-contract>
 
@@ -83,3 +87,4 @@ harness-profile packaging convention (Story 1.10 / harness_profile.py precedent)
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
+- 2026-08-30: added the Never against headroom's cross-agent SharedContext memory (second memory SoR risk; Scribe owns the memory face per the unifying-strategy Grounding)

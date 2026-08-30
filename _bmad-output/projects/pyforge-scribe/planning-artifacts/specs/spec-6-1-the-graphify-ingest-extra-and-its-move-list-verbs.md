@@ -1,0 +1,92 @@
+---
+title: 'The graphify ingest extra and its move-list verbs (Story 6.1, Epic 6)'
+type: 'feature'
+created: '2026-08-30'
+status: 'ready-for-dev'
+review_loop_iteration: 0
+followup_review_recommended: false
+difficulty: heavy
+context:
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md
+  - docs/dreams/pyforge-unifying-strategy.md
+warnings:
+  - Two consumers are waiting on this extra's grammar — the foundry-cutover move-list
+    (docs/dreams/pyforge-target-monorepo.md) and marshal Story 28.9 (planning-corpus
+    retrieval). Declare the grammar in the scribe SKILL.md so consumers bind to it, not to
+    internals.
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** The estate locks `graphifyy` (≥0.9.44, MIT) and the unifying-strategy stack
+schedules it "bind now" behind Scribe, but no story builds the binding. Meanwhile the
+foundry cutover needs a move list (host `import pyforge.*` sites, `sys.path` inserts,
+`five_tier` roots, CFE callers) and marshal's token economy needs a queryable planning
+graph — both would otherwise hand-roll their own graphify use.
+
+**Approach:** Bind graphifyy as an **optional `compile_surface` ingest extra** (the
+Grounding 2026-08-30 port contract): when enabled, folder ingest writes `GraphNode`s
+*through* the `graph_store` persist port (`open_graph_store`, Story 4.1's CAP-18 plugins).
+Add report verbs on the scribe grammar (`scribe index …`) that emit a GRAPH_REPORT-style
+summary (incl. God-node findings) and the move list — derived, gitignored artifacts, like
+`graph.json`. Extras are off by default (air-gap).
+
+## Acceptance Criteria
+
+- Given the extra absent or off (default), when a compile runs, then behavior is identical
+  to today's six builtins — proven by an off-mode test.
+- Given the extra on, when a folder is ingested, then `GraphNode`s are written through the
+  persist port — no parallel store, no second persistence format.
+- Given the report verbs, when run against the repo, then a GRAPH_REPORT-style summary
+  (incl. God-node findings) and a move list (host `import pyforge.*` sites, `sys.path`
+  inserts, `five_tier` roots, CFE callers) land as derived, gitignored artifacts.
+- Given the implementation, when inspected, then graphifyy is imported only inside the
+  extra adapter, and no foundry-root `graphify-out/` product dir is created.
+
+## Boundaries & Constraints
+
+**Always:** Write artifacts under `_bmad-output/projects/pyforge-scribe/planning-artifacts/`
+literally. `BMAD_ACTIVE_PROJECT=pyforge-scribe` only — never `scripts/bmad-switch`. Ledger
+key `6-1-the-graphify-ingest-extra-and-its-move-list-verbs`. AD-1 (append-only capture is
+the only mutation path), AD-2 (write boundary), AD-6 (air-gap: extras off by default) all
+bind.
+
+**Block If:** A change would create a second graph store-of-record, alter the `GraphStore`
+protocol, or put graphify output anywhere a detector treats as tracked product surface.
+
+**Never:** A `mem0` binding (out of this epic). A Kedro project. Publishing any graph
+metric as a PR-gate verdict (Warden doctrine).
+
+</intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py` (compile_surface fan-in — extra hook point)
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py` + `graph_store.py` (persist port, Story 4.1 — read-only protocol)
+- graphify extra adapter (new, e.g. `pyforge/scribe/extras/graphify.py`; optional dependency)
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py` (`scribe index` verbs)
+- `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` (declare the consumer grammar)
+
+## Tasks & Acceptance
+
+**Execution:** Implement the Approach. Add station-owned tests that fail if ACs are violated
+(off-mode identical, port-only writes, report/move-list artifacts derived + gitignored,
+adapter-only import). Land this spec in `planning-artifacts/specs/`.
+
+**Acceptance Criteria:** Same as Intent Contract.
+
+## Design Notes
+
+Bind to epics.md Story 6.1. The stack.md row: "`cocoindex` + `graphifyy` | scribe |
+`scribe index`: AST graph + incremental index; link functions to Dream/PRD/spec_id |
+**bind**". The Grounding rules: "behind GraphStore" means ingest writes through the persist
+port; extras off by default. Consumers bind to the declared grammar only — marshal Story
+28.9 explicitly forbids importing graph internals, so whatever this story declares in the
+SKILL.md is the contract they get.
+
+## Spec Change Log
+
+- 2026-08-30: drafted as Epic 6 preflight (unifying-strategy stack.md "bind now" rows; pairs with marshal Epic 28's token-economy consumers)

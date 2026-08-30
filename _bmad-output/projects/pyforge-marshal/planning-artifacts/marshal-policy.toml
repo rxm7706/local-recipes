@@ -119,9 +119,18 @@ args = []
 # model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
 # the LAST thing in this file -- see the comment block above. "heavy"/"easy" reuse
 # Story 6.1's own test-fixture vocabulary (`test_spin.py::_model_tier_map_policy_path`)
-# rather than inventing a second one.
+# rather than inventing a second one. "medium" added 2026-08-30: it pins the flat
+# baseline EXPLICITLY because `resolve_dispatch_model`'s unmapped-difficulty fallback
+# is `next(iter(tier_map))` -- without this entry a `difficulty: medium` story
+# dispatched via `marshal factory dispatch` would silently inherit the FIRST entry
+# (heavy -> opus dev) instead of the baseline. Spin is unaffected (unmapped -> no
+# override there); this makes the two paths agree.
 [model_tier_map.heavy]
 dev = "opus"
+review = "opus"
+
+[model_tier_map.medium]
+dev = "sonnet"
 review = "opus"
 
 [model_tier_map.easy]

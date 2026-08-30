@@ -89,8 +89,10 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     live (chips at `DW-FU-3-6-6` mid-session blindness).
 - **CAP-8**
   - **intent:** A graduated compression ladder: as a story approaches its token ceiling the
-    supervisor raises compression aggressiveness (and may lower the model floor via existing
-    FR-51 tiering) before the stop-retry-defer ladder fires.
+    supervisor raises compression aggressiveness before the stop-retry-defer ladder fires.
+    The ladder is compression-only: it never changes the model — model selection stays with
+    FR-51 declared difficulty (static) and the Story 3.12 struggle-triggered floor-raise
+    (dynamic, upward only; `spec-adaptive-model-tiering` forbids downgrades).
   - **success:** A test proves ladder ordering — compression escalation strictly precedes
     kill — and that no gate or reviewer is ever skipped by escalation.
 - **CAP-9**

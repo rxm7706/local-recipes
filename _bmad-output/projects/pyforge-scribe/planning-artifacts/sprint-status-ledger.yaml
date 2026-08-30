@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 25
+# stories: 29
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
@@ -29,6 +29,8 @@ development_status:
   4-1-register-graphstore-as-cap-18-plugins: done
   5-1-skf-skill-and-persona-for-scribe: done
   5-2-first-portal-slice-recall-query: done
+  6-1-the-graphify-ingest-extra-and-its-move-list-verbs: backlog
+  6-2-the-cocoindex-incremental-ingest-extra: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -39,3 +41,5 @@ development_status:
   epic-4-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional

@@ -157,7 +157,9 @@ altered, only the encoding of what flows through.
    the operator finally sees spend *and* savings while the run lives.
 5. **A graduated compression ladder.** Sibling to the idle ladder: as a story
    approaches its token ceiling, the supervisor can raise compression
-   aggressiveness (and model tiering can lower the floor) before it ever
+   aggressiveness (compression-only — model movement stays with FR-51 declared
+   difficulty and the Story 3.12 upward-only floor-raise, since
+   [`adaptive-model-tiering.md`](adaptive-model-tiering.md) forbids downgrades) before it ever
    reaches the kill threshold. Ceilings get recalibrated once baseline savings
    are measured — 50M weighted was sized for an uncompressed world.
 6. **Index-freshness as a detector.** `marshal check` (the existing detector

@@ -4194,7 +4194,9 @@ So that a story nearing its ceiling gets cheaper before it gets dead.
 
 **Type:** feature • **Effort:** M • **Deps:** S-28.4 • **FR/AD:** token-economy CAP-8
 **Given** a story approaching its token ceiling **When** the supervisor evaluates the ladder **Then** compression escalation strictly precedes stop-retry-defer
-**And** escalation may lower the model floor only through the existing FR-51 tiering seam
+**And** escalation is compression-only — the launched model is unchanged (model movement
+  stays with FR-51 declared difficulty and Story 3.12's floor-raise;
+  `spec-adaptive-model-tiering` forbids downgrades)
 **And** no gate or reviewer is ever skipped by escalation
 
 ### Story 28.7: Index freshness is an advisory finding

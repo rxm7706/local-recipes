@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: '2026-08-27'
+updated: '2026-08-30'  # Epic 6 added (compile_surface extras: graphify + cocoindex behind the CAP-18 ports; unifying-strategy stack.md "bind now" rows + Grounding 2026-08-30; consumers: foundry-cutover move-list and marshal Epic 28 Stories 28.8/28.9).
 currency_review: "Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -403,6 +403,44 @@ So that Lane 2 does a real job in HTMX.
 **Type:** feature • **Effort:** M • **Deps:** S-5.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated scribe-role session **When** the operator submits a query **Then** results render via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+
+## Epic 6: The compile_surface extras — graphify and cocoindex behind the ports
+
+Binds the two "bind now" estate pins (`spec-pyforge-unifying-strategy/stack.md` § *Estate
+leverage*; Dream Grounding 2026-08-30: Scribe's three CAP-18 ports are `graph_store` /
+`compile_surface` / `recall_ranker`, and "behind GraphStore" means ingest writes GraphNodes
+*through* the persist port) as optional `compile_surface` ingest extras on Story 4.1's
+shipped plugin contract. Extras are **off by default** (air-gap). Two consumers are already
+waiting: the foundry-cutover move-list (`docs/dreams/pyforge-target-monorepo.md` phases) and
+marshal Epic 28's token-economy Layers 3–4 (marshal Stories 28.8/28.9 consume by scribe
+grammar only). **Never, epic-wide:** a second graph/vector store or store-of-record; a
+`cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides CAP-8);
+a foundry-root `graphify-out/` product dir; `mem0.add` / `mem0 init --agent` in place of
+`scribe capture` — the `recall_ranker` mem0 extra is deliberately **not** in this epic.
+
+### Story 6.1: The graphify ingest extra and its move-list verbs
+
+As a scribe operator,
+I want graphifyy bound as an optional `compile_surface` extra with report verbs,
+So that code-structure ingest writes through the persist port and the cutover move-list is a derived artifact, not a second graph product.
+
+**Type:** feature • **Effort:** L • **Deps:** S-4.1 • **FR/AD:** unifying-strategy CAP-18 (Grounding 2026-08-30) • stack.md § Estate leverage
+**Given** the extra absent or off (the air-gap default) **When** a compile runs **Then** behavior is identical to today's six builtins
+**And** with the extra on, folder ingest writes GraphNodes through `graph_store` (`open_graph_store`) — never a parallel store
+**And** the report verbs emit a GRAPH_REPORT-style summary (incl. God-node findings) and a move list (host `import pyforge.*` sites, `sys.path` inserts, `five_tier` roots, CFE callers) as derived, gitignored artifacts — like `graph.json`
+**And** no foundry-root `graphify-out/` product dir is created and graphifyy is imported only inside the extra adapter
+
+### Story 6.2: The cocoindex incremental ingest extra
+
+As a scribe operator,
+I want cocoindex bound as an optional `compile_surface` extra that recomputes only what changed,
+So that derived artifacts (the move list, marshal's epic-context distills) stay fresh per commit without full recomputation.
+
+**Type:** feature • **Effort:** L • **Deps:** S-6.1 • **FR/AD:** unifying-strategy CAP-18 (Grounding 2026-08-30) • stack.md § Estate leverage
+**Given** the extra off (default) **When** a compile runs **Then** behavior is unchanged
+**And** with the extra on, unchanged sources across two consecutive runs yield zero recompute, and one changed source yields exactly one refresh touching only the affected derived rows
+**And** outputs write through the persist port or land as derived gitignored artifacts — cocoindex is the freshness engine, never a GraphStore engine and never a store of record
+**And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides CAP-8)
 
 ## Currency validation — 2026-08-26
 
