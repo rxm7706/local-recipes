@@ -87,6 +87,7 @@ verify_commands = [
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json",
   "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py",
