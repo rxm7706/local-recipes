@@ -21,6 +21,11 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = ["psycopg>=3.3.4"]
+# Story 6.1: the graphify compile_surface ingest extra. Off by default
+# (air-gap, AD-6) -- `pyforge.scribe.extras.graphify` is the only module
+# that imports `graphify`, and only inside a function, so this package
+# works unmodified without it installed.
+graphify = ["graphifyy>=0.9.51"]
 
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"

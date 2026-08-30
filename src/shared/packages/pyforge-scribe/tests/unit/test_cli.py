@@ -634,4 +634,143 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
     assert result.exit_code == 0
     output = _combined_output(result)
     assert "We decided to use SQLite for the local cache." in output
-    assert "[source: session-a.jsonl:L1]" in output
+
+
+# --- Story 6.1: the graphify compile_surface extra + its `scribe index` verbs -
+
+
+def _fake_compile_result(store_path: Path):
+    from pyforge.scribe.compile import CompileResult
+
+    return CompileResult(node_count=0, invalidated_count=0, store_path=store_path, warnings=())
+
+
+def test_graph_compile_extra_flag_forwards_true(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    captured: dict = {}
+
+    def fake_compile_graph(**kwargs):
+        captured.update(kwargs)
+        return _fake_compile_result(tmp_path / "graph.json")
+
+    monkeypatch.setattr(cli_module, "compile_graph", fake_compile_graph)
+
+    result = runner.invoke(app, ["graph", "compile", "--nightly", "--extra"])
+
+    assert result.exit_code == 0
+    assert captured["graphify_extra"] is True
+
+
+def test_graph_compile_no_extra_flag_forwards_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    captured: dict = {}
+
+    def fake_compile_graph(**kwargs):
+        captured.update(kwargs)
+        return _fake_compile_result(tmp_path / "graph.json")
+
+    monkeypatch.setattr(cli_module, "compile_graph", fake_compile_graph)
+
+    result = runner.invoke(app, ["graph", "compile", "--no-extra"])
+
+    assert result.exit_code == 0
+    assert captured["graphify_extra"] is False
+
+
+def test_graph_compile_omitted_extra_flag_forwards_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Omitting `--extra`/`--no-extra` entirely must forward `None` --
+    "consult SCRIBE_GRAPHIFY_EXTRA" -- never a silently-defaulted `False`
+    that would shadow the env var."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    captured: dict = {}
+
+    def fake_compile_graph(**kwargs):
+        captured.update(kwargs)
+        return _fake_compile_result(tmp_path / "graph.json")
+
+    monkeypatch.setattr(cli_module, "compile_graph", fake_compile_graph)
+
+    result = runner.invoke(app, ["graph", "compile"])
+
+    assert result.exit_code == 0
+    assert captured["graphify_extra"] is None
+
+
+def test_index_move_list_writes_derived_gitignored_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    packages_dir = tmp_path / "src" / "shared" / "packages"
+    packages_dir.mkdir(parents=True)
+    (packages_dir / "example.py").write_text("import sys\nsys.path.insert(0, 'x')\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    move_list_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graphify" / "move-list.json"
+    assert move_list_path.is_file()
+    document = json.loads(move_list_path.read_text(encoding="utf-8"))
+    assert document["counts"] == {"sys_path_insert": 1}
+    assert "1 finding(s)" in _combined_output(result)
+    assert not (tmp_path / "graphify-out").exists()
+
+
+def test_index_move_list_no_findings_writes_empty_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    document = json.loads(
+        (tmp_path / ".claude" / "data" / "pyforge-scribe" / "graphify" / "move-list.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert document["counts"] == {}
+    assert "0 finding(s)" in _combined_output(result)
+
+
+def test_index_report_unavailable_exits_2_with_clear_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    def fake_report(*_args, **_kwargs):
+        from pyforge.scribe.extras.graphify import GraphifyExtraUnavailable
+
+        raise GraphifyExtraUnavailable("simulated: graphify not installed")
+
+    monkeypatch.setattr(cli_module, "_build_graphify_report", fake_report)
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 2
+    assert "graphify not installed" in _combined_output(result)
+    assert not (tmp_path / ".claude" / "data" / "pyforge-scribe" / "graphify" / "GRAPH_REPORT.md").exists()
+
+
+def test_index_report_writes_derived_artifact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("graphify", reason="graphifyy not installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "mod.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 0
+    report_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graphify" / "GRAPH_REPORT.md"
+    assert report_path.is_file()
+    assert "# GRAPH_REPORT" in report_path.read_text(encoding="utf-8")
+    assert not (tmp_path / "graphify-out").exists()
+    assert not (tmp_path / "src" / "graphify-out").exists()

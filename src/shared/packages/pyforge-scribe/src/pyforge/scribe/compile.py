@@ -6,9 +6,12 @@ event-sourced capture with a derived, rebuildable read-model. It reads six
 named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
 history, retros, CHANGELOGs (PRD Open Question 2, resolved here), and
 un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
-as a compile source in Story 3.2) -- and writes one `GraphNode` per source
-item through the `GraphStore` port (Story 2.1), never a specific storage
-engine's client library directly (AD-5).
+as a compile source in Story 3.2) -- plus a seventh, OPTIONAL surface: the
+graphify `compile_surface` extra (Story 6.1, off by default -- AD-6), an
+AST code-structure ingest bound only when `graphify_extra_enabled()` says
+so. Every surface writes one `GraphNode` per source item through the
+`GraphStore` port (Story 2.1), never a specific storage engine's client
+library directly (AD-5).
 
 Every run is a FULL rebuild, never an incremental patch: `store.reset()`
 clears the in-memory state, every surface is re-read from scratch, and
@@ -141,8 +144,11 @@ def compile_graph(
     nightly: bool = False,
     max_commits: int = _DEFAULT_MAX_COMMITS,
     transcript_root: Path | None = None,
+    graphify_extra: bool | None = None,
+    graphify_root: Path | None = None,
 ) -> CompileResult:
-    """Rebuild the compiled graph from scratch from the six named surfaces.
+    """Rebuild the compiled graph from scratch from the six named surfaces,
+    plus the optional graphify `compile_surface` extra (Story 6.1).
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).
@@ -155,6 +161,12 @@ def compile_graph(
     (production wiring), matching the `store`/`store_path` injection pattern
     already used for testability -- pass an explicit, empty directory in
     tests to avoid picking up a developer machine's real session transcripts.
+    `graphify_extra` is `None` by default, meaning "consult
+    `SCRIBE_GRAPHIFY_EXTRA`" (air-gap off-by-default, AD-6); pass `True`/
+    `False` to override explicitly (the CLI's `--extra`/`--no-extra` flag).
+    When the extra is off (the default), `pyforge.scribe.extras.graphify` is
+    never imported, so this function's behavior is byte-for-byte identical
+    to the six-surface compile that existed before this story.
     """
     if not memory_root.is_dir():
         raise ValueError(
@@ -201,6 +213,11 @@ def compile_graph(
             cache_path=_transcript_scan_cache_path(resolved_path),
         )
         for node in transcript_nodes:
+            store.upsert_node(node)
+
+        for node in _read_graphify_surface(
+            repo_root, resolved_path, graphify_extra, graphify_root, warnings
+        ):
             store.upsert_node(node)
 
         invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
@@ -626,6 +643,44 @@ def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
         # OverflowError: `fromtimestamp()` can raise this for an
         # out-of-range mtime, per its own docs -- review finding.
         return datetime.now(timezone.utc)
+
+
+# --- surface: graphify (Story 6.1's optional compile_surface extra) -----------
+
+
+def _read_graphify_surface(
+    repo_root: Path,
+    resolved_store_path: Path,
+    graphify_extra: bool | None,
+    graphify_root: Path | None,
+    warnings: list[str],
+) -> list[GraphNode]:
+    """Off by default (air-gap, AD-6) -- `pyforge.scribe.extras.graphify` is
+    imported ONLY when the extra is actually on, so an off-mode compile's
+    behavior (including its import graph) is identical to the six-surface
+    compile that existed before this story. A missing `graphify` package
+    while the extra IS on degrades to a warning, same as every other
+    optional surface here -- it never aborts the compile.
+    """
+    from pyforge.scribe.extras.graphify import (
+        GraphifyExtraUnavailable,
+        default_graphify_root,
+        graphify_extra_enabled,
+        ingest_graphify_surface,
+    )
+
+    if not graphify_extra_enabled(override=graphify_extra):
+        return []
+
+    scan_root = graphify_root if graphify_root is not None else default_graphify_root(repo_root)
+    cache_dir = resolved_store_path.parent / "graphify"
+    try:
+        result = ingest_graphify_surface(scan_root, repo_root=repo_root, cache_dir=cache_dir)
+    except GraphifyExtraUnavailable as exc:
+        warnings.append(str(exc))
+        return []
+    warnings.extend(result.warnings)
+    return list(result.nodes)
 
 
 # --- supersession (Story 2.3) -------------------------------------------------

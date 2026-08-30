@@ -954,3 +954,156 @@ def test_transcript_surface_root_that_is_a_regular_file_warns_as_not_a_directory
     assert len(transcript_warnings) == 1
     assert "is not a directory" in transcript_warnings[0]
     assert "is not readable" not in transcript_warnings[0]
+
+
+# --- Story 6.1: the optional graphify compile_surface extra ------------------
+
+
+def test_graphify_extra_off_by_default_matches_builtins_only(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The off-mode AC: absent/off, a compile's node set is identical to
+    the six-surface compile that existed before this story. Proven with a
+    hard guarantee, not a warnings-text substring check (a naive
+    `"graphify" in warning` search is a false-positive trap here: pytest's
+    own `tmp_path` fixture derives its directory name from THIS TEST'S
+    OWN NAME, which contains "graphify", and that path string legitimately
+    appears inside the unrelated transcript-unavailable warning) -- instead,
+    block the real `graphify` import outright and confirm the compile still
+    succeeds unchanged, so an environment that never installed `graphifyy`
+    is provably unaffected by this story's off-path."""
+    monkeypatch.delenv("SCRIBE_GRAPHIFY_EXTRA", raising=False)
+    capture(memory_root, "feedback", "content")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "would_be_scanned.py").write_text("def f():\n    pass\n", encoding="utf-8")
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _blocked_import(name, *args, **kwargs):
+        if name == "graphify" or name.startswith("graphify."):
+            raise AssertionError(f"off-mode compile must never import {name!r}")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _blocked_import)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert [n for n in store.iter_nodes() if n.kind == "code"] == []
+    assert result.node_count == 1  # only the memory node -- unchanged from before this story
+
+
+def test_graphify_extra_explicit_off_overrides_env_var(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+        graphify_extra=False,
+    )
+
+    assert [n for n in store.iter_nodes() if n.kind == "code"] == []
+
+
+def test_graphify_extra_unavailable_degrades_to_warning_not_crash(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When the extra is ON but `graphify` cannot be imported (a lean
+    environment that never installed the optional dependency), the
+    unattended compile must still complete -- same "degraded surface"
+    contract every other optional surface here already honors."""
+    capture(memory_root, "feedback", "content")
+
+    import pyforge.scribe.extras.graphify as extras_module
+
+    def _raise_unavailable(*_args, **_kwargs):
+        raise extras_module.GraphifyExtraUnavailable("simulated: graphify not installed")
+
+    monkeypatch.setattr(extras_module, "ingest_graphify_surface", _raise_unavailable)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+        graphify_extra=True,
+    )
+
+    assert [n for n in store.iter_nodes() if n.kind == "code"] == []
+    assert any("graphify not installed" in w for w in result.warnings)
+
+
+def test_graphify_extra_on_writes_code_nodes_through_the_store(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    pytest.importorskip("graphify", reason="graphifyy not installed in this environment")
+    capture(memory_root, "feedback", "content")
+    scan_root = tmp_path / "codefolder"
+    scan_root.mkdir()
+    (scan_root / "mod_a.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+        graphify_extra=True,
+        graphify_root=scan_root,
+    )
+
+    code_nodes = [n for n in store.iter_nodes() if n.kind == "code"]
+    assert code_nodes
+    for node in code_nodes:
+        assert (tmp_path / node.citation).is_file()
+    assert result.node_count >= 1 + len(code_nodes)  # memory node + code nodes
+    assert not (tmp_path / "graphify-out").exists()
+    assert not (scan_root / "graphify-out").exists()
+
+
+def test_graphify_extra_on_rerun_is_byte_identical(tmp_path: Path, memory_root: Path) -> None:
+    """The extra participates in Story 2.2's idempotency contract: node
+    `valid_from` is derived from the SOURCE FILE's own mtime, never
+    `datetime.now()`, so two consecutive compiles over unchanged code
+    produce byte-identical `GraphStore` output."""
+    pytest.importorskip("graphify", reason="graphifyy not installed in this environment")
+    capture(memory_root, "feedback", "content")
+    scan_root = tmp_path / "codefolder"
+    scan_root.mkdir()
+    (scan_root / "mod_a.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+    store_path = tmp_path / "graph.json"
+
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=tmp_path / "no-transcripts",
+        graphify_extra=True,
+        graphify_root=scan_root,
+    )
+    first_bytes = store_path.read_bytes()
+
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=tmp_path / "no-transcripts",
+        graphify_extra=True,
+        graphify_root=scan_root,
+    )
+
+    assert store_path.read_bytes() == first_bytes
