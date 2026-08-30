@@ -4,7 +4,6 @@ type: dream
 owner: steward
 status: specified
 ---
-
 # PyForge Unifying Strategy — Eight Stations and the Canopy (modular monolith)
 
 ## Grounding (2026-08-24)
@@ -45,6 +44,7 @@ plus eight peer process-hook stories) shipped most of it. Architecture mermaid s
 describes a greenfield `services/` FastAPI farm; **Grounding + the architecture spine win.**
 
 **Still open after the drain (do not re-mint shipped CAPs):**
+
 - Steward **`12-7`**: **closed 2026-08-25** (`/ht/` 200). CRC follow-through **closed
   2026-08-26** — sidecar Ready, `platform_app` + CAP-9 DML-only proof, Liquibase
   `:17`/`:18`/`:19`, MCP host sidecar, published Lane 1 `/` **200**. Record:
@@ -245,8 +245,7 @@ repo's pipeline table.
   full five tiers (and owner + SLA). Guildhall must not tile 01/02 work as a
   first-class station surface. **Correct-course note for CAP-15/16:** the
   SPEC's `Never: a station is declared complete on fewer than five tiers` is
-  restated as `Never: an 03 capability is declared complete on fewer than five
-  tiers`. CAP-15/16 remain in scope for the eight stations; they do not mint
+  restated as `Never: an 03 capability is declared complete on fewer than five tiers`. CAP-15/16 remain in scope for the eight stations; they do not mint
   a skill+persona+portal for every 01/02 task.
 - **Owner vs SLA split (2026-08-24, Q3).** Steward discovery (`django-pyforge` /
   `AppConfig`, declared by the owning station) holds **who owns it**: owner
@@ -416,6 +415,7 @@ This file is **evergreen**. CAP-1..18 closeout is a dated slice. CAP-19's
 three query-plane OQs and parked Mosaic / vizro-ai / MCP slice 3 remain.
 **Grounding (including 2026-08-30 foundry / conventions / dossier) + this
 section + The Dream (query plane) + the High-Leverage matrix + Constraints
+
 + the SPEC/`stack.md` are authoritative.**
 
 The long 2026-08-23 topology (10 layers, `services/`, `:800x` per station,
@@ -425,18 +425,19 @@ log still makes sense. **Do not implement it as written.** Where a later
 heading repeats a superseded claim, Grounding is the correction — not a
 second product.
 
-| Living | Historical (do not build) |
-|---|---|
-| Eight stations + Canopy (not a ninth) | Nine `:800x` FastAPI processes / `services/` |
-| Host ASGI MCP + Celery | Dual-headed `/mcp/sse` microservices |
-| Wagtail Lane 1 | CodeRed / CRX |
-| Query plane + BSL + Vizro Lane 3 | Private DuckDB / Chroma / OLTP Text-to-SQL |
-| `go-sops` + age; Vault outside the image | In-app HashiCorp Vault client |
-| One Atlas Kedro home; Kedro required for *new* Atlas pipelines | Every station is a Kedro project; “Kedro is optional” |
-| `python-platform-foundry` + `factory/` island | Forever-`local-recipes` + one pixi.lock for estate+factory |
-| Scribe three ports; ingest writes through `GraphStore` | cocoindex/mem0 as GraphStore engines or a second SoR |
-| `django-warden` / `django_warden_fabric` | `compliance_face` as the living mount |
-| PostgreSQL + Redis + Kubernetes | MinIO / fourth backing store as core |
+
+| Living                                                        | Historical (do not build)                                  |
+| ------------------------------------------------------------- | ---------------------------------------------------------- |
+| Eight stations + Canopy (not a ninth)                         | Nine`:800x` FastAPI processes / `services/`                |
+| Host ASGI MCP + Celery                                        | Dual-headed`/mcp/sse` microservices                        |
+| Wagtail Lane 1                                                | CodeRed / CRX                                              |
+| Query plane + BSL + Vizro Lane 3                              | Private DuckDB / Chroma / OLTP Text-to-SQL                 |
+| `go-sops` + age; Vault outside the image                      | In-app HashiCorp Vault client                              |
+| One Atlas Kedro home; Kedro required for*new* Atlas pipelines | Every station is a Kedro project; “Kedro is optional”    |
+| `python-platform-foundry` + `factory/` island                 | Forever-`local-recipes` + one pixi.lock for estate+factory |
+| Scribe three ports; ingest writes through`GraphStore`         | cocoindex/mem0 as GraphStore engines or a second SoR       |
+| `django-warden` / `django_warden_fabric`                      | `compliance_face` as the living mount                      |
+| PostgreSQL + Redis + Kubernetes                               | MinIO / fourth backing store as core                       |
 
 ## The Dream
 
@@ -453,6 +454,7 @@ By placing a unified **Django + Wagtail** application at the center (CodeRed dro
 2026-08-24) and mounting station portals and MCP faces **on the same host ASGI**, we
 keep identity, chrome, and dispatch in one process. Heavy work stays on Celery + Redis.
 The pre-audit `services/` FastAPI farm is **not** the delivery shape (Grounding).
+
 - **The Host (`src/platform/`, role name `pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, Lane 2 portals, and station MCP mounts.
 - **Station compute (packages + Celery, not `services/` processes):** Domain logic lives in `pyforge-<station>` / `django-<station>` packages; the host does not import `pyforge.*`. Agentic tool access is `POST /stations/<name>/mcp` on the host.
 
@@ -582,20 +584,26 @@ graph TD
 ```
 
 ### 1. The Shared Foundation Package (`django-pyforge`)
+
 `django-pyforge` is the central reusable foundation package shared by all station portals:
+
 - **The Guildhall App Switcher Banner (`templates/pyforge/app_switcher.html`):** Renders the global cross-station header banner with active station indicators, user profile badges, and an instant dropdown menu to navigate between all 8 stations.
 - **Identity & SSO:** `django-allauth` OIDC. Profile IdP may be Keycloak, Entra, Okta, or Ping. Middleware copies `idp_subject` and roles onto `request` — not a Keycloak-only stack.
 - **Modernist Theme & Base Template:** Provides `templates/pyforge/base.html`, bundling Bootstrap 5.3 + HTMX + WhiteNoise with zero external CDN dependencies.
 - **Pluggable Settings Helper:** Standardized `PYFORGE_PLATFORM_CONFIG` setting resolution with environment variable overrides.
 
 ### 2. Standalone Reusable Station App Packages (`django-<station>`)
+
 Each station portal is a self-contained, distributable Django app (`django-allauth` shape: one distribution, one or more apps):
+
 - **Zero Database Models:** Contains no domain database models. Domain data is fetched on-demand from the paired FastAPI microservice via `client.py` (`httpx`).
 - **Strict Namespace Isolation:** All views, URLconfs, templates (`templates/warden/`), and static assets (`static/warden/`) are strictly namespaced.
 - **Extends Base Layout:** Every station view extends `pyforge/base.html`, automatically inheriting the universal Guildhall App Switcher banner and auth context.
 
 ### 3. Dynamic Station Discovery (`AppConfig` Metadata)
+
 Each station's `AppConfig` declares standardized suite metadata:
+
 ```python
 from django.apps import AppConfig
 
@@ -607,6 +615,7 @@ class WardenPortalConfig(AppConfig):
     station_url_name = "warden:index"
     station_description = "Compliance gates and recipe policy validation"
 ```
+
 The central `django-pyforge` banner dynamically queries `apps.get_app_configs()` to automatically render the App Switcher menu without hardcoding station URLs!
 
 ---
@@ -749,6 +758,7 @@ local-recipes/ (PyForge Estate Monorepo)
 ## The Cohesive Unified CLI Strategy (`pyforge`)
 
 ### 1. Universal Command Grammar (`pyforge <station> <noun> <verb>`)
+
 ```bash
 # Universal Lifecycle Commands (Identical across all 8 stations)
 pyforge <station> status       # Check station service health, active jobs, and workers
@@ -759,16 +769,19 @@ pyforge <station> docs         # View, build, or open station docs and presentat
 ```
 
 ### 2. Standardized Output Formats (`--output` / `-o`)
+
 - **`--output text` (Default):** Human-optimized terminal output with Rich tables, colored badges (`[PASS]`, `[WARN]`, `[FAIL]`, `[INFO]`), and live progress bars.
 - **`--output json`:** Machine-readable JSON / NDJSON output for CI/CD scripting, piping, and AI subagent ingestion.
 - **`--output yaml`:** Clean YAML configuration and manifest exports.
 - **`--quiet` / `-q`:** Suppresses all visual UI elements, outputting only exit codes and stdout for shell scripts.
 
 ### 3. Dual Execution Modes: Direct Local vs. Service Client (`--remote` / `--local`)
+
 * **Direct Mode (`--local`):** Directly imports and runs the station's Python logic locally in the active Pixi environment (zero network overhead).
 * **Remote Service Mode (`--remote`):** Dispatches to the host (`https://platform.internal/stations/<name>/…`), not `localhost:800x`.
 
 ### 4. Automatic MCP Agent Discovery (`pyforge mcp`)
+
 ```bash
 # Auto-configure Antigravity, Claude Code, Cursor, and Gemini to use PyForge MCP servers
 pyforge mcp install --all
@@ -782,20 +795,24 @@ pyforge mcp list
 ## Dual Deployment Profiles, Cross-Platform Guarantees & LocalStack Alignment
 
 ### 1. The LocalStack Philosophy for Enterprise AI & SDLC Estates
+
 PyForge fundamentally embodies the core philosophy of **[LocalStack](https://github.com/localstack/localstack)** — acting as a **Local Enterprise Cloud Emulator**:
+
 * **The estate on a laptop:** Mode A boots the host (Django + Wagtail + MCP mounts + Celery), PostgreSQL, and Redis locally. Not nine FastAPI processes. Query-plane DuckDB is in-process / optional Mosaic face. Keycloak is a profile IdP, not required on the laptop.
 * **100% Offline & Air-Gapped:** Zero external CDN calls (WhiteNoise asset bundling), OS native truststore bindings for enterprise TLS, and local Pixi package resolution.
 * **Sub-Millisecond Inner Loops:** Autonomous AI agents (Antigravity, Claude, Cursor, BMAD) and human developers execute preflight checks, recipe builds, and compliance audits with zero latency.
 * **Strict Local-to-OCP Environment Parity (15-Factor):** Identical Pydantic models, Keycloak JWT claims (`idp_subject`), and Celery queues run seamlessly on a local workstation and in Red Hat OpenShift production under `restricted-v2` SCC pods.
 
 ### 2. Cross-Platform Guarantees (Linux, macOS, Windows via Pixi)
+
 Governed by `pixi.toml` and locked in `pixi.lock`, the entire PyForge codebase runs natively across all three major operating systems:
 
-| Operating System | Architecture | Pixi Platform Key | Native Local Runtime |
-| :--- | :--- | :--- | :---: |
-| **Linux** | `x86_64` | `linux-64` | ✅ **100% Native** |
-| **macOS (Apple Silicon)** | `M1 / M2 / M3 / M4` | `osx-arm64-min` (macOS 14.5+) | ✅ **100% Native** |
-| **Windows** | `x86_64` | `win-64` | ✅ **100% Native** (PowerShell, CMD, or WSL2) |
+
+| Operating System          | Architecture        | Pixi Platform Key             |             Native Local Runtime             |
+| :------------------------ | :------------------ | :---------------------------- | :------------------------------------------: |
+| **Linux**                 | `x86_64`            | `linux-64`                    |              ✅**100% Native**              |
+| **macOS (Apple Silicon)** | `M1 / M2 / M3 / M4` | `osx-arm64-min` (macOS 14.5+) |              ✅**100% Native**              |
+| **Windows**               | `x86_64`            | `win-64`                      | ✅**100% Native** (PowerShell, CMD, or WSL2) |
 
 * **Self-Contained C/Rust Binaries:** Pixi provisions Python 3.14, Node.js 24 LTS, `git`, `rattler`, `duckdb`, and `uvicorn` isolated from host system packages.
 * **Unified Pathing:** Universal use of `pathlib.Path` across `pyforge.core` guarantees complete path cross-compatibility between Windows `C:\` and POSIX `/`.
@@ -804,14 +821,17 @@ Governed by `pixi.toml` and locked in `pixi.lock`, the entire PyForge codebase r
 
 Empirical resolution testing with the Pixi solver (`pixi lock`) confirms that the entire PyForge dependency tree (over 1,000+ packages including all 10 high-leverage station recommendations) solves cleanly across all active Python versions:
 
-| Python Version | Solve Status | Package Count Resolved | Compatibility Invariants |
-| :--- | :---: | :---: | :--- |
-| **Python 3.14** (`3.14.*`) | ✅ **100% SUCCESS** | **1,000+ packages** | **The Repo Default.** Free-threading, fast execution, full conda-forge & PyPI coverage across Django, Wagtail, FastAPI, MCP, DuckDB, Kedro, Vizro, Celery, Langflow, DB-GPT, and Polars. |
-| **Python 3.13** (`3.13.*`) | ✅ **100% SUCCESS** | **1,000+ packages** | **Fully Supported.** Complete dependency tree resolves byte-for-byte with zero pinning conflicts. |
-| **Python 3.12** (`3.12.*`) | ✅ **100% SUCCESS** *(with note)* | **1,000+ packages** | **Fully Supported.** All web, data, and agent packages resolve cleanly (only `pixi-skills` carries a `python >= 3.13` floor). |
+
+| Python Version             |           Solve Status           | Package Count Resolved | Compatibility Invariants                                                                                                                                                                 |
+| :------------------------- | :------------------------------: | :--------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python 3.14** (`3.14.*`) |        ✅**100% SUCCESS**        |  **1,000+ packages**  | **The Repo Default.** Free-threading, fast execution, full conda-forge & PyPI coverage across Django, Wagtail, FastAPI, MCP, DuckDB, Kedro, Vizro, Celery, Langflow, DB-GPT, and Polars. |
+| **Python 3.13** (`3.13.*`) |        ✅**100% SUCCESS**        |  **1,000+ packages**  | **Fully Supported.** Complete dependency tree resolves byte-for-byte with zero pinning conflicts.                                                                                        |
+| **Python 3.12** (`3.12.*`) | ✅**100% SUCCESS** *(with note)* |  **1,000+ packages**  | **Fully Supported.** All web, data, and agent packages resolve cleanly (only `pixi-skills` carries a `python >= 3.13` floor).                                                            |
 
 #### Verified Resolution for High-Leverage Station Recommendations
+
 All 10 station enhancement libraries were included in the solver input and confirmed resolved in `pixi.lock`:
+
 * `cocoindex` (`>=1.0.20`) & `graphifyy` (`>=0.9.48`) $\rightarrow$ Scribe AST Graph (`py312`, `py313`, `py314` ✅)
 * `openlineage-python` (`>=1.52.0`) $\rightarrow$ Marshal Run Lineage (`py312`, `py313`, `py314` ✅)
 * `boring-semantic-layer` (`>=0.3.16`) $\rightarrow$ Atlas Semantic Metrics (`py312`, `py313`, `py314` ✅)
@@ -824,6 +844,7 @@ All 10 station enhancement libraries were included in the solver input and confi
 * `playwright` (`>=1.62.1`) $\rightarrow$ Herald Deck Previews & E2E Testing (`py312`, `py313`, `py314` ✅)
 
 #### Framework Compatibility & Runtime Isolation Invariants
+
 * **Compiled Rust + PyO3 Extensions (`xorq`, `xorq-datafusion`, `cocoindex`):** Stabilized on Python 3.14 via PyO3 ABI3 bindings and the canonical conda-forge Rust environment block (`CARGO_PROFILE_RELEASE_STRIP: symbols` + `PYTHONUTF8: "1"`), avoiding Windows symlink extraction errors (G11/G12).
 * **Dagster on Python 3.14 (`dagster >= 1.13.19`):** Upgraded to AST parsers that accommodate Python 3.14's deferred annotation evaluation (PEP 649 / PEP 749).
 * **Isolated Agentic Seam (`python-agent-platform`):** Heavy LLM workflow engines (`langflow >= 1.11`, `dbgpt >= 0.8`, `chromadb`, `elevenlabs`) with strict upstream wheel boundaries are isolated in the `python = "3.12.*"` feature environment, communicating with the Python 3.14 platform core over ASGI/REST, MCP, and Redis Streams.
@@ -835,11 +856,11 @@ PyForge achieves total deployment flexibility through **one unified container im
 ```mermaid
 graph TD
     UnifiedImg["Unified Container Image: pyforge-container (Built via Pixi)"]
-    
+  
     subgraph Mode1["1. Single All-in-One Podman Container"]
         UnifiedImg --> SingleBox["Single Container (All 9 Stations + Django + CLI + SQLite)"]
     end
-    
+  
     subgraph Mode2["2. Local Podman Pod (LocalStack Model)"]
         UnifiedImg --> Pod["podman pod (pyforge-estate)"]
         Pod --> PlatformC["pyforge-host Container"]
@@ -847,7 +868,7 @@ graph TD
         Pod --> Redis["redis-noeviction Container"]
         Pod --> Keycloak["keycloak Container"]
     end
-    
+  
     subgraph Mode3["3. Multi-Container OpenShift / K8s (Enterprise Scale)"]
         UnifiedImg --> WebPods["Django Web Pods (Lane 1 & 2)"]
         UnifiedImg --> ComputePods["FastAPI Station Service Pods (:800x)"]
@@ -857,6 +878,7 @@ graph TD
 ```
 
 #### Mode A: Single All-in-One Container (Edge / Demos / Ephemeral CI)
+
 * **Execution:** A single standalone container boots the entire platform using SQLite and in-memory brokers.
 * **Invocation:**
   ```bash
@@ -865,6 +887,7 @@ graph TD
 * **Best for:** Portable zero-dependency demonstrations, offline air-gapped field laptops, or ephemeral CI/CD test runners.
 
 #### Mode B: Local Podman Pod (`podman pod`) — *The LocalStack Topology*
+
 * **Execution:** Podman groups the platform container, PostgreSQL (`pgvector`), Redis, and Keycloak into a single unified Kubernetes-style local **Pod** sharing `localhost` networking and IPC.
 * **Invocation:**
   ```bash
@@ -879,6 +902,7 @@ graph TD
 * **Best for:** Full enterprise-fidelity local development with real Keycloak SSO and PostgreSQL without Kubernetes cluster overhead.
 
 #### Mode C: Multi-Container Distributed Topology (Red Hat OpenShift / Kubernetes)
+
 * **Execution:** The **exact same container image** is deployed across specialized Kubernetes pod controllers with distinct entrypoint arguments:
   * `pyforge-platform` web pods (`python manage.py runserver` / Gunicorn)
   * `pyforge-<station>-service` compute pods (`pyforge <station> serve`)
@@ -899,23 +923,25 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 
 ### 1. Cluster Compute & Sizing Recommendations
 
-| Component | Pod / Replica Count | CPU (Requests / Limits) | Memory (Requests / Limits) | Scaling Strategy |
-| :--- | :---: | :---: | :---: | :--- |
-| **Platform Web Host** (`Django + Wagtail CRX`) | 2–4 replicas | 2 vCPU / 4 vCPU | 2 GB / 4 GB | Horizontal Pod Autoscaler (HPA) on CPU/Traffic |
-| **Station Compute Services** (9 `FastAPI + MCP`) | 1–2 replicas per station | 1 vCPU / 2 vCPU each | 1 GB / 2 GB each | Scaled independently per station load |
-| **Async Task Workers** (`Celery` for Mason/Warden) | 2–8 replicas | 2 vCPU / 4 vCPU | 4 GB / 8 GB | Scaled on Redis Queue depth |
-| **Analytics Dashboards** (`Vizro / Panel`) | 1–2 replicas | 1 vCPU / 2 vCPU | 2 GB / 4 GB | Scaled on active concurrent viewers |
-| **PostgreSQL (`pgvector` + multi-schema)** | 1 primary + 1 standby | 4 vCPU / 8 vCPU | 8 GB / 16 GB | Crunchy Data / CloudNativePG Operator |
-| **Redis (`noeviction` Broker & Cache)** | 3-node Sentinel / HA | 2 vCPU / 4 vCPU | 4 GB / 8 GB | In-memory with RDB persistence |
-| **Total Recommended Capacity (HA Production)** | — | **32 to 64 vCPUs** | **64 to 128 GB RAM** | Minimum 3 Worker Nodes (supports peak concurrent vector embedding & batch builds) |
+
+| Component                                          |    Pod / Replica Count    | CPU (Requests / Limits) | Memory (Requests / Limits) | Scaling Strategy                                                                  |
+| :------------------------------------------------- | :-----------------------: | :---------------------: | :------------------------: | :-------------------------------------------------------------------------------- |
+| **Platform Web Host** (`Django + Wagtail CRX`)     |       2–4 replicas       |     2 vCPU / 4 vCPU     |        2 GB / 4 GB        | Horizontal Pod Autoscaler (HPA) on CPU/Traffic                                    |
+| **Station Compute Services** (9 `FastAPI + MCP`)   | 1–2 replicas per station |  1 vCPU / 2 vCPU each  |      1 GB / 2 GB each      | Scaled independently per station load                                             |
+| **Async Task Workers** (`Celery` for Mason/Warden) |       2–8 replicas       |     2 vCPU / 4 vCPU     |        4 GB / 8 GB        | Scaled on Redis Queue depth                                                       |
+| **Analytics Dashboards** (`Vizro / Panel`)         |       1–2 replicas       |     1 vCPU / 2 vCPU     |        2 GB / 4 GB        | Scaled on active concurrent viewers                                               |
+| **PostgreSQL (`pgvector` + multi-schema)**         |   1 primary + 1 standby   |     4 vCPU / 8 vCPU     |        8 GB / 16 GB        | Crunchy Data / CloudNativePG Operator                                             |
+| **Redis (`noeviction` Broker & Cache)**            |   3-node Sentinel / HA   |     2 vCPU / 4 vCPU     |        4 GB / 8 GB        | In-memory with RDB persistence                                                    |
+| **Total Recommended Capacity (HA Production)**     |            —            |   **32 to 64 vCPUs**   |    **64 to 128 GB RAM**    | Minimum 3 Worker Nodes (supports peak concurrent vector embedding & batch builds) |
 
 ### 2. Persistent Storage (CSI / PVC)
 
-| Storage Class | Usage / Destination | Capacity | Access Mode |
-| :--- | :--- | :---: | :---: |
-| **Block Storage (SSD / NVMe)** | PostgreSQL Data (`public`, `langflow_schema`, `dbgpt_schema`) | 100 GB – 500 GB | `ReadWriteOnce` (RWO) |
-| **Block Storage (SSD)** | Redis Append-Only Persistence | 20 GB – 50 GB | `ReadWriteOnce` (RWO) |
-| **Object Storage (S3 / MinIO / Artifactory)** | Wheel mirror caches, conda tarballs, presentation exports, and Scribe graph dumps | 500 GB – 2 TB | S3 API / REST |
+
+| Storage Class                                 | Usage / Destination                                                               |     Capacity     |      Access Mode      |
+| :-------------------------------------------- | :-------------------------------------------------------------------------------- | :--------------: | :-------------------: |
+| **Block Storage (SSD / NVMe)**                | PostgreSQL Data (`public`, `langflow_schema`, `dbgpt_schema`)                     | 100 GB – 500 GB | `ReadWriteOnce` (RWO) |
+| **Block Storage (SSD)**                       | Redis Append-Only Persistence                                                     |  20 GB – 50 GB  | `ReadWriteOnce` (RWO) |
+| **Object Storage (S3 / MinIO / Artifactory)** | Wheel mirror caches, conda tarballs, presentation exports, and Scribe graph dumps |  500 GB – 2 TB  |     S3 API / REST     |
 
 ### 3. Networking, Ingress & Routing
 
@@ -1014,16 +1040,18 @@ class FlagContext(BaseModel):
 
 ### 3. Canary Testing & Progressive Delivery Strategies
 
-| Canary Strategy | Operational Pattern | Use Case |
-| :--- | :--- | :--- |
-| **Percentage Rollout** | Gradually scale traffic: `1% → 5% → 25% → 50% → 100%` using consistent user hash buckets (`MurmurHash3(user_id) % 100`). | Rolling out new dependency solvers in Mason or package graph pipelines in Atlas. |
-| **Role-Gated Early Access** | Activated exclusively for users with Keycloak role `pyforge-admin` or `beta-maintainer`. | Pre-release testing of new portal views or Wagtail StreamField blocks. |
+
+| Canary Strategy                  | Operational Pattern                                                                                                                                                     | Use Case                                                                                                          |
+| :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| **Percentage Rollout**           | Gradually scale traffic:`1% → 5% → 25% → 50% → 100%` using consistent user hash buckets (`MurmurHash3(user_id) % 100`).                                             | Rolling out new dependency solvers in Mason or package graph pipelines in Atlas.                                  |
+| **Role-Gated Early Access**      | Activated exclusively for users with Keycloak role`pyforge-admin` or `beta-maintainer`.                                                                                 | Pre-release testing of new portal views or Wagtail StreamField blocks.                                            |
 | **Shadow Mode (Dark Launching)** | The microservice runs both the old and new engines in parallel in the background, diffs the outputs, and logs discrepancies without affecting the user's live response. | Verifying that Warden's new SARIF generator produces identical outputs to the legacy scanner before live release. |
-| **OpenShift Route Canary** | OpenShift Route traffic splitting at the network edge: `spec.to.weight: 90` (Stable) vs `spec.alternateBackends[0].weight: 10` (Canary Pods). | Zero-downtime blue/green infrastructure and container upgrades. |
+| **OpenShift Route Canary**       | OpenShift Route traffic splitting at the network edge:`spec.to.weight: 90` (Stable) vs `spec.alternateBackends[0].weight: 10` (Canary Pods).                            | Zero-downtime blue/green infrastructure and container upgrades.                                                   |
 
 ### 4. Automated Circuit Breakers (Doctor Auto-Rollback)
 
 To ensure high availability in production, the **Doctor station** acts as the automated safety supervisor:
+
 1. **Telemetry Stream:** OpenTelemetry continuously emits error rates, latency p99, and panic metrics tagged with active flag names (`feature_flag="warden:fast_ast_parser"`).
 2. **Anomaly Detection:** If the canary feature triggers an error spike (>1% failure rate or >500ms latency degradation), Doctor detects the regression within 10 seconds.
 3. **Automated Kill-Switch:** Doctor publishes a high-priority `feature.circuit_breaker.tripped` event to Redis Streams, immediately setting the flag to `0%` (OFF) across all nodes with zero human intervention.
@@ -1045,6 +1073,7 @@ flowchart LR
 ```
 
 ### Event Specification (`CloudEvents` Compliant Pydantic Model)
+
 ```python
 from datetime import datetime
 from uuid import UUID
@@ -1067,13 +1096,14 @@ class PyForgeEvent(BaseModel):
 
 PyForge enforces a strict, unified Role-Based Access Control (RBAC) model across human browser sessions, CLI operators, and autonomous AI agents:
 
-| Enterprise Persona | Keycloak Realm Role | Django Portal Access (Lane 2) | FastAPI / MCP Endpoint Scopes |
-| :--- | :--- | :--- | :--- |
-| **Platform Administrator** | `pyforge-admin` | Full read/write + Django Admin (`/admin/`) | Full access (`*`) + secret rotation |
-| **Station Maintainer** | `maintainer` | Station workflow triggers (Mason build, Marshal run) | `service:write`, `mcp:tools:execute` |
-| **Compliance Auditor** | `compliance-auditor` | Read-only inspection & Gate waivers | `warden:read`, `audit:export` |
-| **Developer / Viewer** | `viewer` | Read-only Guildhall docs, dashboards, and decks | `service:read` (Public queries only) |
-| **Autonomous AI Agent** | `agent-service-account` | Headless API access via Bearer Token / API Key | Leased MCP tool execution (`mcp:tools:*`) |
+
+| Enterprise Persona         | Keycloak Realm Role     | Django Portal Access (Lane 2)                        | FastAPI / MCP Endpoint Scopes             |
+| :------------------------- | :---------------------- | :--------------------------------------------------- | :---------------------------------------- |
+| **Platform Administrator** | `pyforge-admin`         | Full read/write + Django Admin (`/admin/`)           | Full access (`*`) + secret rotation       |
+| **Station Maintainer**     | `maintainer`            | Station workflow triggers (Mason build, Marshal run) | `service:write`, `mcp:tools:execute`      |
+| **Compliance Auditor**     | `compliance-auditor`    | Read-only inspection & Gate waivers                  | `warden:read`, `audit:export`             |
+| **Developer / Viewer**     | `viewer`                | Read-only Guildhall docs, dashboards, and decks      | `service:read` (Public queries only)      |
+| **Autonomous AI Agent**    | `agent-service-account` | Headless API access via Bearer Token / API Key       | Leased MCP tool execution (`mcp:tools:*`) |
 
 - **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses Keycloak JWT claims (`resource_access.pyforge.roles`), dynamically updating the user's active Django permissions per-request without storing local passwords.
 - **FastAPI Scope Verification:** FastAPI microservice endpoints enforce OAuth2 scopes via `Security(verify_token, scopes=["mason:build"])`.
@@ -1117,7 +1147,7 @@ To eliminate schema drift between the Django portals, station packages, and the 
 flowchart TD
     CoreModels["pyforge.core.models (Pydantic V2 Domain Models)"]
     ClientSDK["pyforge.core.client (Type-Safe Async HTTPX Client)"]
-    
+  
     CoreModels --> ClientSDK
     ClientSDK --> DjangoPortals["src/platform/portals/<station>_portal/"]
     ClientSDK --> CLICommands["src/shared/packages/pyforge-<station>/src/pyforge/<station>/cli.py"]
@@ -1144,6 +1174,7 @@ Bind schedule: `stack.md` § Estate leverage. Do not treat this list as a
 shopping cart.
 
 ### 1. Platform Host, Web Frameworks & Content Layer
+
 * **Django (`5.2.x`):** Core enterprise platform host (`src/platform/`).
 * **Wagtail (`7.4.x`):** Lane 1 at `/` (CodeRed dropped 2026-08-24).
 * **`django-pyforge`:** Guildhall chrome, App Switcher, portal clients.
@@ -1153,6 +1184,7 @@ shopping cart.
 * **WhiteNoise:** Zero-CDN, air-gapped static assets.
 
 ### 2. Autonomous Agent, Multi-Agent & MCP Ecosystem
+
 * **`mcp` (`>=2.0.0`):** Anthropic's official Python Model Context Protocol SDK (SSE and stdio transports).
 * **`fastmcp` (`>=2.14.x` / `3.x`):** High-level decorator framework for rapid MCP tool/resource creation.
 * **`pydantic-ai` (`>=2.33.0`):** Type-safe autonomous agent orchestration.
@@ -1164,6 +1196,7 @@ shopping cart.
 * **`django-mcp-server`:** Direct MCP tool leasing from Django models and services.
 
 ### 3. AI Workflows, Local LLMs & Semantic Search
+
 * **Langflow (`>=1.3.x`):** Visual AI pipeline and agent workflow builder mounted as an ASGI app.
 * **DB-GPT (`>=0.8.x`):** Multi-model database knowledge base and agent copilot.
 * **`sentence-transformers` & `transformers` (`>=5.15.x`):** Local embedding generation and text representation.
@@ -1172,6 +1205,7 @@ shopping cart.
 * **`diffusers` & `accelerate`:** Multi-modal image generation and local GPU acceleration.
 
 ### 4. Dataflow, Analytics & Graph Intelligence
+
 * **DuckDB (`>=1.5.5`):** The query-plane engine (live ATTACH, Parquet cache, `vss`). Library / optional Mosaic face — not a fourth backing store.
 * **Polars (`>=1.43.x`), Pandas & PyArrow (`>=24.0.0`):** High-speed tabular data processing.
 * **Kedro (`>=1.5.0`) & `kedro-datasets`:** Declarative data pipelines — **one Atlas home**; other stations may contribute extract nodes onto the query plane (AD-21: not eight Kedro projects).
@@ -1183,6 +1217,7 @@ shopping cart.
 * **Great Expectations & Pandera:** Schema and data quality validation.
 
 ### 5. Dashboards, Visualization & UI Analytics (Lane 3)
+
 * **Vizro (`>=0.1.60`):** Lane 3 runtime over BSL + the query plane. Isolated by CAP-7. Not imported into Django.
 * **`vizro-mcp` & `vizro-e2e-flow`:** Authoring face (replaces Vizro-AI). After the plane has metrics.
 * **`vizro-ai` (`0.4.2` final, deprecated):** Legacy `query_vizro_ai` only. No new features.
@@ -1192,6 +1227,7 @@ shopping cart.
 * **Plotly, Matplotlib, Graphviz & `mermaid-py` / `d2`:** Multi-format programmatic diagramming.
 
 ### 6. Presentation Studio, Documents & Media Engines
+
 * **Marp CLI (`>=4.2.3`):** Markdown-to-presentation slide compiler.
 * **`pptxgenjs` (`>=4.0.1`) & `python-pptx` (`>=1.0.2`):** Native PowerPoint presentation deck generators.
 * **PyMuPDF (`>=1.28.x`), PyPDF & `pdfplumber`:** PDF extraction and parsing.
@@ -1201,12 +1237,14 @@ shopping cart.
 * **Pillow (`>=12.3.0`):** Image processing engine.
 
 ### 7. Packaging, Build Engines & DevSecOps Compliance
+
 * **Pixi (`>=0.77.0`) & `rattler` / `py-rattler-build`:** Fast Rust-based Conda/PyPI environment manager.
 * **Conda-Build, Conda-Smithy & Grayskull:** Official conda-forge recipe builders and linters.
 * **`deptry` & `osv-scanner`:** Dependency hygiene, unused import detection, and OSV CVE vulnerability scanning.
 * **AppThreat Vuln-DB & `cyclonedx-bom` / `cyclonedx-python-lib`:** Local offline CVE database and SBOM generation.
 
 ### 8. Asynchronous Tasks, Database & Enterprise Infrastructure
+
 * **Celery & Redis (`redis-py`):** Asynchronous task queue (`noeviction` memory policy) and event bus.
 * **PostgreSQL (`psycopg`):** OLTP for Django / Langflow / DB-GPT *app* state. Multi-schema isolation. **Not** the agent Text-to-SQL DSN. Estate vectors live on the query plane (`vss`), not `pgvector` on OLTP.
 * **Object store (profile):** Artifactory / NetApp / optional MinIO — not a fourth required kind beside PostgreSQL + Redis + Kubernetes.
@@ -1216,6 +1254,7 @@ shopping cart.
 * **`go-sops` & `age`:** Developer-local secret encryption and offline credential vaulting.
 
 ### 9. Developer Experience, QA & Testing Kit
+
 * **Typer (`>=0.27.1`) & Rich (`>=14.3.4`):** Powers the universal `pyforge` CLI with interactive tables and progress bars.
 * **Ruff (`>=0.16.4`), Pyright & Mypy:** Instant linting, formatting, and strict type checking.
 * **Pytest (`>=9.1.1`), `pytest-cov`, `pytest-mock`, `pytest-xdist`:** Test runners and parallelization.
@@ -1229,18 +1268,19 @@ shopping cart.
 
 An audit across all station packages in `src/shared/packages/` and `src/platform/` confirms unified packaging standards and dependency spine bindings:
 
-| Station Package | Build Backend | CLI Entrypoint (`project.scripts`) | Key Runtime Dependencies | Leaf Spine Binding |
-| :--- | :--- | :--- | :--- | :---: |
-| **`pyforge-core`** | `hatchling` | `pyforge` (Root CLI Dispatcher) | *Pure stdlib / minimal leaf* | 🏛️ **Spine** |
-| **`pyforge-warden`** | `hatchling` | `warden = "pyforge.warden.cli:main"` | `cyclonedx-python-lib`, `packageurl-python`, `license-expression`, `jsonschema`, `PyYAML`, `packaging` | ✅ `pyforge-core` |
-| **`pyforge-marshal`** | `hatchling` | `marshal = "pyforge.marshal.cli.main:main"`, `marshal-mcp = "pyforge.marshal.mcp.server:main"` | `bmad-loop`, `copier`, `psutil`, `tomlkit`, `jsonschema`, `packaging`, `PyYAML` | ✅ `pyforge-core` |
-| **`pyforge-steward`** | `hatchling` | `steward = "pyforge.steward.cli:main"` | `PyYAML`, `packaging` | ✅ `pyforge-core` |
-| **`pyforge-atlas`** | `hatchling` | `pyforge-atlas = "pyforge.atlas.__main__:main"` | `kedro`, `kedro-datasets`, `kedro-dagster`, `duckdb`, `ibis-framework`, `pandas`, `pyarrow`, `vizro`, `dagster`, `bokeh`, `starlette` | ✅ `pyforge-core` |
-| **`pyforge-scribe`** | `hatchling` | `scribe = "pyforge.scribe.cli:main"` | `typer`, `pydantic` | ✅ `pyforge-core` |
-| **`pyforge-herald`** | `hatchling` | `herald = "pyforge.herald.cli:main"` | `mcp`, `httpx2`, `playwright`, `pillow`, `python-pptx` | ✅ `pyforge-core` |
-| **`pyforge-mason`** | `hatchling` | `mason = "pyforge.mason.cli:main"` | `packaging`, `PyYAML` | ✅ `pyforge-core` |
-| **`pyforge-doctor`** | `hatchling` | `doctor = "pyforge.doctor.__main__:main"` | `mcp`, `jsonschema`, `PyYAML` | ✅ `pyforge-core` |
-| **`pyforge-testing-kit`** | `hatchling` | *(Shared test fixtures & harnesses)* | *Pure stdlib / minimal leaf* | ✅ Shared test kit |
+
+| Station Package           | Build Backend | CLI Entrypoint (`project.scripts`)                                                             | Key Runtime Dependencies                                                                                                              | Leaf Spine Binding |
+| :------------------------ | :------------ | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------ | :----------------: |
+| **`pyforge-core`**        | `hatchling`   | `pyforge` (Root CLI Dispatcher)                                                                | *Pure stdlib / minimal leaf*                                                                                                          |   🏛️**Spine**   |
+| **`pyforge-warden`**      | `hatchling`   | `warden = "pyforge.warden.cli:main"`                                                           | `cyclonedx-python-lib`, `packageurl-python`, `license-expression`, `jsonschema`, `PyYAML`, `packaging`                                |  ✅`pyforge-core`  |
+| **`pyforge-marshal`**     | `hatchling`   | `marshal = "pyforge.marshal.cli.main:main"`, `marshal-mcp = "pyforge.marshal.mcp.server:main"` | `bmad-loop`, `copier`, `psutil`, `tomlkit`, `jsonschema`, `packaging`, `PyYAML`                                                       |  ✅`pyforge-core`  |
+| **`pyforge-steward`**     | `hatchling`   | `steward = "pyforge.steward.cli:main"`                                                         | `PyYAML`, `packaging`                                                                                                                 |  ✅`pyforge-core`  |
+| **`pyforge-atlas`**       | `hatchling`   | `pyforge-atlas = "pyforge.atlas.__main__:main"`                                                | `kedro`, `kedro-datasets`, `kedro-dagster`, `duckdb`, `ibis-framework`, `pandas`, `pyarrow`, `vizro`, `dagster`, `bokeh`, `starlette` |  ✅`pyforge-core`  |
+| **`pyforge-scribe`**      | `hatchling`   | `scribe = "pyforge.scribe.cli:main"`                                                           | `typer`, `pydantic`                                                                                                                   |  ✅`pyforge-core`  |
+| **`pyforge-herald`**      | `hatchling`   | `herald = "pyforge.herald.cli:main"`                                                           | `mcp`, `httpx2`, `playwright`, `pillow`, `python-pptx`                                                                                |  ✅`pyforge-core`  |
+| **`pyforge-mason`**       | `hatchling`   | `mason = "pyforge.mason.cli:main"`                                                             | `packaging`, `PyYAML`                                                                                                                 |  ✅`pyforge-core`  |
+| **`pyforge-doctor`**      | `hatchling`   | `doctor = "pyforge.doctor.__main__:main"`                                                      | `mcp`, `jsonschema`, `PyYAML`                                                                                                         |  ✅`pyforge-core`  |
+| **`pyforge-testing-kit`** | `hatchling`   | *(Shared test fixtures & harnesses)*                                                           | *Pure stdlib / minimal leaf*                                                                                                          | ✅ Shared test kit |
 
 ---
 
@@ -1290,8 +1330,8 @@ graph LR
 1. **`cocoindex` & `graphifyy` $\rightarrow$ `pyforge-scribe`:** Fast AST graph extraction and incremental semantic code indexing (`pyforge scribe index`), linking codebase functions directly to the PRDs and Dreams that spawned them.
 2. **`openlineage-python` $\rightarrow$ `pyforge-marshal` & `pyforge-steward`:** Emits standard OpenLineage pipeline events across the autonomous loop, tracking complete operational lineage (`Dream -> Spec -> Mason Build -> Warden Audit -> Steward Deploy`).
 3. **`boring-semantic-layer` (BSL) $\rightarrow$ `pyforge-atlas`:** Certified metrics over the query plane (DuckDB) — `package_download_velocity`, `ecosystem_cve_risk_score`, and CAP-19 relations — for Vizro and agents **without raw SQL** (UJ-6).
-3a. **Kedro family $\rightarrow$ `pyforge-atlas` (home):** `kedro` / `kedro-datasets` / `kedro-dagster` write and schedule derived layers. `kedro-skills` + `kedro-mcp` author them. Other stations may add extract *nodes*, not new Kedro projects (AD-21).
-3b. **Vizro family $\rightarrow$ Lane 3:** `vizro` is the runtime. `vizro-mcp` + `vizro-e2e-flow` author boards after 34.2. `vizro-ai` 0.4.2 is deprecated — no new work.
+   3a. **Kedro family $\rightarrow$ `pyforge-atlas` (home):** `kedro` / `kedro-datasets` / `kedro-dagster` write and schedule derived layers. `kedro-skills` + `kedro-mcp` author them. Other stations may add extract *nodes*, not new Kedro projects (AD-21).
+   3b. **Vizro family $\rightarrow$ Lane 3:** `vizro` is the runtime. `vizro-mcp` + `vizro-e2e-flow` author boards after 34.2. `vizro-ai` 0.4.2 is deprecated — no new work.
 4. **`markitdown` (Microsoft) $\rightarrow$ `pyforge-herald` & `pyforge-scribe`:** Unified multi-format ingestion converting Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), and PDF into clean markdown for Wagtail Corporate Brain and Scribe memory.
 5. **`graphviz2drawio` $\rightarrow$ `pyforge-herald`:** Programmatically converts Graphviz `.dot` pipelines into editable Draw.io XML (`.drawio`) files for enterprise architect reviews and PowerPoint decks.
 6. **`filelock` $\rightarrow$ `pyforge-marshal` & `pyforge-scribe`:** Cross-platform file locking for worktrees and scribe files. **Already on Atlas** (`duckdb_writer`, FR-27 / CAP-19 writer).
@@ -1308,22 +1348,25 @@ graph LR
 
 Each station in PyForge is already grounded in **one authoritative PRD spline** and **one primary Architecture spline** within the BMAD planning tier (`_bmad-output/projects/`):
 
-| Station | Capability Domain | Primary PRD Spline | Primary Architecture Spline | Satellite / Sub-chain Architecture Artifacts |
-| :--- | :--- | :--- | :--- | :--- |
-| **`pyforge-atlas`** | Package Graph Intelligence | `prd-pyforge-atlas-2026-07-17` | `architecture-pyforge-atlas-2026-07-17` | — |
-| **`pyforge-doctor`** | Health & Auto-Remedy | `prd-pyforge-doctor-2026-07-25` | `architecture-pyforge-doctor-2026-07-25` | — |
-| **`pyforge-herald`** | Proclamations & Stage | `prd-pyforge-herald-2026-08-01` | `architecture-pyforge-herald-2026-08-01` | — |
-| **`pyforge-marshal`** | Loop Orchestrator | `prd-pyforge-marshal-2026-07-25` | `architecture-pyforge-marshal-2026-07-25` | `integration-architecture.md`, `architecture-bmad-infra.md` |
-| **`pyforge-mason`** | Recipe Builder & Build | `prd-pyforge-mason-2026-07-25` | `architecture-pyforge-mason-2026-07-25` | — |
-| **`pyforge-scribe`** | Team Memory & Mining | `prd-pyforge-scribe-2026-07-25` | `architecture-pyforge-scribe-2026-07-25` | — |
-| **`pyforge-steward`** | Infrastructure & Deploy | `prd-pyforge-steward-2026-07-25` | `architecture-pyforge-steward-2026-07-25` | `secure-live-dashboards-2026-08-09`, `unified-container-2026-08-09`, `jira-github-projects-sync-2026-08-09` |
-| **`pyforge-warden`** | Compliance & Quality Gates | `prd-pyforge-warden-2026-07-14` | `architecture-pyforge-warden-2026-07-14` | — |
-| **`pyforge-core`** | Platform Spine & Registry | Governed by `pyforge-core.md` | Governed by `pyforge-charter.md` | Shared foundation package (`django-pyforge`) |
+
+| Station               | Capability Domain          | Primary PRD Spline               | Primary Architecture Spline               | Satellite / Sub-chain Architecture Artifacts                                                                |
+| :-------------------- | :------------------------- | :------------------------------- | :---------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
+| **`pyforge-atlas`**   | Package Graph Intelligence | `prd-pyforge-atlas-2026-07-17`   | `architecture-pyforge-atlas-2026-07-17`   | —                                                                                                          |
+| **`pyforge-doctor`**  | Health & Auto-Remedy       | `prd-pyforge-doctor-2026-07-25`  | `architecture-pyforge-doctor-2026-07-25`  | —                                                                                                          |
+| **`pyforge-herald`**  | Proclamations & Stage      | `prd-pyforge-herald-2026-08-01`  | `architecture-pyforge-herald-2026-08-01`  | —                                                                                                          |
+| **`pyforge-marshal`** | Loop Orchestrator          | `prd-pyforge-marshal-2026-07-25` | `architecture-pyforge-marshal-2026-07-25` | `integration-architecture.md`, `architecture-bmad-infra.md`                                                 |
+| **`pyforge-mason`**   | Recipe Builder & Build     | `prd-pyforge-mason-2026-07-25`   | `architecture-pyforge-mason-2026-07-25`   | —                                                                                                          |
+| **`pyforge-scribe`**  | Team Memory & Mining       | `prd-pyforge-scribe-2026-07-25`  | `architecture-pyforge-scribe-2026-07-25`  | —                                                                                                          |
+| **`pyforge-steward`** | Infrastructure & Deploy    | `prd-pyforge-steward-2026-07-25` | `architecture-pyforge-steward-2026-07-25` | `secure-live-dashboards-2026-08-09`, `unified-container-2026-08-09`, `jira-github-projects-sync-2026-08-09` |
+| **`pyforge-warden`**  | Compliance & Quality Gates | `prd-pyforge-warden-2026-07-14`  | `architecture-pyforge-warden-2026-07-14`  | —                                                                                                          |
+| **`pyforge-core`**    | Platform Spine & Registry  | Governed by`pyforge-core.md`     | Governed by`pyforge-charter.md`           | Shared foundation package (`django-pyforge`)                                                                |
 
 ### Why This Matters for the Unifying Layer
-Because each station already has a single authoritative **PRD + Architecture spline**, the Unifying Estate Strategy does **not** alter or reinvent their internal algorithms or domain models. 
+
+Because each station already has a single authoritative **PRD + Architecture spline**, the Unifying Estate Strategy does **not** alter or reinvent their internal algorithms or domain models.
 
 Instead, this Unifying Dream establishes the **standardized external surface contracts** that mount these 9 engines into one cohesive platform:
+
 1. **Lane 2 UI Portal:** `src/platform/portals/<station>_portal/` (Reusable Django App).
 2. **Compute & MCP Service:** `src/shared/packages/pyforge-<station>/src/pyforge/<station>/service/` (FastAPI + MCP over SSE).
 3. **Analytics Dashboard:** `dashboards/<station>_dashboard/` or Kedro/Vizro board (Lane 3).
@@ -1342,6 +1385,7 @@ Instead, this Unifying Dream establishes the **standardized external surface con
 A critical cross-station audit reveals isolated assumptions made in earlier planning artifacts that must be **course-corrected** to achieve the unified estate topology:
 
 ### 1. `pyforge-warden` (Compliance & Quality Gates)
+
 * **Legacy Assumption:** Conceived primarily as a local CLI tool parsing lockfiles via synchronous subprocesses (`deptry`, `osv-scanner`). Web face was a monolithic Django app (`compliance_face`).
 * **Adversarial Critique:** Running blocking CLI scans inside web requests leads to timeouts; zero agent tool access over standard protocols.
 * **Course Correction:**
@@ -1350,6 +1394,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Refactor `compliance_face` into a zero-model Reusable Django App (`src/platform/portals/warden_portal`).
 
 ### 2. `pyforge-steward` (Platform Hosting & Gateway Controller)
+
 * **Legacy Assumption:** Fragmented across 4 separate architecture documents (1 main spine + 3 satellite sub-chains for dashboards, containers, and Jira sync).
 * **Adversarial Critique:** Architecture fragmentation obscures Steward's true role as the platform's infrastructure and gateway guardian.
 * **Course Correction:**
@@ -1357,6 +1402,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Enforce Steward's reverse-proxy middleware in `pyforge_host` to inject `X-Forwarded-User` and `X-Forwarded-Groups` for row-level tenant isolation across all Vizro boards.
 
 ### 3. `pyforge-atlas` (Package Graph Intelligence)
+
 * **Legacy Assumption:** Heavy monolithic data science stack (Kedro + Dagster + DuckDB + Vizro) conceived as a standalone web application.
 * **Adversarial Critique:** Importing Kedro/Vizro inside the Django host would bloat container memory and create package version deadlocks.
 * **Course Correction:**
@@ -1364,6 +1410,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Expose an ultra-lightweight FastAPI query layer (`atlas_service` :8003 + MCP) allowing Warden, Doctor, Scribe, and AI agents to query graph facts via sub-millisecond REST/MCP calls instead of mounting raw DuckDB files.
 
 ### 4. `pyforge-marshal` (Loop Orchestrator & Execution Cockpit)
+
 * **Legacy Assumption:** Pure headless CLI tool written for local terminals (`bmad-loop`), reading/writing exclusively to local `.marshal/seed-state.yml` and worktrees.
 * **Adversarial Critique:** Completely blind to web-driven execution—operators have no browser cockpit to view, start, or pause autonomous loops.
 * **Course Correction:**
@@ -1372,6 +1419,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Build `marshal_portal` (Lane 2) providing a live HTMX web cockpit with sprint status, strand graphs, and execution controls.
 
 ### 5. `pyforge-scribe` (Team Memory & Decision Mining)
+
 * **Legacy Assumption:** Isolated local SQLite `graphstore` mining transcripts from local developer disks.
 * **Adversarial Critique:** Memory is trapped on local developer machines; ephemeral CI runners and subagents cannot query historical decisions.
 * **Course Correction:**
@@ -1379,6 +1427,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Expose `scribe_service` (:8005 + MCP) with semantic search tools (`recall_team_memory`, `search_decisions`) enabling fleet-wide collective intelligence.
 
 ### 6. `pyforge-herald` (Proclamations, Deck Engine & Stage)
+
 * **Legacy Assumption:** Static Guildhall website generator and standalone Marp slide exporter.
 * **Adversarial Critique:** Static HTML cannot support dynamic Keycloak role-based permissions, search, or live CMS blocks.
 * **Course Correction:**
@@ -1386,6 +1435,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Package presentation deck renderers as Wagtail StreamField blocks (`PresentationDeckBlock`) and an MCP tool for AI pitch deck generation.
 
 ### 7. `pyforge-mason` (Conda-Forge Recipe Builder)
+
 * **Legacy Assumption:** Synchronous CLI builder running rattler-build / conda-build directly in terminal threads.
 * **Adversarial Critique:** Long-running builds block developer terminals; zero visual interface for inspecting recipe diffs or migration logs.
 * **Course Correction:**
@@ -1394,6 +1444,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Provide `mason_service` (:8007 + MCP) for autonomous agent-driven recipe generation and patch evaluation.
 
 ### 8. `pyforge-doctor` (Health Diagnostics & Auto-Remedy)
+
 * **Legacy Assumption:** Passive CLI bridge gathering diagnostics and printing terminal tables.
 * **Adversarial Critique:** Cannot trigger automated remedies proactively; disconnected from platform health probes.
 * **Course Correction:**
@@ -1402,6 +1453,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
   * Build `doctor_portal` (Lane 2) featuring real-time health telemetry and one-click remedy triggers.
 
 ### 9. `pyforge-core` (Platform Foundation Spine)
+
 * **Legacy Assumption:** Conceptual framework without concrete shared client libraries or unified CLI dispatcher.
 * **Course Correction:**
   * Implement `django-pyforge` as the reusable Django foundation package (Guildhall App Switcher, Keycloak SSO middleware, Modernist base template).
@@ -1417,6 +1469,7 @@ A critical cross-station audit reveals isolated assumptions made in earlier plan
 An adversarial review of each station's PRD reveals critical **product-level blindspots** where tooling was scoped purely as non-interactive CLI scripts or isolated data silos, ignoring human operators and autonomous IDE agent loops:
 
 ### 1. `pyforge-warden` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Declared `classification: cli_tool` with non-interactive focus, explicitly dropping the `developer_tool` label and deprioritizing interactive UX.
 * **Adversarial Critique:** Crippled compliance adoption. Human compliance officers had no web interface to inspect CVE trees, review licenses, or issue cryptographic waivers; developers in IDEs had no instant tool feedback before commit.
 * **Product Course Correction:** Evolve from a "headless CI script" to a **Dual-Surface Compliance Engine**:
@@ -1424,6 +1477,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - **`warden_service` MCP Server:** Real-time IDE tool allowing Antigravity, Claude, and Cursor to self-audit recipes as code is written.
 
 ### 2. `pyforge-marshal` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Defined jobs-to-be-done purely around local git worktree commands, terminal loops (`bmad-loop`), and terminal stdout.
 * **Adversarial Critique:** Complete lack of executive or team visibility into autonomous SDLC execution. Engineering managers cannot track loop velocity, agent status, or strand health without manual log inspection.
 * **Product Course Correction:** Expand product scope to include the **Autonomous Loop Cockpit (`marshal_portal`)**:
@@ -1432,6 +1486,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Operator push notifications for approval gates and human-in-the-loop interventions.
 
 ### 3. `pyforge-atlas` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Conceived as a backend data pipeline writing to standalone DuckDB files and a segregated Vizro dashboard.
 * **Adversarial Critique:** Created an isolated data silo requiring separate ports and logins; failed to provide interactive package intelligence across other station workflows.
 * **Product Course Correction:** Reposition Atlas as the **Platform Intelligence Layer**:
@@ -1439,6 +1494,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Expose interactive autocomplete and package intelligence REST/MCP endpoints directly powering Warden and Mason workflows.
 
 ### 4. `pyforge-scribe` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Explicitly stated *"Scribe is not a general-purpose enterprise knowledge platform"* and scoped memory capture strictly to local workstation files.
 * **Adversarial Critique:** Fractured collective intelligence. If an engineer or subagent works in a container, remote worktree, or CI runner, past decisions and ADR rationale remain invisible.
 * **Product Course Correction:** Upgrade Scribe to **Enterprise Collective Memory**:
@@ -1446,6 +1502,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Shared agent memory tool (`recall_team_memory`) enabling all AI subagents across the company to benefit from past architectural decisions.
 
 ### 5. `pyforge-herald` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Scoped as a pitch orchestration CLI and static HTML site generator for the Guildhall.
 * **Adversarial Critique:** Static HTML pages cannot support dynamic enterprise authentication, access control, or live corporate intranet editing.
 * **Product Course Correction:** Elevate Herald to the **Enterprise Corporate Brain (`/`)**:
@@ -1453,6 +1510,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Provides the **Presentation Deck Studio Block** for interactive slide authoring and multi-format exports (.dc.html, Marp, PPTX).
 
 ### 6. `pyforge-mason` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Scoped purely as a terminal builder executing synchronous builds.
 * **Adversarial Critique:** High cognitive load for developers migrating hundreds of packages with no visual diffing, linting, or recipe migration wizards.
 * **Product Course Correction:** Expand to the **Visual Recipe Studio (`mason_portal`)**:
@@ -1460,6 +1518,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Autonomous AI recipe patching tools over MCP.
 
 ### 7. `pyforge-doctor` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Scoped as a passive diagnostics reporter printing terminal summaries.
 * **Adversarial Critique:** Leaves the burden of fixing detected dependency conflicts entirely on the developer.
 * **Product Course Correction:** Upgrade to an **Active Fleet Health Console (`doctor_portal`)**:
@@ -1467,6 +1526,7 @@ An adversarial review of each station's PRD reveals critical **product-level bli
   - Interactive "One-Click Auto-Remedy" triggers executing self-healing tasks in the background.
 
 ### 8. `pyforge-steward` (Product & UX Scope)
+
 * **Legacy PRD Stance:** Scoped around command-line provisioning and secret rotations.
 * **Adversarial Critique:** Operators lacked a single pane of glass to monitor cloud resource consumption, token life spans, and gateway ingress routes.
 * **Product Course Correction:** Broaden to the **Platform Operations Portal (`steward_portal`)**:
@@ -1510,18 +1570,23 @@ graph LR
 ```
 
 * **Directive 1 — Uvicorn Process & Worker Pool Separation (RFC-1):**
+
   * *Vulnerability:* Long-running MCP streaming sessions and heavy CPU AST evaluations in FastAPI starve the asyncio event loop for human HTMX portal requests.
   * *Remediation:* Split each station's compute runtime into two distinct process pools: (1) Low-latency REST worker pool with 500ms timeout ceilings for Django HTMX portals, and (2) Dedicated async worker pool for persistent SSE/MCP agent connections and background threads.
 * **Directive 2 — Strict Redis Broker vs. Cache Infrastructure Separation (RFC-2):**
+
   * *Vulnerability:* Using a single Redis instance with `noeviction` causes volatile web session/cache writes to exhaust memory and crash Celery task ingestion.
   * *Remediation:* Provision two independent Redis services: `redis-broker` (`maxmemory-policy noeviction` for Celery & Redis Streams) and `redis-cache` (`maxmemory-policy allkeys-lru` for Django sessions, HTMX partial caches, and rate-limiting).
 * **Directive 3 — Scoped Identity Token Delegation (RFC-3):**
+
   * *Vulnerability:* Forwarding raw user Bearer tokens causes mid-build 401s during long asynchronous tasks, while static API keys destroy audit attribution.
   * *Remediation:* Standardize `pyforge.core.client` on Signed Internal JWTs (HMAC-SHA256) carrying `idp_subject`, user roles, and an explicit `delegated_by: "pyforge-host"` claim. Async Celery tasks capture the `idp_subject` at invocation time to mint a scoped execution token.
 * **Directive 4 — Redis Streams PEL Reclaim, DLQ & Loop-Depth Limits (RFC-4):**
+
   * *Vulnerability:* Unhandled consumer panics leave orphaned messages in the Pending Entries List (PEL), while recursive agent triggers risk infinite loops.
   * *Remediation:* Mandate an automated Dead Letter Queue (`pyforge:events:dlq`) consumer using `XAUTOCLAIM` to harvest abandoned messages, and enforce a strict loop-depth ceiling (`X-PyForge-Loop-Depth <= 5`) on all inter-station event payloads.
 * **Directive 5 — Single-Source PostgreSQL DDL Governance via Liquibase (RFC-5):**
+
   * *Vulnerability:* Fragmented migrations across multiple frameworks (Django migrations, ORM auto-generation, ad-hoc DDL) cause schema drift, lock contention, and unrepeatable rollbacks across multi-tenant schemas.
   * *Remediation:* **All PostgreSQL database changes across the entire PyForge estate must be managed strictly via Liquibase (`db/changelog/`)**:
     - **Declarative ChangeSets:** Formatted YAML/SQL changelogs (`db.changelog-master.yaml`) maintain an immutable, checksummed audit trail (`DATABASECHANGELOG` table).
@@ -1555,25 +1620,27 @@ graph TD
     end
 ```
 
-| Blind Spot # | Architectural Risk & Failure Mode | Mandated Engineering Mitigation |
-| :--- | :--- | :--- |
-| **BS-1 (Scribe Multi-Pod Storage)** | Multi-pod OpenShift deployments mounting SQLite over NFS/CephFS (`ReadWriteMany`) throw `database is locked` and corrupt B-trees under concurrent agent writes. | **Dual-Driver Scribe Engine:** Local development uses SQLite (`sqlite:///scribe.db`); production OpenShift mode binds to PostgreSQL (`scribe_schema`) using `pgvector` and relational graph tables. |
-| **BS-2 (MCP / SSE Route Timeouts)** | Ingress routers (HAProxy / Envoy) terminate silent SSE connections after 30s–60s during heavy 5-minute build or AST scans, severing agent workflows. | **Keep-Alive Heartbeats & Extended Route Timeouts:** FastAPI emits SSE comment pings (`:keepalive\n\n`) every 15s; OpenShift routes declare `haproxy.router.openshift.io/timeout: 30m`. |
-| **BS-3 (Async Token Expiry in Long Sprints)** | Keycloak JWT access tokens expire after 15m; 2-hour autonomous Marshal sprints or Mason builds fail with 401s when reporting completion. | **Scoped Task Token Delegation (RFC 8693):** Celery tasks receive an immutable `delegation_context` (`idp_subject`) and use Keycloak `client_credentials` with Token Exchange to mint scoped internal execution tokens. |
-| **BS-4 (Cascading Synchronous 500s)** | A crash or restart in `pyforge-warden-service` causes Django HTTPX worker threads to hang, cascading into a 504 outage for the entire Guildhall at `/`. | **PyBreaker & Stale-While-Revalidate Fallbacks:** Django HTTPX clients implement PyBreaker with 500ms fail-fast thresholds; HTMX views render graceful degraded badges (`"Compute restarting — cached 10m ago"`). |
-| **BS-5 (DuckDB Concurrent Writer Thrashing)** | Concurrent Celery ingestion tasks attempting simultaneous writes to `atlas.duckdb` trigger file-lock contention and unhandled exceptions. | **Strict Single-Writer Ingestion Worker:** Only a single dedicated ingestion worker writes to DuckDB; all FastAPI services and Vizro dashboards mount DuckDB in **Strict Read-Only Mode** (`read_only=True`). |
-| **BS-6 (Event Schema Drift & Deserialization)** | Upgraded stations emitting v2 events crash legacy consumer stations with Pydantic `ValidationError` deserialization panics. | **Forward-Compatible CloudEvents Envelope:** Standard envelope carries `schema_version: "2.x"` with generic payload dictionaries; schema validation is executed in domain adapters, not at the stream boundary. |
-| **BS-7 (Pydantic 422 to HTMX Form Mapping)** | FastAPI HTTP 422 JSON errors (`loc: ["body", "version"]`) fail to map back to Django template form fields, showing generic failure toasts. | **`PydanticFormErrorBridge` in `django-pyforge`:** Automatically unpacks HTTP 422 JSON error arrays into standard Django `forms.ValidationError` dictionaries for inline HTMX field highlighting. |
-| **BS-8 (Cross-Datastore PITR Recovery Gap)** | Restoring PostgreSQL from backup while Redis Streams or MinIO contain newer state causes orphaned builds and missing database records. | **Idempotent Startup State Reconciliation:** Microservices execute startup reconciliation sweeps (e.g. Mason scans MinIO on boot to re-index database records, treating PostgreSQL as the canonical anchor). |
+
+| Blind Spot #                                    | Architectural Risk & Failure Mode                                                                                                                               | Mandated Engineering Mitigation                                                                                                                                                                                         |
+| :---------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **BS-1 (Scribe Multi-Pod Storage)**             | Multi-pod OpenShift deployments mounting SQLite over NFS/CephFS (`ReadWriteMany`) throw `database is locked` and corrupt B-trees under concurrent agent writes. | **Dual-Driver Scribe Engine:** Local development uses SQLite (`sqlite:///scribe.db`); production OpenShift mode binds to PostgreSQL (`scribe_schema`) using `pgvector` and relational graph tables.                     |
+| **BS-2 (MCP / SSE Route Timeouts)**             | Ingress routers (HAProxy / Envoy) terminate silent SSE connections after 30s–60s during heavy 5-minute build or AST scans, severing agent workflows.           | **Keep-Alive Heartbeats & Extended Route Timeouts:** FastAPI emits SSE comment pings (`:keepalive\n\n`) every 15s; OpenShift routes declare `haproxy.router.openshift.io/timeout: 30m`.                                 |
+| **BS-3 (Async Token Expiry in Long Sprints)**   | Keycloak JWT access tokens expire after 15m; 2-hour autonomous Marshal sprints or Mason builds fail with 401s when reporting completion.                        | **Scoped Task Token Delegation (RFC 8693):** Celery tasks receive an immutable `delegation_context` (`idp_subject`) and use Keycloak `client_credentials` with Token Exchange to mint scoped internal execution tokens. |
+| **BS-4 (Cascading Synchronous 500s)**           | A crash or restart in`pyforge-warden-service` causes Django HTTPX worker threads to hang, cascading into a 504 outage for the entire Guildhall at `/`.          | **PyBreaker & Stale-While-Revalidate Fallbacks:** Django HTTPX clients implement PyBreaker with 500ms fail-fast thresholds; HTMX views render graceful degraded badges (`"Compute restarting — cached 10m ago"`).      |
+| **BS-5 (DuckDB Concurrent Writer Thrashing)**   | Concurrent Celery ingestion tasks attempting simultaneous writes to`atlas.duckdb` trigger file-lock contention and unhandled exceptions.                        | **Strict Single-Writer Ingestion Worker:** Only a single dedicated ingestion worker writes to DuckDB; all FastAPI services and Vizro dashboards mount DuckDB in **Strict Read-Only Mode** (`read_only=True`).           |
+| **BS-6 (Event Schema Drift & Deserialization)** | Upgraded stations emitting v2 events crash legacy consumer stations with Pydantic`ValidationError` deserialization panics.                                      | **Forward-Compatible CloudEvents Envelope:** Standard envelope carries `schema_version: "2.x"` with generic payload dictionaries; schema validation is executed in domain adapters, not at the stream boundary.         |
+| **BS-7 (Pydantic 422 to HTMX Form Mapping)**    | FastAPI HTTP 422 JSON errors (`loc: ["body", "version"]`) fail to map back to Django template form fields, showing generic failure toasts.                      | **`PydanticFormErrorBridge` in `django-pyforge`:** Automatically unpacks HTTP 422 JSON error arrays into standard Django `forms.ValidationError` dictionaries for inline HTMX field highlighting.                       |
+| **BS-8 (Cross-Datastore PITR Recovery Gap)**    | Restoring PostgreSQL from backup while Redis Streams or MinIO contain newer state causes orphaned builds and missing database records.                          | **Idempotent Startup State Reconciliation:** Microservices execute startup reconciliation sweeps (e.g. Mason scans MinIO on boot to re-index database records, treating PostgreSQL as the canonical anchor).            |
 
 ### 3. Edge Case Failure Protections
 
-| Failure Scenario | Mitigation Pattern |
-| :--- | :--- |
-| **Agentic DDoS / Runaway MCP Loop** | Token-Bucket rate limiting per `agent_id` in Redis + Semantic Circuit Breakers tripping if an agent executes >10 build calls per minute. |
-| **Reverse-Proxy Tenant Data Leakage** | Cryptographically signed `X-Tenant-Signature` headers injected by Django Host and validated by Vizro/FastAPI backends; strict CSP iframe sandboxing. |
-| **DuckDB Concurrency Lock Contention** | Read-only shared DuckDB file attachments with single-writer lock queues offloaded to background Celery workers. |
-| **OpenShift `readOnlyRootFilesystem` Startup Failures** | Explicit in-memory `emptyDir` mounts for `/tmp`, `PYTHONPYCACHEPREFIX=/tmp/pycache`, and WhiteNoise cache directories. |
+
+| Failure Scenario                                        | Mitigation Pattern                                                                                                                                  |
+| :------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agentic DDoS / Runaway MCP Loop**                     | Token-Bucket rate limiting per`agent_id` in Redis + Semantic Circuit Breakers tripping if an agent executes >10 build calls per minute.             |
+| **Reverse-Proxy Tenant Data Leakage**                   | Cryptographically signed`X-Tenant-Signature` headers injected by Django Host and validated by Vizro/FastAPI backends; strict CSP iframe sandboxing. |
+| **DuckDB Concurrency Lock Contention**                  | Read-only shared DuckDB file attachments with single-writer lock queues offloaded to background Celery workers.                                     |
+| **OpenShift `readOnlyRootFilesystem` Startup Failures** | Explicit in-memory`emptyDir` mounts for `/tmp`, `PYTHONPYCACHEPREFIX=/tmp/pycache`, and WhiteNoise cache directories.                               |
 
 ---
 
@@ -1604,6 +1671,7 @@ graph TD
 ```
 
 ### 1. The Central Canopy (`src/platform/` — role names `pyforge_host` / `pyforge-agent-platform`)
+
 * **The Human Canopy (Guildhall / Lane 1 at `/`):**
   * Root web entry point: Django + Wagtail (Corporate Brain) + `django-pyforge`.
   * Universal App Switcher banner linking all 8 station portals.
@@ -1619,16 +1687,17 @@ graph TD
 
 ### 2. The 8 Station 5-Tier Symmetry Matrix
 
-| # | Station | 🖥️ Unified CLI | 🌐 Web Portal (Lane 2) | ⚡ MCP on host ASGI | 🧠 Domain Skill (`SKILL.md`) | 🤖 Station Agent Persona |
-| :-: | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | **`warden`** | `pyforge warden` | `django-warden` / `/stations/warden/` | `POST /stations/warden/mcp` | `pyforge-warden` | **`Agent-Warden`** (Compliance) |
-| **2** | **`atlas`** | `pyforge atlas` | `django-atlas` / `/stations/atlas/` | `POST /stations/atlas/mcp` | `pyforge-atlas` | **`Agent-Atlas`** (Intelligence) |
-| **3** | **`mason`** | `pyforge mason` | `django-mason` / `/stations/mason/` | `POST /stations/mason/mcp` | **`conda-forge-expert`** (Epic 11; no `pyforge-mason/` skill) | **`Agent-Mason`** (Build/Wheels) |
-| **4** | **`marshal`** | `pyforge marshal` | `django-marshal` / `/stations/marshal/` | `POST /stations/marshal/mcp` | `pyforge-marshal` | **`Agent-Marshal`** (Loop/Seed) |
-| **5** | **`doctor`** | `pyforge doctor` | `django-doctor` / `/stations/doctor/` | `POST /stations/doctor/mcp` | `pyforge-doctor` | **`Agent-Doctor`** (Fleet Healer) |
-| **6** | **`herald`** | `pyforge herald` | `django-herald` / `/stations/herald/` | `POST /stations/herald/mcp` | `pyforge-herald` | **`Agent-Herald`** (Presentations) |
-| **7** | **`scribe`** | `pyforge scribe` | `django-scribe` / `/stations/scribe/` | `POST /stations/scribe/mcp` | `pyforge-scribe` | **`Agent-Scribe`** (Memory/AST) |
-| **8** | **`steward`** | `pyforge steward` | `django-steward` / `/stations/steward/` | `POST /stations/steward/mcp` | `pyforge-steward` | **`Agent-Steward`** (Ops/Secrets) |
+
+|   #   | Station       | 🖥️ Unified CLI  | 🌐 Web Portal (Lane 2)                  | ⚡ MCP on host ASGI          | 🧠 Domain Skill (`SKILL.md`)                                  | 🤖 Station Agent Persona           |
+| :---: | :------------ | :---------------- | :-------------------------------------- | :--------------------------- | :------------------------------------------------------------ | :--------------------------------- |
+| **1** | **`warden`**  | `pyforge warden`  | `django-warden` / `/stations/warden/`   | `POST /stations/warden/mcp`  | `pyforge-warden`                                              | **`Agent-Warden`** (Compliance)    |
+| **2** | **`atlas`**   | `pyforge atlas`   | `django-atlas` / `/stations/atlas/`     | `POST /stations/atlas/mcp`   | `pyforge-atlas`                                               | **`Agent-Atlas`** (Intelligence)   |
+| **3** | **`mason`**   | `pyforge mason`   | `django-mason` / `/stations/mason/`     | `POST /stations/mason/mcp`   | **`conda-forge-expert`** (Epic 11; no `pyforge-mason/` skill) | **`Agent-Mason`** (Build/Wheels)   |
+| **4** | **`marshal`** | `pyforge marshal` | `django-marshal` / `/stations/marshal/` | `POST /stations/marshal/mcp` | `pyforge-marshal`                                             | **`Agent-Marshal`** (Loop/Seed)    |
+| **5** | **`doctor`**  | `pyforge doctor`  | `django-doctor` / `/stations/doctor/`   | `POST /stations/doctor/mcp`  | `pyforge-doctor`                                              | **`Agent-Doctor`** (Fleet Healer)  |
+| **6** | **`herald`**  | `pyforge herald`  | `django-herald` / `/stations/herald/`   | `POST /stations/herald/mcp`  | `pyforge-herald`                                              | **`Agent-Herald`** (Presentations) |
+| **7** | **`scribe`**  | `pyforge scribe`  | `django-scribe` / `/stations/scribe/`   | `POST /stations/scribe/mcp`  | `pyforge-scribe`                                              | **`Agent-Scribe`** (Memory/AST)    |
+| **8** | **`steward`** | `pyforge steward` | `django-steward` / `/stations/steward/` | `POST /stations/steward/mcp` | `pyforge-steward`                                             | **`Agent-Steward`** (Ops/Secrets)  |
 
 ---
 
@@ -1720,17 +1789,17 @@ graph TD
   3. **`guildhall-handoff` resolved as SUPERSEDE.** Wagtail Lane 1 replaces Marshal's `docs/dashboard/` console rather than sitting beside or wrapping it. CAP-2 changes from an addition into a replacement carrying a **parity gate**: every view the retired console offered must be reachable from the new front door, and the old build path is *removed*, not merely unlinked. `spec-factory-console` is retired via correct-course in the same chain — a superseded spec left claiming ownership is a worse outcome than two consoles. Herald's non-goal at `spec-pyforge-herald/SPEC.md:137` is unaffected (it never owned the console) and Herald's React web surface is out of scope, being the Moments UI rather than Lane 1. New open question `console-parity-inventory` replaces `guildhall-handoff`.
   4. **Liquibase delivery vehicle goes to research, not to a coin-flip.** New open question `liquibase-airgap-policy`: does this repo's air-gap policy govern *container images* at all, or only conda-sourced dependencies? If images are already mirrored routinely, the Helm pre-upgrade Job's image is cheap; if only conda channels are mirrored, it introduces a new supply path. **CAP-9 cannot be scheduled until this lands.**
   5. **Phase-5 correct-course scope is all eight stations**, one run per station, so every station spec records its Canopy obligations — with Marshal's run additionally retiring `spec-factory-console` per ruling 3. Each run is pinned with `BMAD_ACTIVE_PROJECT` and written to physical `projects/<slug>/` paths, never through the shared `planning-artifacts` symlink (CLAUDE.md parallel-agent rule).
-  Also corrected in this phase: `convergence.md` still recorded RFC-5 as accepted "as written", which the same-day `least_bad` revision had superseded.
+     Also corrected in this phase: `convergence.md` still recorded RFC-5 as accepted "as written", which the same-day `least_bad` revision had superseded.
 - **2026-08-24** — Air-gap delivery research (`planning-artifacts/research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`) closed the CAP-9 vehicle question and found the seam already built. Two operator rulings:
   1. **`liquibase-airgap-policy` answered, and it reframed the question.** The repo runs **two** boundaries: conda channels govern the Python/pixi graph (`docs/reference/enterprise-deployment.md` is silent on images — searched for `container`/`image`/`OCI`, not found), while `spec-python-agent-platform` CAP-6 governs deployment images and **already admits third-party non-conda images** (`postgres:17`, `redis:7`, `quay.io/keycloak/keycloak:26.4.0`). This chain's constraint had read "every dependency resolves from conda-forge" with no qualifier, which flatly contradicted CAP-6; it now reads "every **Python/pixi** dependency" and names the image boundary beside it. **The decisive find was in the chart, not the policy:** `src/platform/deploy/charts/platform/templates/migrate-job.yaml` is shipped and is exactly the `post-install,pre-upgrade` hook RFC-5 asks for, running the platform image with its command as `args` — so CAP-9 adds a Job at weight `-1` and flips that one to `migrate --fake`, and convergence's "must land as a seam, not a chart rewrite" risk is retired. Its header rejects init containers because `helm install --wait` deadlocks migration-gated readiness — a wholly different argument from Phase-2's `DATABASECHANGELOGLOCK` contention, reaching the same answer.
   2. **`liquibase-delivery-vehicle` resolved to a FEEDSTOCK** — a sixth new recipe in this chain, alongside CAP-13's five. Because the hook Job runs the platform image and takes `args`, a conda-packaged Liquibase needs **no new image and no new supply path**; the container route would pay an undocumented third-party-image mirroring path *and* still build a derived image, since 5.0 Community dropped the bundled PostgreSQL JDBC driver and LPM fetches it over the network. `openjdk` 25.0.2 clears the Java 17+ floor and `apache-tika` is the exact recipe shape. Consequence for Phase 4: **CAP-9 and CAP-13 both open with packaging work, not platform work.**
-  Three adjacent defects were surfaced and the cheap two fixed immediately rather than filed: (a) the `air-gap-parity` CI job rendered the DB-GPT sidecar Deployment (no `enabled` guard in the template) without ever loading its image, so a pod sat in `ImagePullBackOff` reaching for a registry while the job — whose own criterion is "any external reference is a FAILING check" — reported green; fixed by building the sidecar in `build-platform-image`, loading it, and adding a **class-level assertion that no pod is waiting on an image pull**, so the next unloaded image cannot repeat it. (b) Story 12.3's spec file is absent from `planning-artifacts/specs/` though `epics.md` and `scripts/build-pixi-mirror.py` both cite it — the Tier-3 worktree-teardown loss CLAUDE.md documents; recovery attempted from session transcripts. (c) No ADR scopes "conda vs container for operational binaries"; the research file is now the nearest decision record.
+     Three adjacent defects were surfaced and the cheap two fixed immediately rather than filed: (a) the `air-gap-parity` CI job rendered the DB-GPT sidecar Deployment (no `enabled` guard in the template) without ever loading its image, so a pod sat in `ImagePullBackOff` reaching for a registry while the job — whose own criterion is "any external reference is a FAILING check" — reported green; fixed by building the sidecar in `build-platform-image`, loading it, and adding a **class-level assertion that no pod is waiting on an image pull**, so the next unloaded image cannot repeat it. (b) Story 12.3's spec file is absent from `planning-artifacts/specs/` though `epics.md` and `scripts/build-pixi-mirror.py` both cite it — the Tier-3 worktree-teardown loss CLAUDE.md documents; recovery attempted from session transcripts. (c) No ADR scopes "conda vs container for operational binaries"; the research file is now the nearest decision record.
 - **2026-08-24** — Phase-4 (`bmad-product-brief` → `bmad-prd`) produced the brief bundle and `prds/prd-pyforge-unifying-strategy-2026-08-24/`, and answered the parity question this Dream's own Phase-3 ruling 3 had opened. Three operator rulings, one of which grew the capability set:
   1. **`console-parity-inventory` answered — and the answer was not a formality.** `specs/spec-pyforge-unifying-strategy/console-parity-inventory.md` enumerates **23 console surfaces: 14 runtime-reproducible, 7 build-time-only, 3 mixed.** The seven collapse to four decisions rather than seven problems, because the "running" chip, the in-flight card and the live/projected fleet overlay are one decision wearing three hats — all three read `~/.bmad-loops`, tmux sessions and `marshal status` through a local pixi env, which is precisely why the *published* board already degrades to `unavailable` for them while a local `dashboard-gen` shows them. Two findings changed FR-7's scope: the retired path carries **100+ inbound references** across dreams, specs, presentations, pixi tasks, workflows, tests and scripts (including the Charter's own accountability gate), making the reference sweep its own story rather than end-of-story cleanup; and the co-published **Kedro-Viz tree (~195 tracked files) is NOT a parity obligation** — nothing in `index.html` links to it and it has its own publishing workflow — so it must survive the removal rather than be deleted alongside it. Also killed an inherited assumption: `cf_atlas.db` does **not** feed this console; `generate.py` sources repo files, git history, local loop homes and subprocess detectors.
   2. **Live run state stays on the front door — so CAP-17 is born.** The inventory recommended the cheaper option (drop the three surfaces, keep them local-only, which is what the published board honestly does today); the operator ruled the other way and accepted the cost. Live run state and journal-derived timing are now published by a **supervisor service** the front door queries, bound as **CAP-17** with FR-40/41/42 and a `Never:` constraint forbidding the supervisor from reading an operator home directory or the front door from falling back to filesystem scraping. This **absorbs two of the inventory's four decisions into one capability** (a supervisor that publishes live state is also where a completed run's journal is ingested), leaving detector verdicts and curated editorial content as the parity build's remaining calls. Stated plainly because it is the one place this chain grew rather than converged: **the replacement is now held to a higher bar than the thing it replaces.**
   3. **Portal URL scheme decided: uniform `/stations/<name>/`,** with `compliance_face` moving off its shipped `/compliance/` mount behind a **permanent** redirect (FR-9a — a supported route, not a shim scheduled for removal). One rule beats eight exceptions, the registration seam enforces it, and the app switcher derives entries from registration rather than a path list. Worth recording *why this was a decision at all*: the pre-audit brief asserted `/stations/{station}/` as settled convention and it never was — `config/urls.py:23` mounts the one existing portal at `/compliance/`, so choosing the uniform prefix buys consistency at the price of migrating a shipped URL.
   4. **Django patch-level exposure sent to audit** rather than left as a recorded constraint. conda-forge's 5.2 line stopped at 5.2.15 while upstream shipped 5.2.16 and 5.2.17, with no feedstock maintenance branch. If either carries a security fix this escalates from a constraint to a risk and a `django-feedstock` 5.2 maintenance branch becomes a seventh packaging item; if not, the pin stands. The remaining three open questions (`mcp-tasks-runtime`, `mcp-client-revision`, `liquibase-7791-fixed`) were dispatched to research in the same pass.
-  A doc-standards review (`bmad-review` structure+prose) returned NOT-YET on the brief and caught a factual error that had already propagated into the PRD: the brief read "**five** OpenFeature packages plus Liquibase are absent from conda-forge", wrong twice over against this log's own Phase-2 ruling 4 — it is **four** OpenFeature feedstocks plus a **`cachebox` 5.x downgrade build on an existing feedstock** (conda-forge ships 6.2.5 against the provider's `<6` pin), so `cachebox` is neither absent nor a new recipe, and sizing it as one overstates the work. The ambiguity originated upstream in `SPEC.md`'s own "five OpenFeature-related" and is now corrected there, in `stack.md`, and in all four Phase-4 documents. Three further review findings: a brief section promised fourteen capabilities and described twelve (CAP-7 and CAP-10 appeared nowhere in it); the agent-as-first-class-user claim shipped as flat fact when the workspace memlog had explicitly flagged it for surfacing; and CodeRed is **three** minor releases behind (Wagtail 7.1 vs 7.4.3 LTS), not two.
+     A doc-standards review (`bmad-review` structure+prose) returned NOT-YET on the brief and caught a factual error that had already propagated into the PRD: the brief read "**five** OpenFeature packages plus Liquibase are absent from conda-forge", wrong twice over against this log's own Phase-2 ruling 4 — it is **four** OpenFeature feedstocks plus a **`cachebox` 5.x downgrade build on an existing feedstock** (conda-forge ships 6.2.5 against the provider's `<6` pin), so `cachebox` is neither absent nor a new recipe, and sizing it as one overstates the work. The ambiguity originated upstream in `SPEC.md`'s own "five OpenFeature-related" and is now corrected there, in `stack.md`, and in all four Phase-4 documents. Three further review findings: a brief section promised fourteen capabilities and described twelve (CAP-7 and CAP-10 appeared nowhere in it); the agent-as-first-class-user claim shipped as flat fact when the workspace memlog had explicitly flagged it for surfacing; and CodeRed is **three** minor releases behind (Wagtail 7.1 vs 7.4.3 LTS), not two.
 - **2026-08-24** — Two commissioned research files landed and a naming decision reshaped the portal tier. Both research results **corrected a premise this chain had recorded as fact**, and in both cases the correction was favourable — worth noting, because a pessimistic premise is as much a planning error as an optimistic one, and both had been sized as risk.
   1. **`django-patch-exposure` answered: a currency gap, not a live exposure** (`planning-artifacts/research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md`). 5.2.16 and 5.2.17 are both security releases carrying **seven CVEs, one Django-rated high** (CVE-2026-15307, CVSS 8.8, GeoDjango raster) — and **every affected path is unreachable in `src/platform/`**: no `contrib.gis` in `INSTALLED_APPS` and no GIS package in any pixi env, neither cache middleware in `MIDDLEWARE` and no `cache_page`, **no `URLField` anywhere in the codebase**, and no `i18n` include so `set_language()` is unrouted. The premise underneath the question was also wrong: this log's Phase-4 ruling 4 recorded "no feedstock maintenance branch", but `conda-forge/django-feedstock` carries live `5.x`/`4.x`/`3.2.x` branches with `5.x` and `4.x` registered in `abi_migration_branches` — and **`rxm7706` personally authored the 5.2.15 bump on it** (PR #230, merged 2026-06-06, following #220/#224/#227/#228). So the seventh packaging item that ruling contemplated does not exist; catching up is a one-file version+sha256 PR on an existing branch. Recorded as **recommended, not required**: the reachability analysis holds, but scanners key on version strings rather than reachability, so an SBOM declaring seven unremediated CVEs is a finding whatever the analysis says, and the justification would be re-written every month. Caveat if taken: 5.2.17's fix is explicitly backward-incompatible (spatial lookups now reject `dict` and non-geometry strings) — irrelevant here, relevant to other consumers of the conda-forge package.
   2. **`liquibase-7791-fixed` answered: yes, in 5.0.4** — and **the SPEC had framed it too broadly**. PR #7803 merged 2026-08-10 and is confirmed an ancestor of the `v5.0.4` tag (`behind_by: 0`); the release notes name it independently. But the defect only ever affected changesets marked **`runInTransaction="false"`** — never in-transaction ones — because the cause was `SET LOCAL SEARCH_PATH` being a no-op outside a transaction block. The SPEC's "before any multi-schema changeset lands" therefore over-stated a gate that really covers the exception (`CREATE INDEX CONCURRENTLY`, `ALTER TYPE … ADD VALUE`). Two consequences bound: the feedstock **targets 5.0.4 or later**, which is also the first release whose GPG signature verifies against the rotated signing key (a recipe-verification fact, not a preference); and **open** issue #7624 becomes a `Never:` constraint — with `preserveSchemaCase=true` the schema name is double-quoted into one that does not exist and **DDL lands silently in `public`**, the worst available failure mode here, mitigated for free because Django's naming conventions are lowercase already. It also surfaced a real architecture decision that was about to be inherited by default: `liquibaseSchemaName` decides whether the changelog lock is **global or per-application**, and therefore whether two applications can migrate concurrently.
