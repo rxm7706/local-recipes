@@ -36,17 +36,22 @@ gate_mode = "none"
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
 #
-# TEMPORARILY EMPTIED (2026-08-30, operator direction) for the drain_to_zero fleet
-# campaign draining atlas's remaining backlog: an empty verify_commands composes to
-# MRS-GATE-004 (Verdict.WARN, "nothing was run"), not a gate failure, so a story no
-# longer blocks the whole campaign on kedro-test's own worktree-environment gaps.
-# Landed stories are UNVERIFIED while this is empty. RESTORE THE TWO COMMANDS BELOW
-# once the campaign finishes, then run the suite by hand across everything it landed.
-verify_commands = []
-# verify_commands = [
-#   "pixi run --frozen -e pyforge-atlas kedro-test",
-#   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
-# ]
+# Emptied on 2026-08-30 (PR #940, "temporarily, for the drain_to_zero campaign") and
+# RESTORED the same day: MRS-GATE-011 refuses to land any story whose TRACKED spec
+# names a verify command the policy no longer runs, and every pre-authored atlas spec
+# names `pixi run -e pyforge-atlas kedro-catalog-check` in its ## Verification -- so an
+# empty list refused the first real landing (Story 21.4, run ...-eef859af). Never empty
+# this again; if drain throughput is the problem, narrow to a targeted pytest path.
+#
+# NO `--frozen` HERE, ON PURPOSE: GATE-011's membership test is a shallow string
+# compare (whitespace-collapse only, no argv parsing), and the atlas specs declare the
+# un-frozen form. The policy strings MUST match the specs byte-for-byte or the gate
+# refuses. Verification runs inside a detached dispatch worktree, so a pixi lock
+# refresh there (the only thing `--frozen` would suppress) cannot touch main.
+verify_commands = [
+  "pixi run -e pyforge-atlas kedro-test",
+  "pixi run -e pyforge-atlas kedro-catalog-check",
+]
 
 
 # epic_surfaces (AD-27, MRS-GATE-007/Story 2.3): per-epic writable-surface allowlist,
