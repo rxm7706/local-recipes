@@ -201,6 +201,75 @@ def test_station_refuses_different_story_while_another_in_flight(tmp_path: Path)
     assert "22.1" in conflict.message
 
 
+def test_redispatch_allowed_when_session_dead_and_verification_refused(
+    tmp_path: Path,
+) -> None:
+    """Regression (2026-08-29, atlas Story 21.1): a crashed dispatch
+    supervisor left ``dispatch_verification_verdict: refused`` +
+    ``session_alive: false`` in the journal, but the redispatch-refusal
+    check only consulted git.changed_paths (nonzero forever once any real
+    edit landed before the crash), so it kept refusing redispatch of the
+    SAME story indefinitely. A confirmed-dead process plus an independently
+    (non-self-reported) refused verification must now let redispatch
+    through instead of reading as still live."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-atlas"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-dead", story_key="21.1"
+    )
+    journal_path = run_dir / "journal.jsonl"
+    verification_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-08-29T19:55:44.943Z",
+            run_id="run-dead",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "refused"},
+        )
+    ).line
+    verification_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-08-29T19:55:44.943Z",
+            run_id="run-dead",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
+        )
+    ).line
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(verification_intent + "\n" + verification_outcome + "\n")
+    fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
+
+    class StaleEvidenceVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-atlas/tools/bootstrap.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "aaa111"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=StaleEvidenceVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="21.1",
+        effective_policy=_compose_policy(slug),
+    )
+    assert conflict is None
+
+
 def test_cross_station_dispatch_allowed_when_other_station_busy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
