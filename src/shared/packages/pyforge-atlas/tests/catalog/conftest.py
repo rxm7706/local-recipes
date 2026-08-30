@@ -78,6 +78,9 @@ PREFIX_TO_PIPELINE = {
     "org_audit": "upstream_discovery",
     "discovery": "upstream_discovery",  # Story 21.4: Tier 1 discovery-shaped sources
     "enterprise": "upstream_discovery",  # Story 21.5: Tier 2 enterprise-universe sources
+    "purl_associator": "upstream_discovery",  # Story 21.6: CAP-3 identity join
+    "openteams": "upstream_discovery",  # Story 21.6: CAP-3 identity join
+    "identity": "upstream_discovery",  # Story 21.6: CAP-3 identity join
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
     "semantic": "semantic_packages",
@@ -95,12 +98,12 @@ EXPECTED_PIPELINE_COUNTS = {
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 2,
-    "upstream_discovery": 12,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1); Story 21.5: + discovery_about_maintainers_raw + discovery_curated_groups_seed + enterprise_conda_maintainers + enterprise_jfrog_names (Tier 2 — enterprise_jfrog_names buckets HERE via the `enterprise` prefix even though its producer node lives in artifactory_downloads)
+    "upstream_discovery": 18,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1); Story 21.5: + discovery_about_maintainers_raw + discovery_curated_groups_seed + enterprise_conda_maintainers + enterprise_jfrog_names (Tier 2 — enterprise_jfrog_names buckets HERE via the `enterprise` prefix even though its producer node lives in artifactory_downloads); Story 21.6: + purl_associator_mappings_raw + openteams_project_1_board_raw + discovery_staged_recipes_prs_raw + discovery_local_recipes_raw + identity_packages_primary + identity_export_parquet (CAP-3 identity join, Phase D)
     "artifactory_downloads": 2,  # Story 15.3 (CAP-4, Epic 15): artifactory_downloads_raw + artifactory_downloads_joined
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 105  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages); Story 21.5: + 4 (discovery_about_maintainers_raw, discovery_curated_groups_seed, enterprise_conda_maintainers, enterprise_jfrog_names)
+EXPECTED_TOTAL = 111  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages); Story 21.5: + 4 (discovery_about_maintainers_raw, discovery_curated_groups_seed, enterprise_conda_maintainers, enterprise_jfrog_names); Story 21.6: + 6 (purl_associator_mappings_raw, openteams_project_1_board_raw, discovery_staged_recipes_prs_raw, discovery_local_recipes_raw, identity_packages_primary, identity_export_parquet)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
@@ -189,6 +192,7 @@ EXPECTED_EXTRA_OVERRIDES = {
     "ANACONDA_API_BASE_URL",  # gap A2-G2 (Phase F direct env override)
     "OSV_VULNS_BUCKET_URL",   # § 3.4 store 2 refresh endpoint (B5)
     "BIGQUERY_BASE_URL",      # Phase P connection base (A2-J1; B3 flips to GBQ)
+    "PURL_ASSOCIATOR_BASE_URL",  # Story 21.6 (CAP-3 identity join): purl_associator_mappings_raw
 }
 
 # Full-URL fetcher settings (outside the 20-count) — set-pinned (P7).

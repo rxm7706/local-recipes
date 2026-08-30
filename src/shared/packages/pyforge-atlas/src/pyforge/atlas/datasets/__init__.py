@@ -39,6 +39,17 @@ from .core_sources import (
     parse_pypi_simple_index,
     repodata_json_to_rows,
 )
+from .identity_sources import (
+    LocalRecipesOverlayDataset,
+    OpenTeamsBoardDataset,
+    PurlAssociatorMappingsDataset,
+    StagedRecipesPRDataset,
+    parse_openteams_board_nodes,
+    parse_pr_files_response,
+    parse_purl_associator_index,
+    parse_recipe_dir,
+    parse_staged_pr_page,
+)
 from .incremental_parquet import IncrementalParquetDataset
 from .migration_status import (
     ACTIVE_CATEGORIES,
@@ -187,6 +198,17 @@ __all__ = [
     # + co-maintainer feedstock lists (external-refresh)
     "AboutMaintainersDataset",
     "parse_about_readme",
+    # Story 21.6 — identity join sources (CAP-3, Phase D): PURL Associator index,
+    # OpenTeams board, staged-recipes PRs, local recipes filesystem overlay
+    "PurlAssociatorMappingsDataset",
+    "parse_purl_associator_index",
+    "OpenTeamsBoardDataset",
+    "parse_openteams_board_nodes",
+    "StagedRecipesPRDataset",
+    "parse_staged_pr_page",
+    "parse_pr_files_response",
+    "LocalRecipesOverlayDataset",
+    "parse_recipe_dir",
     # Core raw-source parsers + datasets (B1 ingest gap)
     "FeedstockOutputsArchiveDataset",
     "CondaRepodataDataset",
