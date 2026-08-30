@@ -19,13 +19,14 @@ warnings: ['oversized']
 
 ## Intent
 
-**Problem:** `complete-export-contract.md` §1 specifies a 12-column
-`enterprise_jfrog_consumption.parquet` (parity with the CDO-ENT-JFROG workbook +
-`priority.py`'s inputs), but the shipped `artifactory_downloads` pipeline (Epic 15, Stories
+**Problem:** `complete-export-contract.md` §1 specifies a 10-column
+`enterprise_jfrog_consumption.parquet` (Artifactory-native telemetry only — `risk_level`/
+`vuln_status` are Basilisk-sourced, not stored here; see Never, below), but the shipped
+`artifactory_downloads` pipeline (Epic 15, Stories
 15.1-15.3: `artifactory/aql_adapter.py`, `artifactory/identity_join.py`,
 `pipelines/artifactory_downloads/{nodes,pipeline}.py`) only produces `name`/`version`/
 `download_count` rows joined against atlas's PyPI/conda identity space — it has no
-`platform_env_count`/`internal_app_count`/`risk_level`/`vuln_status`/
+`platform_env_count`/`internal_app_count`/
 `internal_component_count`/`internal_lob_count` telemetry, no `core_python_package_name`
 PEP-503 identity column, and no `enterprise_jfrog_consumption` catalog output at all. Story
 23.3 (`spec-23-3-priority-rules-in-kedro.md`, already drafted concurrently with this spec)
@@ -96,10 +97,15 @@ review finds the dependency genuinely vacuous for this story's actual code, that
 - Do not compute `OpenTeams_Cohort` or `openteams_universe_member` — contract §1 marks both
   "Derived on join (not stored on enterprise raw — computed in priority node)" — that is
   Story 23.3's job.
-- Do not compute `jfrog_latest_vuln_count` — contract §1 marks the Basilisk vuln overlay "not
-  Artifactory-native"; it is a separate join against `vulnerability_basilisk_*` on a
+- Do not compute `risk_level`, `vuln_status`, or `jfrog_latest_vuln_count` — contract §1 marks
+  the whole Basilisk vuln overlay "not Artifactory-native": Artifactory itself has no
+  vulnerability data. All three are a separate join against `vulnerability_basilisk_*` on a
   package's latest version, owned downstream (23.3/23.5), not by this story's Artifactory-only
-  rollup.
+  rollup. (Corrected 2026-08-30 — the ORIGINAL contract text listed `risk_level`/`vuln_status`
+  as required columns on this table, matching parity with today's legacy `CDO-ENT-JFROG`
+  workbook tab, which carries them only because an external process had already joined
+  Basilisk data in before `priority.py` ever saw it. The Kedro port makes that join explicit
+  instead of implicit — see `complete-export-contract.md`'s own dated correction.)
 - Do not add a `credentials:` key to any new catalog entry, and do not add a credential
   resolver (env-var or otherwise) to `ArtifactoryConfig`/`ArtifactoryAqlAdapter` — Story 15.1's
   module docstring (`aql_adapter.py:17-22`) is explicit that this would be "exactly the kind
@@ -120,7 +126,7 @@ review finds the dependency genuinely vacuous for this story's actual code, that
 | `virtual_repos` empty (committed default) | `params:artifactory = {virtual_repos: []}` | `fetch_artifactory_consumption` returns an empty, correctly-columned frame; zero `ArtifactoryConfig`/adapter construction | No error, no network |
 | Mock transport, non-empty `virtual_repos` | Test injects a mock `transport` serving canned consumption rows | `fetch_artifactory_consumption` returns one row per `(name)` with the 6 telemetry columns | No error |
 | Happy-path join | Non-empty `artifactory_downloads_joined` (some rows with `conda_name`, some `is_internal=True`) + non-empty `artifactory_consumption_raw` | `build_enterprise_jfrog_consumption` returns one row per distinct PEP-503-normalized name; `artifactory_downloads`/`artifactory_version_count` aggregated correctly; telemetry columns attached where a consumption row matches | No error |
-| Name present in downloads but absent from consumption rollup | A package with download history but no org telemetry row | Row still emitted; `platform_env_count`/`internal_app_count`/`internal_component_count`/`internal_lob_count` default to `0`; `risk_level` defaults to `"NO_DATA"`; `vuln_status` defaults to `""` | No error, no dropped row |
+| Name present in downloads but absent from consumption rollup | A package with download history but no org telemetry row | Row still emitted; `platform_env_count`/`internal_app_count`/`internal_component_count`/`internal_lob_count` default to `0` | No error, no dropped row |
 | Name present in consumption rollup but absent from downloads | Org reports telemetry for a package with zero recorded downloads this period | Row still emitted; `artifactory_downloads`/`artifactory_version_count` default to `0` | No error, no dropped row (outer-join semantics) |
 | A name normalizes to `<2` chars under `pep503` | A malformed/degenerate raw name | That row is dropped from the output (never an empty-string `core_python_package_name` PK), mirroring `priority.py::pep503`'s own `None`-on-too-short contract | No error, silent drop, not a crash |
 | Both inputs empty/`None` | Fresh bootstrap, nothing fetched yet | `build_enterprise_jfrog_consumption` returns an empty, correctly-columned (12-column) frame | Never raises |
@@ -133,7 +139,7 @@ review finds the dependency genuinely vacuous for this story's actual code, that
   `ArtifactoryAqlAdapter._call` (`:126-134`), `resolve_backing_repos` (`:136-146`),
   `fetch_download_rows` (`:163-188`) — the exact sibling pattern to mirror. Add
   `ConsumptionRow` (frozen dataclass: `name: str`, `platform_env_count: int`,
-  `internal_app_count: int`, `risk_level: str`, `vuln_status: str`,
+  `internal_app_count: int`,
   `internal_component_count: int`, `internal_lob_count: int`) and
   `ArtifactoryAqlAdapter.fetch_consumption_rows(self, virtual_repo: str) ->
   list[ConsumptionRow]` — resolves backing repos (reuse `resolve_backing_repos`, do not
@@ -144,12 +150,11 @@ review finds the dependency genuinely vacuous for this story's actual code, that
   instance" mock-first stance). Malformed rows raise `ArtifactoryAqlError` (mirrors
   `fetch_download_rows`'s `KeyError`/`TypeError`/`ValueError` handling at `:178-182`);
   missing/absent numeric fields on an otherwise-valid row default to `0`
-  (`row.get("platform_env_count", 0)` etc.), missing `risk_level` defaults to `"NO_DATA"`,
-  missing `vuln_status` defaults to `""`.
+  (`row.get("platform_env_count", 0)` etc.).
 - `src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py` — `_RAW_COLS`/
   `fetch_artifactory_downloads` (`:45-105`) is the exact template for the new
-  `_CONSUMPTION_COLS = ["name", "platform_env_count", "internal_app_count", "risk_level",
-  "vuln_status", "internal_component_count", "internal_lob_count"]` +
+  `_CONSUMPTION_COLS = ["name", "platform_env_count", "internal_app_count",
+  "internal_component_count", "internal_lob_count"]` +
   `fetch_artifactory_consumption(artifactory_params: dict) -> pd.DataFrame` (same
   empty-`virtual_repos` short-circuit, same optional test-only `transport` key, sums nothing —
   one row per name per virtual repo, last-write-wins or summed across repos consistently with
@@ -252,7 +257,7 @@ review finds the dependency genuinely vacuous for this story's actual code, that
   instance named, selected, or contacted.
 - Given a mock transport serving canned consumption + download rows for the same package
   names, when the pipeline runs, then `enterprise_jfrog_consumption.parquet` carries exactly
-  the 12 `complete-export-contract.md` §1 "Required columns", one row per distinct
+  the 10 `complete-export-contract.md` §1 "Required columns", one row per distinct
   PEP-503-normalized name, with `artifactory_downloads`/`artifactory_version_count` correctly
   aggregated and telemetry columns correctly defaulted for any non-matching name on either
   side (outer-join semantics, no dropped rows).
@@ -311,7 +316,7 @@ own established "never conflate resolution and aggregation" rule already argues 
 casually — left as-is for this story.
 
 **Why the real AQL/Xray query shape for `platform_env_count`/`internal_app_count`/
-`risk_level`/`vuln_status`/`internal_component_count`/`internal_lob_count` is not specified
+`internal_component_count`/`internal_lob_count` is not specified
 here:** these read as ORG-SPECIFIC custom telemetry/metadata (not standard vanilla-Artifactory
 AQL primitives) — plausibly an Xray policy export, a custom properties query, or an internal
 CDO system, not something a public Artifactory API reference can pin down generically. The

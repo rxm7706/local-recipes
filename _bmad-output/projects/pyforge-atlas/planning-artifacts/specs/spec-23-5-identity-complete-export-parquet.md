@@ -112,8 +112,8 @@ its inputs exist.
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|----------------|----------------------------|-----------------|
 | All five upstream Parquet present | `identity_packages_primary`, `inventory_priority_assignments`, `enterprise_jfrog_consumption`, `enterprise_conda_maintainers`, `inventory_verified_packages` all materialized | One row per universe name; all 63 columns populated per the §4 groups | — |
-| Enterprise Parquet absent/empty (JFROG creds not attended) | `enterprise_jfrog_consumption.parquet` missing or zero-row | JFROG/enterprise-group columns (`Platforms`…`internal_lob_count`, `JFROG_vuln_status`) blank/NULL for every row; identity is the join anchor so no row is dropped | Never raise; log a shape note, degrade to blank columns (AD-13 spirit) |
-| A universe name has no priority-assignment row | `inventory_priority_assignments` missing a name present in `identity_packages_primary` (should not happen given 23.3's full-coverage contract, but defended against) | Ranking columns (`P`/`Rank`/`Score`/`Work`/`Priority_Bucket_Description`/`Priority_Source`/`Priority_Reason`) blank for that row; row is not dropped | Never raise; row survives with blank ranking |
+| Enterprise Parquet absent/empty (JFROG creds not attended) | `enterprise_jfrog_consumption.parquet` missing or zero-row | Artifactory-native columns only (`Platforms`/`Apps`/`Downloads`/`Versions`/`internal_component_count`/`internal_lob_count`) blank/NULL for every row — `Vuln`/`JFROG_risk_level`/`JFROG_vuln_status`/`JFROG_latest_vuln_count` are UNAFFECTED (Basilisk-sourced via `inventory_priority_assignments`, corrected 2026-08-30, not this input); identity is the join anchor so no row is dropped | Never raise; log a shape note, degrade to blank columns (AD-13 spirit) |
+| A universe name has no priority-assignment row | `inventory_priority_assignments` missing a name present in `identity_packages_primary` (should not happen given 23.3's full-coverage contract, but defended against) | Ranking columns (`P`/`Rank`/`Score`/`Work`/`Priority_Bucket_Description`/`Priority_Source`/`Priority_Reason`) AND the Basilisk-sourced columns (`Vuln`/`JFROG_risk_level`/`JFROG_vuln_status`/`JFROG_latest_vuln_count`, corrected 2026-08-30 — same source row) blank for that row; row is not dropped | Never raise; row survives with blank ranking |
 | Board-only extra (OpenTeams board issue, not in either universe) | `identity_packages_primary` board-only row (`identity_source=openteams-board`) | Row present in export; enterprise + verification-BOOL columns blank (never applicable to board-only, matches today's `from_board_only`) | Matches today's semantics exactly |
 | Tier 3 cross-channel source not yet materialized | e.g. `discovery_debian_packages_raw` absent (Story 23.1 not yet run) | `in_debian` (and siblings) blank/`False`, not a join failure | Never raise |
 | `Verification_Timestamp_UTC` conflicts between upstream sources | `identity_packages_primary` and `inventory_priority_assignments` each carry their own snapshot timestamp | This node re-stamps `Verification_Timestamp_UTC` once, at export-build time — never propagates a stale upstream timestamp | — |
@@ -130,16 +130,19 @@ its inputs exist.
   `P`, `Rank`, `Score`, `Work`, `Priority_Bucket_Description`, `Priority_Source`,
   `Priority_Reason`, plus the legacy-alias columns
   (`Proposed_Priority`/`Packaging_Work`/`Priority_Rank`/`Priority_Score`, not carried into this
-  export per §4's group list). Note: Story 23.3's own spec flags the Basilisk-vuln-rollup input
-  (feeding `JFROG_latest_vuln_count`) as possibly a separate catalog entry rather than folded into
-  `enterprise_jfrog_consumption` — confirm at dispatch time which shape landed (see this story's
-  row 33 below).
+  export per §4's group list) — PLUS `core_python_package_name`/`risk_level`/`vuln_status`/
+  `jfrog_latest_vuln_count`, corrected 2026-08-30: these are Basilisk-sourced, computed inside
+  23.3's own `vulnerability_basilisk_rollup` join and passed through as output columns there —
+  this story reads them from `inventory_priority_assignments`, never from
+  `enterprise_jfrog_consumption` (rows 10/32/33/40 below), resolving what was previously an
+  open dispatch-time question.
 - `enterprise_jfrog_consumption.parquet` (Story 23.2, extends the existing `artifactory_downloads`
   pipeline — see `conf/base/catalog.yml` L930-940's `artifactory_downloads_joined` for the
   existing precedent this new entry sits beside) — `platform_env_count`, `internal_app_count`,
-  `artifactory_downloads`, `artifactory_version_count`, `risk_level`, `vuln_status`,
-  `internal_component_count`, `internal_lob_count`, `jfrog_latest_vuln_count` (Basilisk overlay,
-  `complete-export-contract.md` §1).
+  `artifactory_downloads`, `artifactory_version_count`, `internal_component_count`,
+  `internal_lob_count`, `repository_source`, `packaging_tier`, `verification_timestamp_utc`.
+  Artifactory-native telemetry ONLY — does not carry `risk_level`/`vuln_status`/
+  `jfrog_latest_vuln_count` (corrected 2026-08-30; see `inventory_priority_assignments` above).
 - `enterprise_conda_maintainers.parquet` (Story 23.2, Tier 2 "CDO-ENT-CONDA maintainer universe")
   — `role`, `repository_source` (`CDO-ENT-CONDA`).
 - `inventory_verified_packages.parquet` (Story 23.4, deliverable A, 14 columns per
@@ -256,7 +259,7 @@ its inputs exist.
   | 7 | `Apps` | JFROG shorthand | `enterprise_jfrog_consumption.internal_app_count` |
   | 8 | `Downloads` | JFROG shorthand | `enterprise_jfrog_consumption.artifactory_downloads` |
   | 9 | `Versions` | JFROG shorthand | `enterprise_jfrog_consumption.artifactory_version_count` |
-  | 10 | `Vuln` | JFROG shorthand | `enterprise_jfrog_consumption.vuln_status` |
+  | 10 | `Vuln` | JFROG shorthand | `inventory_priority_assignments.vuln_status` (Basilisk-sourced pass-through, corrected 2026-08-30 — NOT `enterprise_jfrog_consumption`, which is Artifactory-native telemetry only) |
   | 11 | `Core_Python_Package_Name` | Identity core | `identity_packages_primary.Core_Python_Package_Name` (PK) |
   | 12 | `OpenTeams_Title` | Identity core | `identity_packages_primary.OpenTeams_Title` |
   | 13 | `identity_source` | Identity core | `identity_packages_primary.identity_source` |
@@ -278,15 +281,15 @@ its inputs exist.
   | 29 | `Priority_Bucket_Description` | Priority detail | `inventory_priority_assignments.Priority_Bucket_Description` |
   | 30 | `Priority_Source` | Priority detail | `inventory_priority_assignments.Priority_Source` |
   | 31 | `Priority_Reason` | Priority detail | `inventory_priority_assignments.Priority_Reason` |
-  | 32 | `JFROG_risk_level` | Enterprise detail | `enterprise_jfrog_consumption.risk_level` |
-  | 33 | `JFROG_latest_vuln_count` | Enterprise detail | `enterprise_jfrog_consumption.jfrog_latest_vuln_count` |
+  | 32 | `JFROG_risk_level` | Enterprise detail | `inventory_priority_assignments.risk_level` (Basilisk-sourced, corrected 2026-08-30) |
+  | 33 | `JFROG_latest_vuln_count` | Enterprise detail | `inventory_priority_assignments.jfrog_latest_vuln_count` (Basilisk-sourced, corrected 2026-08-30) |
   | 34 | `internal_component_count` | Enterprise detail | `enterprise_jfrog_consumption.internal_component_count` |
   | 35 | `internal_lob_count` | Enterprise detail | `enterprise_jfrog_consumption.internal_lob_count` |
   | 36 | `platform_env_count` | Enterprise detail | `enterprise_jfrog_consumption.platform_env_count` (full name, alias of `Platforms`) |
   | 37 | `internal_app_count` | Enterprise detail | `enterprise_jfrog_consumption.internal_app_count` (alias of `Apps`) |
   | 38 | `artifactory_downloads` | Enterprise detail | `enterprise_jfrog_consumption.artifactory_downloads` (alias of `Downloads`) |
   | 39 | `artifactory_version_count` | Enterprise detail | `enterprise_jfrog_consumption.artifactory_version_count` (alias of `Versions`) |
-  | 40 | `JFROG_vuln_status` | Enterprise detail | `enterprise_jfrog_consumption.vuln_status` (alias of `Vuln`) |
+  | 40 | `JFROG_vuln_status` | Enterprise detail | `inventory_priority_assignments.vuln_status` (Basilisk-sourced, corrected 2026-08-30; alias of `Vuln`) |
   | 41 | `OpenTeams_Cohort` | OpenTeams handoff | derived (see rule above) |
   | 42 | `OpenTeams_Batch` | OpenTeams handoff | alias of `Work` |
   | 43 | `OpenTeams_Coverage` | OpenTeams handoff | derived (see rule above; open item) |
@@ -333,8 +336,10 @@ its inputs exist.
   `identity_complete_export.parquet`'s columns, then every `GIST_SCHEMA` name is present
   unchanged (parity gate).
 - Given `enterprise_jfrog_consumption.parquet` absent or empty, when the export node runs, then
-  every row still appears (anchored on identity) with enterprise-group columns blank, and the
-  node does not raise.
+  every row still appears (anchored on identity) with its Artifactory-native columns blank
+  (`Platforms`/`Apps`/`Downloads`/`Versions`/`internal_component_count`/`internal_lob_count`) —
+  `Vuln`/`JFROG_risk_level`/`JFROG_vuln_status`/`JFROG_latest_vuln_count` are unaffected
+  (Basilisk-sourced via `inventory_priority_assignments`) — and the node does not raise.
 - Given a board-only row from `identity_packages_primary`, when exported, then it appears with
   enterprise + verification-BOOL columns blank, matching today's `from_board_only` semantics.
 - Given the fixed `tests/fixtures/inventory_identity/` corpus (extended by this story), when the
