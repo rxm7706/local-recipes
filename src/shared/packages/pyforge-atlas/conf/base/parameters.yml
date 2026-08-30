@@ -62,6 +62,11 @@ ttls:
   discovery_anaconda_dist_2026x_raw: 604800     # 7 d (Anaconda Dist 2026.x release-notes scrape + seed fallback) [future_consumer: 21.4]
   discovery_basilisk_packages_raw: 604800       # 7 d (Basilisk GET /v1/packages catalog walk) [future_consumer: 21.4]
   discovery_aoss_premium_python_raw: 604800     # 7 d (Google AOSS premium-tier Python live doc) [future_consumer: 21.4]
+  # Story 21.5 (Tier 2, CDO-ENT-CONDA): WEEKLY, not daily — the about README's
+  # maintainer/co-maintainer lists change on a manual refresh cadence, not
+  # continuously (mirrors the Story 21.4 sibling cadence above, not
+  # trending_candidates's daily one).
+  discovery_about_maintainers_raw: 604800       # 7 d (rxm7706/about maintainer-list manual-refresh cadence) [future_consumer: 21.5]
 
 # AD-15 consumer-side freshness contract on derived-layer datasets — a
 # CONSUMER gate (refuse-stale), distinct from the fetch TTLs above; never

@@ -8,6 +8,7 @@ same invariants offline.
 
 from __future__ import annotations
 
+from pyforge.atlas.pipelines.artifactory_downloads import create_pipeline as artifactory_create
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.derived_artifacts import create_pipeline as derived_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
@@ -235,13 +236,15 @@ def test_v_current_version_vulns_is_backed_by_per_version_vulns():
     assert "vulnerability_package_version_vulns" in vuln.outputs()
 
 
-# -- Story 21.4: upstream_discovery (7 nodes) + Tier-1 single-writer wiring -----
+# -- Story 21.4/21.5: upstream_discovery (9 nodes) + Tier-1/Tier-2 single-writer wiring -----
 
-def test_upstream_discovery_pipeline_has_seven_nodes():
+def test_upstream_discovery_pipeline_has_nine_nodes():
     # Stories 13.1/13.2/13.4 landed the original four; Story 21.4 added the three Tier-1
-    # external-refresh triggers (single writers of the discovery_*_raw stores).
+    # external-refresh triggers (single writers of the discovery_*_raw stores); Story
+    # 21.5 added the two Tier-2 nodes (refresh_about_maintainers +
+    # join_enterprise_conda_maintainers).
     discovery = discovery_create()
-    assert len(discovery.nodes) == 7
+    assert len(discovery.nodes) == 9
     assert {n.name for n in discovery.nodes} == {
         "refresh_trending_candidates",
         "classify_trending_candidates",
@@ -250,6 +253,8 @@ def test_upstream_discovery_pipeline_has_seven_nodes():
         "refresh_anaconda_dist_2026x",
         "refresh_basilisk_packages",
         "refresh_aoss_premium_python",
+        "refresh_about_maintainers",
+        "join_enterprise_conda_maintainers",
     }
 
 
@@ -265,6 +270,7 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
         "discovery_basilisk_packages_raw": "refresh_basilisk_packages",
         "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
+        "discovery_about_maintainers_raw": "refresh_about_maintainers",
         "core_anaconda_main_packages": "enumerate_anaconda_main_packages",
     }
     for store, expected in writers.items():
@@ -274,4 +280,26 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
     # the materializer is the ONLY consumer of the live Anaconda main raw entry
     consumers = [n.name for n in combined.nodes if "core_anaconda_main_channeldata_raw" in n.inputs]
     assert consumers == ["enumerate_anaconda_main_packages"]
+
+
+# -- Story 21.5: artifactory_downloads (4 nodes) + enterprise_jfrog_names wiring ----
+
+
+def test_artifactory_downloads_pipeline_has_four_nodes():
+    # Story 15.3 landed the original three; Story 21.5 added project_artifactory_names
+    # (the names-only enterprise_jfrog_names projection).
+    artifactory = artifactory_create()
+    assert len(artifactory.nodes) == 4
+    assert {n.name for n in artifactory.nodes} == {
+        "fetch_artifactory_downloads",
+        "join_artifactory_identity",
+        "format_artifactory_purl_export",
+        "project_artifactory_names",
+    }
+
+
+def test_enterprise_jfrog_names_has_exactly_one_writer():
+    artifactory = artifactory_create()
+    producers = [n.name for n in artifactory.nodes if "enterprise_jfrog_names" in n.outputs]
+    assert producers == ["project_artifactory_names"]
 

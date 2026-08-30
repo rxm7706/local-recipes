@@ -1,6 +1,7 @@
-"""``artifactory_downloads`` pipeline wiring (Story 15.3, CAP-4; Epic 15).
+"""``artifactory_downloads`` pipeline wiring (Story 15.3, CAP-4, Epic 15; + Story
+21.5, Tier 2 names-only projection).
 
-Three nodes, wired by catalog-name string edges (AD-3):
+Four nodes, wired by catalog-name string edges (AD-3):
 - ``fetch_artifactory_downloads``: PURE ``params:artifactory -> DataFrame`` fetch node
   (Story 15.1's ``ArtifactoryAqlAdapter``); ``outputs=`` is the ``artifactory_downloads_raw``
   catalog entry.
@@ -12,6 +13,9 @@ Three nodes, wired by catalog-name string edges (AD-3):
   already-declared-but-unproduced ``derived_purl_exports`` ``PartitionedDataset``
   (``conf/base/catalog.yml``) -- never touching any other partition of that shared
   dataset (``PartitionedDataset.save()`` only writes the keys returned).
+- ``project_artifactory_names`` (Story 21.5): projects ``artifactory_downloads_joined``
+  down to ``pypi_name``/``conda_name``/``is_internal`` ONLY -- ``outputs=`` is the
+  ``enterprise_jfrog_names`` catalog entry (names, not telemetry).
 """
 
 from __future__ import annotations
@@ -22,6 +26,7 @@ from .nodes import (
     fetch_artifactory_downloads,
     format_artifactory_purl_export,
     join_artifactory_identity,
+    project_artifactory_names,
 )
 
 
@@ -45,6 +50,12 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="artifactory_downloads_joined",
                 outputs="derived_purl_exports",
                 name="format_artifactory_purl_export",
+            ),
+            node(
+                func=project_artifactory_names,
+                inputs="artifactory_downloads_joined",
+                outputs="enterprise_jfrog_names",
+                name="project_artifactory_names",
             ),
         ]
     )

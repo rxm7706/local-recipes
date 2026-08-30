@@ -77,6 +77,7 @@ PREFIX_TO_PIPELINE = {
     "trending": "upstream_discovery",
     "org_audit": "upstream_discovery",
     "discovery": "upstream_discovery",  # Story 21.4: Tier 1 discovery-shaped sources
+    "enterprise": "upstream_discovery",  # Story 21.5: Tier 2 enterprise-universe sources
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
     "semantic": "semantic_packages",
@@ -94,12 +95,12 @@ EXPECTED_PIPELINE_COUNTS = {
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 2,
-    "upstream_discovery": 8,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1)
+    "upstream_discovery": 12,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1); Story 21.5: + discovery_about_maintainers_raw + discovery_curated_groups_seed + enterprise_conda_maintainers + enterprise_jfrog_names (Tier 2 — enterprise_jfrog_names buckets HERE via the `enterprise` prefix even though its producer node lives in artifactory_downloads)
     "artifactory_downloads": 2,  # Story 15.3 (CAP-4, Epic 15): artifactory_downloads_raw + artifactory_downloads_joined
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 101  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages)
+EXPECTED_TOTAL = 105  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages); Story 21.5: + 4 (discovery_about_maintainers_raw, discovery_curated_groups_seed, enterprise_conda_maintainers, enterprise_jfrog_names)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

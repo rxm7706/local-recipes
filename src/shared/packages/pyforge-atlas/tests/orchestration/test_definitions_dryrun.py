@@ -733,16 +733,35 @@ _STORY_21_4_REFRESH_OPS = {
     "refresh_basilisk_packages",
     "refresh_aoss_premium_python",
 }
+_STORY_21_5_REFRESH_OPS = {
+    "refresh_about_maintainers",
+}
 
 
 def test_refresh_assets_job_lists_the_21_2_and_21_4_refresh_triggers(defs):
     ops = next(ops for job_name, ops, *_ in D.SCHEDULED_JOBS if job_name == "refresh_assets")
     assert _STORY_21_2_REFRESH_OPS <= set(ops), sorted(set(ops))
     assert _STORY_21_4_REFRESH_OPS <= set(ops), sorted(set(ops))
+    assert _STORY_21_5_REFRESH_OPS <= set(ops), sorted(set(ops))
     job = next(j for j in defs.jobs if j.name == "refresh_assets")
     graph_ops = {n.name for n in job.graph.nodes}
-    assert _STORY_21_2_REFRESH_OPS | _STORY_21_4_REFRESH_OPS <= graph_ops, sorted(graph_ops)
+    assert (
+        _STORY_21_2_REFRESH_OPS | _STORY_21_4_REFRESH_OPS | _STORY_21_5_REFRESH_OPS <= graph_ops
+    ), sorted(graph_ops)
     # and it stays the WEEKLY cadence
     _, _, _cron, cadence, label = next(row for row in D.SCHEDULED_JOBS if row[0] == "refresh_assets")
     assert cadence == "weekly"
     assert "Story 21.4" in label
+    assert "Story 21.5" in label
+
+
+def test_node_timeouts_covers_the_story_21_5_nodes():
+    """Story 21.5's three new nodes each get an explicit NODE_TIMEOUTS entry —
+    the dict's own stated invariant is that every migrated node appears here
+    explicitly, never falling back to DEFAULT_TIMEOUT by omission."""
+    for name in (
+        "refresh_about_maintainers",
+        "join_enterprise_conda_maintainers",
+        "project_artifactory_names",
+    ):
+        assert name in D.NODE_TIMEOUTS, f"{name} missing from NODE_TIMEOUTS"

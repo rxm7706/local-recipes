@@ -359,3 +359,82 @@ def test_missing_conda_name_variants_are_excluded(bad_conda_name):
     assert result == {
         "artifactory_downloads.tsv": "conda_purl\tpypi_purl\tmatch_source\tmatch_confidence\n"
     }
+
+
+# ---------------------------------------------------------------------------
+# project_artifactory_names -- Story 21.5, Tier 2 (names-only, not telemetry)
+# ---------------------------------------------------------------------------
+
+
+def test_project_artifactory_names_default_empty_input_is_empty_but_correctly_columned():
+    """params:artifactory.virtual_repos stays [] (the committed default) ->
+    artifactory_downloads_joined is empty -> enterprise_jfrog_names is
+    empty-but-correctly-columned, no live call made."""
+    out = N.project_artifactory_names(_joined([]))
+    assert out.empty
+    assert list(out.columns) == ["pypi_name", "conda_name", "is_internal"]
+
+
+def test_project_artifactory_names_selects_only_the_three_identity_columns():
+    joined = _joined(
+        [
+            {
+                "pypi_name": "requests",
+                "version": "2.31.0",
+                "download_count": 999,
+                "conda_name": "requests",
+                "match_source": "g10_spelling",
+                "is_internal": False,
+            }
+        ]
+    )
+    out = N.project_artifactory_names(joined)
+    assert list(out.columns) == ["pypi_name", "conda_name", "is_internal"]
+    assert "download_count" not in out.columns
+    assert "version" not in out.columns
+    assert "match_source" not in out.columns
+    row = out.iloc[0]
+    assert row["pypi_name"] == "requests"
+    assert row["conda_name"] == "requests"
+    assert bool(row["is_internal"]) is False
+
+
+def test_project_artifactory_names_dedupes_distinct_pypi_conda_pairs():
+    joined = _joined(
+        [
+            {"pypi_name": "foo", "version": "1.0", "download_count": 1, "conda_name": "foo", "match_source": "x", "is_internal": False},
+            {"pypi_name": "foo", "version": "2.0", "download_count": 2, "conda_name": "foo", "match_source": "x", "is_internal": False},
+            {"pypi_name": "bar", "version": "1.0", "download_count": 3, "conda_name": None, "match_source": None, "is_internal": True},
+        ]
+    )
+    out = N.project_artifactory_names(joined)
+    assert len(out) == 2
+    pairs = set(zip(out["pypi_name"], out["conda_name"].apply(lambda v: v if isinstance(v, str) else None)))
+    assert pairs == {("foo", "foo"), ("bar", None)}
+
+
+def test_project_artifactory_names_includes_internal_only_rows():
+    """A mock-only (internal) package with no resolved conda_name still carries its
+    is_internal flag through -- this projection is names-only, not "resolved only"
+    (unlike format_artifactory_purl_export, which excludes unresolved rows)."""
+    joined = _joined(
+        [
+            {"pypi_name": "internal-pkg", "version": "1.0", "download_count": 5, "conda_name": None, "match_source": None, "is_internal": True},
+        ]
+    )
+    out = N.project_artifactory_names(joined)
+    assert len(out) == 1
+    assert out.iloc[0]["pypi_name"] == "internal-pkg"
+    assert bool(out.iloc[0]["is_internal"]) is True
+
+
+def test_project_artifactory_names_none_input_never_raises():
+    out = N.project_artifactory_names(None)
+    assert out.empty
+    assert list(out.columns) == ["pypi_name", "conda_name", "is_internal"]
+
+
+def test_project_artifactory_names_malformed_input_missing_columns_degrades_to_empty():
+    out = N.project_artifactory_names(pd.DataFrame({"pypi_name": ["x"]}))
+    assert out.empty
+    assert list(out.columns) == ["pypi_name", "conda_name", "is_internal"]

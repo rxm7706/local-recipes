@@ -868,3 +868,192 @@ def test_dist_dataset_accepts_response_like_fetcher_payload(tmp_path):
     ds = _dist(tmp_path / "dist", fetcher=lambda url: _StubTextResponse(text=DIST_HTML))
     ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
     assert set(ds.load()["source"]) == {"html_scrape"}
+
+
+# ===========================================================================
+# Story 21.5 — Tier 2 catalog sources: parse_about_readme / AboutMaintainersDataset
+# ===========================================================================
+
+from pyforge.atlas.datasets import (  # noqa: E402
+    AboutMaintainersDataset,
+    parse_about_readme,
+)
+
+README_URL = "https://raw.githubusercontent.com/rxm7706/about/main/README.md"
+
+# A captured-shape fixture mirroring rxm7706/about's README.md (live snapshot
+# 2026-07-11): two numbered feedstock lists under distinct headers, with an
+# unrelated paragraph in between (must not leak into either list) and a trailing
+# non-numbered line ending the second list.
+ABOUT_README_MD = """
+About
+
+Some intro text.
+
+List Of FeedStocks - As Maintainer
+
+1. conda-forge/numpy-feedstock
+2. conda-forge/dbt-bigquery-feedstock
+
+Some unrelated paragraph here.
+
+List Of FeedStocks - As Co-Maintainer
+
+1. conda-forge/requests-feedstock
+2. conda-forge/flask-feedstock
+
+Thanks for reading.
+"""
+
+ABOUT_README_BROKEN_MD = "About\n\nNo maintainer lists here at all.\n"
+
+
+def test_parse_about_readme_extracts_maintainer_and_co_maintainer_rows():
+    rows = parse_about_readme(ABOUT_README_MD)
+    assert [r["feedstock_slug"] for r in rows] == [
+        "conda-forge/numpy-feedstock",
+        "conda-forge/dbt-bigquery-feedstock",
+        "conda-forge/requests-feedstock",
+        "conda-forge/flask-feedstock",
+    ]
+    assert [r["role"] for r in rows] == [
+        "Maintainer",
+        "Maintainer",
+        "Co-Maintainer",
+        "Co-Maintainer",
+    ]
+    assert all(r["source"] == "about_readme" and isinstance(r["fetched_at"], int) for r in rows)
+
+
+def test_parse_about_readme_unrelated_paragraph_does_not_leak_into_either_list():
+    rows = parse_about_readme(ABOUT_README_MD)
+    maint_slugs = {r["feedstock_slug"] for r in rows if r["role"] == "Maintainer"}
+    assert maint_slugs == {"conda-forge/numpy-feedstock", "conda-forge/dbt-bigquery-feedstock"}
+
+
+def test_parse_about_readme_layout_break_no_headers_returns_empty_never_raises():
+    assert parse_about_readme(ABOUT_README_BROKEN_MD) == []
+
+
+@pytest.mark.parametrize("markdown", ["", None])
+def test_parse_about_readme_empty_or_none_returns_empty(markdown):
+    assert parse_about_readme(markdown) == []
+
+
+def test_parse_about_readme_renamed_header_degrades_that_list_to_zero_rows():
+    """A single-list layout break (one header renamed/removed) degrades ONLY the
+    affected list — the other list's rows are unaffected."""
+    md = ABOUT_README_MD.replace(
+        "List Of FeedStocks - As Maintainer", "List Of FeedStocks - RENAMED"
+    )
+    rows = parse_about_readme(md)
+    assert {r["feedstock_slug"] for r in rows} == {
+        "conda-forge/requests-feedstock",
+        "conda-forge/flask-feedstock",
+    }
+    assert all(r["role"] == "Co-Maintainer" for r in rows)
+
+
+def test_parse_about_readme_malformed_numbered_line_is_skipped_not_crashed():
+    md = """
+List Of FeedStocks - As Maintainer
+
+1. conda-forge/numpy-feedstock
+2. not-a-feedstock-line-at-all
+3. conda-forge/pandas-feedstock
+"""
+    rows = parse_about_readme(md)
+    assert [r["feedstock_slug"] for r in rows] == [
+        "conda-forge/numpy-feedstock",
+        "conda-forge/pandas-feedstock",
+    ]
+
+
+# -- AboutMaintainersDataset --------------------------------------------------
+
+
+def _about(path, *, fetcher=None) -> AboutMaintainersDataset:
+    return AboutMaintainersDataset(filepath=str(path), readme_url=README_URL, fetcher=fetcher)
+
+
+def test_about_constructs_offline_no_refresher(tmp_path):
+    ds = _about(tmp_path / "about")
+    assert ds._describe()["refresher_wired"] is False
+    assert ds._describe()["readme_url"] == README_URL
+
+
+def test_about_fetch_success_persists_and_not_stale(tmp_path):
+    ds = _about(tmp_path / "about", fetcher=lambda url: ABOUT_README_MD)
+    ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
+    assert ds.is_stale() is False
+    out = ds.load()
+    assert len(out) == 4
+    assert set(out["role"]) == {"Maintainer", "Co-Maintainer"}
+
+
+def test_about_first_run_no_last_good_fetch_failure_marks_stale_empty(tmp_path):
+    def boom(url):
+        raise ConnectionError("4xx/5xx")
+
+    ds = _about(tmp_path / "about", fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))  # never raises
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is False
+    out = ds.load()
+    assert out.empty and "feedstock_slug" in out.columns
+
+
+def test_about_fetch_failure_keeps_last_good_and_marks_stale(tmp_path):
+    p = tmp_path / "about"
+    _about(p, fetcher=lambda url: ABOUT_README_MD).save(
+        RefreshRequest(store="discovery_about_maintainers_raw", force=True)
+    )
+
+    def boom(url):
+        raise ConnectionError("unreachable")
+
+    ds = _about(p, fetcher=boom)
+    ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
+    assert ds.is_stale() is True
+    assert ds.staleness().last_good_exists is True
+    assert len(ds.load()) == 4  # last-good never clobbered with empty
+
+
+def test_about_layout_break_keeps_last_good(tmp_path):
+    p = tmp_path / "about"
+    _about(p, fetcher=lambda url: ABOUT_README_MD).save(
+        RefreshRequest(store="discovery_about_maintainers_raw", force=True)
+    )
+    ds = _about(p, fetcher=lambda url: ABOUT_README_BROKEN_MD)
+    ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
+    assert ds.is_stale() is True
+    assert len(ds.load()) == 4
+
+
+def test_about_offline_no_fetcher_marks_stale_and_keeps_last_good(tmp_path):
+    p = tmp_path / "about"
+    _about(p, fetcher=lambda url: ABOUT_README_MD).save(
+        RefreshRequest(store="discovery_about_maintainers_raw", force=True)
+    )
+    offline = _about(p)
+    offline.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
+    assert offline.is_stale() is True
+    assert len(offline.load()) == 4
+
+
+def test_about_offline_missing_store_load_returns_empty_and_marks_stale(tmp_path):
+    ds = _about(tmp_path / "never")
+    out = ds.load()
+    assert out.empty and "feedstock_slug" in out.columns
+    assert ds.is_stale() is True
+
+
+def test_about_write_rejects_frame_missing_required_columns(tmp_path):
+    with pytest.raises(ValueError):
+        _about(tmp_path / "about")._write(pd.DataFrame({"nonsense": [1]}))
+
+
+def test_about_dataset_accepts_response_like_fetcher_payload(tmp_path):
+    ds = _about(tmp_path / "about", fetcher=lambda url: _StubTextResponse(text=ABOUT_README_MD))
+    ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
+    assert len(ds.load()) == 4
