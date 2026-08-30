@@ -1070,6 +1070,86 @@ enterprise_conda_maintainers:
   metadata:
     layer: derived
 
+# -----------------------------------------------------------------------------
+# Story 21.6 — identity join (spec-atlas-kedro-catalog-expansion CAP-3; Phase D;
+# identity-contract.md). Extends upstream_discovery (no 9th pipeline) — replaces
+# the legacy scripts/conda-forge-packaging-inventory-operations_openteams_identity.py's
+# PURL Associator / OpenTeams board / staged-recipes PR / local recipes fetch-and-join
+# surfaces. purl_associator_mappings_raw carries no credential (a public GitHub Pages
+# endpoint); openteams_project_1_board_raw / discovery_staged_recipes_prs_raw both
+# reuse the EXISTING github_token credential (vcs_github_api_raw's own) + the EXISTING
+# GITHUB_API_BASE_URL override point — no second GitHub credential key or global.
+# -----------------------------------------------------------------------------
+
+# PURL Associator mappings-index.json — upstream identity (distinct from Parselmouth's
+# conda<->PyPI NAME map, pypi_conda_mapping). Index required at bootstrap; per-package
+# shards fetched on demand (PurlAssociatorMappingsDataset.fetch_shard, a
+# forward-compatible enrichment seam) — NOT eagerly for the whole index. Public
+# endpoint, no credential.
+# fetch mode: external-refresh
+purl_associator_mappings_raw:
+  type: pyforge.atlas.datasets.PurlAssociatorMappingsDataset
+  url: ${globals:extra_overrides.PURL_ASSOCIATOR_BASE_URL}/purl-associator/mappings-index.json
+  filepath: ${globals:paths.data_root}/raw/purl_associator_mappings_raw
+  metadata:
+    layer: raw
+
+# OpenTeams project 1 board — "[Conda-Forge Packaging] {name}" issue titles on org
+# project 1 (OpenTeams-WFT-CDO), cursor-paginated GraphQL (mirrors the legacy
+# fetch_project_issues). Reuses the EXISTING GITHUB_API_BASE_URL override point + the
+# EXISTING github_token credential stub.
+# fetch mode: external-refresh
+openteams_project_1_board_raw:
+  type: pyforge.atlas.datasets.OpenTeamsBoardDataset
+  url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql
+  credentials: github_token
+  filepath: ${globals:paths.data_root}/raw/openteams_project_1_board_raw
+  metadata:
+    layer: raw
+
+# conda-forge/staged-recipes PR REST listing (all states, paginated) + a bounded
+# per-open-PR files() fan-out for the file-path match ranking tier (mirrors the legacy
+# load_staged_prs). Reuses GITHUB_API_BASE_URL + github_token.
+# fetch mode: external-refresh
+discovery_staged_recipes_prs_raw:
+  type: pyforge.atlas.datasets.StagedRecipesPRDataset
+  url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}
+  credentials: github_token
+  filepath: ${globals:paths.data_root}/raw/discovery_staged_recipes_prs_raw
+  metadata:
+    layer: raw
+
+# Live local recipes/ filesystem scan (dir name + recipe.yaml/meta.yaml-parsed name
+# aliases + the CFE cfe-local-build-status stamp) — no cadence/staleness (a local
+# repo-tree walk is cheap and always current, mirrors discovery_aoss_free_python_raw's
+# no-trigger-node tracked-seed shape). Repo-root-relative via the NEW
+# paths.local_recipes_dir override (PYFORGE_ATLAS_LOCAL_RECIPES_DIR).
+# fetch mode: local filesystem (no fetch)
+discovery_local_recipes_raw:
+  type: pyforge.atlas.datasets.LocalRecipesOverlayDataset
+  filepath: ${globals:paths.local_recipes_dir}
+  metadata:
+    layer: raw
+
+# The 18-column "identity tab minimum" (identity-contract.md Export columns) — one row
+# per join-universe package (CDO-ENT-JFROG enterprise_jfrog_names union CDO-ENT-CONDA
+# enterprise_conda_maintainers, both Story 21.5) + board-only extras.
+# build_identity_packages_primary reproduces the legacy
+# lookup_assoc/from_assoc/from_inventory/from_board_only/attach_packaging_urls join.
+identity_packages_primary:
+  type: pandas.ParquetDataset
+  filepath: data/primary/identity_packages_primary/identity_packages_primary.parquet
+  metadata:
+    layer: primary
+
+# The full GIST_SCHEMA-shaped export (legacy GIST_COLUMNS order) — ranking/JFROG
+# columns present but null until Epic 23.3/23.5 merge them at gist-publish time.
+identity_export_parquet:
+  type: pandas.ParquetDataset
+  filepath: data/derived/identity_export_parquet/identity_export_parquet.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # artifactory_downloads — Artifactory download intelligence (Story 15.3, CAP-4;
 # Epic 15). Wires Story 15.1's ArtifactoryAqlAdapter (fetch) and Story 15.2's

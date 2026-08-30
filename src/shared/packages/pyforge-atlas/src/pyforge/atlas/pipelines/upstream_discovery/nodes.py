@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -631,3 +632,730 @@ def load_org_audit_candidates(
     for repo_full_name in _flatten_curated_groups(discovery_curated_groups_seed):
         _add_org_audit_row(rows, seen, repo_full_name)
     return pd.DataFrame(rows, columns=_ORG_AUDIT_COLS)
+
+
+# ---------------------------------------------------------------------------
+# Story 21.6 (CAP-3, Phase D identity join) — PURL Associator + OpenTeams board +
+# staged-recipes PRs + local recipes overlay, replacing the legacy
+# scripts/conda-forge-packaging-inventory-operations_openteams_identity.py's
+# lookup_assoc/from_assoc/from_inventory/from_board_only/attach_packaging_urls/
+# overlay_live_local join. Every helper below reproduces its legacy namesake's
+# SEMANTICS byte-for-byte (verified against the legacy script) — pure
+# pandas/stdlib, no fetch (AD-2; the three live sources' fetch/parse lives in
+# datasets/identity_sources.py).
+# ---------------------------------------------------------------------------
+
+# Three new external-refresh triggers (mirror refresh_trending_candidates /
+# refresh_about_maintainers exactly). discovery_local_recipes_raw
+# (LocalRecipesOverlayDataset) needs no trigger — a local repo-tree walk has no
+# cadence/staleness (mirrors discovery_aoss_free_python_raw's tracked-seed shape).
+
+
+def refresh_purl_associator_mappings(ttls: dict) -> RefreshRequest:
+    # Story 21.6 — PURL Associator mappings-index.json bootstrap fetch (Phase D)
+    """External-refresh trigger for ``purl_associator_mappings_raw``. PURE: emits
+    the ``RefreshRequest`` ``PurlAssociatorMappingsDataset.save()`` honors; the
+    index fetch (per-package shards fetched on demand, not here) is
+    dataset-owned (AD-2)."""
+    return RefreshRequest(
+        store="purl_associator_mappings_raw",
+        cadence_seconds=_coerce_cadence(ttls, "purl_associator_mappings_raw", WEEKLY_SECONDS),
+    )
+
+
+def refresh_openteams_board(ttls: dict) -> RefreshRequest:
+    # Story 21.6 — OpenTeams project 1 board GraphQL fetch (Phase D)
+    """External-refresh trigger for ``openteams_project_1_board_raw``. PURE:
+    emits the ``RefreshRequest`` ``OpenTeamsBoardDataset.save()`` honors; the
+    credentialed cursor-paginated GraphQL fetch is dataset-owned (AD-2)."""
+    return RefreshRequest(
+        store="openteams_project_1_board_raw",
+        cadence_seconds=_coerce_cadence(ttls, "openteams_project_1_board_raw", WEEKLY_SECONDS),
+    )
+
+
+def refresh_staged_recipes_prs(ttls: dict) -> RefreshRequest:
+    # Story 21.6 — conda-forge/staged-recipes PR REST fetch (Phase D)
+    """External-refresh trigger for ``discovery_staged_recipes_prs_raw``. PURE:
+    emits the ``RefreshRequest`` ``StagedRecipesPRDataset.save()`` honors; the
+    credentialed paginated REST fetch (+ bounded per-open-PR files fan-out) is
+    dataset-owned (AD-2)."""
+    return RefreshRequest(
+        store="discovery_staged_recipes_prs_raw",
+        cadence_seconds=_coerce_cadence(ttls, "discovery_staged_recipes_prs_raw", WEEKLY_SECONDS),
+    )
+
+
+# -- pure join helpers (each mirrors a legacy function of the same intent) ----
+
+_ID_PACKAGING_TITLE_RE = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.IGNORECASE)
+_ID_GIT_HOST_RE = re.compile(
+    r"https?://(?:www\.)?(github\.com|gitlab\.com|bitbucket\.org|codeberg\.org)/([^/]+)/([^/#?\s]+)",
+    re.IGNORECASE,
+)
+_ID_RECIPE_FILE_RE = re.compile(r"^recipes/([^/]+)/")
+_ID_SKIP_RECIPE_DIRS = {"example", "example-v1"}
+_ID_TITLE_PREFIX_RE = re.compile(
+    r"""(?ix)^(?:
+        add(?:s|ed|ing)?|
+        new|
+        create[ds]?|creating|
+        initial(?:\s+commit)?(?:\s+of|\s+for)?|
+        conda(?:-forge)?\s+recipe(?:s)?(?:\s+for)?
+    )\s+
+    (?:(?:the|a|an)\s+)?
+    (?:
+        (?:conda(?:-forge)?\s+)?(?:python\s+)?(?:r\s+)?(?:new\s+)?
+        recipes?(?:\.ya?ml)?\s+(?:for\s+)?
+        |
+        meta\.yaml\s+(?:for\s+)?
+    )?
+    """
+)
+_ID_TITLE_VERSION_RE = re.compile(r"\s+v?\d+(?:\.\d+)+(?:[a-z0-9.-]*)\s*$", re.IGNORECASE)
+_ID_TITLE_JUNK_RE = re.compile(
+    r"""(?ix)
+    \s+(?:as\s+a\s+)?packages?\s*$|
+    \s+\([^)]*\)\s*$
+    """
+)
+_ID_TITLE_STOP = {
+    "recipe",
+    "recipes",
+    "package",
+    "packages",
+    "python",
+    "conda",
+    "forge",
+    "meta",
+    "yaml",
+    "example",
+    "new",
+    "the",
+    "a",
+    "an",
+    "for",
+    "and",
+    "with",
+    "using",
+    "from",
+    "initial",
+    "commit",
+    "support",
+    "fix",
+    "update",
+    "bump",
+    "r",
+}
+_ID_METADATA_URL_TEMPLATE = "https://conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}"
+_ID_FEEDSTOCK_REPO_CDT_BUILDS = "cdt-builds"
+
+_IDENTITY_PACKAGES_PRIMARY_COLUMNS = [
+    "Core_Python_Package_Name",
+    "OpenTeams_Title",
+    "identity_source",
+    "associator_key",
+    "associator_status",
+    "primary_purl",
+    "primary_type",
+    "alternative_purls",
+    "cpes",
+    "conda_purl",
+    "source_repository_url",
+    "OpenTeams_Issue_URL",
+    "Conda-Forge_FeedStock_URL",
+    "Conda-Forge_Metadata_URL",
+    "Staged_Recipes_PR_URL",
+    "Local_Recipes_URL",
+    "Local_Build_Status",
+    "Verification_Timestamp_UTC",
+]
+
+# The FULL GIST_SCHEMA column order (legacy script lines 84-121:
+# GIST_SCHEMA/GIST_COLUMNS), declared ONCE here so nothing re-derives it ad hoc
+# (Design Notes) — Epic 21's gist publish (future) and Epic 23.5's
+# identity_complete_export.parquet both key off this order by name.
+GIST_EXPORT_COLUMNS = [
+    "P",
+    "Rank",
+    "Score",
+    "Package",
+    "Work",
+    "Platforms",
+    "Apps",
+    "Downloads",
+    "Versions",
+    "Vuln",
+    *_IDENTITY_PACKAGES_PRIMARY_COLUMNS,
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "JFROG_risk_level",
+    "JFROG_latest_vuln_count",
+    "internal_component_count",
+    "internal_lob_count",
+]
+
+# Ranking (Epic 23.3) / JFROG telemetry (Epic 23.2) columns — declared present,
+# ALWAYS null in this story's output (Boundaries "Always" — never fabricated;
+# merged later by priority.py at gist-publish time).
+_GIST_RANKING_AND_JFROG_COLUMNS = [
+    "P",
+    "Rank",
+    "Score",
+    "Work",
+    "Platforms",
+    "Apps",
+    "Downloads",
+    "Versions",
+    "Vuln",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "JFROG_risk_level",
+    "JFROG_latest_vuln_count",
+    "internal_component_count",
+    "internal_lob_count",
+]
+
+
+def _id_pep503(value) -> str:
+    """Mirrors the legacy script's ``pep503_name`` exactly (incl. the trailing
+    ``.strip("-")``) — deliberately distinct from :func:`_normalize_pypi_name`
+    above, which the CAP-2 classifier uses and does NOT strip leading/trailing
+    ``-``; the identity join's parity bar is the legacy script, not the
+    classifier."""
+    return re.sub(r"[-_.]+", "-", (value or "").strip().lower()).strip("-")
+
+
+def _id_na(value) -> bool:
+    """Mirrors the legacy script's ``na()``: blank string, the literal N/A
+    spellings, or a real NaN/``pd.NA``."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        v = value.strip()
+        return (not v) or v in {"N/A", "n/a", "NA"}
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _id_join_list(values) -> str:
+    return "; ".join(v for v in values if v)
+
+
+def _id_git_purl(url) -> str | None:
+    """Mirrors the legacy script's ``git_purl``."""
+    if _id_na(url):
+        return None
+    m = _ID_GIT_HOST_RE.search(str(url))
+    if not m:
+        return None
+    host, ns, repo = m.group(1).lower(), m.group(2), m.group(3)
+    repo = re.sub(r"\.git$", "", repo, flags=re.IGNORECASE)
+    if host == "github.com":
+        return f"pkg:github/{ns}/{repo}"
+    if host == "gitlab.com":
+        return f"pkg:gitlab/{ns}/{repo}"
+    if host == "bitbucket.org":
+        return f"pkg:bitbucket/{ns}/{repo}"
+    return None
+
+
+def _id_lookup_assoc(name: str, packages: dict) -> tuple[dict | None, str | None]:
+    """Mirrors the legacy script's ``lookup_assoc`` (PEP 503 key + ``-``/``.``/``_``
+    alias fallback)."""
+    if name in packages:
+        return packages[name], name
+    for cand in (name.replace("-", "."), name.replace("-", "_")):
+        if cand in packages:
+            return packages[cand], cand
+    return None, None
+
+
+def _id_packaging_name_from_title(title) -> str | None:
+    """Mirrors the legacy script's ``packaging_name_from_title``."""
+    m = _ID_PACKAGING_TITLE_RE.match((title or "").strip())
+    if not m:
+        return None
+    name = _id_pep503(m.group(1))
+    return name or None
+
+
+def _id_name_keys(core_python_package_name, associator_key) -> list[str]:
+    """Mirrors the legacy script's ``name_keys``."""
+    keys: list[str] = []
+    for raw in (core_python_package_name, associator_key):
+        if not raw:
+            continue
+        for cand in (raw, raw.lower(), _id_pep503(raw), raw.replace("-", "_")):
+            if cand and cand not in keys:
+                keys.append(cand)
+    return keys
+
+
+def _id_first_map(mapping: dict, keys: list[str]) -> str:
+    """Mirrors the legacy script's ``first_map``."""
+    for key in keys:
+        if key in mapping and mapping[key]:
+            return mapping[key]
+    return ""
+
+
+def _id_feedstock_repo_name(repo: str) -> str:
+    """Mirrors the legacy script's ``feedstock_repo_name``."""
+    return repo if repo == _ID_FEEDSTOCK_REPO_CDT_BUILDS else f"{repo}-feedstock"
+
+
+def _id_metadata_url(pkg: str) -> str:
+    return _ID_METADATA_URL_TEMPLATE.format(pkg=pkg)
+
+
+def _id_issue_url(core_python_package_name, associator_key, board: dict) -> str:
+    """Mirrors the legacy script's ``issue_url`` — the board join is the ONLY
+    source (Story 21.6's universe rows carry no pre-existing
+    ``OpenTeams_Issue_URL`` hint the way the legacy workbook rows did)."""
+    name = _id_pep503(associator_key or core_python_package_name)
+    return board.get(name, "")
+
+
+def _id_from_assoc(
+    core_python_package_name,
+    open_teams_title: str,
+    conda_purl_in,
+    source_repository_url_in,
+    rec: dict,
+    matched_as: str,
+    timestamp: str,
+    board: dict,
+) -> dict:
+    """Mirrors the legacy script's ``from_assoc``."""
+    conda = "" if _id_na(conda_purl_in) else conda_purl_in
+    src = "" if _id_na(source_repository_url_in) else source_repository_url_in
+    return {
+        "Core_Python_Package_Name": core_python_package_name,
+        "OpenTeams_Title": open_teams_title,
+        "identity_source": "purl-associator",
+        "associator_key": matched_as,
+        "associator_status": rec.get("status") or "",
+        "primary_purl": rec.get("purl") or "",
+        "primary_type": rec.get("type") or "",
+        "alternative_purls": rec.get("alternative_purls") or "",
+        "cpes": rec.get("cpes") or "",
+        "conda_purl": conda,
+        "source_repository_url": src,
+        "OpenTeams_Issue_URL": _id_issue_url(core_python_package_name, matched_as, board),
+        "Verification_Timestamp_UTC": timestamp,
+    }
+
+
+def _id_from_inventory(
+    core_python_package_name,
+    open_teams_title: str,
+    pypi_purl_in,
+    conda_purl_in,
+    source_repository_url_in,
+    timestamp: str,
+    board: dict,
+) -> dict:
+    """Mirrors the legacy script's ``from_inventory``."""
+    pypi = "" if _id_na(pypi_purl_in) else pypi_purl_in
+    src = "" if _id_na(source_repository_url_in) else source_repository_url_in
+    gp = _id_git_purl(src)
+    primary = pypi
+    ptype = "pypi" if pypi else ""
+    alts: list[str] = []
+    if pypi and gp:
+        alts.append(gp)
+    elif not pypi and gp:
+        primary = gp
+        ptype = "github" if gp.startswith("pkg:github/") else "git"
+    if primary:
+        source, status = "inventory", "inventory-derived"
+    else:
+        source, status = "none", "unmapped"
+    return {
+        "Core_Python_Package_Name": core_python_package_name,
+        "OpenTeams_Title": open_teams_title,
+        "identity_source": source,
+        "associator_key": "",
+        "associator_status": status,
+        "primary_purl": primary,
+        "primary_type": ptype,
+        "alternative_purls": _id_join_list(alts),
+        "cpes": "",
+        "conda_purl": "" if _id_na(conda_purl_in) else conda_purl_in,
+        "source_repository_url": src,
+        "OpenTeams_Issue_URL": _id_issue_url(core_python_package_name, None, board),
+        "Verification_Timestamp_UTC": timestamp,
+    }
+
+
+def _id_from_board_only(name: str, url: str, packages: dict, timestamp: str) -> dict:
+    """Mirrors the legacy script's ``from_board_only``."""
+    rec, key = _id_lookup_assoc(name, packages)
+    if rec and key:
+        row = _id_from_assoc(
+            name, f"[Conda-Forge Packaging] {name}", "", "", rec, key, timestamp, {name: url}
+        )
+        row["identity_source"] = "openteams-board"
+        return row
+    return {
+        "Core_Python_Package_Name": name,
+        "OpenTeams_Title": f"[Conda-Forge Packaging] {name}",
+        "identity_source": "openteams-board",
+        "associator_key": "",
+        "associator_status": "unmapped",
+        "primary_purl": "",
+        "primary_type": "",
+        "alternative_purls": "",
+        "cpes": "",
+        "conda_purl": "",
+        "source_repository_url": "",
+        "OpenTeams_Issue_URL": url,
+        "Verification_Timestamp_UTC": timestamp,
+    }
+
+
+def _id_attach_packaging_urls(
+    row: dict, fs_map: dict, meta_map: dict, staged_map: dict, local_map: dict, local_status_map: dict
+) -> dict:
+    """Mirrors the legacy script's ``attach_packaging_urls`` + folds in
+    ``overlay_live_local``'s ``Local_Build_Status`` resolution into the SAME
+    pass (Design Notes: ``identity_packages_primary`` carries no ``Package``
+    alias column for the legacy two-pass structure's expanded key-set to add,
+    so a single pass over the SAME ``_id_name_keys`` reproduces the identical
+    result without the redundant second pass)."""
+    keys = _id_name_keys(row.get("Core_Python_Package_Name"), row.get("associator_key"))
+    fs_url = _id_first_map(fs_map, keys)
+    meta_url = _id_first_map(meta_map, keys)
+    if fs_url and not meta_url:
+        pkg = row.get("associator_key") or row.get("Core_Python_Package_Name") or ""
+        meta_url = _id_metadata_url(pkg) if pkg else ""
+    if not fs_url:
+        meta_url = ""
+    row["Conda-Forge_FeedStock_URL"] = fs_url
+    row["Conda-Forge_Metadata_URL"] = meta_url
+    row["Staged_Recipes_PR_URL"] = _id_first_map(staged_map, keys)
+    row["Local_Recipes_URL"] = _id_first_map(local_map, keys)
+    row["Local_Build_Status"] = _id_first_map(local_status_map, keys)
+    return row
+
+
+def _id_load_feedstock_maps(core_feedstock_attribution: pd.DataFrame) -> tuple[dict[str, str], dict[str, str]]:
+    """feedstock + metadata URL maps from ``core_feedstock_attribution``
+    (``conda_name``/``feedstock_name``) — the Kedro-native replacement for the
+    legacy script's ``load_feedstock_outputs`` (which fetched
+    ``feedstock-outputs.json`` directly; ``core_feedstock_attribution`` is the
+    already-resolved 1:1 conda-name -> feedstock-name Atlas equivalent, Phase
+    B.5's ``_pick_feedstock``)."""
+    fs_map: dict[str, str] = {}
+    meta_map: dict[str, str] = {}
+    if (
+        core_feedstock_attribution is None
+        or getattr(core_feedstock_attribution, "empty", True)
+        or not {"conda_name", "feedstock_name"} <= set(getattr(core_feedstock_attribution, "columns", []))
+    ):
+        return fs_map, meta_map
+    for row in core_feedstock_attribution.itertuples(index=False):
+        conda_name = getattr(row, "conda_name", None)
+        feedstock_name = getattr(row, "feedstock_name", None)
+        if not isinstance(conda_name, str) or not conda_name or not isinstance(feedstock_name, str) or not feedstock_name:
+            continue
+        url = f"https://github.com/conda-forge/{_id_feedstock_repo_name(feedstock_name)}"
+        meta = _id_metadata_url(conda_name)
+        for key in (conda_name, conda_name.lower(), _id_pep503(conda_name), conda_name.replace("-", "_")):
+            if key and key not in fs_map:
+                fs_map[key] = url
+                meta_map[key] = meta
+    return fs_map, meta_map
+
+
+def _id_board_map(openteams_project_1_board_raw: pd.DataFrame) -> dict[str, str]:
+    """Mirrors the legacy script's ``board_packaging_urls``: PEP-503 name -> issue
+    URL, first-seen wins on a duplicate name."""
+    out: dict[str, str] = {}
+    if (
+        openteams_project_1_board_raw is None
+        or getattr(openteams_project_1_board_raw, "empty", True)
+        or not {"title", "url"} <= set(getattr(openteams_project_1_board_raw, "columns", []))
+    ):
+        return out
+    for row in openteams_project_1_board_raw.itertuples(index=False):
+        name = _id_packaging_name_from_title(getattr(row, "title", None))
+        url = getattr(row, "url", None) or ""
+        if name and url and name not in out:
+            out[name] = url
+    return out
+
+
+def _id_names_from_pr_title(title) -> list[str]:
+    """Mirrors the legacy script's ``names_from_pr_title`` verbatim."""
+    t = (title or "").strip().strip("`\"'")
+    t = _ID_TITLE_PREFIX_RE.sub("", t).strip(" :.-")
+    t = _ID_TITLE_JUNK_RE.sub("", t).strip()
+    t = _ID_TITLE_VERSION_RE.sub("", t).strip()
+    if not t:
+        return []
+    parts = re.split(r"\s+(?:and|&)\s+|,\s*|;\s+|\s+/\s+", t)
+    names: list[str] = []
+    for part in parts:
+        part = part.strip().strip("`\"'").strip(" .")
+        part = re.sub(r"\s+recipe\.ya?ml$", "", part, flags=re.IGNORECASE)
+        if not part or len(part.split()) > 3:
+            continue
+        token = _id_pep503(part.replace(" ", "-"))
+        if not token or len(token) < 2 or token in _ID_TITLE_STOP:
+            continue
+        if token not in names:
+            names.append(token)
+    return names
+
+
+def _id_staged_map(discovery_staged_recipes_prs_raw: pd.DataFrame) -> dict[str, str]:
+    """Mirrors the legacy script's ``load_staged_prs`` ranking (file-path match
+    on an open PR ranks above an open-title match, above a merged-title match,
+    above a closed-title match; the higher PR number wins a tie within the same
+    rank)."""
+    best: dict[str, tuple[int, int, str]] = {}
+
+    def consider(name, rank: int, number: int, url: str) -> None:
+        if not name or not url:
+            return
+        prev = best.get(name)
+        if prev is None or (rank, -number) < (prev[0], -prev[1]):
+            best[name] = (rank, number, url)
+
+    if (
+        discovery_staged_recipes_prs_raw is None
+        or getattr(discovery_staged_recipes_prs_raw, "empty", True)
+        or not {"number", "state", "url", "title"} <= set(getattr(discovery_staged_recipes_prs_raw, "columns", []))
+    ):
+        return {}
+    for row in discovery_staged_recipes_prs_raw.itertuples(index=False):
+        try:
+            number = int(getattr(row, "number"))
+        except (TypeError, ValueError):
+            continue
+        url = getattr(row, "url", None) or ""
+        state = getattr(row, "state", None) or ""
+        title = getattr(row, "title", None) or ""
+        file_paths = getattr(row, "file_paths", "") or ""
+        for path in file_paths.split("; "):
+            m = _ID_RECIPE_FILE_RE.match(path)
+            if not m:
+                continue
+            dirname = m.group(1)
+            if dirname in _ID_SKIP_RECIPE_DIRS:
+                continue
+            consider(_id_pep503(dirname), 0, number, url)
+        if state == "open":
+            rank = 1
+        elif getattr(row, "merged_at", None):
+            rank = 2
+        else:
+            rank = 3
+        for name in _id_names_from_pr_title(title):
+            consider(name, rank, number, url)
+    return {name: url for name, (_rank, _n, url) in best.items()}
+
+
+def _id_local_maps(discovery_local_recipes_raw: pd.DataFrame) -> tuple[dict[str, str], dict[str, str]]:
+    """Mirrors the legacy script's ``load_local_recipes`` + ``load_local_build_status``
+    combined, consuming ``LocalRecipesOverlayDataset``'s one-row-per-recipe-dir
+    frame (``dir_name``/``names``/``url``/``build_status``, ``names`` already
+    ``; ``-joined)."""
+    local_map: dict[str, str] = {}
+    status_map: dict[str, str] = {}
+    if (
+        discovery_local_recipes_raw is None
+        or getattr(discovery_local_recipes_raw, "empty", True)
+        or not {"names", "url"} <= set(getattr(discovery_local_recipes_raw, "columns", []))
+    ):
+        return local_map, status_map
+    for row in discovery_local_recipes_raw.itertuples(index=False):
+        url = getattr(row, "url", None) or ""
+        names_field = getattr(row, "names", None) or ""
+        build_status = getattr(row, "build_status", "") or ""
+        for name in (n for n in names_field.split("; ") if n):
+            if name not in local_map:
+                local_map[name] = url
+            elif local_map[name] != url and url not in local_map[name].split("; "):
+                local_map[name] = _id_join_list([local_map[name], url])
+            if build_status and name not in status_map:
+                status_map[name] = build_status
+    return local_map, status_map
+
+
+def _id_universe_frame(
+    enterprise_jfrog_names: pd.DataFrame,
+    enterprise_conda_maintainers: pd.DataFrame,
+    pypi_universe: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame,
+) -> pd.DataFrame:
+    """The Story 21.6 join universe: CDO-ENT-JFROG (``enterprise_jfrog_names``)
+    union CDO-ENT-CONDA (``enterprise_conda_maintainers``) — Story 21.5's own
+    deliverable, LANDED (verified live in this tree: both catalog entries and
+    their producer nodes, ``project_artifactory_names`` /
+    ``join_enterprise_conda_maintainers``, exist), so the story spec's Block-If
+    "join against its output directly" branch applies — the
+    PyPI_Verified/CondaForge_Verified public-universe substitute is NOT used
+    (that branch only fires when Story 21.5 has not landed).
+
+    ``pypi_purl``/``conda_purl`` are derived by PEP-503-matching this name
+    against ``pypi_universe``/``core_packages_enumerated`` (the two live,
+    already-persisted verification signals verification-matrix.md documents for
+    ``PyPI_Verified``/``CondaForge_Verified``). ``source_repository_url`` is
+    always blank — no Atlas dataset carries a per-package upstream repository
+    URL yet (a genuine, documented gap; ``from_inventory``'s git-purl fallback
+    simply never fires against production data until a future story adds that
+    column — the parity fixture corpus exercises the code path directly with
+    synthetic values instead of production data). Never raises: an
+    empty/malformed input degrades that source's contribution to zero rows."""
+    names: dict[str, str] = {}  # pep503 key -> original-cased name, first-seen wins
+
+    def _add(raw_name) -> None:
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            return
+        key = _id_pep503(raw_name)
+        if key and key not in names:
+            names[key] = raw_name.strip()
+
+    if enterprise_jfrog_names is not None and not getattr(enterprise_jfrog_names, "empty", True):
+        cols = set(getattr(enterprise_jfrog_names, "columns", []))
+        if {"pypi_name", "conda_name"} <= cols:
+            for row in enterprise_jfrog_names.itertuples(index=False):
+                conda_name = getattr(row, "conda_name", None)
+                pypi_name = getattr(row, "pypi_name", None)
+                _add(conda_name if isinstance(conda_name, str) and conda_name else pypi_name)
+
+    if enterprise_conda_maintainers is not None and not getattr(enterprise_conda_maintainers, "empty", True):
+        if "core_python_package_name" in getattr(enterprise_conda_maintainers, "columns", []):
+            for name in enterprise_conda_maintainers["core_python_package_name"]:
+                _add(name)
+
+    pypi_index = _normalized_pypi_index(pypi_universe)
+
+    conda_index: dict[str, str] = {}
+    if (
+        core_packages_enumerated is not None
+        and not getattr(core_packages_enumerated, "empty", True)
+        and "conda_name" in getattr(core_packages_enumerated, "columns", [])
+    ):
+        for name in core_packages_enumerated["conda_name"]:
+            if _is_missing(name):
+                continue
+            conda_index.setdefault(_id_pep503(str(name)), str(name))
+
+    rows: list[dict] = []
+    for key, original in names.items():
+        pypi_match = pypi_index.get(key)
+        conda_match = conda_index.get(key)
+        rows.append(
+            {
+                "core_python_package_name": original,
+                "pypi_purl": f"pkg:pypi/{pypi_match}" if pypi_match else "",
+                "conda_purl": f"pkg:conda/{conda_match}?channel=conda-forge" if conda_match else "",
+                "source_repository_url": "",
+            }
+        )
+    return pd.DataFrame(
+        rows, columns=["core_python_package_name", "pypi_purl", "conda_purl", "source_repository_url"]
+    )
+
+
+def build_identity_packages_primary(
+    purl_associator_mappings_raw: pd.DataFrame,
+    openteams_project_1_board_raw: pd.DataFrame,
+    discovery_staged_recipes_prs_raw: pd.DataFrame,
+    discovery_local_recipes_raw: pd.DataFrame,
+    core_feedstock_attribution: pd.DataFrame,
+    enterprise_jfrog_names: pd.DataFrame,
+    enterprise_conda_maintainers: pd.DataFrame,
+    pypi_universe: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame,
+) -> pd.DataFrame:
+    # CAP-3 — identity join (Story 21.6, Phase D; spec-atlas-kedro-catalog-expansion)
+    """The 18-column "identity tab minimum" (identity-contract.md Export
+    columns), one row per join-universe package + board-only extras —
+    reproduces the legacy ``lookup_assoc``/``from_assoc``/``from_inventory``/
+    ``from_board_only``/``attach_packaging_urls``/``overlay_live_local`` join
+    exactly (I/O & Edge-Case Matrix). PURE — all fetch/parse lives in
+    ``datasets/identity_sources.py`` (AD-2). Never a silent row drop; never
+    raises."""
+    packages: dict[str, dict] = {}
+    if (
+        purl_associator_mappings_raw is not None
+        and not getattr(purl_associator_mappings_raw, "empty", True)
+        and "assoc_key" in getattr(purl_associator_mappings_raw, "columns", [])
+    ):
+        for row in purl_associator_mappings_raw.itertuples(index=False):
+            key = getattr(row, "assoc_key", None)
+            if isinstance(key, str) and key:
+                packages[key] = row._asdict()
+
+    board = _id_board_map(openteams_project_1_board_raw)
+    fs_map, meta_map = _id_load_feedstock_maps(core_feedstock_attribution)
+    staged_map = _id_staged_map(discovery_staged_recipes_prs_raw)
+    local_map, status_map = _id_local_maps(discovery_local_recipes_raw)
+    universe = _id_universe_frame(
+        enterprise_jfrog_names, enterprise_conda_maintainers, pypi_universe, core_packages_enumerated
+    )
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for u in universe.itertuples(index=False):
+        name = getattr(u, "core_python_package_name")
+        seen.add(_id_pep503(name))
+        title = f"[Conda-Forge Packaging] {name}"
+        rec, matched_as = _id_lookup_assoc(name, packages)
+        if rec and matched_as:
+            row = _id_from_assoc(
+                name,
+                title,
+                getattr(u, "conda_purl"),
+                getattr(u, "source_repository_url"),
+                rec,
+                matched_as,
+                timestamp,
+                board,
+            )
+        else:
+            row = _id_from_inventory(
+                name,
+                title,
+                getattr(u, "pypi_purl"),
+                getattr(u, "conda_purl"),
+                getattr(u, "source_repository_url"),
+                timestamp,
+                board,
+            )
+        rows.append(_id_attach_packaging_urls(row, fs_map, meta_map, staged_map, local_map, status_map))
+
+    for name, url in sorted(board.items()):
+        if name in seen:
+            continue
+        row = _id_from_board_only(name, url, packages, timestamp)
+        rows.append(_id_attach_packaging_urls(row, fs_map, meta_map, staged_map, local_map, status_map))
+
+    return pd.DataFrame(rows, columns=_IDENTITY_PACKAGES_PRIMARY_COLUMNS)
+
+
+def build_identity_export_parquet(identity_packages_primary: pd.DataFrame) -> pd.DataFrame:
+    # CAP-3 — GIST_SCHEMA-shaped export (Story 21.6; identity-contract.md Derived outputs)
+    """Reshape ``identity_packages_primary`` to the FULL ``GIST_SCHEMA`` column
+    order — the 18 core identity columns populated, every ranking/JFROG column
+    present as null (never fabricated; merged later by ``priority.py`` at
+    gist-publish time, Epic 21 boundary; Epic 23.5 completes the export). An
+    empty ``identity_packages_primary`` yields an empty frame carrying the full
+    schema, not a missing file (I/O & Edge-Case Matrix)."""
+    if identity_packages_primary is None or getattr(identity_packages_primary, "empty", True):
+        return pd.DataFrame(columns=GIST_EXPORT_COLUMNS)
+    out = identity_packages_primary.copy()
+    out["Package"] = out["Core_Python_Package_Name"]
+    for col in _GIST_RANKING_AND_JFROG_COLUMNS:
+        out[col] = pd.NA
+    return out[GIST_EXPORT_COLUMNS].reset_index(drop=True)
