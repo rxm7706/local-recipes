@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 27  # 2026-08-27: restamped to the live document (Epics 22-27 landed without bumping this field; the previous stamp was 2026-08-15's Epic 21 addition, which also noted Story 19.4 — whose FR cite is FR-132 as of 2026-08-27, the FR-193 double-assignment resolved per PRD § 18.1).
-storyCount: 166  # 2026-08-27: 165 ledger-verified story keys + Story 22.7 (FR-193 CAP-7 fleet drain, backlog; tracked ledger synced in the same pass) = 166. The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-08-27"  # spec-marshal-single-story-dispatch reconciliation (Story 22.7 minted for CAP-7) + the PRD § 18.1 FR-numbering INV-A pass (FR-148..152/FR-192 partition recorded; Story 19.4 re-cited FR-193 → FR-132).
+epicCount: 28  # 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
+storyCount: 179  # 2026-08-30: ledger-verified post-sync (rg -c '^  [0-9]+-[0-9]+' on the tracked twin = 179 = the `### Story` heading count). The 2026-08-27 stamp of 166 had gone stale by four (20.11, 22.8, 22.9, 22.10 landed without a restamp); Stories 28.1-28.9 added this pass. The ledger's key count is the enumeration; this numeral is a dated snapshot.
+updated: "2026-08-30"  # Epic 28 (Stories 28.1-28.9) added via the Dream/Spec-chain convention: spec-marshal-token-economy CAP-1..CAP-10.
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -149,7 +149,14 @@ which had drifted twice more since 2026-08-14 (the E21 row was missing from this
 entirely, and post-2026-08-14 story additions such as 10.8 were never folded into the
 Total). The numeral rots; the ledger's key count is the enumeration. **Story 22.7 added
 2026-08-27** (FR-193 CAP-7 fleet drain — the one CAP the 2026-08-21 decomposition left
-uncovered; tracked ledger synced in the same pass, key count now **166**).*
+uncovered; tracked ledger synced in the same pass, key count now **166**). **Epic 28
+(Stories 28.1–28.9) added 2026-08-30** (decomposing `spec-marshal-token-economy`, Dream
+`docs/dreams/marshal-token-economy.md` — same Dream/Spec-chain convention, citing the spec's
+own CAP-1..CAP-10 rather than minting PRD FRs, per the Epic 26/27 external-spec-cite
+precedent; Tier-3 feed and tracked ledger synced in the same pass — the sync's own
+`--repair-feed` also restored 5 keys the Tier-3 feed had lost vs the twin (20.11, 22.7–22.10),
+so the post-sync ledger-verified story-key count is **179**, matching the heading count; the
+2026-08-27 numeral of 166 had already rotted by four before this pass, proving its own point).*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -4108,3 +4115,116 @@ So that one operator job works in HTMX on the host.
 **Given** an authenticated marshal-role session **When** the operator opens `/stations/marshal/` **Then** homes list via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 **And** this story does not implement bmad-loop → supervisor ingest
+
+## Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
+
+Decomposes `spec-marshal-token-economy` (CAP-1..CAP-10; Dream:
+`docs/dreams/marshal-token-economy.md`). Marshal owns spend *brakes* (E3 ceilings, idle
+ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
+policy-rendered, Genesis-seeded, supervisor-metered context pipeline over five
+already-packaged instruments (headroom-ai, caveman, codegraph, cocoindex, graphifyy).
+Constraints binding every story (spec § Constraints): never compress the contract
+(specs/ACs/verdicts/escalation), never break the provider prompt cache (prefix
+byte-identical), reversible-or-absent (CCR), BSL boundary (`@caveman-ai/cli` stays out),
+telemetry advisory only (no second gate), per-layer graceful degradation (an unavailable
+instrument disables its layer with a named finding, never blocks a run — headroom-ai and
+caveman are pixi-blocked today per `docs/dreams/pixi-candidate-currency.md`).
+
+### Story 28.1: The context policy block, rendered once for both engines
+
+As a marshal operator,
+I want the context pipeline declared in `EffectivePolicy` and rendered into every launch surface,
+So that compression and indexing are policy, not per-home hand-configuration.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-1
+**Given** a policy with no `[context]` block **When** a run launches **Then** every layer is off and behavior is byte-identical to today
+**And** with a block present, bmad-loop spin and factory dispatch resolve the same declaration from one composition site
+**And** `schemas/policy.json` validates the block and provenance reporting covers its keys
+
+### Story 28.2: Wire compression at the harness seam
+
+As a marshal operator,
+I want sessions launched through the wire-compression layer when policy enables it,
+So that tool outputs, logs, and file reads compress before the provider call — reversibly.
+
+**Type:** feature • **Effort:** L • **Deps:** S-28.1 • **FR/AD:** token-economy CAP-2
+**Given** an enabled `[context]` wire layer **When** spin/dispatch launches a session **Then** the harness-profile wrapper demonstrably wraps the CLI and the CCR store is loop-home-scoped
+**And** a compressed artifact is retrievable byte-exact via the store
+**And** the prompt prefix (system prompt, tool defs, older turns) is byte-identical wrapped vs unwrapped
+**And** when the instrument is unavailable the layer disables with a named finding, never a blocked run
+
+### Story 28.3: Genesis seeds the token-economy kit
+
+As a marshal operator,
+I want `marshal seed` to install and `marshal seed check` to verify the per-loop-home kit,
+So that output compression and the code-structure graph exist by provisioning, not ritual.
+
+**Type:** feature • **Effort:** L • **Deps:** S-28.1 • **FR/AD:** token-economy CAP-3, CAP-4
+**Given** a seeded loop home **When** `marshal seed check` runs **Then** it verifies caveman-skill deployment, CCR store dir, and a present+fresh codegraph index
+**And** dev-session speech compresses while verdicts, journals, and escalation context stay fully articulated
+**And** an unavailable instrument (pixi blocker, platform gap) reports a named finding and the seed still applies
+
+### Story 28.4: Savings telemetry in journals and status
+
+As a marshal operator,
+I want per-layer savings recorded next to per-story spend and rendered mid-run,
+So that economy is observable while a run lives, not archaeology after it dies.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.2 • **FR/AD:** token-economy CAP-7
+**Given** a live run with layers enabled **When** the supervisor ticks **Then** journal entries carry per-layer savings fields alongside the weighted spend tally
+**And** `marshal status` renders spend and savings for the running story (chips at DW-FU-3-6-6)
+**And** savings numbers never feed a pass/fail verdict
+
+### Story 28.5: The pinned wrapped-vs-unwrapped benchmark
+
+As a marshal operator,
+I want a re-runnable same-story benchmark with layers off vs on,
+So that ceilings recalibrate against our measurement, not upstream marketing numbers.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.2, S-28.3 • **FR/AD:** token-economy CAP-9
+**Given** the pinned benchmark story **When** the harness runs both legs **Then** it emits a per-layer before/after weighted-token comparison artifact
+**And** the on-leg lands the same story: same verdict, same gate results, reviewer never skipped
+**And** the ceiling-recalibration note cites the artifact
+
+### Story 28.6: The graduated compression ladder
+
+As a marshal operator,
+I want compression aggressiveness to escalate before the kill ladder fires,
+So that a story nearing its ceiling gets cheaper before it gets dead.
+
+**Type:** feature • **Effort:** M • **Deps:** S-28.4 • **FR/AD:** token-economy CAP-8
+**Given** a story approaching its token ceiling **When** the supervisor evaluates the ladder **Then** compression escalation strictly precedes stop-retry-defer
+**And** escalation may lower the model floor only through the existing FR-51 tiering seam
+**And** no gate or reviewer is ever skipped by escalation
+
+### Story 28.7: Index freshness is an advisory finding
+
+As a marshal operator,
+I want `marshal check` to report codegraph/cocoindex staleness,
+So that a stale index is a named admission signal, not a mid-run surprise.
+
+**Type:** feature • **Effort:** S • **Deps:** S-28.3 • **FR/AD:** token-economy CAP-10
+**Given** a stale or missing index **When** `marshal check` runs **Then** a named advisory finding reports it
+**And** the exit-code domain `{0, 1, 2, 3, 4, 130}` is unchanged and the finding alone never blocks a run
+
+### Story 28.8: Derived context recomputes only on source change
+
+As a marshal operator,
+I want epic-context and continuity distills maintained as incrementally-derived artifacts,
+So that an iteration never recompiles planning context whose sources did not change.
+
+**Type:** feature • **Effort:** L • **Deps:** S-28.1 • **FR/AD:** token-economy CAP-5
+**Given** two consecutive iterations with unchanged planning sources **When** the second routes its story **Then** zero recompute occurs
+**And** a planning-source edit yields exactly one refresh (cocoindex flow)
+**And** BMAD skill semantics are untouched — only the freshness mechanism changes
+
+### Story 28.9: Planning-graph retrieval behind the Scribe seam
+
+As a marshal operator,
+I want story routing to retrieve scoped planning context from the graph when the seam exists,
+So that an epic-path iteration never loads `epics.md`/`prd.md` wholesale.
+
+**Type:** feature • **Effort:** L • **Deps:** S-28.8 • **FR/AD:** token-economy CAP-6
+**Given** the Scribe-owned GraphStore seam is available **When** step-01 routes an epic story **Then** the iteration completes within the epic-context token target with zero full-document loads
+**And** disabling the seam proves the epic-context-file fallback
+**And** marshal consumes the graph — it does not build a second one

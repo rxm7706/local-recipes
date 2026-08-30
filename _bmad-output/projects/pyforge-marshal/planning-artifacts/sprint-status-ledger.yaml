@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 220
+# stories: 235
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -120,6 +120,15 @@ development_status:
   26-1-extract-the-loop-runner-hook: done
   27-1-skf-skill-and-persona-for-marshal: done
   27-2-first-portal-slice-loop-homes: done
+  28-1-the-context-policy-block-rendered-once-for-both-engines: backlog
+  28-2-wire-compression-at-the-harness-seam: backlog
+  28-3-genesis-seeds-the-token-economy-kit: backlog
+  28-4-savings-telemetry-in-journals-and-status: backlog
+  28-5-the-pinned-wrapped-vs-unwrapped-benchmark: backlog
+  28-6-the-graduated-compression-ladder: backlog
+  28-7-index-freshness-is-an-advisory-finding: backlog
+  28-8-derived-context-recomputes-only-on-source-change: backlog
+  28-9-planning-graph-retrieval-behind-the-scribe-seam: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -224,6 +233,8 @@ development_status:
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
+  epic-28: backlog
+  epic-28-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done
