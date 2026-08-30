@@ -524,6 +524,8 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/conda-pack@1.iml" filepath="$PROJECT_DIR$/.idea/conda-pack@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/conda-package-handling.iml" filepath="$PROJECT_DIR$/.idea/conda-package-handling.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/conda_package_streaming.iml" filepath="$PROJECT_DIR$/.idea/conda_package_streaming.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/conda_recipe_manager.iml" filepath="$PROJECT_DIR$/.idea/conda_recipe_manager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/conda_recipe_manager@1.iml" filepath="$PROJECT_DIR$/.idea/conda_recipe_manager@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/config-precedence-fixture.iml" filepath="$PROJECT_DIR$/.idea/config-precedence-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/configparser.iml" filepath="$PROJECT_DIR$/.idea/configparser.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/constantly.iml" filepath="$PROJECT_DIR$/.idea/constantly.iml" />

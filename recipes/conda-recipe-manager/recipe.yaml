@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.10.3"
+  version: "0.10.5"
   python_min: '3.11'
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/conda/conda-recipe-manager/archive/v${{ version }}.tar.gz
-  sha256: 00e0702144881d75dbc087e96764dd20ec79647f24e5dec32f74c12fea725353
+  sha256: 11e2306a7ed2573a275cb1b3eccfb6735b4d71166a37fc35baea071e9c58e798
 
 build:
   number: 0
@@ -25,7 +25,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
+    - setuptools >=61.0
     - pip
     - wheel
   run:
@@ -57,13 +57,14 @@ tests:
         - python ${{ python_min }}.*
         - pytest
         - pytest-xdist
-        - pytest-socket >=0.7.0
+        - pytest-socket >=0.7.0,<0.8.0
         - pyfakefs >=6.0.0
         - git  # Required for `gitpython` tests
     script:
       - conda-recipe-manager --help
       - pip check
       - python -m pytest -n auto --ignore=tests/test_aux_files tests/
+      - crm --help
 
 about:
   homepage: https://github.com/conda/conda-recipe-manager
@@ -80,3 +81,21 @@ extra:
     - schuylermartin45
     - msentissi
     - leahsch
+
+#### CFE comments
+# CFE comments
+# tests:
+#   requirements:
+#     run:
+#       # pytest-socket capped <0.8.0 (2026-08-30): 0.8.0 added
+#       # `warnings.warn(msg)` inside SocketBlockedError.__init__ (0.7.0
+#       # doesn't have it -- diffed the wheels). Combined with this
+#       # project's own .pytest.ini `filterwarnings = error`, the warning
+#       # is promoted to a raised UserWarning before SocketBlockedError
+#       # finishes constructing, so `pytest.raises(SocketBlockedError)` in
+#       # tests/test_smoke_testing.py::test_validate_pysocket_plugin never
+#       # sees it. NOT related to click (verified: reproduced locally with
+#       # click already unpinned, matching
+#       # conda-forge/conda-recipe-manager-feedstock#44's diff, which
+#       # unpins click but does not touch test deps).
+####

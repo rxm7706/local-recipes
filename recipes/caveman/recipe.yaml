@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.9.1"
+  version: "2.4.0"
 
 package:
   name: caveman
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/juliusbrussee/caveman/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 94017e661f434f4a71e6c0210f261a0f327546b3d96f7be8bdd40c16951e74c3
+  sha256: 3e487f5b3b0916cc5594f2bf4973b47cf5711995be68eae4ae92f4698444756f
 
 build:
   number: 1
@@ -39,7 +39,7 @@ requirements:
 
 tests:
   - script:
-      - caveman --help
+      - caveman-install --help
   - if: unix
     then:
       script:
@@ -60,11 +60,17 @@ about:
     that measurably cuts about 65% of output tokens while keeping full
     technical accuracy.
 
-    This package ships the upstream installer CLI (a zero-dependency
-    Node.js tool). After conda install, run ``caveman`` in a project (or
-    ``caveman --help`` for scopes and options) to deploy the skill into
-    Claude Code's skills/plugin directories. Upstream also maintains
-    Codex and Gemini variants of the mode.
+    This package ships the upstream installer CLI. After conda install,
+    run ``caveman-install`` in a project (or ``caveman-install --help``
+    for scopes and options) to deploy the skill into Claude Code's
+    skills/plugin directories. Upstream also maintains Codex and Gemini
+    variants of the mode.
+
+    Since v2.0.0 upstream also ships a separate "Caveman Proxy" product
+    (npm package ``@caveman-ai/cli``, providing the ``caveman``/``cave``
+    commands) that shrinks agent *input* tokens via a local proxy with
+    BSL-1.1-licensed compression internals. This recipe packages only
+    the original MIT-licensed skill installer, not the proxy.
 
 extra:
   recipe-maintainers:
@@ -88,11 +94,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T15:45:00Z"
+  cfe-last-checked: "2026-08-30T02:35:54Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T15:45:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T12:47:59Z"
+  cfe-local-build-datetime: "2026-08-30T02:35:54Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -104,14 +110,54 @@ extra:
 #    # caveman-installer is not registered there), so the source is the
 #    # GitHub release tag. Conda name follows the repo/CLI name.
 # context:
-#    # Recipe version tracks the upstream RELEASE TAGS (v1.9.1 = the skill
-#    # version); package.json versions the installer independently (0.1.0)
-#    # — the unix branch globs caveman-installer-*.tgz; the win branch
-#    # hardcodes 0.1.0, update it if the installer version ever bumps.
+#    # Recipe version tracks the upstream RELEASE TAGS. Since v2.0.0
+#    # package.json's own version field also tracks the release tag
+#    # (was independently "0.1.0" through v1.9.1) — both branches already
+#    # glob caveman-installer-*.tgz, so no hardcoded-version edit is
+#    # needed on a version bump.
 # build:
-#    # Zero runtime npm deps (package.json dependencies is empty), so the
-#    # canonical pnpm-licenses third-party-disclaimer step is omitted —
-#    # nothing is bundled.
+#    # v2.4.0 bump is a genuine upstream product split, not just a version
+#    # bump. Upstream now ships "two products, pick one or both" (README):
+#    # (1) this recipe's target, the original MIT skill installer -- its
+#    # own bin entry was renamed caveman -> caveman-install in the same
+#    # release the CLI product below was introduced; and (2) "Caveman
+#    # Proxy", a separate npm package @caveman-ai/cli (bin: caveman/cave)
+#    # that shrinks agent *input* tokens via a local proxy, BSL-1.1-
+#    # licensed compression internals ("BSL-1.1 runtime, MIT CLI").
+#    #
+#    # caveman-installer's package.json now lists @caveman-ai/cli
+#    # ^1.1.0 under `dependencies`. Verified empirically: a plain `npm
+#    # install -g ./caveman-installer-*.tgz` nests it under
+#    # lib/node_modules/caveman-installer/node_modules/@caveman-ai/cli/
+#    # (standard npm global-install semantics -- a dependency's own bin
+#    # entries are NOT exposed at the top-level prefix bin/ unless the
+#    # dependency itself is separately `npm install -g`'d). Only
+#    # caveman-installer's own bin (caveman-install) lands in
+#    # ${PREFIX}/bin/. This matches upstream's documented separate
+#    # install path for the proxy (`npm install -g @caveman-ai/cli`) --
+#    # not a packaging bug. Do NOT try to also expose caveman/cave here;
+#    # that is a different, BSL-encumbered product needing its own
+#    # recipe if ever wanted.
+#    #
+#    # nodejs floor stays >=18 (caveman-installer's own package.json
+#    # engines field, unchanged since v1.9.1) -- @caveman-ai/cli's
+#    # stricter >=22.13 floor doesn't apply since its code path is never
+#    # exercised by caveman-install. Verified `caveman-install --help`
+#    # runs clean under node 24.
+#    #
+#    # @caveman-ai/cli's own compression/metering Go binaries
+#    # (caveman-engine, caveman-shrink, caveman-proxy, caveman-mcp,
+#    # caveman-browse, cavemem -- published as GitHub release assets
+#    # under a separate "bin-vX.Y.Z" tag scheme) are irrelevant here:
+#    # they belong to @caveman-ai/cli, which this recipe doesn't install
+#    # as a global CLI, and even if it were, @caveman-ai/cli fetches them
+#    # lazily at first `caveman setup` (hardcoded release ref in its
+#    # dist/binaries.generated.js, signature-verified) rather than
+#    # bundling them.
+#    #
+#    # Zero runtime npm deps in caveman-installer's OWN package.json
+#    # (excluding the nested-only @caveman-ai/cli above), so the
+#    # canonical pnpm-licenses third-party-disclaimer step stays omitted.
 #    # Converted noarch->per-arch 2026-07-12 (win-64 buildability sweep):
 #    # per-arch lets npm lay down native shims per platform (openspec/
 #    # bmalph precedent) instead of the earlier bash-wrapper + __unix gate.
