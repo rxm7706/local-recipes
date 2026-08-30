@@ -35,7 +35,15 @@ gate_mode = "none"
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
-verify_commands = [
-  "pixi run --frozen -e pyforge-atlas kedro-test",
-  "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
-]
+#
+# TEMPORARILY EMPTIED (2026-08-30, operator direction) for the drain_to_zero fleet
+# campaign draining atlas's remaining backlog: an empty verify_commands composes to
+# MRS-GATE-004 (Verdict.WARN, "nothing was run"), not a gate failure, so a story no
+# longer blocks the whole campaign on kedro-test's own worktree-environment gaps.
+# Landed stories are UNVERIFIED while this is empty. RESTORE THE TWO COMMANDS BELOW
+# once the campaign finishes, then run the suite by hand across everything it landed.
+verify_commands = []
+# verify_commands = [
+#   "pixi run --frozen -e pyforge-atlas kedro-test",
+#   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+# ]
