@@ -12,10 +12,10 @@ import) never skip.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
-
 from pyforge.scribe.extras.graphify import (
     GRAPHIFY_EXTRA_ENV,
     GraphifyExtraUnavailable,
@@ -24,7 +24,6 @@ from pyforge.scribe.extras.graphify import (
     move_list_to_document,
     scan_move_list,
 )
-
 
 # --- graphify_extra_enabled() -------------------------------------------------
 
@@ -170,12 +169,29 @@ def test_move_list_to_document_shape(tmp_path: Path) -> None:
     _write(tmp_path / "x.py", "sys.path.insert(0, 'x')\n")
 
     findings = scan_move_list(tmp_path)
-    document = move_list_to_document(findings, repo_root=tmp_path)
+    document = move_list_to_document(findings)
 
-    assert document["counts"] == {"sys_path_insert": 1}
-    assert document["categories"]["sys_path_insert"] == [
-        {"path": "x.py", "line": 1, "snippet": "sys.path.insert(0, 'x')"}
-    ]
+    assert document == {
+        "counts": {"sys_path_insert": 1},
+        "categories": {
+            "sys_path_insert": [
+                {"path": "x.py", "line": 1, "snippet": "sys.path.insert(0, 'x')"}
+            ]
+        },
+    }
+
+
+def test_move_list_to_document_carries_no_absolute_path(tmp_path: Path) -> None:
+    """Every artifact path is already repo-relative -- the document must
+    not bake in the caller's absolute, machine-local repo_root (portability/
+    diffability of a derived artifact meant to be inspected and compared)."""
+    _write(tmp_path / "x.py", "sys.path.insert(0, 'x')\n")
+
+    findings = scan_move_list(tmp_path)
+    document = move_list_to_document(findings)
+
+    assert set(document.keys()) == {"counts", "categories"}
+    assert str(tmp_path) not in json.dumps(document)
 
 
 # --- real graphify ingest / report (skipped when graphifyy is absent) --------

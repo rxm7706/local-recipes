@@ -37,6 +37,23 @@ transcripts) in, one atomic store write out. It never prompts (FR-11),
 performs zero network calls (AD-6), and `--nightly` itself changes no
 behavior — it exists for scheduling clarity in cron lines and logs.
 
+A seventh, OPTIONAL surface exists (Story 6.1): the graphify
+`compile_surface` extra, an AST code-structure ingest over `src/` (or an
+explicit `--path`, exposed via `scribe index` below, not `graph compile`).
+It is **off by default** (air-gap, AD-6) — `graph compile` behaves exactly
+as documented above unless you opt in. `--extra`/`--no-extra` turns it
+on/off for one invocation; omitted, the run consults
+`SCRIBE_GRAPHIFY_EXTRA` (any of `1`/`true`/`yes`, case-insensitive, turns
+it on — anything else, including unset, stays off). The extra requires the
+optional `graphifyy` dependency (`pyforge-scribe[graphify]`); when it is
+on but `graphifyy` is not installed, the run degrades to a
+`warning: ... graphify ...` line and continues — it never aborts the
+nightly compile.
+
+```
+$ pixi run -e pyforge-scribe scribe graph compile --nightly --extra
+```
+
 ```
 $ cd /path/to/local-recipes
 $ pixi run -e pyforge-scribe scribe graph compile --nightly
@@ -111,6 +128,38 @@ recall` answer still cites whatever the last compile saw). PRD SM-4
 ("completes unattended across at least 4 consecutive scheduled runs")
 is validated against this entry's log on the operator machine that
 installs it.
+
+## The graphify index verbs (Story 6.1)
+
+`scribe index report [--path PATH]` and `scribe index move-list` are the
+graphify extra's report verbs — unlike `graph compile`'s automatic,
+off-by-default fan-in, invoking either command **is** the opt-in: neither
+consults `SCRIBE_GRAPHIFY_EXTRA`. Both write derived, gitignored artifacts
+under `.claude/data/pyforge-scribe/graphify/` (like `graph.json`) — never a
+foundry-root `graphify-out/`.
+
+```
+$ pixi run -e pyforge-scribe scribe index report
+315 node(s), 568 edge(s), 10 god node(s) -> .claude/data/pyforge-scribe/graphify/GRAPH_REPORT.md
+
+$ pixi run -e pyforge-scribe scribe index move-list
+1133 finding(s) (914 cfe_caller, 24 five_tier_root, 8 host_import_pyforge, 187 sys_path_insert) -> .claude/data/pyforge-scribe/graphify/move-list.json
+```
+
+**`scribe index report [--path PATH]`** — an AST-only, no-LLM,
+no-API-key GRAPH_REPORT-style summary (node/edge counts plus god-node
+findings, via `graphify.analyze.god_nodes`) over `--path` (default:
+`src/`). Requires the optional `graphifyy` dependency
+(`pyforge-scribe[graphify]`); when it is not installed, the command
+**exits 2** with a `graphify compile_surface extra requires ... which is
+not installed in this environment` message on stderr, rather than an
+unguarded traceback.
+
+**`scribe index move-list`** — the foundry-cutover move list: host
+`import pyforge.*` sites (under `src/platform/`), `sys.path` inserts,
+`five_tier` roots, and CFE (conda-forge-expert) callers, repo-wide. Pure
+text scan — no `graphify` dependency, so it always runs regardless of the
+extra's install state.
 
 ## Troubleshooting
 

@@ -370,16 +370,18 @@ def _is_move_list_excluded(parts: tuple[str, ...]) -> bool:
     return False
 
 
-def move_list_to_document(findings: list[MoveListFinding], *, repo_root: Path) -> dict:
+def move_list_to_document(findings: list[MoveListFinding]) -> dict:
     """JSON-serializable move-list document -- a derived, gitignored
-    artifact (like `graph.json`), never git-tracked."""
+    artifact (like `graph.json`), never git-tracked. Deliberately carries
+    no absolute, machine-local path (e.g. a `repo_root` field): every
+    `categories` entry already uses repo-relative `path`s, so the document
+    is portable and diffable across checkouts/machines as-is."""
     categories: dict[str, list[dict]] = {}
     for finding in findings:
         categories.setdefault(finding.category, []).append(
             {"path": finding.path, "line": finding.line, "snippet": finding.snippet}
         )
     return {
-        "repo_root": str(repo_root),
         "counts": {category: len(items) for category, items in categories.items()},
         "categories": categories,
     }

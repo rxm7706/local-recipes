@@ -164,9 +164,11 @@ def compile_graph(
     `graphify_extra` is `None` by default, meaning "consult
     `SCRIBE_GRAPHIFY_EXTRA`" (air-gap off-by-default, AD-6); pass `True`/
     `False` to override explicitly (the CLI's `--extra`/`--no-extra` flag).
-    When the extra is off (the default), `pyforge.scribe.extras.graphify` is
-    never imported, so this function's behavior is byte-for-byte identical
-    to the six-surface compile that existed before this story.
+    When the extra is off (the default), the third-party `graphify` package
+    is never imported (see `_read_graphify_surface()`'s own docstring for
+    exactly which import stays deferred), so this function's node output is
+    byte-for-byte identical to the six-surface compile that existed before
+    this story.
     """
     if not memory_root.is_dir():
         raise ValueError(
@@ -655,12 +657,17 @@ def _read_graphify_surface(
     graphify_root: Path | None,
     warnings: list[str],
 ) -> list[GraphNode]:
-    """Off by default (air-gap, AD-6) -- `pyforge.scribe.extras.graphify` is
-    imported ONLY when the extra is actually on, so an off-mode compile's
-    behavior (including its import graph) is identical to the six-surface
-    compile that existed before this story. A missing `graphify` package
-    while the extra IS on degrades to a warning, same as every other
-    optional surface here -- it never aborts the compile.
+    """Off by default (air-gap, AD-6). The `from pyforge.scribe.extras.graphify
+    import (...)` statement below runs unconditionally -- that module is
+    lightweight (stdlib-only at import time) and never imports the
+    third-party `graphify` package itself. The THIRD-PARTY `graphify`
+    package is what stays deferred: `_import_graphify()` (in
+    `extras/graphify.py`) is the only place that imports it, and it is
+    reached only via `ingest_graphify_surface()` below the
+    `graphify_extra_enabled()` check -- never when the extra is off. A
+    missing `graphify` package while the extra IS on degrades to a warning,
+    same as every other optional surface here -- it never aborts the
+    compile.
     """
     from pyforge.scribe.extras.graphify import (
         GraphifyExtraUnavailable,

@@ -634,6 +634,7 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
     assert result.exit_code == 0
     output = _combined_output(result)
     assert "We decided to use SQLite for the local cache." in output
+    assert "[source: session-a.jsonl:L1]" in output
 
 
 # --- Story 6.1: the graphify compile_surface extra + its `scribe index` verbs -

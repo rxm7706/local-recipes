@@ -357,7 +357,7 @@ def index_move_list() -> None:
     state."""
     repo_root = Path.cwd()
     findings = scan_move_list(repo_root)
-    document = move_list_to_document(findings, repo_root=repo_root)
+    document = move_list_to_document(findings)
     move_list_path = _graphify_data_dir(repo_root) / "move-list.json"
     atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
     counts = document["counts"]

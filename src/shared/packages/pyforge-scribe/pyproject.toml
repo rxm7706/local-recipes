@@ -24,8 +24,12 @@ postgres = ["psycopg>=3.3.4"]
 # Story 6.1: the graphify compile_surface ingest extra. Off by default
 # (air-gap, AD-6) -- `pyforge.scribe.extras.graphify` is the only module
 # that imports `graphify`, and only inside a function, so this package
-# works unmodified without it installed.
-graphify = ["graphifyy>=0.9.51"]
+# works unmodified without it installed. Upper-bounded: extras/graphify.py
+# binds directly to graphify.extract.extract / graphify.build.build_from_json
+# / graphify.analyze.god_nodes -- internal extraction primitives, not a
+# documented stable public API -- so an unbounded floor risks a silent
+# break on a future breaking release.
+graphify = ["graphifyy>=0.9.51,<0.10"]
 
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"

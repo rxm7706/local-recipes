@@ -19,7 +19,8 @@ Compiles `src/shared/packages/pyforge-scribe/` (PyPI `pyforge-scribe` 0.1.0) as 
 agentskills.io content skill for the **scribe** station. Source: local path
 `src/shared/packages/pyforge-scribe` @ commit `a5e9dad59ab` (`source_ref: local`).
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
-4 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `main`).
+6 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`,
+`index_report`, `index_move_list`, `main`).
 The package `__init__.py` exports only `__version__` — other components integrate
 via the CLI, never by importing internal modules [SRC:src/pyforge/scribe/__init__.py:L9-L14].
 
@@ -112,7 +113,8 @@ then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
 ## Key Exports
 
 Public SKF extract of `cli.py` (Quick mode): `capture_cmd`, `graph_compile`,
-`recall_cmd`, `main` [SRC:src/pyforge/scribe/cli.py]. Console script:
+`recall_cmd`, `index_report`, `index_move_list`, `main`
+[SRC:src/pyforge/scribe/cli.py]. Console script:
 `scribe = pyforge.scribe.cli:main` [SRC:pyproject.toml:L25-L26].
 
 ## Usage
@@ -124,9 +126,11 @@ in other stations. Graph engine is selected via `pyforge.core.hooks` plugins
 
 The graphify `compile_surface` extra (Story 6.1) is off by default (air-gap)
 and consumers bind to this declared `scribe index …` grammar, not to
-`pyforge.scribe.extras.graphify` internals — the marshal Story 28.9
-planning-corpus consumer and the foundry-cutover move-list both consume it
-this way [SRC:src/pyforge/scribe/extras/graphify.py:L1-L40]. `graphify`
+`pyforge.scribe.extras.graphify` internals — this is the grammar the
+marshal Story 28.9 planning-corpus consumer (still `status:
+ready-for-dev`, unimplemented as of this story) and the foundry-cutover
+move-list are meant to bind to
+[SRC:src/pyforge/scribe/extras/graphify.py:L1-L40]. `graphify`
 (conda-forge `graphifyy`, PyPI extra `pyforge-scribe[graphify]`) is imported
 ONLY inside that one module, and only inside a function — a lean
 `pyforge-scribe` install (the package is not a hard pixi run-dep of that
@@ -143,6 +147,19 @@ environment) works unmodified without it.
 **`RecallAnswer`** [SRC:src/pyforge/scribe/recall.py:L56] — `grounded`, `text`,
 `citation`, `node_id`. `grounded=False` is the explicit miss, never fabricated
 prose.
+
+**`GraphifyIngestResult`** [SRC:src/pyforge/scribe/extras/graphify.py:L163-L168]
+— `nodes` (kind="code" `GraphNode`s), `warnings`; what `ingest_graphify_surface`
+returns for `compile.py` to upsert through the `GraphStore` port.
+
+**`GraphifyReport`** [SRC:src/pyforge/scribe/extras/graphify.py:L226-L236] —
+`summary_markdown`, `god_nodes`, `node_count`, `edge_count`, `warnings`; what
+`build_graphify_report`/`scribe index report` produce.
+
+**`MoveListFinding`** [SRC:src/pyforge/scribe/extras/graphify.py:L314-L318] —
+`category`, `path`, `line`, `snippet`; one `scan_move_list`/`scribe index
+move-list` hit (`host_import_pyforge` | `sys_path_insert` | `five_tier_root`
+| `cfe_caller`).
 
 ## Architecture at a Glance
 
