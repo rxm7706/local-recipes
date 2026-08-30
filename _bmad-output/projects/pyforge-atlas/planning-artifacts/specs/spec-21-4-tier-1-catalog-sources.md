@@ -2,15 +2,74 @@
 title: 'Tier 1 catalog sources: SelfExplainML, Anaconda, Basilisk packages, AOSS (Story 21.4, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 baseline_revision: '7b87803db5180c591211e2f97d539bff77bc61f7'
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
 warnings: ['oversized']
+deferred:
+  - summary: >-
+      An offline `kedro run --pipelines core,…` cannot complete with no network
+      because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract)
+      lets the composed APIDataset's transport error propagate — the pre-existing
+      Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's
+      axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
+    evidence: |-
+      Reproduced 2026-08-30: `ANACONDA_CHANNEL_BASE_URL=http://127.0.0.1:9 kedro run
+      --nodes enumerate_anaconda_main_packages` -> ConnectionRefusedError, exit 1.
+      The story's second AC therefore holds only for the upstream_discovery half
+      (3 `.staleness.json` markers, exit 0) and the zero-network seed load
+      (1,474 rows); the `core` half was verified LIVE instead (5,401 rows).
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:393
+    severity: medium
+  - summary: >-
+      `tests/pipelines/test_refresh_single_writer.py` (the declared home of the
+      single-writer invariant) omits the `upstream_discovery` pipeline from
+      `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing)
+      and the three Tier-1 stores; the invariant is pinned for them only by
+      `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in
+      `test_dag_resolves.py`.
+    evidence: |-
+      Verification-gap + blind reviewers both read `_STORE_TO_REFRESH_ASSET` and
+      `_all_nodes()` in that module; `trending_candidates` (Story 13.1) was already
+      missing before this story, so this is a pre-existing coverage gap the story
+      extended rather than caused.
+    location: >-
+      src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_single_writer.py
+    severity: low
+  - summary: >-
+      `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not
+      404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential
+      timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s
+      NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into
+      `None`, so a connection-level failure cannot short-circuit a dead mirror.
+    evidence: |-
+      Edge-case reviewer, from the loop at core_sources.py::_fetch_channel_repodata
+      and the `except Exception -> None` in `_fetch_repodata_at_url`. Pre-existing
+      loop shape; the hardening doubled the combo count. Offline runs fail fast
+      (refused/DNS) so the practical impact is limited to black-holed networks.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:556
+    severity: low
+  - summary: >-
+      `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout`
+      only checks that a tag exists, and the fallback always supplies one — so an
+      unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are
+      already unmapped (assemble_and_gate, compose_semantic_packages,
+      extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
+    evidence: |-
+      Checked 2026-08-30 via register_pipelines() vs D.NODE_TIMEOUTS: 59 nodes, 54
+      mapped, 5 missing (all pre-existing). The 4 Story 21.4 nodes ARE mapped. Adding
+      the completeness test now would fail on the pre-existing five, so it is deferred
+      rather than patched.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py:219
+    severity: low
 ---
 
 <intent-contract>
@@ -316,54 +375,54 @@ make.
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `core_sources.py` — extend + harden `_CROSS_CHANNEL_SPECS` (add
+- [x] `core_sources.py` — extend + harden `_CROSS_CHANNEL_SPECS` (add
   selfexplainml `("noarch", "linux-64")`; broaden the 4 existing channels'
   subdir fallback lists).
-- [ ] `pypi_intelligence/nodes.py` — extend `_CROSS_CHANNELS` with
+- [x] `pypi_intelligence/nodes.py` — extend `_CROSS_CHANNELS` with
   `"selfexplainml"`.
-- [ ] `basilisk.py` — add `BasiliskPackagesDataset` + its pure parser,
+- [x] `basilisk.py` — add `BasiliskPackagesDataset` + its pure parser,
   resolving through the existing `BASILISK_BASE_URL`.
-- [ ] `upstream_discovery.py` — add `AnacondaDist2026Dataset`,
+- [x] `upstream_discovery.py` — add `AnacondaDist2026Dataset`,
   `AossPremiumPythonDataset`, `TrackedSeedDataset` + their pure parsers.
-- [ ] `datasets/__init__.py` — export the 4 new classes.
-- [ ] `core/nodes.py` + `pipeline.py` — add `enumerate_anaconda_main_packages`
+- [x] `datasets/__init__.py` — export the 4 new classes.
+- [x] `core/nodes.py` + `pipeline.py` — add `enumerate_anaconda_main_packages`
   wired to the new `core_anaconda_main_channeldata_raw` → `core_anaconda_main_packages`
   pair.
-- [ ] `upstream_discovery/nodes.py` + `pipeline.py` — add the 3 refresh-trigger
+- [x] `upstream_discovery/nodes.py` + `pipeline.py` — add the 3 refresh-trigger
   nodes (Anaconda Dist, Basilisk packages, AOSS premium), each `params:ttls ->
   RefreshRequest`, single writer of its named entry.
-- [ ] `globals.yml` — add `ANACONDA_DIST_BASE_URL` + `AOSS_PREMIUM_BASE_URL`
+- [x] `globals.yml` — add `ANACONDA_DIST_BASE_URL` + `AOSS_PREMIUM_BASE_URL`
   to `endpoint_bases`; research + commit each real default URL against its
   live public source (step-03 — do NOT fabricate; see Design Notes).
-- [ ] `parameters.yml` — add the 3 new `ttls:` entries (weekly, documented).
-- [ ] `catalog.yml` — add the 6 new entries (exact shapes in Code Map), each
+- [x] `parameters.yml` — add the 3 new `ttls:` entries (weekly, documented).
+- [x] `catalog.yml` — add the 6 new entries (exact shapes in Code Map), each
   with its `# fetch mode: <mode>` comment per the Code Map table; lightly fix
   the stale header prefix-list comment while here.
-- [ ] `conf/base/seeds/discovery_aoss_free_python_seed.json` — source the real
+- [x] `conf/base/seeds/discovery_aoss_free_python_seed.json` — source the real
   AOSS free-tier Python package list from Google's published AOSS docs
   (step-03 research/data-acquisition — do NOT fabricate a package list).
-- [ ] `conf/base/seeds/discovery_anaconda_dist_2026x_seed.json` — source the
+- [x] `conf/base/seeds/discovery_anaconda_dist_2026x_seed.json` — source the
   real Anaconda Distribution 2026.x package list (same caveat).
-- [ ] `tests/catalog/conftest.py` — `PREFIX_TO_PIPELINE`, `EXPECTED_PIPELINE_COUNTS`,
+- [x] `tests/catalog/conftest.py` — `PREFIX_TO_PIPELINE`, `EXPECTED_PIPELINE_COUNTS`,
   `EXPECTED_TOTAL`, `EXPECTED_LIVE_OVERRIDE_POINTS`, `EXPECTED_ENV_OVERRIDE_SURFACE`
   updates (exact deltas in Code Map).
-- [ ] `tests/catalog/test_override_points.py` — bump the hardcoded `== 20`
+- [x] `tests/catalog/test_override_points.py` — bump the hardcoded `== 20`
   assertion + its comment.
-- [ ] `tests/catalog/test_scale_floors.py` (new) — the 3 offline, fixture-driven
+- [x] `tests/catalog/test_scale_floors.py` (new) — the 3 offline, fixture-driven
   floor assertions.
-- [ ] `tests/parity/fixtures/pypi_intelligence/flag_cross_channel.json` — add
+- [x] `tests/parity/fixtures/pypi_intelligence/flag_cross_channel.json` — add
   `in_selfexplainml: false` to existing rows.
-- [ ] `tests/datasets/test_core_sources.py`, `test_basilisk.py`,
+- [x] `tests/datasets/test_core_sources.py`, `test_basilisk.py`,
   `test_upstream_discovery.py` — new-class + hardening regression coverage
   (per Code Map).
-- [ ] Node-level tests for `enumerate_anaconda_main_packages` + the 3 new
+- [x] Node-level tests for `enumerate_anaconda_main_packages` + the 3 new
   trigger nodes; `test_dag_resolves.py` node-count updates.
-- [ ] Verification housekeeping: `grep -rn "discovery_\|core_anaconda_main"`
+- [x] Verification housekeeping: `grep -rn "discovery_\|core_anaconda_main"`
   across `src/shared/packages/pyforge-atlas/` to confirm every new name is
   referenced consistently (dataset class, catalog entry, node wiring, test);
   check `conf/local/` for any catalog override that might shadow the 6 new
   entries.
-- [ ] Run `pixi run -e pyforge-atlas kedro-catalog-check`, `parity-diff`, and
+- [x] Run `pixi run -e pyforge-atlas kedro-catalog-check`, `parity-diff`, and
   `kedro-test` — confirm all green (see Verification).
 
 **Acceptance Criteria:**
@@ -550,3 +609,111 @@ here to research items instead of pins).
     zero network; `enumerate_anaconda_main_packages` materializes 5,401 rows live.
   - Nothing was wired into the identity export / metrics runner / `--live-catalog`
     (Stories 21.6–21.8); Tier 2 (`about`, curated orgs) untouched (Story 21.5).
+- 2026-08-30 (review-pass 1 patches — behavior changes, items 1-4 of the review):
+  (1) `BasiliskPackagesDataset`: a PARTIAL walk (page-fetch failure or the `max_pages`
+  cap) never overwrites an existing last-good store (`_do_refresh` returns empty so the
+  inherited `save()` keeps last-good) and, when persisted because no last-good existed,
+  is marked stale with a `partial catalog walk: <collected>/<total>` reason via a
+  `save()` override — a 200-row partial can no longer read as a fresh 34k catalog.
+  (2) Pagination advances the offset by the rows actually served and judges "short
+  page" against the envelope's served `limit` (new `_payload_limit`), so a
+  `page_size` above the live 200 clamp still walks the whole catalog. (3)
+  `core_sources._fetch_channel_repodata`: a valid-but-EMPTY index (unpopulated
+  `noarch`) no longer counts as success — `_repodata_has_packages` gates the return so
+  the subdir/filename fallback actually runs. (4) The weekly Dagster `refresh_assets`
+  job now lists the three Tier-1 triggers (`refresh_anaconda_dist_2026x` /
+  `refresh_basilisk_packages` / `refresh_aoss_premium_python`), so the dedicated weekly
+  refresh no longer excludes the Tier-1 stores. LOW items 5-13 (query-string-safe
+  `page_url`, Response-like payload coercion in `_coerce_payload`/`_as_text`,
+  largest-matching-table selection in `parse_anaconda_dist_html`, the catalog-literal
+  seed-path test module, real `git check-ignore` seed assertion, `_CROSS_CHANNELS` ↔
+  `_CROSS_CHANNEL_SPECS` drift pin, filename-fallback regression test, no-sleep
+  scheduler in the multi-page tests, comment/README accuracy) applied alongside.
+
+## Review Triage Log
+
+### 2026-08-30 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 17: (high 0, medium 5, low 12)
+- defer: 4: (high 0, medium 1, low 3)
+- reject: 16: (high 0, medium 0, low 16)
+- addressed_findings:
+  - `[medium]` `[patch]` `BasiliskPackagesDataset`: a partial walk (page failure / `max_pages` cap) could overwrite a fuller last-good catalog and read as fresh — now returns empty (keep-last-good) when a store exists, and a persisted first-run partial is marked stale via a `save()` override; tests updated + 2 added.
+  - `[medium]` `[patch]` Basilisk pagination advanced by `page_size` and judged "short page" against it, so any `page_size` above the live 200 clamp stopped after one page — now advances by rows served and uses the envelope's `limit` (`_payload_limit`); clamp test added.
+  - `[medium]` `[patch]` `_fetch_channel_repodata` returned on the first subdir whose index was merely non-None, so a valid-but-empty `noarch` index defeated the hardening — `_repodata_has_packages` now gates the return; fall-through test added.
+  - `[medium]` `[patch]` The three weekly Tier-1 triggers were absent from the Dagster `refresh_assets` job that Story 21.2 extended for its own triggers — added, with a membership test in `test_definitions_dryrun.py`.
+  - `[medium]` `[patch]` The catalog's literal `seed_path`/`filepath` strings were never resolved by any test (a typo would leave the air-gap seed silently empty) — new `tests/catalog/test_tracked_seeds.py` drives both literals to real files and ≥1,000 / ≥600 rows.
+  - `[low]` `[patch]` `page_url` used `?` unconditionally — `&` when the base already carries a query string.
+  - `[low]` `[patch]` `_coerce_payload` / `_as_text` parsed a Response-like fetcher return as empty forever — now honor `.json()` / `.text` / `.content` (mirrors `_api_json`).
+  - `[low]` `[patch]` `parse_anaconda_dist_html` took the FIRST `Package Name` table — now the largest.
+  - `[low]` `[patch]` `_CROSS_CHANNELS` and `_CROSS_CHANNEL_SPECS` were two hand-edited lists — drift pin test added.
+  - `[low]` `[patch]` The repodata-FILENAME fallback (`current_repodata.json` → `repodata.json`) the Problem statement names as uncovered — regression test added.
+  - `[low]` `[patch]` `test_aoss_free_seed_is_git_tracked…` asserted a tautology (`parts[:1]` is always `conf`) — now asserts `conf/base/seeds` parentage + `git check-ignore` exit 1.
+  - `[low]` `[patch]` Multi-page Basilisk tests slept on the real rate limiter — no-sleep scheduler injected by default.
+  - `[low]` `[patch]` `globals.yml` "20 helper-backed points" + `conftest.py` "no live helper backs it yet" comments were stale — reconciled to the 22-point structure.
+  - `[low]` `[patch]` Anaconda main's mirror (5,401) vs `repo.anaconda.com/pkgs/main` (5,474) gap was only in the Spec Change Log — now in the catalog comment.
+  - `[low]` `[patch]` `conf/base/seeds/` and the re-acquisition path were undocumented — README conf-layout paragraph extended.
+  - `[low]` `[patch]` `upstream_discovery.py` module docstring claimed all three new classes parse HTML with bs4 — `TrackedSeedDataset` reads JSON; corrected.
+  - `[low]` `[patch]` `catalog.yml` said the ≥5,000 floor is "asserted by test_scale_floors.py" without saying it is fixture-asserted — clarified.
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** Story 21.4 landed all six Tier 1 catalog sources exactly as the intent contract
+shapes them: SelfExplainML as the 5th `_CROSS_CHANNEL_SPECS` tuple (plus the 2-subdir
+fallback hardening for the 4 existing channels), Anaconda `main` channeldata via the
+UNCHANGED `CondaChanneldataDataset` + a new `enumerate_anaconda_main_packages`
+materializer in `core`, and four new `discovery_*` entries routed to `upstream_discovery`:
+`AnacondaDist2026Dataset` (HTML scrape → tracked-seed fallback → keep-last-good),
+`BasiliskPackagesDataset` (paginated `/v1/packages` walk), `AossPremiumPythonDataset`
+(live doc, keep-last-good) — each an `ExternalRefreshDataset` subclass with exactly one
+refresh-trigger node — and `TrackedSeedDataset` backing the AOSS free-tier seed. Both seeds
+are REAL sourced data (1,474 AOSS free names; 639 Anaconda Dist 2026.x rows), git-tracked
+under `conf/base/seeds/`. Two new override points (`ANACONDA_DIST_BASE_URL`,
+`AOSS_PREMIUM_BASE_URL`) are pinned in every set/count. All step-03 research items resolved
+with live-verified values (details in the Spec Change Log). Review pass 1 then hardened the
+Basilisk walk (partial-walk integrity, server-clamp pagination), the cross-channel
+empty-index fall-through, the weekly `refresh_assets` job membership, and catalog-literal
+seed-path coverage.
+
+**Files changed** (relative to `7b87803d`; includes the mid-run WIP autosave `190d8a4a07`):
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — 6 new entries with `# fetch mode:` comments; header prefix-list fix.
+- `src/shared/packages/pyforge-atlas/conf/base/globals.yml` — `ANACONDA_DIST_BASE_URL`, `AOSS_PREMIUM_BASE_URL`; 20→22 / 31→33 accounting.
+- `src/shared/packages/pyforge-atlas/conf/base/parameters.yml` — 3 weekly `ttls` keyed by catalog-entry name.
+- `src/shared/packages/pyforge-atlas/conf/base/seeds/discovery_aoss_free_python_seed.json` — NEW, 1,474 names (live free-tier doc).
+- `src/shared/packages/pyforge-atlas/conf/base/seeds/discovery_anaconda_dist_2026x_seed.json` — NEW, 639 rows (live 2026.x release-notes table).
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py` — `BasiliskPackagesDataset` + `parse_basilisk_packages_response` (+ review hardening).
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py` — `AnacondaDist2026Dataset`, `AossPremiumPythonDataset`, `TrackedSeedDataset` + pure parsers.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py` — selfexplainml tuple, 2-subdir fallback lists, `_repodata_has_packages` gate.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/__init__.py` — exports for the 4 classes + helpers.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/{nodes,pipeline}.py` — `enumerate_anaconda_main_packages`.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/{nodes,pipeline}.py` — 3 refresh triggers; `_coerce_cadence` gained `default`.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py` — `_CROSS_CHANNELS` + selfexplainml.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — 4 `NODE_TIMEOUTS`; 3 triggers added to `refresh_assets`.
+- `src/shared/packages/pyforge-atlas/README.md` — 22-point accounting; `conf/base/seeds/` documented.
+- `src/shared/packages/pyforge-atlas/tests/catalog/{conftest,test_override_points}.py` — pinned counts/sets (101 total, core 18, upstream_discovery 8, 22 points, surface 33, `discovery` prefix).
+- `src/shared/packages/pyforge-atlas/tests/catalog/test_scale_floors.py` — NEW: the 3 offline floors (AOSS free ≥1,000 against the real seed; Anaconda main ≥5,000 fixture; Basilisk non-zero) + sub-threshold negatives.
+- `src/shared/packages/pyforge-atlas/tests/catalog/test_tracked_seeds.py` — NEW: catalog-literal seed paths resolve + load.
+- `src/shared/packages/pyforge-atlas/tests/datasets/{test_basilisk,test_core_sources,test_upstream_discovery}.py` — new-class + hardening coverage (incl. the malformed-channeldata matrix row, filename fallback, drift pin).
+- `src/shared/packages/pyforge-atlas/tests/pipelines/{core/test_nodes,upstream_discovery/test_nodes,test_dag_resolves}.py`, `tests/parity/{test_parity_complete.py,fixtures/pypi_intelligence/flag_cross_channel.json}`, `tests/orchestration/test_definitions_dryrun.py` — node tests, DAG pins (8/7/47 + single-writer), parity fixture `in_selfexplainml`, refresh_assets membership.
+
+**Review findings.** 4 parallel reviewers (blind, edge-case, verification-gap, intent-alignment) → 37 distinct findings: 17 patched (5 medium, 12 low), 4 deferred (frontmatter `deferred`), 16 rejected as design choices the contract already makes (seed-fallback-on-exception mirrors `TrendingSnapshotDataset`; runtime floors were explicitly scoped to offline fixture tests; no consumer for the AOSS free seed is the spec's own Design Note; wheel-install seed resolution is the whole `conf/` tree's checkout-bound shape; etc.). intent_gap 0, bad_spec 0.
+
+**Follow-up review recommendation: true** — patched counts high 0 / medium 5 / low 12 → score 3×5 + 12 = 27 (≥ 5).
+
+**Verification performed (all run by the orchestrator, not only reported by the dev agent):**
+- `pixi run -e pyforge-atlas kedro-catalog-check` — 61 passed (57 pre-review).
+- `pixi run -e pyforge-atlas parity-diff` — 70 passed.
+- `pixi run -e pyforge-atlas kedro-test` — 1466 passed, 24 skipped (1440 pre-review); none of the matrix-covering tests skipped (269-test targeted run, all passed).
+- Offline `kedro run --nodes refresh_anaconda_dist_2026x,refresh_basilisk_packages,refresh_aoss_premium_python` on an empty temp data root — exit 0, three `.staleness.json` markers (`refresh due but no refresher wired`).
+- Live `kedro run --nodes enumerate_anaconda_main_packages` — exit 0, 5,401-row `core_anaconda_main_packages` parquet (`conda_name`/`subdirs`), temp artifacts removed.
+- Matrix Test Audit: all 8 I/O rows covered by passing tests (the malformed-channeldata row had no direct test — added `test_conda_channeldata_dataset_malformed_payload_returns_empty_columned_frame`).
+- Seeds: `git ls-files --others --exclude-standard` listed both under `conf/base/seeds/` (not ignored — the `!src/**/packages/*/**` negation), 1,474 / 639 entries, 0 duplicates.
+
+**Residual risks.**
+- The second AC's "no live network + `--pipelines core`" half is bounded by the Tier-0 live contract (deferred item 1): `CondaChanneldataDataset` raises on an unreachable host exactly as `core_channeldata_raw` does today.
+- No shipped run path injects a `fetcher` into the three new `ExternalRefreshDataset` subclasses (same attended / Dagster-resource pattern as `TrendingSnapshotDataset`, DW-B5-2 / DW-B8-1) — unattended runs mark the stores stale rather than populate them, by design.
+- A first-ever Basilisk walk against a flaky endpoint persists a small, visibly-stale partial that a later complete walk replaces; a later partial walk keeps (does not grow) it — the never-overwrite rule.
+- Anaconda main is sourced from the `conda.anaconda.org/anaconda` mirror (5,401) rather than `repo.anaconda.com/pkgs/main` (5,474); ~400 rows of headroom above the ≥5,000 floor.

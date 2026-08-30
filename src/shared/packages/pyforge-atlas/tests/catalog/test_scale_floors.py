@@ -17,6 +17,8 @@ this whole ``tests/catalog/`` suite is offline and non-credentialed by design
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 
 import pandas as pd
 import pytest
@@ -27,6 +29,7 @@ from pyforge.atlas.datasets import (
     TrackedSeedDataset,
     channeldata_json_to_rows,
 )
+from pyforge.atlas.datasets.rate_limit import RateLimitedScheduler
 from pyforge.atlas.pipelines.core.nodes import enumerate_anaconda_main_packages
 
 from .conftest import CONF_SOURCE
@@ -53,11 +56,42 @@ def _assert_floor(frame: pd.DataFrame, floor: int, label: str) -> None:
 # -- AOSS free Python: the REAL committed seed --------------------------------
 
 
+def _git_says_not_ignored(path) -> bool | None:
+    """``git check-ignore -q <path>`` exit 1 == NOT ignored (0 == ignored). ``None``
+    when git is unavailable or the tree is not a git checkout (caller skips)."""
+    git = shutil.which("git")
+    if git is None:
+        return None
+    try:
+        inside = subprocess.run(
+            [git, "rev-parse", "--is-inside-work-tree"],
+            cwd=path.parent, capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return None
+    probe = subprocess.run(
+        [git, "check-ignore", "-q", str(path)], cwd=path.parent, capture_output=True, timeout=30
+    )
+    if probe.returncode == 0:
+        return False  # ignored
+    if probe.returncode == 1:
+        return True  # not ignored
+    return None  # 128 = fatal (not a checkout / bad path) -> skip
+
+
 def test_aoss_free_seed_is_git_tracked_under_conf_seeds_not_data():
-    assert AOSS_FREE_SEED.is_file(), f"tracked seed missing: {AOSS_FREE_SEED}"
-    assert ANACONDA_DIST_SEED.is_file(), f"tracked seed missing: {ANACONDA_DIST_SEED}"
+    seeds_dir = CONF_SOURCE / "base" / "seeds"
     for seed in (AOSS_FREE_SEED, ANACONDA_DIST_SEED):
-        assert "data" not in seed.relative_to(CONF_SOURCE.parent).parts[:1]
+        assert seed.is_file(), f"tracked seed missing: {seed}"
+        # under conf/base/seeds/ — NEVER under the gitignored data/ root
+        assert seed.parent == seeds_dir, seed
+        assert seed.relative_to(CONF_SOURCE.parent).parts[:3] == ("conf", "base", "seeds")
+        not_ignored = _git_says_not_ignored(seed)
+        if not_ignored is None:
+            pytest.skip("git unavailable or not a git checkout — cannot verify ignore status")
+        assert not_ignored, f"{seed} is gitignored — it would NOT survive a fresh clone"
 
 
 def test_aoss_free_real_seed_meets_the_1000_floor():
@@ -100,6 +134,11 @@ def test_anaconda_main_fixture_below_floor_fails_not_warns():
 # -- Basilisk packages: non-zero when the (fixture) API is healthy ------------
 
 
+def _no_sleep_scheduler() -> RateLimitedScheduler:
+    """Frozen clock + no sleep: multi-page walks burn no wall-clock here."""
+    return RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
+
+
 def _basilisk_page(offset: int, size: int, total: int) -> str:
     items = [
         {"name": f"pkg-{i}", "browse_ecosystem": "conda-forge", "latest_version": "1.0"}
@@ -120,6 +159,7 @@ def test_basilisk_packages_non_zero_when_fixture_api_healthy(tmp_path):
         filepath=str(tmp_path / "basilisk"),
         fetcher=fetcher,
         page_size=size,
+        scheduler=_no_sleep_scheduler(),
     )
     ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
     frame = ds.load()
@@ -135,6 +175,7 @@ def test_basilisk_packages_zero_rows_from_healthy_fixture_would_fail(tmp_path):
         url="https://api.basilisk.prefix.dev/v1/packages",
         filepath=str(tmp_path / "basilisk"),
         fetcher=lambda url: json.dumps({"total": 0, "items": []}),
+        scheduler=_no_sleep_scheduler(),
     )
     ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
     frame = ds.load()

@@ -46,8 +46,9 @@ co-located with :class:`TrendingSnapshotDataset` because they share its exact sh
   its ``load()`` reads the file directly, so there is no ``save()``-gated emptiness to
   be dormant relative to.
 
-All three parse with the same ``beautifulsoup4`` + stdlib ``html.parser`` backend already
-imported above — no new dependency — and every parser NEVER raises.
+The two HTML sources (Anaconda Dist, AOSS premium) parse with the same ``beautifulsoup4``
++ stdlib ``html.parser`` backend already imported above — no new dependency;
+``TrackedSeedDataset`` reads plain JSON. Every parser NEVER raises.
 """
 
 from __future__ import annotations
@@ -467,6 +468,28 @@ class TrackedSeedDataset(AbstractDataset):
         }
 
 
+def _as_text(payload: Any) -> str | None:
+    """Normalize an injected-fetcher return value to response TEXT: a ``str``, UTF-8
+    ``bytes``, or a Response-like object exposing ``.text`` (str) / ``.content`` (bytes)
+    (review-pass 1: such an object used to parse as empty every time, leaving the store
+    stale forever with no error). ``None`` when nothing text-like is found."""
+    if isinstance(payload, str):
+        return payload
+    if isinstance(payload, bytes):
+        try:
+            return payload.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+    text = getattr(payload, "text", None)
+    if isinstance(text, str):
+        return text
+    content = getattr(payload, "content", None)
+    if isinstance(content, bytes):
+        return _as_text(content)
+    return None
+
+
+
 # -- Anaconda Distribution 2026.x ---------------------------------------------
 
 # The release-notes page's package table starts with this header cell (live shape
@@ -476,26 +499,31 @@ _ANACONDA_DIST_NAME_HEADER = "package name"
 _ANACONDA_DIST_COLUMNS: tuple[str, ...] = ("conda_name", "version", "platforms", "source", "fetched_at")
 
 
-def parse_anaconda_dist_html(html: str) -> list[dict]:
+def parse_anaconda_dist_html(html: Any) -> list[dict]:
     """Parse the anaconda.com Anaconda Distribution 2026.x release-notes page
-    (BeautifulSoup + stdlib ``html.parser``). Finds the FIRST ``<table>`` whose header
-    row begins with ``Package Name`` and reads one row per package: ``conda_name``,
+    (BeautifulSoup + stdlib ``html.parser``). Reads every ``<table>`` whose header row
+    begins with ``Package Name`` and returns the LARGEST one (review-pass 1: a small
+    changelog table with the same header may precede the full list — the all-platform
+    package table is the biggest by construction), one row per package: ``conda_name``,
     ``version`` (the ``linux-64`` column when present, else the first non-empty
     platform cell), ``platforms`` (the header columns carrying a version), tagged
     ``source="html_scrape"`` + ``fetched_at``.
 
     Returns ``[]`` — NEVER raises — on a layout break (no such table, an empty table, a
-    malformed document): the dataset then falls back to its tracked seed."""
-    if not html:
+    malformed document): the dataset then falls back to its tracked seed. ``html`` may be
+    text, bytes, or a Response-like object (see :func:`_as_text`)."""
+    text = _as_text(html)
+    if not text:
         return []
     try:
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(text, "html.parser")
         tables = soup.find_all("table")
     except Exception as exc:  # a malformed document must never crash the run (AD-13)
         logger.warning("anaconda dist HTML parse failed: %s", exc)
         return []
 
     fetched_at = int(time.time())
+    best: list[dict[str, Any]] = []
     for table in tables:
         trs = table.find_all("tr")
         if not trs:
@@ -521,9 +549,9 @@ def parse_anaconda_dist_html(html: str) -> list[dict]:
                     "fetched_at": fetched_at,
                 }
             )
-        if rows:
-            return rows
-    return []
+        if len(rows) > len(best):
+            best = rows
+    return best
 
 
 class AnacondaDist2026Dataset(ExternalRefreshDataset):
@@ -665,15 +693,6 @@ class AnacondaDist2026Dataset(ExternalRefreshDataset):
 # ``<li>`` per package name (free 1,474 / premium 2,156 incl. 2 duplicates).
 _AOSS_PYTHON_HEADING_ID = "python"
 _AOSS_PREMIUM_COLUMNS: tuple[str, ...] = ("pypi_name", "tier", "source", "fetched_at")
-
-
-def _as_text(payload: Any) -> str | None:
-    if isinstance(payload, bytes):
-        try:
-            return payload.decode("utf-8")
-        except UnicodeDecodeError:
-            return None
-    return payload if isinstance(payload, str) else None
 
 
 def parse_aoss_python_package_names(html: Any) -> list[str]:

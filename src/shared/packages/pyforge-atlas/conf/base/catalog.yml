@@ -64,11 +64,15 @@ core_channeldata_raw:
 # Story 21.4 (Tier 1, CAP-2) — Anaconda `main` channeldata, catalog-sources.md's
 # "Same parser as core_channeldata_raw": CondaChanneldataDataset REUSED UNCHANGED,
 # only the `url:` differs. Routes through the EXISTING ANACONDA_CHANNEL_BASE_URL
-# override point (conda.anaconda.org's `anaconda` channel mirrors repo.anaconda.com/
-# pkgs/main; live 2026-08-30: 5,401 packages, above the ≥5,000 scale-sanity floor
-# asserted by tests/catalog/test_scale_floors.py). Consumed ONLY by the
-# enumerate_anaconda_main_packages node (core/pipeline.py) — the materializer that
-# keeps this live entry from being a bare, never-touched raw entry.
+# override point: conda.anaconda.org's `anaconda` channel is a MIRROR of
+# repo.anaconda.com/pkgs/main with a small count gap (5,401 vs 5,474 live
+# 2026-08-30) — the mirror is the only route reachable through an existing
+# override point (the story caps new points at 2), and both sit above the ≥5,000
+# scale-sanity floor. That floor is FIXTURE-asserted in
+# tests/catalog/test_scale_floors.py; the live count is NOT observed at runtime.
+# Consumed ONLY by the enumerate_anaconda_main_packages node (core/pipeline.py) —
+# the materializer that keeps this live entry from being a bare, never-touched raw
+# entry.
 # fetch mode: live
 core_anaconda_main_channeldata_raw:
   type: pyforge.atlas.datasets.CondaChanneldataDataset

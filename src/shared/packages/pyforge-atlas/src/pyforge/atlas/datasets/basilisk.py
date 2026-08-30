@@ -490,12 +490,20 @@ _BASILISK_PACKAGE_COLUMNS: tuple[str, ...] = tuple(dst for _, dst in _BASILISK_P
 
 def _coerce_payload(payload: Any) -> Any:
     """Normalize an injected-fetcher return value to parsed JSON (dict / list). The
-    fetcher contract is "GET this URL, return the response" — text, bytes, or an
-    already-parsed object are all accepted; anything unparseable -> ``None``."""
+    fetcher contract is "GET this URL, return the response" — text, bytes, an
+    already-parsed object, OR a Response-like object with a callable ``.json()``
+    (mirrors ``core_sources._api_json``; review-pass 1: such an object used to parse
+    as empty every time, leaving the store stale forever with no error). Anything
+    unparseable -> ``None``."""
     if isinstance(payload, (bytes, str)):
         try:
             return json.loads(payload)
         except (TypeError, ValueError):
+            return None
+    if hasattr(payload, "json") and callable(payload.json):
+        try:
+            return payload.json()
+        except (ValueError, TypeError):
             return None
     return payload
 
@@ -536,16 +544,26 @@ def parse_basilisk_packages_response(payload: Any) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=_BASILISK_PACKAGE_COLUMNS)
 
 
-def _payload_total(payload: Any) -> int | None:
-    """The ``total`` the page envelope reports (``None`` when absent/malformed)."""
+def _envelope_int(payload: Any, key: str) -> int | None:
     data = _coerce_payload(payload)
     if not isinstance(data, dict):
         return None
-    total = data.get("total")
+    value = data.get(key)
     try:
-        return int(total) if total is not None else None
+        return int(value) if value is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _payload_total(payload: Any) -> int | None:
+    """The ``total`` the page envelope reports (``None`` when absent/malformed)."""
+    return _envelope_int(payload, "total")
+
+
+def _payload_limit(payload: Any) -> int | None:
+    """The ``limit`` the server ACTUALLY served (it clamps a larger request to 200 —
+    live 2026-08-30); ``None`` when absent/malformed."""
+    return _envelope_int(payload, "limit")
 
 
 class BasiliskPackagesDataset(ExternalRefreshDataset):
@@ -563,9 +581,17 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
       ``fetcher: Callable[[str], Any]`` (``GET {BASILISK_BASE_URL}/v1/packages?limit=N&offset=M``,
       one :class:`RateLimitedScheduler` token per page — the standard atlas rate-limit
       discipline the two advisory datasets above bind too) and parses each page with
-      :func:`parse_basilisk_packages_response`. A page fetch failure stops the walk and
-      KEEPS the pages already collected (a partial catalog is still real data; the
-      inherited ``save()`` only refuses an EMPTY result). Never raises.
+      :func:`parse_basilisk_packages_response`. The offset advances by the rows ACTUALLY
+      returned and a page is "short" only against the limit the server actually served
+      (it clamps larger requests to 200), so a ``page_size`` above the clamp still walks
+      the whole catalog. Never raises.
+    - **Partial walks never overwrite a fuller catalog** (review-pass 1): a walk that
+      ends by a page-fetch failure or by the ``max_pages`` cap is PARTIAL. With a
+      last-good store already on disk, ``_do_refresh`` returns an EMPTY frame so the
+      inherited ``save()`` keeps last-good (a 200-row partial must never replace a
+      34k catalog); with NO last-good, the partial is persisted (better than nothing)
+      and :meth:`save` then marks the store stale with a ``partial catalog walk:
+      <collected>/<total>`` reason so it is visibly incomplete.
     - :meth:`_write` / :meth:`load`: Parquet at ``<filepath>/basilisk_packages.parquet``;
       a missing / unreadable store degrades to an empty frame + staleness marker.
 
@@ -597,6 +623,10 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
         self._page_size = max(1, int(page_size))
         self._max_pages = max(1, int(max_pages))
         self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler()
+        # Set by _do_refresh when a walk ends early (page failure / page cap); read by
+        # save() to mark a persisted partial catalog stale. None == the last walk was
+        # complete (or never ran).
+        self._partial_walk: str | None = None
         super().__init__(
             filepath=filepath,
             # Bind our own zero-arg refresh ONLY when a fetcher is wired, so construction
@@ -612,55 +642,80 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
     # -- refresh (dataset-owned IO; the injected fetcher is the ONLY seam) --
 
     def page_url(self, offset: int) -> str:
-        """The ``?limit=&offset=`` page URL — built HERE (a node never builds one, AC-2)."""
-        return f"{self._url}?limit={self._page_size}&offset={int(offset)}"
+        """The ``?limit=&offset=`` page URL — built HERE (a node never builds one, AC-2).
+        A base URL that already carries a query string is extended with ``&``."""
+        sep = "&" if "?" in self._url else "?"
+        return f"{self._url}{sep}limit={self._page_size}&offset={int(offset)}"
 
     def _do_refresh(self) -> pd.DataFrame:
-        """Walk every page until ``total`` is reached, a short/empty page arrives, or the
-        page cap trips. Never raises — a page failure WARNs and returns what was
-        collected so far (possibly nothing, which ``save()`` treats as keep-last-good)."""
+        """Walk every page until ``total`` is reached or a short/empty page arrives (a
+        COMPLETE walk). A page-fetch failure or the ``max_pages`` cap ends the walk
+        PARTIAL: with a last-good store on disk an empty frame is returned so
+        ``save()`` keeps last-good; with none, the partial rows are returned and
+        :meth:`save` marks the store stale. Never raises."""
         frames: list[pd.DataFrame] = []
         collected = 0
+        offset = 0
+        pages = 0
         total: int | None = None
-        for page in range(self._max_pages):
-            offset = page * self._page_size
+        served_limit: int | None = None
+        partial_reason: str | None = None
+        self._partial_walk = None
+        while True:
             if total is not None and offset >= total:
-                break
+                break  # complete: every row the server reported has been read
+            if pages >= self._max_pages:
+                partial_reason = f"page cap ({self._max_pages} pages) reached"
+                break  # the never-hang guard
             try:
                 self.scheduler.acquire()
                 payload = self._fetcher(self.page_url(offset))
             except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
-                logger.warning(
-                    "Basilisk /v1/packages page at offset=%s failed (%s); keeping %s rows "
-                    "collected so far",
-                    offset,
-                    exc,
-                    collected,
-                )
+                partial_reason = f"page fetch failed at offset={offset}: {type(exc).__name__}: {exc}"
                 break
+            pages += 1
             if total is None:
                 total = _payload_total(payload)
+            if served_limit is None:
+                served_limit = _payload_limit(payload)
             frame = parse_basilisk_packages_response(payload)
             if frame.empty:
-                if page == 0:
+                if pages == 1:
                     logger.warning("Basilisk /v1/packages first page parsed zero rows (layout break?)")
-                break
+                break  # complete: nothing more to read
             frames.append(frame)
             collected += len(frame)
-            if len(frame) < self._page_size:
-                break  # a short page is the last page
-        else:
-            logger.warning(
-                "Basilisk /v1/packages page cap (%s pages) reached with total=%s — "
-                "persisting the %s rows collected",
-                self._max_pages,
-                total,
-                collected,
-            )
+            offset += len(frame)  # advance by rows ACTUALLY served, not by page_size
+            effective_page = min(self._page_size, served_limit) if served_limit else self._page_size
+            if len(frame) < effective_page:
+                break  # complete: a short page (against the limit actually served) is the last page
+
+        if partial_reason is not None and frames:
+            summary = f"partial catalog walk: {collected}/{total if total is not None else '?'} ({partial_reason})"
+            self._partial_walk = summary
+            if self._store_exists():
+                # Never overwrite a fuller last-good catalog with a partial one.
+                logger.warning("Basilisk /v1/packages %s — keeping the existing last-good store", summary)
+                return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
+            logger.warning("Basilisk /v1/packages %s — persisting the partial (no last-good exists)", summary)
+        elif partial_reason is not None:
+            logger.warning("Basilisk /v1/packages walk collected nothing (%s) — keeping last-good", partial_reason)
+
         if not frames:
             return pd.DataFrame(columns=_BASILISK_PACKAGE_COLUMNS)
         out = pd.concat(frames, ignore_index=True)
         return out.drop_duplicates(subset=["conda_name", "ecosystem"]).reset_index(drop=True)
+
+    def save(self, data: Any) -> None:
+        """The inherited single write path, plus: a PERSISTED partial walk (no last-good
+        existed, so the partial was written) is marked stale with its
+        ``partial catalog walk`` reason — a partial catalog must never read as fresh.
+        A partial walk that was NOT persisted (last-good kept) carries the same reason
+        instead of the base class's generic "refresh returned no data"."""
+        self._partial_walk = None
+        super().save(data)
+        if self._partial_walk:
+            self._mark_stale(self._partial_walk)
 
     # -- store (Parquet under filepath/STORE_FILENAME) -----------------------
 

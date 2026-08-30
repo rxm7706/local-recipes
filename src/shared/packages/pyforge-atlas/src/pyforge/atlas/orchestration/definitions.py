@@ -173,11 +173,19 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
             "refresh_vcs_github_store",
             "refresh_vcs_host_stores",
             "refresh_vcs_registry_stores",
+            # Story 21.4 — the three weekly Tier-1 discovery-store triggers (single
+            # writers of discovery_anaconda_dist_2026x_raw / discovery_basilisk_packages_raw /
+            # discovery_aoss_premium_python_raw); without them here only the whole-DAG
+            # bootstrap job would ever refresh those stores (review-pass 1).
+            "refresh_anaconda_dist_2026x",
+            "refresh_basilisk_packages",
+            "refresh_aoss_premium_python",
         ],
         "0 1 * * 0",
         "weekly",
         "refresh assets (vdb-refresh / update-cve-db / update-mapping-cache / "
-        "GitHub+GitLab+Codeberg+registry live-fetch stores, Story 21.2)",
+        "GitHub+GitLab+Codeberg+registry live-fetch stores, Story 21.2 / "
+        "Tier-1 discovery stores, Story 21.4)",
     ),
     (
         "upstream_discovery_trending",

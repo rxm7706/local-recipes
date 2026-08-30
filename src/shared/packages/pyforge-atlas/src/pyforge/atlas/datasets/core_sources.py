@@ -553,6 +553,18 @@ def _fetch_repodata_at_url(
         return None
 
 
+def _repodata_has_packages(repodata: dict[str, Any]) -> bool:
+    """True when the index carries at least one record under ``packages`` or
+    ``packages.conda``. A VALID but EMPTY index (``{"packages": {}, "packages.conda":
+    {}}`` — common for an unpopulated ``noarch``) must NOT count as a successful fetch,
+    or the per-channel subdir fallback would never be tried (review-pass 1, Story 21.4)."""
+    for key in ("packages.conda", "packages"):
+        source = repodata.get(key)
+        if isinstance(source, dict) and source:
+            return True
+    return False
+
+
 def _fetch_channel_repodata(
     channel_name: str,
     subdirs: tuple[str, ...],
@@ -561,7 +573,10 @@ def _fetch_channel_repodata(
     credentials: dict[str, Any] | None,
     metadata: dict[str, Any] | None,
 ) -> tuple[dict[str, Any] | None, str | None]:
-    """Fetch one channel's repodata; mirrors legacy ``_phase_q_fetch_channel_pypi_names`` IO."""
+    """Fetch one channel's repodata; mirrors legacy ``_phase_q_fetch_channel_pypi_names`` IO.
+    The first ``(subdir, filename, mirror)`` combo whose index actually carries packages
+    wins; a missing OR empty index falls through to the next combo. ``(None, None)``
+    only after every combo is exhausted."""
     for subdir in subdirs:
         for filename in _REPDATA_FILENAMES:
             for url in _resolve_anaconda_channel_urls(channel_name, subdir, filename):
@@ -571,8 +586,12 @@ def _fetch_channel_repodata(
                     credentials=credentials,
                     metadata=metadata,
                 )
-                if repodata is not None:
-                    return repodata, subdir
+                if repodata is None:
+                    continue
+                if not _repodata_has_packages(repodata):
+                    logger.debug("cross-channel repodata at %s is empty — trying the next combo", url)
+                    continue
+                return repodata, subdir
     return None, None
 
 

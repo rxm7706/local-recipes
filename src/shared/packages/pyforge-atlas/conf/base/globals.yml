@@ -65,7 +65,8 @@ endpoint_bases:
   AOSS_PREMIUM_BASE_URL: ${env_or:AOSS_PREMIUM_BASE_URL,https://docs.cloud.google.com}
 
 # Additional overrides that ARE current data access but are NOT among the
-# 20 helper-backed points. kedro-catalog-check asserts these separately:
+# 22 endpoint_bases points (19 legacy-helper-backed + 1 reserved + 2 Story
+# 21.4). kedro-catalog-check asserts these separately:
 #   ANACONDA_API_BASE_URL — Phase F's v7.8.0-era direct env override on the
 #     anaconda-api download path (gap A2-G2; live-verified 2026-07-17 at
 #     conda_forge_atlas.py L2651/2659/2816/3588).

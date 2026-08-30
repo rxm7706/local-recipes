@@ -336,7 +336,14 @@ def _paged_fetcher(total: int, size: int, calls: list[str] | None = None):
     return fetcher
 
 
+def _no_sleep_scheduler() -> RateLimitedScheduler:
+    """A frozen-clock, no-sleep scheduler so multi-page walks burn no wall-clock
+    (the default RateLimitedScheduler is rps=3 with a real time.sleep)."""
+    return RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
+
+
 def _pkgs(tmp_path, **kw) -> BasiliskPackagesDataset:
+    kw.setdefault("scheduler", _no_sleep_scheduler())
     return BasiliskPackagesDataset(url=_PKG_URL, filepath=str(tmp_path / "packages"), **kw)
 
 
@@ -373,6 +380,35 @@ def test_packages_page_url_is_dataset_built():
     assert ds.page_url(400) == f"{_PKG_URL}?limit=200&offset=400"
 
 
+def test_packages_page_url_extends_an_existing_query_string_with_ampersand():
+    ds = BasiliskPackagesDataset(url=_PKG_URL + "?ecosystem=conda-forge", filepath="x", page_size=200)
+    assert ds.page_url(0) == f"{_PKG_URL}?ecosystem=conda-forge&limit=200&offset=0"
+
+
+class _StubResponse:
+    """A Response-like object (the shape an injected requests/httpx fetcher returns)."""
+
+    def __init__(self, payload):
+        self._payload = payload
+
+    def json(self):
+        if isinstance(self._payload, Exception):
+            raise self._payload
+        return self._payload
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_rows"),
+    [
+        (_StubResponse({"items": [{"name": "a"}, {"name": "b"}]}), 2),
+        (_StubResponse([{"name": "a"}]), 1),
+        (_StubResponse(ValueError("not json")), 0),  # .json() raising -> empty, never a crash
+    ],
+)
+def test_parse_basilisk_packages_response_accepts_response_like_objects(payload, expected_rows):
+    assert len(parse_basilisk_packages_response(payload)) == expected_rows
+
+
 def test_packages_fetch_success_walks_every_page_and_persists(tmp_path):
     calls: list[str] = []
     ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200, calls=calls), page_size=200)
@@ -393,6 +429,25 @@ def test_packages_stops_at_total_when_pages_are_exact_multiples(tmp_path):
     assert len(calls) == 2  # offset 400 >= total -> never requested
 
 
+def test_packages_server_clamp_below_requested_page_size_still_walks_everything(tmp_path):
+    """The live server clamps `limit` to 200 whatever is requested: a dataset built with
+    page_size=1000 must still collect all 450 rows over 3 calls (offset advances by the
+    rows actually served; "short page" is judged against the served limit)."""
+    calls: list[str] = []
+
+    def clamped(url: str) -> str:
+        calls.append(url)
+        offset = int(url.rsplit("offset=", 1)[-1])
+        assert "limit=1000" in url  # the dataset asked for 1000...
+        return _page(offset, 200, 450)  # ...the server served 200 (envelope limit=200)
+
+    ds = _pkgs(tmp_path, fetcher=clamped, page_size=1000)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 450
+    assert [u.rsplit("offset=", 1)[-1] for u in calls] == ["0", "200", "400"]
+    assert ds.is_stale() is False
+
+
 def test_packages_acquires_one_scheduler_token_per_page(tmp_path):
     sched = RateLimitedScheduler(rps=1000.0, bucket_capacity=100, clock=lambda: 0.0, sleep=lambda s: None)
     start = sched.tokens
@@ -408,8 +463,11 @@ def test_packages_page_cap_never_hangs_and_keeps_collected(tmp_path):
 
     ds = _pkgs(tmp_path, fetcher=endless, page_size=5, max_pages=4)
     ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
-    assert len(ds.load()) == 20  # 4 pages x 5 rows, then the cap trips
-    assert ds.is_stale() is False
+    assert len(ds.load()) == 20  # 4 pages x 5 rows, then the cap trips (no last-good -> persisted)
+    # ...but a cap-terminated walk is PARTIAL and must not read as fresh
+    assert ds.is_stale() is True
+    assert "partial catalog walk: 20/?" in ds.staleness().reason
+    assert "page cap" in ds.staleness().reason
 
 
 def test_packages_first_run_no_last_good_fetch_failure_marks_stale_empty(tmp_path):
@@ -451,7 +509,48 @@ def test_packages_mid_walk_failure_persists_pages_collected_so_far(tmp_path):
 
     ds = _pkgs(tmp_path, fetcher=flaky, page_size=200)
     ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
-    assert len(ds.load()) == 200  # a partial catalog is still real data
+    assert len(ds.load()) == 200  # first run, no last-good: the partial is persisted (better than nothing)
+    # ...but it is visibly STALE with the partial reason, never "fresh"
+    assert ds.is_stale() is True
+    marker = ds.staleness()
+    assert marker.last_good_exists is True
+    assert marker.reason.startswith("partial catalog walk: 200/450")
+
+
+def test_packages_partial_walk_never_overwrites_a_fuller_last_good(tmp_path):
+    """A full 450-row last-good exists; a later flaky walk fails at offset 200 -> the
+    200-row partial must NOT replace it: load() still returns 450 rows, store stale."""
+    _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200), page_size=200).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    assert len(_pkgs(tmp_path).load()) == 450
+
+    def flaky(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        if offset >= 200:
+            raise ConnectionError("page 2 down")
+        return _page(offset, 200, 450)
+
+    ds = _pkgs(tmp_path, fetcher=flaky, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 450  # the fuller catalog survived
+    assert ds.is_stale() is True
+    assert ds.staleness().reason.startswith("partial catalog walk: 200/450")
+
+
+def test_packages_complete_walk_after_a_partial_clears_stale(tmp_path):
+    def flaky(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        if offset >= 200:
+            raise ConnectionError("page 2 down")
+        return _page(offset, 200, 450)
+
+    _pkgs(tmp_path, fetcher=flaky, page_size=200).save(
+        RefreshRequest(store="discovery_basilisk_packages_raw", force=True)
+    )
+    ds = _pkgs(tmp_path, fetcher=_paged_fetcher(total=450, size=200), page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 450
     assert ds.is_stale() is False
 
 

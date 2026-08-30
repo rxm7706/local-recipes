@@ -176,8 +176,10 @@ EXPECTED_LIVE_OVERRIDE_POINTS = {
 # The Story 21.4 additions, named so test_override_points can assert the
 # 19 + 2 split inside the "live" set explicitly.
 STORY_21_4_OVERRIDE_POINTS = {"ANACONDA_DIST_BASE_URL", "AOSS_PREMIUM_BASE_URL"}
-# ...plus the reserved 20th (A2-A2 / FR-19; nodes = B8 — no live helper
-# backs it yet, which is exactly why it is pinned SEPARATELY).
+# ...plus the reserved 20th (A2-A2 / FR-19). Story B8 LANDED its nodes, but
+# no legacy resolve_*_urls helper ever backed it (the reserved slot was
+# pre-declared, not ported) — which is exactly why it stays pinned SEPARATELY
+# from the 19 helper-backed live points (same statement as globals.yml).
 RESERVED_OVERRIDE_POINTS = {"BASILISK_BASE_URL"}
 EXPECTED_OVERRIDE_POINTS = EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POINTS
 

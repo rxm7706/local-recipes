@@ -40,7 +40,15 @@ The Python package is the dotted namespace package `pyforge.atlas`
 `[tool.kedro] package_name = "pyforge.atlas"`. `conf/local/` is gitignored;
 `conf/base/catalog.yml` declares every API source + persisted output of the
 seven pipelines (Story A2), with endpoint bases in `conf/base/globals.yml`
-and per-dataset TTLs in `conf/base/parameters.yml`.
+and per-dataset TTLs in `conf/base/parameters.yml`. `conf/base/seeds/` holds
+the git-tracked JSON seeds behind the air-gap "tracked seed" fetch mode
+(Story 21.4: `discovery_aoss_free_python_seed.json`, the Google AOSS free-tier
+Python list, and `discovery_anaconda_dist_2026x_seed.json`, the Anaconda
+Distribution 2026.x package table used as the scrape fallback). They are NOT
+written by any pipeline — re-acquire them by running the two pure parsers
+(`pyforge.atlas.datasets.parse_aoss_python_package_names` /
+`parse_anaconda_dist_html`) over the live docs and hand-commit the result
+under git review.
 
 Relative dataset paths (the `data/<layer>/<dataset_name>/` outputs and the
 store/seed defaults in `globals.yml paths:`) resolve against the **process

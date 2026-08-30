@@ -812,3 +812,59 @@ def test_aoss_premium_offline_no_fetcher_marks_stale_and_keeps_last_good(tmp_pat
 def test_aoss_premium_write_rejects_frame_missing_required_columns(tmp_path):
     with pytest.raises(ValueError):
         _aoss(tmp_path / "aoss")._write(pd.DataFrame({"nonsense": [1]}))
+
+
+# -- review-pass 1: Response-like payloads + largest-table selection -----------
+
+
+class _StubTextResponse:
+    def __init__(self, *, text=None, content=None):
+        if text is not None:
+            self.text = text
+        if content is not None:
+            self.content = content
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        _StubTextResponse(text=AOSS_HTML),
+        _StubTextResponse(content=AOSS_HTML.encode("utf-8")),
+        AOSS_HTML.encode("utf-8"),
+    ],
+)
+def test_parse_aoss_accepts_response_like_objects(payload):
+    assert parse_aoss_python_package_names(payload) == ["APScheduler", "Adafruit-Blinka", "zope.interface"]
+
+
+def test_parse_aoss_response_like_without_text_or_content_is_empty():
+    assert parse_aoss_python_package_names(_StubTextResponse()) == []
+    assert parse_aoss_python_package_names(_StubTextResponse(content=b"\\xff\\xfe")) == []
+
+
+def test_parse_anaconda_dist_html_prefers_the_largest_matching_table():
+    """A small changelog table with the same `Package Name` header precedes the full
+    list: the LARGEST matching table wins, not the first."""
+    html = """
+    <html><body>
+    <table>
+      <tr><th>Package Name</th><th>linux-64</th></tr>
+      <tr><td>changelog-only</td><td>1.0</td></tr>
+    </table>
+    <table>
+      <tr><th>Package Name</th><th>linux-64</th><th>win-64</th></tr>
+      <tr><td>numpy</td><td>2.0</td><td>2.0</td></tr>
+      <tr><td>pandas</td><td>3.0</td><td></td></tr>
+      <tr><td>scipy</td><td>1.15</td><td>1.15</td></tr>
+    </table>
+    </body></html>
+    """
+    rows = parse_anaconda_dist_html(html)
+    assert [r["conda_name"] for r in rows] == ["numpy", "pandas", "scipy"]
+    assert rows[1]["platforms"] == ["linux-64"]
+
+
+def test_dist_dataset_accepts_response_like_fetcher_payload(tmp_path):
+    ds = _dist(tmp_path / "dist", fetcher=lambda url: _StubTextResponse(text=DIST_HTML))
+    ds.save(RefreshRequest(store="discovery_anaconda_dist_2026x_raw", force=True))
+    assert set(ds.load()["source"]) == {"html_scrape"}

@@ -255,3 +255,63 @@ def test_conda_channeldata_dataset_malformed_payload_returns_empty_columned_fram
     df = ds.load()
     assert list(df.columns) == ["conda_name", "subdirs"]
     assert df.empty
+
+
+def test_cross_channel_empty_index_on_first_subdir_falls_through_to_second(monkeypatch):
+    """Review-pass 1: a VALID but EMPTY index ({"packages": {}, "packages.conda": {}} — an
+    unpopulated noarch) must NOT count as success; the second subdir is still tried."""
+    attempted: list[str] = []
+
+    def fake_fetch(url, **kw):
+        attempted.append(url)
+        if "/noarch/" in url:
+            return {"packages": {}, "packages.conda": {}}  # valid, empty
+        if "/linux-64/" in url:
+            return _repodata("piml")
+        return None
+
+    monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
+    monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
+    out = CS.CrossChannelRepodataDataset(url="ignored").load()
+    assert out["conda_name"].tolist() == ["piml"]
+    assert any("/noarch/" in u for u in attempted)
+    assert any("/linux-64/" in u for u in attempted)  # the second subdir WAS attempted
+
+
+def test_repodata_has_packages_helper():
+    assert CS._repodata_has_packages(_repodata("x")) is True
+    assert CS._repodata_has_packages({"packages": {"a": {}}}) is True
+    assert CS._repodata_has_packages({"packages": {}, "packages.conda": {}}) is False
+    assert CS._repodata_has_packages({}) is False
+    assert CS._repodata_has_packages({"packages": "nope"}) is False
+
+
+def test_cross_channel_repodata_filename_fallback_current_then_repodata(monkeypatch):
+    """The repodata-FILENAME fallback (the spec's named coverage gap): for ONE subdir,
+    current_repodata.json fails on both mirrors and repodata.json succeeds -> data is
+    returned, and current_repodata.json was tried BEFORE repodata.json."""
+    attempted: list[str] = []
+
+    def fake_fetch(url, **kw):
+        attempted.append(url)
+        return _repodata("piml") if url.endswith("/noarch/repodata.json") else None
+
+    monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
+    monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch",)),))
+    out = CS.CrossChannelRepodataDataset(url="ignored").load()
+    assert out["conda_name"].tolist() == ["piml"]
+    first_repodata = next(i for i, u in enumerate(attempted) if u.endswith("/repodata.json"))
+    assert first_repodata > 0
+    assert all(u.endswith("/current_repodata.json") for u in attempted[:first_repodata])
+    # both mirrors of current_repodata.json were exhausted before the filename fallback
+    assert len(attempted[:first_repodata]) == 2
+
+
+def test_cross_channels_node_tuple_matches_dataset_specs():
+    """The hand-maintained `_CROSS_CHANNELS` (pypi_intelligence/nodes.py — drives the
+    in_<channel> output columns) and `_CROSS_CHANNEL_SPECS` (datasets/core_sources.py —
+    drives the fetch) must never drift: the in_selfexplainml column only "falls out
+    automatically" because BOTH were edited (review-pass 1 pin)."""
+    from pyforge.atlas.pipelines.pypi_intelligence.nodes import _CROSS_CHANNELS
+
+    assert _CROSS_CHANNELS == tuple(short for short, _, _ in CS._CROSS_CHANNEL_SPECS)
