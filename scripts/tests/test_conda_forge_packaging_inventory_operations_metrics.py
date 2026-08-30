@@ -283,13 +283,28 @@ def test_live_catalog_only_sub_floor_exits_2_before_output(tmp_path: Path, capsy
 
 def test_live_catalog_sub_floor_without_only_degrades_and_completes(tmp_path: Path, capsys):
     root = tmp_path / "root"
+    # core_packages_enumerated is sub-floor (degrades cf_packages to set()) and
+    # carries no "examplepkg" entry even above the floor line, so this proves
+    # the degrade -- not a coincidental miss. pypi_universe/pypi_conda_mapping
+    # stay at their defaults (examplepkg present / mapping empty) so PyPI_Verified
+    # resolves independently of the degraded conda-forge set.
     _make_catalog_root(root, cf_names=_bulk_names(12_000))
-    rc = _run_main(tmp_path, ["--live-catalog", str(root)])
+    rc = _run_main(
+        tmp_path,
+        ["--live-catalog", str(root)],
+        curated={"test-group": ["examplepkg"]},
+    )
     assert rc == 0
     assert (tmp_path / "out.csv").exists()
     out = capsys.readouterr().out
     assert "Warnings (fallbacks used):" in out
     assert "core_packages_enumerated" in out
+    csv_text = (tmp_path / "out.csv").read_text(encoding="utf-8")
+    lines = [line for line in csv_text.splitlines() if line.startswith("curated:test-group")]
+    assert len(lines) == 1
+    # PyPI_Verified=Yes (pypi_universe unaffected), CondaForge_Verified=No
+    # (cf_packages degraded to empty, parselmouth_pypi empty by default).
+    assert ",Yes,No," in lines[0]
 
 
 def test_live_catalog_success_no_http_fetch_for_replaced_sets(tmp_path: Path, blocked_network):

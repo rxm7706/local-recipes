@@ -11,7 +11,7 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
 warnings: []
-review_loop_iteration: 1
+review_loop_iteration: 0
 deferred:
   - summary: >-
       pypi_conda_mapping.parquet's conda_name restriction to enumerated conda
@@ -146,6 +146,34 @@ deferred:
       not independently re-verified beyond that report.
     location: >-
       scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), subdirs)
+    severity: low
+  - summary: >-
+      Nothing validates or warns when --live-catalog is set without
+      --cf-channeldata, even though replay.md documents --cf-channeldata as
+      still required (it independently drives has_src/the 10k-tab-drop
+      filter). A user following only --help, not the replay doc, gets no
+      signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`,
+      almost certainly absent) silently changes which 10k-tab rows are kept.
+    evidence: |-
+      Confirmed no code path checks args.cf_channeldata when args.live_catalog
+      is set; args.cf_channeldata's default-path fallback behavior itself
+      pre-dates this story and is unchanged by it. Found by review pass 3's
+      blind hunter.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), has_src)
+    severity: low
+  - summary: >-
+      load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike
+      every HTTP-based acquisition path elsewhere in this file (which all take
+      an explicit timeout argument) -- a read against a slow/unresponsive
+      network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
+    evidence: |-
+      Direct read of load_live_catalog(): the try/except wraps path.exists()
+      and pd.read_parquet() but neither is time-bounded. Low real-world
+      likelihood given the documented usage pattern (a local post-bootstrap
+      data root). Found by review pass 3's edge case hunter.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
     severity: low
 ---
 
@@ -650,6 +678,39 @@ instead of the current literal `github.com/conda-forge/{pkg}-feedstock` template
   Re-verified `--help` output and the `--live-catalog-only` fail-fast exit-2
   command from this spec's `## Verification` section — both still pass.
 
+### 2026-08-30 — Review pass 3
+- intent_gap: 0
+- bad_spec: 0
+- patch: 3: (high 0, medium 2, low 1)
+- defer: 2: (high 0, medium 0, low 2)
+- reject: 15: (high 0, medium 1, low 14)
+- addressed_findings:
+  - `[medium]` `[patch]` Companion doc `spec-atlas-kedro-catalog-expansion/verification-matrix.md`'s
+    `PyPI_Verified`/`CondaForge_Verified` mapping table still cited the raw,
+    unpersisted `pypi_simple_index_raw`/`pypi_json_raw`/`core_channeldata_raw`
+    classes — `load_live_catalog()`'s own docstring cites this file as authority,
+    but the implementation reads the derived `pypi_universe`/
+    `core_packages_enumerated`/`pypi_conda_mapping` outputs instead (per this
+    spec's own Design Notes). Updated the two rows with a footnote pointing to
+    the Design Notes rationale.
+  - `[medium]` `[patch]` `test_live_catalog_sub_floor_without_only_degrades_and_completes`
+    only asserted `rc == 0`/file-existence/warning text — it never populated a
+    package, so it never actually verified the AC's core claim ("CondaForge_Verified
+    for affected packages degrades based on an empty conda-forge set"). A real
+    regression in the three-set wiring could have shipped with 16/16 green.
+    Added a curated package + CSV-column assertion (`,Yes,No,`) proving the
+    degrade reaches `CondaForge_Verified` specifically.
+  - `[low]` `[patch]` replay.md's new execution-mode-4 example omitted
+    `--verify-mode`, unlike modes 1–3. Added `--verify-mode fast` for
+    consistency and to keep the example's "no live HTTP" framing unambiguous.
+
+  Applied directly (the implementation subagent from the prior pass was not
+  re-engageable in this session). Re-ran `python3 -m pytest scripts/tests/`
+  after applying: 16/16 pass. Re-verified `--help` output and the
+  `--live-catalog-only` fail-fast exit-2 command from this spec's
+  `## Verification` section — both still pass.
+
+
 ## Auto Run Result
 
 **Summary:** Implemented `--live-catalog PATH` / `--live-catalog-only` in
@@ -659,32 +720,36 @@ already-populated `pyforge-atlas` Kedro Tier 0 Parquet outputs directly
 (`pandas.read_parquet`, lazily imported) instead of live HTTP fetches or
 `--cf-channeldata`/`--pypi-simple`/`--parselmouth` local snapshots. Every other
 acquisition path, and all downstream shape (CSV/MD columns, `source_sets`
-keys, `cf_or_pm`), is unchanged. Two adversarial review passes ran: pass 1
+keys, `cf_or_pm`), is unchanged. Three adversarial review passes ran: pass 1
 found and corrected 3 spec defects (wrong Parquet column, an incorrect "no
 edit needed" claim, an incomplete doc example) via a full revert + spec
 amendment + re-derivation loop; pass 2 found and applied 4 direct code
-patches on the re-derived implementation. `--live-catalog` absent remains
+patches on the re-derived implementation; pass 3 found and applied 3 more
+patches (a stale companion-doc mapping, a test that never actually verified
+its own claimed assertion, a doc-example consistency nit) and deferred 2
+new low-severity pre-existing gaps. `--live-catalog` absent remains
 byte-identical to pre-story behavior (regression-guarded by a dedicated test).
 
 **Files changed:**
 - `scripts/conda-forge-packaging-inventory-operations_metrics.py` — `--live-catalog`/`--live-catalog-only` flags, `LiveCatalogResult` dataclass, `load_live_catalog()`, wiring into `main()`'s three acquisition sites, `write_revised_prompt()` flag echo.
-- `docs/reference/conda-forge-packaging-inventory-operations_replay.md` — fourth execution-mode example (`--live-catalog`, retaining `--cf-channeldata`) + verification-section note, per the script's Prompt ↔ Script sync contract.
-- `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` (new) — 16 tests covering every I/O & Edge-Case Matrix row plus the `write_revised_prompt()` echo path; no pixi task (spec Boundaries → Never, mirrors `test_word_metrics.py`).
-- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md` — this spec, amended across both review passes (Code Map, Tasks & Acceptance, Design Notes, Spec Change Log, frontmatter `deferred`, Review Triage Log).
+- `docs/reference/conda-forge-packaging-inventory-operations_replay.md` — fourth execution-mode example (`--live-catalog`, retaining `--cf-channeldata`, now also `--verify-mode fast` per pass 3) + verification-section note, per the script's Prompt ↔ Script sync contract.
+- `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` (new) — 16 tests covering every I/O & Edge-Case Matrix row plus the `write_revised_prompt()` echo path; no pixi task (spec Boundaries → Never, mirrors `test_word_metrics.py`). Pass 3 strengthened one test to assert the actual `CondaForge_Verified` CSV value under a sub-floor degrade, not just exit code/warning text.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/verification-matrix.md` — pass 3: corrected the `PyPI_Verified`/`CondaForge_Verified` source-dataset mapping to the derived Parquet outputs this story actually reads, with a footnote to this spec's Design Notes.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md` — this spec, amended across all three review passes (Code Map, Tasks & Acceptance, Design Notes, Spec Change Log, frontmatter `deferred`, Review Triage Log).
 
 **Review findings breakdown:**
 - Pass 1: 3 bad_spec (all repaired via spec amendment + revert + re-derivation), 1 patch (moot — superseded by re-derivation), 6 defer, 6 reject.
 - Pass 2: 0 bad_spec/intent_gap, 4 patch (all applied directly), 3 new defer, 7 reject.
-- Total deferred (frontmatter `deferred`, 9 items): `match_source_urls()` subset-claim caveat; pre-existing `--verify-mode strict` + degraded `pypi_index` live-HTTP fallback (medium, cross-confirmed by 3+ review layers across both passes); `--strict-fetch` not applying to `--live-catalog`; untraced exceptions in `load_live_catalog()`; two `--help`/replay wording-precision items (one likely already resolved by pass 2's re-derivation, left as historical record); AOSS-Free Mason-queue poisoning risk on a `cf_packages` degrade without `-only` (medium — the most operationally significant deferred item); pre/post-normalization floor-count discrepancy (low, likely inert); a relocated, pre-existing unused `subdirs` line (low).
-- Rejected: everything that matched the spec's own explicit Boundaries text verbatim (no floor on `pypi_conda_mapping`, `pypi_universe` floor of 1, silent-but-warned degrade, unused-old-flags-no-error, `source_sets` key reuse), plus items resolved by pre-existing/unmodified code patterns or judged too low-impact to track (unescaped-quote path interpolation, empty-string `--live-catalog` path, pandas `ImportError` given it's a guaranteed pixi-env dependency, `nunique()` computed-but-unused for the unfloored dataset, marginal test-depth suggestions beyond the I/O matrix's own requirements).
-- Follow-up review recommendation: **true** — pass 2's 4 patches score `3×2 (medium) + 1×2 (low) = 8 ≥ 5` (0 high-severity patches).
+- Pass 3: 0 bad_spec/intent_gap, 3 patch (all applied directly), 2 new defer, 15 reject (mostly duplicates of already-deferred/already-rejected findings from passes 1–2, cross-checked before triage).
+- Total deferred (frontmatter `deferred`, 11 items): the 9 from passes 1–2 (see prior entries) plus pass 3's: no CLI-level enforcement/warning for `--live-catalog` set without `--cf-channeldata` (low); `load_live_catalog()`'s `pd.read_parquet` has no timeout guard, unlike this file's HTTP paths (low).
+- Rejected across all passes: everything matching the spec's own explicit Boundaries text verbatim (warn-and-degrade-by-default vs. loud-failure framing tension, unused-old-flags-no-error, pandas/pyarrow assumed present per pixi env), items already tracked as deferred from an earlier pass re-surfaced by a later pass's independent reviewers, and marginal/cosmetic documentation nits judged too low-impact to track individually.
+- Follow-up review recommendation: **true** — pass 3's 3 patches score `2×2 (medium) + 1×1 (low) = 5 ≥ 5`.
 
 **Verification performed:**
-- `python3 -m pytest scripts/tests/ tests/packaging/test_openteams_handoffs.py` — 32/32 pass (re-run after both the pass-1 re-derivation and the pass-2 patches).
-- `--help` lists `--live-catalog`/`--live-catalog-only` with corrected, accurate wording.
-- `--live-catalog /tmp/empty-does-not-exist --live-catalog-only` → exit 2, no output file written, before opening the analysis workbook (`XlsxReader` never instantiated) — re-verified after both implementation passes.
-- Matrix Test Audit: all 9 I/O & Edge-Case Matrix rows covered by at least one test, all tests ran and passed, both passes.
-- Could not run the spec's real-bootstrapped-data verification command (`--live-catalog src/shared/packages/pyforge-atlas/data` against the 34,098/880,710/21,761-row baseline) — this worktree has no bootstrapped `PYFORGE_ATLAS_DATA_ROOT`; synthetic-fixture tests exercise the identical code path.
+- `python3 -m pytest scripts/tests/` — 16/16 pass (re-run after pass 3's patches; the strengthened sub-floor test now asserts the actual `CondaForge_Verified` CSV value).
+- `--help` lists `--live-catalog`/`--live-catalog-only` with accurate wording.
+- `--live-catalog /tmp/empty-does-not-exist --live-catalog-only` → exit 2, no output file written, before opening the analysis workbook — re-verified after pass 3.
+- Matrix Test Audit: all 9 I/O & Edge-Case Matrix rows covered by at least one test, all tests ran and passed, across all three passes.
+- Could not run the spec's real-bootstrapped-data verification command (`--live-catalog src/shared/packages/pyforge-atlas/data` against the 34,098/880,710/21,761-row baseline) in the review-pass session — this worktree's data-root bootstrap state was not re-checked in pass 3; synthetic-fixture tests exercise the identical code path. A prior implementation pass reported running this command successfully against the real bootstrapped root.
 
-**Residual risks:** see the 9 `deferred` frontmatter items. The most operationally significant is the AOSS-Free Mason-queue poisoning risk (medium) — an operator running `--live-catalog` without `--live-catalog-only` against a degraded/incomplete data root could push false "not on conda-forge" entries into a queue documented elsewhere as live/irreversible; mitigated today only by using `--live-catalog-only` in automation, not by any code-level guard.
-
+**Residual risks:** see the 11 `deferred` frontmatter items. The most operationally significant remains the AOSS-Free Mason-queue poisoning risk (medium, from pass 2) — an operator running `--live-catalog` without `--live-catalog-only` against a degraded/incomplete data root could push false "not on conda-forge" entries into a queue documented elsewhere as live/irreversible; mitigated today only by using `--live-catalog-only` in automation, not by any code-level guard. Pass 3's two new low-severity deferrals (no `--cf-channeldata` enforcement warning; no Parquet-read timeout) are both narrow, low-likelihood edge cases given this tool's documented sequential post-bootstrap usage pattern.

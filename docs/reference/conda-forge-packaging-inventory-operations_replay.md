@@ -158,6 +158,7 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
   --output-csv "cdao_consolidated_inventory_verified_all_packages.csv" \
   --output-md "cdao_consolidated_inventory_verified_all_packages.md" \
   --skip-revised-prompt \
+  --verify-mode fast \
   --cf-channeldata "/tmp/ext-src/cf-channeldata.json" \
   --live-catalog "src/shared/packages/pyforge-atlas/data"
 ```
