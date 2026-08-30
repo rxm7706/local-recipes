@@ -11,13 +11,22 @@ CLI, never by importing internal modules directly (AD-7).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
 
+from pyforge.core.atomic_write import atomic_write_text
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import CompileInProgressError, compile_graph, default_store_path
+from pyforge.scribe.extras.graphify import (
+    GraphifyExtraUnavailable,
+    default_graphify_root,
+    move_list_to_document,
+    scan_move_list,
+)
+from pyforge.scribe.extras.graphify import build_graphify_report as _build_graphify_report
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
@@ -40,6 +49,10 @@ app = typer.Typer(
 )
 graph_app = typer.Typer(help="Knowledge-graph projection commands (Epic 2).")
 app.add_typer(graph_app, name="graph")
+index_app = typer.Typer(
+    help="graphify compile_surface extra: code-structure report + move list (Story 6.1)."
+)
+app.add_typer(index_app, name="index")
 
 # Resolved relative to the current working directory at invocation time —
 # `scribe` is always run from the repo root (never a hardcoded absolute
@@ -258,16 +271,28 @@ def _render_transcript_proposal(proposal: TranscriptScanProposal) -> str:
 @graph_app.command("compile")
 def graph_compile(
     nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
+    extra: bool | None = typer.Option(
+        None,
+        "--extra/--no-extra",
+        help=(
+            "Turn the optional graphify compile_surface extra on/off for "
+            "this run (Story 6.1). Omit to consult SCRIBE_GRAPHIFY_EXTRA "
+            "(off by default, air-gap)."
+        ),
+    ),
 ) -> None:
     """Rebuild the compiled knowledge graph from `.claude/memory/`,
     `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
-    un-curated session transcripts (Story 3.2; bounded per Story 3.3). Never
-    prompts -- safe to run from cron with no human present; the documented
-    nightly trigger is an opt-in operator crontab entry (see this package's
-    `docs/cli-runbooks.md`). An overlapping run against the same store skips
-    cleanly with exit 0 rather than double-writing."""
+    un-curated session transcripts (Story 3.2; bounded per Story 3.3), plus
+    the optional graphify code-structure extra when enabled (Story 6.1).
+    Never prompts -- safe to run from cron with no human present; the
+    documented nightly trigger is an opt-in operator crontab entry (see this
+    package's `docs/cli-runbooks.md`). An overlapping run against the same
+    store skips cleanly with exit 0 rather than double-writing."""
     try:
-        result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
+        result = compile_graph(
+            memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly, graphify_extra=extra
+        )
     except CompileInProgressError as exc:
         # Benign under a scheduler (Story 3.3): an overlapping cron firing
         # must not produce a non-zero exit / red cron mail -- mirror the
@@ -283,6 +308,61 @@ def graph_compile(
         f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated "
         f"-> {result.store_path}"
     )
+
+
+def _graphify_data_dir(repo_root: Path) -> Path:
+    """Where `scribe index` writes its derived, gitignored artifacts --
+    beside the compiled graph itself (`.claude/data/pyforge-scribe/`,
+    already blanket-gitignored, `compile.py::default_store_path`), never at
+    a foundry-root `graphify-out/`."""
+    return default_store_path(repo_root).parent / "graphify"
+
+
+@index_app.command("report")
+def index_report(
+    path: Path | None = typer.Option(None, "--path", help="Folder to scan (default: src/)."),
+) -> None:
+    """GRAPH_REPORT-style summary (node/edge counts + god-node findings,
+    Story 6.1) from the graphify extra. Writes a derived, gitignored
+    artifact under `.claude/data/pyforge-scribe/graphify/GRAPH_REPORT.md` --
+    never a foundry-root `graphify-out/`. Invoking this command IS the
+    opt-in: unlike `graph compile`'s automatic fan-in, it does not consult
+    `SCRIBE_GRAPHIFY_EXTRA`."""
+    repo_root = Path.cwd()
+    scan_root = path if path is not None else default_graphify_root(repo_root)
+    data_dir = _graphify_data_dir(repo_root)
+    try:
+        report = _build_graphify_report(scan_root, repo_root=repo_root, cache_dir=data_dir)
+    except GraphifyExtraUnavailable as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in report.warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    report_path = data_dir / "GRAPH_REPORT.md"
+    atomic_write_text(report_path, report.summary_markdown)
+    typer.echo(
+        f"{report.node_count} node(s), {report.edge_count} edge(s), "
+        f"{len(report.god_nodes)} god node(s) -> {report_path}"
+    )
+
+
+@index_app.command("move-list")
+def index_move_list() -> None:
+    """Foundry-cutover move list (Story 6.1): host `import pyforge.*`
+    sites, `sys.path` inserts, `five_tier` roots, and CFE callers. Writes a
+    derived, gitignored artifact under
+    `.claude/data/pyforge-scribe/graphify/move-list.json` -- never a
+    foundry-root `graphify-out/`. No `graphify` dependency -- a pure text
+    scan, always available regardless of the graphify extra's install
+    state."""
+    repo_root = Path.cwd()
+    findings = scan_move_list(repo_root)
+    document = move_list_to_document(findings)
+    move_list_path = _graphify_data_dir(repo_root) / "move-list.json"
+    atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    counts = document["counts"]
+    summary = ", ".join(f"{count} {category}" for category, count in sorted(counts.items()))
+    typer.echo(f"{len(findings)} finding(s) ({summary or 'none'}) -> {move_list_path}")
 
 
 @app.command("recall")

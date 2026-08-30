@@ -120,8 +120,9 @@ class CaptureRecord(BaseModel):
 
 
 #: What kind of real-tool surface a compiled `GraphNode` was read from
-#: (Story 2.2's named input surfaces, plus Story 3.2's transcript surface).
-GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript"]
+#: (Story 2.2's named input surfaces, Story 3.2's transcript surface, and
+#: Story 6.1's optional graphify `compile_surface` extra -- "code").
+GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript", "code"]
 
 
 class GraphNode(BaseModel):
