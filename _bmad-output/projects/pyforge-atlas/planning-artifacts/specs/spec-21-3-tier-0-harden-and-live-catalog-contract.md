@@ -2,14 +2,151 @@
 title: 'Tier 0 harden and --live-catalog contract (Story 21.3, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
-baseline_revision: 48ddb34b224456d7e2e3ec37de6d1e94deb88875
+status: 'done'
+followup_review_recommended: true
+baseline_revision: e631a46a33a58782619645063ea9e9113057d2a8
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/verification-matrix.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
 warnings: []
+review_loop_iteration: 1
+deferred:
+  - summary: >-
+      pypi_conda_mapping.parquet's conda_name restriction to enumerated conda
+      packages (map_pypi_conda) is not re-applied by match_source_urls()'s
+      recipe_source_url tier, so "conda_name is a subset of cf_packages" is not
+      strictly true for every row of the final persisted dataset.
+    evidence: |-
+      Read src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py
+      L96-136 (match_source_urls): recipe_source_url-tier rows are appended from
+      pypi_json_raw without re-checking core_packages_enumerated membership.
+      Doesn't change the pypi_name-column decision (independently justified by
+      load_parselmouth_pypi_names' pre-existing semantics and the intent's own
+      downstream-unchanged-shape requirement), but the code comment justifying
+      that decision should not overclaim the subset property universally.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py:96-136
+    severity: low
+  - summary: >-
+      When --live-catalog degrades pypi_index to empty (no -only) and
+      --verify-mode strict is set, main() falls through to the pre-existing
+      per-package pypi_exists() live-HTTP path, in tension with --live-catalog's
+      "no duplicate HTTP clients" framing; cf_packages' degrade path has no
+      equivalent live-HTTP fallback, so the I/O matrix's "mirrors the
+      conda-forge row exactly" claim doesn't fully hold at the
+      downstream-consumption level.
+    evidence: |-
+      Pre-existing mechanism (scripts/conda-forge-packaging-inventory-operations_metrics.py,
+      the `if pypi_index: ... elif args.verify_mode == "strict": pypi_exists(...)`
+      block), not modified by this story, but --live-catalog is a new way to
+      reach it. Confirmed independently by three review layers (blind hunter,
+      edge case hunter, intent-alignment auditor).
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (pypi_verified loop)
+    severity: medium
+  - summary: >-
+      --strict-fetch has no effect on the three --live-catalog-acquired sets
+      (they bypass try_source entirely); --live-catalog-only is the intentional
+      analog for this path, but the interaction is undocumented.
+    evidence: |-
+      Confirmed --strict-fetch exists (argparse) and is checked inside
+      try_source() and one other call site, but load_live_catalog()'s three
+      acquisitions never call try_source and never check args.strict_fetch.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), live_catalog branch)
+    severity: low
+  - summary: >-
+      load_live_catalog()'s except Exception blocks store only str(exc), no
+      traceback -- a genuine bug (e.g. a future Kedro column rename) would look
+      identical in the printed warning to an expected degrade (missing file /
+      sub-floor count).
+    evidence: |-
+      Direct read of the (reverted, to-be-re-derived) loader's exception
+      handling shape; applies to whatever the re-derived equivalent looks like.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
+    severity: low
+  - summary: >-
+      --help/replay wording says "missing, unreadable, or below its scale
+      floor" applies uniformly to "the three required datasets," but
+      pypi_conda_mapping has no floor -- could mislead debugging of a
+      --live-catalog-only failure on that dataset.
+    evidence: |-
+      Boundaries & Constraints (this spec) explicitly documents no floor for
+      pypi_conda_mapping; the planned --help/replay phrasing doesn't
+      distinguish it from the two floored datasets.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
+    severity: low
+  - summary: >-
+      --live-catalog's --help text names internal Python variables
+      (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing
+      concepts (conda-forge names / PyPI names / Parselmouth mapping) used
+      elsewhere in the CLI's own output columns.
+    evidence: |-
+      Direct read of the planned --help description text vs. the CSV's
+      PyPI_Verified/CondaForge_Verified column names. Note (review pass 2):
+      the re-derived --help text already uses user-facing concepts, not
+      internal variable names -- this item appears already resolved as a
+      side effect of the re-derivation, left here as historical record
+      rather than pruned (no un-defer mechanism in this workflow).
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
+    severity: low
+  - summary: >-
+      --live-catalog degrading cf_packages to empty (missing/sub-floor
+      core_packages_enumerated.parquet, run without --live-catalog-only)
+      makes every already-on-conda-forge AOSS package look "not on
+      conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free
+      Mason-facing queue output (write_aoss_free_queue) -- documented
+      elsewhere as a live/irreversible signal. Not a new code path (the
+      aoss_free_candidates gate is pre-existing and unmodified by this
+      story) and matches the story's own explicit degrade-and-continue
+      design, but the consequence severity isn't called out anywhere in
+      --help/replay.md; operators relying on the AOSS-Free queue should use
+      --live-catalog-only.
+    evidence: |-
+      Read scripts/conda-forge-packaging-inventory-operations_metrics.py's
+      aoss_free_candidates construction (gated on `pkg not in cf_or_pm`) and
+      write_aoss_free_queue's own "live and irreversible" framing. Confirmed
+      independently by one review layer (blind hunter, pass 2); not
+      corroborated by other layers, but the underlying mechanism (cf_or_pm
+      membership) is directly verifiable in the diff.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (aoss_free_candidates / write_aoss_free_queue)
+    severity: medium
+  - summary: >-
+      load_live_catalog()'s scale-floor check counts distinct raw
+      pre-normalization values (non_null.nunique()), while the set actually
+      returned and consumed downstream is deduplicated post-norm_pkg() --
+      a column with many raw variants collapsing to the same normalized
+      name could theoretically pass the floor with a materially smaller
+      final set. Low real-world likelihood: conda-forge/PyPI catalog names
+      are already close to normalized in the source Parquet.
+    evidence: |-
+      Direct read of load_live_catalog(): `distinct = non_null.nunique()`
+      computed before `values = {norm_pkg(str(v)) for v in non_null}`.
+      Corroborated by two independent review layers (blind hunter and
+      intent-alignment auditor, pass 2), both rating it low-severity/likely
+      inert.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
+    severity: low
+  - summary: >-
+      The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",")
+      ...]` line was relocated (not behaviorally changed) by this story's
+      diff and appears unused elsewhere in the file -- pre-existing
+      dead/unused code unrelated to this story's purpose, surfaced
+      incidentally by touching nearby lines.
+    evidence: |-
+      Blind hunter (review pass 2) noted the line is directly touched
+      (moved) by this diff but never referenced elsewhere in the file;
+      not independently re-verified beyond that report.
+    location: >-
+      scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), subdirs)
+    severity: low
 ---
 
 <intent-contract>
@@ -219,13 +356,55 @@ spec, not left to a human decision at dev time.
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/pipeline.py`
   L55 — confirms `pypi_conda_mapping` (`pypi_name`, `conda_name`, `match_source`)
   is the persisted primary-layer output the Phase C mapping node writes.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py`
+  `map_pypi_conda` (L57-89) — **corrected 2026-08-30 (review pass 1):** this node
+  restricts `pypi_conda_mapping_base`'s `conda_name` to values already present in
+  `core_packages_enumerated` (L83-87: "restrict to conda_names the core pipeline
+  actually enumerated"). Reading `pypi_conda_mapping.parquet`'s `conda_name` column
+  (as this spec originally instructed below) would therefore make `parselmouth_pypi`
+  a strict subset of `cf_packages`, making the `cf_or_pm = cf_packages |
+  parselmouth_pypi` union a no-op — defeating the entire point of adding the
+  Parselmouth set. Note `match_source_urls()` (L96-136), which extends
+  `pypi_conda_mapping_base` into the final persisted `pypi_conda_mapping` with
+  `recipe_source_url`-tier rows sourced from `pypi_json_raw`, does **not**
+  re-apply that `core_packages_enumerated` filter — so the "conda_name is a subset"
+  property does not strictly hold for every row of the final dataset either. The
+  loader must read the `pypi_name` column (see corrected Code Map entry and Tasks
+  below), which reproduces the pre-existing `load_parselmouth_pypi_names()`
+  semantics (a PyPI name whose Parselmouth mapping resolves to a — possibly
+  differently-named — conda-forge package still counts as `CondaForge_Verified =
+  Yes`; `docs/dreams/atlas-kedro-catalog-expansion.md`, "CondaForge Yes when PyPI
+  name != conda name") and is what the Boundaries → Always "everything downstream
+  unchanged in shape" rule requires.
 - `docs/reference/conda-forge-packaging-inventory-operations_replay.md` — add the
   fourth execution-mode example + the verification-section note (see Boundaries →
-  Always).
+  Always). **Corrected 2026-08-30 (review pass 1):** the new example MUST also pass
+  `--cf-channeldata` pointing at a real snapshot. `--cf-channeldata` is not one of
+  the three sets `--live-catalog` replaces — it is still read independently for
+  `git_url_from_channeldata_meta()`/`has_src` (the `10kClosed`/`10kOpen` tab-drop
+  filter, `main()` further down). Omitting `--cf-channeldata` from the example
+  leaves `args.cf_channeldata` at its default (`/tmp/ext-src/cf-channeldata.json`,
+  almost certainly absent), making `has_src` always `False` and silently changing
+  which `10k`-tab rows get dropped compared to an HTTP-based run — a caveat a
+  reader following the example verbatim would not discover. Also fix the example's
+  prose: `PYFORGE_ATLAS_DATA_ROOT` is not auto-detected — `--live-catalog` is a
+  plain `Path` argument the caller supplies explicitly; phrase it as "point
+  `--live-catalog` at your `PYFORGE_ATLAS_DATA_ROOT`" rather than implying
+  environment-variable auto-detection.
 - `docs/reference/conda-forge-packaging-inventory-operations_prompt.md` — auto-
-  regenerated by `write_revised_prompt()` (metrics.py L743-761); no manual edit
-  needed, but confirm the regenerated file after a `--live-catalog` run still
-  matches the replay doc's contract (it echoes back whichever flags were passed).
+  regenerated by `write_revised_prompt()` (metrics.py L743-761). **Corrected
+  2026-08-30 (review pass 1):** the "no manual edit needed" claim below was wrong —
+  `write_revised_prompt()` is a hardcoded f-string template over a fixed, explicit
+  list of `args.*` fields (`analysis_xlsx`, `openteams_tsv`, `curated_config`,
+  `output_csv`, `output_md`, `output_revised_prompt`, `verify_mode`,
+  `strict_max_live_checks`) — it does not dynamically echo every parsed argument, so
+  it silently drops `--live-catalog`/`--live-catalog-only` today. The template DOES
+  need a manual edit: append `--live-catalog "{args.live_catalog}" \` (only when
+  `args.live_catalog is not None`) and `--live-catalog-only \` (only when
+  `args.live_catalog_only` is set) to the generated command block, so a
+  `--live-catalog` run without `--skip-revised-prompt` regenerates
+  `conda-forge-packaging-inventory-operations_prompt.md` with a command that still
+  matches how it was actually invoked.
 - `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py`
   (new) — mirrors the existing `.claude/skills/bmad-review/scripts/tests/
   test_word_metrics.py` convention (a bare `tests/` dir next to `scripts/`, no
@@ -248,7 +427,10 @@ spec, not left to a human decision at dev time.
   - Reads `root / "intermediate/pypi_universe/pypi_universe.parquet"` column
     `pypi_name`; floor 1 (non-empty).
   - Reads `root / "primary/pypi_conda_mapping/pypi_conda_mapping.parquet"` column
-    `conda_name` (drop nulls); no floor, existence/readability only.
+    `pypi_name` (drop nulls); no floor, existence/readability only. **Corrected
+    2026-08-30 (review pass 1):** originally specified as `conda_name` — see the
+    corrected Code Map entry for `map_pypi_conda`/`match_source_urls` above for why
+    that was wrong.
   - For each: missing file / read exception / sub-floor → append that dataset's
     key to `failed`, append a one-line message to `warnings`, and use an empty set
     for that piece — never raise.
@@ -265,7 +447,13 @@ spec, not left to a human decision at dev time.
 - [ ] Update the `--help` description to mention `--live-catalog`.
 - [ ] Update `docs/reference/conda-forge-packaging-inventory-operations_replay.md`
   per the Prompt ↔ Script sync contract (new execution-mode example + verification
-  note).
+  note). The example MUST also pass `--cf-channeldata` (see corrected Code Map
+  entry) and must not phrase `PYFORGE_ATLAS_DATA_ROOT` as auto-detected.
+- [ ] Update `write_revised_prompt()` (metrics.py L834-851) to append
+  `--live-catalog "{args.live_catalog}"` (when set) and `--live-catalog-only`
+  (when set) to its generated command block, so a `--live-catalog` run without
+  `--skip-revised-prompt` regenerates `..._prompt.md` accurately (see corrected
+  Code Map entry).
 - [ ] Add `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py`
   covering every row of the I/O & Edge-Case Matrix with synthetic `tmp_path`
   Parquet fixtures, including an explicit assertion that no HTTP-fetch function
@@ -321,6 +509,42 @@ spec, not left to a human decision at dev time.
   entries do not exist yet (Story 21.6 territory) and that `Source_Repository_URL`
   is not derivable from Tier 0 Parquet alone today. See Design Notes for the
   candidate follow-up items this narrowing defers.
+- 2026-08-30 (review pass 1, bad_spec repair): a first implementation pass (now
+  reverted) surfaced three spec defects via adversarial review, all in this file's
+  Code Map / Tasks & Acceptance — never in `<intent-contract>`, which is unchanged:
+  1. **`pypi_conda_mapping.parquet` column.** Originally specified as `conda_name`;
+     corrected to `pypi_name`. Root cause: `map_pypi_conda()` restricts
+     `pypi_conda_mapping_base`'s `conda_name` to values already in
+     `core_packages_enumerated`, so reading `conda_name` would make
+     `parselmouth_pypi` a strict subset of `cf_packages`, making `cf_or_pm =
+     cf_packages | parselmouth_pypi` a no-op. Known-bad state avoided: a
+     `--live-catalog` run that silently fails to give any package credit for a
+     PyPI-name-differs-from-conda-name Parselmouth match, defeating the set's
+     purpose. **KEEP:** the reverted implementation's `load_live_catalog()` had
+     already independently arrived at `pypi_name` (with a correct, verified inline
+     rationale) — the re-derivation should reproduce that choice, now made
+     explicit in the spec itself rather than left to independent re-derivation.
+  2. **`write_revised_prompt()` claimed "no manual edit needed."** False —
+     confirmed by direct read that it is a hardcoded f-string template, not
+     dynamic over `args`. Corrected: added an explicit task to extend the
+     template. Known-bad state avoided: a `--live-catalog` run (without
+     `--skip-revised-prompt`) regenerating `..._prompt.md` with a command that
+     silently omits the flags actually used.
+  3. **replay.md's new example omitted `--cf-channeldata`.** `--cf-channeldata`
+     is not one of the three sets `--live-catalog` replaces (it still drives
+     `has_src`/the `10k`-tab-drop filter); corrected the Code Map/Tasks to require
+     the example keep it, and to not phrase `PYFORGE_ATLAS_DATA_ROOT` as
+     auto-detected. Known-bad state avoided: a reader following the example
+     verbatim getting a different `10k`-tab drop outcome than an HTTP-based run,
+     with no indication why.
+
+  Deferred (not required for this story's `done_checkpoint`, tracked in
+  frontmatter `deferred`): the `match_source_urls()` caveat on the "conda_name is
+  a subset" property; the pre-existing `pypi_index`-empty + `--verify-mode strict`
+  live-HTTP fallback interaction; `--strict-fetch` not applying to the
+  `--live-catalog` path; unlabeled traceback loss in `load_live_catalog()`'s
+  `except` blocks; `--help`/replay wording precision on the no-floor
+  `pypi_conda_mapping` dataset and on internal variable-name exposure.
 
 ## Design Notes
 
@@ -366,4 +590,101 @@ instead of the current literal `github.com/conda-forge/{pkg}-feedstock` template
   clears every floor on this baseline).
 - Same command with `--live-catalog /tmp/empty-does-not-exist --live-catalog-only`
   — expected: exit 2, no output file written.
+
+## Review Triage Log
+
+### 2026-08-30 — Review pass
+- intent_gap: 0
+- bad_spec: 3: (high 1, medium 2, low 0)
+- patch: 1: (high 0, medium 0, low 1)
+- defer: 6: (high 0, medium 2, low 4)
+- reject: 6: (high 0, medium 1, low 5)
+- addressed_findings:
+  - `[high]` `[bad_spec]` `pypi_conda_mapping.parquet` loader column: Code
+    Map/Tasks specified `conda_name`; corrected to `pypi_name`. Root cause:
+    `map_pypi_conda()` restricts `pypi_conda_mapping_base`'s `conda_name` to
+    values already in `core_packages_enumerated`, so `conda_name` would make
+    `parselmouth_pypi` a strict, no-op subset of `cf_packages`. Code reverted;
+    spec amended (Code Map, Tasks & Acceptance, Design Notes, Spec Change Log);
+    re-derivation via step-03 to follow.
+  - `[medium]` `[bad_spec]` `write_revised_prompt()`: Code Map claimed "no
+    manual edit needed" — false, it's a hardcoded f-string template that never
+    echoes `--live-catalog`/`--live-catalog-only`. Spec amended to add an
+    explicit task extending the template.
+  - `[medium]` `[bad_spec]` replay.md's new `--live-catalog` example omitted
+    `--cf-channeldata`, which independently drives `has_src`/the `10k`-tab-drop
+    filter and is not one of the three sets `--live-catalog` replaces. Spec
+    amended to require the example retain it and to fix the
+    `PYFORGE_ATLAS_DATA_ROOT` auto-detection-sounding phrasing.
+
+### 2026-08-30 — Review pass 2
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 0, medium 2, low 2)
+- defer: 3: (high 0, medium 1, low 2)
+- reject: 7: (high 0, medium 0, low 7)
+- addressed_findings:
+  - `[medium]` `[patch]` `load_live_catalog()`'s `path.exists()` check sat
+    outside the `try/except` wrapping the Parquet read — a `PermissionError`/
+    `OSError` there would have propagated uncaught, violating the "never
+    raises" contract. Moved inside the same `try/except`.
+  - `[low]` `[patch]` `--live-catalog`'s `--help` text claimed
+    `--cf-channeldata`/`--pypi-simple`/`--parselmouth` "stay accepted but
+    unused" — inaccurate for `--cf-channeldata` (still drives `has_src`).
+    Reworded to distinguish it from the two genuinely-unused flags.
+  - `[low]` `[patch]` replay.md's `--live-catalog-only` prose didn't carry
+    the "no floor for the Parselmouth mapping" caveat the `--help` text
+    already states. Aligned the two.
+  - `[medium]` `[patch]` `write_revised_prompt()`'s new
+    `--live-catalog`/`--live-catalog-only` echo logic (landed in review pass
+    1) had zero test coverage — every `main()`-level test hardcoded
+    `--skip-revised-prompt`. Added
+    `test_write_revised_prompt_echoes_live_catalog_flags`, which runs
+    `main()` without that flag and asserts the regenerated prompt doc
+    contains both flags.
+
+  Patches applied directly (the review-pass-1 implementation subagent was
+  not addressable via `SendMessage`/`ListAgents` in this session for
+  re-engagement with context intact). Re-ran `python3 -m pytest scripts/tests/
+  tests/packaging/test_openteams_handoffs.py` after applying: 32/32 pass.
+  Re-verified `--help` output and the `--live-catalog-only` fail-fast exit-2
+  command from this spec's `## Verification` section — both still pass.
+
+## Auto Run Result
+
+**Summary:** Implemented `--live-catalog PATH` / `--live-catalog-only` in
+`scripts/conda-forge-packaging-inventory-operations_metrics.py`: when set, the
+acquisition of `cf_packages`/`pypi_index`/`parselmouth_pypi` reads three
+already-populated `pyforge-atlas` Kedro Tier 0 Parquet outputs directly
+(`pandas.read_parquet`, lazily imported) instead of live HTTP fetches or
+`--cf-channeldata`/`--pypi-simple`/`--parselmouth` local snapshots. Every other
+acquisition path, and all downstream shape (CSV/MD columns, `source_sets`
+keys, `cf_or_pm`), is unchanged. Two adversarial review passes ran: pass 1
+found and corrected 3 spec defects (wrong Parquet column, an incorrect "no
+edit needed" claim, an incomplete doc example) via a full revert + spec
+amendment + re-derivation loop; pass 2 found and applied 4 direct code
+patches on the re-derived implementation. `--live-catalog` absent remains
+byte-identical to pre-story behavior (regression-guarded by a dedicated test).
+
+**Files changed:**
+- `scripts/conda-forge-packaging-inventory-operations_metrics.py` — `--live-catalog`/`--live-catalog-only` flags, `LiveCatalogResult` dataclass, `load_live_catalog()`, wiring into `main()`'s three acquisition sites, `write_revised_prompt()` flag echo.
+- `docs/reference/conda-forge-packaging-inventory-operations_replay.md` — fourth execution-mode example (`--live-catalog`, retaining `--cf-channeldata`) + verification-section note, per the script's Prompt ↔ Script sync contract.
+- `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` (new) — 16 tests covering every I/O & Edge-Case Matrix row plus the `write_revised_prompt()` echo path; no pixi task (spec Boundaries → Never, mirrors `test_word_metrics.py`).
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md` — this spec, amended across both review passes (Code Map, Tasks & Acceptance, Design Notes, Spec Change Log, frontmatter `deferred`, Review Triage Log).
+
+**Review findings breakdown:**
+- Pass 1: 3 bad_spec (all repaired via spec amendment + revert + re-derivation), 1 patch (moot — superseded by re-derivation), 6 defer, 6 reject.
+- Pass 2: 0 bad_spec/intent_gap, 4 patch (all applied directly), 3 new defer, 7 reject.
+- Total deferred (frontmatter `deferred`, 9 items): `match_source_urls()` subset-claim caveat; pre-existing `--verify-mode strict` + degraded `pypi_index` live-HTTP fallback (medium, cross-confirmed by 3+ review layers across both passes); `--strict-fetch` not applying to `--live-catalog`; untraced exceptions in `load_live_catalog()`; two `--help`/replay wording-precision items (one likely already resolved by pass 2's re-derivation, left as historical record); AOSS-Free Mason-queue poisoning risk on a `cf_packages` degrade without `-only` (medium — the most operationally significant deferred item); pre/post-normalization floor-count discrepancy (low, likely inert); a relocated, pre-existing unused `subdirs` line (low).
+- Rejected: everything that matched the spec's own explicit Boundaries text verbatim (no floor on `pypi_conda_mapping`, `pypi_universe` floor of 1, silent-but-warned degrade, unused-old-flags-no-error, `source_sets` key reuse), plus items resolved by pre-existing/unmodified code patterns or judged too low-impact to track (unescaped-quote path interpolation, empty-string `--live-catalog` path, pandas `ImportError` given it's a guaranteed pixi-env dependency, `nunique()` computed-but-unused for the unfloored dataset, marginal test-depth suggestions beyond the I/O matrix's own requirements).
+- Follow-up review recommendation: **true** — pass 2's 4 patches score `3×2 (medium) + 1×2 (low) = 8 ≥ 5` (0 high-severity patches).
+
+**Verification performed:**
+- `python3 -m pytest scripts/tests/ tests/packaging/test_openteams_handoffs.py` — 32/32 pass (re-run after both the pass-1 re-derivation and the pass-2 patches).
+- `--help` lists `--live-catalog`/`--live-catalog-only` with corrected, accurate wording.
+- `--live-catalog /tmp/empty-does-not-exist --live-catalog-only` → exit 2, no output file written, before opening the analysis workbook (`XlsxReader` never instantiated) — re-verified after both implementation passes.
+- Matrix Test Audit: all 9 I/O & Edge-Case Matrix rows covered by at least one test, all tests ran and passed, both passes.
+- Could not run the spec's real-bootstrapped-data verification command (`--live-catalog src/shared/packages/pyforge-atlas/data` against the 34,098/880,710/21,761-row baseline) — this worktree has no bootstrapped `PYFORGE_ATLAS_DATA_ROOT`; synthetic-fixture tests exercise the identical code path.
+
+**Residual risks:** see the 9 `deferred` frontmatter items. The most operationally significant is the AOSS-Free Mason-queue poisoning risk (medium) — an operator running `--live-catalog` without `--live-catalog-only` against a degraded/incomplete data root could push false "not on conda-forge" entries into a queue documented elsewhere as live/irreversible; mitigated today only by using `--live-catalog-only` in automation, not by any code-level guard.
 
