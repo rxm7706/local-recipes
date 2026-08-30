@@ -2,7 +2,7 @@
 title: 'upstream_discovery identity join and export Parquet (Story 21.6, CAP-3)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '2fa0d73abc1f701f60b46bf9f81deca3f90555c5'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'

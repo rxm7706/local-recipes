@@ -1,0 +1,103 @@
+{
+  "_comment": "Story 21.6 (CAP-3, Phase D) fixed parity fixture corpus for build_identity_packages_primary — identity-contract.md Parity test corpus: associator hit, inventory-derived fallback, board-only extra, unmapped none, conda_purl only when CondaForge_Verified, overlay URLs from feedstock map + staged PR + local recipes. Consumed by tests/pipelines/upstream_discovery/test_identity_parity_fixtures.py.",
+  "inputs": {
+    "purl_associator_mappings_raw": [
+      {
+        "assoc_key": "assoc-hit-pkg",
+        "purl": "pkg:pypi/assoc-hit-pkg",
+        "type": "pypi",
+        "status": "confirmed",
+        "alternative_purls": "pkg:github/someone/assoc-hit-pkg",
+        "cpes": "cpe:2.3:a:someone:assoc-hit-pkg",
+        "fetched_at": 1
+      }
+    ],
+    "openteams_project_1_board_raw": [
+      {
+        "number": 501,
+        "title": "[Conda-Forge Packaging] board-only-corpus-pkg",
+        "url": "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/501",
+        "state": "OPEN",
+        "milestone": "OSS Enhancements (Conda Forge, Pixi, ect)",
+        "fetched_at": 1
+      }
+    ],
+    "discovery_staged_recipes_prs_raw": [
+      {
+        "number": 900,
+        "state": "open",
+        "merged_at": null,
+        "url": "https://github.com/conda-forge/staged-recipes/pull/900",
+        "title": "Add recipe for overlay-pkg",
+        "file_paths": "",
+        "fetched_at": 1
+      }
+    ],
+    "discovery_local_recipes_raw": [
+      {
+        "dir_name": "overlay-pkg",
+        "names": "overlay-pkg",
+        "url": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg",
+        "build_status": "success"
+      }
+    ],
+    "core_feedstock_attribution": [
+      {"conda_name": "overlay-pkg", "feedstock_name": "overlay-pkg"}
+    ],
+    "enterprise_jfrog_names": [
+      {"pypi_name": "assoc-hit-pkg", "conda_name": null, "is_internal": true},
+      {"pypi_name": "inventory-pkg", "conda_name": null, "is_internal": true},
+      {"pypi_name": "unmapped-pkg", "conda_name": null, "is_internal": false}
+    ],
+    "enterprise_conda_maintainers": [
+      {"core_python_package_name": "verified-conda-pkg", "role": "Maintainer", "feedstock_slug": "conda-forge/verified-conda-pkg-feedstock", "repository_source": "CDO-ENT-CONDA"},
+      {"core_python_package_name": "unverified-conda-pkg", "role": "Maintainer", "feedstock_slug": "conda-forge/unverified-conda-pkg-feedstock", "repository_source": "CDO-ENT-CONDA"},
+      {"core_python_package_name": "overlay-pkg", "role": "Co-Maintainer", "feedstock_slug": "conda-forge/overlay-pkg-feedstock", "repository_source": "CDO-ENT-CONDA"}
+    ],
+    "pypi_universe": [
+      {"pypi_name": "assoc-hit-pkg"},
+      {"pypi_name": "inventory-pkg"}
+    ],
+    "core_packages_enumerated": [
+      {"conda_name": "verified-conda-pkg"}
+    ]
+  },
+  "expected_rows": {
+    "assoc-hit-pkg": {
+      "identity_source": "purl-associator",
+      "associator_key": "assoc-hit-pkg",
+      "primary_purl": "pkg:pypi/assoc-hit-pkg",
+      "primary_type": "pypi",
+      "alternative_purls": "pkg:github/someone/assoc-hit-pkg",
+      "cpes": "cpe:2.3:a:someone:assoc-hit-pkg"
+    },
+    "inventory-pkg": {
+      "identity_source": "inventory",
+      "associator_status": "inventory-derived",
+      "primary_purl": "pkg:pypi/inventory-pkg",
+      "primary_type": "pypi"
+    },
+    "unmapped-pkg": {
+      "identity_source": "none",
+      "associator_status": "unmapped",
+      "primary_purl": ""
+    },
+    "verified-conda-pkg": {
+      "conda_purl": "pkg:conda/verified-conda-pkg?channel=conda-forge"
+    },
+    "unverified-conda-pkg": {
+      "conda_purl": ""
+    },
+    "overlay-pkg": {
+      "Conda-Forge_FeedStock_URL": "https://github.com/conda-forge/overlay-pkg-feedstock",
+      "Conda-Forge_Metadata_URL": "https://conda-metadata-app.streamlit.app/?q=conda-forge/overlay-pkg",
+      "Staged_Recipes_PR_URL": "https://github.com/conda-forge/staged-recipes/pull/900",
+      "Local_Recipes_URL": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg",
+      "Local_Build_Status": "success"
+    },
+    "board-only-corpus-pkg": {
+      "identity_source": "openteams-board",
+      "OpenTeams_Issue_URL": "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/501"
+    }
+  }
+}

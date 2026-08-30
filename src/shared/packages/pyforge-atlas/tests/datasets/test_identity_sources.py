@@ -408,7 +408,11 @@ def test_staged_page_fetch_failure_keeps_accumulated_rows(tmp_path):
     def fetcher(url):
         if "/files" in url:
             return []
-        if "page=1" in url:
+        # NOTE: match on the trailing `&page=N` param, never a bare substring
+        # check against "page=1" — the FIXED "per_page=100" query param itself
+        # contains that substring for every page, which would make every call
+        # look like page 1.
+        if url.endswith("&page=1"):
             return _STAGED_FULL_PAGE
         raise ConnectionError("page 2 failed")
 
@@ -462,7 +466,8 @@ package:
   name: cool-pkg
   version: 1.0.0
 
-# cfe-local-build-status: success
+extra:
+  cfe-local-build-status: success
 """
 
 
@@ -508,8 +513,10 @@ def test_local_recipes_overlay_dataset_missing_directory_degrades_to_empty(tmp_p
 
 
 def test_local_recipes_overlay_dataset_is_read_only(tmp_path):
+    from kedro.io.core import DatasetError
+
     ds = LocalRecipesOverlayDataset(filepath=str(tmp_path))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(DatasetError, match="read-only"):
         ds.save(pd.DataFrame())
 
 

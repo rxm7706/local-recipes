@@ -1127,7 +1127,7 @@ def test_identity_overlay_urls_feedstock_metadata_staged_local():
     """Matrix row: Overlay URLs — feedstock + metadata + staged PR + local recipes."""
     attribution = _attribution_raw([{"conda_name": "overlay-pkg", "feedstock_name": "overlay-pkg"}])
     staged = _staged_raw(
-        [{"number": 10, "state": "open", "merged_at": None, "url": "https://x/10", "title": "Add overlay-pkg recipe", "file_paths": "", "fetched_at": 1}]
+        [{"number": 10, "state": "open", "merged_at": None, "url": "https://x/10", "title": "Add recipe for overlay-pkg", "file_paths": "", "fetched_at": 1}]
     )
     local = _local_raw(
         [{"dir_name": "overlay-pkg", "names": "overlay-pkg", "url": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg", "build_status": "success"}]
@@ -1151,7 +1151,7 @@ def test_identity_staged_pr_file_path_match_ranks_above_title_match():
     title-parse match on a different (also open) PR."""
     staged = _staged_raw(
         [
-            {"number": 5, "state": "open", "merged_at": None, "url": "https://x/title-match", "title": "Add rank-pkg recipe", "file_paths": "", "fetched_at": 1},
+            {"number": 5, "state": "open", "merged_at": None, "url": "https://x/title-match", "title": "Add recipe for rank-pkg", "file_paths": "", "fetched_at": 1},
             {"number": 6, "state": "open", "merged_at": None, "url": "https://x/file-match", "title": "unrelated title", "file_paths": "recipes/rank-pkg/recipe.yaml", "fetched_at": 1},
         ]
     )
