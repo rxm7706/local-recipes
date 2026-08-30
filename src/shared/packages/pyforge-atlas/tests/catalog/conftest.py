@@ -211,6 +211,9 @@ EXPECTED_FETCHER_URLS = {
 PATHS_ENV_VARS = {
     "data_root": "PYFORGE_ATLAS_DATA_ROOT",
     "seed_root": "PYFORGE_ATLAS_SEED_ROOT",
+    # Story 21.6 (CAP-3 identity join): discovery_local_recipes_raw's live
+    # recipes/ tree root (LocalRecipesOverlayDataset).
+    "local_recipes_dir": "PYFORGE_ATLAS_LOCAL_RECIPES_DIR",
 }
 
 # Story 21.1: the three § 3.4 external-refresh store paths — exact key ->
@@ -224,10 +227,12 @@ DERIVED_STORE_PATHS = {
 }
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
-# data_root, +2 by Story 21.4): endpoint_bases 22 (19 live + 1 reserved + 2
-# Story 21.4) + extra_overrides 3 + fetcher_urls 3 + paths 5 (2 env_or-wrapped
-# + 3 data_root-derived, Story 21.1) = 33. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 33
+# data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
+# endpoint_bases 22 (19 live + 1 reserved + 2 Story 21.4) + extra_overrides 4
+# (Story 21.6: + PURL_ASSOCIATOR_BASE_URL) + fetcher_urls 3 + paths 6 (2
+# env_or-wrapped + 3 data_root-derived, Story 21.1 + 1 Story 21.6
+# local_recipes_dir) = 35. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 35
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the
@@ -236,6 +241,10 @@ EXPECTED_ENV_OVERRIDE_SURFACE = 33
 CREDENTIAL_ALLOWLIST = {
     "vcs_github_api_raw": "github_token",
     "pypi_bigquery_downloads_raw": "bigquery_adc",
+    # Story 21.6 (CAP-3 identity join): both reuse the EXISTING github_token
+    # credential — no second GitHub credential key.
+    "openteams_project_1_board_raw": "github_token",
+    "discovery_staged_recipes_prs_raw": "github_token",
 }
 
 STUB_CREDENTIALS = {

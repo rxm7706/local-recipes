@@ -858,3 +858,393 @@ def test_load_org_audit_candidates_both_sources_empty_degrades_to_empty_schema()
     out = load_org_audit_candidates(None, None)
     assert out.empty
     assert list(out.columns) == ["repo_full_name"]
+
+
+# ---------------------------------------------------------------------------
+# Story 21.6 (CAP-3, Phase D identity join)
+# ---------------------------------------------------------------------------
+
+from pyforge.atlas.pipelines.upstream_discovery.nodes import (  # noqa: E402
+    build_identity_export_parquet,
+    build_identity_packages_primary,
+    refresh_openteams_board,
+    refresh_purl_associator_mappings,
+    refresh_staged_recipes_prs,
+)
+
+_ID_TIER_1_TRIGGERS = [
+    (refresh_purl_associator_mappings, "purl_associator_mappings_raw", "purl_associator_mappings_raw"),
+    (refresh_openteams_board, "openteams_project_1_board_raw", "openteams_project_1_board_raw"),
+    (refresh_staged_recipes_prs, "discovery_staged_recipes_prs_raw", "discovery_staged_recipes_prs_raw"),
+]
+
+
+@pytest.mark.parametrize(("trigger", "ttl_key", "store"), _ID_TIER_1_TRIGGERS)
+def test_identity_join_trigger_reads_its_own_ttls_cadence(trigger, ttl_key, store):
+    req = trigger({ttl_key: 12345})
+    assert isinstance(req, RefreshRequest)
+    assert req.store == store
+    assert req.cadence_seconds == 12345
+    assert req.force is False
+
+
+@pytest.mark.parametrize(("trigger", "ttl_key", "store"), _ID_TIER_1_TRIGGERS)
+def test_identity_join_trigger_missing_or_non_numeric_falls_back_to_weekly(trigger, ttl_key, store):
+    assert trigger({}).cadence_seconds == WEEKLY_SECONDS
+    assert trigger(None).cadence_seconds == WEEKLY_SECONDS
+    assert trigger({ttl_key: "nope"}).cadence_seconds == WEEKLY_SECONDS
+
+
+def test_identity_join_triggers_read_the_shipped_parameters_yml_ttls():
+    import pathlib
+
+    import yaml
+
+    params = yaml.safe_load(
+        (pathlib.Path(__file__).resolve().parents[3] / "conf" / "base" / "parameters.yml").read_text(encoding="utf-8")
+    )
+    ttls = params["ttls"]
+    for trigger, ttl_key, _store in _ID_TIER_1_TRIGGERS:
+        assert ttl_key in ttls, ttl_key
+        assert trigger(ttls).cadence_seconds == ttls[ttl_key] == WEEKLY_SECONDS
+    assert "discovery_local_recipes_raw" not in ttls  # plain filesystem read: no ttl
+
+
+# -- build_identity_packages_primary / build_identity_export_parquet ---------
+# One test per I/O & Edge-Case Matrix row (spec-21-6-upstream-discovery-identity-
+# join-and-export-parquet.md), hand-derived by tracing the legacy script's
+# lookup_assoc/from_assoc/from_inventory/from_board_only/attach_packaging_urls/
+# overlay_live_local against the fixed fixture corpus below (identity-contract.md
+# Parity test corpus).
+
+_ASSOC_COLS = ["assoc_key", "purl", "type", "status", "alternative_purls", "cpes", "fetched_at"]
+_BOARD_COLS = ["number", "title", "url", "state", "milestone", "fetched_at"]
+_STAGED_COLS = ["number", "state", "merged_at", "url", "title", "file_paths", "fetched_at"]
+_LOCAL_COLS = ["dir_name", "names", "url", "build_status"]
+_ATTRIBUTION_COLS_ID = ["conda_name", "feedstock_name"]
+_JFROG_NAMES_COLS = ["pypi_name", "conda_name", "is_internal"]
+_CONDA_MAINTAINERS_COLS = ["core_python_package_name", "role", "feedstock_slug", "repository_source"]
+
+
+def _assoc_raw(rows=()):
+    return pd.DataFrame(list(rows), columns=_ASSOC_COLS)
+
+
+def _board_raw(rows=()):
+    return pd.DataFrame(list(rows), columns=_BOARD_COLS)
+
+
+def _staged_raw(rows=()):
+    return pd.DataFrame(list(rows), columns=_STAGED_COLS)
+
+
+def _local_raw(rows=()):
+    return pd.DataFrame(list(rows), columns=_LOCAL_COLS)
+
+
+def _attribution_raw(rows=()):
+    return pd.DataFrame(list(rows), columns=_ATTRIBUTION_COLS_ID)
+
+
+def _jfrog_names(rows=()):
+    return pd.DataFrame(list(rows), columns=_JFROG_NAMES_COLS)
+
+
+def _conda_maintainers(rows=()):
+    return pd.DataFrame(list(rows), columns=_CONDA_MAINTAINERS_COLS)
+
+
+def _pypi_universe(names=()):
+    return pd.DataFrame({"pypi_name": list(names)})
+
+
+def _packages_enumerated(names=()):
+    return pd.DataFrame({"conda_name": list(names)})
+
+
+_EMPTY_ASSOC = _assoc_raw()
+_EMPTY_BOARD = _board_raw()
+_EMPTY_STAGED = _staged_raw()
+_EMPTY_LOCAL = _local_raw()
+_EMPTY_ATTRIBUTION = _attribution_raw()
+
+
+def _build_primary(
+    *,
+    assoc=None,
+    board=None,
+    staged=None,
+    local=None,
+    attribution=None,
+    jfrog_names=None,
+    conda_maintainers=None,
+    universe_names=(),
+    enumerated_names=(),
+):
+    return build_identity_packages_primary(
+        assoc if assoc is not None else _EMPTY_ASSOC,
+        board if board is not None else _EMPTY_BOARD,
+        staged if staged is not None else _EMPTY_STAGED,
+        local if local is not None else _EMPTY_LOCAL,
+        attribution if attribution is not None else _EMPTY_ATTRIBUTION,
+        jfrog_names if jfrog_names is not None else _jfrog_names(),
+        conda_maintainers if conda_maintainers is not None else _conda_maintainers(),
+        _pypi_universe(universe_names),
+        _packages_enumerated(enumerated_names),
+    )
+
+
+def _row_for(out, name):
+    matches = out[out["Core_Python_Package_Name"] == name]
+    assert len(matches) == 1, f"expected exactly one row for {name!r}, got {len(matches)}"
+    return matches.iloc[0]
+
+
+def test_identity_associator_hit():
+    """Matrix row: Associator hit."""
+    assoc = _assoc_raw(
+        [
+            {
+                "assoc_key": "cool-pkg",
+                "purl": "pkg:pypi/cool-pkg",
+                "type": "pypi",
+                "status": "confirmed",
+                "alternative_purls": "pkg:github/someone/cool-pkg",
+                "cpes": "cpe:2.3:a:someone:cool-pkg",
+                "fetched_at": 1,
+            }
+        ]
+    )
+    out = _build_primary(
+        assoc=assoc,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "cool-pkg", "role": "Maintainer", "feedstock_slug": "conda-forge/cool-pkg-feedstock", "repository_source": "CDO-ENT-CONDA"}]),
+        enumerated_names=["cool-pkg"],
+    )
+    row = _row_for(out, "cool-pkg")
+    assert row["identity_source"] == "purl-associator"
+    assert row["associator_key"] == "cool-pkg"
+    assert row["primary_purl"] == "pkg:pypi/cool-pkg"
+    assert row["primary_type"] == "pypi"
+    assert row["alternative_purls"] == "pkg:github/someone/cool-pkg"
+    assert row["cpes"] == "cpe:2.3:a:someone:cool-pkg"
+    assert row["conda_purl"] == "pkg:conda/cool-pkg?channel=conda-forge"
+
+
+def test_identity_associator_hit_via_alias_fallback():
+    """lookup_assoc's -/./_ alias fallback."""
+    assoc = _assoc_raw(
+        [{"assoc_key": "cool.pkg", "purl": "pkg:pypi/cool-pkg", "type": "pypi", "status": "ok", "alternative_purls": "", "cpes": "", "fetched_at": 1}]
+    )
+    out = _build_primary(
+        assoc=assoc,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "cool-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    row = _row_for(out, "cool-pkg")
+    assert row["identity_source"] == "purl-associator"
+    assert row["associator_key"] == "cool.pkg"
+
+
+def test_identity_inventory_derived_fallback_pypi_only():
+    """Matrix row: Inventory-derived fallback (PyPI verified, no associator hit)."""
+    out = _build_primary(
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "newpkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        universe_names=["newpkg"],
+    )
+    row = _row_for(out, "newpkg")
+    assert row["identity_source"] == "inventory"
+    assert row["associator_status"] == "inventory-derived"
+    assert row["primary_purl"] == "pkg:pypi/newpkg"
+    assert row["primary_type"] == "pypi"
+
+
+def test_identity_unmapped_none():
+    """Matrix row: Unmapped (none) — no associator hit, no PyPI/conda verification."""
+    out = _build_primary(
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "ghostpkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    row = _row_for(out, "ghostpkg")
+    assert row["identity_source"] == "none"
+    assert row["associator_status"] == "unmapped"
+    assert row["primary_purl"] == ""
+    # row is still emitted, never dropped
+
+
+def test_identity_board_only_extra_appended():
+    """Matrix row: Board-only extra."""
+    board = _board_raw(
+        [{"number": 1, "title": "[Conda-Forge Packaging] board-only-pkg", "url": "https://x/1", "state": "OPEN", "milestone": None, "fetched_at": 1}]
+    )
+    out = _build_primary(board=board)
+    row = _row_for(out, "board-only-pkg")
+    assert row["identity_source"] == "openteams-board"
+    assert row["OpenTeams_Issue_URL"] == "https://x/1"
+
+
+def test_identity_board_only_associator_rechecked():
+    """from_board_only re-checks the associator for a board-only name too."""
+    assoc = _assoc_raw(
+        [{"assoc_key": "board-assoc-pkg", "purl": "pkg:pypi/board-assoc-pkg", "type": "pypi", "status": "ok", "alternative_purls": "", "cpes": "", "fetched_at": 1}]
+    )
+    board = _board_raw(
+        [{"number": 2, "title": "[Conda-Forge Packaging] board-assoc-pkg", "url": "https://x/2", "state": "OPEN", "milestone": None, "fetched_at": 1}]
+    )
+    out = _build_primary(assoc=assoc, board=board)
+    row = _row_for(out, "board-assoc-pkg")
+    assert row["identity_source"] == "openteams-board"
+    assert row["primary_purl"] == "pkg:pypi/board-assoc-pkg"
+
+
+def test_identity_board_duplicate_name_keeps_first_issue_url():
+    """A duplicate board name (same PEP-503 key) across multiple issues keeps
+    the FIRST issue URL seen, never overwritten."""
+    board = _board_raw(
+        [
+            {"number": 1, "title": "[Conda-Forge Packaging] dup-pkg", "url": "https://x/first", "state": "OPEN", "milestone": None, "fetched_at": 1},
+            {"number": 2, "title": "[Conda-Forge Packaging] dup-pkg", "url": "https://x/second", "state": "OPEN", "milestone": None, "fetched_at": 1},
+        ]
+    )
+    out = _build_primary(board=board)
+    row = _row_for(out, "dup-pkg")
+    assert row["OpenTeams_Issue_URL"] == "https://x/first"
+
+
+def test_identity_conda_purl_only_when_conda_forge_verified():
+    """Matrix row: conda_purl only when CondaForge_Verified."""
+    out = _build_primary(
+        conda_maintainers=_conda_maintainers(
+            [
+                {"core_python_package_name": "verified-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"},
+                {"core_python_package_name": "unverified-pkg", "role": "Maintainer", "feedstock_slug": "y", "repository_source": "CDO-ENT-CONDA"},
+            ]
+        ),
+        enumerated_names=["verified-pkg"],
+    )
+    assert _row_for(out, "verified-pkg")["conda_purl"] == "pkg:conda/verified-pkg?channel=conda-forge"
+    assert _row_for(out, "unverified-pkg")["conda_purl"] == ""
+
+
+def test_identity_overlay_urls_feedstock_metadata_staged_local():
+    """Matrix row: Overlay URLs — feedstock + metadata + staged PR + local recipes."""
+    attribution = _attribution_raw([{"conda_name": "overlay-pkg", "feedstock_name": "overlay-pkg"}])
+    staged = _staged_raw(
+        [{"number": 10, "state": "open", "merged_at": None, "url": "https://x/10", "title": "Add overlay-pkg recipe", "file_paths": "", "fetched_at": 1}]
+    )
+    local = _local_raw(
+        [{"dir_name": "overlay-pkg", "names": "overlay-pkg", "url": "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg", "build_status": "success"}]
+    )
+    out = _build_primary(
+        attribution=attribution,
+        staged=staged,
+        local=local,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "overlay-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    row = _row_for(out, "overlay-pkg")
+    assert row["Conda-Forge_FeedStock_URL"] == "https://github.com/conda-forge/overlay-pkg-feedstock"
+    assert row["Conda-Forge_Metadata_URL"] == "https://conda-metadata-app.streamlit.app/?q=conda-forge/overlay-pkg"
+    assert row["Staged_Recipes_PR_URL"] == "https://x/10"
+    assert row["Local_Recipes_URL"] == "https://github.com/rxm7706/local-recipes/tree/main/recipes/overlay-pkg"
+    assert row["Local_Build_Status"] == "success"
+
+
+def test_identity_staged_pr_file_path_match_ranks_above_title_match():
+    """load_staged_prs ranking: a file-path match on an open PR outranks a
+    title-parse match on a different (also open) PR."""
+    staged = _staged_raw(
+        [
+            {"number": 5, "state": "open", "merged_at": None, "url": "https://x/title-match", "title": "Add rank-pkg recipe", "file_paths": "", "fetched_at": 1},
+            {"number": 6, "state": "open", "merged_at": None, "url": "https://x/file-match", "title": "unrelated title", "file_paths": "recipes/rank-pkg/recipe.yaml", "fetched_at": 1},
+        ]
+    )
+    out = _build_primary(
+        staged=staged,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "rank-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    assert _row_for(out, "rank-pkg")["Staged_Recipes_PR_URL"] == "https://x/file-match"
+
+
+def test_identity_no_local_build_status_stays_blank_never_fabricated():
+    """A malformed/absent CFE cfe-local-build-status stamp leaves
+    Local_Build_Status blank, never fabricated."""
+    local = _local_raw(
+        [{"dir_name": "blank-status-pkg", "names": "blank-status-pkg", "url": "https://x", "build_status": ""}]
+    )
+    out = _build_primary(
+        local=local,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "blank-status-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    assert _row_for(out, "blank-status-pkg")["Local_Build_Status"] == ""
+
+
+def test_identity_associator_fetch_fully_unavailable_falls_through_to_inventory():
+    """Matrix row: PURL Associator fetch fails — every universe row falls
+    through to from_inventory/from_board_only (an always-empty associator index
+    behaves identically)."""
+    out = _build_primary(
+        assoc=_EMPTY_ASSOC,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "assoc-down-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        universe_names=["assoc-down-pkg"],
+    )
+    row = _row_for(out, "assoc-down-pkg")
+    assert row["identity_source"] == "inventory"
+    assert row["primary_purl"] == "pkg:pypi/assoc-down-pkg"
+
+
+def test_identity_board_totally_unavailable_join_still_proceeds():
+    """Matrix row: OpenTeams board fetch fails / paginates incompletely — the
+    universe-row join still proceeds using inventory/associator data alone."""
+    out = _build_primary(
+        board=_EMPTY_BOARD,
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "board-down-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+    )
+    row = _row_for(out, "board-down-pkg")
+    assert row["OpenTeams_Issue_URL"] == ""
+    assert row["identity_source"] in {"none", "inventory"}
+
+
+def test_identity_export_parquet_full_gist_schema_shape():
+    """Matrix row: identity_export_parquet shape — full GIST_SCHEMA column order,
+    18 core columns populated, every ranking/JFROG column present as null."""
+    primary = _build_primary(
+        conda_maintainers=_conda_maintainers([{"core_python_package_name": "export-pkg", "role": "Maintainer", "feedstock_slug": "x", "repository_source": "CDO-ENT-CONDA"}]),
+        enumerated_names=["export-pkg"],
+    )
+    out = build_identity_export_parquet(primary)
+    assert list(out.columns) == [
+        "P", "Rank", "Score", "Package", "Work",
+        "Platforms", "Apps", "Downloads", "Versions", "Vuln",
+        "Core_Python_Package_Name", "OpenTeams_Title", "identity_source", "associator_key",
+        "associator_status", "primary_purl", "primary_type", "alternative_purls", "cpes",
+        "conda_purl", "source_repository_url", "OpenTeams_Issue_URL",
+        "Conda-Forge_FeedStock_URL", "Conda-Forge_Metadata_URL", "Staged_Recipes_PR_URL",
+        "Local_Recipes_URL", "Local_Build_Status", "Verification_Timestamp_UTC",
+        "Priority_Bucket_Description", "Priority_Source", "Priority_Reason",
+        "JFROG_risk_level", "JFROG_latest_vuln_count", "internal_component_count",
+        "internal_lob_count",
+    ]
+    row = out.iloc[0]
+    assert row["Package"] == "export-pkg"
+    assert row["Core_Python_Package_Name"] == "export-pkg"
+    for col in ("P", "Rank", "Score", "Work", "Platforms", "JFROG_risk_level"):
+        assert pd.isna(row[col])
+
+
+def test_identity_export_parquet_empty_primary_yields_empty_full_schema():
+    """An empty identity_packages_primary yields an empty frame carrying the
+    full schema, not a missing/absent file."""
+    out = build_identity_export_parquet(pd.DataFrame(columns=[]))
+    assert out.empty
+    assert "P" in out.columns and "Core_Python_Package_Name" in out.columns
+    out_none = build_identity_export_parquet(None)
+    assert out_none.empty
+
+
+def test_identity_join_never_raises_on_all_empty_inputs():
+    out = build_identity_packages_primary(None, None, None, None, None, None, None, None, None)
+    assert out.empty
+    assert list(out.columns) == [
+        "Core_Python_Package_Name", "OpenTeams_Title", "identity_source", "associator_key",
+        "associator_status", "primary_purl", "primary_type", "alternative_purls", "cpes",
+        "conda_purl", "source_repository_url", "OpenTeams_Issue_URL",
+        "Conda-Forge_FeedStock_URL", "Conda-Forge_Metadata_URL", "Staged_Recipes_PR_URL",
+        "Local_Recipes_URL", "Local_Build_Status", "Verification_Timestamp_UTC",
+    ]
