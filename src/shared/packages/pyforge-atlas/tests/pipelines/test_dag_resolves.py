@@ -238,13 +238,14 @@ def test_v_current_version_vulns_is_backed_by_per_version_vulns():
 
 # -- Story 21.4/21.5: upstream_discovery (9 nodes) + Tier-1/Tier-2 single-writer wiring -----
 
-def test_upstream_discovery_pipeline_has_nine_nodes():
+def test_upstream_discovery_pipeline_has_fourteen_nodes():
     # Stories 13.1/13.2/13.4 landed the original four; Story 21.4 added the three Tier-1
     # external-refresh triggers (single writers of the discovery_*_raw stores); Story
     # 21.5 added the two Tier-2 nodes (refresh_about_maintainers +
-    # join_enterprise_conda_maintainers).
+    # join_enterprise_conda_maintainers); Story 21.6 added the CAP-3 identity join's
+    # three external-refresh triggers + two pure join/shape nodes.
     discovery = discovery_create()
-    assert len(discovery.nodes) == 9
+    assert len(discovery.nodes) == 14
     assert {n.name for n in discovery.nodes} == {
         "refresh_trending_candidates",
         "classify_trending_candidates",
@@ -255,6 +256,11 @@ def test_upstream_discovery_pipeline_has_nine_nodes():
         "refresh_aoss_premium_python",
         "refresh_about_maintainers",
         "join_enterprise_conda_maintainers",
+        "refresh_purl_associator_mappings",
+        "refresh_openteams_board",
+        "refresh_staged_recipes_prs",
+        "build_identity_packages_primary",
+        "build_identity_export_parquet",
     }
 
 
@@ -272,6 +278,11 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
         "discovery_about_maintainers_raw": "refresh_about_maintainers",
         "core_anaconda_main_packages": "enumerate_anaconda_main_packages",
+        "purl_associator_mappings_raw": "refresh_purl_associator_mappings",
+        "openteams_project_1_board_raw": "refresh_openteams_board",
+        "discovery_staged_recipes_prs_raw": "refresh_staged_recipes_prs",
+        "identity_packages_primary": "build_identity_packages_primary",
+        "identity_export_parquet": "build_identity_export_parquet",
     }
     for store, expected in writers.items():
         producers = [n.name for n in combined.nodes if store in n.outputs]

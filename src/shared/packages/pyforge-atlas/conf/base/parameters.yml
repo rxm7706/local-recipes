@@ -67,6 +67,14 @@ ttls:
   # continuously (mirrors the Story 21.4 sibling cadence above, not
   # trending_candidates's daily one).
   discovery_about_maintainers_raw: 604800       # 7 d (rxm7706/about maintainer-list manual-refresh cadence) [future_consumer: 21.5]
+  # Story 21.6 (CAP-3, Phase D identity join): WEEKLY, matching the sibling Tier 1/2
+  # external-refresh cadences above — the associator index / OpenTeams board /
+  # staged-recipes PR listing all change on a similar not-continuous cadence.
+  # discovery_local_recipes_raw deliberately has NO entry: LocalRecipesOverlayDataset
+  # is a plain filesystem read (no cadence/staleness — always current).
+  purl_associator_mappings_raw: 604800          # 7 d (PURL Associator mappings-index.json bootstrap fetch) [future_consumer: 21.6]
+  openteams_project_1_board_raw: 604800         # 7 d (OpenTeams project 1 GraphQL board fetch) [future_consumer: 21.6]
+  discovery_staged_recipes_prs_raw: 604800      # 7 d (conda-forge/staged-recipes PR REST listing) [future_consumer: 21.6]
 
 # AD-15 consumer-side freshness contract on derived-layer datasets — a
 # CONSUMER gate (refuse-stale), distinct from the fetch TTLs above; never

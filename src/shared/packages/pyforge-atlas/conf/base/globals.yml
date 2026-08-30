@@ -24,9 +24,9 @@
 # separately, never a bare 22.
 #
 # Total env-override surface of this file (P7 accounting, +1 by P9's
-# data_root, +2 by Story 21.4): endpoint_bases 22 + extra_overrides 3 +
-# fetcher_urls 3 + paths 5 = 33. Pinned by tests/catalog
-# (EXPECTED_ENV_OVERRIDE_SURFACE).
+# data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
+# endpoint_bases 22 + extra_overrides 4 + fetcher_urls 3 + paths 6 = 35. Pinned
+# by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
   CONDA_FORGE_BASE_URL: ${env_or:CONDA_FORGE_BASE_URL,https://conda.anaconda.org/conda-forge}
@@ -78,10 +78,15 @@ endpoint_bases:
 #     pypi_bigquery_downloads_raw entry stays a resolvable standard type
 #     until the Phase P port story flips it to pandas.GBQQueryDataset —
 #     judgment A2-J1).
+#   PURL_ASSOCIATOR_BASE_URL — the prefix-dev.github.io Pages host behind
+#     purl_associator_mappings_raw (Story 21.6, CAP-3 identity join). A NEW
+#     host, not one of the 20 helper-backed endpoint_bases — mirrors how
+#     ANACONDA_API_BASE_URL/OSV_VULNS_BUCKET_URL were added above.
 extra_overrides:
   ANACONDA_API_BASE_URL: ${env_or:ANACONDA_API_BASE_URL,https://api.anaconda.org}
   OSV_VULNS_BUCKET_URL: ${env_or:OSV_VULNS_BUCKET_URL,https://osv-vulnerabilities.storage.googleapis.com}
   BIGQUERY_BASE_URL: ${env_or:BIGQUERY_BASE_URL,https://bigquery.googleapis.com/bigquery/v2}
+  PURL_ASSOCIATOR_BASE_URL: ${env_or:PURL_ASSOCIATOR_BASE_URL,https://prefix-dev.github.io}
 
 # Full feed URLs for the three vulnerability side-catalogs (the inventory's
 # "fetcher URL setting" rows — full URLs, not host bases, so they live
@@ -126,3 +131,8 @@ paths:
   vdb_store: ${paths.data_root}/stores/vdb
   osv_offline_store: ${paths.data_root}/stores/osv
   pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json
+  # Story 21.6 (CAP-3 identity join): the live recipes/ tree LocalRecipesOverlayDataset
+  # scans (discovery_local_recipes_raw) — repo-root-relative, mirrors the P9 convention
+  # above (resolves against the process CWD; the documented invocation is the pixi task
+  # from the repo root).
+  local_recipes_dir: ${env_or:PYFORGE_ATLAS_LOCAL_RECIPES_DIR,recipes}
