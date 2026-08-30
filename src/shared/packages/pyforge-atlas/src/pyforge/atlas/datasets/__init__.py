@@ -90,10 +90,12 @@ from .sbom_intake import (
     parse_requirements_txt,
 )
 from .upstream_discovery import (
+    AboutMaintainersDataset,
     AnacondaDist2026Dataset,
     AossPremiumPythonDataset,
     TrackedSeedDataset,
     TrendingSnapshotDataset,
+    parse_about_readme,
     parse_anaconda_dist_html,
     parse_aoss_premium_doc,
     parse_aoss_python_package_names,
@@ -181,6 +183,10 @@ __all__ = [
     "parse_aoss_python_package_names",
     "TrackedSeedDataset",
     "read_tracked_seed",
+    # Story 21.5 — Tier 2 catalog sources (CDO-ENT-CONDA): rxm7706/about maintainer
+    # + co-maintainer feedstock lists (external-refresh)
+    "AboutMaintainersDataset",
+    "parse_about_readme",
     # Core raw-source parsers + datasets (B1 ingest gap)
     "FeedstockOutputsArchiveDataset",
     "CondaRepodataDataset",

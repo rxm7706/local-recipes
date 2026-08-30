@@ -833,3 +833,175 @@ class AossPremiumPythonDataset(ExternalRefreshDataset):
         base.update({"url": self._url})
         return base
 
+
+# ---------------------------------------------------------------------------
+# Story 21.5 — Tier 2 catalog sources (spec-21-5-tier-2-sources.md, CDO-ENT-CONDA):
+# rxm7706/about maintainer + co-maintainer feedstock lists
+# ---------------------------------------------------------------------------
+
+_ABOUT_MAINTAINERS_COLUMNS: tuple[str, ...] = ("feedstock_slug", "role", "source", "fetched_at")
+_ABOUT_MAINTAINERS_SOURCE = "about_readme"
+
+# The two numbered-list section headers rxm7706/about's README.md carries (live
+# snapshot 2026-07-11 — Block If: re-confirm against the live file before trusting
+# this regex if the shape has since drifted). Matched by ``str.startswith`` (mirrors
+# the legacy ``parse_feedstocks_from_about``) so a trailing anchor/punctuation change
+# doesn't break the match.
+_ABOUT_SECTION_HEADERS: tuple[tuple[str, str], ...] = (
+    ("List Of FeedStocks - As Maintainer", "Maintainer"),
+    ("List Of FeedStocks - As Co-Maintainer", "Co-Maintainer"),
+)
+
+# Captures the FULL ``conda-forge/<feedstock>-feedstock`` slug (not just the bare
+# name) — join_enterprise_conda_maintainers (pipelines/upstream_discovery/nodes.py)
+# strips the prefix/suffix at JOIN time, per the story spec's explicit "strip before
+# comparing" contract.
+_ABOUT_FEEDSTOCK_LINE_RE = re.compile(r"^\d+\.\s+(conda-forge/[a-zA-Z0-9._-]+-feedstock)\s*$")
+
+
+def parse_about_readme(markdown: str) -> list[dict]:
+    """Parse ``rxm7706/about``'s ``README.md`` two numbered feedstock lists
+    ("List Of FeedStocks - As Maintainer" / "... - As Co-Maintainer") into
+    ``feedstock_slug``/``role`` rows. PURE — mirrors :func:`parse_trending_html`'s
+    degrade contract exactly: a missing/renamed section header, a malformed
+    ``N. conda-forge/<x>-feedstock`` line, or an empty README all degrade the
+    AFFECTED list to zero rows for that role — NEVER raises.
+
+    A non-blank line that is neither a recognized section header nor a matching
+    numbered feedstock line ENDS the current section (mirrors the legacy
+    ``parse_feedstocks_from_about``'s "line and not digit -> reset" rule) so a
+    trailing note/paragraph after a list doesn't get misread as belonging to it.
+    """
+    if not markdown:
+        return []
+    fetched_at = int(time.time())
+    rows: list[dict[str, Any]] = []
+    try:
+        current_role: str | None = None
+        for raw_line in markdown.splitlines():
+            line = raw_line.strip()
+            matched_header = False
+            for header, role in _ABOUT_SECTION_HEADERS:
+                if line.startswith(header):
+                    current_role = role
+                    matched_header = True
+                    break
+            if matched_header:
+                continue
+            if current_role is None:
+                continue
+            m = _ABOUT_FEEDSTOCK_LINE_RE.match(line)
+            if m:
+                rows.append(
+                    {
+                        "feedstock_slug": m.group(1),
+                        "role": current_role,
+                        "source": _ABOUT_MAINTAINERS_SOURCE,
+                        "fetched_at": fetched_at,
+                    }
+                )
+                continue
+            if line and not line[0].isdigit():
+                current_role = None
+    except Exception as exc:  # pragma: no cover - defensive; AD-13 never-raise
+        logger.warning("about README parse failed: %s", exc)
+        return []
+    return rows
+
+
+class AboutMaintainersDataset(ExternalRefreshDataset):
+    """Story 21.5 (Tier 2, CDO-ENT-CONDA) — ``rxm7706/about``'s README maintainer +
+    co-maintainer feedstock lists (``discovery_about_maintainers_raw``).
+
+    Mirrors :class:`AossPremiumPythonDataset`'s shape exactly: a SINGLE injected-fetch
+    live doc (no 3-period fan-out, no fallback tier — a plain unauthenticated GitHub-raw
+    GET) parsed by :func:`parse_about_readme`. On a fetch failure / layout break the
+    INHERITED ``ExternalRefreshDataset.save()`` keep-last-good-Parquet + mark-stale
+    behavior applies unchanged (AD-13). ``fetcher=None`` == offline: construction is
+    network-free; a DUE refresh keeps last-good + marks stale.
+    """
+
+    STORE_FILENAME = "about_maintainers.parquet"
+    _REQUIRED_COLUMNS = _ABOUT_MAINTAINERS_COLUMNS
+
+    def __init__(
+        self,
+        *,
+        filepath: str,
+        readme_url: str,
+        fetcher: Callable[[str], str] | None = None,
+        cadence_seconds: int | None = None,
+        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self._readme_url = str(readme_url)
+        self._fetcher = fetcher
+        super().__init__(
+            filepath=filepath,
+            refresher=self._do_refresh if fetcher is not None else None,
+            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            required_resource=None,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            metadata=metadata,
+        )
+
+    def _do_refresh(self) -> pd.DataFrame:
+        """Fetch + parse the README once. Never raises — a fetch failure WARNs and
+        returns an empty frame (which ``save()`` turns into keep-last-good + mark
+        stale)."""
+        try:
+            payload = self._fetcher(self._readme_url)
+        except Exception as exc:  # AD-13
+            logger.warning("about README fetch failed: %s", exc)
+            return pd.DataFrame(columns=list(_ABOUT_MAINTAINERS_COLUMNS))
+        text = _as_text(payload)
+        rows = parse_about_readme(text) if text else []
+        if not rows:
+            logger.warning(
+                "about README parsed zero maintainer rows (layout break / empty fetch) "
+                "— keeping last-good"
+            )
+        return pd.DataFrame(rows, columns=list(_ABOUT_MAINTAINERS_COLUMNS))
+
+    @property
+    def _store_path(self) -> Path:
+        return Path(self._filepath) / self.STORE_FILENAME
+
+    def _store_exists(self) -> bool:
+        return self._store_path.is_file()
+
+    def _store_mtime(self) -> float:
+        return self._store_path.stat().st_mtime
+
+    def _write(self, fetched: Any) -> None:
+        frame = fetched if isinstance(fetched, pd.DataFrame) else pd.DataFrame(fetched)
+        missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]
+        if missing:
+            raise ValueError(f"about maintainers refresh frame missing required columns: {missing}")
+        self._atomic_write(self._store_path, lambda p: frame.to_parquet(p, index=False))
+
+    def load(self) -> pd.DataFrame:
+        if not self._store_exists():
+            self._mark_stale(
+                "about maintainers store absent (never refreshed / offline)",
+                only_if_absent=True,
+            )
+            return pd.DataFrame(columns=list(_ABOUT_MAINTAINERS_COLUMNS))
+        try:
+            return pd.read_parquet(self._store_path)
+        except Exception as exc:
+            logger.warning(
+                "about maintainers store unreadable (%s), degrading to empty: %s",
+                self._store_path,
+                exc,
+            )
+            self._mark_stale("about maintainers store unreadable", only_if_absent=True)
+            return pd.DataFrame(columns=list(_ABOUT_MAINTAINERS_COLUMNS))
+
+    def _describe(self) -> dict[str, Any]:
+        base = super()._describe()
+        base.update({"readme_url": self._readme_url})
+        return base
+

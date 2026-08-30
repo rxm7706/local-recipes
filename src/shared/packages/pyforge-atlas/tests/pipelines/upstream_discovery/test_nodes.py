@@ -651,3 +651,210 @@ def test_tier_1_triggers_read_the_shipped_parameters_yml_ttls():
 def test_coerce_cadence_default_is_still_daily_for_the_existing_caller():
     assert N._coerce_cadence({}, "trending_candidates") == DAILY_SECONDS
     assert N._coerce_cadence({}, "x", WEEKLY_SECONDS) == WEEKLY_SECONDS
+
+
+# ---------------------------------------------------------------------------
+# Story 21.5 — Tier 2 catalog sources (spec-21-5-tier-2-sources.md)
+# ---------------------------------------------------------------------------
+
+from pyforge.atlas.pipelines.upstream_discovery.nodes import (  # noqa: E402
+    join_enterprise_conda_maintainers,
+    refresh_about_maintainers,
+)
+
+
+def test_refresh_about_maintainers_reads_its_own_ttls_cadence():
+    req = refresh_about_maintainers({"discovery_about_maintainers_raw": 12345})
+    assert isinstance(req, RefreshRequest)
+    assert req.store == "discovery_about_maintainers_raw"
+    assert req.cadence_seconds == 12345
+    assert req.force is False
+
+
+def test_refresh_about_maintainers_missing_or_non_numeric_falls_back_to_weekly():
+    # weekly — NOT the daily default refresh_trending_candidates falls back to
+    assert refresh_about_maintainers({}).cadence_seconds == WEEKLY_SECONDS
+    assert refresh_about_maintainers(None).cadence_seconds == WEEKLY_SECONDS
+    assert refresh_about_maintainers({"discovery_about_maintainers_raw": "nope"}).cadence_seconds == WEEKLY_SECONDS
+
+
+def test_refresh_about_maintainers_reads_the_shipped_parameters_yml_ttl():
+    import pathlib
+
+    import yaml
+
+    params = yaml.safe_load(
+        (pathlib.Path(__file__).resolve().parents[3] / "conf" / "base" / "parameters.yml").read_text(encoding="utf-8")
+    )
+    ttls = params["ttls"]
+    assert "discovery_about_maintainers_raw" in ttls
+    assert refresh_about_maintainers(ttls).cadence_seconds == ttls["discovery_about_maintainers_raw"] == WEEKLY_SECONDS
+
+
+# -- join_enterprise_conda_maintainers ----------------------------------------
+
+_ABOUT_COLS = ["feedstock_slug", "role", "source", "fetched_at"]
+_ATTRIBUTION_COLS = ["conda_name", "feedstock_name"]
+_ENTERPRISE_COLS = ["core_python_package_name", "role", "feedstock_slug", "repository_source"]
+
+
+def _about_raw(rows: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(rows, columns=_ABOUT_COLS)
+
+
+def _attribution(rows: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(rows, columns=_ATTRIBUTION_COLS)
+
+
+def test_join_enterprise_conda_maintainers_matched_feedstock():
+    about = _about_raw(
+        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+    )
+    attribution = _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
+    out = join_enterprise_conda_maintainers(about, attribution)
+    assert list(out.columns) == _ENTERPRISE_COLS
+    assert len(out) == 1
+    row = out.iloc[0]
+    assert row["core_python_package_name"] == "numpy"
+    assert row["role"] == "Maintainer"
+    assert row["feedstock_slug"] == "conda-forge/numpy-feedstock"
+    assert row["repository_source"] == "CDO-ENT-CONDA"
+
+
+def test_join_enterprise_conda_maintainers_strips_prefix_and_suffix_before_matching():
+    """feedstock_name in core_feedstock_attribution is a BARE name (e.g.
+    "dbt-bigquery", per the core pipeline's _pick_feedstock) — the about-parsed
+    feedstock_slug carries the full "conda-forge/<x>-feedstock" form and must be
+    stripped before comparing."""
+    about = _about_raw(
+        [{"feedstock_slug": "conda-forge/dbt-bigquery-feedstock", "role": "Co-Maintainer", "source": "about_readme", "fetched_at": 1}]
+    )
+    attribution = _attribution([{"conda_name": "dbt-bigquery", "feedstock_name": "dbt-bigquery"}])
+    out = join_enterprise_conda_maintainers(about, attribution)
+    assert len(out) == 1
+    assert out.iloc[0]["core_python_package_name"] == "dbt-bigquery"
+
+
+def test_join_enterprise_conda_maintainers_unmatched_feedstock_is_dropped_never_fabricated():
+    about = _about_raw(
+        [
+            {"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
+            {"feedstock_slug": "conda-forge/retired-pkg-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
+        ]
+    )
+    attribution = _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
+    out = join_enterprise_conda_maintainers(about, attribution)
+    assert len(out) == 1
+    assert list(out["core_python_package_name"]) == ["numpy"]
+
+
+def test_join_enterprise_conda_maintainers_empty_attribution_degrades_to_empty_schema():
+    about = _about_raw(
+        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+    )
+    out = join_enterprise_conda_maintainers(about, pd.DataFrame(columns=_ATTRIBUTION_COLS))
+    assert out.empty
+    assert list(out.columns) == _ENTERPRISE_COLS
+
+
+def test_join_enterprise_conda_maintainers_none_attribution_never_raises():
+    about = _about_raw(
+        [{"feedstock_slug": "conda-forge/numpy-feedstock", "role": "Maintainer", "source": "about_readme", "fetched_at": 1}]
+    )
+    out = join_enterprise_conda_maintainers(about, None)
+    assert out.empty
+    assert list(out.columns) == _ENTERPRISE_COLS
+
+
+def test_join_enterprise_conda_maintainers_empty_about_raw_degrades_to_empty_schema():
+    out = join_enterprise_conda_maintainers(pd.DataFrame(columns=_ABOUT_COLS), _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}]))
+    assert out.empty
+    assert list(out.columns) == _ENTERPRISE_COLS
+
+
+def test_join_enterprise_conda_maintainers_none_about_raw_never_raises():
+    out = join_enterprise_conda_maintainers(None, _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}]))
+    assert out.empty
+    assert list(out.columns) == _ENTERPRISE_COLS
+
+
+def test_join_enterprise_conda_maintainers_malformed_slug_never_raises():
+    about = _about_raw(
+        [
+            {"feedstock_slug": None, "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
+            {"feedstock_slug": 12345, "role": "Maintainer", "source": "about_readme", "fetched_at": 1},
+        ]
+    )
+    attribution = _attribution([{"conda_name": "numpy", "feedstock_name": "numpy"}])
+    out = join_enterprise_conda_maintainers(about, attribution)
+    assert out.empty
+
+
+def test_strip_feedstock_slug_variants():
+    assert N._strip_feedstock_slug("conda-forge/numpy-feedstock") == "numpy"
+    assert N._strip_feedstock_slug("numpy") == "numpy"
+    assert N._strip_feedstock_slug("conda-forge/dbt-bigquery-feedstock") == "dbt-bigquery"
+    assert N._strip_feedstock_slug(None) is None
+    assert N._strip_feedstock_slug("") is None
+    assert N._strip_feedstock_slug(123) is None
+
+
+# -- load_org_audit_candidates + discovery_curated_groups_seed ---------------
+
+
+def test_load_org_audit_candidates_unions_curated_groups_seed():
+    out = load_org_audit_candidates(
+        [{"repo_full_name": "microsoft/edit"}],
+        {"groups": [{"org": "example", "repos": ["exampleorg/repo-one", "exampleorg/repo-two"]}]},
+    )
+    assert list(out["repo_full_name"]) == ["microsoft/edit", "exampleorg/repo-one", "exampleorg/repo-two"]
+
+
+def test_load_org_audit_candidates_dedups_across_both_sources_keeping_first_seen():
+    out = load_org_audit_candidates(
+        [{"repo_full_name": "microsoft/edit"}],
+        {"groups": [{"org": "example", "repos": ["Microsoft/Edit", "exampleorg/repo-one"]}]},
+    )
+    assert list(out["repo_full_name"]) == ["microsoft/edit", "exampleorg/repo-one"]
+
+
+def test_load_org_audit_candidates_missing_curated_groups_seed_contributes_zero_rows():
+    out = load_org_audit_candidates([{"repo_full_name": "microsoft/edit"}], None)
+    assert list(out["repo_full_name"]) == ["microsoft/edit"]
+
+
+def test_load_org_audit_candidates_malformed_curated_groups_seed_never_raises():
+    for malformed in (
+        None,
+        {},
+        {"groups": "not-a-list"},
+        {"groups": ["not-a-dict"]},
+        {"groups": [{"org": "x", "repos": "not-a-list"}]},
+        "not-a-dict",
+        42,
+    ):
+        out = load_org_audit_candidates([{"repo_full_name": "microsoft/edit"}], malformed)
+        assert list(out["repo_full_name"]) == ["microsoft/edit"]
+
+
+def test_load_org_audit_candidates_curated_groups_seed_alone_with_no_org_audit_candidates():
+    out = load_org_audit_candidates(
+        None, {"groups": [{"org": "example", "repos": ["exampleorg/repo-one"]}]}
+    )
+    assert list(out["repo_full_name"]) == ["exampleorg/repo-one"]
+
+
+def test_load_org_audit_candidates_curated_groups_malformed_repo_entry_is_a_visible_none_row():
+    out = load_org_audit_candidates(
+        None, {"groups": [{"org": "example", "repos": [123, "exampleorg/repo-one"]}]}
+    )
+    assert len(out) == 2
+    values = list(out["repo_full_name"])
+    assert values[1] == "exampleorg/repo-one"
+    assert values[0] is None or (isinstance(values[0], float) and pd.isna(values[0]))
+
+
+def test_load_org_audit_candidates_both_sources_empty_degrades_to_empty_schema():
+    out = load_org_audit_candidates(None, None)
+    assert out.empty
+    assert list(out.columns) == ["repo_full_name"]

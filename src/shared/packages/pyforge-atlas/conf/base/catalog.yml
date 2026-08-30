@@ -1022,6 +1022,54 @@ discovery_aoss_premium_python_raw:
   metadata:
     layer: raw
 
+# -----------------------------------------------------------------------------
+# Story 21.5 — Tier 2 catalog sources (spec-21-5-tier-2-sources.md;
+# catalog-sources.md Tier 2): rxm7706/about maintainer universe (CDO-ENT-CONDA) +
+# curated org sweeps. The `discovery_` prefix routes to upstream_discovery
+# (PREFIX_TO_PIPELINE) same as Tier 1; the NEW `enterprise_` prefix also routes
+# here — `enterprise_jfrog_names` (Artifactory/CDO names, below in the
+# artifactory_downloads block) shares the same domain-prefix bucket even though its
+# producer node physically lives in the artifactory_downloads pipeline.
+# -----------------------------------------------------------------------------
+
+# rxm7706/about README maintainer + co-maintainer feedstock lists
+# ("N. conda-forge/<feedstock>-feedstock" under the two "List Of FeedStocks - As
+# (Co-)Maintainer" headers — live snapshot 2026-07-11). Deliberately UNAUTHENTICATED
+# (mirrors TrendingSnapshotDataset / the 5 conda-forge-bot-data entries) — reuses the
+# EXISTING GITHUB_RAW_BASE_URL override point, no new global. parse_about_readme
+# degrades to [] per list on a header/line-format break — never raises, never
+# clobbers last-good with empty (AD-13).
+# fetch mode: external-refresh
+discovery_about_maintainers_raw:
+  type: pyforge.atlas.datasets.AboutMaintainersDataset
+  readme_url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/rxm7706/about/main/README.md
+  filepath: ${globals:paths.data_root}/raw/discovery_about_maintainers_raw
+  metadata:
+    layer: raw
+
+# Curated org sweeps — a git-tracked, hand-curated air-gap seed (NOT a live
+# GitHub-org-enumeration crawl, same posture as params:org_audit_candidates below).
+# load_org_audit_candidates flattens `groups[].repos[]` into the same
+# `repo_full_name` rows org_audit_candidates already produces, unioned + deduped
+# with the existing hand-curated list unchanged.
+# fetch mode: tracked seed
+discovery_curated_groups_seed:
+  type: json.JSONDataset
+  filepath: conf/base/curated_groups.json
+  metadata:
+    layer: raw
+
+# CDO-ENT-CONDA enterprise-consumption universe (complete-export-contract.md §1).
+# join_enterprise_conda_maintainers matches the about-parsed feedstock_slug (stripped
+# of its `conda-forge/` prefix and `-feedstock` suffix at JOIN time) against
+# core_feedstock_attribution.feedstock_name — an unmatched about row is DROPPED,
+# never fabricated with a null core_python_package_name.
+enterprise_conda_maintainers:
+  type: pandas.ParquetDataset
+  filepath: data/derived/enterprise_conda_maintainers/enterprise_conda_maintainers.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # artifactory_downloads — Artifactory download intelligence (Story 15.3, CAP-4;
 # Epic 15). Wires Story 15.1's ArtifactoryAqlAdapter (fetch) and Story 15.2's
@@ -1042,6 +1090,18 @@ artifactory_downloads_raw:
 artifactory_downloads_joined:
   type: pandas.ParquetDataset
   filepath: data/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet
+  metadata:
+    layer: derived
+
+# Story 21.5 (Tier 2, catalog-sources.md "Artifactory / CDO names") — a NAMES-ONLY
+# projection of artifactory_downloads_joined: pypi_name/conda_name/is_internal ONLY,
+# never download_count/version/match_source (that's Story 23.2's
+# enterprise_jfrog_consumption.parquet — depends on THIS entry existing first).
+# Correct whether the upstream fetch is empty (today, params:artifactory.virtual_repos:
+# [], the committed default) or populated later by a separate, attended live bring-up.
+enterprise_jfrog_names:
+  type: pandas.ParquetDataset
+  filepath: data/derived/enterprise_jfrog_names/enterprise_jfrog_names.parquet
   metadata:
     layer: derived
 
