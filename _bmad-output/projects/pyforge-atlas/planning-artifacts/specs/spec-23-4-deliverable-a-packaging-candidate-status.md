@@ -201,6 +201,12 @@ and 23.3 (`inventory_priority_assignments`, this story's `Priority_Bucket` sourc
 
 ## Spec Change Log
 
+- 2026-08-30 (course correction, `change-history/sprint-change-proposal-2026-08-30.md`): **row grain
+  corrected.** Deliverable A is the full-inventory union (`verified-all-packages`, 38,372
+  rows on 2026-08-12), not `identity_packages_primary` (the ~7.5k OpenTeams universe).
+  Consume Story 23.8's `inventory_universe` for the row set, `Package_Input_Name`,
+  `Repository_Source`, and `Role`; `identity_packages_primary` remains an overlay input
+  only. `depends_on` gains `23.8`; the `Block If` clause extends to 23.8 accordingly.
 - 2026-08-30: Initial draft. Ports `metrics.py::packaging_status` and `write_aoss_free_queue`
   into two new `derived_artifacts` Kedro nodes producing `inventory_verified_packages.parquet`
   (14-column deliverable A) and its `inventory_aoss_free_queue.parquet` sibling. Written ahead

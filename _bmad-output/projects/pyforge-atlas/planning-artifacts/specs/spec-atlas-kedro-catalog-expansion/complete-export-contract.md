@@ -295,9 +295,9 @@ comes from Atlas/BSL, not script string templates.
 
 | Epic | Delivers | Deferred after |
 |------|----------|----------------|
-| **18** | Public indexes + identity export (no rank/enterprise) | ranking, enterprise, Tier 3 |
-| **19** | Vizro canvas parity (reads ranked export) | UX polish; gist generator until 23.6 |
-| **20** | Complete export + Tier 3 + ranking in Kedro + BSL gist | **nothing data-related** |
+| **21** (draft 18) | Public indexes + identity export (no rank/enterprise) | ranking, enterprise, Tier 3 |
+| **22** (draft 19) | Vizro canvas parity (reads ranked export) | UX polish; gist generator until 23.6 |
+| **23** (draft 20) | Complete export + Tier 3 + ranking in Kedro + BSL gist + **workbook retirement (23.8/23.9)** | **nothing data-related** |
 
 **22.1 bridge:** until 23.5 lands, quartet may still write
 `identity_ranked_export.parquet` for Epic 22. **23.5 supersedes 22.1** — Vizro and
@@ -318,7 +318,10 @@ On a machine with no `CF_ATLAS_DB`, no workbook ingest, no quartet merge:
 7. `metrics.py --live-catalog` and `--gist-only` are no-ops or thin actuators — no
    ranking/verification logic in scripts.
 
-**Excel workbook remains out of scope** — complete closure does not require it.
+**Excel workbook: never ingested, and no longer required.** Kedro never reads it
+(unchanged); as of the 2026-08-30 course correction the quartet does not either —
+item 1 (bootstrap) and item 7 (thin scripts) are both gated on zero `.xlsx` reads,
+delivered by §9's Stories 23.8/23.9.
 
 ---
 
@@ -327,3 +330,30 @@ On a machine with no `CF_ATLAS_DB`, no workbook ingest, no quartet merge:
 `--create-issues` is **not required** to close the data dream. If moved later,
 it consumes handoff columns from `identity_complete_export.parquet` only — no
 separate issue-state fetch beyond board ingest already in Phase D.
+
+---
+
+## 9. Workbook retirement map (Stories 23.8 / 23.9 — added 2026-08-30)
+
+`docs/Analysis_Dataset-2026-08-12.xlsx` is an untracked 11 MB local file; every sheet
+the quartet reads maps to a catalog dataset except one. Provenance labels (`tab:<Sheet>`)
+survive as stable strings on `inventory_universe.sources` / `Repository_Source`.
+
+| Sheet (rows) | Today feeds | Replacement dataset | Story |
+|---|---|---|---|
+| `CDO-ENT-JFROG` (6,989) | universe, `must_keep`, hints | `enterprise_jfrog_names` → `enterprise_jfrog_consumption` | 21.5 → 23.2 |
+| `CDO-ENT-CONDA` (814) | universe, `must_keep`, roles | `enterprise_conda_maintainers` | 21.5 |
+| `OpenTeams` (9,355) | universe via `Title` parse, summary | `openteams_project_1_board_raw` | Tier 0 (exists) |
+| `Conda-Forge` (33,875) | universe, Tier 1 fallback | `core_packages_enumerated` | 21.3 |
+| `Basilisk` (33,853) | universe, fallback | `discovery_basilisk_packages_raw` | 21.4 |
+| `Anaconda-Main` (5,458) / `Anaaconda-Dist` (639) | universe, fallback | `core_anaconda_main_channeldata_raw` / `discovery_anaconda_dist_2026x_raw` | 21.4 |
+| `GAOSS-Free` (1,474) / `GAOSS-Premium` (2,114) | universe, fallback, AOSS queue | `discovery_aoss_free_python_raw` / `discovery_aoss_premium_python_raw` | 21.4 |
+| `10kOpen` (6,989) | nothing (clone of JFROG) | dropped | 23.8 |
+| `10kClosed` (10,000) | universe (derive-only) | **none — reported delta** (operator decision) | 23.8 |
+| `verified-all-packages` / `inventory-*` / `identity-*` | nothing / identity.py + priority.py I/O | `inventory_verified_packages`, `identity_complete_export`, `inventory_priority_assignments` | 23.4 / 23.5 / 23.3 → 23.9 |
+| prior-run `Priority_Bucket`, `Available_on_*` hints | `priority_bucket()`, verification hints | `inventory_priority_assignments`; Tier 0 verification | 23.3; 21.3 |
+
+**Union/grain:** `inventory_universe` = one row per PEP-503 name across every source above
+(~38k, the `verified-all-packages` grain); `identity_complete_export` stays at the
+OpenTeams-universe grain (~7.5k + board extras). Deliverable A (23.4) is built at the
+`inventory_universe` grain.

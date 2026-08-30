@@ -1,0 +1,46 @@
+# Optional, hand-maintained order overrides + declared skips for `marshal factory drain`
+# (pyforge.marshal.core.dispatch_fleet.QUEUE_CONFIG_FILENAME). Absent = tracked-ledger
+# order (story-key order) with no skips. Keys named here run first, in this order; any
+# backlog key not listed follows in story-key order. A key that is `done` or absent from
+# the station's tracked ledger is ignored (never a crash). Marshal does NOT read `Deps:`
+# from epics.md -- this file is where dependency order is made explicit.
+#
+# pyforge-atlas (2026-08-30 course correction, change-history/sprint-change-proposal-2026-08-30.md):
+# workbook-retirement critical path first, every epics.md `Deps:` edge respected.
+#   23.8 needs 21.4+21.5 | 21.7 needs 21.6 | 21.8 needs 21.7 | 23.1 needs 21.4
+#   23.2 needs 21.5 | 23.3 needs 21.6+23.2 | 23.4 needs 21.3+23.3+23.8 | 22.1 needs 21.7+21.8
+#   23.5 needs 23.3+23.4 | 23.6 needs 23.5 | 23.9 needs 23.4+23.5+23.6+23.8+22.1
+#   22.2/22.3/22.4 need 22.1 | 22.5 needs 22.2+22.3 | 23.7 needs 23.5+23.6+23.8+23.9 (+22.1-22.5)
+#   22.6 needs 22.5 | 21.9/21.10 need 21.8
+# Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
+# if the operator decides to scope them out -- that is a scope decision, not made here.
+order_overrides:
+  pyforge-atlas:
+    - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
+    - 21-5-tier-2-sources-about-curated-orgs-artifactory-names
+    - 21-6-upstream_discovery-identity-join-and-export-parquet
+    - 23-8-workbook-free-metrics-universe
+    - 21-7-quartet-thin-out-and-gist-wrapper
+    - 21-8-end-to-end-verification-gate
+    - 23-1-tier-3-bulk-os-indexes
+    - 23-2-enterprise-jfrog-consumption-parquet
+    - 23-3-priority-rules-in-kedro-inventory_priority_assignments
+    - 23-4-deliverable-a-packaging_candidate_status
+    - 22-1-ranked-export-bridge-quartet-vizro-feed
+    - 23-5-identity_complete_export-parquet-canonical
+    - 23-6-bsl-gist-aggregates-cap-8d
+    - 23-9-quartet-workbook-retirement
+    - 22-2-vizro-identity-catalog-page
+    - 22-3-vizro-identity-ops-page
+    - 22-4-vizro-identity-workbook-page
+    - 22-5-canvas-vs-vizro-parity-gate
+    - 23-7-zero-deferred-e2e-gate
+    - 22-6-canvas-deprecation-switch
+    - 21-9-vizro-bootstrap-health-pages-optional-cap-5
+    - 21-10-kedro-viz-ci-path-sync-optional-cap-6
+
+# skip_policies:
+#   - station: pyforge-atlas
+#     story: 21-10-kedro-viz-ci-path-sync-optional-cap-6
+#     reason: "optional CAP-6; scoped out by operator on <date>"
+skip_policies: []

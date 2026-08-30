@@ -46,4 +46,7 @@ operator env block shipped with `pyforge-atlas-bootstrap`.
 - Ranking / candidate status → **23.3–23.5** Kedro derived exports
 - OpenTeams issue creation (optional; not data-closure required)
 - Dashboard canvas generation → Epic 22 Vizro; DATA from **23.5** complete export
-- Excel workbook tabs
+- Excel workbook tabs → retired: universe/provenance/roles via `inventory_universe`
+  (**23.8**, `--analysis-xlsx` optional); identity/priority/dashboards inputs via
+  the Epic 23 exports (**23.9**, `openpyxl` gone from `scripts/`); `10kClosed`
+  reported as a delta (no catalog source)

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 132
+# stories: 134
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -54,7 +54,7 @@ development_status:
   21-1-relocate-atlas-data-defaults-and-add-pyforge-atlas-bootstrap: done
   21-10-kedro-viz-ci-path-sync-optional-cap-6: backlog
   21-2-remove-cf_atlas-db-seeds-from-production-datasets: done
-  21-3-tier-0-harden-and-live-catalog-contract: backlog
+  21-3-tier-0-harden-and-live-catalog-contract: done
   21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss: backlog
   21-5-tier-2-sources-about-curated-orgs-artifactory-names: backlog
   21-6-upstream_discovery-identity-join-and-export-parquet: backlog
@@ -74,6 +74,8 @@ development_status:
   23-5-identity_complete_export-parquet-canonical: backlog
   23-6-bsl-gist-aggregates-cap-8d: backlog
   23-7-zero-deferred-e2e-gate: backlog
+  23-8-workbook-free-metrics-universe: backlog
+  23-9-quartet-workbook-retirement: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done

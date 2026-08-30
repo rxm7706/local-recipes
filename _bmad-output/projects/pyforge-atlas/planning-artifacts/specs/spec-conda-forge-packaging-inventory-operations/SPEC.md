@@ -7,6 +7,7 @@ surface:            # 17.1 claims the quartet + data files (per-file, not a glob
                      # be the same invisible-by-construction breadth the 2026-08-08
                      # scripts/ allowlist split removed; see spec_surface_allowlist.txt)
   - scripts/conda-forge-packaging-inventory-operations_metrics.py
+  - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py   # Story 21.3 (atlas), 2026-08-30
   - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
   - scripts/conda-forge-packaging-inventory-operations_priority.py
   - scripts/openteams_identity_dashboards.py
