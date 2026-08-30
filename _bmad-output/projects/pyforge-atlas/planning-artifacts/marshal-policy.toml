@@ -47,3 +47,72 @@ verify_commands = []
 #   "pixi run --frozen -e pyforge-atlas kedro-test",
 #   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
 # ]
+
+
+# epic_surfaces (AD-27, MRS-GATE-007/Story 2.3): per-epic writable-surface allowlist,
+# narrowed further by a story spec's own `surface:` field when it declares one. The
+# DEFAULT for an undeclared epic is `()` -- deny by default, narrow-only, never
+# widened -- so an epic with no entry here blocks EVERY changed path from landing,
+# not just an unexpected one. Story 21.3 (2026-08-30) was the first story on ANY
+# station to reach marshal's fully-automated dispatch->verify->land path to
+# completion, and hit exactly that: no station in this repo had ever declared
+# epic_surfaces before. Scoped to what Epic 21's stories actually touch (per 21.3's
+# own diff) plus Epics 22/23's stated scope in epics.md, not a wildcard.
+# Widened 2026-08-30 (course-correction, sprint-change-proposal-2026-08-30): the first
+# cut listed only what 21.3's diff touched, but the same spec's later stories land on
+# the rest of the inventory quartet (21.7 identity.py, 22.1 priority.py, 22.6 the
+# UI switch, 23.8/23.9 the workbook retirement), the quartet's docs/conf, the
+# Kedro-Viz CI workflow (21.10), and pixi.toml (+ its ungated environment.yaml
+# twin). fnmatch globs: `*` spans `/`, so `**` and `*` are equivalent here.
+[epic_surfaces]
+"21" = [
+  "scripts/conda-forge-packaging-inventory-operations_metrics.py",
+  "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
+  "scripts/conda-forge-packaging-inventory-operations_priority.py",
+  "scripts/openteams_identity_dashboards.py",
+  "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
+  "scripts/tests/test_openteams_identity_dashboards*.py",
+  "conf/conda-forge-packaging-inventory-operations*",
+  "docs/reference/conda-forge-packaging-inventory-operations_*.md",
+  "docs/dashboard/kedro-viz/**",
+  ".github/workflows/kedro-viz-publish.yml",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+]
+"22" = [
+  "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
+  "scripts/conda-forge-packaging-inventory-operations_priority.py",
+  "scripts/openteams_identity_dashboards.py",
+  "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
+  "scripts/tests/test_openteams_identity_dashboards*.py",
+  "docs/reference/conda-forge-packaging-inventory-operations_*.md",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+]
+"23" = [
+  "scripts/conda-forge-packaging-inventory-operations_metrics.py",
+  "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
+  "scripts/conda-forge-packaging-inventory-operations_priority.py",
+  "scripts/openteams_identity_dashboards.py",
+  "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
+  "scripts/tests/test_openteams_identity_dashboards*.py",
+  "conf/conda-forge-packaging-inventory-operations*",
+  "docs/reference/conda-forge-packaging-inventory-operations_*.md",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+]
