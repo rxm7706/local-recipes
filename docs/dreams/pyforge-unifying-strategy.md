@@ -1,11 +1,11 @@
 ---
-title: PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture
+title: PyForge Unifying Strategy — Eight Stations and the Canopy (modular monolith)
 type: dream
 owner: steward
 status: specified
 ---
 
-# PyForge Unifying Strategy
+# PyForge Unifying Strategy — Eight Stations and the Canopy (modular monolith)
 
 ## Grounding (2026-08-24)
 
@@ -18,7 +18,9 @@ Charter §5 stands, the roster stays at eight. Steward carries the through-line.
 
 **The host already exists.** `src/platform/` is a live cookiecutter-django project with an
 ASGI seam, `django-allauth` OIDC SSO, Langflow and DB-GPT mounted as pluggable apps on
-isolated PostgreSQL schemas, warden's `compliance_face` portal mounted, a Helm chart with an
+isolated PostgreSQL schemas, warden's portal mounted as **`django-warden`**
+(module `django_warden_fabric`; `src/platform/compliance_face/` is a leftover
+husk, not the mount), a Helm chart with an
 OCP overlay, a Containerfile, and the 15-factor baseline. Steward epics 10, 11, 12 and 16 are
 `done` end to end, including **`12-7`**, which **closed 2026-08-25** on attended CRC: Route / SCC /
 official postgres:17 + redis:7 under assigned UID / PVCs Bound / Liquibase + `migrate --fake` /
@@ -73,11 +75,12 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   (`estate-cache` Vizro page over BSL). Residual is the three SPEC OQs
   (`query-plane-face`, `query-plane-catalog`, `query-plane-scribe-cutover`).
   Mosaic `duckdb-server` stays optional. Do not claim a 28-page Vizro inventory.
-- **Kedro is optional for pipelines; Vizro is Lane 3.** One Atlas Kedro *home*
-  (plus extract nodes). Not eight Kedro projects (AD-21). Lane 3 is Vizro over
-  BSL over the plane. `vizro-ai` 0.4.2 is deprecated — author with `vizro-mcp`
-  / `vizro-e2e-flow` for *new* boards (36.2 is a grounded page, not that authoring
-  story). `kedro-mcp` stays wrapped, never load-bearing.
+- **Kedro is required for new Atlas pipelines; Vizro is Lane 3.**
+  Superseded 2026-08-30 (was “optional”). One Atlas Kedro *home* (plus extract
+  nodes). Not eight Kedro projects (AD-21). Lane 3 is Vizro over BSL over the
+  plane. `vizro-ai` 0.4.2 is deprecated — author with `vizro-mcp` /
+  `vizro-e2e-flow` for *new* boards (36.2 is a grounded page, not that
+  authoring story). `kedro-mcp` stays wrapped, never load-bearing.
 - **Five-tier roster is complete (2026-08-26, Epic 37.1).** Live matrix **40/40**.
   Mason's skill cell is **`conda-forge-expert`** (Epic 11: CFE stays; no
   `pyforge-mason/` skill). A missing cell fails CI. 01/02 work is still outside
@@ -86,8 +89,9 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   OpenLineage, markitdown, graphviz2drawio, filelock, go-sops/age, pandera,
   taplo/sqlfluff/yamllint, playwright — schedule in
   `spec-pyforge-unifying-strategy/stack.md` § *Estate leverage*. OpenLineage
-  rides CAP-8; it is not a fourth bus. cocoindex stays behind Scribe
-  `GraphStore`.
+  rides CAP-8; it is not a fourth bus. Scribe ports: see Grounding
+  2026-08-30 (cocoindex is a `compile_surface` extra that writes *through*
+  `GraphStore`, not a GraphStore engine).
 - **Vault is a profile adapter.** `go-sops` + `age` are the in-estate vault.
   HashiCorp Vault / ESO may mint Kubernetes secrets *outside* the image.
   **Never:** `hvac` from the platform process (AD-19: secret *references* only).
@@ -98,6 +102,92 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   this package. Phase-2 “adopt for OIDC only” is **retracted**.
 - Story **12.9** (`ocp-portability-smoke`) is an AD-11 honesty gap (ledger `done`
   without the job). Optional; Actions minutes. Not a Canopy stamp gate.
+
+**Grounding (2026-08-30) — foundry, conventions, fleet dossier.**
+Authoritative over older Grounding bullets where they disagree. Layout
+detail — the annotated tree and phases 0–6 — lives in the tracked seed
+[[pyforge-target-monorepo]] (`docs/dreams/pyforge-target-monorepo.md`).
+This section is the ruling. Do not cite a Cursor `.canvas.tsx` as the seed.
+
+- **Hub-and-Spoke means one ASGI hub, not `:800x` spokes.** The hub is
+  `src/platform/`. The eight spokes are station *packages* (CLI + portal +
+  MCP face on this process + skill + persona). Do not read the YAML title’s
+  old “Hub-and-Spoke Enterprise Architecture” brand, or the 2026-08-23
+  mermaid, as nine FastAPI processes.
+- **Destination is `python-platform-foundry`** (Pixi workspace name
+  `pyforge`). `rxm7706/local-recipes` is the copy source, then archive.
+  Two remotes are a migration interval, not the product.
+- **`factory/` is an island.** Own `pixi.toml` / `pixi.lock` and a
+  recipes-only CI workflow. Do not merge the factory solver farm into the
+  estate lock. Working set only — live `recipes/` has thousands of first-level
+  dirs; do not clone that universe. Mason wraps CFE; submit/update talk to
+  conda-forge remotes. After the last in-flight PR and CFE retro move,
+  archive `local-recipes`.
+- **Packages fold `src/shared/packages/` → `src/packages/`.** Host drops
+  `sys.path` inserts and Containerfile `COPY` of django src; django-* grow
+  `pixi.toml` on migrate. `five_tier.py` must retarget `_packages_root` *and*
+  skill/persona paths (today `.claude/skills/`). Skills live under `skills/`
+  with IDE adapters as symlinks. Mason’s skill cell stays
+  `conda-forge-expert`.
+- **Cutover phases (0–6), do not replace with a hexagonal regen loop:**
+  open empty foundry → move estate → move CFE home → factory island →
+  inventory (do not clone all recipe dirs) → Mason talks to conda-forge →
+  archive local-recipes. Do not blend map-coupling and the package fold in
+  one story.
+- **Scribe is the memory face; three CAP-18 ports.** `graph_store` (persist;
+  default flat-file; steward PG and atlas plane are plugins).
+  `compile_surface` (fan-in ingest; six builtins plus optional graphify /
+  cocoindex extras). `recall_ranker` (lexical default; optional mem0 extra).
+  **“Behind GraphStore”** means ingest writes `GraphNode`s *through* the
+  persist port. Capture stays `scribe capture` into git-reviewed
+  `.claude/memory/`. Agents do not `mem0.add` instead of capture. Air-gap
+  default: extras off.
+- **Same-language DDD is this roster, not a generic hexagonal regen.**
+  Bounded contexts = eight stations + Canopy + factory island + spine
+  (`pyforge-core` / `django-pyforge`). Ports = five faces. Adapters =
+  `django-*` and Mason’s CFE wrap. **Never:** `services/` / `:800x` farm;
+  hide-legacy generate-from-`analysis/*_spec.md` only; a new hand-authored
+  `ARCH_RULES.md`; dual-endpoint parity harness; Track 3 daemon; the
+  orchestrator’s five phases as this cutover; a Track 1/2/3 picker.
+- **Fleet conventions (absorbed from [[fleet-convention-consistency]]).**
+  That sibling keeps the 2026-08-30 ten-row evidence table. The *contract*
+  lives here. Marshal measures horizontally (Charter §6); owning stations
+  close their rows; **Doctor holds the verdict on Marshal’s own row.**
+  **Always (new work):** fully-qualified decision tags (`marshal:AD-8`,
+  `warden:D-12`) or one documented shared registry; hook entry points
+  station-prefixed; exit-code domain declared as a relationship to a
+  shared reference (subset / disjoint-and-why), the way Doctor already is
+  to Warden; new top-level CLI follows a named idiom (document the
+  exception if it cannot). **Always:** one authoritative source per fleet
+  status fact — extra dashboards read it or refuse, they do not derive a
+  fourth answer. **Never:** a second plugin loader beside
+  `pyforge.core.hooks`; skill-index “Lane 1 CMS” — Steward owns `/console/`
+  (read surface over Marshal + Doctor), not a CMS; Warden `scan --doctor`
+  is a local operability flag, not `pyforge-doctor`.
+- **MCP public contract is the host ASGI** (`POST /stations/<name>/mcp`).
+  Atlas ships in-package MCP *tools*; that is not a second public `:800x`
+  process. Herald and Scribe correctly ship no in-package MCP *server* —
+  the host mounts the route. Reconcile Atlas’s standalone server module
+  against this ruling (fold into the host mount, or name why it stays);
+  do not treat silence as “not built yet.”
+- **Fleet dossier (2026-08-30), verified synthesis — not a line-count CAP.**
+  Spine: `pyforge-core` is the stdlib leaf (`dispatch`, `Lattice`,
+  `atomic_write`, `hooks`, `PyforgeError`, `process`, `report`,
+  `landing_evidence`; `assertion` is host-signed). Atlas provides data
+  (Kedro; py3.14 floor; legacy `cf_atlas.db` stays until a credentialed
+  parity event — retirement `allowed=False` is correct today). Doctor is
+  advisory (exit domain subset of Warden; judges Marshal without importing
+  `pyforge.marshal`). Herald is Dream-to-deck + Four Moments; MCP *client*
+  to Claude Design, not an in-package MCP server. Marshal supervises
+  `bmad-loop` and `bmad-build-auto` (two engines). Mason wraps CFE for
+  `recipe` verbs; `package` / `environment` are native; no second recipe
+  skill. Scribe is capture → compile → recall. Steward duties freeze
+  evidence (crash exit 70); console does not derive fleet status. Warden
+  is the PR-gate lattice (seven rungs; commercial scanners optional
+  plugins). README/skill undercount is a fleet-wide drift finding — each
+  station remediates its own row, not one sweep commit.
+- **Python floor.** No silent raise. Atlas/Doctor `>=3.14` is declared;
+  other stations `>=3.12` until a named policy says otherwise.
 
 **Operating model is estate-wide (2026-08-24, Q1).**
 The operating model first written as
@@ -306,8 +396,9 @@ new product. Architecture mermaid below is still pre-audit; this block wins.
 This file is **evergreen**. CAP-1..18 closeout is a dated slice. CAP-19's
 **first slice** (Epic 34 + Lane 3 `estate-cache`) shipped 2026-08-26; the
 three query-plane OQs and parked Mosaic / vizro-ai / MCP slice 3 remain.
-**Grounding + this section + The Dream (query plane) + the High-Leverage
-matrix + Constraints + the SPEC/`stack.md` are authoritative.**
+**Grounding (including 2026-08-30 foundry / conventions / dossier) + this
+section + The Dream (query plane) + the High-Leverage matrix + Constraints
++ the SPEC/`stack.md` are authoritative.**
 
 The long 2026-08-23 topology (10 layers, `services/`, `:800x` per station,
 “9 stations,” CodeRed CRX, Chroma as estate memory, Vault-in-app, MinIO as a
@@ -323,12 +414,22 @@ second product.
 | Wagtail Lane 1 | CodeRed / CRX |
 | Query plane + BSL + Vizro Lane 3 | Private DuckDB / Chroma / OLTP Text-to-SQL |
 | `go-sops` + age; Vault outside the image | In-app HashiCorp Vault client |
-| One Atlas Kedro home | Every station is a Kedro project |
+| One Atlas Kedro home; Kedro required for *new* Atlas pipelines | Every station is a Kedro project; “Kedro is optional” |
+| `python-platform-foundry` + `factory/` island | Forever-`local-recipes` + one pixi.lock for estate+factory |
+| Scribe three ports; ingest writes through `GraphStore` | cocoindex/mem0 as GraphStore engines or a second SoR |
+| `django-warden` / `django_warden_fabric` | `compliance_face` as the living mount |
 | PostgreSQL + Redis + Kubernetes | MinIO / fourth backing store as core |
 
 ## The Dream
 
-We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`src/platform/` — the host and agent platform) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
+We move from a disparate collection of local tools to **one modular monolith**:
+a **Canopy hub** (`src/platform/`, one ASGI process) and **eight station
+spokes** (packages, not `:800x` processes). “Hub-and-Spoke” in this Dream
+means that shape — not nine FastAPI microservices. We are not building
+disconnected apps; we are building **one Platform Canopy that mounts the 8
+canonical capability stations**, powered by **Pixi** as the unified package
+and environment manager. The lasting git root is **`python-platform-foundry`**
+(workspace name `pyforge`); the recipe plant is **`factory/`** (own lock).
 
 By placing a unified **Django + Wagtail** application at the center (CodeRed dropped
 2026-08-24) and mounting station portals and MCP faces **on the same host ASGI**, we
@@ -1531,8 +1632,9 @@ graph TD
 - **Lane 1 is Wagtail.** CodeRed is dropped.
 - **One analytical engine (CAP-19).** No private DuckDB, Chroma, or OLTP DSN
   for estate knowledge or Text-to-SQL. BSL is the dashboard/agent SQL contract.
-- **Kedro is optional; not eight projects.** Atlas is the Kedro home. Warden
-  is never re-templated as Kedro (Q8).
+- **Kedro is required for new Atlas pipelines; not eight projects.** Atlas is
+  the Kedro home. Warden is never re-templated as Kedro (Q8). `kedro-mcp`
+  stays wrapped.
 - **Infra kinds.** PostgreSQL + Redis + Kubernetes. DuckDB is a library/face.
   Vault/ESO stay outside the image. No MinIO as a fourth core kind.
 - **Bind installed pins; do not re-pin.** See `stack.md` § Estate leverage.
@@ -1541,7 +1643,7 @@ graph TD
 
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[pyforge-scribe]] (GraphStore port; cocoindex behind the port; 34.5 cutover) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[pyforge-target-monorepo]] (tracked directory-map seed: tree + phases 0–6) · [[fleet-convention-consistency]] (ten-row evidence; contract absorbed here 2026-08-30; Marshal detects, Doctor verdicts Marshal’s row) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
 
 ---
 
@@ -1672,3 +1774,14 @@ graph TD
   SPEC OQs. Mosaic optional. MCP slice 3 / vizro-ai / Q5 / eight Kedro
   projects stay parked. Hygiene (bmad-loop recipe 0.11.1, loop-home
   refresh, deferred-work verify stamp) is **not** a canopy contract.
+- **2026-08-30** — Bound the target monorepo directory map, [[fleet-convention-consistency]],
+  and the 2026-08-30 full-fleet dossier (verified synthesis only). Retitled
+  living heading: Eight Stations and the Canopy (modular monolith).
+  Hub-and-Spoke = one ASGI + eight packages. Destination
+  `python-platform-foundry`; `factory/` island; `local-recipes` archives
+  after phases 0–6. Kedro required for new Atlas pipelines. Scribe three
+  ports. Portal `django-warden`, not `compliance_face` mounted. Fleet
+  convention contract lives here; sibling Dream keeps the evidence table.
+  **Never:** hexagonal/`services/` regen as this cutover. Directory-map
+  *seed* minted as [[pyforge-target-monorepo]] so the tree is git-tracked
+  and `[[wikilink]]`-able (the Cursor canvas is a viewer only).
