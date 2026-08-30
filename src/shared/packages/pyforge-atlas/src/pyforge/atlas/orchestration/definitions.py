@@ -61,7 +61,6 @@ from pathlib import Path
 
 import dagster as dg
 from kedro_dagster import KedroProjectTranslator
-
 from pyforge.atlas.factory.crews import CompileCrew, LintCrew
 from pyforge.atlas.factory.wiki import WikiLayout, scaffold_wiki
 from pyforge.atlas.orchestration.event_source import (
@@ -167,10 +166,18 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
     # weekly refresh assets
     (
         "refresh_assets",
-        ["refresh_vdb_store", "refresh_osv_offline_store", "export_pypi_conda_map"],
+        [
+            "refresh_vdb_store",
+            "refresh_osv_offline_store",
+            "export_pypi_conda_map",
+            "refresh_vcs_github_store",
+            "refresh_vcs_host_stores",
+            "refresh_vcs_registry_stores",
+        ],
         "0 1 * * 0",
         "weekly",
-        "refresh assets (vdb-refresh / update-cve-db / update-mapping-cache)",
+        "refresh assets (vdb-refresh / update-cve-db / update-mapping-cache / "
+        "GitHub+GitLab+Codeberg+registry live-fetch stores, Story 21.2)",
     ),
     (
         "upstream_discovery_trending",
@@ -240,6 +247,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "ingest_basilisk_advisories": 600,  # FR-19
     "fetch_basilisk_details": 600,  # FR-19
     # -- vcs_health -------------------------------------------------------- #
+    "refresh_vcs_github_store": 900,  # Story 21.2 — GitHub batched-GraphQL refresh
+    "refresh_vcs_host_stores": 900,  # Story 21.2 — GitLab + Codeberg refresh
+    "refresh_vcs_registry_stores": 900,  # Story 21.2 — 8-registry refresh
     "enrich_maintainers": 300,  # Phase E
     "detect_archived_feedstocks": 300,  # Phase E.5
     "track_upstream_versions": 900,  # Phase K

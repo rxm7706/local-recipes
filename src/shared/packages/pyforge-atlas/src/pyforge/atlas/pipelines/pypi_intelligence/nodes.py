@@ -20,6 +20,7 @@ from __future__ import annotations
 import time
 
 import pandas as pd
+from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
 
 # The mapping provenance tiers that must NEVER be clobbered by a later, weaker match
 # (Phase C/C.5 no-clobber rule; the g10_spelling tier MUST survive as a valid
@@ -672,3 +673,42 @@ def export_pypi_conda_map(pypi_conda_mapping: pd.DataFrame) -> dict:
             out[pypi_name] = conda_name
             ranks[pypi_name] = rank
     return out
+
+
+# ---------------------------------------------------------------------------
+# External-refresh trigger node (Story 21.2 review fix #6) — mirrors
+# ``refresh_vcs_github_store`` (``pipelines/vcs_health/nodes.py``) exactly: a PURE
+# ``RefreshRequest`` producer; the real per-project ``/pypi/<name>/json`` fan-out over
+# the ``pypi_conda_map_store`` candidate universe is DATASET-owned
+# (``PyPIJsonFanOutDataset.fetch_candidates()``). Single writer of ``pypi_json_raw`` —
+# without this trigger, ``load()`` would stay empty on every normal ``kedro run``
+# (the same "dormant load()" bug the GitHub/GitLab/Codeberg/registry trigger nodes
+# fixed). Gated by the existing ``params:ttls`` Phase H cadence
+# (``pypi_current_versions``) rather than growing the exact-3-pinned
+# ``params:refresh_cadences``.
+# ---------------------------------------------------------------------------
+
+def _ttl_cadence(ttls: dict, key: str) -> int:
+    """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
+    value falls back to the WEEKLY default rather than crashing the node. (A local
+    copy of ``pipelines/vcs_health/nodes.py``'s identical helper — kept
+    import-independent between the two pipelines, matching this module's existing
+    self-containment.)"""
+    raw = (ttls or {}).get(key)
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return WEEKLY_SECONDS
+
+
+def refresh_pypi_json_store(ttls: dict) -> RefreshRequest:
+    # Story 21.2 review fix #6: single writer of pypi_json_raw (PyPIJsonFanOutDataset).
+    """External-refresh trigger for the PyPI-JSON per-project fan-out store. PURE:
+    emits the ``RefreshRequest`` ``PyPIJsonFanOutDataset.save()`` honors (cadence/
+    force), which invokes the dataset-owned ``fetch_candidates()`` for the actual IO
+    (KEEP that method as-is — do not duplicate fetch logic here). Cadence == the
+    Phase H TTL (``pypi_current_versions``, weekly)."""
+    return RefreshRequest(
+        store="pypi_json_raw",
+        cadence_seconds=_ttl_cadence(ttls, "pypi_current_versions"),
+    )

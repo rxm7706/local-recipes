@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import pandas as pd
 
+from pyforge.atlas.datasets.refresh import RefreshRequest, WEEKLY_SECONDS
 from pyforge.atlas.pipelines.vcs_health.nodes import (
+    _REGISTRY_INPUTS,
+    _ttl_cadence,
     detect_archived_feedstocks,
     enrich_maintainers,
     fetch_live_health,
+    refresh_vcs_github_store,
+    refresh_vcs_host_stores,
+    refresh_vcs_registry_stores,
     track_registry_versions,
     track_upstream_versions,
 )
@@ -111,3 +117,54 @@ def test_fetch_live_health_projects_signals():
     out = fetch_live_health(api)
     assert len(out) == 1  # dedup on feedstock_name
     assert out.iloc[0]["stars"] == 100
+
+
+# -- External-refresh trigger nodes (Story 21.2, review fix #10) ------------
+
+
+def test_ttl_cadence_reads_the_key():
+    assert _ttl_cadence({"vcs_upstream_versions": 12345}, "vcs_upstream_versions") == 12345
+
+
+def test_ttl_cadence_falls_back_to_weekly_on_missing_key():
+    assert _ttl_cadence({}, "vcs_upstream_versions") == WEEKLY_SECONDS
+    assert _ttl_cadence(None, "vcs_upstream_versions") == WEEKLY_SECONDS
+
+
+def test_ttl_cadence_falls_back_to_weekly_on_non_numeric_value():
+    assert _ttl_cadence({"vcs_upstream_versions": "not-a-number"}, "vcs_upstream_versions") == WEEKLY_SECONDS
+    assert _ttl_cadence({"vcs_upstream_versions": None}, "vcs_upstream_versions") == WEEKLY_SECONDS
+
+
+def test_ttl_cadence_passes_through_zero_and_negative():
+    # _ttl_cadence itself does not clamp -- it only guards against non-numeric /
+    # missing values; RefreshRequest.cadence_seconds=0 is a legitimate "always due"
+    # trigger, consumed downstream by the dataset's own _refresh_due check.
+    assert _ttl_cadence({"vcs_upstream_versions": 0}, "vcs_upstream_versions") == 0
+    assert _ttl_cadence({"vcs_upstream_versions": -5}, "vcs_upstream_versions") == -5
+
+
+def test_refresh_vcs_github_store_returns_a_refresh_request_for_its_own_store():
+    req = refresh_vcs_github_store({"vcs_upstream_versions": 999})
+    assert isinstance(req, RefreshRequest)
+    assert req.store == "vcs_github_api_raw"
+    assert req.cadence_seconds == 999
+
+
+def test_refresh_vcs_github_store_defaults_cadence_to_weekly():
+    req = refresh_vcs_github_store({})
+    assert req.cadence_seconds == WEEKLY_SECONDS
+
+
+def test_refresh_vcs_host_stores_returns_one_request_per_host():
+    gitlab_req, codeberg_req = refresh_vcs_host_stores({"vcs_upstream_versions": 555})
+    assert (gitlab_req.store, gitlab_req.cadence_seconds) == ("vcs_gitlab_api_raw", 555)
+    assert (codeberg_req.store, codeberg_req.cadence_seconds) == ("vcs_codeberg_api_raw", 555)
+
+
+def test_refresh_vcs_registry_stores_returns_one_request_per_registry():
+    reqs = refresh_vcs_registry_stores({"vcs_registry_versions": 777})
+    assert len(reqs) == len(_REGISTRY_INPUTS) == 8
+    stores = {r.store for r in reqs}
+    assert stores == {f"vcs_registry_{r}_raw" for r in _REGISTRY_INPUTS}
+    assert all(r.cadence_seconds == 777 for r in reqs)

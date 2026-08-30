@@ -15,7 +15,47 @@ credentialed materialization attended-only) + ``coerce_cvss_score`` (AC-3(b) vdb
 ScoreType unwrap, boundary layer).
 """
 
+from .basilisk import (
+    BASILISK_QUERYBATCH_MAX,
+    BasiliskBatchDataset,
+    BasiliskDetailDataset,
+    build_conda_purl,
+    chunk_queries,
+)
+from .core_sources import (
+    CfGraphTarballDataset,
+    CondaChanneldataDataset,
+    CondaRepodataDataset,
+    CrossChannelRepodataDataset,
+    FeedstockOutputsArchiveDataset,
+    ParselmouthMappingDataset,
+    PyPISimpleIndexDataset,
+    S3DownloadStatsDataset,
+    channeldata_json_to_rows,
+    parse_cf_graph_tarball,
+    parse_feedstock_outputs_zip,
+    parse_pypi_simple_index,
+    repodata_json_to_rows,
+)
 from .incremental_parquet import IncrementalParquetDataset
+from .migration_status import (
+    ACTIVE_CATEGORIES,
+    BLOCKER_BUCKETS,
+    CATEGORY_FILES,
+    EXCLUDED_STATUS_FILES,
+    MIGRATION_BUCKETS,
+    MigrationCategoryDataset,
+    MigrationDetailDataset,
+    migration_names,
+)
+from .rate_limit import (
+    FetcherClient,
+    FetchError,
+    RateLimitedScheduler,
+    StubFetcherClient,
+    parse_retry_after,
+    resolve_worker_count,
+)
 from .refresh import (
     LEGACY_REFRESH_TTLS,
     VULN_DB_ENV_RESOURCE,
@@ -28,13 +68,14 @@ from .refresh import (
     StalenessMarker,
     VDBStoreDataset,
 )
-from .rate_limit import (
-    FetcherClient,
-    FetchError,
-    RateLimitedScheduler,
-    StubFetcherClient,
-    parse_retry_after,
-    resolve_worker_count,
+from .request_datasets import (
+    AnacondaDownloadsDataset,
+    BigQueryDownloadsDataset,
+    GitHubRequestDataset,
+    PhasePCostAbort,
+    PyPIBigQueryDownloadsDataset,
+    PyPIJsonFanOutDataset,
+    PyPIJsonRequestDataset,
 )
 from .sbom_intake import (
     SbomIntakeDataset,
@@ -46,34 +87,6 @@ from .sbom_intake import (
     parse_pip_list_text,
     parse_requirements_txt,
 )
-from .request_datasets import (
-    AnacondaDownloadsDataset,
-    BigQueryDownloadsDataset,
-    GitHubRequestDataset,
-    PhasePCostAbort,
-    PyPIJsonFanOutDataset,
-    PyPIJsonRequestDataset,
-    PyPIBigQueryDownloadsDataset,
-    seed_pypi_json_from_cf_atlas,
-)
-from .vdb_boundary import coerce_cvss_score
-from .basilisk import (
-    BASILISK_QUERYBATCH_MAX,
-    BasiliskBatchDataset,
-    BasiliskDetailDataset,
-    build_conda_purl,
-    chunk_queries,
-)
-from .migration_status import (
-    ACTIVE_CATEGORIES,
-    BLOCKER_BUCKETS,
-    CATEGORY_FILES,
-    EXCLUDED_STATUS_FILES,
-    MIGRATION_BUCKETS,
-    MigrationCategoryDataset,
-    MigrationDetailDataset,
-    migration_names,
-)
 from .upstream_discovery import (
     TrendingSnapshotDataset,
     parse_search_api_response,
@@ -82,10 +95,8 @@ from .upstream_discovery import (
 from .vcs_sources import (
     RegistryUpstreamDataset,
     VcsHostSeedDataset,
-    seed_github_from_cf_atlas,
-    seed_registry_from_cf_atlas,
-    seed_vcs_host_from_cf_atlas,
 )
+from .vdb_boundary import coerce_cvss_score
 from .vulnerability_feeds import (
     CisaKevDataset,
     CweCatalogDataset,
@@ -93,22 +104,6 @@ from .vulnerability_feeds import (
     parse_cisa_kev_catalog,
     parse_cwe_catalog_zip,
     parse_epss_csv_gz,
-)
-from .core_sources import (
-    CfGraphTarballDataset,
-    CondaChanneldataDataset,
-    CondaRepodataDataset,
-    FeedstockOutputsArchiveDataset,
-    CrossChannelRepodataDataset,
-    ParselmouthMappingDataset,
-    PyPISimpleIndexDataset,
-    S3DownloadStatsDataset,
-    channeldata_json_to_rows,
-    parse_cf_graph_tarball,
-    parse_feedstock_outputs_zip,
-    parse_pypi_simple_index,
-    repodata_json_to_rows,
-    seed_parselmouth_mapping_from_cf_atlas,
 )
 
 __all__ = [
@@ -118,7 +113,6 @@ __all__ = [
     "PyPIJsonRequestDataset",
     "PyPIJsonFanOutDataset",
     "PyPIBigQueryDownloadsDataset",
-    "seed_pypi_json_from_cf_atlas",
     "BigQueryDownloadsDataset",
     "PhasePCostAbort",
     "coerce_cvss_score",
@@ -184,10 +178,7 @@ __all__ = [
     "parse_cisa_kev_catalog",
     "parse_epss_csv_gz",
     "parse_cwe_catalog_zip",
-    # VCS / registry seeds (vcs_health)
+    # VCS / registry live sources (vcs_health)
     "VcsHostSeedDataset",
     "RegistryUpstreamDataset",
-    "seed_github_from_cf_atlas",
-    "seed_vcs_host_from_cf_atlas",
-    "seed_registry_from_cf_atlas",
 ]

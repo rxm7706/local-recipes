@@ -83,7 +83,7 @@ operator's own `credentials.yml` (with real tokens) is left untouched.
 | Variable | Required for the smoke | Effect |
 |---|---|---|
 | `PYFORGE_ATLAS_DATA_ROOT` | No (defaults to the member `data/`) | Overrides `data_root` — every store/output path resolves under it |
-| `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Only consulted by an EXPLICIT live GitHub fan-out; the default `vcs_health` run seeds-then-empty without it |
+| `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Only consulted by an EXPLICIT live GitHub fan-out; the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2) |
 | `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |
 
 Excludes `universal_sbom` (entry-scoped, needs `--params sbom_intake_path`;
