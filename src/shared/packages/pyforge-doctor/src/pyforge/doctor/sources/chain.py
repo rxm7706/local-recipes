@@ -58,6 +58,7 @@ from pathlib import Path, PurePosixPath
 
 import yaml
 
+from ..checks.env_hygiene import _PRUNED_DIR_NAMES
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
@@ -3689,13 +3690,32 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
 
     Returns ``None`` -- never raises -- on any OTHER git failure, so the
     caller degrades THIS entry's check to "not evaluated" (I/O matrix: "git
-    grep hard failure")."""
+    grep hard failure").
+
+    2026-08-30 fix: ``--no-exclude-standard`` (see docstring above for why
+    it's needed) also un-ignores every huge, never-first-party-source
+    directory ``.gitignore`` normally hides -- measured live: ``.pixi/``
+    alone is 32GB, and a single call with no further exclusion did not
+    return within 4 minutes (a fleet with ~10 mechanical-verdict-eligible
+    entries would then need 40+ minutes just for this one check, well past
+    ``fleet_picture.py``'s 90s subprocess budget -- exactly the "could not
+    check verification staleness" degrade users were seeing). Excludes
+    ``env_hygiene.py``'s own ``_PRUNED_DIR_NAMES`` (the SAME curated,
+    battle-tested "never holds first-party source" list the discovery-walk
+    pruning already trusts, not a second independently-maintained list) via
+    additional pathspecs, so the untracked-file recall `--no-exclude-standard`
+    exists for is preserved everywhere EXCEPT these known-huge vendor/cache/
+    worktree trees."""
+    prune_pathspecs = [
+        f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)
+    ]
     try:
         out = run_git(
             target,
             [
                 "grep", "-n", "-w", "-I", "--untracked", "--no-exclude-standard",
                 "--", symbol, ":(exclude,glob)**/deferred-work-ledger.md",
+                *prune_pathspecs,
             ],
             ok_exit_codes=frozenset({0, 1}),
         )
