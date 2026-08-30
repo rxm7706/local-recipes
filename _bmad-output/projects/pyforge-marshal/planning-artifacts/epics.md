@@ -4118,7 +4118,8 @@ So that one operator job works in HTMX on the host.
 
 ## Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
 
-Decomposes `spec-marshal-token-economy` (CAP-1..CAP-10; Dream:
+Decomposes `spec-marshal-token-economy` (CAP-1..CAP-12; CAP-11/CAP-12 added 2026-08-30
+from the operator's model/cost catalog — Stories 28.10/28.11; Dream:
 `docs/dreams/marshal-token-economy.md`). Marshal owns spend *brakes* (E3 ceilings, idle
 ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
 policy-rendered, Genesis-seeded, supervisor-metered context pipeline over five
