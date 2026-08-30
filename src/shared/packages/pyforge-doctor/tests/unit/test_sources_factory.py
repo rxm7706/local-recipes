@@ -664,6 +664,31 @@ def test_spike_report_look_alike_without_a_numeric_index_still_hard_fails(tmp_pa
     assert finding.evidence["subject"] == "planning-artifacts/spike-copier-api-fit-report.md"
 
 
+def test_fleet_drain_run_records_are_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-08-29/30 shape: `marshal factory drain` campaign records
+    (`fleet-drain-supervisor.log`, `journal.jsonl`) under a third `*-runs/`
+    directory name the `runs/`/`dispatch-runs/` rules don't match -- must be
+    classified rather than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    run_dir = (
+        factory._impl(repo)
+        / "fleet-drain-runs"
+        / "pyforge-marshal-20260830T010055392Z-4088e463"
+    )
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "fleet-drain-supervisor.log").write_text("x\n", encoding="utf-8")
+    (run_dir / "journal.jsonl").write_text("{}\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)

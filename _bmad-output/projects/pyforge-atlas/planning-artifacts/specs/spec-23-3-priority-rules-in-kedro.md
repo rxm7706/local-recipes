@@ -1,0 +1,277 @@
+---
+title: 'Port priority.py rules to Kedro inventory_priority_assignments (Story 23.3, Epic 23)'
+type: 'feature'
+created: '2026-08-30'
+status: 'ready-for-dev'
+review_loop_iteration: 0
+followup_review_recommended: false
+context:
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/identity-contract.md'
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/verification-matrix.md'
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/stories.yaml'
+  - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
+warnings: []
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** `priority.py` (`scripts/conda-forge-packaging-inventory-operations_priority.py`) is
+the only place the P1-P10 priority hierarchy, `Rank`, `Score`, and `Work` disposition are
+computed today — an attended script that reads four tabs (`identity-2026-08-12`,
+`CDO-ENT-JFROG`, `OpenTeams`, `inventory-2026-08-12`) out of
+`docs/Analysis_Dataset-2026-08-12.xlsx`, ranks in memory, and writes the result back into the
+same workbook plus an optional Cursor canvas. `verification-matrix.md` explicitly lists
+`P1`-`P10`, `Score`, `Work` as "outside matrix until Epic 23," and
+`complete-export-contract.md` §3.2 requires this hierarchy ported to a Kedro-native derived
+node, `inventory_priority_assignments`, so Story 23.4's `Priority_Bucket` column and Story
+23.5's `identity_complete_export.parquet` can be produced from Atlas Parquet alone — no
+workbook, no quartet merge pass, no `CF_ATLAS_DB`.
+
+**Approach:** Add one PURE node to the `derived_artifacts` pipeline (see Design Notes for the
+`upstream_discovery`-vs-`derived_artifacts` choice) that reimplements `priority.py`'s rule
+hierarchy verbatim over four Kedro-native inputs (`identity_packages_primary`,
+`enterprise_jfrog_consumption`, `enterprise_conda_maintainers`,
+`openteams_project_1_board_raw`, plus the Basilisk vuln rollup already in the vulnerability
+pipeline) instead of xlsx tabs. This is a **port, not a redesign** — every branch, tie-break,
+and output column of `priority.py` carries over unchanged; the only thing that changes is the
+data source (Parquet frames instead of `openpyxl` worksheets) and the output sink (a Kedro
+catalog entry instead of an in-place workbook rewrite + canvas).
+
+## Boundaries & Constraints
+
+**Always:**
+- Every rule branch of `priority.py::assign_lane` is reproduced with the same precedence order:
+  P1 current-version vuln (`risk_level == "HIGH"` or `vuln_status == "affected_latest"`) wins
+  first; then `board_lock` (existing OpenTeams board P1/P2/P3, via `board_maps`'s
+  URL-then-name lookup against `[Conda-Forge Packaging] <name>` titles) is never overwritten;
+  then P4 `platform_env_count > 0`; then P5 `internal_app_count > 0`; then P6
+  `artifactory_downloads >= 100 or artifactory_version_count >= 100`; then P7 `>= 10`; the
+  remainder is split into P8/P9/P10 by `Work` exactly as `priority.py`'s `main()` remainder
+  loop does (Create recipe → P8; File OpenTeams tracking issue on-cf → P9; File OpenTeams
+  tracking issue conda-only, or Already-tracked leftover → P10).
+- `use_score(plat, apps, ic, lob, downloads, versions)` — `100*plat + 10*apps + 3*ic + 2*lob +
+  log10(1+downloads) + log10(1+versions)` — and `percentile_1_100` (stable rank-based 1-100
+  percentile with `(raws[i], i)` tie-break, `n==1` special case returns `100`) are ported
+  verbatim, including tie handling.
+- `work_label`'s precedence is ported verbatim: current-version vuln → `Fix vulnerability`
+  first; else the inventory row's `OpenTeams_Batch`/`OpenTeams_Cohort`/`OpenTeams_Coverage`
+  mapping (`BATCH_TO_WORK`, `Have_Issue` → `Already tracked`, `JFROG_NEW` → `Create recipe`,
+  `JFROG_ON_CF`/`CONDA_ONLY` → the tracking-issue label); else a filled
+  `OpenTeams_Issue_URL` → `Already tracked`; else a filled `conda_purl` or
+  `Conda-Forge_FeedStock_URL` → the tracking-issue label; else `Create recipe`.
+- The final sort/rank key matches `priority.py::sort_key` exactly: `(P-bucket-order,
+  work-rank, -score100, -raw, -downloads, -versions, name)`, 1-based `Rank` assigned after
+  sort.
+- PEP-503 normalization for every join key matches `priority.py::pep503` (lowercase,
+  `-`/`_`/`.` collapsed to a single `-`, stripped) — the same normalization already governing
+  the quartet and this contract's stated join key (`core_python_package_name`).
+- `PRIORITY_DESC` text (all 10 bucket descriptions) is copied verbatim into
+  `Priority_Bucket_Description`.
+- Output columns match complete-export-contract.md §3.2's table exactly: `P`, `Rank`, `Score`,
+  `Work`, `Priority_Bucket_Description`, `Priority_Source`, `Priority_Reason`, plus the four
+  legacy aliases `Proposed_Priority` (= `P`), `Packaging_Work` (= `Work`), `Priority_Rank`
+  (= `Rank`), `Priority_Score` (= `Score`) preserved for downstream parity.
+- The node is PURE — pandas + stdlib only, no inline IO, no `dagster`/`kedro_mcp` imports
+  (AD-1) — matching `derived_artifacts::build_universe_sbom`'s existing shape; no TTL/cadence
+  gating (this is a join/derive over already-materialized Parquet, not a live fetch — no
+  `refresh_cadences` params needed, unlike the `vcs_health` refresh-trigger nodes).
+- A frozen fixture corpus (new, under `tests/fixtures/inventory_priority/` or reused from
+  Story 21.6's identity fixtures if shape-compatible) covers at minimum: one current-vuln P1
+  row, one existing-board P1/P2/P3-lock row, one platform-only P4 row, one app-only P5 row, one
+  100+/10+ download-floor P6/P7 row, and one row for each of the three leftover `Work` splits
+  (P8/P9/P10). Running both `priority.py` (unmodified) and the new node over the same rows must
+  produce identical `P`/`Rank`/`Score`/`Work` — this is the story's `done_checkpoint`.
+
+**Block If:** Stories 21.6 (`identity_packages_primary`) and 23.2
+(`enterprise_jfrog_consumption.parquet`, `enterprise_conda_maintainers.parquet`) are not both
+`status: done` — see Design Notes (same dispatch-ordering pattern `spec-21-8` already
+established for a hard upstream dependency).
+
+**Never:**
+- Do not read `packaging_tier` for `P` assignment — explicit non-goal in
+  `complete-export-contract.md` §3.2; `packaging_tier` is stored on
+  `enterprise_jfrog_consumption.parquet` for audit only (contract §1: "stored, never used for
+  P").
+- Do not modify `scripts/conda-forge-packaging-inventory-operations_priority.py` — it is the
+  read-only parity target, not a symptom to fix (mirrors the existing "do not touch
+  `priority.py`'s disposition/ranking logic" constraint from `spec-17-2`).
+- Do not add a duplicate live fetch for `openteams_project_1_board_raw` in this story — if
+  Story 21.6 has not yet materialized it as a Kedro catalog entry by dispatch time, that is a
+  `Block If` condition, not a workaround to build around here.
+- Do not implement Story 23.4's `Packaging_Candidate_Status` or Story 23.5's
+  `identity_complete_export.parquet` join here — this story's sole output is
+  `inventory_priority_assignments`.
+- Do not touch the Vizro/BSL/gist-actuator layer (Epic 22 / Story 23.6) — this is a pure data
+  node with no UI or publish surface.
+- Do not rewrite an Excel workbook or emit a Cursor `.canvas.tsx` — those are `priority.py`'s
+  own output sinks (workbook in-place rewrite, `write_canvas`), out of scope for the Kedro node.
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| Current-version vuln row | `risk_level == "HIGH"` or `vuln_status == "affected_latest"` on the enterprise/Basilisk join | `P1`, `Priority_Source="current-version-vuln"`, `Work="Fix vulnerability"` regardless of any board lock or platform/app signal | None — this is the top-precedence branch, never overridden |
+| Existing OpenTeams board P1/P2/P3 | `board_lock` resolves via `OpenTeams_Issue_URL` or name against `openteams_project_1_board_raw` titles matching `[Conda-Forge Packaging] <name>` | Locked bucket (`P1`/`P2`/`P3`) preserved, `Priority_Source="openteams-board"`, not overwritten by platform/app/download signals | A board title that doesn't match the bracket pattern is ignored (same as `board_maps`'s regex miss) |
+| Platform / app / download floors, no vuln, no board lock | `platform_env_count>0` (P4), else `internal_app_count>0` (P5), else `downloads>=100 or versions>=100` (P6), else `downloads>=10 or versions>=10` (P7) | Bucket assigned per first matching floor, `Priority_Source` set accordingly | A row matching none of P1-P7 falls to the remainder split |
+| Remainder (no vuln/board/platform/app/floor) | `Work` computed via `work_label` | Split into P8 (`Work=="Create recipe"`), P9 (`Work` is the tracking-issue label, cohort not `CONDA_ONLY`), P10 (tracking-issue label with `CONDA_ONLY` cohort, or `Already tracked` leftover) | Every row is assigned a bucket — there is no "no bucket" terminal state |
+| Missing enterprise telemetry for a universe package | No `enterprise_jfrog_consumption` row joins for a given name | Treated as `platform_env_count=apps=ic=lob=downloads=versions=0`, `risk_level`/`vuln_status` empty — same zero-default behavior as `priority.py`'s `j = jfrog.get(...)` returning `None` | Falls through to the remainder split, not an error |
+| `enterprise_conda_maintainers` role present, `enterprise_jfrog_consumption` absent | A package on conda-forge with a maintainer/co-maintainer role but no JFROG telemetry | Still ranked (remainder split); `Role` itself is Story 23.4's concern, not this node's output | Not a blocker for priority assignment |
+| Upstream dependency not yet materialized | Story 21.6 or 23.2 not `status: done` at dispatch time | This story is not dispatched (`Block If`) | See Design Notes |
+
+</intent-contract>
+
+## Code Map
+
+- `scripts/conda-forge-packaging-inventory-operations_priority.py` — the read-only parity
+  target, in full:
+  - `pep503` (~L104-109) — join-key normalization.
+  - `use_score` (~L129-138), `percentile_1_100` (~L141-149) — scoring.
+  - `board_maps` (~L152-167), `board_lock` (~L170-182) — OpenTeams board P1-P3 lock.
+  - `is_current_vuln` (~L190-193) — P1 vuln gate.
+  - `work_label` (~L196-216) — `Work` disposition.
+  - `assign_lane` (~L219-247) — P1/P4-P7/board-lock branch dispatch (the remainder — P2/P3
+    locked or unbucketed — falls through to `main()`'s remainder loop).
+  - `PRIORITY_DESC` (~L57-68), `BUCKET_ORDER`/`PRI_N` (~L35-36), `WORK_ORDER`/`WORK_RANK`
+    (~L43-44), `BATCH_TO_WORK` (~L45-56) — the lookup tables to copy verbatim.
+  - `main()`'s remainder-bucket loop (~L666-694, P8/P9/P10 leftover split by `Work` and
+    `cohort`) and `sort_key`/rank assignment (~L685-698) — the parts of `main()` that are rule
+    logic, not I/O; port these, not the xlsx read/write around them.
+- `_bmad-output/.../specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md` §3.2
+  — the exact input/output contract this story implements (verbatim in the task brief above).
+- `_bmad-output/.../specs/spec-atlas-kedro-catalog-expansion/identity-contract.md` — Story
+  21.6's `identity_packages_primary` shape (this story's first input) and
+  `openteams_project_1_board_raw`'s source/credential (GitHub GraphQL project V2 #1, org
+  `OpenTeams-WFT-CDO`).
+- `_bmad-output/.../specs/spec-atlas-kedro-catalog-expansion/verification-matrix.md` — confirms
+  `P1`-`P10`/`Score`/`Work` are explicitly "outside matrix until Epic 23" today, and that this
+  story (23.3) plus 23.5 are the entries that close that gap.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` (71
+  lines today) — target file; `build_universe_sbom` (~L23-71) is the existing PURE-node
+  precedent to mirror (pandas + stdlib only, no inline IO, `AD-1`).
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py`
+  (25 lines today) — add one `node(...)` entry; `inputs=` bind to catalog NAMES per the existing
+  cross-pipeline-edge convention (`AD-3`), matching `build_universe_sbom`'s
+  `["core_packages_enumerated", "pypi_conda_mapping", "parameters"]` pattern.
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — add
+  `inventory_priority_assignments` as `type: pandas.ParquetDataset`, `filepath:
+  data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet`,
+  `metadata: {layer: derived}` (same shape as the neighboring `derived_universe_sbom`,
+  `trending_candidates_classified`, `org_audit_candidates_classified` entries).
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_universe_sbom.py` —
+  the existing test-file precedent for this pipeline; add a sibling
+  `test_inventory_priority_assignments.py`.
+- `src/shared/packages/pyforge-atlas/tests/parity/` (`parity_runner.py`, `harness.py`) — the
+  existing `cf_atlas.db`-vs-Kedro parity harness; **not** directly reusable here (it diffs
+  against the legacy SQLite surface, not the xlsx-based quartet), but its
+  fixture/evidence-record pattern is the model for this story's new
+  `priority.py`-vs-node fixture comparison.
+
+## Tasks & Acceptance
+
+**Execution:**
+- Add `assign_inventory_priority(identity_packages_primary, enterprise_jfrog_consumption,
+  enterprise_conda_maintainers, openteams_project_1_board_raw, vulnerability_basilisk_rollup,
+  parameters=None)` to `pipelines/derived_artifacts/nodes.py`, porting `priority.py`'s
+  `pep503`/`use_score`/`percentile_1_100`/`board_maps`/`board_lock`/`is_current_vuln`/
+  `work_label`/`assign_lane`/remainder-split/`sort_key` logic verbatim (module-private helpers
+  in the same file; do not import from `scripts/`).
+- Wire the node into `pipelines/derived_artifacts/pipeline.py` with `outputs=
+  "inventory_priority_assignments"`, `inputs=` bound to the four Kedro catalog names named in
+  complete-export-contract.md §3.2 (plus the Basilisk vuln rollup as a fifth positional input,
+  or a merged frame if Story 23.2's enterprise export already folds Basilisk in — confirm
+  against 23.2's landed shape at dispatch time and note the actual wiring here or in a Spec
+  Change Log entry).
+- Add `inventory_priority_assignments` to `conf/base/catalog.yml` per the Code Map's dataset
+  shape.
+- Build the frozen fixture corpus (new directory under `tests/fixtures/`) covering the six
+  scenarios in the I/O matrix above; capture `priority.py`'s output over the same synthetic
+  rows as the frozen expected values (do not run `priority.py` against real workbook data as
+  part of CI — the fixture is synthetic and small, matching the existing `tests/fixtures`
+  convention across the repo).
+- Add `tests/pipelines/derived_artifacts/test_inventory_priority_assignments.py` asserting
+  P/Rank/Score/Work/Priority_Bucket_Description/Priority_Source parity against the fixture, one
+  test case per I/O-matrix scenario plus the four legacy-alias columns.
+- Confirm `pixi run -e pyforge-atlas kedro-catalog-check` and `kedro-test` stay green with the
+  new catalog entry and node.
+
+**Acceptance Criteria:**
+- Given the frozen fixture corpus's current-vuln row, when the new node runs, then it is
+  assigned `P1`, `Work="Fix vulnerability"`, `Priority_Source="current-version-vuln"` —
+  matching `priority.py`'s output on the same row.
+- Given the fixture's board-locked P1/P2/P3 row, when the new node runs, then the locked bucket
+  is preserved and not overwritten by any platform/app/download signal on that row.
+- Given the fixture's P4-P7 floor rows, when the new node runs, then each is assigned the
+  correct bucket per the first-matching-floor precedence, with `Score` matching `priority.py`'s
+  `use_score`/`percentile_1_100` output within floating-point tolerance.
+- Given the fixture's three remainder rows, when the new node runs, then each is split into
+  P8/P9/P10 exactly as `priority.py`'s `main()` remainder loop does, keyed off the same `Work`
+  value.
+- Given the full fixture corpus sorted and ranked, when compared row-by-row against
+  `priority.py`'s output on the same corpus, then `P`, `Rank`, `Score`, and `Work` are
+  identical for every row (`done_checkpoint`).
+- Given `inventory_priority_assignments.parquet`, when read, then it carries all eleven
+  contract columns (`P`, `Rank`, `Score`, `Work`, `Priority_Bucket_Description`,
+  `Priority_Source`, `Priority_Reason`, `Proposed_Priority`, `Packaging_Work`, `Priority_Rank`,
+  `Priority_Score`).
+- Given `pixi run -e pyforge-atlas kedro-catalog-check` and `kedro-test`, when run after this
+  story, then both stay green.
+
+## Spec Change Log
+
+- 2026-08-30: Initial draft. Ports `priority.py`'s P1-P10/Rank/Score/Work hierarchy into a new
+  `derived_artifacts` Kedro node, `inventory_priority_assignments`. Written ahead of Stories
+  21.6 and 23.2's implementation — see Design Notes for the resulting dispatch-timing
+  consequence.
+
+## Design Notes
+
+**Pipeline choice: `derived_artifacts`, not `upstream_discovery`.** The task brief allows
+either; `derived_artifacts` is the better fit. `upstream_discovery`'s existing nodes
+(`refresh_trending_candidates`, `classify_trending_candidates`, `load_org_audit_candidates`)
+are all about *finding new candidate packages* (GitHub trending, org-audit lists) — a discovery
+concern. `inventory_priority_assignments` is the opposite: it re-ranks an already-known,
+already-materialized universe of packages using signals that already exist in Parquet (no
+fetch, no discovery). `derived_artifacts` is architecturally the home for exactly this shape —
+its only current node, `build_universe_sbom`, is likewise a PURE join/derive over
+already-materialized inputs producing a new derived artifact, with no fetch and no TTL/cadence
+gating. `complete-export-contract.md`'s own build-order diagram groups `PRI`
+(`inventory_priority_assignments`) with `VER` (`inventory_verified_packages`, Story 23.4) and
+`COMP` (`identity_complete_export.parquet`, Story 23.5) as a single downstream "derived" chain
+feeding off `ID` (`identity_packages_primary`) — consistent with putting all three in
+`derived_artifacts`, keeping Story 23.4 (which depends on this story's output) in the same
+pipeline rather than crossing pipeline boundaries for a tightly-coupled two-node chain.
+
+**This story cannot be dispatched yet.** As of this spec's drafting (2026-08-30), neither
+Story 21.6 (`identity_packages_primary` — confirmed via `grep` across `conf/base/catalog.yml`:
+zero hits) nor Story 23.2 (`enterprise_jfrog_consumption.parquet` /
+`enterprise_conda_maintainers.parquet` — same, zero hits) has landed; no `spec-21-6-*.md` or
+`spec-23-2-*.md` file exists yet under this directory either. This spec describes the node
+Story 21.6 and 23.2's outputs make possible — do not dispatch `bmad-build`/`bmad-loop` against
+it until both are `status: done` (same pattern `spec-21-8` already established: the spec is
+complete and actionable, but upstream code has not landed). Whoever picks this story up must
+re-check `21.6`/`23.2`'s live status (spec frontmatter or `fleet-picture`) before dispatch
+rather than trusting this spec's drafting-time snapshot.
+
+**Porting scope is read-only against `priority.py`.** "Port the full P1-P10 hierarchy" is not
+an intent gap: the script exists, is fully readable (818 lines, no ambiguity in its branch
+logic), and per the task's own framing this is normal step-03 implementation work — reading and
+faithfully reimplementing already-shipped logic — not a spec-level open question. The only
+genuine open point is the exact Kedro binding of the Basilisk vuln rollup input (whether Story
+23.2 folds it into `enterprise_jfrog_consumption` or it stays a separate catalog entry),
+flagged above as a dispatch-time confirmation, not a blocker to writing this spec now.
+
+## Verification
+
+**Commands (run once Stories 21.6 and 23.2 are done and this story dispatches):**
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass, `inventory_priority_assignments`
+  present and well-formed.
+- `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_inventory_priority_assignments.py`
+  (or the equivalent full-suite `kedro-test` run) — expected: all fixture-corpus parity
+  assertions pass.
+- Manual/CI diff of `priority.py`'s unmodified output against the new node's output on the same
+  frozen fixture corpus — expected: byte-identical `P`/`Rank`/`Score`/`Work` per row
+  (`done_checkpoint`).
