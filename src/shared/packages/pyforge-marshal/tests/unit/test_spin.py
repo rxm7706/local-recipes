@@ -3662,6 +3662,7 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert len(parsed["landing_rules"]) == 2
     assert parsed["model_tier_map"] == {
         "heavy": {"dev": "opus", "review": "opus"},
+        "medium": {"dev": "sonnet", "review": "opus"},
         "easy": {"dev": "haiku"},
     }
 

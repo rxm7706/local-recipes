@@ -71,6 +71,30 @@ verify_commands = [
   "pixi run --frozen -e pyforge-ci pyforge-deps-test",
 ]
 
+# epic_surfaces (AD-27, MRS-GATE-007/Story 2.3): per-epic writable-surface allowlist,
+# narrowed further by a story spec's own `surface:` field when it declares one. The
+# DEFAULT for an undeclared epic is `()` -- deny by default, narrow-only, never
+# widened -- so an epic with no entry here blocks EVERY changed path from landing,
+# not just an unexpected one (see pyforge-atlas's own marshal-policy.toml, the first
+# station to hit this: Story 21.3 was the first story on ANY station to reach
+# marshal's fully-automated dispatch->verify->land path). Story 28.1 (2026-08-30)
+# was pyforge-marshal's own first story through that path and hit the same wall.
+# Scoped to what 28.1 actually touches, not a wildcard; widen per-story as later
+# Epic 28 stories land, same pattern atlas used.
+[epic_surfaces]
+"28" = [
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-1-the-context-policy-block-rendered-once-for-both-engines.md",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_policy.py",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.
