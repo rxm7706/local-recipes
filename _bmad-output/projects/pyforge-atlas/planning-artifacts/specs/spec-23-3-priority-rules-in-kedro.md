@@ -74,7 +74,14 @@ catalog entry instead of an in-place workbook rewrite + canvas).
 - Output columns match complete-export-contract.md §3.2's table exactly: `P`, `Rank`, `Score`,
   `Work`, `Priority_Bucket_Description`, `Priority_Source`, `Priority_Reason`, plus the four
   legacy aliases `Proposed_Priority` (= `P`), `Packaging_Work` (= `Work`), `Priority_Rank`
-  (= `Rank`), `Priority_Score` (= `Score`) preserved for downstream parity.
+  (= `Rank`), `Priority_Score` (= `Score`) preserved for downstream parity, PLUS
+  `core_python_package_name` (the join key every downstream consumer needs) and — new
+  2026-08-30 correction — `risk_level`/`vuln_status`/`jfrog_latest_vuln_count` pass through as
+  output columns too (the values this node already computed internally for its own P1 gate via
+  the `vulnerability_basilisk_rollup` join). Story 23.5 sources `JFROG_risk_level`/
+  `JFROG_vuln_status`/`JFROG_latest_vuln_count` from THIS node's output, not from
+  `enterprise_jfrog_consumption` (which no longer carries them) — avoids a second, redundant
+  Basilisk join downstream.
 - The node is PURE — pandas + stdlib only, no inline IO, no `dagster`/`kedro_mcp` imports
   (AD-1) — matching `derived_artifacts::build_universe_sbom`'s existing shape; no TTL/cadence
   gating (this is a join/derive over already-materialized Parquet, not a live fetch — no
@@ -156,10 +163,15 @@ established for a hard upstream dependency).
   (25 lines today) — add one `node(...)` entry; `inputs=` bind to catalog NAMES per the existing
   cross-pipeline-edge convention (`AD-3`), matching `build_universe_sbom`'s
   `["core_packages_enumerated", "pypi_conda_mapping", "parameters"]` pattern.
-- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — add
-  `inventory_priority_assignments` as `type: pandas.ParquetDataset`, `filepath:
-  data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet`,
-  `metadata: {layer: derived}` (same shape as the neighboring `derived_universe_sbom`,
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` (~L448-461) —
+  `vulnerability_basilisk_advisories` (`conda_name`/`advisory_id`/`modified`, layer `primary`)
+  and `vulnerability_basilisk_details` (per-advisory `fix_available`, layer `intermediate`) are
+  `derive_basilisk_vuln_rollup`'s two inputs, already live. Add
+  `vulnerability_basilisk_rollup` as `type: pandas.ParquetDataset`, `filepath:
+  data/derived/vulnerability_basilisk_rollup/vulnerability_basilisk_rollup.parquet`, `metadata:
+  {layer: derived}`, and `inventory_priority_assignments` the same way, `filepath:
+  data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet`
+  (same shape as the neighboring `derived_universe_sbom`,
   `trending_candidates_classified`, `org_audit_candidates_classified` entries).
 - `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_universe_sbom.py` —
   the existing test-file precedent for this pipeline; add a sibling
@@ -173,6 +185,27 @@ established for a hard upstream dependency).
 ## Tasks & Acceptance
 
 **Execution:**
+- **New (2026-08-30 correction) — `vulnerability_basilisk_rollup` does not exist yet and this
+  story must build it**, not just consume it: `grep` confirms `conf/base/catalog.yml` has
+  `vulnerability_basilisk_advisories` (`conda_name`, `advisory_id`, `modified` — one row per
+  advisory) and `vulnerability_basilisk_details` (per-advisory tri-state `fix_available`), but
+  no per-package rollup and no `risk_level`/`vuln_status` extraction anywhere in the repo (the
+  legacy `priority.py` reads them pre-joined off the CDO-ENT-JFROG workbook tab, computed by an
+  external, out-of-repo process — see Design Notes). Add a new pure node
+  `derive_basilisk_vuln_rollup(vulnerability_basilisk_advisories, vulnerability_basilisk_details)
+  -> vulnerability_basilisk_rollup` to `pipelines/derived_artifacts/nodes.py`, one row per
+  `conda_name`: `jfrog_latest_vuln_count` = count of distinct `advisory_id` for that name
+  (unambiguous from the existing data); `vuln_status` = `"affected_latest"` if the name has ≥1
+  advisory row, else `"clean"` (a name absent from `vulnerability_basilisk_advisories`
+  entirely never appears in the rollup at all — the join in `assign_inventory_priority` treats
+  a missing rollup row as `risk_level`/`vuln_status` empty, per the existing I/O matrix row);
+  `risk_level` classification (`HIGH`/`MEDIUM`/`LOW`/`NO_DATA`) needs a CVSS-or-equivalent
+  severity signal `vulnerability_basilisk_details` does not currently extract from the raw
+  `GET /v1/vulns/{id}` OSV-format response (only `fix_available` is captured today) — this is a
+  genuine step-03 research/design task (verify what severity field the live API actually
+  returns, extend the detail extraction if needed, pick and document the CVSS-band-to-enum
+  mapping), not an unresolved spec gap: the OUTPUT contract (the four enum values, one row per
+  name) is fully specified above regardless of exactly how severity gets classified.
 - Add `assign_inventory_priority(identity_packages_primary, enterprise_jfrog_consumption,
   enterprise_conda_maintainers, openteams_project_1_board_raw, vulnerability_basilisk_rollup,
   parameters=None)` to `pipelines/derived_artifacts/nodes.py`, porting `priority.py`'s
@@ -181,10 +214,16 @@ established for a hard upstream dependency).
   in the same file; do not import from `scripts/`).
 - Wire the node into `pipelines/derived_artifacts/pipeline.py` with `outputs=
   "inventory_priority_assignments"`, `inputs=` bound to the four Kedro catalog names named in
-  complete-export-contract.md §3.2 (plus the Basilisk vuln rollup as a fifth positional input,
-  or a merged frame if Story 23.2's enterprise export already folds Basilisk in — confirm
-  against 23.2's landed shape at dispatch time and note the actual wiring here or in a Spec
-  Change Log entry).
+  complete-export-contract.md §3.2, PLUS `vulnerability_basilisk_rollup` as a genuinely
+  separate fifth positional input — resolved 2026-08-30 (Corrected 2026-08-30, see Design
+  Notes): Story 23.2's `enterprise_jfrog_consumption.parquet` is Artifactory-native telemetry
+  ONLY (`platform_env_count`/`internal_app_count`/`artifactory_downloads`/
+  `artifactory_version_count`/`internal_component_count`/`internal_lob_count`/
+  `repository_source`/`packaging_tier`/`verification_timestamp_utc`) — it does NOT carry
+  `risk_level`/`vuln_status`. This node is where the Basilisk join actually happens: left-join
+  `vulnerability_basilisk_rollup` (keyed the same PEP-503 way, latest-version-per-package
+  rollup) onto the joined frame to produce `risk_level`/`vuln_status`/`jfrog_latest_vuln_count`
+  before evaluating `is_current_vuln`/`assign_lane`'s P1 branch.
 - Add `inventory_priority_assignments` to `conf/base/catalog.yml` per the Code Map's dataset
   shape.
 - Build the frozen fixture corpus (new directory under `tests/fixtures/`) covering the six
@@ -195,6 +234,11 @@ established for a hard upstream dependency).
 - Add `tests/pipelines/derived_artifacts/test_inventory_priority_assignments.py` asserting
   P/Rank/Score/Work/Priority_Bucket_Description/Priority_Source parity against the fixture, one
   test case per I/O-matrix scenario plus the four legacy-alias columns.
+- Add a test for `derive_basilisk_vuln_rollup` covering: a name with ≥1 advisory ->
+  `vuln_status="affected_latest"`, `jfrog_latest_vuln_count` matches the distinct-advisory
+  count; a name with zero advisories -> absent from the rollup entirely (not a zero-count row);
+  `risk_level` defaults to whatever the step-03 classification lands on for a covered name, and
+  is absent (not a fabricated default) when the name has no advisories.
 - Confirm `pixi run -e pyforge-atlas kedro-catalog-check` and `kedro-test` stay green with the
   new catalog entry and node.
 
@@ -216,7 +260,8 @@ established for a hard upstream dependency).
 - Given `inventory_priority_assignments.parquet`, when read, then it carries all eleven
   contract columns (`P`, `Rank`, `Score`, `Work`, `Priority_Bucket_Description`,
   `Priority_Source`, `Priority_Reason`, `Proposed_Priority`, `Packaging_Work`, `Priority_Rank`,
-  `Priority_Score`).
+  `Priority_Score`) plus `core_python_package_name`, `risk_level`, `vuln_status`, and
+  `jfrog_latest_vuln_count` (the pass-through Basilisk-join columns Story 23.5 consumes).
 - Given `pixi run -e pyforge-atlas kedro-catalog-check` and `kedro-test`, when run after this
   story, then both stay green.
 
@@ -259,10 +304,18 @@ rather than trusting this spec's drafting-time snapshot.
 **Porting scope is read-only against `priority.py`.** "Port the full P1-P10 hierarchy" is not
 an intent gap: the script exists, is fully readable (818 lines, no ambiguity in its branch
 logic), and per the task's own framing this is normal step-03 implementation work — reading and
-faithfully reimplementing already-shipped logic — not a spec-level open question. The only
-genuine open point is the exact Kedro binding of the Basilisk vuln rollup input (whether Story
-23.2 folds it into `enterprise_jfrog_consumption` or it stays a separate catalog entry),
-flagged above as a dispatch-time confirmation, not a blocker to writing this spec now.
+faithfully reimplementing already-shipped logic — not a spec-level open question.
+
+**Corrected 2026-08-30: the Basilisk vuln rollup is a genuinely separate input, resolved, not
+an open point.** The legacy `priority.py` reads `risk_level`/`vuln_status` off the same `j`
+(JFrog) dict as `platform_env_count` etc. (`scripts/conda-forge-packaging-inventory-operations_priority.py:607-618`)
+only because the CDO-ENT-JFROG workbook TAB already carries them pre-joined by an external,
+out-of-repo process before the script ever runs — Artifactory itself has no vulnerability data.
+`complete-export-contract.md` §1 and `spec-23-2` were both corrected to remove `risk_level`/
+`vuln_status` from `enterprise_jfrog_consumption.parquet`'s required columns for exactly this
+reason: the Kedro port should make that join explicit (this node, against
+`vulnerability_basilisk_rollup`) rather than silently inherit an implicit one. This is now a
+firm design decision, not a dispatch-time confirmation to re-derive.
 
 ## Verification
 

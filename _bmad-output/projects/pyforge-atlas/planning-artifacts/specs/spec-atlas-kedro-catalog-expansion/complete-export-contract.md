@@ -83,12 +83,15 @@ normalization as `priority.py::pep503` and metrics runner).
 | `internal_app_count` | int | org telemetry | P5, gist `Apps`, use_score |
 | `artifactory_downloads` | int | download count aggregate | P6/P7, gist `Downloads`, use_score |
 | `artifactory_version_count` | int | distinct versions pulled | P6/P7, gist `Versions`, use_score |
-| `risk_level` | enum | `HIGH` \| `MEDIUM` \| `LOW` \| `NO_DATA` | P1 gate, gist `JFROG_risk_level` |
-| `vuln_status` | enum | `affected_latest` \| `clean` \| … | P1 gate, gist `Vuln` |
 | `internal_component_count` | int | JFROG internal components | use_score, gist detail |
 | `internal_lob_count` | int | JFROG LOB count | use_score, gist detail |
 | `packaging_tier` | string | **stored, never used for P** | audit only; ranking ignores per dream |
 | `verification_timestamp_utc` | datetime | row generation time | staleness |
+
+`risk_level`/`vuln_status` are **not** stored here — Artifactory has no vulnerability data of its
+own; today's legacy workbook only carries them on the `CDO-ENT-JFROG` tab because an earlier,
+external process had already joined Basilisk data in before priority.py ever saw it. The Kedro
+port makes that join explicit instead of implicit — see the Basilisk vuln overlay below.
 
 **Derived on join (not stored on enterprise raw — computed in priority node):**
 
@@ -97,11 +100,14 @@ normalization as `priority.py::pep503` and metrics runner).
 | `OpenTeams_Cohort` | `JFROG_NEW` if JFROG ∧ ¬conda-forge; `JFROG_ON_CF` if JFROG ∧ conda-forge; absent if not in JFROG |
 | `openteams_universe_member` | bool — in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` |
 
-**Basilisk vuln overlay** (not Artifactory-native):
+**Basilisk vuln overlay** (not Artifactory-native — joined onto `enterprise_jfrog_consumption`
+by the priority node, Story 23.3, not stored on the raw table itself):
 
 | Column | Producer |
 |--------|----------|
-| `jfrog_latest_vuln_count` | join `vulnerability_basilisk_*` / package rollup on latest version |
+| `risk_level` | join `vulnerability_basilisk_*` / package rollup on latest version — enum `HIGH` \| `MEDIUM` \| `LOW` \| `NO_DATA`; P1 gate, gist `JFROG_risk_level` |
+| `vuln_status` | same join — enum `affected_latest` \| `clean` \| …; P1 gate, gist `Vuln` |
+| `jfrog_latest_vuln_count` | same join, package rollup on latest version — count |
 
 **CDO-ENT-CONDA maintainer universe** (Tier 2, separate Parquet — already cataloged in 18.5):
 
