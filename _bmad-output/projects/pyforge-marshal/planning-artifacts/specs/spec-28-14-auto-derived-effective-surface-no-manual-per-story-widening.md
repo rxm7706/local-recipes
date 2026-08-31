@@ -2,9 +2,9 @@
 title: 'Auto-derived effective surface, no manual per-story widening'
 type: 'feature'
 created: '2026-08-31'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 1
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 warnings: ['oversized']
 deferred:
@@ -25,10 +25,14 @@ deferred:
       (it would require modifying compute_effective_surface's intersection-only body, which
       this story's own boundaries and meta-test explicitly forbid touching) -- confirmed
       identical behavior already existed for any hand-declared glob-only `[epic_surfaces]`
-      entry before this story.
+      entry before this story. Severity raised medium -> high on review pass 2 (Blind
+      Hunter): every populated `surface:` field found in this repo's tracked specs uses
+      literal paths, so this is the COMMON case a real story hits, not a rare edge case --
+      it likely nullifies the "no manual per-story widening" promise for any story that also
+      declares its own `surface:` field.
     location: >-
       src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py::compute_effective_surface
-    severity: medium
+    severity: high
   - summary: >-
       default_epic_surface(project_slug) assumes a src/shared/packages/<slug>/ package tree
       exists; for a BMAD project without that convention the derived default silently
@@ -39,7 +43,9 @@ deferred:
       stations, the package-tree and artifact-tree globs simply never match any real file,
       leaving only the 5 bookkeeping paths as the effective default -- not a regression (it
       is never worse than the pre-story deny-all), but the story's stated benefit does not
-      materialize for such a project, silently.
+      materialize for such a project, silently. Review pass 2 (Blind Hunter): a future fix
+      shape could mirror MRS-GATE-004's precedent (a WARN advisory finding for an analogous
+      "nothing meaningfully configured" state) rather than staying silent.
     location: >-
       src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py::default_epic_surface
     severity: low
@@ -71,6 +77,21 @@ deferred:
       forgotten.
     location: >-
       _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml:107
+    severity: low
+  - summary: >-
+      dispatch_verify.py's scope_check JSON payload never exposes policy_surface (only
+      effective_surface/changed_files/violations), unlike cli/gate.py's payload -- a
+      pre-existing reporting-shape asymmetry that review pass 2 found newly more meaningful
+      now that declared vs. auto-derived policy_surface values can differ materially.
+    evidence: |-
+      dispatch_verify.py::evaluate_dispatch_verification's data["scope_check"] dict (around
+      line 213) was already missing a policy_surface key before this story; this story does
+      not change that dict's shape, only the value flowing into effective_surface. In the
+      common case (no spec surface: field) effective_surface equals policy_surface, so an
+      operator can usually still infer the resolved surface from the existing field -- this
+      is an observability nicety, not a correctness gap, so left as pre-existing.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py::evaluate_dispatch_verification
     severity: low
 baseline_revision: '3bc9a072c6943cbf6594f5d961a9f87c2e6e93de'
 ---
@@ -166,6 +187,19 @@ baseline_revision: '3bc9a072c6943cbf6594f5d961a9f87c2e6e93de'
   - `[medium]` `[bad_spec]` Declared-vs-default branching (not just the path list) was duplicated verbatim across both call sites — amended Code Map/Tasks to extract one shared resolver function.
   - `[low]` `[bad_spec]` `default_epic_surface`'s docstring inaccurately claimed `_valid_epic_surfaces` never yields an empty tuple — amended for correction on re-derivation.
 
+### 2026-08-31 — Review pass (pass 2, post re-derivation)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 5: (high 1, medium 2, low 2)
+- defer: 0 (severity of one existing deferred item raised medium -> high; one existing deferred item's evidence extended; one new deferred item added — no new triage-category defer this pass, only frontmatter updates to already-deferred items)
+- reject: 6: (low 6)
+- addressed_findings:
+  - `[low]` `[patch]` `test_default_epic_surface_does_not_grant_the_full_planning_artifacts_tree`'s second assertion was vacuous (wrong suffix pattern, never matched either the correct or regressed value) — removed; the first assertion already does the real check.
+  - `[low]` `[patch]` `default_epic_surface`'s docstring overstated that both call sites validate `project_slug` upfront — corrected to note only `cli/gate.py` does.
+  - `[high]` `[patch]` No end-to-end test proved the exact pass-1 regression stays fixed (a `planning-artifacts/` path outside `specs/**`, e.g. `marshal-policy.toml`, must still trip `MRS-GATE-007`) — added `test_gate_evaluate_scope_check_unconfigured_epic_denies_planning_artifacts_outside_specs`.
+  - `[medium]` `[patch]` No test proved the AC's own "different station's package tree" negative-case example — added `test_gate_evaluate_scope_check_unconfigured_epic_denies_a_different_stations_package_tree`.
+  - `[medium]` `[patch]` `dispatch_verify.py`'s tests never varied `project_slug`, so a hardcoded-literal regression would ship undetected — added `test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_resolver` using a different slug.
+
 ## Design Notes
 
 Three design questions had no single unambiguous answer in the epics.md AC text alone and were resolved from corroborating sources rather than left open:
@@ -178,3 +212,27 @@ Three design questions had no single unambiguous answer in the epics.md AC text 
 
 **Commands:**
 - `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, including the new/updated cases in `test_scope.py`, `test_cli.py`, and `test_dispatch_verification.py`.
+
+## Auto Run Result
+
+**Summary:** `policy_surface` resolution now auto-derives a safe per-station default (package tree + `planning-artifacts/specs/**` + `implementation-artifacts/**` + 5 bookkeeping paths) at both scope-check call sites whenever an epic has no `[epic_surfaces]` entry declared, via a single shared `core/gate.py::resolve_policy_surface` resolver. A declared entry, even an empty one, is always used outright and never merged with or widened by the default. Went through one bad_spec loopback (review pass 1): the first implementation auto-derived the FULL `planning-artifacts/**` tree, which review found broader than the only concrete repo precedent and let an unconfigured epic silently touch its own project's governance files; the spec was amended and code re-derived to narrow to `planning-artifacts/specs/**`. A second review pass (pass 2) found and fixed 5 smaller patch-level gaps in the re-derived code/tests.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py` -- added `_COMMON_BOOKKEEPING_PATHS`, `default_epic_surface(project_slug)`, `resolve_policy_surface(epic_surfaces, epic, project_slug)`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py` -- `_run_scope_check` calls `gate.resolve_policy_surface(...)` instead of the old deny-all `.get(..., ())`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` -- `evaluate_dispatch_verification` calls the same shared resolver.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_scope.py` -- unit tests for `default_epic_surface`/`resolve_policy_surface`.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py` -- updated the deny-all pin to the new default; added permits-a-bookkeeping-path, permits-implementation-artifacts, declared-wins, denies-planning-artifacts-outside-specs, and denies-a-different-stations-package-tree tests.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` -- extended the existing gates-not-self-report test with an `MRS-GATE-007`-absent assertion; added outside-default-denied, declared-wins, and slug-threading tests.
+- This spec file itself (bad_spec amendment + two review-triage-log entries + deferred-work catalog).
+
+**Review findings breakdown:**
+- Review pass 1: 5 bad_spec (amended spec, reverted+re-derived code), 4 defer (recorded in frontmatter `deferred:`), 2 reject.
+- Review pass 2: 5 patch (all applied — 1 high, 2 medium, 2 low), 0 defer as a fresh triage category (one existing deferred item's severity raised medium->high, one extended, one new deferred item added as frontmatter-only updates), 6 reject.
+- Total across both passes: 0 intent_gap, 5 bad_spec (resolved via loopback), 5 patch (applied), 5 deferred items recorded in frontmatter, 8 rejected as noise/duplicate/out-of-workflow-scope.
+
+**Follow-up review recommendation:** `true`. This pass's patch findings: 1 high, 2 medium, 2 low -- a high-severity patched finding alone triggers `true` (also exceeds the `3*medium + 1*low >= 5` threshold: 3*2+1*2=8).
+
+**Verification performed:** `pixi run -e pyforge-marshal pyforge-marshal-test` run independently by the orchestrating session (not just self-reported by the implementation subagent) after both the initial implementation and the pass-2 patch round: 6768 passed, 12 deselected (`@pytest.mark.slow`), 0 failures. Matrix Test Audit: all 5 I/O-matrix rows plus the amended implementation-artifacts requirement covered by passing, non-skipped tests. Diffs for every changed file were read and manually cross-checked against the spec's Code Map/Tasks after each round, not just trusted from subagent self-reports.
+
+**Residual risks:** 5 items recorded in frontmatter `deferred:` — (1, high) `compute_effective_surface`'s literal-string intersection likely defeats the auto-derived default whenever a story's own spec declares a `surface:` field (every populated example in this repo uses literal paths); (2, low) the default silently collapses to near-empty for a non-PyForge-Guild project slug with no diagnostic; (3, low) `dispatch_verify.py`'s `project_slug` has no shape validation before flowing into the resolver (pre-existing trust boundary); (4, low) the live `"22"`/`"28"` `[epic_surfaces]` stopgap entries are intentionally left in place with no deferred-work-ledger entry tracking their eventual removal; (5, low) `dispatch_verify.py`'s JSON payload doesn't expose `policy_surface` separately from `effective_surface`, a minor operator-observability gap. None block this story's own AC.

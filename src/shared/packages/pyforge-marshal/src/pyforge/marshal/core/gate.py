@@ -370,10 +370,13 @@ def default_epic_surface(project_slug: str) -> tuple[str, ...]:
     existence check -- mirroring ``core/policy.py::_base_worktree_seed_
     paths``'s own FR-50 precedent: a hardcoded project name would defeat
     the entire point of an AUTO-derived default. This function does not
-    validate ``project_slug``'s shape itself; both call sites already
-    guard on ``policy._is_valid_project_slug`` (or an equivalent) before a
-    scope check ever runs, matching every other consumer of an
-    already-validated ``project_slug`` in this package.
+    validate ``project_slug``'s shape itself. ``cli/gate.py::
+    _run_scope_check`` guards on ``policy._is_valid_project_slug`` before
+    its own scope check ever runs, so an invalid slug never reaches this
+    function from that call site; ``dispatch_verify.py::
+    evaluate_dispatch_verification`` has NO such guard yet -- a
+    pre-existing gap, not introduced by this story, tracked in the spec's
+    own ``deferred:`` frontmatter rather than closed here.
 
     Covers exactly four things, matching the ONLY concrete precedent for
     this shape in the repo -- ``marshal-policy.toml``'s own live ``"22"``/

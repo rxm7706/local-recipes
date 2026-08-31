@@ -2036,11 +2036,14 @@ def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
 ):
     """Pins the CORRECT, currently-unproven behavior (review finding, Blind
     Hunter): an unconfigured epic (`epic_surfaces` left at its DEFAULT `{}`)
-    makes `compute_effective_surface` always empty, so EVERY changed file
-    for that epic is flagged MRS-GATE-007 -- deny-by-default, consistent
-    with "narrowing only". A future accidental change to "skip the check
-    when unconfigured" must regress this test, not ship silently."""
+    falls back to `gate.default_epic_surface`'s auto-derived per-station
+    default (Story 28.14, CAP-16) -- not an empty surface -- so a changed
+    file OUTSIDE that default (a `recipes/**` path is never part of any
+    station's own default) is still flagged MRS-GATE-007. A future
+    accidental change to "skip the check when unconfigured" must regress
+    this test, not ship silently."""
     from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core import gate as gate_core
     from pyforge.marshal.core.model import Verdict
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
@@ -2052,13 +2055,131 @@ def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
         args, vcs=_FakeVcs(changed=("recipes/anything/recipe.yaml",))
     )
     payload = json.loads(capsys.readouterr().out)
+    default_surface = list(gate_core.default_epic_surface("acme"))
     assert payload["data"]["scope_check"]["checked"] is True
-    assert payload["data"]["scope_check"]["policy_surface"] == []
-    assert payload["data"]["scope_check"]["effective_surface"] == []
+    assert payload["data"]["scope_check"]["policy_surface"] == default_surface
+    assert payload["data"]["scope_check"]["effective_surface"] == default_surface
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-007" in codes
     assert payload["verdict"] == Verdict.SCOPE_VIOLATION.value
     assert exit_code == 2
+
+
+def test_gate_evaluate_scope_check_unconfigured_epic_permits_a_default_surface_path(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 28.14, CAP-16: a changed file matching the auto-derived
+    default (a bookkeeping path, here `pixi.toml`) is NOT flagged
+    MRS-GATE-007 even with zero declared `[epic_surfaces]` entries -- the
+    whole point of the auto-derived fallback."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is True
+    assert payload["data"]["scope_check"]["violations"] == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" not in codes
+
+
+def test_gate_evaluate_scope_check_unconfigured_epic_permits_implementation_artifacts_path(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 28.14, CAP-16: the `implementation-artifacts/**` component of
+    the auto-derived default must be proven END-TO-END through
+    `_run_scope_check`, not just pinned as a tuple value in test_scope.py."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    changed = (
+        "_bmad-output/projects/acme/implementation-artifacts/stories/2.3.md",
+    )
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is True
+    assert payload["data"]["scope_check"]["violations"] == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" not in codes
+
+
+def test_gate_evaluate_scope_check_unconfigured_epic_denies_planning_artifacts_outside_specs(
+    tmp_path, capsys, monkeypatch
+):
+    """Review pass 2 (finding 3): the auto-derived default deliberately
+    excludes the full `planning-artifacts/**` tree -- only its `specs/**`
+    subtree is included (review pass 1) -- so a changed file elsewhere
+    under `planning-artifacts/` (here `marshal-policy.toml` itself, a
+    governance file) with zero declared `[epic_surfaces]` entries must
+    still trip MRS-GATE-007. Proven end-to-end through `_run_scope_check`
+    here, not just at the pure-tuple level `test_scope.py` already
+    covers."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    changed = ("_bmad-output/projects/acme/planning-artifacts/marshal-policy.toml",)
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is True
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
+
+
+def test_gate_evaluate_scope_check_unconfigured_epic_denies_a_different_stations_package_tree(
+    tmp_path, capsys, monkeypatch
+):
+    """Review pass 2 (finding 4): the AC's own text names "a different
+    station's package" as a case that must still fail MRS-GATE-007, but
+    every existing "outside the default" fixture used a `recipes/**` path
+    -- never an actual different-station package-tree path, the shape most
+    plausibly confused with the default's own
+    `src/shared/packages/{slug}/**` component."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    changed = ("src/shared/packages/pyforge-atlas/src/pyforge/atlas/somefile.py",)
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=changed))
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
+
+
+def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 28.14, CAP-16: a DECLARED `[epic_surfaces]` entry is used
+    outright, exactly as today -- the auto-derived default is never
+    consulted or merged in, even for a path the default would have
+    permitted (here `pixi.toml`, one of the default's own bookkeeping
+    paths)."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
+    )
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs(changed=("pixi.toml",)))
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["policy_surface"] == ["recipes/x/**"]
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
 
 
 def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(

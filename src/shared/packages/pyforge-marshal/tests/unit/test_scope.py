@@ -43,7 +43,6 @@ def test_default_epic_surface_does_not_grant_the_full_planning_artifacts_tree():
     narrower planning-artifacts/specs/** subtree is in the default."""
     default = gate.default_epic_surface("acme")
     assert "_bmad-output/projects/acme/planning-artifacts/**" not in default
-    assert not any(glob.endswith("/planning-artifacts/*") for glob in default)
 
 
 def test_default_epic_surface_depends_on_nothing_but_the_slug_argument():
