@@ -12,7 +12,7 @@ import pytest
 
 from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import GraphNode
-from pyforge.scribe.recall import answer
+from pyforge.scribe.recall import _answer_semantic, answer
 
 
 def _node(**overrides) -> GraphNode:
@@ -111,6 +111,72 @@ def test_unresolvable_citation_falls_through_to_next_candidate(repo_with_citatio
 
     assert result.grounded is True
     assert result.citation == "notes/kuzu-drop.md"
+
+
+def test_stale_node_is_excluded_from_default_answer(repo_with_citation: Path) -> None:
+    """Story 6.3, AC3: a stale-flagged node is never served, the same way a
+    superseded node isn't -- the consumer falls back rather than seeing it."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(_node(stale=True))
+    store.commit()
+
+    result = answer("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is False
+
+
+def test_stale_node_falls_through_to_next_non_stale_candidate(repo_with_citation: Path) -> None:
+    """Mirrors `test_unresolvable_citation_falls_through_to_next_candidate` --
+    a stale top candidate does not block a resolvable, non-stale one from
+    being served."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="memory:project/kuzu-drop-stale",
+            citation="notes/kuzu-drop.md",
+            text="Kuzu was dropped, stale edition.",
+            stale=True,
+        )
+    )
+    store.upsert_node(_node())  # non-stale, resolvable
+    store.commit()
+
+    result = answer("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "notes/kuzu-drop.md"
+    assert result.node_id == "memory:project/kuzu-drop"
+
+
+class _FakeSimilarStore:
+    """Minimal `query_similar`-only double -- `_answer_semantic()` never
+    calls anything else on its `store` argument, so this avoids the real
+    semantic tests' PostgreSQL dependency (`tests/unit/test_recall_semantic.py`)."""
+
+    def __init__(self, nodes: list[GraphNode]) -> None:
+        self._nodes = nodes
+
+    def query_similar(self, query: str, *, limit: int = 8) -> list[GraphNode]:
+        return self._nodes
+
+
+def test_semantic_stale_node_is_excluded_falls_through(repo_with_citation: Path) -> None:
+    """Story 6.3, AC3 on the semantic path too -- `_answer_semantic()` skips
+    a stale node exactly like `answer()`'s lexical path does."""
+    stale_node = _node(citation="notes/kuzu-drop.md", stale=True)
+    clean_node = _node(
+        id="memory:project/kuzu-drop-clean",
+        citation="notes/kuzu-drop.md",
+        text="Kuzu, clean edition.",
+    )
+    store = _FakeSimilarStore([stale_node, clean_node])
+
+    result = _answer_semantic("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.node_id == "memory:project/kuzu-drop-clean"
 
 
 def test_commit_citation_is_resolvable_if_well_formed_sha(repo_with_citation: Path) -> None:

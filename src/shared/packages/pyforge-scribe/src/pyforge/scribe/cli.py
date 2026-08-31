@@ -305,8 +305,8 @@ def graph_compile(
     for warning in result.warnings:
         typer.echo(f"warning: {warning}", err=True)
     typer.echo(
-        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated "
-        f"-> {result.store_path}"
+        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated, "
+        f"{result.stale_count} stale -> {result.store_path}"
     )
 
 

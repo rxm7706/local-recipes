@@ -112,10 +112,21 @@ class PostgresGraphStore:
                         valid_from TIMESTAMPTZ NOT NULL,
                         valid_until TIMESTAMPTZ,
                         superseded_by TEXT,
-                        embedding vector
+                        embedding vector,
+                        stale BOOLEAN NOT NULL DEFAULT FALSE
                     )
                     """
                 ).format(self._table())
+            )
+            # Story 6.3: a table created by a pre-6.3 version of this module
+            # already exists (the CREATE above is a no-op for it) -- add the
+            # column so `stale` (Story 2.3's `valid_until`/`superseded_by`
+            # precedent) persists across a commit/reload for THIS backend
+            # too, not just the flat-file default.
+            conn.execute(
+                sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS stale BOOLEAN NOT NULL DEFAULT FALSE").format(
+                    self._table()
+                )
             )
             conn.commit()
 
@@ -126,7 +137,7 @@ class PostgresGraphStore:
                 sql.SQL(
                     """
                     SELECT id, kind, title, text, citation,
-                           valid_from, valid_until, superseded_by
+                           valid_from, valid_until, superseded_by, stale
                     FROM {}
                     """
                 ).format(self._table())
@@ -141,6 +152,7 @@ class PostgresGraphStore:
                 valid_from=row[5],
                 valid_until=row[6],
                 superseded_by=row[7],
+                stale=row[8],
             )
             for row in rows
         }
@@ -176,10 +188,11 @@ class PostgresGraphStore:
                 sql.SQL(
                     """
                     SELECT id, kind, title, text, citation,
-                           valid_from, valid_until, superseded_by
+                           valid_from, valid_until, superseded_by, stale
                     FROM {}
                     WHERE embedding IS NOT NULL
                       AND valid_until IS NULL
+                      AND stale = false
                     ORDER BY embedding <=> %s::vector
                     LIMIT %s
                     """
@@ -196,6 +209,7 @@ class PostgresGraphStore:
                 valid_from=row[5],
                 valid_until=row[6],
                 superseded_by=row[7],
+                stale=row[8],
             )
             for row in rows
         ]
@@ -217,8 +231,8 @@ class PostgresGraphStore:
                             """
                             INSERT INTO {} (
                                 id, kind, title, text, citation,
-                                valid_from, valid_until, superseded_by, embedding
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
+                                valid_from, valid_until, superseded_by, embedding, stale
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector, %s)
                             """
                         ).format(self._table()),
                         (
@@ -231,6 +245,7 @@ class PostgresGraphStore:
                             node.valid_until,
                             node.superseded_by,
                             embedding_literal,
+                            node.stale,
                         ),
                     )
 
