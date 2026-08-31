@@ -209,7 +209,14 @@ def test_json_flag_emits_valid_json_to_stdout(clean_repo, capsys):
     assert list(payload.keys()) == ["verb", "ok", "result"]
     assert payload["verb"] == "check"
     assert payload["ok"] is True
-    assert list(payload["result"].keys()) == ["strict", "findings", "model_version", "failing"]
+    # Story 28.3 adds "kit" between "model_version" and "failing".
+    assert list(payload["result"].keys()) == [
+        "strict",
+        "findings",
+        "model_version",
+        "kit",
+        "failing",
+    ]
     assert payload["result"]["failing"] is True
 
 
@@ -257,7 +264,7 @@ def test_an_unanticipated_failure_from_the_verb_is_never_a_traceback(clean_repo,
     ``SeedError`` ancestry) and confirms it is caught and reported as
     ``InternalError`` (10), never re-raised."""
 
-    def _boom(repo_root, manifest, *, strict):
+    def _boom(repo_root, manifest, *, strict, context_layers=None):
         raise RuntimeError("simulated unanticipated failure deep in the verb")
 
     monkeypatch.setattr(seed_cli, "_run_check_verb", _boom)

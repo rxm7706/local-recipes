@@ -1075,6 +1075,16 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tier as MRS-SPIN-004/006/007/008/009 and for the same reason.
     "MRS-DISP-033": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
+    # Story 28.3 (Genesis seeds the token-economy kit,
+    # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
+    # could not put in place -- its instrument is unavailable on this
+    # platform, its provisioning step failed, or the packaged seed manifest
+    # would not load. The SAME WARN tier and the SAME reason as
+    # MRS-DISP-033/MRS-SPIN-017 above: a token-economy layer that did not
+    # engage over a loop home that is otherwise entirely viable. Blocking
+    # here would violate the story's own "never blocking a seed on a missing
+    # optional instrument".
+    "MRS-PREFLIGHT-015": Verdict.WARN,
 }
 
 

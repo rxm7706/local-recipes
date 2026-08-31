@@ -1644,6 +1644,23 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # MRS-SPIN-004/006/007/008/009 advisory tier) instead of leaving
         # the operator to believe a bmad-loop run was compressed.
         "MRS-SPIN-017",
+        # Story 28.3 (Genesis seeds the token-economy kit,
+        # SPEC-marshal-token-economy CAP-3/CAP-4): `run_preflight` provisions
+        # the per-loop-home kit (caveman skill, CCR store directory,
+        # codegraph index), each gated by its own `[context]` layer.
+        # `MRS-PREFLIGHT-015` names ANY item that did not end up in place:
+        # its instrument is unavailable here (a platform gap -- caveman and
+        # codegraph are linux-64-only -- or simply not installed), its
+        # provisioning step failed, or the whole kit could not be attempted
+        # because the packaged seed manifest would not load. WARN, never
+        # ERROR, and deliberately so: the spec's own constraint is "an
+        # unavailable instrument disables its layer with a named finding,
+        # never blocks a run", and this story's Never bullets forbid
+        # blocking a seed on a missing optional instrument -- the same
+        # reasoning (and the same tier) as Story 28.2's MRS-DISP-033 /
+        # MRS-SPIN-017. A home with every layer off raises nothing at all:
+        # there is no degradation to report about a layer nobody enabled.
+        "MRS-PREFLIGHT-015",
     }
 )
 

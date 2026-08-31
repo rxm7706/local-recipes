@@ -27,6 +27,7 @@ from pyforge.marshal.cli import init as init_module
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
+from pyforge.marshal.seed.verbs.kit import INDEX_TIMEOUT_S
 
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
@@ -2409,6 +2410,210 @@ def test_preflight_seed_file_copy_failure_reports_finding_and_halts(repo_root, t
     # the SECOND seed file is never attempted -- reported failed too, one halt
     assert "  .claude/settings.json: failed" in out
     assert len(fs.copy_file_calls) == 1
+
+
+# --- Story 28.3: the token-economy kit is provisioned, never ritual --------
+#
+# Every test below DECIDES instrument availability through `kit_probe=`
+# instead of inheriting it from the machine. Without that, the outcome
+# depends on whether the developer's shell carries
+# `.pixi/envs/local-recipes/bin` on PATH: green locally, red on CI (the
+# coverage-gates workflow installs only the `pyforge-marshal` env, which
+# declares none of the three instruments) and red on macOS (caveman and
+# codegraph are linux-64-only).
+
+
+def _kit_available(_item):
+    from pyforge.marshal.seed.detect.kit import InstrumentProbe
+
+    return InstrumentProbe(available=True)
+
+
+def _kit_unavailable(_item):
+    from pyforge.marshal.seed.detect.kit import InstrumentProbe
+
+    return InstrumentProbe(
+        available=False, reason=f"{_item.instrument} is not installed here (test)"
+    )
+
+
+def _declare_context(home: Path, **layers: bool) -> None:
+    """Write the home's own repo-defaults policy layer -- the file
+    `run_preflight` resolves `[context]` from."""
+    (home / "_bmad-output").mkdir(parents=True, exist_ok=True)
+    body = "\n".join(
+        f'[context."{name.replace("_", "-")}"]\nenabled = {str(value).lower()}'
+        for name, value in layers.items()
+    )
+    (home / "_bmad-output" / "policy-defaults.toml").write_text(
+        body + "\n", encoding="utf-8"
+    )
+
+
+def test_preflight_provisions_nothing_when_every_context_layer_is_off(
+    repo_root, tmp_path, capsys
+):
+    """AC 4 at the provisioning seam: a home with no `[context]` block --
+    every home today -- does exactly nothing here and raises nothing. This
+    is also what keeps every OTHER preflight test in this file unchanged."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        kit_probe=_kit_available,
+    )
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-015" not in out
+    assert home / ".marshal" / "wire" not in fs.ensure_dir_calls
+
+
+def test_preflight_provisions_a_declared_kit_item_through_the_injected_fs_port(
+    repo_root, tmp_path, capsys
+):
+    """Story 28.3: Genesis owns provisioning -- a declared `[context]` layer
+    means preflight PUTS the item in the home, through the same `FsPort`
+    AD-11's write-boundary guard observes, and the post-apply verification
+    reads that same port back (so the item lands, rather than merely being
+    attempted)."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    home.mkdir(parents=True)
+    _declare_context(home, wire=True)
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        kit_probe=_kit_available,
+    )
+
+    assert exit_code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    kit = {entry["item"]: entry for entry in payload["data"]["token_economy_kit"]}
+    assert kit["ccr-store"]["action"] == "applied"
+    assert kit["caveman-skill"]["action"] == "skipped"  # its layer is off
+    assert home / ".marshal" / "wire" in fs.ensure_dir_calls
+    # The apply LANDED: nothing is left reported as missing, so no kit
+    # finding at all.
+    assert [f for f in payload["findings"] if f["code"] == "MRS-PREFLIGHT-015"] == []
+
+
+def test_preflight_reports_an_unavailable_instrument_and_still_exits_ok(
+    repo_root, tmp_path, capsys
+):
+    """AC 3 at this seam, and the property that makes the kit safe to enable:
+    a declared layer whose instrument is absent emits MRS-PREFLIGHT-015 AND
+    exits EXIT_OK. Mirrors the assertions Story 28.2's two sibling codes
+    already carry (test_dispatch.py's MRS-DISP-033, test_spin.py's
+    MRS-SPIN-017)."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    home.mkdir(parents=True)
+    _declare_context(home, wire=True, output=True)
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        kit_probe=_kit_unavailable,
+    )
+
+    assert exit_code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    kit_findings = [f for f in payload["findings"] if f["code"] == "MRS-PREFLIGHT-015"]
+    assert len(kit_findings) == 2
+    assert {f["severity"] for f in kit_findings} == {"info"}
+    assert any("caveman is not installed here" in f["message"] for f in kit_findings)
+    assert any("headroom-ai is not installed here" in f["message"] for f in kit_findings)
+    assert payload["status"] == "ok"
+
+
+def test_preflight_maps_a_missing_kit_item_to_warn_not_info(repo_root, tmp_path, capsys):
+    """The severity is the KIT's own, mapped -- not flattened. An item whose
+    instrument IS available but which did not land is real drift (WARN),
+    while the unavailable-instrument case above stays INFO."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    home.mkdir(parents=True)
+    _declare_context(home, structure_graph=True)
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        kit_probe=_kit_available,
+        kit_index_builder=lambda _root, *, stale: "codegraph init exited 1: kernel missing",
+    )
+
+    assert exit_code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    kit_findings = [f for f in payload["findings"] if f["code"] == "MRS-PREFLIGHT-015"]
+    assert [f["severity"] for f in kit_findings] == ["warn"]
+    assert "kernel missing" in kit_findings[0]["message"]
+    # P16: the ceiling reaches the envelope wherever a codegraph step ran.
+    assert f"{INDEX_TIMEOUT_S:.0f}s" in payload["data"]["token_economy_kit_note"]
+
+
+def test_preflight_skips_the_kit_when_seeding_halted(repo_root, tmp_path, capsys):
+    """The seed-file loop is halt-after-one-failure; a home whose seeding
+    hard-failed is not a home to then spend up to INDEX_TIMEOUT_S
+    provisioning into. Skipping is reported, never silent."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    home.mkdir(parents=True)
+    _declare_context(home, wire=True, structure_graph=True)
+    fs = FakeFs(project_dirs={home})
+    fs.fail_copy_file = FsError("disk full")
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.adapter_seed_files_map["claude"] = (".mcp.json",)
+    fs.files.add(repo_root / ".mcp.json")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        kit_probe=_kit_available,
+        kit_index_builder=lambda _root, *, stale: pytest.fail(
+            "provisioned a kit into a home whose seeding had already failed"
+        ),
+    )
+
+    assert exit_code != EXIT_OK  # MRS-PREFLIGHT-009 is the blocking failure
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["token_economy_kit"] == []
+    skipped = [f for f in payload["findings"] if f["code"] == "MRS-PREFLIGHT-015"]
+    assert len(skipped) == 1
+    assert skipped[0]["severity"] == "info"
+    assert "seeding halted" in skipped[0]["message"]
+    assert home / ".marshal" / "wire" not in fs.ensure_dir_calls
 
 
 # --- main checked out twice: MRS-PREFLIGHT-007 ------------------------------

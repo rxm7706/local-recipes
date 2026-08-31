@@ -834,6 +834,28 @@ claude_hash.txt
 # the store the moment a home sat one directory deeper.
 **/.marshal/wire/
 
+# pyforge-marshal Story 28.3 (SPEC-marshal-token-economy CAP-3/CAP-4): the
+# other two per-loop-home token-economy kit artifacts Genesis provisions
+# (`marshal seed kit --apply`, and `marshal preflight`'s own call to it).
+# Ignored for exactly the reason the CCR store above is: both land INSIDE a
+# loop home / dispatch worktree by design, `bmad-loop run` refuses to start
+# on a dirty worktree, and the loop's own `git add -A` would otherwise sweep
+# them into a merge commit. Verified live rather than assumed -- a real
+# `marshal seed kit --apply` in a scratch repo leaves `?? .claude/` and
+# `?? .codegraph/` in `git status` without these rules.
+#
+# `**/.claude/skills/caveman/`, NOT `.claude/` and NOT `.claude/skills/`:
+# this repo TRACKS `.claude/skills/**` (conda-forge-expert, the pyforge-*
+# station skills) and `.claude/settings.json`, so anything broader would
+# shadow real source. Only the caveman subdirectory is tool-deployed.
+#
+# `.codegraph/` ships its own self-ignoring `.gitignore` ("ignore everything
+# here except this file"), which is deliberately visible to git -- so the
+# index bytes are already ignored, but the directory still shows up
+# untracked because of that one file. The rule below is what closes it.
+**/.claude/skills/caveman/
+**/.codegraph/
+
 # Derived artifact (Story 6.2, AD-12/AD-36): the projected skill tree(s)
 # cli/adapters.py::run_adapters_sync creates -- a directory symlink to the
 # canonical .claude/skills, never real content, never tracked. Root-anchored
