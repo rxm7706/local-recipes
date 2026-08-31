@@ -1134,7 +1134,7 @@ Scribe compiles session transcripts, architectural decisions, and repository fac
 
 - **Natural Language Memory Search (`/stations/scribe/`):** HTMX over the shipped driver today. Plane vectors replace a new OLTP `pgvector` write path when 34.5 lands.
 - **Visual Decision Lineage:** Interactive visual graphs (Cytoscape.js) illustrating how **Dreams $\rightarrow$ Specs $\rightarrow$ Sprints $\rightarrow$ Pull Requests** evolved over time.
-- **Supersession & Intent Trails:** Highlights when a rule or architecture decision was deprecated or superseded by a newer Dream, preserving historical intent.
+- **Supersession & Intent Trails:** Highlights when a rule or architecture decision was deprecated or superseded by a newer Dream, preserving historical intent. Supersession today is author-declared only (`supersedes:` frontmatter, Story 2.3); [`marshal-token-economy.md`](marshal-token-economy.md)'s 2026-08-31 addendum adds a deterministic staleness flag (git-timestamp vs the node's `valid_from`) so an un-declared-stale node is caught, not silently served — landing as a new scribe Epic 6 story plus marshal Story 28.9's fifth AC.
 - **CLI Recall Symmetry:** `pyforge scribe recall "why do we use Keycloak?"` delivers formatted historical summaries straight to developer terminals.
 
 ---

@@ -129,6 +129,16 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     per the map on both engines (rendered-launch diff); the serving pool is journaled; an
     exhausted or unavailable pool falls through to the next preference, never blocks; the
     FR-51 seam remains the only selection mechanism and run-level batching is unchanged.
+- **CAP-13**
+  - **intent:** Graph-node staleness flag: `compile_graph` (Scribe's own compile-step,
+    CAP-18) flags a node `stale: true` when its source file's latest git commit postdates
+    the node's own `valid_from` and no `supersedes:` edge points at it — CAP-6 retrieval
+    consumes the flag and falls back to the epic-context file path (CAP-5) instead of
+    silently serving a stale graph answer.
+  - **success:** A node whose source changed since compile with no declared supersession is
+    flagged stale; an unchanged source or a properly superseded node is never flagged; a
+    retrieval that hits a stale node demonstrably falls back, never serves it; zero LLM
+    calls and no new dependency (a git-timestamp comparison on data compile already walks).
 
 ## Constraints
 
@@ -140,6 +150,10 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   prefix byte-comparison.
 - **Reversible or absent:** lossy-with-retrieval (CCR) is acceptable; silently-lossy is
   not — a compressed FATAL line must be recoverable byte-exact.
+- **Staleness detection is deterministic, never LLM-judged (CAP-13):** a git-timestamp
+  comparison against the node's `valid_from`, not a per-write model call deciding
+  ADD/UPDATE/DELETE/NOOP (Mem0's OSS pattern) — consistent with the standing rule that
+  Scribe capture/recall is the fleet's only memory face (no `mem0.add` in its place).
 - **BSL boundary:** the caveman input proxy (`@caveman-ai/cli`, BSL-1.1) stays unpackaged
   and unwired; headroom-ai (Apache-2.0) is the input side.
 - **Telemetry stays advisory:** savings numbers and dollar estimates inform ceilings and

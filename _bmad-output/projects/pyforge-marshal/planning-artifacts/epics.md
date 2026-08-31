@@ -4229,10 +4229,11 @@ As a marshal operator,
 I want story routing to retrieve scoped planning context from the graph when the seam exists,
 So that an epic-path iteration never loads `epics.md`/`prd.md` wholesale.
 
-**Type:** feature • **Effort:** L • **Deps:** S-28.8 • **FR/AD:** token-economy CAP-6
+**Type:** feature • **Effort:** L • **Deps:** S-28.8, scribe S-6.3 • **FR/AD:** token-economy CAP-6/CAP-13
 **Given** the Scribe-owned GraphStore seam is available **When** step-01 routes an epic story **Then** the iteration completes within the epic-context token target with zero full-document loads
 **And** disabling the seam proves the epic-context-file fallback
 **And** marshal consumes the graph — it does not build a second one
+**And** a graph answer whose backing node is flagged `stale` (scribe Story 6.3) falls back to the epic-context file path (Story 28.8) rather than being served silently
 
 ### Story 28.10: The model-cost catalog makes spend legible in dollars
 
