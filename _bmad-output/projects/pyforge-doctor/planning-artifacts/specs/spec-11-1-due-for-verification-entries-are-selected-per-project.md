@@ -178,12 +178,7 @@ story's surface. Mutate a ledger file. Emit a `FAIL` status.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py -v`
-  -- expected: all new tests pass.
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py -v`
-  -- expected: still passes (REGISTRY/Source set-equality holds with the new member).
-- `pixi run -e local-recipes due-for-verification-check` -- expected: runs against this repo's
-  live 8 project ledgers, prints one WARN line per due entry, exits 0.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

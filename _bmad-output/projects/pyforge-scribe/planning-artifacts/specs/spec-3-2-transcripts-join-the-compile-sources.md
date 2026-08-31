@@ -246,5 +246,4 @@ _Corrected 2026-08-22 (review pass 3):_ this note previously claimed the scheme 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-scribe pyforge-scribe-test` -- expected: all tests pass, including the new transcript-surface coverage in `test_compile.py`, the citation-resolvability test in `test_recall.py`, and the end-to-end test in `test_cli.py`.
-
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

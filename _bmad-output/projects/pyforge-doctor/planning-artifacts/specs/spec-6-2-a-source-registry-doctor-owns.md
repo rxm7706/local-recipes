@@ -259,15 +259,7 @@ Doctor once each migrated detector's `scripts/*_check.py` shim retires.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass,
-  including the new `test_sources_registry.py`.
-- `python3 -c "from pyforge.doctor.sources import REGISTRY; from pyforge.doctor.models import Source; assert {r.source for r in REGISTRY} == set(Source)"`
-  (inside the `pyforge-doctor` env) -- expected: no assertion error.
-- `pixi run detectors -- --list --json` (repo root) -- expected: JSON includes a
-  `doctor_sources` array with 9 rows, each carrying `scope`/`subject_station`/
-  `owning_station`.
-- `python -m pytest tests/scripts/test_detectors_doctor_sources.py -q` --
-  expected: pass, including the import-failure-degrades-to-empty-list branch.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

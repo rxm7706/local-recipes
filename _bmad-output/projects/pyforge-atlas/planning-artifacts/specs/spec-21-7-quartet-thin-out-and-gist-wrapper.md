@@ -109,10 +109,5 @@ constraint with a dated memlog entry.
 ## Verification
 
 **Commands:**
-- `python -m py_compile scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`
-  -- expected: exit 0.
-- `pixi run -e local-recipes pytest tests/packaging/test_openteams_handoffs.py -q` -- expected:
-  all green, no regressions.
-- `pixi run -e local-recipes test-packaging` -- expected: current pass count plus new tests.
-- `grep -rn 'ASSOCIATOR_URL\|lookup_assoc\|fetch_project_issues\|board_packaging_urls' scripts/`
-  -- expected: zero hits outside fixtures/history.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

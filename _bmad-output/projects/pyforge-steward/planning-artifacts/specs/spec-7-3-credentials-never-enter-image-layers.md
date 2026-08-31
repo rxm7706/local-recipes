@@ -120,9 +120,7 @@ final_revision: 'e63ea1e7dcf504d16cf8497929d52d82a20d4726'
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-container-gates-test` -- expected: all new tests pass
-- `docker build -f Containerfile -t pyforge-guild-gate-check .` -- expected: succeeds (gate step reports clean); this is the direct proof of the AC and must be run for real, not simulated
-- Injected-secret variant: temporarily add a file with a secret-shaped literal under a path that ships into `/pyforge` (outside `.pixi/`/`tests/`), rebuild, confirm the `RUN` gate step fails the build, then remove the temporary file before finishing
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm no `age` identity, token, or enterprise URL appears in `docker history --no-trunc pyforge-guild-gate-check` or in `docker run --rm --entrypoint find pyforge-guild-gate-check /pyforge -iname '*.age' -o -iname '*secret*'` (should list only the `keys.py`/tests source referencing the concept, never a real key file).

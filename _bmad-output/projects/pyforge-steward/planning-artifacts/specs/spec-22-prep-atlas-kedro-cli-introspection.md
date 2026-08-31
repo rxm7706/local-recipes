@@ -41,3 +41,8 @@ deferred: []
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

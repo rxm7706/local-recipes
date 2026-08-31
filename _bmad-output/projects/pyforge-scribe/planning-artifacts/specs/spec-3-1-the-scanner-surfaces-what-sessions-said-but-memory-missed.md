@@ -155,7 +155,8 @@ Notes: `bad_spec`/`intent_gap` are both zero this pass -- Verification Gap revie
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-scribe pyforge-scribe-test` -- expected: all tests pass, including the new `test_transcripts.py` and the added `--transcripts` cases in `test_cli.py`.
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
 ## Auto Run Result
 
 **Summary of implemented change:** Added `scribe capture --transcripts`, a read-only scanner (`transcripts.py`) that mines a user's raw Claude Code session transcripts (`~/.claude/projects/<encoded-repo-path>/*.jsonl`) for assistant-authored sentences matching a small set of decision/fact marker phrases, skips anything already covered by curated `.claude/memory/`, and routes survivors through the same proposal-then-confirm mechanics `capture --promote` already established -- never auto-promoted, no write-back against the transcript file itself.

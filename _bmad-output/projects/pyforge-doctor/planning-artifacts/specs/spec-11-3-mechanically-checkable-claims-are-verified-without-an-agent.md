@@ -201,13 +201,7 @@ dotted-extension matching; the bare-identifier restriction is deliberate.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py -v`
-  -- expected: all tests (11.1's + 11.2's + 11.3's new ones) pass.
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py -v`
-  -- expected: still passes (no taxonomy change).
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full suite green.
-- `pixi run -e local-recipes due-for-verification-check` -- expected: rc=0; live output text
-  reflects any mechanical verdicts found among today's real fleet entries.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

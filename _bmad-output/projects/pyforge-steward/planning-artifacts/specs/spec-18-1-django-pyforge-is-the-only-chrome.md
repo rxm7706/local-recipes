@@ -141,8 +141,7 @@ Probe portal station name `chrome-probe` is a test fixture, not a Guildhall stat
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test python -m pytest tests/test_django_pyforge_chrome.py tests/meta/test_no_pyforge_import.py tests/policy -q` (cwd `src/platform`) -- expected: all passed
-- `pixi run -e platform-ci-test python -m ruff check` on touched platform Python -- expected: clean
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

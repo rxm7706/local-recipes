@@ -277,3 +277,8 @@ misclassification, Tier-3 brief durability, slice-1's own physical-path divergen
 pre-existing or systemic, none blocking Story 12.7. Story 12.7's own next_action (recorded in
 `campaign-state.yaml`) already flags the `failure_catalog_generator.py` slice-map.md
 classification gap as work to resolve before or alongside compiling.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

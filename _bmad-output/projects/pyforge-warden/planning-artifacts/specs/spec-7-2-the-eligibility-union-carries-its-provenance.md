@@ -157,6 +157,4 @@ ProvenanceEntry("manifest","/proj",now))`.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py -v` -- expected: all new tests pass.
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/ -q` -- expected: full existing suite stays green (no regression to `sources.py`/`inventory.py`/`models.py`/`feeds.py` -- none are modified).
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py` -- expected: clean.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

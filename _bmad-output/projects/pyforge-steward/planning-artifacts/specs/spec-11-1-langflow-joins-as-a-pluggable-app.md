@@ -214,10 +214,7 @@ class _LifespanManager:  # one shared implementation, used by config/asgi.py AND
 ## Verification
 
 **Commands:**
-- `python -m pytest src/platform/langflow_integration/tests.py src/platform/tests/test_langflow_mount.py -v` -- expected: all pass, proving schema isolation + dispatch routing
-- `pixi run -e local-recipes llms-full-check` -- expected: exit 0, catalog matches the new `platform-dev` feature
-- `python scripts/bmad_drift_check.py --write-baseline` (after `git add` of new files) -- expected: baseline restamped clean
-- `pixi install -e platform-dev` -- expected: solves and installs postgresql+pgvector+redis-server+k8s CLIs with no errors
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Inspect `pg_tables` after `manage.py migrate`: `SELECT schemaname, tablename FROM pg_tables WHERE schemaname IN ('public','langflow_schema');` -- Langflow's tables (`flow`, `user`, `variable`, etc.) appear only under `langflow_schema`.

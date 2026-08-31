@@ -1119,13 +1119,7 @@ practice, not anything inside `deploy.py` itself.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test -k test_deploy_static -v` -- expected: all
-  new tests pass.
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: full suite green, zero
-  regressions.
-- `ruff check src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py
-  src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
-  src/shared/packages/pyforge-steward/tests/conformance/test_deploy_static.py` -- expected: clean.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

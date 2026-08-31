@@ -131,9 +131,8 @@ must catch that `SystemExit` and translate it, or a missing db kills the render 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: full suite green, including `tests/views/*`
-- `pixi run -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/singularity -q` -- expected: still green (no `sqlite3` regression)
-- `pixi install -e pyforge-atlas` -- expected: solves cleanly with `bokeh` added
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

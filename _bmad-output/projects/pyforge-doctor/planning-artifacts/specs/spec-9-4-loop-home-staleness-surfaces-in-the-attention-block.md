@@ -143,8 +143,7 @@ demonstrated real cost when ignored, not merely an FYI.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes test` -- expected: full suite green, including the new `test_fleet_picture_loop_home_staleness.py`.
-- `python scripts/fleet_picture.py` -- expected: runs to completion, exit 0, ATTENTION block prints (no stale homes expected in the live fleet today).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Read the new ATTENTION-block wiring and confirm it sits inside the same `try/except Exception` fault-tolerance pattern as the baseline-drift and open-PR blocks immediately above it.

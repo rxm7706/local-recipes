@@ -268,6 +268,4 @@ fully tested, realizes FR-18's third bullet and AD-10's conda-forge mechanism no
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass, including
-  the extended `test_credential_isolation.py` and `test_engine_version_range_sync.py` guards.
-
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

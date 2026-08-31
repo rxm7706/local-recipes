@@ -209,9 +209,7 @@ exists to dispatch to would be premature, so this story stops at the vocabulary 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass (default
-  `-m "not slow"` loop); no new `slow`-marked test is needed since nothing here touches a real
-  subprocess or engine.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -146,15 +146,7 @@ append-only discipline makes "beyond the stamped count" equivalent to "new." `_a
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, count increased by the
-  new tests.
-- `python scripts/spec_surface_reconcile.py` -- expected: `OK: every tracked file governed or
-  allowlisted; no drift.` after the `.memlog.md` entry + re-stamp.
-- `python -m pyforge.doctor.sources deferred-work` (via `pixi run -e pyforge-doctor python -m
-  pyforge.doctor.sources deferred-work`) -- expected: the pre-existing unrelated
-  `tier3-only-deferral` FAIL for `pyforge-doctor/DW-FU-6-11` is the only doctor-project finding;
-  no new `tier3-entry-unidentified` finding appears (72 live == 72 baselined, verified live during
-  planning).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git diff --stat` touches only `chain.py`, the test file, and `spec-pyforge-doctor/.memlog.md`

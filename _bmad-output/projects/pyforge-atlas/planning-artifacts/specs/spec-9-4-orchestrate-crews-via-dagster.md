@@ -235,3 +235,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     resolve, weekly lint schedule, sensor targets the compile job, simulated new-raw-file →
     RunRequest, no-new-file/already-seen → SkipReason, lister-error degrades, ships STOPPED, +
     wiki_events unit tests). The live wiki store is DW-H1; the crews' agno/LLM synthesis is DW-H2.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

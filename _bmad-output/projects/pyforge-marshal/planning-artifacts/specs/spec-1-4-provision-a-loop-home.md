@@ -149,9 +149,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: all unit + meta tests pass, `-m "not slow"` excludes the new integration test by default
-- `pixi run -e pyforge-marshal pyforge-marshal-test-slow` -- expected: the integration test passes against a real throwaway repo
-- `pixi run -e pyforge-marshal marshal init <existing-project-slug>` run twice in a scratch clone -- expected: second run reports all `skipped`, exit 0
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

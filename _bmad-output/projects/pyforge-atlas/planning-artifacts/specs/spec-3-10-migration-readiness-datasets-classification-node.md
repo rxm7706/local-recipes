@@ -226,3 +226,9 @@ Independent/Gemini review produced follow-up fix commit(s) on PR `#83`:
 > supersedes this section.
 
 ### Dev summary — merged PR #83: story(B10): migration-readiness datasets + classification node (FR-21)
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -436,10 +436,7 @@ character.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes generate-failure-catalog -- --check` -- expected: exit 0, no diff reported (proves the committed catalog matches the current SKILL.md)
-- `pixi run -e local-recipes test-skill -- --meta` -- expected: full meta-test suite green, including the new `test_failure_catalog_freshness.py` and the three existing three-place-rule tests
-- `pixi run -e local-recipes test-skill -- tests/unit/test_failure_catalog_generator.py` -- expected: new unit tests green
-- `python -c "import yaml; d = yaml.safe_load(open('.claude/skills/conda-forge-expert/config/failure-catalog.yaml')); assert len(d['rows']) == 110; assert [r['id'] for r in d['rows']] == [f'G{i}' for i in range(1, 111)]"` -- expected: no assertion error (row count + ordering sanity check any implementer can run ad hoc)
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Not applicable — all checks above are scriptable.

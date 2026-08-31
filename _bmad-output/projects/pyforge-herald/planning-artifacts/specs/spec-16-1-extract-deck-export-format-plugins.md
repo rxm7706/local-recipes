@@ -97,8 +97,7 @@ Do not add `[project.entry-points."pyforge.herald.hooks"]`.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_export_plugins.py -q` -- expected: all pass
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_smoke.py src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py src/shared/packages/pyforge-herald/tests/test_pptx_pipeline.py -q` -- expected: existing surfaces still pass
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

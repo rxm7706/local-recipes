@@ -180,7 +180,5 @@ _None. No `bad_spec` finding triggered a repair loopback in this run._
 ## Verification
 
 **Commands:**
-- `python -m py_compile scripts/conda-forge-packaging-inventory-operations_openteams_identity.py scripts/conda-forge-packaging-inventory-operations_metrics.py scripts/openteams_identity_dashboards.py` -- expected: exit 0, no output.
-- `pytest tests/packaging/test_openteams_handoffs.py -q` -- expected: all new tests pass, offline, no network/credentials used.
-- `pixi run -e local-recipes spec-surface-check` -- expected: `spec-surface: ok`, no drift finding for the modified scripts (already claimed in `surface:` by Story 17.1).
-
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

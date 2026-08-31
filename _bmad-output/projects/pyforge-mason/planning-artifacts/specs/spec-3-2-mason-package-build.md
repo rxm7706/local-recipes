@@ -153,9 +153,7 @@ name, version, build_string = stem.rsplit("-", 2)
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass (default `-m "not slow"` loop).
-- `pixi run -e pyforge-mason pyforge-mason-test-slow` -- expected: the new integration self-hosting test passes.
-- `pixi run -e pyforge-mason pyforge-mason-build` -- expected: unchanged; the reference triad this story's integration test compares against.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

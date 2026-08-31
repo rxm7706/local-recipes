@@ -293,3 +293,9 @@ Gates after fix: member tree 137 passed, kedro-catalog-check 38, parity 14,
 drift 0 integrity. Story sound to close.
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

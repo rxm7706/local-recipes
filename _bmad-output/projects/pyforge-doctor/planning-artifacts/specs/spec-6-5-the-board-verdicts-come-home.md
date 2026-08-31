@@ -247,14 +247,7 @@ rewritten.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass (502 + new); check-layout's browser-driven smoke test skips (no `playwright` in this env).
-- `python -c "from pyforge.doctor.sources import board; from pathlib import Path; r=Path('.'); print(board.gather_chain_completeness(r)); print(board.gather_dashboard_drift(r)); print(board.gather_check_layout(r))"` (from the monorepo root) -- expected: no traceback, well-formed `Finding` tuples.
-
-**NOTE on running the suite from a bmad-loop worktree** (same caveat Story 6.4
-recorded): point `PYTHONPATH` at this worktree's own `pyforge-doctor/src` and the
-env's interpreter explicitly, or the task silently tests `main`'s sources instead
-of the branch's.
-
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

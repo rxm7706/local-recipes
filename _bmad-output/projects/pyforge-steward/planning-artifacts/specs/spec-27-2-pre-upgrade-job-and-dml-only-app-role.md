@@ -112,5 +112,4 @@ CREATE SCHEMA IF NOT EXISTS dbgpt_schema;
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test -- python -m pytest tests/policy/test_liquibase_ddl_governance.py tests/test_liquibase_update.py -q` (cwd `src/platform`) -- expected: pass (postgres rows skip if vendor is not postgresql)
-- `pixi run -e platform-dev -- python -m pytest src/platform/tests/test_chart_invariants.py::test_liquibase_job_then_fake_migrate -q` -- expected: pass when helm is on PATH
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

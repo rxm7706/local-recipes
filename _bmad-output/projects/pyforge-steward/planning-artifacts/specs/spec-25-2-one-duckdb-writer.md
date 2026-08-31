@@ -83,9 +83,7 @@ Atlas does not open a persistent `atlas.duckdb` today — RAG/BSL defaults are i
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/test_one_duckdb_writer.py -q` -- expected: all pass
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_one_duckdb_writer.py src/platform/tests/meta/test_no_pyforge_import.py -q` -- expected: pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

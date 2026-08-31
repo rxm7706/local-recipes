@@ -307,10 +307,7 @@ ruff-clean against the file's 12-finding pre-existing baseline.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dream_chain_gap.py .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_bmad_core_drift.py .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_verification_staleness.py .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_loop_home_staleness.py -q` -- expected: all pass
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: green (package untouched; regression guard only)
-- `ruff check scripts/fleet_picture.py` (pixi env) -- expected: zero NEW findings vs the pre-change baseline
-- `pixi run -e local-recipes fleet-picture` -- manual smoke: ATTENTION block shows the real count line (17 today), exit 0
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

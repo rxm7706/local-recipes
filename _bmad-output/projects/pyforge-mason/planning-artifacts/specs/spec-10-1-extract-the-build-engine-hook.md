@@ -99,8 +99,7 @@ Plugin classes are required by `HookPlugin` (same shape as `DummyPlugin`); they 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_build_hooks.py src/shared/packages/pyforge-mason/tests/unit/test_recipe.py src/shared/packages/pyforge-mason/tests/meta/test_adapter_sole_caller.py src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py -q` -- expected: all pass
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/ -m "not slow" -q` -- expected: pass
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

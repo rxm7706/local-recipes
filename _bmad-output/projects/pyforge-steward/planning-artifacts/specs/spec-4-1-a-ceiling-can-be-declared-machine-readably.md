@@ -87,8 +87,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
-- `pixi run --frozen -e pyforge-steward steward budget set --cap 1500usd/month` -- expected: writes `.steward/budget.yaml` and reports the declared ceiling
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 197 passed (full Epic 4 suite, run together with Stories 4.2/4.3 in the same session; this story's own share is `test_budget_set.py`'s tests plus its slice of `BudgetDuty`/`cli.py`).

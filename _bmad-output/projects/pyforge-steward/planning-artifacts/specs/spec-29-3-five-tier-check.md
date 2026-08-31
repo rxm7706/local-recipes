@@ -117,5 +117,4 @@ Verification: 28 passed (`test_five_tier_check` + `test_station_persona` + `test
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py -q` — expected: all pass (live 8×5 report; false-complete fails; 01/02 extras pass; module must exist)
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py -q` — expected: 29.1/29.2 still pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

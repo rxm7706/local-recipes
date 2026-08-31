@@ -234,3 +234,8 @@ story's own scope is the narrower ID-vs-content-mismatch class in the DETECTOR s
 Landing (git commit beyond this session's working tree, the ledger flip for key
 `8-5-the-detector-recognizes-content-that-already-reached-the-ledger-by-another-path`, and the
 `maintenance` PR label) is the dispatcher's, matching every other story landed this session.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

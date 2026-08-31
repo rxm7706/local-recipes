@@ -97,8 +97,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1-1.6's existing suite + this story's new tests)
-- `pixi run -e pyforge-steward steward keys revoke --help` -- expected: shows `--scope`/`--inventory`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Results (2026-08-07):**
 - `pixi run -e pyforge-steward pyforge-steward-test` — 96 passed, 0 failed (full Epic 1 suite: Stories 1.1-1.7 combined, unit + conformance + meta).

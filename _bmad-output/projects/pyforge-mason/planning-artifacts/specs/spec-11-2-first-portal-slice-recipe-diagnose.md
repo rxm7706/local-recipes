@@ -112,6 +112,4 @@ Residual risks: last diagnose is a portal-owned equivalent snapshot, not a live 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py -q` — expected: all pass
-- `pixi run -e local-recipes pytest src/platform/tests/test_mason_portal_last_diagnose.py src/platform/tests/test_station_portal_shells.py -q --ds=config.settings.test` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

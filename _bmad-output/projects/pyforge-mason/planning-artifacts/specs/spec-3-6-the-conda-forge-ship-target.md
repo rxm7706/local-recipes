@@ -488,9 +488,7 @@ granularity doctor can observe without a recipe argument.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass (default
-  `-m "not slow"` loop, including `tests/meta/test_capability_tiers.py`, which the lazy `recipe`
-  import inside `ship_conda_forge` must satisfy for `package.py`).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

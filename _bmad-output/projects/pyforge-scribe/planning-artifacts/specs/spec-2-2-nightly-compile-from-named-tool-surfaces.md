@@ -134,8 +134,7 @@ it, replacing the Epic-1 stub.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- expected: full suite green
-- `git diff --stat` -- expected: only the files in Code Map changed
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

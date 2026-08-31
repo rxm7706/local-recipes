@@ -260,9 +260,8 @@ through `fs` — this module's manifest-only check is a first filter, not the fi
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, including the
-  two new test files.
-- `pytest src/shared/packages/pyforge-marshal/tests/unit/test_seed_engine_copier.py src/shared/packages/pyforge-marshal/tests/meta/test_p02_copier_sole_ownership.py -v` -- expected: all new tests pass, run directly for fast iteration.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

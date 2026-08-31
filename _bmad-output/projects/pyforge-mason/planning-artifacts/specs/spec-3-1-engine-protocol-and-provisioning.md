@@ -152,10 +152,7 @@ def require_engine(name: str) -> str | None:
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass, including
-  the new `test_engine_version_range_sync.py` and the extended `test_engines.py`/`test_errors.py`.
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_doctor.py -q`
-  -- expected: unchanged, confirms `doctor.py`'s composition is untouched.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

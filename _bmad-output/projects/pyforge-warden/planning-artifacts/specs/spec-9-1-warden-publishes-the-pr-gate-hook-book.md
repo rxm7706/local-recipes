@@ -113,8 +113,7 @@ PR_GATE_VERDICT = HookSpec(name="pyforge.warden.pr_gate.verdict", owner="warden"
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_hooks.py src/shared/packages/pyforge-warden/tests/meta/test_pr_gate_plugin_registration.py src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py -q` -- expected: all pass
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: default suite (`not slow`) still green
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

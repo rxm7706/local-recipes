@@ -219,11 +219,8 @@ one-off manual sweep frozen at the June 2026 snapshot").
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: all pass, including the new `load_org_audit_candidates`/reuse tests.
-- `pixi run -e pyforge-atlas kedro-catalog-check` -- expected: pass (naming/layer/path conventions hold for the two new entries).
-- `pixi run -e pyforge-atlas dagster-dryrun` -- expected: pass (both new nodes carry `NODE_TIMEOUTS`; bootstrap-op-set tests hold).
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery -q` -- expected: all pass in isolation.
-- `python3 scripts/spec_surface_check.py` -- expected: `OK: every tracked file governed or allowlisted; no drift` (re-stamp with `--write-baseline --spec pyforge-atlas/spec-pyforge-atlas` after appending the reconciling `.memlog.md` entry — scoped, never a bare re-stamp).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

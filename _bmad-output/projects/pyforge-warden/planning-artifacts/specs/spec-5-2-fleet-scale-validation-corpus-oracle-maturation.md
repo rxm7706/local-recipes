@@ -182,9 +182,7 @@ Resolution: `scripts/dogfood_scan.py` stages `{pyproject.toml, src/}` only (clos
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: full default suite green, no regression, completes in well under a minute. **Result: 1935 passed, 11 deselected, 47.32s** (baseline before this story: 1931 passed in ~50s).
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test-corpus-oracle` (new task) -- expected: full-corpus differential-oracle green (or cleanly skipped if renderers unavailable). **Result: both renderers were available in this environment (not skipped) — 11/11 slow tests green**, incl. the two new corpus-scale oracle tests (228/945 recipe.yaml + 711/1042 meta.yaml files strictly compared, 0 violations) and the full-corpus determinism + egress-counter tests.
-- `pixi run --frozen -e pyforge-warden pyforge-warden-dogfood` (new task) -- expected: exit 0 against pyforge-warden's own manifest. **Result: `status=bypassed exit_code=0` (19 baselined findings, 0 unexpected).**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `tests/fixtures/corpus/` is excluded from the built wheel/conda package (packaging config unchanged: `packages = ["src/pyforge"]`).

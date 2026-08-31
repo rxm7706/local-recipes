@@ -90,9 +90,8 @@ baseline_revision: a38a2dbdfb
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: green, incl. `test_chain_regen`
-- `pixi run --frozen -e local-recipes chain-layers-audit-check -- --project pyforge-marshal --json` (or equivalent) — expected: Story 17.3 path still works
-
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

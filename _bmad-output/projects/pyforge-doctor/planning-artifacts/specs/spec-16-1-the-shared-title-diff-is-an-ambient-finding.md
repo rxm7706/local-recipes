@@ -93,5 +93,4 @@ Fixture title: use this repo's licensed deck-dream `title:` string plus syntheti
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py src/shared/packages/pyforge-doctor/tests/unit/test_cli_check.py src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py -q` -- expected: pass
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_sibling_dreams_drift.py -q` -- expected: pass
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

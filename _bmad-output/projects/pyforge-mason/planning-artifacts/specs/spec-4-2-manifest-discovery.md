@@ -230,10 +230,7 @@ file=sys.stderr)` from `cli.py` is unrestricted and does not need a meta-test ex
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass, including
-  the new `discover_manifests`/`EnvironmentManifestsNotFoundError` coverage and the rewritten
-  `environment lock`/`environment check` CLI dispatch tests; `test_capability_tiers`/
-  `test_dependency_direction`/`test_render_ownership`/`test_no_recipe_knowledge` remain green.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

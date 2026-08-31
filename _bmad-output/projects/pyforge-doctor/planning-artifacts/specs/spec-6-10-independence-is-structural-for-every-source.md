@@ -94,3 +94,8 @@ That docstring-stripping detail is load-bearing and easy to lose in a rewrite.
 retire. Nothing about the meta-test depends on the retirement, so if 6.9 stalls on its
 blocking precondition (CI detector coverage), this story can land first without harm — the
 dependency is tidiness, not correctness.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

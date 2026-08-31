@@ -157,13 +157,7 @@ meaningful data; every other test gets a deterministic, silent default.
 ## Verification
 
 **Commands:**
-- `npm run test` (from `web/`) -- full suite green: baseline **13 passed** (2 files) before this
-  story; **22 passed** (3 files) after (+9 new in `ProgressPanel.test.jsx`; `App.test.jsx` stayed
-  at 9, content updated).
-- `npm run build` -- succeeds; `dist/progress.json` present (copied from `public/progress.json` by
-  Vite's static-asset handling), containing `[]` when no `.herald/progress.json` source exists.
-- No `act()` warnings in the `npm run test` output (verified after the `App.test.jsx` `findBy*`
-  fix -- prior to it, four tests warned, though none failed).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

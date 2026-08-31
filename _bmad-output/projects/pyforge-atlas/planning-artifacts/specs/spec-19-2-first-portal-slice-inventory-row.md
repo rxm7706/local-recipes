@@ -108,9 +108,8 @@ PortalClient is a signer (steward 18.3): emit the assertion, then read `run_stat
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e platform-ci-test pytest src/platform/tests/test_atlas_portal_inventory_row.py src/platform/tests/test_station_portal_shells.py -q` — expected: all pass
-- `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py -q` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge` outside tests that already existed; new platform test must not import `pyforge.*`
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

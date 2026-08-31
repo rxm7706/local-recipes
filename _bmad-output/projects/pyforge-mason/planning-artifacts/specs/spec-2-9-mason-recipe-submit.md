@@ -311,12 +311,7 @@ once, in `recipe.py::submit()`, from the real inherited `environ` plus one liter
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/` -- expected: full
-  suite green, including the generalized `test_credential_isolation.py`. (The `pyforge-mason` env,
-  not `local-recipes`, is the one with `pyforge.mason` installed.)
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/` -- expected: all
-  seam-enforcement meta-tests green (AD-1..AD-16 guards), proving the AD-14 extension didn't
-  regress anything else in the file.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

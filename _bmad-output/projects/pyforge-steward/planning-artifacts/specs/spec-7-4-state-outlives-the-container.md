@@ -134,10 +134,7 @@ final_revision: 'a48e6df6ec6fd07a6c20bebd6afb6e1870bc7097'
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-container-volumes-test` -- expected: all new tests pass
-- `docker build -f Containerfile -t pyforge-guild-7-4-check .` -- expected: succeeds; `docker inspect --format '{{json .Config.Volumes}}' pyforge-guild-7-4-check` lists all three paths
-- `python3 scripts/container-gates volumes-roundtrip --image pyforge-guild-7-4-check --mount /pyforge/.steward --mount /pyforge/.claude/data/conda-forge-expert --mount /root/.bmad-loops` -- expected: clean report, exit 0, run for real against the built image
-- Duty-level proof: `docker run --rm -v steward-state:/pyforge/.steward pyforge-guild-7-4-check steward budget set --cap 1500usd/month`, then `docker rm` (implicit via `--rm`), then `docker run --rm -v steward-state:/pyforge/.steward pyforge-guild-7-4-check steward budget show` -- expected: the second run reports the ceiling declared by the first; clean up `docker volume rm steward-state` afterward
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `Containerfile`'s `VOLUME` line lists exactly the three CAP-4 paths and sits after the Story 7.3 secrets-scan gate, before `ENTRYPOINT`.

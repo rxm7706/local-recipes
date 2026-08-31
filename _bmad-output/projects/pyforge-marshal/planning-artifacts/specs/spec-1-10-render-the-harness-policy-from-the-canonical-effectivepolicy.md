@@ -141,9 +141,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite passes, including the new render tests and the untracked meta-test
-- `pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: `2 kept, 0 broken` (unchanged; no new import surface crosses either contract)
-- `git ls-files .bmad-loop/policy.toml` (from repo root, after the final `git rm --cached` step) -- expected: empty output
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

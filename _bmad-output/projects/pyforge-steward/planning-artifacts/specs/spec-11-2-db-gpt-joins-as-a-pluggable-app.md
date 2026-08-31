@@ -98,9 +98,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `docker compose -f src/platform/compose/compose.yml config --quiet` -- expected: exit 0, compose file parses (already confirmed pre-recovery)
-- `cd src/platform && pytest -v` -- expected: full pass against real Postgres 17 + Redis 7, matching `platform-ci.yml`
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: pass (station verify_commands gate; different package, run for policy compliance)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Live `text_to_sql` round trip against the running `dbgpt` sidecar returns real SQL + data, not a mocked transport

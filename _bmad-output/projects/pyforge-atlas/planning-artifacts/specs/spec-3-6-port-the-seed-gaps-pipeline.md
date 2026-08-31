@@ -238,3 +238,9 @@ Status: review (left at `review` per the orchestrator-owns-git mandate — NOT a
 - **Residual risk:** `spdx-schema-gap`'s atlas-usage ranking is empty until `conda_license` is produced by core (DW-B6-1 — the atlas-independent `upstream-drift` tier keeps the report meaningful meanwhile); `cwe-seed-gap`'s "Other-bucket affects N packages" headline is deferred (DW-B6-2 — the proposal rows, the load-bearing output, are fully computed). Both are additive-signal gaps, not correctness holes. The `seed_gaps` reports re-run per rebuild but their upstream feeds (endoflife/SPDX APIDatasets) degrade to empty offline (AD-13), which the pure nodes handle gracefully (empty feed → empty report).
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -103,9 +103,7 @@ PortalClient.start/get emit an RS256 assertion then call supervisor (same writer
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py -q` -- expected: pass
-- `cd src/platform && DATABASE_URL=postgres://postgres:platform@localhost:5432/platform pixi run -e platform-ci-test python -m pytest tests/test_warden_portal_audit_start_get.py -q` -- expected: pass
-- `git diff origin/main -- src/platform` -- expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

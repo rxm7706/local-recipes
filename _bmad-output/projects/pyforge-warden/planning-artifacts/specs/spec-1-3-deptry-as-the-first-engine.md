@@ -126,8 +126,7 @@ Verify: **429 passed** (`--frozen`, worktree); frozen 1.1 artifacts + manifests 
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` -- expected: all prior 1.1/1.2 suites + the new deptry unit/seam/conformance suites pass; false-green = 0; twice-run byte-identical. (`--frozen` is mandatory in the loop worktree — see `deferred-work.md`: the unfrozen solve panics and rewrites `pixi.lock`.)
-- Sole-ownership + no-execution + socket-deny meta-tests stay green with `hygiene.py` present.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

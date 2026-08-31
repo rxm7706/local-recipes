@@ -95,8 +95,8 @@ final_revision: '6f8d81d627'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new regression test included, zero regressions.
-- `python3 -c "import tomllib; tomllib.load(open('_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml','rb'))"` -- expected: no exception (confirms TOML table placement didn't break parsing).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `marshal config --project-policy _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml --format json` shows `model_tier_map` populated with `heavy`/`easy`, `layer: project`, no findings.

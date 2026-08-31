@@ -109,8 +109,7 @@ Deferred: `_run_env`'s/`_run_runner`'s own unknown-value error paths (bad `--env
 ## Verification
 
 **Commands:**
-- `cd src/shared/packages/pyforge-steward && python3 -m pytest tests/conformance/test_provision_module.py -q` -- new tests pass
-- `cd src/shared/packages/pyforge-steward && python3 -m pytest tests -q` -- full existing suite stays green
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (real backend, no mocks):**
 - From repo root, with `local-recipes` on PATH: `pixi run -e pyforge-steward steward provision --module bmb`, then inspect `_bmad/config.yaml` for a new `bmb:` section, `_bmad/module-help.csv` for new rows, and confirm `_bmad/core/config.yaml` is unchanged (mtime/content) before and after.

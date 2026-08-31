@@ -131,3 +131,8 @@ That is why the AC demands a **before/after governed-file count** rather than a 
 Worth considering as follow-up (not this story's scope): a `stale-surface-glob` finding
 would close the asymmetry permanently and is a natural Doctor source, since the artifact it
 judges is Marshal-governed.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

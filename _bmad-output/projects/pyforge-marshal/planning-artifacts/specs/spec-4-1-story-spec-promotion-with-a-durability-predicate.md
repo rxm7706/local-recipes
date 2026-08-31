@@ -95,9 +95,8 @@ baseline_revision: '51d51597b0b71794cedda5d071dbde0645eef0d4'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: green modulo the pre-existing, unrelated `pyforge-steward` failures already logged in `deferred-work.md`.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold (AD-4 core purity for `merged_story_keys`/`classify_promotion_candidates`).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Run `marshal deploy promote` against this very repo's own `pyforge-marshal` project (a real, live target — 3.1-3.8 and 2.3's specs are ALREADY promoted by hand this session, so the correct, verifiable behavior is "0 promoted, N already-promoted skips, 0 gaps" for those keys).

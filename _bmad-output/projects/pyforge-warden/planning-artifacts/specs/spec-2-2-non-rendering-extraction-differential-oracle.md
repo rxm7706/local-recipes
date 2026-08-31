@@ -204,9 +204,7 @@ Both were exercised live against throwaway fixtures; `conda_build`'s renderer va
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior 1.x/2.x suites unchanged + new test files green; sole-ownership/no-execution/socket-deny meta-guards stay green automatically for the new `extract/` files.
-- `pixi install -e pyforge-warden` (after the `pixi.toml` edit) -- expected: resolves cleanly. NOTE (per 2.6's own Dev Note): a full `pixi install`/`update` in a fresh worktree may fail on the UNRELATED `bmad-ui` environment's gitignored local channel — if so, verify instead via the root `local-recipes` env, which already has `conda-build`/`rattler-build`/`py-rattler-build` installed from its own `[feature.local-recipes.dependencies]`.
-- Manual: `git diff --stat` shows zero changes to `verdict.py`, `interfaces.py`, or `models.py`'s frozen enums.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

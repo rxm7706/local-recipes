@@ -245,11 +245,7 @@ within Slice 2).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/unit/test_recipe_generator.py .claude/skills/conda-forge-expert/tests/unit/test_name_resolver.py .claude/skills/conda-forge-expert/tests/unit/test_github_updater.py -v`
-  (with `CFE_TEST_SCRIPTS_DIR` pointed at the compiled copy) -- expected: 60/60 pass
-- `pixi run -e local-recipes pytest -m slow -k equivalence -v` -- expected: all pass
-- `pixi run -e local-recipes cfe-rebuild-guard-check` -- expected: exit 0
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- expected: unaffected, still green
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

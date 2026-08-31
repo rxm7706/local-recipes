@@ -130,10 +130,4 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi install -e pyforge-steward` -- expected: resolves cleanly with `pyyaml` added
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1-1.3's existing suite + this story's new tests)
-- `pixi run -e pyforge-steward steward keys rotate --help` -- expected: shows `--scope`/`--new-identity`/`--inventory`
-
-**Results (2026-08-07):** see this session's consolidated Verification note after Story 1.7 for the final combined pytest count; this story's own new tests were independently green at the point they were added, and re-verified green again after Stories 1.5-1.7 landed on top.
-
-</intent-contract>
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

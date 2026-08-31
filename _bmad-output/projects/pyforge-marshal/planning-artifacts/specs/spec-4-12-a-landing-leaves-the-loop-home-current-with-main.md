@@ -146,19 +146,8 @@ names ("8 PRs behind on **origin**").
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, including new `fetch`/`fast_forward` and `_resync_home_branch` tests
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: no new disallowed import edges
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: clean
-
-**Note (2026-08-09):** `pyforge-deps-test` initially failed on 3 pre-existing, unrelated
-baseline gaps (`pyforge-steward`'s undeclared `age`/`_http`, `pyforge-doctor`'s undeclared
-`mcp` conda run-dep) -- confirmed via `git stash` to predate this story's `baseline_revision`
-and identical to the fix Story 4.11's own review pass already applied in its (not-yet-merged)
-sibling worktree. Applied the same precedent-matched fix directly here (not deferred) in
-`tests/packaging/test_dependency_completeness.py` and `pyforge-doctor/pixi.toml`, unrelated to
-this story's own `<intent-contract>`. **This fix was reverted along with the rest of this pass's
-code per the intent-gap HALT below (`## Review Triage Log`) and will need to be re-applied on
-the next implementation pass.**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

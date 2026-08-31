@@ -16,3 +16,9 @@ claimed reconciled). Verification exceeded the contract: `memlog.py append`
 proven against ALL 86 spec folders fleet-wide (0 failures), each verification
 append itself the dated migration record. spec-surface reconcile: 0 findings
 with no re-stamps (memlog-only movement is not drift by design).
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

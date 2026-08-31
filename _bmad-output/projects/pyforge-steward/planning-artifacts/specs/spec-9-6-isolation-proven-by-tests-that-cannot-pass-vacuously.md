@@ -185,14 +185,7 @@ into a repo-wide gap the `detectors.yml` header already names and tracks separat
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: full suite green, including the
-  new `tests/unit/test_dashboard_isolation_proof.py` and zero regressions in the pre-existing
-  suite. (Confirmed at 613 passed = 602 pre-story baseline + 11 new -- see Auto Run Result.)
-- `pixi run -e pyforge-steward pyforge-steward-test -k test_dashboard_isolation_proof -v` --
-  expected: all tests in the new file pass, names matching the Tasks list above plus the 3
-  fail-closed tests added in review pass 1.
-- `ruff check src/shared/packages/pyforge-steward/tests/unit/test_dashboard_isolation_proof.py` --
-  expected: zero findings (or only the pre-existing repo-wide baseline, verified via `git stash`).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

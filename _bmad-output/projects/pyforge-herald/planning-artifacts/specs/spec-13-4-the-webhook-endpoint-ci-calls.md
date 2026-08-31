@@ -717,10 +717,7 @@ committed, and the retry is provably redundant) -- both outcomes are safe. A fre
 ## Verification
 
 **Commands:**
-- `PYTHONPATH=src python -m pytest tests -q` (run inside
-  `src/shared/packages/pyforge-herald/`, from inside this worktree -- `pixi run -e
-  pyforge-herald pyforge-herald-test` resolves against the main checkout, per Story 13.3's own
-  measurement note) -- expected: all tests pass, including new `test_webhook.py`.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Hand-construct a `scope`/`receive`/`send` triple in a throwaway script, POST a signed

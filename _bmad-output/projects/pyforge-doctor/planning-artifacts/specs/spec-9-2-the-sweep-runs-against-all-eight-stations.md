@@ -189,7 +189,7 @@ mentioning its own filename must not count as an inbound reference.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, including the new `test_sources_hygiene.py` cases, the 2 new `test_cli_bridge.py` cases, and the existing meta tests (`test_read_only_guard`, `test_every_real_sources_file_is_mapped_by_at_least_one_source`, `test_every_in_scope_source_is_mapped_to_exactly_one_file`, the independence-guard parametrized tests) still green.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

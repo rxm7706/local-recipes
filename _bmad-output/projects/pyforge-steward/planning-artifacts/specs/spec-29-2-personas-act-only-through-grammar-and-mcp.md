@@ -117,5 +117,4 @@ Verification: 20 passed (`test_station_persona` + `test_skf_domain_skills`).
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py -q` — expected: all pass (golden accepted; FS/HTTP freelance rejected; live skill forbids freelance; not SKF; CFE intact)
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py -q` — expected: 29.1 suite still passes
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

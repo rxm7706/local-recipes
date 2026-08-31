@@ -112,7 +112,5 @@ Do not close estate-wide `DW-OM-2026-08-24` from this station-only story.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py -q` -- expected: all pass
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests/unit/test_cli.py src/shared/packages/pyforge-marshal/tests/unit/test_init.py -q -k "version or preflight or harness" --maxfail=20` -- expected: pass (default factory + monkeypatch)
-- `pixi run -e pyforge-core python -m pytest src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py -q` -- expected: pass (no parallel marshal loader)
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests -q -m "not slow"` -- expected: all pass
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

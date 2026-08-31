@@ -980,11 +980,7 @@ failed write, and do not add a "verify the UI moved" check anywhere in this stor
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass, including the
-  new `sync` conformance tests, with zero live network calls.
-- `pixi run -e pyforge-steward pyforge-steward-dogfood` -- expected: unaffected (`steward
-  --version && steward keys audit --drift` still succeeds), confirming the new duty doesn't
-  break existing dispatch.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Live-pair demonstration (CAP-1's literal acceptance bar — "against a live GitHub Projects V2

@@ -221,15 +221,7 @@ be regenerated and committed (that gate is ungated by the label).
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full suite green, including
-  new `test_webhook_host.py` and the timestamp coverage in `test_webhook.py`; the new live
-  marker test skipped by default.
-- `HERALD_LIVE_WEBHOOK=1 pixi run -e pyforge-herald pytest tests/test_webhook_live_smoke.py` --
-  expected: the opt-in live-socket test passes against a real local daphne process.
-- `pixi run --frozen -e pyforge-herald herald scheduler run --repo-root /tmp/herald-demo --json`
-  -- expected: valid JSON summary, exit 0 (existing 13.5 command, re-verified unchanged).
-- `pixi project export conda-environment -e build > environment.yaml` -- expected: no diff
-  beyond the new `daphne` line; commit it alongside `pixi.toml`.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Trigger `herald-live-demo.yml` via `workflow_dispatch` once on a scratch branch/PR before

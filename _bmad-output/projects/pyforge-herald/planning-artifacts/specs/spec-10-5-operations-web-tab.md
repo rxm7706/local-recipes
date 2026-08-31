@@ -115,12 +115,7 @@ exactly this kind of cross-panel regression.
 ## Verification
 
 **Commands:**
-- `cd src/shared/packages/pyforge-herald/web && npm run test` -- 20 passed (3 files: Tooltip,
-  OperationsPanel, App).
-- `npm run build` -- succeeds (46 modules, ~153 KB JS / ~6.6 KB CSS before gzip).
-- `python3 scripts/export_notices_snapshot.py --repo-root <tmp> --out <tmp>/out.json` -- manual
-  smoke test against a freshly authored+published notice; output matches the shape
-  `OperationsPanel.jsx` expects.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

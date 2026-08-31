@@ -92,7 +92,7 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: full suite green, including the new `test_sbom.py`/`test_cli_sbom.py`/`test_sbom_schema.py` modules. (If a fresh worktree's `pixi install` hits the known pre-existing `build_artifacts/linux64` local-channel gap documented in `deferred-work.md`, use `pixi run --frozen -e pyforge-warden ...` the same way this planning pass verified the `cyclonedx-python-lib`/`packageurl` APIs.)
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Round-trip smoke check (cross-tool, not part of the pixi test task): `warden scan . --sbom-output /tmp/out.json` in the `pyforge-warden` env, then `scan-project --sbom-in /tmp/out.json` in the `local-recipes`/CFE env — confirm it ingests without error.

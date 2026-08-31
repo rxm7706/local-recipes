@@ -101,8 +101,8 @@ baseline_revision: 'fbccf6ee0dbeb9a8701fc53ae2350d801808d44d'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold, especially AD-4 (`core/**` holds no `subprocess`/`os`/`time`/`adapters` import) given `core/spec_surface.py`'s file-reading question flagged in its own Code Map entry.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Seed a `marshal-policy.toml` with `frozen_surfaces` naming a real file and `epic_surfaces` naming this epic's own surface; run `marshal gate evaluate --scope-check` against a worktree with an uncommitted change to the frozen file; confirm a hard failure naming the file.

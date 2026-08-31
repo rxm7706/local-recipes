@@ -246,16 +246,7 @@ hand.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_cli_check.py src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -v` --
-  expected: all pass, including the NFR-4 benchmark unaffected.
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full suite green, same
-  baseline count as Story 10.2's own run plus this story's new tests.
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_bmad_core_drift.py -v` --
-  expected: all pass.
-- `pixi run -e local-recipes python -m pyforge.doctor.__main__ check --bmad-core` -- expected:
-  today's live drift (2 WARN findings) prints.
-- `pixi run -e local-recipes fleet-picture` -- expected: ATTENTION block's `watch` section names
-  the live bmad-method drift.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

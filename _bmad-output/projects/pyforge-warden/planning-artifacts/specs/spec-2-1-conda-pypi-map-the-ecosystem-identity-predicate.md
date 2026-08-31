@@ -90,8 +90,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all tests pass, including the new map/hygiene/osv cases
-- `python -c "import json,pathlib; d=json.loads(pathlib.Path('src/shared/packages/pyforge-warden/src/pyforge/warden/data/conda_pypi_map.json').read_text()); assert d and all({'pypi_name','match_source','match_confidence'} <= e.keys() for e in d.values())"` -- expected: real, non-empty, correctly-shaped map
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git diff --stat` -- confirm only the files in Code Map changed

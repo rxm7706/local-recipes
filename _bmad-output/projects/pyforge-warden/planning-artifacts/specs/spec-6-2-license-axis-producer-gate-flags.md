@@ -180,8 +180,7 @@ All 11 `[patch]` findings from the follow-up triage entry below landed as locali
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- ran: **1397 passed** (1334 baseline + 63 new/updated: `test_license.py` (45 tests) + `test_axis_producer_ceiling.py` (2 tests) + `test_config.py`'s new license-config section (16 tests), plus 9 pre-existing tests updated in place — see Code Map).
-- `pixi run --frozen -e pyforge-warden warden scan <fixture-dir> --format json` (a fixture with a mix of allowed/denied/unknown licenses) -- ran live against a scratch fixture (`requests==2.31.0` + `packaging==24.0`, both genuinely installed) with `--deny-licenses Apache-2.0`: `report["license"]` section present (`coverage: {axis: license, deps_total: 2, deps_assessed: 2, gating: true}`), one `license:Apache-2.0:requests@2.31.0` finding (`verdict: denied`) at the axis's own `warn` ceiling — confirmed it composes into the overall status (never above `indeterminate`/`policy-violation` from the OTHER axes; see the corrected Design Notes note above for why this is the intended behavior, not "license is invisible to composition"). `--help` shows both new flags with their config-precedence/FR33 wording.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ### Review-fix pass (2026-07-18) verification
 

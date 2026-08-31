@@ -224,3 +224,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     propagation offline (26 crew tests). `Enricher`/`Synthesizer`/`Retriever` are the injectable
     seams; their defaults (`_identity_enricher`, `_extractive_synthesizer`, `keyword_retriever`)
     are offline. No `agno` Agent is constructed and no model/vss is loaded in-package.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

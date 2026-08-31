@@ -230,3 +230,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     `tests/factory/test_lasuite.py` proves the round-trip + idempotency (zero remote calls on an
     unchanged re-push) + mapping-resume against the mock opener. `resolve_lasuite_config` returns
     `None` unless BOTH env vars are set.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

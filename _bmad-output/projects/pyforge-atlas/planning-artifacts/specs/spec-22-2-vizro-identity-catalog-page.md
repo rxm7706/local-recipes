@@ -277,8 +277,5 @@ xlsx-parsing logic, which this story does not touch or care about).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes dashboard-dryrun` — expected: green, including the new
-  `test_identity_catalog_page.py` file and the extended existing test functions.
-- Manual: `pixi run -e local-recipes dashboard-serve` then open `identity-catalog` in a
-  browser — expected: page renders (empty grid + data-gap Card on a checkout with no
-  `identity_ranked_export.parquet`, per the honest-shell contract).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

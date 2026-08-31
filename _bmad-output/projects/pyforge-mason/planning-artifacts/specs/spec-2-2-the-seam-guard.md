@@ -603,18 +603,7 @@ apart as Stories 2.4–2.10 add entries to `_CFE_SCRIPTS`.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (415 tests before
-  this story, plus every new test listed above; neither new file carries the `slow` marker).
-  Actual: **559 passed** after the third review pass (537 before it, 474 before that).
-- Mutation re-probe after the third pass: all 11 evasions the reviewers reproduced against the
-  previous revision now fire (multi-arg `Path(...)`; case-variant and `.`-component CFE paths;
-  `pty.spawn`/`runpy.run_path`/`multiprocessing.Process` inside an allowlisted file; a full script
-  path inside an allowlisted file; a hoisted command constant; PEP 695 alias and type parameter;
-  bare-`Name` read; uppercase field name; lowercase check code), and all 4 reproduced false
-  positives are now clean (f-string format spec, `.format()` template, newline-spanning operator,
-  `=>` arrow) with the real-pin control (`">=1.0,<2.0"`, `"python >=3.9"`) still flagged.
-- `ruff check` on both files reports the same 3 findings before and after this pass (1 `RUF007`,
-  2 `SIM114`) -- no new lint introduced; ruff is not a gate for this package.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

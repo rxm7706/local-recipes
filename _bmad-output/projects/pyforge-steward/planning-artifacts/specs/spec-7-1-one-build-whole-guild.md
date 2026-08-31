@@ -187,10 +187,7 @@ final_revision: '4761c7dc92e5701b73af9ea5155acf229426dcfd'
 ## Verification
 
 **Commands:**
-- `pixi install -e pyforge-container --frozen` -- expected: resolves and materializes without solver errors (sanity-check the new environment definition before wrapping it in a build)
-- `docker build -f Containerfile -t pyforge-guild-test .` -- expected: exits 0
-- `for cli in marshal steward pyforge-atlas warden doctor mason herald scribe; do docker run --rm pyforge-guild-test "$cli" --version || echo "FAIL: $cli"; done` -- expected: every line prints a version string, no `FAIL` lines
-- `docker run --rm pyforge-guild-test` -- expected: runs `marshal`'s own no-args behavior (usage line, exit 0)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

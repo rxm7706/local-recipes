@@ -118,8 +118,7 @@ Row vocabulary is `east` / `west` on access column `tenant`. Station role `atlas
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test -- pytest src/platform/tests/test_host_board_row_isolation.py src/platform/tests/test_station_portal_shells.py src/platform/tests/meta/test_no_pyforge_import.py -q` -- expected: all pass (needs Django test settings DB like sibling platform tests)
-- Confirm atlas Vizro CLI modules are not referenced from `src/platform/config/urls.py`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

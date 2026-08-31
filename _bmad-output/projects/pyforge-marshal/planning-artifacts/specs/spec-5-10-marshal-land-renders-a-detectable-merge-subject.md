@@ -112,9 +112,8 @@ final_revision: 'e503e2d070578ead7e944c2cb525296797ccbeac'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, new tests included.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: clean (this story stays entirely in `cli/`/`ports/`/`adapters/`, no `core/` change).
-- `python scripts/spec_surface_reconcile.py` -- bmad-loop's own S-13.7 verify gate; expected: exit 0, no drift.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

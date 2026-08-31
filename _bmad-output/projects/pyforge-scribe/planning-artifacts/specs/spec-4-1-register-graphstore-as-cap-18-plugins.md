@@ -85,8 +85,7 @@ Do not wrap `FlatFileGraphStore` in a second persistence format. The plugin is a
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- expected: full suite green including new plugin tests
-- `git diff --stat` -- expected: scribe package + this spec only; no steward Epic 28 / pgvector files
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

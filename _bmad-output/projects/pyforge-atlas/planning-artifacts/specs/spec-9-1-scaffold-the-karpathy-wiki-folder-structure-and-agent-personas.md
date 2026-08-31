@@ -221,3 +221,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     both-keys-required-for-credentials). Only `minio` the SDK is importable in-env; no server
     process runs. The AD-16 pixi.toml line ships `minio >=7.2.20` (SDK) + `psycopg2 >=2.9.12`
     (driver) — the SDKs, not the servers.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

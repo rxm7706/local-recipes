@@ -33,3 +33,8 @@ duplicating work.
 Merged via PR #296 (`scribe: Epic 1 close-out — Stories 1.4-1.5 (pointer-stub write-back, real
 seed promotion)`), merge commit `75696cc29b`, 2026-08-07T16:25:58Z.
 https://github.com/rxm7706/local-recipes/pull/296
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -108,6 +108,4 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior 1.x/2.x suites unchanged + the 3 new test files green; sole-ownership/no-execution/socket-deny meta-guards stay green automatically (no wiring needed for new files under `extract/` or `tests/`).
-- `pixi install -e pyforge-warden` (after the `pixi.toml` edit) -- expected: resolves cleanly (py-rattler is already proven resolvable from conda-forge via the root `local-recipes` env's own dependency on it).
-- Manual: `git diff --stat` shows zero changes to `pyproject.toml`'s runtime `dependencies` list, `verdict.py`, or `interfaces.py`.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

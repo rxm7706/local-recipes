@@ -225,3 +225,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     `default_status=STOPPED`, offline-default-is-no-op) + the AD-1 import-ban (`tests/catalog/test_no_inline_io.py`,
     now covering `orchestration/event_source.py` via rglob — it imports no dagster). The live feed
     readers do not exist in-package (injected, mirroring the B5/B7/B8 injected-fetcher deferrals).
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

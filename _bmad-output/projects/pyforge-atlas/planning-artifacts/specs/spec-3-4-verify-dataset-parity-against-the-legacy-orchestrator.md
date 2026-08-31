@@ -243,3 +243,9 @@ Status: review (Status left at `review` per the orchestrator-owns-git mandate �
 - **Residual risk:** the credentialed-mode composition + read-path robustness are finalized at the attended event (DW-B4-1/6); a green in-loop gate is NOT legacy-parity evidence (by design, PARITY_NOTES.md).
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

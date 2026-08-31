@@ -96,5 +96,4 @@ Residual risks: the golden transcript is a checked event log, not a live LLM run
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py -q` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

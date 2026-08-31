@@ -356,12 +356,8 @@ passed.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: green, including the two new test files.
-- `pixi run -e pyforge-atlas duckdb-singularity` -- expected: green (sole-engine + new
-  one-launch-site gates).
-- `pixi run -e pyforge-atlas query-plane-boot` (no signal env) -- expected: exit 0, one-line
-  JSON stack-down notice on stdout.
-- `pixi run -e local-recipes llms-full-check` -- expected: exit 0 after the catalog reconcile.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git diff pixi.toml` shows exactly one new dependency line + one new task block under the

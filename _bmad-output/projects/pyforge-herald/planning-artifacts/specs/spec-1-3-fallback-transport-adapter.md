@@ -165,14 +165,7 @@ risks guessing wrong before that caller exists.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- 311 passed, 2 skipped (was 306 passed, 2
-  skipped before this story's 5 new construction/error-mapping tests plus the existing suite's
-  count from Stories 1.1/1.2/1.4/1.5; the 2 skips are Story 1.2's live-spike test, unaffected).
-- `ruff format --check` / `ruff check` from the package root -- clean on every file this story
-  touches (`agent_sdk_transport.py`, `test_agent_sdk_transport.py`, `transport/__init__.py`,
-  `base.py`, `mcp_transport.py`); pre-existing findings in `test_bridge.py`/`test_registry.py`
-  (import ordering) and `test_transport_base.py`/`mcp_transport.py` (`SIM117` nested `with`) are
-  untouched by this story and out of its scope.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `isinstance(AgentSdkTransport(), DesignTransport)` is `True`.
