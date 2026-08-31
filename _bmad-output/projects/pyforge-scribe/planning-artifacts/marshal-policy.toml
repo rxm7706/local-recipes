@@ -61,6 +61,6 @@ verify_commands = [
   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_*graphify*.py",
-  "src/shared/packages/pyforge-scribe/tests/unit/test_extras_move_list.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_extras_*.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py",
 ]
