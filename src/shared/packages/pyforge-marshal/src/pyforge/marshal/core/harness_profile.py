@@ -50,6 +50,47 @@ matching ``core/policy.py``'s closed-vocabulary discipline):
   ``.pixi/envs/local-recipes/bin``, invisible to a bare operator PATH).
 - ``verified`` / ``notes``: provenance, stated honestly -- ``true`` only for
   an invocation shape empirically smoke-tested against the real CLI.
+- ``wrapper`` (Story 28.2): the OPTIONAL wire-compression wrapper --
+  ``[wrapper]``, a sub-table parsed by ``parse_wrapper`` into
+  ``HarnessWrapper``. See that dataclass and ``resolve_wire_wrap`` below.
+
+**The wire-compression seam** (Story 28.2, SPEC-marshal-token-economy
+CAP-2). A profile MAY declare a ``[wrapper]`` table naming a CLI that
+launches the profile's own CLI through a compressing proxy (``headroom wrap
+claude -- <claude argv>``). When -- and only when -- Story 28.1's declared
+``[context]`` ``wire`` layer resolves ENABLED, ``resolve_wire_wrap`` turns
+that declaration into a launch decision:
+
+- the wrapper's ``binary`` + ``argv`` become an argv PREFIX that replaces
+  the resolved CLI binary path. Everything ``render_dispatch_argv`` renders
+  from the profile's own template -- flags, ``{worktree}``, the model flags,
+  and the prompt -- follows the prefix BYTE-IDENTICALLY, wrapped or not.
+  That is the NFR-14 admission requirement in marshal's own terms: the
+  layer may prepend a launcher, never rewrite what marshal composed. Pinned
+  by ``tests/unit/test_harness_profile.py``'s prefix byte-comparison, and
+  enforced at parse time -- a wrapper ``argv`` token carrying any of the
+  four launch placeholders is a ``HarnessProfileError``.
+- the wrapper ``argv`` must NAME the profile's own ``binary`` as one of its
+  tokens (``parse_profile``, which is where both values are known). Wrapping
+  drops the probed+authchecked ``binary_path`` and lets the wrapper resolve
+  the tool by name, so an overlay retargeting ``binary`` while keeping a
+  packaged prefix would otherwise launch a different CLI entirely, with an
+  identical rendered tail and no other symptom.
+- ``store_env``/``store_relpath`` scope the wrapper's reversible
+  compress-cache-retrieve (CCR) store to the LOOP HOME (for factory
+  dispatch, the story's own worktree), so it is torn down with the worktree
+  rather than accumulating in a user-global cache.
+- ``reversible`` must be declared ``true``. The spec's "reversible or
+  absent" constraint is a schema rule here, not a convention: a wrapper
+  that cannot hand back the original bytes has no admissible declaration.
+  Checked at BOTH layers -- ``parse_wrapper`` refuses the declaration, and
+  ``resolve_wire_wrap`` re-checks the value it is about to launch with and
+  degrades, covering any ``HarnessWrapper`` built without going through the
+  parser.
+- an unavailable wrapper (no ``[wrapper]`` declared for this profile, the
+  wrapper binary missing, an uncreatable store dir) DISABLES the layer with
+  a named reason the caller reports as ``MRS-DISP-033`` and launches
+  unwrapped -- never a blocked run, never a silent no-op.
 
 **Loading precedence**: packaged (``pyforge/marshal/data/harness_profiles/
 *.toml``) < repo overlay (``_bmad-output/harness-profiles/*.toml`` --
@@ -117,8 +158,32 @@ _PROFILE_KEYS: frozenset[str] = frozenset(
         "fallback_bin_dirs",
         "verified",
         "notes",
+        # Story 28.2 (SPEC-marshal-token-economy CAP-2): the optional
+        # wire-compression `[wrapper]` sub-table -- see `parse_wrapper`.
+        "wrapper",
     }
 )
+
+#: ``[wrapper]``'s own closed key set (Story 28.2) -- the same
+#: unknown-key-is-a-parse-error discipline the profile itself applies, one
+#: level down.
+_WRAPPER_KEYS: frozenset[str] = frozenset(
+    {
+        "binary",
+        "argv",
+        "env",
+        "store_env",
+        "store_relpath",
+        "reversible",
+        "fallback_bin_dirs",
+        "notes",
+    }
+)
+
+#: The ``CONTEXT_LAYER_NAMES`` member (``core/policy.py``) whose enablement
+#: drives this seam. Named here, not spelled inline at the two launch call
+#: sites, so the wire layer has exactly one spelling in the codebase.
+WIRE_LAYER_NAME = "wire"
 
 #: marshal profile name -> the installed bmad-loop's own adapter/profile
 #: name for ``[adapter].name`` (bmad_loop's packaged set: claude, codex,
@@ -141,6 +206,106 @@ class HarnessProfileError(PyforgeError, Exception):
 
 
 @dataclass(frozen=True)
+class HarnessWrapper:
+    """One profile's declarative wire-compression wrapper (Story 28.2,
+    SPEC-marshal-token-economy CAP-2) -- see the module docstring's "The
+    wire-compression seam" section for the contract.
+
+    - ``binary`` / ``fallback_bin_dirs``: resolved exactly like the
+      profile's own binary (``PATH`` first, then repo-root-relative
+      fallbacks). An unresolvable wrapper disables the layer; it never
+      disqualifies the profile itself.
+    - ``argv``: the tokens that follow the wrapper binary, ending at the
+      wrapper's own argument separator. A pure PREFIX -- no launch
+      placeholder may appear here (enforced in ``parse_wrapper``), so the
+      wrapped and unwrapped argv tails are byte-identical.
+    - ``env``: extra child-environment entries the wrapper needs (e.g. the
+      cache-preserving optimization mode that keeps the provider prompt
+      prefix frozen).
+    - ``store_env`` / ``store_relpath``: the env var naming the wrapper's
+      reversible CCR store, and where that store lives RELATIVE TO THE LOOP
+      HOME. Both or neither.
+    - ``reversible``: must be ``true``. "Reversible or absent" is the
+      spec's own constraint; declaring it is how a profile states that the
+      wrapper's compression is retrievable byte-exact. Enforced TWICE, at
+      two different layers and deliberately not once: ``parse_wrapper``
+      refuses a declaration that omits or denies it (a shipped/overlay TOML
+      is a configuration error, and configuration errors are loud), while
+      ``resolve_wire_wrap`` re-checks the value it is actually about to
+      launch with and DEGRADES if it is false. The second check is what
+      covers a ``HarnessWrapper`` built by any other route -- a future
+      loader, Story 28.3's shim, a test helper -- for which the parse-time
+      refusal never ran. It degrades rather than raises because a wrapper
+      is a compression layer: an inadmissible one must turn its layer off,
+      never fail a dispatch that is otherwise fine.
+
+      The field's default is ``False`` for the same reason: the fail-safe
+      direction for "is this compression reversible?" is *no*, so a
+      constructor that simply forgets the flag gets an unapplied layer with
+      a named reason, never silently-lossy compression on the wire.
+    """
+
+    binary: str
+    argv: tuple[str, ...] = ()
+    env: Mapping[str, str] = field(default_factory=dict)
+    store_env: str = ""
+    store_relpath: str = ""
+    reversible: bool = False
+    fallback_bin_dirs: tuple[str, ...] = ()
+    notes: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "env", MappingProxyType(dict(self.env)))
+
+
+@dataclass(frozen=True)
+class WireWrap:
+    """``resolve_wire_wrap``'s decision for ONE launch (Story 28.2).
+
+    Exactly three shapes exist, and no fourth:
+
+    - **off** -- the declared ``wire`` layer is disabled (or absent, which
+      resolves to disabled). ``applied=False``, ``reason=None``: nothing
+      happened and nothing is worth saying, so today's behavior stays
+      byte-identical and no finding is raised.
+    - **degraded** -- the layer is ENABLED but could not be applied.
+      ``applied=False`` with a non-``None`` ``reason``; the caller reports
+      it (``MRS-DISP-033``) and launches unwrapped. Never a blocked run,
+      never a silent no-op.
+    - **applied** -- ``applied=True``, carrying the argv prefix, the extra
+      child env (store-scoping var included), and the resolved store dir.
+
+    Truthy iff applied, so a call site reads ``if wire:`` the same way
+    ``HarnessResolution`` already reads."""
+
+    applied: bool
+    reason: str | None = None
+    argv_prefix: tuple[str, ...] = ()
+    env: Mapping[str, str] = field(default_factory=dict)
+    store_dir: str | None = None
+    aggressiveness: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "env", MappingProxyType(dict(self.env)))
+
+    def __bool__(self) -> bool:
+        return self.applied
+
+    def journal_payload(self) -> dict[str, object]:
+        """The JSON-safe projection both launch verbs journal and echo --
+        a fresh plain ``dict`` per call (never the frozen proxy), so a
+        caller hands it straight to ``json.dumps``. Mirrors
+        ``policy.resolve_context_layers``'s own "plain dict, every time"
+        discipline for the same reason."""
+        return {
+            "applied": self.applied,
+            "reason": self.reason,
+            "store_dir": self.store_dir,
+            "aggressiveness": self.aggressiveness,
+        }
+
+
+@dataclass(frozen=True)
 class HarnessProfile:
     """One declarative session-harness CLI profile -- see the module
     docstring for the field-by-field contract."""
@@ -158,6 +323,7 @@ class HarnessProfile:
     fallback_bin_dirs: tuple[str, ...] = ()
     verified: bool = False
     notes: str = ""
+    wrapper: HarnessWrapper | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "model_map", MappingProxyType(dict(self.model_map)))
@@ -207,6 +373,105 @@ def _require_str_map(data: Mapping[str, object], key: str, source: str) -> dict[
             )
         result[map_key] = map_value
     return result
+
+
+def _require_clean_relpath(entry: str, key: str, source: str) -> str:
+    """A repo-root-/loop-home-relative path that cannot climb out of its
+    root or anchor itself elsewhere. Extracted (Story 28.2) from
+    ``parse_profile``'s original inline ``fallback_bin_dirs`` check so
+    ``[wrapper]``'s own two path fields apply the IDENTICAL rule rather
+    than a second, drifting copy."""
+    parts = entry.split("/")
+    if entry.startswith("/") or any(part in ("", "..") for part in parts):
+        raise HarnessProfileError(
+            f"{source}: {key!r} entries must be clean relative paths, got {entry!r}"
+        )
+    return entry
+
+
+def parse_wrapper(data: Mapping[str, object], *, source: str) -> HarnessWrapper:
+    """Validate one already-parsed ``[wrapper]`` sub-table into a
+    ``HarnessWrapper`` (Story 28.2, SPEC-marshal-token-economy CAP-2);
+    raises ``HarnessProfileError`` naming ``source`` on any shape
+    violation. Same closed-key discipline as ``parse_profile``, and the
+    same single-validator convergence: packaged and overlay wrappers both
+    arrive here, so an overlay author cannot declare a wrapper state the
+    packaged set would have been refused.
+
+    Two rules are the spec's own constraints made structural rather than
+    conventional:
+
+    - **no launch placeholder in ``argv``** -- the wrapper is a PREFIX. A
+      token carrying ``{prompt}``/``{model_args}``/``{worktree}``/
+      ``{model}`` would let a wrapper re-render (and so rewrite) what
+      ``render_dispatch_argv`` already composed, which is precisely the
+      prompt-prefix rewrite NFR-14 declares inadmissible. Refused here, so
+      the byte-identical-tail property holds by construction and not only
+      by test.
+    - **``reversible`` must be ``true``** -- "reversible or absent". A
+      wrapper that compresses without a retrievable original is
+      silently-lossy; there is no admissible way to declare one."""
+    unknown = set(data.keys()) - _WRAPPER_KEYS
+    if unknown:
+        raise HarnessProfileError(f"{source}: unknown wrapper key(s) {sorted(unknown)}")
+
+    binary = _require_str(data, "binary", source)
+    if binary == "":
+        raise HarnessProfileError(f"{source}: 'wrapper.binary' must be non-empty")
+
+    argv = _require_str_list(data, "argv", source)
+    for token in argv:
+        for placeholder in (
+            _PROMPT_TOKEN,
+            _MODEL_ARGS_TOKEN,
+            _WORKTREE_TOKEN,
+            _MODEL_TOKEN,
+        ):
+            if placeholder in token:
+                raise HarnessProfileError(
+                    f"{source}: 'wrapper.argv' token {token!r} carries the launch "
+                    f"placeholder {placeholder!r} -- the wrapper is a prefix and "
+                    "must never re-render the launch template (NFR-14: the prompt "
+                    "prefix stays byte-identical wrapped vs unwrapped)"
+                )
+
+    reversible = _require_bool(data, "reversible", source)
+    if not reversible:
+        raise HarnessProfileError(
+            f"{source}: 'wrapper.reversible' must be declared true -- a wrapper "
+            "whose compression cannot be retrieved byte-exact is silently lossy, "
+            "and the spec admits reversible or absent, never that"
+        )
+
+    store_env = _require_str(data, "store_env", source)
+    store_relpath = _require_str(data, "store_relpath", source)
+    if bool(store_env) != bool(store_relpath):
+        raise HarnessProfileError(
+            f"{source}: 'wrapper.store_env' and 'wrapper.store_relpath' must be "
+            "declared together (an env var with nowhere to point, or a store path "
+            "no launch would ever pass to the wrapper, is a half-declaration)"
+        )
+    if store_relpath:
+        _require_clean_relpath(store_relpath, "wrapper.store_relpath", source)
+
+    fallback_bin_dirs = _require_str_list(data, "fallback_bin_dirs", source)
+    for entry in fallback_bin_dirs:
+        _require_clean_relpath(entry, "wrapper.fallback_bin_dirs", source)
+
+    return HarnessWrapper(
+        binary=binary,
+        argv=argv,
+        env=_require_str_map(data, "env", source),
+        store_env=store_env,
+        store_relpath=store_relpath,
+        # The PARSED value, never a hardcoded `True`: hardcoding is what
+        # made this field vestigial on the constructed object even though
+        # the declaration was checked, so `resolve_wire_wrap`'s own
+        # re-check had nothing real to read.
+        reversible=reversible,
+        fallback_bin_dirs=fallback_bin_dirs,
+        notes=_require_str(data, "notes", source),
+    )
 
 
 def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
@@ -267,11 +532,36 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
 
     fallback_bin_dirs = _require_str_list(data, "fallback_bin_dirs", source)
     for entry in fallback_bin_dirs:
-        parts = entry.split("/")
-        if entry.startswith("/") or any(part in ("", "..") for part in parts):
+        _require_clean_relpath(entry, "fallback_bin_dirs", source)
+
+    # Story 28.2: the `[wrapper]` sub-table, absent by default (no wrapper
+    # declared = this profile has no wire-compression seam, which
+    # `resolve_wire_wrap` degrades with a named reason rather than treating
+    # as an error -- most CLIs have no wrapper counterpart at all).
+    wrapper_data = data.get("wrapper")
+    wrapper: HarnessWrapper | None = None
+    if wrapper_data is not None:
+        if isinstance(wrapper_data, str) or not isinstance(wrapper_data, Mapping):
             raise HarnessProfileError(
-                f"{source}: 'fallback_bin_dirs' entries must be clean "
-                f"repo-root-relative paths, got {entry!r}"
+                f"{source}: 'wrapper' must be a table, got {wrapper_data!r}"
+            )
+        wrapper = parse_wrapper(wrapper_data, source=source)
+        # The wrapper names the tool it launches (`headroom wrap claude --`)
+        # and then resolves that name off PATH itself -- while wrapping
+        # DROPS the `binary_path` marshal probed and authchecked. So the two
+        # spellings must agree, or an overlay that retargets `binary` while
+        # keeping the packaged prefix would launch a DIFFERENT CLI than the
+        # one this profile was resolved against, with no observable
+        # difference in the rendered tail. Checked here rather than in
+        # `parse_wrapper` because only this function knows both values, and
+        # `parse_wrapper` stays usable standalone.
+        if binary not in wrapper.argv:
+            raise HarnessProfileError(
+                f"{source}: 'wrapper.argv' {list(wrapper.argv)!r} never names this "
+                f"profile's own binary {binary!r} -- the wrapper resolves the tool "
+                "it launches by name, so a prefix naming a different tool would "
+                "silently launch something other than the CLI marshal probed and "
+                "authenticated"
             )
 
     return HarnessProfile(
@@ -288,6 +578,7 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
         fallback_bin_dirs=fallback_bin_dirs,
         verified=_require_bool(data, "verified", source),
         notes=_require_str(data, "notes", source),
+        wrapper=wrapper,
     )
 
 
@@ -377,6 +668,97 @@ def translate_model(
     )
 
 
+def resolve_wire_wrap(
+    profile: HarnessProfile,
+    *,
+    wire_layer: Mapping[str, object] | None,
+    home: Path,
+    wrapper_binary_path: str | None,
+) -> WireWrap:
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2): the ONE place the
+    declared ``wire`` layer becomes a launch decision. Pure -- no
+    filesystem probing, no ``os`` (AD-4): binary resolution already
+    happened (``wrapper_binary_path``, ``None`` when it did not), and
+    creating the store directory is the adapter's business.
+
+    ``wire_layer`` is one entry of ``policy.resolve_context_layers``'s own
+    output -- ``{"enabled": bool, "aggressiveness": str}`` -- so both
+    engines read the same composition site rather than each re-deriving
+    "layer absent = off". ``None`` (no layer resolved at all) reads as
+    disabled.
+
+    ``home`` is the loop home the CCR store is scoped to. For factory
+    dispatch that is the story's own dispatch worktree, which is what makes
+    the store torn down with the worktree instead of accumulating in a
+    user-global cache.
+
+    Every non-applied return with an ENABLED layer carries a ``reason``:
+    the layer disabling itself is always visible (``MRS-DISP-033``), never
+    a silent no-op. A DISABLED layer returns no reason -- there is nothing
+    to report about a layer nobody asked for."""
+    enabled = bool((wire_layer or {}).get("enabled", False))
+    if not enabled:
+        return WireWrap(applied=False)
+
+    aggressiveness = (wire_layer or {}).get("aggressiveness")
+    aggressiveness = aggressiveness if isinstance(aggressiveness, str) else None
+
+    wrapper = profile.wrapper
+    if wrapper is None:
+        return WireWrap(
+            applied=False,
+            reason=(
+                f"harness profile {profile.name!r} declares no [wrapper] -- the "
+                "wire-compression layer is off for this launch and the session "
+                "runs unwrapped"
+            ),
+            aggressiveness=aggressiveness,
+        )
+    if not wrapper.reversible:
+        # "Reversible or absent" checked against the value this launch would
+        # ACTUALLY run with, not only against the TOML that declared it --
+        # `parse_wrapper` refuses an irreversible declaration, but a
+        # `HarnessWrapper` reaching here by any other route (a future
+        # loader, a provisioning shim, a test helper) never passed through
+        # it. Degraded rather than raised: an inadmissible compression layer
+        # turns itself off, it does not fail an otherwise-fine dispatch.
+        return WireWrap(
+            applied=False,
+            reason=(
+                f"wire-compression wrapper {wrapper.binary!r} (profile "
+                f"{profile.name!r}) is not declared reversible -- compression "
+                "whose original bytes cannot be retrieved is silently lossy, "
+                "which is inadmissible, so the layer is off for this launch "
+                "and the session runs unwrapped"
+            ),
+            aggressiveness=aggressiveness,
+        )
+    if wrapper_binary_path is None:
+        return WireWrap(
+            applied=False,
+            reason=(
+                f"wire-compression wrapper binary {wrapper.binary!r} (profile "
+                f"{profile.name!r}) did not resolve on PATH or in its declared "
+                "fallback dirs -- the layer is off for this launch and the "
+                "session runs unwrapped"
+            ),
+            aggressiveness=aggressiveness,
+        )
+
+    env = dict(wrapper.env)
+    store_dir: str | None = None
+    if wrapper.store_env:
+        store_dir = str(Path(home) / wrapper.store_relpath)
+        env[wrapper.store_env] = store_dir
+    return WireWrap(
+        applied=True,
+        argv_prefix=(wrapper_binary_path, *wrapper.argv),
+        env=env,
+        store_dir=store_dir,
+        aggressiveness=aggressiveness,
+    )
+
+
 def render_dispatch_argv(
     profile: HarnessProfile,
     *,
@@ -384,15 +766,24 @@ def render_dispatch_argv(
     worktree: Path,
     prompt: str,
     model: str | None,
+    wire: WireWrap | None = None,
 ) -> tuple[tuple[str, ...], str | None, str | None]:
     """Render the full launch argv for one dispatch:
     ``(argv, rendered_model, model_omitted_reason)``. Placeholder
     substitution is literal ``str.replace`` per token, never ``str.format``
     -- the prompt is free text and must not be interpretable as a format
     spec. ``{model_args}`` expands in place to ``model_args`` (with
-    ``{model}`` substituted) when a model renders, or to nothing."""
+    ``{model}`` substituted) when a model renders, or to nothing.
+
+    Story 28.2: an APPLIED ``wire`` replaces the leading ``binary_path``
+    with the wrapper's own argv prefix and changes NOTHING else -- the
+    rendered tail is byte-identical wrapped vs unwrapped, which is the
+    NFR-14 property in marshal's own terms (a prepended launcher, never a
+    rewritten prompt). The wrapper then resolves the wrapped CLI itself;
+    the adapter keeps ``binary_path``'s own directory on the child ``PATH``
+    so a CLI that only lives in a profile fallback dir stays reachable."""
     rendered_model, omitted_reason = translate_model(profile, model)
-    argv: list[str] = [binary_path]
+    argv: list[str] = list(wire.argv_prefix) if wire is not None and wire else [binary_path]
     for token in profile.argv:
         if token == _MODEL_ARGS_TOKEN:
             if rendered_model is None:

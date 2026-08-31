@@ -807,6 +807,33 @@ claude_hash.txt
 # bookkeeping for stale-projection detection only, never hand-edited, never
 # tracked (same precedent as .bmad-loop/policy.toml above).
 .bmad-loop/skill-projection.json
+# pyforge-marshal Story 28.2 (SPEC-marshal-token-economy CAP-2): the
+# loop-home-scoped wire-compression (CCR) store the harness-seam wrapper
+# writes into. The store lives INSIDE the loop home / dispatch worktree on
+# purpose -- that is what makes it torn down with the worktree instead of
+# accumulating in a user-global cache -- which puts runtime state in a git
+# checkout. Ignored for the same two reasons `.bmad-loop/archive/` and
+# `claude_hash.txt` above are: `bmad-loop run` refuses to start on a dirty
+# worktree, and the loop's own `git add -A` would otherwise sweep a
+# multi-megabyte sqlite cache into a merge commit.
+#
+# Scoped to `wire/`, NOT to the `.marshal/` namespace: that namespace is the
+# Genesis seed subsystem's, and it holds files this repo deliberately leaves
+# visible to git -- `.marshal/seed-state.yml`, whose documented remedy for a
+# `state-invalid` finding is "Restore ... from version control"
+# (`src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md`),
+# and `.marshal/plan.json`. `seed/verbs/adopt.py` already handles its own
+# dirty-tree problem by EXCLUDING `.marshal/` with a git pathspec
+# (`':!.marshal/'`) rather than ignoring it, so a blanket rule here would
+# both shadow a documented recovery path and silently duplicate a mechanism
+# that already exists one layer down.
+#
+# `**/` keeps the any-depth reach the over-broad rule this replaces had: a
+# loop home is normally its own worktree root (so this file IS its
+# toplevel), but an anchored `.marshal/wire/` would silently stop ignoring
+# the store the moment a home sat one directory deeper.
+**/.marshal/wire/
+
 # Derived artifact (Story 6.2, AD-12/AD-36): the projected skill tree(s)
 # cli/adapters.py::run_adapters_sync creates -- a directory symlink to the
 # canonical .claude/skills, never real content, never tracked. Root-anchored

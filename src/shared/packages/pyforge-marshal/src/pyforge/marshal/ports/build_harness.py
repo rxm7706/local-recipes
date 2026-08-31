@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from ..core.harness_profile import HarnessProfile
+    from ..core.harness_profile import HarnessProfile, WireWrap
 
 
 @dataclass(frozen=True)
@@ -39,13 +39,22 @@ class HarnessResolution:
     or ``None``, plus every skipped candidate and any overlay-profile load
     errors. Truthy iff a profile resolved -- preserving the port method's
     original ``if not binary_present()`` meaning while carrying the
-    evidence CAP-8 requires."""
+    evidence CAP-8 requires.
+
+    Story 28.2 adds ``wrapper_binary_path``: the resolved path of the
+    profile's declared wire-compression wrapper, or ``None`` when the
+    profile declares none OR its binary did not resolve. Resolved HERE
+    because this is the method that already holds ``repo_root`` (the
+    fallback-dir anchor) -- never inside ``dispatch``, which does not. A
+    wrapper that fails to resolve NEVER skips the candidate: the layer
+    degrades, the profile still dispatches."""
 
     profile: str | None
     binary_path: str | None = None
     spec: HarnessProfile | None = None
     skipped: tuple[HarnessCandidateSkip, ...] = ()
     profile_errors: tuple[str, ...] = ()
+    wrapper_binary_path: str | None = None
 
     def __bool__(self) -> bool:
         return self.profile is not None
@@ -59,7 +68,14 @@ class DispatchLaunchResult:
     that profile, the ``model_omitted_reason`` (the caller's
     ``MRS-DISP-029``); ``model`` carries the model string actually rendered
     into the argv (post per-profile translation), or ``None`` when
-    omitted."""
+    omitted.
+
+    Story 28.2 adds ``wire``: the wire-compression decision this launch
+    actually made (applied / degraded-with-a-reason / off). ``None`` only
+    when the caller passed no ``wire_layer`` at all. The caller reports a
+    degraded decision as ``MRS-DISP-033`` and journals the whole payload,
+    so "was this session wrapped, and if not, why not" is a recorded fact
+    of every dispatch rather than something inferred from an argv."""
 
     pid: int
     command: tuple[str, ...]
@@ -67,6 +83,7 @@ class DispatchLaunchResult:
     budget_env: Mapping[str, str]
     profile: str | None = None
     model_omitted_reason: str | None = None
+    wire: WireWrap | None = None
 
 
 class BuildHarnessPort(Protocol):
@@ -92,6 +109,7 @@ class BuildHarnessPort(Protocol):
         model: str | None,
         budget_env: Mapping[str, str],
         log_path: Path,
+        wire_layer: Mapping[str, object] | None = None,
     ) -> DispatchLaunchResult:
         """Detach-launch one plain background agent session running
         ``bmad-build-auto`` against ``spec_path`` inside ``worktree``, using
@@ -104,5 +122,15 @@ class BuildHarnessPort(Protocol):
         ``start_new_session=True`` -- never a CLI's own self-backgrounding
         flag, so the returned ``pid`` is the session process the dispatch
         supervisor tracks. Raises ``BuildHarnessError`` only when the
-        process could not be LAUNCHED (including a falsy ``resolution``)."""
+        process could not be LAUNCHED (including a falsy ``resolution``).
+
+        Story 28.2 (SPEC-marshal-token-economy CAP-2): ``wire_layer`` is
+        the resolved ``{"enabled", "aggressiveness"}`` entry for the
+        ``wire`` layer of policy's declared ``[context]`` block -- ``None``
+        or disabled means the launch is byte-identical to pre-28.2. When
+        enabled AND the profile's wrapper resolves, the launch runs through
+        it with the CCR store scoped inside ``worktree``; when enabled and
+        it does not, the layer disables with a reason on the returned
+        ``wire`` and the session launches unwrapped. Never a blocked
+        launch."""
         ...
