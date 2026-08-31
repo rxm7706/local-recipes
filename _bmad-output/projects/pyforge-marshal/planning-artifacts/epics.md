@@ -3580,6 +3580,33 @@ that HAS diverged (real commits past baseline) **When** the same check runs **Th
 genuine "merged" ancestry answer is trusted exactly as before — this is a divergence
 guard on an existing fact, not a new completion signal or a rewrite of CAP-2.
 
+### Story 22.11: Station-scoped drain and an explicit story sequence
+
+**Type:** feature • **Effort:** M • **Deps:** S-22.7 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-10; decomposed 2026-08-31 — motivated by a live incident the same day)
+**Surface:** `cli/dispatch.py` (`drain`'s argparse + `run_fleet_drain`'s per-station backlog
+read; `dispatch`'s argparse), `tests/unit/test_dispatch.py`
+**Note:** found live 2026-08-31 wanting to complete just `pyforge-scribe`'s 2 remaining
+backlog stories (the fleet's only story with a declared cross-station `Deps:` link in the
+entire remaining backlog) without touching atlas's or marshal's own in-flight backlogs.
+`drain`'s six flags (`--mode`, `--leave-remaining`, `--once`, `--max-cycles`,
+`--tick-seconds`, `--campaign`) carry no station filter — it always reads all eight
+stations' ordered backlogs and launches one story per station in parallel; `dispatch
+<slug> <story>` launches exactly one story with no chaining at all. The only path available
+was two manual `dispatch` calls with an operator polling for landing between them,
+forfeiting `drain`'s chaining/preflight/campaign-journal machinery for no reason but scope.
+**Given** `drain --mode <mode> --station <slug>` **When** a cycle runs **Then** the
+campaign's chaining/preflight/journal (S-22.7) apply to exactly that station's own tracked
+backlog, and every other station's backlog is provably untouched by the same invocation;
+**given** `dispatch <slug> --stories <key1>,<key2>,...` **When** it runs **Then** the named
+stories launch in that order via the same chaining `drain` already uses, one dispatch at a
+time (not one agent handed the whole list — the epic's own "not backlog orchestration"
+non-goal is unchanged); **given** a `--stories` key that is unknown or already done on that
+station's tracked backlog **When** the command runs **Then** it refuses before any worktree
+is provisioned, the same zombie-refusal discipline `drain` already applies; **given**
+either new flag **When** a dispatch launches **Then** it reuses S-22.2's preflight,
+S-22.4's landing, and S-22.10's divergence guard unchanged — no second preflight or landing
+path is introduced.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion

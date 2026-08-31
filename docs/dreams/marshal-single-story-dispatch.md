@@ -109,3 +109,43 @@ no FR covering the dispatch driver.
    or attended-by-design? The hand-run pattern's orphan-on-session-death is
    its worst property; the Spec decides how much of bmad-loop's detachment
    (tmux, journal, resume) the driver inherits.
+
+## Addendum (2026-08-31) — station-scoped and sequence-scoped dispatch
+
+**Problem:** `dispatch <slug> <story>` launches exactly one story and returns — no
+chaining. `drain --mode <mode>` chains automatically (CAP-7) but is fleet-wide only: its
+six flags (`--mode`, `--leave-remaining`, `--once`, `--max-cycles`, `--tick-seconds`,
+`--campaign`) carry no station filter — confirmed against `cli/dispatch.py`'s own
+argparse definition — so it always reads every station's ordered backlog and launches one
+story per station in parallel. There is no way to drain just one station to zero without
+touching every other station's backlog too, and no way to hand marshal an explicit ordered
+list of stories to run, overriding the ledger's own order, for a single targeted push.
+
+**Motivating incident (2026-08-31):** wanted to complete just `pyforge-scribe`'s 2
+remaining backlog stories — identified that session as the fleet's smallest,
+highest-leverage remaining chunk (the only cross-station `Deps:` link in the entire
+remaining backlog) — without disturbing atlas's or marshal's own in-flight backlogs. No
+CLI primitive existed for it: the only options were fleet-wide `drain` (wrong scope) or
+two manual `dispatch` calls with a human/agent polling for landing in between, forfeiting
+`drain`'s chaining/preflight/campaign-journal machinery for no reason but scope.
+
+**Approach:** extend the dispatch surface, don't fork it — CAP-7's chaining, preflight,
+and campaign-journal machinery is exactly what a station-scoped drain needs too; the only
+missing dimension is *which stories, on which stations*, handed as an override to the same
+per-station ordered-backlog reader CAP-7 already owns:
+
+1. **Station-scoped drain.** `marshal factory drain --mode <mode> --station <slug>` (or a
+   sibling `dispatch-station <slug> --mode <mode>`) restricts the campaign to exactly one
+   station's own backlog — same chaining/preflight/journal, one station instead of eight.
+2. **Explicit sequence.** `marshal factory dispatch <slug> --stories <key1>,<key2>,...`
+   chains a caller-supplied ordered list instead of the ledger's own backlog order — for
+   prioritizing specific stories (today's scribe 6.2-then-6.3 finding) without editing
+   `fleet-drain-queue.yaml`'s `order_overrides` for a one-off push. Every named key is
+   validated against the station's actual backlog before anything launches — an unknown or
+   already-done key refuses loudly, never silently skips.
+
+**Non-goals:** not a new landing/verification mechanism (reuses `execute_dispatch_land` /
+CAP-2 / CAP-4 unchanged); not a replacement for fleet-wide `drain`, which stays the
+default for "drain everything."
+
+Lands as a new CAP (CAP-10) in `spec-marshal-single-story-dispatch` when specced.
