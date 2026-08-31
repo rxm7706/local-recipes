@@ -227,6 +227,29 @@ DERIVED_STORE_PATHS = {
     "pypi_conda_map": "stores/pypi_conda_map.json",
 }
 
+# Story 21.6 (review finding, patch): `data_root`/`seed_root` are repo-root-
+# relative (P9's own convention — correct for the pytest-based gates, which run
+# with cwd = repo root). `local_recipes_dir` is the ONE exception: its real
+# consumer is a live `kedro run` (`pyforge-atlas-bootstrap`, or a manual `cd
+# src/shared/packages/pyforge-atlas && kedro run`), which runs with cwd = the
+# KEDRO PROJECT ROOT (the pyforge-atlas member dir) — `kedro` needs its own
+# `conf/`/`pyproject.toml` under cwd. `recipes/` only exists at the true repo
+# root, so this default is deliberately MEMBER_DIR-relative
+# (`../../../../recipes`), not REPO_ROOT-relative like its siblings —
+# test_path_defaults_resolve_inside_the_repo_root resolves entries in this set
+# against MEMBER_DIR instead of REPO_ROOT (still asserting the result lands
+# inside the repo).
+#
+# `seed_root` joined this set 2026-08-31, landing this Story-21.6 branch: its
+# `../../../../.claude/skills/conda-forge-expert/data` default (globals.yml)
+# is the SAME MEMBER_DIR-relative depth as `local_recipes_dir`'s, not the
+# REPO_ROOT-relative shape this comment originally described it as — that
+# shape existed when this fix was authored (2026-08-26) and has since
+# changed on main. Resolving it against REPO_ROOT (the original single-key
+# set) overshoots four directories above the repo; against MEMBER_DIR it
+# lands correctly.
+MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
+
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
 # endpoint_bases 22 (19 live + 1 reserved + 2 Story 21.4) + extra_overrides 4

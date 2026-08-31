@@ -100,9 +100,17 @@ _PURL_ASSOC_COLUMNS: tuple[str, ...] = (
 
 def _alt_purls(rec: dict) -> list[str]:
     """Mirrors the legacy script's ``alt_purls``: each entry is either a bare
-    PURL string or a ``{"purl": ...}`` dict."""
+    PURL string or a ``{"purl": ...}`` dict. ``rec["alternative_purls"]`` must
+    itself be a ``list`` — a malformed payload where it is instead a non-empty
+    STRING would otherwise iterate its individual characters (each passing the
+    ``isinstance(item, str) and item`` check) and fabricate garbage
+    single-character purl entries (review finding, patch); degrades to ``[]``
+    for any non-list value instead."""
+    values = rec.get("alternative_purls")
+    if not isinstance(values, list):
+        return []
     out: list[str] = []
-    for item in rec.get("alternative_purls") or []:
+    for item in values:
         if isinstance(item, str) and item:
             out.append(item)
         elif isinstance(item, dict) and item.get("purl"):
@@ -141,7 +149,10 @@ def parse_purl_associator_index(payload: Any) -> list[dict]:
                 "type": rec.get("type") or "",
                 "status": rec.get("status") or "",
                 "alternative_purls": _join_list(_alt_purls(rec)),
-                "cpes": _join_list(list(rec.get("cpes") or [])),
+                # rec["cpes"] must itself be a list — the same non-list-string
+                # fabrication hazard _alt_purls guards against above (review
+                # finding, patch): a malformed non-list value degrades to [].
+                "cpes": _join_list(rec.get("cpes") if isinstance(rec.get("cpes"), list) else []),
                 "fetched_at": fetched_at,
             }
         )
@@ -438,6 +449,16 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
             cursor = page_info.get("endCursor")
             if not cursor:
                 break
+        else:
+            # The loop exhausted _OPENTEAMS_BOARD_MAX_PAGES without a natural
+            # break (every page still reported hasNextPage) — the board is
+            # larger than the hard safety cap; silently truncating would hide
+            # real, missing rows (review finding, patch).
+            logger.warning(
+                "OpenTeams board pagination hit the %s-page safety cap — the board "
+                "may have more pages than fetched; truncating",
+                _OPENTEAMS_BOARD_MAX_PAGES,
+            )
         return pd.DataFrame(rows, columns=list(_BOARD_COLUMNS))
 
     @property
@@ -621,10 +642,27 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
             rows.extend(page_rows)
             if len(page_rows) < 100:
                 break
+        else:
+            # The loop exhausted _STAGED_PR_MAX_PAGES without a natural break
+            # (every page was a full 100-row page) — staged-recipes has more PRs
+            # than the hard safety cap; silently truncating would hide real,
+            # missing rows (review finding, patch).
+            logger.warning(
+                "staged-recipes PR pagination hit the %s-page safety cap — there "
+                "may be more PRs than fetched; truncating",
+                _STAGED_PR_MAX_PAGES,
+            )
 
         # Bounded per-open-PR files() fan-out — never raises: a per-PR failure
         # degrades that PR's file_paths to empty, never drops the PR row.
         open_numbers = [r["number"] for r in rows if r.get("state") == "open"]
+        if len(open_numbers) > _STAGED_PR_OPEN_FILES_FANOUT_LIMIT:
+            logger.warning(
+                "staged-recipes open-PR files() fan-out hit the %s-PR cap (%s open "
+                "PRs found) — the file-path ranking tier is skipped for the rest",
+                _STAGED_PR_OPEN_FILES_FANOUT_LIMIT,
+                len(open_numbers),
+            )
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
             files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100"
             try:
@@ -788,16 +826,28 @@ class LocalRecipesOverlayDataset(AbstractDataset):
 
     def load(self) -> pd.DataFrame:
         recipes_dir = Path(self._filepath)
-        if not recipes_dir.is_dir():
+        try:
+            if not recipes_dir.is_dir():
+                return pd.DataFrame(columns=list(_LOCAL_RECIPES_COLUMNS))
+            dirs = sorted(
+                p for p in recipes_dir.iterdir() if p.is_dir() and not p.name.startswith(".")
+            )
+        except OSError as exc:  # never raise: a permission-denied/exotic fs error
+            # degrades to empty exactly like a missing directory (AD-13-style).
+            logger.warning(
+                "local recipes directory walk failed (%s), degrading to empty: %s",
+                recipes_dir,
+                exc,
+            )
             return pd.DataFrame(columns=list(_LOCAL_RECIPES_COLUMNS))
         rows: list[dict[str, Any]] = []
-        for d in sorted(p for p in recipes_dir.iterdir() if p.is_dir() and not p.name.startswith(".")):
+        for d in dirs:
             files: dict[str, str] = {}
             for fname in ("recipe.yaml", "meta.yaml"):
                 fpath = d / fname
-                if not fpath.is_file():
-                    continue
                 try:
+                    if not fpath.is_file():
+                        continue
                     files[fname] = fpath.read_text(encoding="utf-8", errors="replace")
                 except OSError:
                     continue

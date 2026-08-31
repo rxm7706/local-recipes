@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 import pandas as pd
 
@@ -910,7 +911,11 @@ def _id_feedstock_repo_name(repo: str) -> str:
 
 
 def _id_metadata_url(pkg: str) -> str:
-    return _ID_METADATA_URL_TEMPLATE.format(pkg=pkg)
+    # URL-encode the name segment (review finding, patch): an un-encoded name
+    # containing "/", "?", "&", or a space (plausible from a board-title-derived
+    # name) would otherwise produce a malformed URL. `safe=""` — this segment is
+    # a query-string VALUE (`?q=...`), not a path, so even "/" must be encoded.
+    return _ID_METADATA_URL_TEMPLATE.format(pkg=quote(str(pkg), safe=""))
 
 
 def _id_issue_url(core_python_package_name, associator_key, board: dict) -> str:
@@ -1064,7 +1069,10 @@ def _id_load_feedstock_maps(core_feedstock_attribution: pd.DataFrame) -> tuple[d
         feedstock_name = getattr(row, "feedstock_name", None)
         if not isinstance(conda_name, str) or not conda_name or not isinstance(feedstock_name, str) or not feedstock_name:
             continue
-        url = f"https://github.com/conda-forge/{_id_feedstock_repo_name(feedstock_name)}"
+        # URL-encode the path segment (review finding, patch): mirrors
+        # _id_metadata_url's guard against a name containing "/", "?", "&", or a
+        # space producing a malformed URL.
+        url = f"https://github.com/conda-forge/{quote(_id_feedstock_repo_name(feedstock_name), safe='')}"
         meta = _id_metadata_url(conda_name)
         for key in (conda_name, conda_name.lower(), _id_pep503(conda_name), conda_name.replace("-", "_")):
             if key and key not in fs_map:
@@ -1229,7 +1237,17 @@ def _id_universe_frame(
             for row in enterprise_jfrog_names.itertuples(index=False):
                 conda_name = getattr(row, "conda_name", None)
                 pypi_name = getattr(row, "pypi_name", None)
-                _add(conda_name if isinstance(conda_name, str) and conda_name else pypi_name)
+                # Register BOTH spellings (review finding, patch): collapsing to
+                # a single preferred name (conda_name when present, else
+                # pypi_name) silently discarded the PyPI identity whenever the
+                # two normalize to different PEP-503 keys (plausible — conda-
+                # forge and PyPI spellings sometimes diverge), so a row whose
+                # own pypi_name would have matched pypi_index directly could
+                # never do so. _add()'s first-seen dedup makes a call for a
+                # name that normalizes the same as one already registered a
+                # no-op, so this never double-counts a matching pair.
+                _add(conda_name)
+                _add(pypi_name)
 
     if enterprise_conda_maintainers is not None and not getattr(enterprise_conda_maintainers, "empty", True):
         if "core_python_package_name" in getattr(enterprise_conda_maintainers, "columns", []):
