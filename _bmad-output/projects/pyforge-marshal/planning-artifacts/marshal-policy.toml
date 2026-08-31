@@ -82,6 +82,18 @@ verify_commands = [
 # Scoped to what 28.1 actually touches, not a wildcard; widen per-story as later
 # Epic 28 stories land, same pattern atlas used.
 [epic_surfaces]
+"22" = [
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_findings.py",
+]
+
 "28" = [
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-1-the-context-policy-block-rendered-once-for-both-engines.md",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
