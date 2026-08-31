@@ -3261,3 +3261,47 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-21-6: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
+
+- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+  summary: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
+  evidence: _id_universe_frame (nodes.py) hardcodes source_repository_url="" for every row because no catalog entry supplies it today; the git-purl transform logic (_id_git_purl, _id_from_inventory) is ported and unit-tested but structurally unreachable through the real build_identity_packages_primary entry point until a future story adds that column to some Atlas source.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py:_id_universe_frame
+  origin: spec-deferred a74f6192c65d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-6-2: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+  summary: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
+  evidence: _do_refresh's files-fanout loop issues one GET per open PR (`.../pulls/{number}/files?per_page=100`) with no pagination loop, unlike the PR-listing fetch above it which does paginate. Most single-recipe PRs have far fewer than 100 files, so this is a narrow, currently-cold edge (bulk/mass staged-recipes PRs), not a general regression.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:StagedRecipesPRDataset._do_refresh
+  origin: spec-deferred ff96931ad5a2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-6-3: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+  summary: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
+  evidence: _LOCAL_RECIPES_TREE_URL_TEMPLATE is a module-level constant hardcoding the repo slug; only the scanned filesystem path is configurable. Narrow in practice — the override is documented for pointing at an alternate path within this same repo (e.g. test fixtures), not a different GitHub repo.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:_LOCAL_RECIPES_TREE_URL_TEMPLATE
+  origin: spec-deferred e78c546ea659 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-6-4: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
+  summary: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
+  evidence: Verified by reading tests/parity/test_parity_complete.py: _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability"). This is a pre-existing inaccuracy in the spec's own Code Map, not something this story's diff broke or needs to fix.
+  location: src/shared/packages/pyforge-atlas/tests/parity/test_parity_complete.py
+  origin: spec-deferred e0b18322d3d6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
