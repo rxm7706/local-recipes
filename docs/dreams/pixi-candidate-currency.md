@@ -468,6 +468,115 @@ Bumping these would force *downgrading* something we're deliberately keeping new
 | `azure-core` | 1.38.2 | 1.41.0 | flask (azure-core wants flask 2.2.5, we run 3.1.3) |
 | `db-dtypes` | 1.4.3 | 1.7.1 | numpy (db-dtypes wants numpy<=2.2.6, we run 2.5.2) |
 
+## The channel-sourcing debt ledger
+
+A third shape of the same problem: every active dependency that does NOT come from
+conda-forge is a standing bet that a non-default channel or a bare PyPI wheel keeps
+working — currency debt exactly like the two ledgers above, just on the *source* axis
+instead of the *version* axis. Verified against `pixi.lock`'s own resolved URLs (ground
+truth — not `pixi.toml`'s comments, which describe availability/history and can lag what
+actually got locked), not inferred from intent.
+
+### SelfExplainML-channel packages (30, all locally authored)
+
+Every one of the 30 packages `pixi.lock` actually resolves from the `SelfExplainML`
+channel has a `recipes/<name>/` in this repo — none is a third-party channel dependency
+we don't control, but every one is a conda-forge submission still in flight (or, for a
+few, permanently out of reach of conda-forge by construction). Grouped by area, with each
+recipe's own `cfe-on-conda-forge-status`:
+
+| Area | Packages | Status |
+|---|---|---|
+| BMAD suite tooling | `bmad-builder`, `bmad-creative-intelligence-suite`, `bmad-dashboard`, `bmad-method-test-architecture-enterprise`, `bmad-method-wds-expansion`, `bmad-module-skill-forge`, `bmad-module-template`, `bmad-utility-skills`, `mybmad-dashboard` | `pending-approval-on-conda-forge` |
+| BMAD suite tooling | `bmad-labs-skills`, `bmad-loop`, `bmad-manticore` | `pending-submission-to-conda-forge` |
+| Token-economy instruments (§ see "What is real" above / [[marshal-token-economy]]) | `caveman` | `pending-submission-to-conda-forge` |
+| Token-economy instruments | `codegraph` | `pending-approval-on-conda-forge` |
+| MCP tooling | `fastmcp` | `confirmed-on-conda-forge` — **check needed**: still resolving from SelfExplainML despite the metadata; per `pixi.toml`'s own comment, conda-forge tops out at `3.4.7` (hard-requires `mcp<2.0`) while this env pins `>=4.0.0b5` — the recipe metadata likely describes the OLD `<=3.4.7` package, not the `>=4.0` build actually locked |
+| MCP tooling | `fastmcp-slim` | no status field recorded |
+| Kedro tooling | `kedro-mcp` | `pypi-only` — describes the *upstream* package (no conda-forge feedstock exists for it at all); this repo's own recipe packages a locally source-patched fork (swaps the `fastmcp` import for the official `mcp` SDK) that has no upstream conda-forge counterpart to converge toward |
+| Kedro tooling | `kedro-skills` | no status field recorded |
+| Enterprise/deploy | `liquibase`, `liquibase-postgresql` | no status field recorded (vendored JDBC per `pixi.toml`'s own comment) |
+| Enterprise/deploy (OpenFeature) | `openfeature-flagd-api`, `openfeature-flagd-core`, `openfeature-provider-flagd`, `openfeature-sdk` | `pending-submission-to-conda-forge` — OpenFeature is absent from conda-forge AND anaconda.org entirely (Grounding 2026-08-24 ruling in [[pyforge-unifying-strategy]]); this is the closest any of these four will get until conda-forge itself gains the feedstocks |
+| Presentation/deck tooling | `ppt-master`, `pptxgenjs`, `pptxgenjs-plus`, `vizro-e2e-flow` | `pending-submission-to-conda-forge` |
+| Misc | `panzi-json-logic` | `pending-submission-to-conda-forge` |
+| Misc | `slowapi` | `confirmed-on-conda-forge` — **same check needed as `fastmcp`**: still locked from SelfExplainML despite the metadata; `pixi.toml`'s own comment names a specific `0.1.10` SelfExplainML build as expected in the lock, so this is very likely a version/channel-priority nuance (SelfExplainML's build satisfies a constraint conda-forge's doesn't) rather than a stale field — worth a real re-check, not a guess |
+
+**What this actually means:** 25 of 30 are genuinely "our own packaging work, not yet
+merged upstream" — the fix path is finishing the staged-recipes submission each already
+has in flight, same lifecycle every other recipe in this repo follows. The 4 OpenFeature
+packages and the whole BMAD-suite family are the closest thing to *permanent* SelfExplainML
+residents in this list — OpenFeature by a documented upstream absence, BMAD-suite tooling
+because it's a thin npm/npx wrapper ecosystem unlikely to ever grow conda-forge feedstocks
+of its own. `kedro-mcp` is permanent for a different reason: the package itself is a
+local fork with no upstream to converge toward. The 2 `confirmed-on-conda-forge` outliers
+(`fastmcp`, `slowapi`) are the one genuinely open question in this table — each needs a
+real repodata check (which exact version conda-forge ships today vs. what this env's
+`pixi.toml` constraint actually requires), not an assumption that the field is simply
+stale.
+
+### Bare-PyPI dependency (1)
+
+`[feature.vuln-db.pypi-dependencies]` carries exactly one active entry:
+**`appthreat-vulnerability-db`** (multi-source CVE DB — NVD/GHSA/OSV/npm/Snyk), pulled
+directly from PyPI with no conda-forge equivalent at all. This is the CVE-scanning engine
+behind `vdb-refresh`/`cve-watcher`, not a candidate for conda packaging in this pass — its
+own dependency tree (multiple scanner backends) makes it a poor fit for a single conda
+recipe, and nothing else in this repo needs the exact same debt this dependency creates.
+The commented-out `crewai` line in the same table is not live debt — it's a dormant
+placeholder for a package already tracked in the candidate ledger's own "unexamined"
+bucket above.
+
+## The external-tracking gap ledger
+
+A fourth shape of currency debt, on the *visibility* axis rather than source/version:
+which of this environment's active dependencies have no corresponding tracking item on
+OpenTeams-WFT-CDO's own conda-forge-packaging project board
+(`github.com/orgs/OpenTeams-WFT-CDO/projects/1`, "OSS Enhancements (Conda Forge, Pixi,
+ect)" milestone — that org's own `[Conda-Forge Packaging] <name>` / `Add <name> to
+conda-forge` / `Build <name> vX on conda-forge` title conventions). Verified 2026-08-31:
+extracted 1309 distinct tracked names from that milestone's ~1332 items, parsed all 335
+active `pixi.toml` dependency keys via `tomllib`, cross-referenced. **197 of 335 are not
+tracked there.** After excluding base conda/pixi ecosystem infra (52 — `conda`, `pixi`,
+`python`, `conda-build`, `rattler-build`, the `pixi-*` plugin family, system tools like
+`gh`/`tmux`/`nodejs`/`postgresql`) and this repo's own `pyforge-*` packages (10, not
+third-party OSS), **135 remain as genuine candidates**:
+
+- **108 with a local `recipes/<name>/`** — real packaging debt this repo already did the
+  work for, invisible to that tracker: `bmad-labs-skills`, `bmad-loop`, `bmad-manticore`,
+  `bmad-module-skill-forge`, `bokeh-django`, `boring-semantic-layer`, `caveman`,
+  `channels`, `cocoindex`, `codegraph`, `coderedcms`, `cookiecutter`, `copier`,
+  `cyclonedx-bom`, `cyclonedx-python-lib`, `dagster`, `dagster-webserver`, `daphne`,
+  `dask-core`, `dbt-duckdb`, `deptry`, `diffusers`, `django-anymail`, `django-appconf`,
+  `django-compressor`, `django-ipware`, `django-lasuite`, `django-mcp-server`,
+  `django-model-utils`, `djlint`, `dlt`, `duckdb-server`, `elevenlabs`, `fido2`,
+  `frozendict`, `github-copilot-sdk`, `graphifyy`, `great-expectations`, `headroom-ai`,
+  `httpx2`, `ibis-framework`, `import-linter`, `ipdb`, `jinja2-ospath`, `kedro`,
+  `kedro-dagster`, `kedro-datasets`, `kedro-mcp`, `kedro-skills`, `kedro-viz`,
+  `langchain-chroma`, `langflow`, `liquibase`, `liquibase-postgresql`, `mammoth`,
+  `markitdown`, `marp-cli`, `mermaid-py`, `mlx`, `mlx-lm`, `moto`, `msgraph-sdk`,
+  `mybmad-dashboard`, `nbqa`, `ocrmypdf`, `odfpy`, `office2pdf`, `ollama-python`,
+  `openfeature-flagd-api`, `openfeature-flagd-core`, `openfeature-provider-flagd`,
+  `openfeature-sdk`, `openlineage-python`, `opentelemetry-instrumentation-psycopg`,
+  `osv-scanner`, `pandera`, `pandoc`, `panel`, `panel-graphic-walker`, `pdf2image`,
+  `pip-audit`, `playwright-python`, `pptxgenjs`, `pptxgenjs-plus`, `psycopg2`, `pyrefly`,
+  `pyright`, `python-build`, `python-graphviz`, `qrcode`, `rank-bm25`, `rcssmin`,
+  `redis-py`, `rjsmin`, `ruamel.yaml`, `sentencepiece`, `spec-kit`, `speechrecognition`,
+  `sphinx-autobuild`, `tablib`, `truststore`, `twine`, `uvicorn-worker`, `vizro`,
+  `vizro-ai`, `vizro-e2e-flow`, `vizro-mcp`, `wagtail`.
+- **27 with no local recipe** — genuinely unverified, several plausibly already fine on
+  conda-forge with no packaging needed at all (`pgvector`, `llama.cpp`, the `ibis-*`
+  backend family) rather than real debt: `age`, `cachebox`, `channels-redis`,
+  `claude-agent-acp`, `cruft`, `d2`, `dagster-pipes`, `dbgpt`, `dbgpt-app`, `dbgpt-serve`,
+  `fasta2a`, `go-sops`, `graphviz2drawio`, `ibis-duckdb`, `ibis-mssql`, `ibis-oracle`,
+  `ibis-polars`, `ibis-postgres`, `ibis-sqlite`, `llama.cpp`, `lumen-ai-anthropic`,
+  `mcp-types`, `nebi-cli`, `pdfminer.six`, `pgvector`, `pyarrow-all`, `pydantic-ai`.
+
+**This is a visibility gap, not a packaging verdict.** A package missing from OpenTeams'
+board is not necessarily un-packaged or blocked — the 108-with-recipe bucket already has
+its own disposition in the ledgers above (most `pending-*` on conda-forge already); this
+ledger only says that disposition isn't mirrored onto that external tracker. Whether it
+should be is an operator call, not something this Dream decides unilaterally per package.
+
 ## Constraints
 
 - **A `blocked` disposition must name what would unblock it**, not just that it's blocked —
@@ -559,3 +668,28 @@ is narrower and repo-local rather than factory-wide)
   itself traces to `a2a-sdk`, now correctly counted among the 34 terminals) — a real, distinct
   finding, not a single-package fix, called out explicitly rather than hidden inside a table
   note. The hypothesis-only language was removed from every section that referenced it.
+- **2026-08-31** — Added the third ledger, channel-sourcing debt: operator direction that
+  packages depending on SelfExplainML or bare PyPI "are also currency / workarounds and
+  debt." Queried `pixi.lock`'s own resolved URLs (ground truth, not `pixi.toml` comments)
+  for every package actually served from SelfExplainML — 30 found, cross-checked against
+  `recipes/` (all 30 have a local recipe — none is a third-party channel risk, all are our
+  own in-flight conda-forge submissions) and each recipe's own `cfe-on-conda-forge-status`.
+  25 are `pending-*`, 4 (OpenFeature) and the BMAD-suite family are effectively permanent
+  SelfExplainML residents (documented upstream absence / thin npm-wrapper ecosystem), 1
+  (`kedro-mcp`) is permanent for a different reason (a local fork with no upstream to
+  converge toward), and 2 (`fastmcp`, `slowapi`) are flagged `confirmed-on-conda-forge` yet
+  still lock from SelfExplainML — a real open question (likely a version/constraint
+  mismatch between the recipe metadata and what's actually locked), not resolved in this
+  pass. Also found the one active bare-PyPI dependency (`appthreat-vulnerability-db`, no
+  conda-forge equivalent) and confirmed the commented-out `crewai` pypi-dependencies line
+  is dormant, not live debt (already tracked in the candidate ledger's own "unexamined"
+  bucket).
+- **2026-08-31 (same session, continued)** — added the fourth ledger, external-tracking
+  gap: cross-referenced all 335 active `pixi.toml` packages against OpenTeams-WFT-CDO's
+  own conda-forge-packaging project board (1309 tracked names extracted from its "OSS
+  Enhancements" milestone). 197 untracked; after excluding base conda/pixi infra and this
+  repo's own `pyforge-*` packages, 135 genuine candidates remain — 108 with a local
+  recipe already (real packaging debt invisible to that tracker) and 27 without one
+  (unverified; several plausibly already fine on conda-forge with no debt at all). Framed
+  explicitly as a visibility gap, not a packaging verdict — this Dream doesn't decide
+  per-package whether external tracking is warranted.

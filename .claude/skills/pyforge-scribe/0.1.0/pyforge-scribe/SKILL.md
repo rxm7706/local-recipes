@@ -17,8 +17,8 @@ Compiles `src/shared/packages/pyforge-scribe/` (PyPI `pyforge-scribe` 0.1.0) as 
 agentskills.io content skill for the **scribe** station. Source: local path
 `src/shared/packages/pyforge-scribe` @ commit `a5e9dad59ab` (`source_ref: local`).
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
-7 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `index_build`,
-`index_report`, `index_move_list`, `main`).
+8 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `index_build`,
+`index_report`, `index_move_list`, `index_refresh`, `main`).
 The package `__init__.py` exports only `__version__` — other components integrate
 via the CLI, never by importing internal modules [SRC:src/pyforge/scribe/__init__.py:L9-L14].
 
@@ -40,6 +40,7 @@ pixi run -e pyforge-scribe scribe recall "why did we pin typer"
 pixi run -e pyforge-scribe scribe index build            # graphify extra, explicit
 pixi run -e pyforge-scribe scribe index report            # GRAPH_REPORT + God nodes
 pixi run -e pyforge-scribe scribe index move-list          # foundry-cutover move list
+pixi run -e pyforge-scribe scribe index refresh            # cocoindex incremental refresh
 ```
 
 **Capture** (`scribe capture`) [SRC:src/pyforge/scribe/cli.py:L73-L139]:
@@ -76,10 +77,25 @@ prints the answer plus `[source: …]` when grounded, else `no grounded answer f
   (host `import pyforge.*` sites, `sys.path` inserts, `five_tier` roots, CFE
   callers) and writes `.claude/data/pyforge-scribe/move-list.json` (derived,
   gitignored). Independent of graphifyy -- always available.
+- `scribe index refresh [--target PATH]` (Story 6.2, the cocoindex
+  `compile_surface` incremental-ingest extra): with `SCRIBE_COCOINDEX_EXTRA`
+  unset/falsy (default), behaves exactly like `index build` + `index
+  move-list` run back to back -- both derived artifacts fully recomputed
+  every invocation, no fingerprint index touched. With `SCRIBE_COCOINDEX_EXTRA`
+  truthy, an artifact whose declared sources are unchanged since the last
+  `index refresh` is skipped entirely -- its previously-written output is
+  left untouched -- and only a changed artifact is recomputed. Prints
+  `refreshed: <names>; skipped (unchanged): <names>`. This is the GENERIC
+  "declare sources -> derived artifact" surface (`pyforge.scribe.extras.
+  cocoindex_flow.DerivedArtifact` / `refresh_incremental`) -- Story 6.1's
+  graphify ingest + move list are its first two registrations, not a
+  special case. A future consumer (marshal Story 28.8's epic-context/
+  continuity freshness) binds to this `scribe index refresh`-shaped CLI
+  grammar only, never to `pyforge.scribe.extras.cocoindex_flow` internals.
 
 Consumers (foundry-cutover move-list, marshal Story 28.9's planning-corpus
-retrieval) bind to this grammar only -- never to `pyforge.scribe.extras`
-internals.
+retrieval, and, later, marshal Story 28.8's freshness check) bind to this
+grammar only -- never to `pyforge.scribe.extras` internals.
 
 <!-- [MANUAL:additional-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->
@@ -113,18 +129,20 @@ then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
 | `index_build` | Explicit graphify ingest through the persist port | `--target` |
 | `index_report` | GRAPH_REPORT-style summary + God nodes | `--target` |
 | `index_move_list` | Foundry-cutover move-list scan | — |
+| `index_refresh` | Incremental refresh of both Story 6.1 artifacts (Story 6.2) | `--target` |
 | `capture` | Append-only write under memory_root | `memory_root`, `capture_type`, `text` |
 | `compile_graph` | Full graph rebuild via GraphStore port | `memory_root`, `repo_root`, `nightly` |
 | `answer` | Lexical (default) or semantic recall | `query`, `store`, `repo_root`, `mode` |
 | `open_graph_store` | Factory; default flat-file plugin | `store_path` |
 | `ingest_repo` | graphify extra: folder -> `GraphNode`s | `repo_root`, `target`, `warnings` |
 | `scan_move_list` | Move-list signal scan (no graphifyy needed) | `repo_root` |
+| `refresh_incremental` | cocoindex extra: skip-if-unchanged over declared artifacts | `repo_root`, `artifacts`, `index_path`, `warnings` |
 
 ## Key Exports
 
 Public SKF extract of `cli.py` (Quick mode): `capture_cmd`, `graph_compile`,
-`recall_cmd`, `index_build`, `index_report`, `index_move_list`, `main`
-[SRC:src/pyforge/scribe/cli.py]. Console script:
+`recall_cmd`, `index_build`, `index_report`, `index_move_list`,
+`index_refresh`, `main` [SRC:src/pyforge/scribe/cli.py]. Console script:
 `scribe = pyforge.scribe.cli:main` [SRC:pyproject.toml:L25-L26].
 
 ## Usage
@@ -139,6 +157,18 @@ The graphify `compile_surface` extra (Story 6.1) is off by default
 inside `pyforge.scribe.extras.graphify`; install it via the `pyforge-scribe[graphify]`
 optional dependency. Consumers (foundry-cutover move-list, marshal Story 28.9) bind to
 the `scribe index …` CLI grammar, never to `pyforge.scribe.extras` internals.
+
+The cocoindex `compile_surface` incremental-ingest extra (Story 6.2) is off by
+default (`SCRIBE_COCOINDEX_EXTRA` unset/falsy) — `cocoindex` is imported lazily
+and only inside `pyforge.scribe.extras.cocoindex_flow`, which calls only its
+standalone `memo_fingerprint` primitive, never the reactive App/Runner/component
+runtime (that would make scribe a long-running daemon it does not own). Install
+it via the `pyforge-scribe[cocoindex]` optional dependency. It does not hook into
+`scribe graph compile` (`compile_graph()`'s full-reset-then-rebuild contract is
+incompatible with a "skip if unchanged" step — see `compile.py`'s own docstring);
+its home is `scribe index refresh`. Consumers bind to that CLI grammar's exit
+code and `refreshed: …; skipped (unchanged): …` output, never to
+`pyforge.scribe.extras.cocoindex_flow` internals.
 
 ## Key Types
 
@@ -181,6 +211,7 @@ scribe recall <query>
 scribe index build [--target PATH]
 scribe index report [--target PATH]
 scribe index move-list
+scribe index refresh [--target PATH]
 ```
 
 `--promote` and `--transcripts` are mutually exclusive with each other and with
@@ -189,6 +220,12 @@ scribe index move-list
 `scribe index build`/`report` exit 2 if graphifyy is not installed
 (`GraphifyUnavailableError`); `scribe index move-list` never depends on
 graphifyy [SRC:src/pyforge/scribe/extras/graphify.py].
+
+`scribe index refresh` also exits 2 on `GraphifyUnavailableError` (its
+graphify-ingest artifact still needs graphifyy); `cocoindex` itself is
+required only when `SCRIBE_COCOINDEX_EXTRA` is truthy, raising
+`CocoindexUnavailableError` if missing
+[SRC:src/pyforge/scribe/extras/cocoindex_flow.py].
 
 <!-- [MANUAL:api-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->

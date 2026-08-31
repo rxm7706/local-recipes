@@ -1134,7 +1134,8 @@ Scribe compiles session transcripts, architectural decisions, and repository fac
 
 - **Natural Language Memory Search (`/stations/scribe/`):** HTMX over the shipped driver today. Plane vectors replace a new OLTP `pgvector` write path when 34.5 lands.
 - **Visual Decision Lineage:** Interactive visual graphs (Cytoscape.js) illustrating how **Dreams $\rightarrow$ Specs $\rightarrow$ Sprints $\rightarrow$ Pull Requests** evolved over time.
-- **Supersession & Intent Trails:** Highlights when a rule or architecture decision was deprecated or superseded by a newer Dream, preserving historical intent. Supersession today is author-declared only (`supersedes:` frontmatter, Story 2.3); [`marshal-token-economy.md`](marshal-token-economy.md)'s 2026-08-31 addendum adds a deterministic staleness flag (git-timestamp vs the node's `valid_from`) so an un-declared-stale node is caught, not silently served — landing as a new scribe Epic 6 story plus marshal Story 28.9's fifth AC.
+- **Supersession & Intent Trails:** Highlights when a rule or architecture decision was deprecated or superseded by a newer Dream, preserving historical intent. Supersession today is author-declared only (`supersedes:` frontmatter, Story 2.3); [``marshal-token-economy.md
+- ``](marshal-token-economy.md)'s 2026-08-31 addendum adds a deterministic staleness flag (git-timestamp vs the node's `valid_from`) so an un-declared-stale node is caught, not silently served — landing as a new scribe Epic 6 story plus marshal Story 28.9's fifth AC.
 - **CLI Recall Symmetry:** `pyforge scribe recall "why do we use Keycloak?"` delivers formatted historical summaries straight to developer terminals.
 
 ---
@@ -1164,6 +1165,51 @@ client = PyForgeStationClient(station="warden")  # host-relative; not :8004
 # Used identically inside Django views and Typer CLI subcommands:
 result: ComplianceResult = await client.post("/api/v1/compliance/check", payload=RecipePayload(recipe_name="numpy"))
 ```
+
+---
+
+## 6. Marshal Token Economy — Agent-Loop Compression & Retrieval
+
+Full detail lives on [[marshal-token-economy]] (its own Spec, `spec-marshal-token-economy`,
+CAP-1..CAP-13) — this pillar is the evergreen summary so the architecture survives here
+even if that satellite Dream is ever trimmed. Every unattended dev/review session Marshal
+launches — across all eight stations — pays a fixed tax: identical repo docs re-read every
+session, a codebase re-explored whose structure hasn't changed, 65k/46k-token planning
+documents loaded for a 1.5k-token routing decision, and the agent's own prose (the
+heaviest-weighted tokens) narrated in full every time. Five layers attack these sinks, each
+at a different point in the pipeline, composing rather than competing:
+
+| Layer | Instrument (pixi-active) | Attacks |
+|---|---|---|
+| 0 — Output compression | `caveman` `>=2.4.0` (linux-64, SelfExplainML) | The agent's own speech — ~65% cut, heaviest-weighted tokens |
+| 1 — Wire compression | `headroom-ai` `>=0.37.0` (linux-64) | Tool outputs, logs, diffs — 40–95%, reversible via its CCR store |
+| 2 — Structure from a graph | `codegraph` `>=1.6.0` (linux-64, SelfExplainML) | Re-reading files to answer "what does this codebase look like" |
+| 3 — Incremental derived context | `cocoindex` `>=1.0.20` (Scribe `compile_surface` extra, Story 6.2) | Recomputing epic-context/continuity distills whose sources didn't change |
+| 4 — Planning-graph retrieval | `graphifyy` `>=0.9.51` (Scribe `compile_surface` extra, Story 6.1) + a deterministic staleness flag (Story 6.3, CAP-13) | Loading `epics.md`/`prd.md` wholesale for the ~1.5k tokens a story actually binds to |
+
+Layers 3–4 are Scribe-owned infrastructure (the `graph_store`/`compile_surface` CAP-18
+ports, §4 above) — Marshal consumes by grammar only, never a second graph or store of
+record. Layers 0–2 are Marshal's own harness-wrapping: dev sessions launch behind
+`headroom wrap <cli>` and the caveman skill; loop-home provisioning builds/syncs the
+codegraph index. All five stay **outside BMAD semantics** — the story contract,
+gates, and review verdicts cross the wire and land in journals fully articulated; only the
+encoding of what an agent *reads along the way* and *says* is compressed, never what it is
+*bound by* or *judged against*.
+
+A sixth candidate was evaluated and rejected: **`mem0ai`** (an LLM-judged
+ADD/UPDATE/DELETE/NOOP memory-consolidation layer) was considered for Scribe's optional
+`recall_ranker` CAP-18 port and explicitly excluded — Scribe capture/recall stays the
+fleet's only memory face (`recall_ranker` defaults to lexical; no `mem0.add` in place of
+`scribe capture`, §4 above). Story 6.3's staleness flag is the concrete reason the
+rejection holds: the one capability Mem0's approach would have bought (catching a memory
+gone stale) is delivered instead as a deterministic git-timestamp check on data Scribe's
+own `compile_graph` already touches every run — zero LLM calls, no new dependency,
+consistent with this Dream's own no-second-store rulings (§4's table row above).
+
+**Guardrails, unchanged from [[marshal-token-economy]]:** never compress the contract;
+never break the provider prompt cache (a layer that rewrites the prompt prefix is
+inadmissible); reversible or absent (lossy-with-retrieval is fine, silently-lossy is not);
+savings telemetry stays advisory, never a second PR gate.
 
 ---
 
@@ -1730,7 +1776,7 @@ graph TD
 
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[pyforge-target-monorepo]] (tracked directory-map seed: tree + phases 0–6) · [[fleet-convention-consistency]] (ten-row evidence; contract absorbed here 2026-08-30; Marshal detects, Doctor verdicts Marshal’s row) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[pyforge-target-monorepo]] (tracked directory-map seed: tree + phases 0–6) · [[fleet-convention-consistency]] (ten-row evidence; contract absorbed here 2026-08-30; Marshal detects, Doctor verdicts Marshal’s row) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-13; five-layer agent-loop compression + retrieval, summarized as §6 above) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
 
 ---
 
@@ -1898,3 +1944,10 @@ graph TD
   legacy-`cf_atlas.db` handling during the CFE-home move — both already
   structurally covered by existing Grounding bullets without needing
   file-level detail in a Dream).
+- **2026-08-31** — Added a sixth pillar, **Marshal Token Economy**, alongside the existing
+  five (Event Bus, Keycloak, Guildhall, Scribe Knowledge Graph, Client SDK): the five-layer
+  agent-loop compression/retrieval architecture (`caveman`, `headroom-ai`, `codegraph`,
+  `cocoindex`, `graphifyy`) and `mem0ai`'s evaluated-and-rejected disposition, summarized
+  here so the architecture stays evergreen even if [[marshal-token-economy]] (its own Spec,
+  CAP-1..CAP-13) is ever trimmed. Operator direction: token-optimization architecture is
+  "an important part of the unifying evergreen strategy," not satellite-only content.

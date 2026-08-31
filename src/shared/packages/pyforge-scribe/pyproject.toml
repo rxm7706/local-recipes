@@ -24,6 +24,12 @@ postgres = ["psycopg>=3.3.4"]
 # Story 6.1: the graphify `compile_surface` ingest extra -- off by default
 # (AD-6, air-gap); `pyforge.scribe.extras.graphify` imports it lazily.
 graphify = ["graphifyy>=0.9.51"]
+# Story 6.2: the cocoindex `compile_surface` incremental-ingest extra -- off
+# by default (AD-6, air-gap); `pyforge.scribe.extras.cocoindex_flow` imports
+# it lazily, and only calls its standalone `memo_fingerprint` primitive
+# (never the reactive App/Runner/component runtime -- see that module's
+# docstring).
+cocoindex = ["cocoindex>=1.0.20"]
 
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"

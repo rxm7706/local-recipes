@@ -77,6 +77,19 @@ byte-for-byte identical to the six-surface compile that predates this
 story. If the extra is on but graphifyy fails to import (or errors during
 extraction), that degrades to a warning like every other optional surface
 here -- it does not abort the rest of the compile.
+
+**Story 6.2 deliberately does not hook the cocoindex incremental extra into
+this function.** `compile_graph()`'s whole contract is `store.reset()` then
+rebuild every surface from scratch (AD-1 above) -- a `derive()` step that
+`refresh_incremental()` (`pyforge.scribe.extras.cocoindex_flow`) decides to
+SKIP would, inside that reset-then-rebuild flow, simply mean those nodes
+are never re-upserted into the freshly emptied store and vanish from the
+committed graph -- indistinguishable from deleting them, which AD-1
+forbids. `scribe index refresh` (`cli.py`) is the actual home for the
+cocoindex extra instead: it is upsert-only / independent-file-write for
+BOTH of Story 6.1's derived artifacts (graphify ingest, move list), so
+"skip" there correctly means "leave the previously-written artifact
+exactly as it was", with no reset step to reconcile against.
 """
 
 from __future__ import annotations
