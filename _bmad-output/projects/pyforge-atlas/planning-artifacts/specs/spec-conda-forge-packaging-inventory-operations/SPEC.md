@@ -8,6 +8,14 @@ surface:            # 17.1 claims the quartet + data files (per-file, not a glob
                      # scripts/ allowlist split removed; see spec_surface_allowlist.txt)
   - scripts/conda-forge-packaging-inventory-operations_metrics.py
   - scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py   # Story 21.3 (atlas), 2026-08-30
+  # Story 23.8 (atlas), 2026-08-30: the workbook-free inventory_universe fixture set
+  - scripts/tests/fixtures/inventory_universe/generate_fixtures.py
+  - scripts/tests/fixtures/inventory_universe/mini-workbook.xlsx
+  - scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_universe/inventory_universe.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/intermediate/pypi_universe/pypi_universe.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/raw/openteams_project_1_board_raw/openteams_project_1_board.parquet
   - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
   - scripts/conda-forge-packaging-inventory-operations_priority.py
   - scripts/openteams_identity_dashboards.py
