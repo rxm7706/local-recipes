@@ -526,6 +526,57 @@ The commented-out `crewai` line in the same table is not live debt — it's a do
 placeholder for a package already tracked in the candidate ledger's own "unexamined"
 bucket above.
 
+## The external-tracking gap ledger
+
+A fourth shape of currency debt, on the *visibility* axis rather than source/version:
+which of this environment's active dependencies have no corresponding tracking item on
+OpenTeams-WFT-CDO's own conda-forge-packaging project board
+(`github.com/orgs/OpenTeams-WFT-CDO/projects/1`, "OSS Enhancements (Conda Forge, Pixi,
+ect)" milestone — that org's own `[Conda-Forge Packaging] <name>` / `Add <name> to
+conda-forge` / `Build <name> vX on conda-forge` title conventions). Verified 2026-08-31:
+extracted 1309 distinct tracked names from that milestone's ~1332 items, parsed all 335
+active `pixi.toml` dependency keys via `tomllib`, cross-referenced. **197 of 335 are not
+tracked there.** After excluding base conda/pixi ecosystem infra (52 — `conda`, `pixi`,
+`python`, `conda-build`, `rattler-build`, the `pixi-*` plugin family, system tools like
+`gh`/`tmux`/`nodejs`/`postgresql`) and this repo's own `pyforge-*` packages (10, not
+third-party OSS), **135 remain as genuine candidates**:
+
+- **108 with a local `recipes/<name>/`** — real packaging debt this repo already did the
+  work for, invisible to that tracker: `bmad-labs-skills`, `bmad-loop`, `bmad-manticore`,
+  `bmad-module-skill-forge`, `bokeh-django`, `boring-semantic-layer`, `caveman`,
+  `channels`, `cocoindex`, `codegraph`, `coderedcms`, `cookiecutter`, `copier`,
+  `cyclonedx-bom`, `cyclonedx-python-lib`, `dagster`, `dagster-webserver`, `daphne`,
+  `dask-core`, `dbt-duckdb`, `deptry`, `diffusers`, `django-anymail`, `django-appconf`,
+  `django-compressor`, `django-ipware`, `django-lasuite`, `django-mcp-server`,
+  `django-model-utils`, `djlint`, `dlt`, `duckdb-server`, `elevenlabs`, `fido2`,
+  `frozendict`, `github-copilot-sdk`, `graphifyy`, `great-expectations`, `headroom-ai`,
+  `httpx2`, `ibis-framework`, `import-linter`, `ipdb`, `jinja2-ospath`, `kedro`,
+  `kedro-dagster`, `kedro-datasets`, `kedro-mcp`, `kedro-skills`, `kedro-viz`,
+  `langchain-chroma`, `langflow`, `liquibase`, `liquibase-postgresql`, `mammoth`,
+  `markitdown`, `marp-cli`, `mermaid-py`, `mlx`, `mlx-lm`, `moto`, `msgraph-sdk`,
+  `mybmad-dashboard`, `nbqa`, `ocrmypdf`, `odfpy`, `office2pdf`, `ollama-python`,
+  `openfeature-flagd-api`, `openfeature-flagd-core`, `openfeature-provider-flagd`,
+  `openfeature-sdk`, `openlineage-python`, `opentelemetry-instrumentation-psycopg`,
+  `osv-scanner`, `pandera`, `pandoc`, `panel`, `panel-graphic-walker`, `pdf2image`,
+  `pip-audit`, `playwright-python`, `pptxgenjs`, `pptxgenjs-plus`, `psycopg2`, `pyrefly`,
+  `pyright`, `python-build`, `python-graphviz`, `qrcode`, `rank-bm25`, `rcssmin`,
+  `redis-py`, `rjsmin`, `ruamel.yaml`, `sentencepiece`, `spec-kit`, `speechrecognition`,
+  `sphinx-autobuild`, `tablib`, `truststore`, `twine`, `uvicorn-worker`, `vizro`,
+  `vizro-ai`, `vizro-e2e-flow`, `vizro-mcp`, `wagtail`.
+- **27 with no local recipe** — genuinely unverified, several plausibly already fine on
+  conda-forge with no packaging needed at all (`pgvector`, `llama.cpp`, the `ibis-*`
+  backend family) rather than real debt: `age`, `cachebox`, `channels-redis`,
+  `claude-agent-acp`, `cruft`, `d2`, `dagster-pipes`, `dbgpt`, `dbgpt-app`, `dbgpt-serve`,
+  `fasta2a`, `go-sops`, `graphviz2drawio`, `ibis-duckdb`, `ibis-mssql`, `ibis-oracle`,
+  `ibis-polars`, `ibis-postgres`, `ibis-sqlite`, `llama.cpp`, `lumen-ai-anthropic`,
+  `mcp-types`, `nebi-cli`, `pdfminer.six`, `pgvector`, `pyarrow-all`, `pydantic-ai`.
+
+**This is a visibility gap, not a packaging verdict.** A package missing from OpenTeams'
+board is not necessarily un-packaged or blocked — the 108-with-recipe bucket already has
+its own disposition in the ledgers above (most `pending-*` on conda-forge already); this
+ledger only says that disposition isn't mirrored onto that external tracker. Whether it
+should be is an operator call, not something this Dream decides unilaterally per package.
+
 ## Constraints
 
 - **A `blocked` disposition must name what would unblock it**, not just that it's blocked —
@@ -633,3 +684,12 @@ is narrower and repo-local rather than factory-wide)
   conda-forge equivalent) and confirmed the commented-out `crewai` pypi-dependencies line
   is dormant, not live debt (already tracked in the candidate ledger's own "unexamined"
   bucket).
+- **2026-08-31 (same session, continued)** — added the fourth ledger, external-tracking
+  gap: cross-referenced all 335 active `pixi.toml` packages against OpenTeams-WFT-CDO's
+  own conda-forge-packaging project board (1309 tracked names extracted from its "OSS
+  Enhancements" milestone). 197 untracked; after excluding base conda/pixi infra and this
+  repo's own `pyforge-*` packages, 135 genuine candidates remain — 108 with a local
+  recipe already (real packaging debt invisible to that tracker) and 27 without one
+  (unverified; several plausibly already fine on conda-forge with no debt at all). Framed
+  explicitly as a visibility gap, not a packaging verdict — this Dream doesn't decide
+  per-package whether external tracking is warranted.
