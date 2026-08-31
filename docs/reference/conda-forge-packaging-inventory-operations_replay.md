@@ -74,6 +74,30 @@ Deliverables (local files):
 1. Full inventory (14 columns) — workbook tab `verified-all-packages`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
 2. Dated OpenTeams 1:1 universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) — workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (14 inventory columns + 8 handoff columns). Repo-root `cdao_consolidated_inventory-2026-08-12.csv` is not the stored copy.
 3. Identity snapshot — workbook tab `identity-2026-08-12`, then **edit in place** the pinned secret gist files `mgmt-wf-python-modernization-identity.md` (row catalog) and `mgmt-wf-python-modernization-dashboards.md` (canvas summaries) (`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`; gist id from `OPENTEAMS_IDENTITY_GIST_ID` / gitignored `conf/conda-forge-packaging-inventory-operations.local.env` / `--gist-id`; `--skip-gist` when no id). Do not create a new gist. Do not commit the id. `--create-issues` is a separate, **live and irreversible** flag: it opens one GitHub issue (+ adds it to OpenTeams project 1) per record still missing `OpenTeams_Issue_URL`. Absent (the default), the run is dry-run only — it prints/returns what would be created and makes no `gh` mutation call.
+
+   **Story 21.7 (quartet thin-out):** `main()` no longer fetches
+   `ASSOCIATOR_URL`, the OpenTeams board, `feedstock-outputs.json`, or
+   staged-recipes PRs itself — it reads the pyforge-atlas Kedro catalog's
+   `identity_export_parquet` (Story 21.6's `upstream_discovery` Phase D
+   join) via `PYFORGE_ATLAS_DATA_ROOT` (default `src/shared/packages/
+   pyforge-atlas/data`; run `pixi run -e pyforge-atlas
+   pyforge-atlas-bootstrap` first — a missing Parquet is a hard, named
+   error, never a live-fetch fallback). The `--tab-in` / `--associator` /
+   `--refresh-associator` / `--project-items` / `--feedstock-outputs` /
+   `--staged-prs` / `--staged-open-prs` / `--recipes-dir` /
+   `--refresh-staged-prs` flags are retired along with that fetch. Once
+   generated, the identity tab is ranked by `priority.py` as before.
+   `Local_Recipes_URL`/`Local_Build_Status` are the two columns the Parquet
+   does NOT supply: both are always freshly re-derived from a live
+   `recipes/` filesystem scan on every `main()`/`--gist-only` run, never
+   read from the Parquet. `--gist-only` republishes without regenerating
+   rows: it reads the same Parquet for identity columns and merges ranking
+   columns (`P`/`Rank`/`Score`/`Work` + JFROG/priority fields) from the
+   ranked identity tab by `Core_Python_Package_Name` — a name present in
+   the Parquet with no match in the ranked tab is dropped from the
+   published gist with a stderr warning (never silently, never a hard
+   failure); the existing "identity tab missing ranking columns" error is
+   unchanged.
 4. `cdao_consolidated_inventory_verified_all_packages.md`
 5. [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)
 6. AOSS-Free extra Mason queue — dated CSV `aoss-free-queue-YYYY-MM-DD.csv` (same directory as `--output-csv`), columns `Package_Name` / `Reason` / `Verification_Timestamp_UTC`: `GAOSS-Free` names that are on PyPI, absent from conda-forge, and absent from the OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`). Never merges into or expands that universe (`write_aoss_free_queue`).

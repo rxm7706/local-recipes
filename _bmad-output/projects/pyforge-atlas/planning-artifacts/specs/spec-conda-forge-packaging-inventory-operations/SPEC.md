@@ -63,6 +63,20 @@ not this quartet — `..._openteams_identity.py`'s existing direct
 purl-associator fetch (`ASSOCIATOR_URL`) is a separate, narrower join and
 stays as-is; no code in this quartet folds parselmouth.
 
+**Superseded 2026-08-31 (Story 21.7, atlas Epic 21 CAP-4):** the
+`ASSOCIATOR_URL`-stays-in-quartet clause above no longer holds. That direct
+purl-associator/OpenTeams-board/feedstock-outputs/staged-prs fetch is
+retired: `..._openteams_identity.py`'s `main()` now reads the pyforge-atlas
+Kedro catalog's `identity_export_parquet` (Story 21.6's `upstream_discovery`
+Phase D join) via `PYFORGE_ATLAS_DATA_ROOT` — never a direct HTTP/GraphQL
+call — and `--gist-only` merges ranking columns from the ranked identity tab
+into that same Parquet-sourced data by name. See
+`spec-atlas-kedro-catalog-expansion/identity-contract.md` for the join
+semantics this quartet now consumes rather than performs. The Parselmouth
+fold-placement resolution above is unaffected by this — Parselmouth's
+PyPI↔conda mapping still folds into pyforge-atlas's
+`mapping_manager`/`name_resolver` chain, not this quartet.
+
 ## Non-goals
 The recipe work itself (Mason/CFE); the sibling org's issue-ledger
 machinery; expanding the OpenTeams universe definition.
