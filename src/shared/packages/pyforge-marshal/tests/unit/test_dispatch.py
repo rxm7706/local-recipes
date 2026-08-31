@@ -192,6 +192,46 @@ def test_run_dispatch_journals_and_returns(tmp_path: Path, monkeypatch: pytest.M
     assert any("dispatch-launch" in line for _, line, _ in fs.appended)
 
 
+def test_run_dispatch_surfaces_the_context_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Story 28.1 (SPEC-marshal-token-economy CAP-1): `dispatch_once`'s
+    returned AND journaled data both carry the SAME `context` payload
+    `core/policy.py::resolve_context_layers` computes -- the one
+    composition site both `render_policy_toml` (bmad-loop spin) and this
+    engine (factory dispatch) resolve from. No project declares a
+    `[context]` block for `pyforge-marshal` today, so every layer resolves
+    off at the default "medium" aggressiveness."""
+    import json
+
+    from pyforge.marshal.core import policy
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    spec = specs / f"spec-{story}.md"
+    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+
+    fs = FakeFs()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert code == EXIT_OK
+    expected = {layer: {"enabled": False, "aggressiveness": "medium"} for layer in policy.CONTEXT_LAYER_NAMES}
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["context"] == expected
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    assert any(json.loads(line)["payload"].get("context") == expected for line in launch_lines)
+
+
 def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _init_git_repo(tmp_path)
     slug = "pyforge-marshal"

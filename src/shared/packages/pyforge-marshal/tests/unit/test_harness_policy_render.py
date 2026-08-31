@@ -305,6 +305,42 @@ def test_empty_verify_commands_renders_empty_list():
     assert doc["verify"]["commands"] == [_SURFACE_RECONCILE_COMMAND]
 
 
+# --- Story 28.1: the [context] block (SPEC-marshal-token-economy CAP-1) ------
+
+
+def test_context_absent_renders_no_context_table():
+    """The AC's own byte-identical guarantee: no declaration at all (the
+    DEFAULT_POLICY empty-mapping default) must render NO [context] table,
+    matching pre-Story-28.1 output exactly."""
+    text = render_policy_toml(_compose())
+    assert "context" not in text
+    doc = tomllib.loads(text)
+    assert "context" not in doc
+
+
+def test_context_declared_renders_all_five_layers():
+    from pyforge.marshal.core import policy
+
+    effective = _compose(
+        context={"wire": {"enabled": True, "aggressiveness": "high"}}
+    )
+    doc = tomllib.loads(render_policy_toml(effective))
+    resolved = policy.resolve_context_layers(effective)
+    assert set(doc["context"]) == set(policy.CONTEXT_LAYER_NAMES)
+    for layer in policy.CONTEXT_LAYER_NAMES:
+        assert doc["context"][layer]["enabled"] == resolved[layer]["enabled"]
+        assert doc["context"][layer]["aggressiveness"] == resolved[layer]["aggressiveness"]
+    assert doc["context"]["wire"] == {"enabled": True, "aggressiveness": "high"}
+    assert doc["context"]["output"] == {"enabled": False, "aggressiveness": "medium"}
+
+
+def test_context_partial_declaration_defaults_remaining_layers_off():
+    effective = _compose(context={"planning-graph": {"enabled": True}})
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["context"]["planning-graph"] == {"enabled": True, "aggressiveness": "medium"}
+    assert doc["context"]["wire"] == {"enabled": False, "aggressiveness": "medium"}
+
+
 # --- rendered text validity ---------------------------------------------------
 
 
