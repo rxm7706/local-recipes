@@ -1082,3 +1082,66 @@ def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
 
     assert result.node_count == 1
     assert any("graphify" in w for w in result.warnings)
+
+
+# --- Story 6.2: cocoindex extra does not hook into compile_graph() ----------
+
+
+def test_compile_graph_is_unaffected_by_the_cocoindex_extra_env_var(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: `compile_graph()` deliberately does not consult
+    `SCRIBE_COCOINDEX_EXTRA` at all (see this module's own docstring for
+    why) -- a compile is byte-for-byte identical whether the extra is off
+    or on."""
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+    capture(memory_root, "feedback", "content")
+
+    monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    off_store = FlatFileGraphStore(tmp_path / "graph-off.json")
+    off_result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=off_store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    on_store = FlatFileGraphStore(tmp_path / "graph-on.json")
+    on_result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=on_store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert off_result.node_count == on_result.node_count == 2
+    assert [n.id for n in off_store.iter_nodes()] == [n.id for n in on_store.iter_nodes()]
+    index_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
+    assert not index_path.exists()
+
+
+def test_compile_module_does_not_import_the_cocoindex_extra() -> None:
+    """The cocoindex incremental extra lives entirely in `cli.py`'s `index
+    refresh` verb (see this module's own docstring) -- `compile.py` has no
+    import of it at all."""
+    import ast
+
+    tree = ast.parse(compile_module.__file__ and Path(compile_module.__file__).read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "cocoindex_flow" not in node.module
