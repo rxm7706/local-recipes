@@ -20,6 +20,7 @@ import pytest
 from pyforge.scribe import compile as compile_module
 from pyforge.scribe.capture import _DESCRIPTION_MAX_LEN, _truncate, capture
 from pyforge.scribe.compile import compile_graph
+from pyforge.scribe.extras import graphify as graphify_module
 from pyforge.scribe.graph_store import FlatFileGraphStore
 
 _MEMORY_MD_STARTER = """# Team Memory Index
@@ -954,3 +955,130 @@ def test_transcript_surface_root_that_is_a_regular_file_warns_as_not_a_directory
     assert len(transcript_warnings) == 1
     assert "is not a directory" in transcript_warnings[0]
     assert "is not readable" not in transcript_warnings[0]
+
+
+# --- Story 6.1: the optional graphify compile_surface extra -----------------
+
+
+class _FakeGraph:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def nodes(self, data: bool = False):
+        items = list(self._nodes.items())
+        return items if data else [nid for nid, _ in items]
+
+    def number_of_nodes(self) -> int:
+        return len(self._nodes)
+
+    def number_of_edges(self) -> int:
+        return 0
+
+
+class _FakeGraphifyModule:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def collect_files(self, target, root=None):
+        return [Path(target) / "a.py"]
+
+    def extract(self, files, cache_root=None, root=None, parallel=True):
+        return {"nodes": [], "edges": [], "hyperedges": []}
+
+    def build_from_json(self, extraction, root=None):
+        return _FakeGraph(self._nodes)
+
+    def god_nodes(self, graph, top_n=10):
+        return []
+
+
+def test_graphify_extra_off_by_default_is_a_no_op(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: absent or off (default) -- a compile is identical to today's
+    six builtins, and produces zero graphify-related noise."""
+    monkeypatch.delenv("SCRIBE_GRAPHIFY_EXTRA", raising=False)
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.node_count == 1
+    assert [n for n in store.iter_nodes() if n.kind == "code"] == []
+    assert all(("git" in w or "transcript" in w) for w in result.warnings)
+
+
+def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2: with the extra on, folder ingest writes GraphNodes through the
+    SAME `GraphStore` the six builtins already use -- never a parallel
+    store."""
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "type": "module",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    code_nodes = [n for n in store.iter_nodes() if n.kind == "code"]
+    assert len(code_nodes) == 1
+    assert code_nodes[0].citation == "src/shared/packages/example.py:L1"
+    assert result.node_count == 2  # the memory node + the one code node
+
+
+def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    try:
+        import graphify  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("graphifyy is installed in this environment")
+
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.node_count == 1
+    assert any("graphify" in w for w in result.warnings)

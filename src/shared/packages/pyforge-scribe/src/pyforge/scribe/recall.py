@@ -7,8 +7,10 @@ the compiled projection only"). Matching is pure deterministic lexical
 token-overlap scoring -- no LLM, no network call, matching AD-6's
 "no-LLM-required" v1 default (PRD Open Question 3). Every returned answer's
 citation is verified resolvable (a real file under `repo_root`, a
-well-formed `commit:<sha>`, or a well-formed `<jsonl filename>:L<line>`
-transcript citation, Story 3.2) before being returned -- an unresolvable
+well-formed `commit:<sha>`, a well-formed `<jsonl filename>:L<line>`
+transcript citation (Story 3.2), or a well-formed `<path>:L<line>` code
+citation whose path resolves under `repo_root` (Story 6.1's graphify
+extra)) before being returned -- an unresolvable
 citation is treated as no match and never surfaces (AD-8: "No code path in
 recall.py may return synthesized prose without a resolvable citation
 attached"). A query with zero coverage, or whose only candidates all fail
@@ -50,6 +52,15 @@ _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
 #: reason: `\d` also matches non-ASCII decimal digits, so `x.jsonl:L١٢`
 #: was likewise waved through without existing (review finding: reproduced).
 _TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L[0-9]+")
+#: A `code` node's citation (Story 6.1's graphify extra) is
+#: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,
+#: matching graphify's own `source_location` shape. Unlike the transcript
+#: format above, this IS re-resolved against a live file: repo source is not
+#: per-user/local the way a session transcript is, so the same
+#: existence-check `recall.py` already applies to a bare path citation
+#: applies here too -- only the PATH portion is checked; the line number is
+#: format-only (never re-parsed against the file's actual length).
+_CODE_LINE_CITATION_RE = re.compile(r"^(?P<path>.+):L(?P<line>[0-9]+)$")
 
 
 @dataclass(frozen=True)
@@ -140,4 +151,13 @@ def _citation_is_resolvable(citation: str, repo_root: Path) -> bool:
         # per-user/local and can be pruned or rotated outside Scribe's
         # control (Story 3.2), mirroring the `commit:<sha>` precedent above.
         return True
+    code_match = _CODE_LINE_CITATION_RE.match(citation)
+    if code_match:
+        # Story 6.1 fix: before this branch existed, a `code` node's
+        # `<path>:L<line>` citation fell straight to the whole-string check
+        # below, which looked for a literal file named e.g.
+        # `"compile.py:L120"` -- never found it, and so no graphify-ingested
+        # code node could ever be recalled. Strip the `:L<line>` suffix and
+        # check the PATH portion only.
+        return (repo_root / code_match.group("path")).is_file()
     return (repo_root / citation).is_file()

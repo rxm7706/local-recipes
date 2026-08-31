@@ -16,8 +16,42 @@ from typer.testing import CliRunner
 
 import pyforge.scribe.cli as cli_module
 from pyforge.scribe.cli import app
+from pyforge.scribe.extras import graphify as graphify_module
 
 runner = CliRunner()
+
+
+class _FakeGraph:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def nodes(self, data: bool = False):
+        items = list(self._nodes.items())
+        return items if data else [nid for nid, _ in items]
+
+    def number_of_nodes(self) -> int:
+        return len(self._nodes)
+
+    def number_of_edges(self) -> int:
+        return 0
+
+
+class _FakeGraphifyModule:
+    def __init__(self, nodes: dict[str, dict], god: list[dict] | None = None) -> None:
+        self._nodes = nodes
+        self._god = god or []
+
+    def collect_files(self, target, root=None):
+        return [Path(target) / "a.py"]
+
+    def extract(self, files, cache_root=None, root=None, parallel=True):
+        return {"nodes": [], "edges": [], "hyperedges": []}
+
+    def build_from_json(self, extraction, root=None):
+        return _FakeGraph(self._nodes)
+
+    def god_nodes(self, graph, top_n=10):
+        return self._god
 
 _MEMORY_MD_STARTER = """# Team Memory Index
 
@@ -635,3 +669,129 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
     output = _combined_output(result)
     assert "We decided to use SQLite for the local cache." in output
     assert "[source: session-a.jsonl:L1]" in output
+
+
+# --- Story 6.1: `scribe index build|report|move-list` -----------------------
+
+
+def test_index_build_missing_target_reports_zero_and_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 0
+    assert "indexed 0 code node(s)" in _combined_output(result)
+
+
+def test_index_build_happy_path_writes_nodes_through_the_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 0
+    assert "indexed 1 code node(s)" in _combined_output(result)
+    store_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json"
+    assert store_path.is_file()
+    document = json.loads(store_path.read_text(encoding="utf-8"))
+    assert "code:python:example" in document["nodes"]
+
+
+def test_index_build_graphify_unavailable_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    try:
+        import graphify  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("graphifyy is installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 2
+
+
+def test_index_report_writes_derived_gitignored_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    fake_nodes = {"a": {"label": "A", "source_file": "src/shared/packages/a.py"}}
+    god = [{"id": "a", "label": "A", "degree": 3}]
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes, god)
+    )
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 0
+    report_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph-report.md"
+    assert report_path.is_file()
+    text = report_path.read_text(encoding="utf-8")
+    assert "GRAPH_REPORT" in text
+    assert "A (degree=3)" in text
+
+
+def test_index_report_missing_target_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 2
+
+
+def test_index_move_list_writes_json_with_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    src = tmp_path / "src" / "platform" / "app.py"
+    src.parent.mkdir(parents=True)
+    src.write_text(
+        "import pyforge.scribe\nimport sys\nsys.path.insert(0, 'x')\n", encoding="utf-8"
+    )
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    move_list_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "move-list.json"
+    assert move_list_path.is_file()
+    document = json.loads(move_list_path.read_text(encoding="utf-8"))
+    categories = {f["category"] for f in document["findings"]}
+    assert "import_pyforge" in categories
+    assert "sys_path_insert" in categories
+
+
+def test_index_move_list_does_not_require_graphify(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The move-list scan is independent of graphifyy/SCRIBE_GRAPHIFY_EXTRA."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    assert "0 finding(s)" in _combined_output(result)
