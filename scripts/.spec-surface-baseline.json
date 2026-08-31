@@ -2284,10 +2284,10 @@
  },
  "pyforge-marshal/spec-agent-tool-surface": {
   "files": {
-   ".claude/tools/conda_forge_server.py": "5e4b8db5da15d2d54c575fc854d76d00c3ffe100",
-   ".claude/tools/gemini_server.py": "cee1026d8a552d20069a985529d51e1a354bd056"
+   ".claude/tools/conda_forge_server.py": "0b1d4e0367d75356d6e84b582c70d80d57d55922",
+   ".claude/tools/gemini_server.py": "82b1c29e761479cfba18f07485c22720ad553a89"
   },
-  "memlog": "097d164278426f29a6f33fe0ffec8f3509f1bd7c"
+  "memlog": "00e1e01334b3256018d70dca1355208d207a79a4"
  },
  "pyforge-marshal/spec-agentic-sdlc-autonomy": {
   "files": {},
