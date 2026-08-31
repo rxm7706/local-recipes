@@ -127,7 +127,7 @@ development_status:
   28-12-dependency-derived-dispatch-ordering: backlog
   28-13-sanctioned-retry-after-an-operator-initiated-stop: backlog
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: backlog
-  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: backlog
+  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
   28-2-wire-compression-at-the-harness-seam: done
   28-3-genesis-seeds-the-token-economy-kit: done
   28-4-savings-telemetry-in-journals-and-status: backlog
