@@ -46,6 +46,14 @@ class MoveListFinding:
     snippet: str
 
 
+def move_list_sources(repo_root: Path) -> list[Path]:
+    """The exact `*.py` file set `scan_move_list()` reads -- exposed so the
+    cocoindex incremental extra (Story 6.2) can fingerprint the SAME files
+    it would otherwise re-scan, rather than re-deriving its own file list
+    with different exclusion rules."""
+    return _rglob_excluding(repo_root, "**/*.py")
+
+
 def scan_move_list(repo_root: Path) -> list[MoveListFinding]:
     """Scan every `*.py` file (excluding the same noise directories
     `compile.py`'s other surfaces already exclude) for the four cutover-move
@@ -53,7 +61,7 @@ def scan_move_list(repo_root: Path) -> list[MoveListFinding]:
     every other compile surface's own sorted-output discipline.
     """
     findings: list[MoveListFinding] = []
-    for path in _rglob_excluding(repo_root, "**/*.py"):
+    for path in move_list_sources(repo_root):
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
