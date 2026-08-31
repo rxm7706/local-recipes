@@ -239,7 +239,12 @@ process. ``MRS-SPIN-012`` (Story 3.7, added in review) is the third code
 escalation gate could not read the run's status at all, so it proceeds
 without having confirmed anything -- ambiguity, never a refusal.
 ``MRS-SPIN-016`` (Story 3.12) is the retry-escalation floor-raise's own
-write-failure code, described above.
+write-failure code, described above. ``MRS-SPIN-017`` (Story 28.2,
+SPEC-marshal-token-economy CAP-2) reports an ENABLED ``[context]`` wire
+layer that this engine structurally cannot apply -- ``bmad-loop run``, not
+marshal, launches the coding CLI, so the harness-seam wrapper has no argv
+to prefix here; ``WARN``, the same advisory-over-a-live-run tier as
+``MRS-SPIN-004``/``006``/``007``/``008``/``009``, never a refusal.
 """
 
 from __future__ import annotations
@@ -269,6 +274,7 @@ from ..adapters.harness_bmadloop import (
     write_policy_document,
     write_policy_toml,
 )
+from ..core import harness_profile
 from ..core import policy
 from ..core.identity import (
     StoryKey,
@@ -1138,6 +1144,53 @@ def _spawn_supervisor_sidecar(
                     )
                 ),
             )
+        )
+    # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-compression
+    # layer on THIS engine, resolved from the same single composition site
+    # (`policy.resolve_context_layers`) `cli/dispatch.py` and
+    # `render_policy_toml` read. Marshal's harness-seam wrapper wraps a
+    # command marshal itself launches; on this engine marshal launches
+    # `bmad-loop run`, and bmad-loop launches the coding CLI inside its own
+    # multiplexer -- there is no coding-CLI argv here to prefix, so an
+    # enabled wire layer reports what did NOT happen instead of silently
+    # doing nothing (the spec's own "never a silent no-op"). Making it real
+    # on this engine needs a loop-home-provisioned launcher shim plus a
+    # bmad-loop profile overlay pointing `binary` at it, which is Story
+    # 28.3's loop-home provisioning surface, not this seam's.
+    #
+    # Echoed into `data` unconditionally (like `supervisor_log` above) so a
+    # spin report always states the layer's disposition, and raised as a
+    # finding ONLY when the layer was actually enabled -- a disabled layer
+    # has no degradation to name.
+    #
+    # Composed as a `WireWrap` and projected through `journal_payload()`
+    # rather than hand-spelled: that method is the ONE spelling of this
+    # payload (`cli/dispatch.py` emits the same shape from the same place),
+    # so a future field on `WireWrap` reaches both engines instead of
+    # silently drifting one of them.
+    wire_layer = policy.resolve_context_layers(effective_policy)[
+        harness_profile.WIRE_LAYER_NAME
+    ]
+    enabled = bool(wire_layer["enabled"])
+    reason = (
+        (
+            "the declared [context] wire layer is enabled, but this engine "
+            "launches 'bmad-loop run' and bmad-loop -- not marshal -- launches "
+            "the coding CLI, so marshal's harness-seam wrapper has no command "
+            "to wrap here; the run proceeds UNWRAPPED (factory dispatch is the "
+            "engine this layer applies to today)"
+        )
+        if enabled
+        else None
+    )
+    data["wire"] = harness_profile.WireWrap(
+        applied=False,
+        reason=reason,
+        aggressiveness=wire_layer["aggressiveness"] if enabled else None,
+    ).journal_payload()
+    if reason is not None:
+        findings.append(
+            Finding(code="MRS-SPIN-017", severity=Severity.WARN, message=reason)
         )
     idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
     # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
@@ -2407,6 +2460,20 @@ def _render_text(
             )
             lines.append(f"from_model: {_scalar(data['from_model'])}")
             lines.append(f"to_model: {_scalar(data['to_model'])}")
+    if "wire" in data:
+        # Story 28.2 (SPEC-marshal-token-economy CAP-2). Stated on every
+        # run that got as far as the sidecar, exactly like `supervisor_log`
+        # below: text is the DEFAULT format, so a layer whose disposition
+        # existed only in `--format json` would be invisible on the surface
+        # an unattended operator actually reads -- the same defect the
+        # `escalated` block above records as a review finding. The reason
+        # is deliberately NOT repeated here: whenever there is one it is
+        # already a `MRS-SPIN-017` line in the findings block below.
+        wire = data["wire"]
+        lines.append(
+            f"wire: applied={_scalar(wire['applied'])} "
+            f"aggressiveness={_scalar(wire['aggressiveness'])}"
+        )
     if "supervisor_log" in data:
         lines.append(f"supervisor_log: {_scalar(str(data['supervisor_log']))}")
     if "supervisor_pid" in data:

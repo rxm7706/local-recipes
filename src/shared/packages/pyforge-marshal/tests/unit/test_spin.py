@@ -2219,6 +2219,152 @@ def test_spin_reports_the_supervisor_log_path_on_success_too(home, capsys):
     assert envelope["data"]["supervisor_log"] == str(process.spawn_calls[0]["log_path"])
 
 
+def _declare_wire_layer(monkeypatch, tmp_path: Path, *, enabled: bool) -> None:
+    """Point the conventional project-policy read at a real TOML file
+    declaring a `[context.wire]` layer, so the layer arrives through the
+    SAME composition the launch already performs -- never a patched
+    resolver."""
+    path = tmp_path / "marshal-policy.toml"
+    path.write_text(
+        "[context.wire]\n"
+        f"enabled = {str(enabled).lower()}\n"
+        'aggressiveness = "high"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda _slug: path
+    )
+
+
+def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2): a spin report always
+    says what the wire-compression layer did, exactly as it always says
+    where ``supervisor.log`` is. Undeclared -> off, and NOTHING is raised:
+    a layer nobody enabled has no degradation to name."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["wire"] == {
+        "applied": False,
+        "reason": None,
+        "store_dir": None,
+        "aggressiveness": None,
+    }
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
+
+
+def test_spin_names_an_enabled_wire_layer_this_engine_cannot_apply(
+    home, capsys, monkeypatch, tmp_path
+):
+    """The spec's "never a silent no-op", on the engine that structurally
+    cannot wrap: ``marshal factory spin`` launches ``bmad-loop run``, and
+    bmad-loop -- not marshal -- launches the coding CLI, so marshal's
+    harness-seam wrapper has no command to prefix here. Enabling the layer
+    for a spin run therefore REPORTS what did not happen (``MRS-SPIN-017``,
+    WARN over a live run) instead of leaving the operator believing a
+    bmad-loop run was compressed. Factory dispatch is the engine this layer
+    applies to today."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    # WARN: the run launched, and it launched unwrapped.
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"]
+    assert finding["severity"] == "warn"
+    assert "UNWRAPPED" in finding["message"]
+    assert envelope["data"]["wire"]["applied"] is False
+    assert envelope["data"]["wire"]["reason"] == finding["message"]
+    assert envelope["data"]["wire"]["aggressiveness"] == "high"
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_wire_payload_has_exactly_the_single_spellings_fields(
+    home, capsys, monkeypatch, tmp_path
+):
+    """Both engines project this payload through the SAME
+    ``WireWrap.journal_payload()``. The expected key set is derived from
+    that method rather than restated, so a hand-spelled literal that drifts
+    when ``WireWrap`` gains a field fails here instead of silently emitting
+    a different shape on one engine than the other."""
+    from pyforge.marshal.core.harness_profile import WireWrap
+
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert set(envelope["data"]["wire"]) == set(WireWrap(applied=False).journal_payload())
+
+
+def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch, tmp_path):
+    """Text is the DEFAULT format -- a layer visible only under
+    ``--format json`` is invisible on the surface an unattended operator
+    actually reads (the same defect ``escalated`` was fixed for)."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    out = capsys.readouterr().out
+    assert "wire: applied=False aggressiveness='high'" in out
+    assert "MRS-SPIN-017" in out
+
+
+def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(
+    home, capsys, monkeypatch, tmp_path
+):
+    """A DECLARED-but-disabled layer is still nothing to report -- only an
+    enabled layer that could not be applied is a degradation."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=False)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
+    assert envelope["data"]["wire"]["aggressiveness"] is None
+
+
+def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
+    """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
+    (Story 3.7's extraction), so a resumed run states the same disposition
+    -- a resume that silently dropped the layer's report would be the exact
+    drifting second copy that extraction exists to prevent."""
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+
+    run_resume(
+        _resume_namespace("acme", fmt="json"),
+        fs=fs,
+        harness=harness,
+        process=FakeProcess(),
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["wire"]["applied"] is False
+    assert [f["code"] for f in envelope["findings"]].count("MRS-SPIN-017") == 1
+
+
 def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
     """Review finding: ``_render_text``'s own comment states that finding
     MESSAGES are deliberately NOT quoted and requires "every message that

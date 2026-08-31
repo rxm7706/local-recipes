@@ -301,6 +301,16 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",
+            # Story 28.2 (wire compression at the harness seam,
+            # SPEC-marshal-token-economy CAP-2): MRS-DISP-033 an enabled
+            # `[context]` wire layer that factory dispatch could not apply
+            # (no `[wrapper]`, an unresolved wrapper binary, an uncreatable
+            # CCR store); MRS-SPIN-017 the same layer enabled on the
+            # bmad-loop engine, which launches the coding CLI itself and so
+            # has no argv for marshal's harness seam to wrap. Both WARN --
+            # a layer disables itself with a named finding, never blocks.
+            "MRS-DISP-033",
+            "MRS-SPIN-017",
         }
     )
 

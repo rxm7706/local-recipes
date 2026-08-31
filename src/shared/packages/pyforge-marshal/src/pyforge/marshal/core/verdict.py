@@ -1062,6 +1062,19 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-013": Verdict.ERROR,
     "MRS-DRAIN-014": Verdict.ERROR,
     "MRS-DRAIN-015": Verdict.ERROR,
+    # Story 28.2 (wire compression at the harness seam,
+    # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
+    # LAYER that did not engage over a launch that is otherwise entirely
+    # viable -- the spec's own constraint is "an unavailable instrument
+    # disables its layer with a named finding, never blocks a run", so
+    # WARN, never the pre-flight refusal tier. MRS-DISP-033 is the factory
+    # dispatch engine's (no `[wrapper]` declared, its binary unresolved, or
+    # an uncreatable CCR store); MRS-SPIN-017 is the bmad-loop engine's
+    # structural gap (bmad-loop launches the coding CLI itself, so
+    # marshal's harness seam has nothing to wrap there) -- the same WARN
+    # tier as MRS-SPIN-004/006/007/008/009 and for the same reason.
+    "MRS-DISP-033": Verdict.WARN,
+    "MRS-SPIN-017": Verdict.WARN,
 }
 
 

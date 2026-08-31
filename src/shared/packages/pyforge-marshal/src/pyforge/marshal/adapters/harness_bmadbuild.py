@@ -16,6 +16,18 @@ is necessary-but-insufficient), and the detached launch. The pure half --
 profile shape, parsing, loading, argv rendering, model translation -- is
 ``core/harness_profile.py``.
 
+Story 28.2 (SPEC-marshal-token-economy CAP-2) adds the wire-compression
+seam to the same launch: when policy's declared ``[context]`` ``wire``
+layer is enabled and the resolved profile declares a ``[wrapper]`` whose
+binary resolves, the CLI launches THROUGH it (``headroom wrap claude --
+<the same argv as before>``) with the reversible CCR store scoped inside
+the dispatch worktree. The decision itself is pure
+(``core/harness_profile.py::resolve_wire_wrap``); this module owns only
+its impure halves -- probing the wrapper binary, creating the store
+directory, and composing the child environment. An unavailable wrapper
+disables the layer with a reason on the returned ``DispatchLaunchResult``
+and launches unwrapped: never a blocked run.
+
 Detached launch only: subprocess ``Popen`` with ``start_new_session=True``
 (never a CLI's own self-backgrounding flag, which would double-detach and
 orphan the PID the dispatch supervisor tracks), ``BMAD_ACTIVE_PROJECT``
@@ -33,8 +45,9 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
-from ..core.harness_profile import HarnessProfile, load_profiles
+from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
+from ..core.harness_profile import resolve_wire_wrap as _resolve_wire_wrap
 from ..ports.build_harness import (
     DispatchLaunchResult,
     HarnessCandidateSkip,
@@ -53,18 +66,24 @@ class BuildHarnessError(PyforgeError, Exception):
 _AUTHCHECK_TIMEOUT_S = 20.0
 
 
-def _resolve_binary(profile: HarnessProfile, repo_root: Path | None) -> str | None:
-    """``PATH`` first, then the profile's repo-root-relative fallback dirs
-    (the pixi-env CLIs are invisible to a bare operator PATH -- honest
-    probing rather than assuming dispatch always runs under ``pixi run``).
-    Returns the resolved path string, or ``None``."""
-    on_path = shutil.which(profile.binary)
+def _resolve_binary(
+    binary: str, fallback_bin_dirs: Sequence[str], repo_root: Path | None
+) -> str | None:
+    """``PATH`` first, then the given repo-root-relative fallback dirs (the
+    pixi-env CLIs are invisible to a bare operator PATH -- honest probing
+    rather than assuming dispatch always runs under ``pixi run``). Returns
+    the resolved path string, or ``None``.
+
+    Story 28.2 widened the parameters from a whole ``HarnessProfile`` to
+    the two fields it actually reads, so the profile's ``[wrapper]`` binary
+    resolves through the IDENTICAL probe rather than a second copy of it."""
+    on_path = shutil.which(binary)
     if on_path is not None:
         return on_path
     if repo_root is None:
         return None
-    for rel_dir in profile.fallback_bin_dirs:
-        candidate = Path(repo_root) / rel_dir / profile.binary
+    for rel_dir in fallback_bin_dirs:
+        candidate = Path(repo_root) / rel_dir / binary
         if candidate.is_file() and os.access(candidate, os.X_OK):
             return str(candidate)
     return None
@@ -126,7 +145,9 @@ class BmadBuildHarness:
                     )
                 )
                 continue
-            binary_path = _resolve_binary(profile, repo_root)
+            binary_path = _resolve_binary(
+                profile.binary, profile.fallback_bin_dirs, repo_root
+            )
             if binary_path is None:
                 skipped.append(
                     HarnessCandidateSkip(
@@ -139,12 +160,27 @@ class BmadBuildHarness:
             if failure is not None:
                 skipped.append(HarnessCandidateSkip(profile=name, reason=failure))
                 continue
+            # Story 28.2: probe the wire-compression wrapper's binary while
+            # `repo_root` is in hand. Deliberately AFTER the candidate has
+            # already won -- an unresolvable wrapper degrades its own layer
+            # (MRS-DISP-033) and never disqualifies an otherwise
+            # dispatchable profile, and no authcheck runs against it (the
+            # wrapper carries no credentials of its own; it launches the
+            # CLI whose auth was just confirmed).
+            wrapper_binary_path = (
+                _resolve_binary(
+                    profile.wrapper.binary, profile.wrapper.fallback_bin_dirs, repo_root
+                )
+                if profile.wrapper is not None
+                else None
+            )
             return HarnessResolution(
                 profile=name,
                 binary_path=binary_path,
                 spec=profile,
                 skipped=tuple(skipped),
                 profile_errors=profile_errors,
+                wrapper_binary_path=wrapper_binary_path,
             )
         return HarnessResolution(
             profile=None,
@@ -163,6 +199,7 @@ class BmadBuildHarness:
         model: str | None,
         budget_env: Mapping[str, str],
         log_path: Path,
+        wire_layer: Mapping[str, object] | None = None,
     ) -> DispatchLaunchResult:
         if not resolution or resolution.spec is None or resolution.binary_path is None:
             raise BuildHarnessError(
@@ -179,24 +216,68 @@ class BmadBuildHarness:
             f"paths under _bmad-output/projects/{project_slug}/ — never "
             f"scripts/bmad-switch.\n"
         )
+        # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-
+        # compression decision, resolved from the SAME `[context]` payload
+        # `core/policy.py::resolve_context_layers` hands both engines. The
+        # store directory is created HERE -- `core/harness_profile.py` is
+        # pure (AD-4) and may not touch the filesystem, and a store the
+        # wrapper cannot write to would make its compression irreversible,
+        # so an uncreatable store DISABLES the layer rather than launching
+        # into it (reversible or absent).
+        wire = _resolve_wire_wrap(
+            profile,
+            wire_layer=wire_layer,
+            home=worktree,
+            wrapper_binary_path=resolution.wrapper_binary_path,
+        )
+        if wire.applied and wire.store_dir is not None:
+            try:
+                Path(wire.store_dir).mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                wire = WireWrap(
+                    applied=False,
+                    reason=(
+                        f"wire-compression store {wire.store_dir!r} could not be "
+                        f"created: {exc} -- the layer is off for this launch (a "
+                        "store the wrapper cannot write to makes its compression "
+                        "irreversible) and the session runs unwrapped"
+                    ),
+                    aggressiveness=wire.aggressiveness,
+                )
         argv, rendered_model, model_omitted_reason = _render_dispatch_argv(
             profile,
             binary_path=resolution.binary_path,
             worktree=worktree,
             prompt=prompt,
             model=model,
+            wire=wire,
         )
 
         # Precedence, lowest to highest: the operator's environment, the
-        # profile's own declared vars, marshal's per-invocation project pin,
-        # the policy budget env -- a profile may tune its CLI but never
-        # repoint the dispatched project or the budget ceilings.
+        # profile's own declared vars, the wire layer's own vars (Story
+        # 28.2), marshal's per-invocation project pin, the policy budget
+        # env -- a profile or a wrapper may tune its CLI but never repoint
+        # the dispatched project or the budget ceilings.
         child_env = {
             **os.environ,
             **dict(profile.env),
+            **dict(wire.env),
             "BMAD_ACTIVE_PROJECT": project_slug,
             **dict(budget_env),
         }
+        if wire.applied:
+            # Wrapping replaces the resolved CLI path with the wrapper's
+            # prefix, and the wrapper then resolves the CLI itself off
+            # PATH. A CLI that only lives in a profile `fallback_bin_dirs`
+            # entry (the pixi-env case this repo runs on) would vanish at
+            # that point, so its own directory is prepended -- restoring
+            # exactly the reachability the unwrapped launch already had,
+            # and nothing more.
+            binary_dir = str(Path(resolution.binary_path).parent)
+            existing_path = child_env.get("PATH", "")
+            child_env["PATH"] = (
+                f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
+            )
         try:
             log_file = open(log_path, "wb")  # noqa: SIM115
         except (OSError, ValueError) as exc:
@@ -237,4 +318,5 @@ class BmadBuildHarness:
             budget_env=dict(budget_env),
             profile=profile.name,
             model_omitted_reason=model_omitted_reason,
+            wire=wire,
         )

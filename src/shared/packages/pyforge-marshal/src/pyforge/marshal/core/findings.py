@@ -1625,6 +1625,25 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DRAIN-013",
         "MRS-DRAIN-014",
         "MRS-DRAIN-015",
+        # Story 28.2 (wire compression at the harness seam,
+        # SPEC-marshal-token-economy CAP-2): the declared `[context]`
+        # `wire` layer was ENABLED but could not be applied to this launch
+        # -- the resolved harness profile declares no `[wrapper]`, the
+        # wrapper binary did not resolve, or its loop-home-scoped CCR store
+        # could not be created. WARN, not ERROR: the spec's own
+        # graceful-degradation constraint is "disables its layer with a
+        # named finding, never blocks a run", and this launch is already
+        # viable unwrapped. A DISABLED wire layer raises nothing at all --
+        # there is no degradation to report about a layer nobody enabled.
+        "MRS-DISP-033",
+        # Story 28.2, the same layer on the OTHER engine: `marshal factory
+        # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
+        # launches the coding CLI, so marshal's harness-seam wrapper has no
+        # command to wrap there. Enabling the wire layer for a spin run
+        # therefore reports what did NOT happen (WARN, the
+        # MRS-SPIN-004/006/007/008/009 advisory tier) instead of leaving
+        # the operator to believe a bmad-loop run was compressed.
+        "MRS-SPIN-017",
     }
 )
 

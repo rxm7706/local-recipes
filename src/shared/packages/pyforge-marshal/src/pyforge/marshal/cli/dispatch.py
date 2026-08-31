@@ -51,6 +51,7 @@ from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import dispatch_fleet
+from ..core import harness_profile
 from ..core import policy
 from ..core.dispatch_completion import (
     DispatchCompletionInput,
@@ -906,10 +907,24 @@ def dispatch_once(
     # Story 28.1 (SPEC-marshal-token-economy CAP-1): the SAME composition
     # site `adapters/harness_bmadloop.py::render_policy_toml` (bmad-loop
     # spin) resolves its `[context]` block from -- one function, both
-    # engines. Declaration plumbing only: no launch behavior changes on
-    # this key yet (CAP-2 wires the harness seam).
+    # engines. Story 28.2 (CAP-2) makes the `wire` entry of this SAME
+    # payload load-bearing on this engine: it is handed to
+    # `BuildHarnessPort.dispatch` below, which resolves the profile's
+    # declared wrapper against it. Every other layer stays declaration-only
+    # until its own story lands.
     context_payload = policy.resolve_context_layers(effective_policy)
     data["context"] = context_payload
+    # Story 28.2 (CAP-2): seed the wire disposition to OFF here, the moment
+    # the `[context]` payload it derives from exists, so `data["wire"]` is
+    # present on EVERY envelope this verb can still emit -- including the
+    # `BuildHarnessError` path below, which returns without ever reaching
+    # the launch result and so used to omit the key from precisely the
+    # envelope an operator most wants to inspect. `ports/build_harness.py`
+    # promises the disposition is "a recorded fact of every dispatch", and
+    # `cli/spin.py` echoes its own unconditionally; a key that is sometimes
+    # absent makes every consumer guard a read that was specified not to
+    # need one. Overwritten with the real decision once a launch returns.
+    data["wire"] = harness_profile.WireWrap(applied=False).journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
@@ -1107,6 +1122,10 @@ def dispatch_once(
             model=model,
             budget_env=budget_env,
             log_path=log_path,
+            # Story 28.2 (CAP-2): the wire layer's own resolved entry --
+            # never the whole `[context]` payload. The launch seam has no
+            # business reading a layer it does not implement.
+            wire_layer=context_payload[harness_profile.WIRE_LAYER_NAME],
         )
     except BuildHarnessError as exc:
         findings.append(
@@ -1141,6 +1160,28 @@ def dispatch_once(
                 message=launch.model_omitted_reason,
             )
         )
+    # Story 28.2 (CAP-2): what the wire layer actually did to THIS launch --
+    # echoed and journaled whether it applied, degraded, or stayed off, so
+    # "was this session wrapped?" is a recorded fact rather than an
+    # inference from an argv nobody kept. A degradation over an ENABLED
+    # layer additionally raises MRS-DISP-033 (WARN): the layer disabling
+    # itself is always named, never silent -- and never blocking, the
+    # session is already live and unwrapped.
+    # A harness that returns no decision at all (the port's field is
+    # optional) composes the SAME off-shape through `WireWrap` rather than a
+    # hand-spelled literal -- `journal_payload()` is the one spelling of
+    # this payload, so adding a field to `WireWrap` cannot silently leave a
+    # call site behind.
+    wire = launch.wire if launch.wire is not None else harness_profile.WireWrap(applied=False)
+    data["wire"] = wire.journal_payload()
+    if wire.reason is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-033",
+                severity=Severity.WARN,
+                message=wire.reason,
+            )
+        )
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, 1),
         ts=_format_entry_ts(_now_utc()),
@@ -1154,6 +1195,9 @@ def dispatch_once(
             "model": launch.model,
             "budget_env": dict(launch.budget_env),
             "harness_profile": launch.profile,
+            # A fresh dict per call (never the one already in `data`), so
+            # the journal payload and the echoed envelope can never alias.
+            "wire": wire.journal_payload(),
         },
     )
     try:
