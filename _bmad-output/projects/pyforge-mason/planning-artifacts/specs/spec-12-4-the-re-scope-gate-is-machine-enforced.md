@@ -260,3 +260,8 @@ coordination; clause (d)'s self-reported-status design vs. clauses (a)-(c)'s ind
 verified checks; two pre-existing minor tolerance gaps shared with clauses (a)/(b)) are real
 but judged out of this story's scope — tracked in frontmatter `deferred` for whoever picks up
 Story 12.5 or a future hardening pass.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

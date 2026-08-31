@@ -94,7 +94,7 @@ Ahead/behind: `git rev-list --left-right --count <source>...<branch>` from the w
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests -q` -- expected: all passed (incl. new status tests)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

@@ -55,3 +55,8 @@ only job_id; task calls `pyforge.warden.cli.main(["scan", ...])`.
 - [x] Models + migration (storage_key)
 - [x] Upload + Celery task
 - [x] Wire urls/settings
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

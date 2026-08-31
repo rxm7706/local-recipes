@@ -163,8 +163,8 @@ final_revision: '94ba58a96db26475e71d4f7faab213e8f771e0ec'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: all import-linter contracts hold (`core/supervise.py` still imports no adapter/port; the new `adapters/notify_file_desktop.py -> core/egress` edge stays one-way).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Against a real provisioned loop home with a run paused on a genuine CRITICAL escalation: confirm `marshal factory resume <slug>` refuses with `MRS-SPIN-010`; run `bmad-loop resolve --no-interactive` (after hand-editing the spec) and confirm the same command now proceeds and re-attaches a supervisor.

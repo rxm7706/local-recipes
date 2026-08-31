@@ -112,8 +112,7 @@ The guard test is a static text scan over the Containerfiles as committed — it
 ## Verification
 
 **Commands:**
-- `python -m pytest tests/packaging -q` -- expected: all tests pass, including every new test in `test_containerfile_base_layer_convention.py`, with the same or greater total test count as before this change.
-- `python -m pytest tests/packaging/test_containerfile_base_layer_convention.py -v` -- expected: all tests pass, including the parametrized synthetic-regression cases (visible individually with `-v`).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Read `docs/reference/container-base-layer-convention.md` and confirm it names all three Containerfiles by relative path and states the base-tag-pinning, multi-stage-materialization, and `--mount=type=secret`-only rules explicitly.

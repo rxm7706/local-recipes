@@ -133,3 +133,8 @@ Fourth instance recorded of a broad ignore rule hiding a file nobody could see w
 `tests/unit/test_sources_deps_independence.py` goes one step further than every sibling
 independence test: it bars `bmad_loop` as well as `pyforge.marshal`, at module scope,
 lazily, and as a string constant. S-6.10 generalises that shape across every source.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

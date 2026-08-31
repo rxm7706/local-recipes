@@ -329,14 +329,7 @@ This story's obligation is limited to `--write-baseline`, which reconciles the s
 ## Verification
 
 **Commands:**
-- `pixi install -e python-agent-platform` -- expect a clean solve, exit 0
-- `pixi run -e python-agent-platform python --version` -- expect `Python 3.12.x`
-- `pixi list -e python-agent-platform | grep -E "^(langflow|dbgpt|dbgpt-serve|django|fastapi|django-health-check|psycopg2|redis-py) "` -- expect all eight present
-- `pixi run -e local-recipes llms-full-check` -- expect exit 0
-- `python scripts/bmad_drift_check.py` -- run before AND after `--write-baseline`; expect no
-  NEW finding introduced by this story's `pixi.toml` change after stamping
-- `git diff -- environment.yaml` -- expect only the regenerated `build`-env content (no
-  `python-agent-platform` leakage into that file)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -276,10 +276,7 @@ neutralized → 3 deterministic failures) as the proof the tests can fail.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py -q` -- expected: `1 failed, 9 passed` — the 9 are the 5 pre-existing S-13.1/CLI tests + the 4 S-12.5 tests; the 1 failure is `test_spec_surface_check_green`, red before AND after this story from the pre-existing foreign findings
-- Negative control (proves the S-12.5 tests can fail): neutralize the `fcntl.flock` line in a copy (or in place, restoring after) and re-run the 3 lock tests -- expected: 3 deterministic failures (observed 2026-08-21: `3 failed in 0.44s`)
-- `pixi run --frozen -e local-recipes spec-surface-check` (before/after diff against the captured pre-change set, story files staged) -- expected: exactly one new finding, the `spec-conda-forge-expert-rebuild` drift for the edited test file (63 -> 64)
-- `ruff check scripts/spec_surface_check.py .claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py` (pixi env) -- expected: no NEW findings vs pre-change (5 pre-existing: 4x PLW1510 test-file, 1x EXE001 script)
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

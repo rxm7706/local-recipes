@@ -132,10 +132,7 @@ overlay would.
 ## Verification
 
 **Commands:**
-- `npm install && npm run build` -- clean production build (Vite, no warnings beyond the
-  pre-existing `esbuild` postinstall-script notice common to every Vite app in this repo).
-- `npm run test` (`vitest run`) -- 6 passing tests in `App.test.jsx` (tab switch + hash
-  persistence + initial-hash read + desktop/tablet/mobile sidebar collapse + filter echo).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (headless-browser, not just static reasoning):**
 - `npm run preview` + Playwright (`chromium.launch()`, the interpreter's bundled build under

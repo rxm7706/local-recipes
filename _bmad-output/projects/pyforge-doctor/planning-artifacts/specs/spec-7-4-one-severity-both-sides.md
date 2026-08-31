@@ -119,10 +119,7 @@ WARN-producing scenarios in a sibling source module.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, count increased by
-  exactly one new test (852 -> 853).
-- `python scripts/spec_surface_reconcile.py` -- expected: `OK: every tracked file governed or
-  allowlisted; no drift.` after the `.memlog.md` entry + re-stamp.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git diff --stat` touches only the test file and `spec-pyforge-doctor/.memlog.md` (+ the

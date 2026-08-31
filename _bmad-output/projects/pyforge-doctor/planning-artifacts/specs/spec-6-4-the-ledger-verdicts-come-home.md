@@ -226,24 +226,7 @@ explicitly out of this story's surface (Epic 6 context, Known Blocker 4:
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass (449 + new).
-- `python -c "from pyforge.doctor.sources import ledger, marshal; from pathlib import Path; print(ledger.gather(Path('.'))); print(marshal.gather_story_status(Path('.')))"` (from the monorepo root) -- expected: no traceback, one or more well-formed `Finding` tuples.
-
-**NOTE on running the suite from a bmad-loop worktree.** `pixi run -e
-pyforge-doctor pyforge-doctor-test` resolves its test path relative to the
-MAIN checkout, so invoking it while working in a run worktree silently tests
-`main`'s sources, not the branch's (observed this pass: 422 passed against
-main while the branch had 491). Point the env's interpreter at the worktree
-explicitly and confirm which module was imported:
-
-```
-PYTHONPATH=<worktree>/src/shared/packages/pyforge-doctor/src \
-  <repo>/.pixi/envs/pyforge-doctor/bin/python -m pytest tests -q
-```
-
-`pyforge` is a namespace package with no `__init__.py`, so the worktree's
-`pyforge.doctor` and the env's `pyforge.warden` resolve together.
-
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

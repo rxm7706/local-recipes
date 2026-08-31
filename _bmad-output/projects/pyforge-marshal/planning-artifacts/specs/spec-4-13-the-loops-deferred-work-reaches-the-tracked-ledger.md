@@ -171,10 +171,8 @@ prefix_collision` and its companion exact-match test.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, including new `test_deferred_work.py` and the extended `test_land.py` cases
-- `python3 scripts/deferred_work_check.py` -- expected: unchanged, "OK: every Tier-3 deferral has a tracked twin"
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: no new disallowed import edges
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: clean
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

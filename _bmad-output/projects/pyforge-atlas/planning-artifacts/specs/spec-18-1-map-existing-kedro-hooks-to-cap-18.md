@@ -96,8 +96,8 @@ Three atlas-owned specs: `pyforge.atlas.catalog`, `pyforge.atlas.pipeline`, `pyf
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/test_cap18_kedro_hook_map.py -q` -- expected: all new tests pass
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/test_hooks.py src/shared/packages/pyforge-atlas/tests/test_admission.py -q` -- expected: existing hook/admission tests still pass
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

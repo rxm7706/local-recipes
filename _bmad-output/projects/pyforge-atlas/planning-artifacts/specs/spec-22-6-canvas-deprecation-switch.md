@@ -213,10 +213,8 @@ story ID.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e local-recipes test-packaging` -- expected: pass, including the new
-  `INVENTORY_IDENTITY_UI` mode-gating tests in `tests/packaging/test_openteams_handoffs.py`.
-- `pixi run --frozen -e local-recipes dashboard-dryrun` -- expected: stays green, unaffected
-  (this story does not touch `tests/dashboard/` or any Vizro dashboard code).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `INVENTORY_IDENTITY_UI=vizro python scripts/conda-forge-packaging-inventory-operations_priority.py --xlsx <fixture.xlsx> --canvas /tmp/should-not-exist.canvas.tsx` --

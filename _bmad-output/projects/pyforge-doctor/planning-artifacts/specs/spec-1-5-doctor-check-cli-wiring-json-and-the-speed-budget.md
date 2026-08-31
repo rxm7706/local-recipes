@@ -153,8 +153,7 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full unit + meta suite green, including the new CLI and speed-budget tests.
-- `pixi run -e pyforge-doctor doctor check --json` -- manual smoke check once implemented: one schema-valid document on stdout.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

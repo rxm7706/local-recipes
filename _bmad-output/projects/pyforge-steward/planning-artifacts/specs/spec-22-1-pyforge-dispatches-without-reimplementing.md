@@ -139,5 +139,4 @@ Verification: 141 passed on the spec command subset; `dispatch_argv(['pyforge','
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-core pytest -q src/shared/packages/pyforge-core/tests/unit src/shared/packages/pyforge-core/tests/meta/test_cli_parity_matrix.py src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py` — expected: all pass (parity matrix generated; sibling sole-ownership reds are pre-existing and out of this story)
-- `python -c "from pyforge.core.dispatch import dispatch_argv; print(dispatch_argv(['pyforge','steward','keys','list'], packages_root=__import__('pathlib').Path('src/shared/packages')))"` from repo root with PYTHONPATH=`src/shared/packages/pyforge-core/src` — expected: `['steward', 'keys', 'list']`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

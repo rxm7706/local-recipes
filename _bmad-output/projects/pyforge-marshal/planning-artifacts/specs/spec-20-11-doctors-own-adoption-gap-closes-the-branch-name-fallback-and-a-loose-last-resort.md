@@ -271,3 +271,9 @@ working tree, the ledger flip for key
 `20-11-doctors-own-adoption-gap-closes-the-branch-name-fallback-and-a-loose-last-resort`, and
 the `maintenance` PR label — this touches `src/` and `_bmad-output/`, never `recipes/**`) is the
 dispatcher's, matching every other story landed this session.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

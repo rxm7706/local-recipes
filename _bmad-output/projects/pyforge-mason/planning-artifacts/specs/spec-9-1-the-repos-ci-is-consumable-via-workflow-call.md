@@ -119,7 +119,4 @@ avoids touching `linter.py` and matches how staged-recipes forks already vendor 
 ## Verification
 
 **Commands:**
-- `python -c "import yaml; yaml.safe_load(open('.github/workflows/reusable-staged-recipes-linter.yml'))"` -- expected: no exception
-- `python -c "import yaml; yaml.safe_load(open('.github/workflows/reusable-staged-recipes-linter-selftest.yml'))"` -- expected: no exception
-- compare `staged-recipes-linter.yml` and `detectors.yml` against pre-story content -- expected: unchanged
-- `actionlint .github/workflows/reusable-staged-recipes-linter*.yml` -- expected: no findings (if `actionlint` available; else rely on YAML-parse + manual schema review)
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

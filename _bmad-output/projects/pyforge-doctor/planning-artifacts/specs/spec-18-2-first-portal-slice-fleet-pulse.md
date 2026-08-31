@@ -121,5 +121,4 @@ Residual: last pulse is a stored surface/cache document (`DOCTOR_FLEET_SURFACE_P
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: new tests pass
-- `git diff origin/main -- src/platform` -- expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

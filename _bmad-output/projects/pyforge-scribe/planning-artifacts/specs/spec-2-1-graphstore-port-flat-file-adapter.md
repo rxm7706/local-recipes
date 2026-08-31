@@ -128,8 +128,7 @@ calls (AD-6) as this story's own deliverable, not deferred.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- expected: full suite green (existing 32 tests + new `test_graph_store.py` cases)
-- `git diff --stat` -- expected: only the files in Code Map changed
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

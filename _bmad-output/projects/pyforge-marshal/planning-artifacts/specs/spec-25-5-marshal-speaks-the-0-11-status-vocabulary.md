@@ -103,8 +103,5 @@ State precedence: escalation-pause > parked > finished/unsupervised — a park "
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests -q` -- expected: all pass (>5187).
-- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_loop_stall_check_awaiting_operator.py .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_awaiting_operator.py -q` -- expected: pass.
-- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py .claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py -q` -- expected: pass.
-- `pixi project export conda-environment -e build | diff - environment.yaml` -- expected: no diff (pixi.toml description edit does not move the export).
-- `python scripts/spec_surface_reconcile.py` -- expected: 0 findings (memlog + scoped stamps AFTER `git add` for governed files; fleet_picture/loop_stall_check are allowlisted).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

@@ -95,9 +95,7 @@ A Warden `HookSpec` used in tests is synthetic (`name="pyforge.warden.pr-gate"`,
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_hooks_plugins.py src/shared/packages/pyforge-doctor/tests/unit/test_cli_diagnose.py src/shared/packages/pyforge-doctor/tests/meta/test_prescribe_pure_function.py -q` -- expected: all pass
-- `pixi run -e pyforge-core pytest src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py -q` -- expected: pass (no parallel doctor group)
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: suite green (one pre-existing hygiene live-fixture fail is deferred)
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

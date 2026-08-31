@@ -139,8 +139,7 @@ def gather_one(category: str, name: str, target: Path) -> Finding | None:
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full unit + meta suite passes (this worktree's path is well under the pixi-build-python panic threshold recorded in `deferred-work.md`, per Story 1.2's identical successful run).
-- `PYTHONPATH=src/shared/packages/pyforge-doctor/src:src/shared/packages/pyforge-warden/src python3 -m pytest src/shared/packages/pyforge-doctor/tests -q` -- expected: full suite green, substitute verification if the pixi task cannot run.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Actual results (2026-07-30):**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- **115 passed** (pre-review), **116 passed** (post-review, one new test added). No `pixi-build-python` panic; this worktree's root is well under the recorded threshold.

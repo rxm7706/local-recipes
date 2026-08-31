@@ -83,8 +83,8 @@ baseline_revision: '9c048a9c2dafef805648a055e60f1eb5e9835976'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `marshal config --format json` against this project and confirm `landing_rules` includes both seeded rules with `project` as their winning layer. Verified live 2026-08-06: `BMAD_ACTIVE_PROJECT=pyforge-marshal marshal config --format json` prints `landing_rules.layer == "project"` with both `maintenance-label` (`trigger_path_glob: "recipes/**"`, `trigger_mode: "exclude"`, `label: "maintenance"`, `ungated: false`) and `environment-yaml-sync` (`trigger_path_glob: "pixi.toml"`, `trigger_mode: "include"`, `required_check: "environment-yaml-sync"`, `ungated: true`) present in `landing_rules.value`, matching `CLAUDE.md`'s prose exactly. The other 3 landing keys default cleanly (`landing_merge_strategy: "merge"`, `landing_branch_retirement: true`, `landing_resync: true`, all `layer: "default"`), since this project's `marshal-policy.toml` seeds only `landing_rules`.

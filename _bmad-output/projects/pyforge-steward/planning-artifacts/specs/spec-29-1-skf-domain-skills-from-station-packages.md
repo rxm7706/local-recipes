@@ -92,7 +92,4 @@ Personas (CAP-16) consult this content skill later; they are BMAD launcher skill
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` — expected: new meta tests pass with existing suite
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py -q` — expected: all pass
-- `python3 .claude/skills/shared/scripts/skf-validate-frontmatter.py .claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md --skill-dir-name pyforge-scribe` — expected: pass
-- `python3 .claude/skills/shared/scripts/skf-validate-output.py .claude/skills/pyforge-scribe/0.1.0/pyforge-scribe --generated-by create-skill` — expected: no high-severity FAIL
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

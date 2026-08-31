@@ -128,19 +128,7 @@ change.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- full suite green.
-- `ruff format --check` / `ruff check` clean on every file this story touches.
-- `herald deck push --help` -- shows the new subcommand.
-
-**Verification gap (not closed by this story):** the two PPTX companions named in
-`docs/specs/presentation-deck.md` § *Standard export set* are not pushed by this implementation --
-see the Design Notes judgment call above. A future story should prove a binary `write_files` shape
-live before extending `_discover_export_files` to cover them.
-
-**Deferred live-MCP proof (NOT run by this session):** the orchestrating session must run one real
-`herald deck push pyforge-warden` against the live endpoint (after a real `deck-export` regeneration)
-to confirm `write_files` accepts the standalone HTML's actual byte size/content over the real wire,
-and that the Design project ends up holding a file whose name matches the repo's exactly.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

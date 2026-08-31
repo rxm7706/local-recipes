@@ -179,10 +179,7 @@ publish during this run (2026-08-14).
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test-slow` -- expected: both self-hosting tests
-  (`test_package_build.py`'s existing one + this story's new one) pass.
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- expected: full fast suite still green,
-  no regression.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

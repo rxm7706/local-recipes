@@ -181,10 +181,7 @@ story of this size. The CLI verb writes them to `--output-dir` when given.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: full suite green, including the new `tests/conformance/test_deploy_perimeter.py` and the extended `tests/meta/test_invariants.py`
-- `pixi run -e pyforge-steward steward --version` -- expected: succeeds unchanged, evidence the base package still runs without the dashboard code path being invoked
-- `pixi install` (or the workspace's equivalent solve check) -- expected: the four new pins resolve against this repo's `conda-forge`/`SelfExplainML` channels
-
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

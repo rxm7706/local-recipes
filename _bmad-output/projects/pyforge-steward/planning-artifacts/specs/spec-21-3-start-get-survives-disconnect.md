@@ -97,7 +97,7 @@ Do not add start/get to the other seven stations (21.4).
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test pytest tests/test_start_get_survives_disconnect.py tests/test_supervisor_tables.py tests/test_atlas_mcp_host.py tests/meta/test_no_pyforge_import.py -q` — expected: all passed (cwd `src/platform`)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -228,15 +228,7 @@ case is never silently treated as "touches nothing."
 ## Verification
 
 **Commands:**
-- `python scripts/mason_cfe_surface_check.py` -- expected: exit 0, 0 findings, against the live repo
-  today.
-- `pixi run -e local-recipes mason-cfe-surface-check` -- expected: same, via the new task.
-- `pixi run -e local-recipes detectors -- --list` -- expected: `mason_cfe_surface_check` appears with
-  `scope=repo` and a resolved task (no registry-gap finding).
-- `python -m pytest tests/scripts/test_mason_cfe_surface_check.py -v` -- expected: every synthetic-fixture
-  scenario in the I/O matrix passes.
-- `pixi run -e local-recipes pyforge-doctor-scripts-test` -- expected: green, includes the new file.
-- `pixi run -e local-recipes spec-surface-check` -- expected: green (AC3).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

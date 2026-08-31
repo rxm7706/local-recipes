@@ -410,3 +410,9 @@ limitation outside this story's surgical scope. A handful of composite-score mea
 as pre-computed passthrough columns pending a future Kedro pipeline node (frontmatter `deferred`
 item 5). None of these residuals block this story's own AC as scoped; DW-D2-3's open status is the
 one that should stay visibly tracked rather than read as closed.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

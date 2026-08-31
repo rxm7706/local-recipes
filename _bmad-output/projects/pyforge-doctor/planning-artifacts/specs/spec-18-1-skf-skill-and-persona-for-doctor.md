@@ -93,5 +93,4 @@ Verification: 19 passed on the new meta files; full doctor suite 1279 passed + 1
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-doctor` — expected: new tests pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

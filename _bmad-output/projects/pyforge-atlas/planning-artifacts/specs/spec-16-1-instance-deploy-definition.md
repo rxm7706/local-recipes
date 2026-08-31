@@ -289,12 +289,8 @@ introduced.
 ## Verification
 
 **Commands:**
-- `git diff --stat -- src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py` --
-  expected: no output (zero diff — the frozen contract is untouched).
-- `pixi run -e pyforge-atlas kedro-test` -- expected: full pass, including
-  `tests/factory/test_lasuite.py` (untouched, still green) and
-  `tests/catalog/test_no_inline_io.py` (the no-inline-IO gate stays green since no HTTP client was
-  added anywhere in package code).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Read this spec's Design Notes and confirm: both parent-SPEC open questions (substrate, DW-H1

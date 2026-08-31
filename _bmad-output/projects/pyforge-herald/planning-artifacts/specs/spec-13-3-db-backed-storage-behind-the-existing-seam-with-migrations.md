@@ -392,12 +392,7 @@ redefined to `db.DEFAULT_DB_PATH` rather than removed, so every existing call si
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: all tests pass, including new
-  `test_db.py` and `test_export_progress_snapshot.py`
-- `pixi run -e pyforge-herald pyforge-herald-web-snapshot` -- expected: `success.json` still
-  exports correctly (claims path unaffected by the exporter-script changes)
-- `cd src/shared/packages/pyforge-herald/web && npm run build` -- expected: builds clean,
-  `public/progress.json`/`success.json`/`notices.json` all present
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - Seed `.herald/progress.json`/`claims.json`/`notices-index.json` by hand in a scratch repo

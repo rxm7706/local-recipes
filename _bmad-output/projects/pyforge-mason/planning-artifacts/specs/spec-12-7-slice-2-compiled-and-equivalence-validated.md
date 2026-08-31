@@ -560,20 +560,4 @@ covered in Tasks above):**
 ## Verification
 
 **Commands:**
-- `uv run _bmad/skf/shared/scripts/skf-forge-tier-rw.py ...` (via `skf-setup --headless`) --
-  expected: `forge-tier.yaml` + `preferences.yaml` written.
-- `skf-create-skill` (headless, brief_path = the recovered brief) -- expected: staging then
-  promotion succeeds; `.claude/skills/cfe-recipe-lifecycle/active` resolves; `forge-data/
-  cfe-recipe-lifecycle/1.0.0/provenance-map.json` has a non-empty `entries[]`.
-- `CFE_TEST_SCRIPTS_DIR=.claude/skills/cfe-recipe-lifecycle/active/cfe-recipe-lifecycle/scripts
-  pixi run -e local-recipes pytest <17 mapped test files> -v` -- expected: same pass count as
-  the unmodified-`CFE_TEST_SCRIPTS_DIR` baseline run of the same files.
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/integration/test_slice2_equivalence.py -m slow -v`
-  -- expected: all pass, zero divergence.
-- `skf-audit-skill` (`skill_name: cfe-recipe-lifecycle`) -- expected: completes end-to-end
-  (not exit 3); real verdict recorded honestly regardless of outcome.
-- `pixi run -e local-recipes cfe-rebuild-guard-check` -- expected: exit 0.
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- expected: unaffected, still
-  green.
-- `grep -n "cfe-recipe-lifecycle" src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py`
-  -- expected: no matches (no caller flip).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

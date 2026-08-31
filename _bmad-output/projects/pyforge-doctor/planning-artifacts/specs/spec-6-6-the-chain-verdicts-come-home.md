@@ -257,15 +257,7 @@ it here a fourth time.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass (current count + new).
-- `python -c "from pyforge.doctor.sources import chain; from pathlib import Path; r=Path('.'); print(chain.gather_dream_chain(r)); print(chain.gather_spec_surface(r)); print(chain.gather_deferred_work(r))"` (from the monorepo root) -- expected: no traceback, well-formed `Finding` tuples.
-
-**NOTE on running the suite from a bmad-loop worktree** (same caveat Stories 6.4/6.5
-recorded): point `PYTHONPATH` at this worktree's own `pyforge-doctor/src` and the
-env's interpreter explicitly, or the task silently tests `main`'s sources instead
-of the branch's.
-
-
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

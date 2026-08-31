@@ -130,9 +130,7 @@ A third gotcha surfaced only by an actual live deploy (not discoverable from `he
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-dev helm lint src/platform/deploy/charts/platform` -- expected: no errors (chart is unchanged by this story)
-- Local dry run of the new job's steps (kind create cluster, image build+load, ingress-nginx install, helm install --wait, curl through Ingress, teardown) -- expected: `/ht/` and `/admin/login/` both return 200 through the Ingress; matches CI's own logic before pushing
-- YAML syntax check on the edited workflow file -- expected: no parse errors
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm the new job does not reference `overlays/ocp/` anywhere and adds no new chart/values files under `src/platform/deploy/`

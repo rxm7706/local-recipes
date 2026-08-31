@@ -253,8 +253,4 @@ files during planning and review).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py -v`
-  -- expected: all existing + new tests pass.
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor -q` -- expected: no regressions
-  elsewhere in the package (e.g. `tests/meta/test_source_independence.py` still passes -- no new imports
-  outside stdlib/`yaml`).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

@@ -20,3 +20,9 @@ Result: module_version 0.8.1 -> 0.11.0, 10 files +398/-1075. Verification:
 `bmad-loop validate` 8/8 homes zero warnings post-refresh; retired-ID guard +
 bmad-artifacts integrity meta tests green (`.claude/skills/**` is outside the
 guard's include-list by design — skills carry their own names).
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

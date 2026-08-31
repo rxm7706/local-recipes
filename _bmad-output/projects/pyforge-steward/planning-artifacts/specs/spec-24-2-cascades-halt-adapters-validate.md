@@ -72,9 +72,7 @@ Depth is a CloudEvents extension (`pyforgeloopdepth`), not HTTP `X-PyForge-Loop-
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_cascades_halt_adapters_validate.py src/platform/tests/test_cloudevents_redis_broker.py -q` -- expected: all pass
-- `pixi run -e platform-ci-test pytest src/platform/tests/meta/test_no_pyforge_import.py -q` -- expected: pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

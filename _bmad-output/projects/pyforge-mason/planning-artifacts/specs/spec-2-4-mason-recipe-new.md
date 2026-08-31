@@ -263,8 +263,7 @@ judgment about what any of those words mean.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green, including the new
-  `generate_recipe`/`recipe.new`/`recipe new`-verb tests and the two updated table-shape assertions.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

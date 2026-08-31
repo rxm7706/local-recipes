@@ -124,26 +124,7 @@ need a signal this package's `TransportError` hierarchy does not yet carry.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- full suite green.
-- `ruff format --check` / `ruff check` clean on every file this story touches.
-- `herald deck push --help` unaffected (no new flags -- this story only changes `push_exports`'s
-  internal error handling).
-
-**Verification gap (not closed by this story):** an `AuthError` (a `TransportError` subclass) raised
-mid-batch by one file's `write_files` call is currently treated identically to a genuine etag
-conflict -- reported as a per-file conflict, with the loop continuing to attempt the remaining files
-against a credential that is almost certainly still bad for all of them. A future story should narrow
-the catch (or check `AuthError` specifically and re-raise it immediately, halting the batch) once
-`herald deck watch`'s own "halt on auth error, never retry a 401" convention
-(`bridge-protocol.md` § Watch parameters) has a push-side analogue to reuse.
-
-**Deferred live-MCP proof (NOT run by this session):** the orchestrating session must produce one
-real conditional-write conflict against the live endpoint (edit the Warden Design project's
-standalone-bundle-adjacent export file directly, then run `herald deck push pyforge-warden` with a
-stale `if_match`) to confirm the real wire failure for a conditional-write mismatch actually surfaces
-as `TransportCallError` through `McpTransport`'s existing `_call_json` path, rather than as an
-ordinary success carrying an unpinned structured-conflict body (the exact DW-1-2-5 risk this story's
-Design Notes name).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

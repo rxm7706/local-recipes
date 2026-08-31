@@ -257,11 +257,8 @@ concern) -- not a step-03 research item, a resolved detail.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e local-recipes dashboard-dryrun` -- expected: pass, including the three
-  new parity assertions (catalog row-key equality, ops pane-total equality, workbook honest-
-  degrade-on-both-sides) collected automatically from `tests/dashboard/`.
-- `python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_parity.py -v`
-  -- expected: all new tests pass in isolation.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Diff the new test module's shared fixture corpus against `GIST_SCHEMA` in

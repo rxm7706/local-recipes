@@ -77,8 +77,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
-- `pixi run --frozen -e pyforge-steward steward provision --list` / `--list --json` -- expected: real repo-root environments printed
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 161 passed (full Epic 3 suite; this story's own share is `test_provision_list.py`'s 8 tests).

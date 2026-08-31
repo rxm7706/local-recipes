@@ -229,8 +229,7 @@ exactly what this gate detects.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_deck_qa.py src/shared/packages/pyforge-herald/tests/test_cli_deck_qa.py -v` -- expected: all pass, including new image-slot-gate tests
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full existing suite stays green
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `pixi run -e pyforge-herald herald deck qa agentic-sdlc --repo-root .` -- inspect the

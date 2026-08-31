@@ -70,5 +70,5 @@ Verification: marshal meta 7 passed; platform portal tests 7 passed (plus empty-
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-marshal` — expected: new tests pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

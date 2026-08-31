@@ -607,17 +607,8 @@ instead of the current literal `github.com/conda-forge/{pkg}-feedstock` template
 ## Verification
 
 **Commands:**
-- `python3 -m pytest scripts/tests/` — expected: all new + existing tests pass.
-- `pixi run -e local-recipes python3 scripts/conda-forge-packaging-inventory-operations_metrics.py --help`
-  — expected: `--live-catalog`/`--live-catalog-only` listed.
-- `pixi run -e local-recipes python3 scripts/conda-forge-packaging-inventory-operations_metrics.py
-  --analysis-xlsx <existing fixture/workbook> --curated-config
-  conf/conda-forge-packaging-inventory-operations_curated_groups.json
-  --live-catalog src/shared/packages/pyforge-atlas/data --skip-revised-prompt`
-  — expected: exit 0, zero live-catalog warnings (real local data root already
-  clears every floor on this baseline).
-- Same command with `--live-catalog /tmp/empty-does-not-exist --live-catalog-only`
-  — expected: exit 2, no output file written.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

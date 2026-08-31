@@ -193,8 +193,7 @@ baseline mechanism to solve -- deliberately out of this story's scope.
 ## Verification
 
 **Commands:**
-- `python scripts/deferred_work_promote.py --fix --project doctor` (against a real project with zero live orphans today, per Story 8.1's classifier) -- expected: no-op, exit 0.
-- `python -m pytest tests/scripts/test_deferred_work_promote.py -v` -- expected: all pass, including the collision-abort byte-identical assertions.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

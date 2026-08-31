@@ -263,24 +263,7 @@ Not a new finding; not re-logged.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green, including the new
-  `diagnose_failure`/`recipe.diagnose`/`recipe diagnose`-verb tests and the updated `_CFE_SCRIPTS`
-  table-shape assertion.
-
-**Result (2026-08-12):** `pixi run -e pyforge-mason pyforge-mason-test` -- 723 passed (baseline 691 +
-32 new tests, incl. 4 added by the review pass below), 0 failed. `pixi run -e pyforge-mason
-pyforge-mason-test-slow` -- 723 deselected, 0 collected (unchanged; FR-46's delegation-fidelity test
-is still Story 5.3's, not this one's). Manual
-smoke test against `tests/fixtures/fake_cfe_root`: `mason recipe diagnose <log> --cfe-root <fixture>
---format json` returns `EXIT_OK` with the fixture's canned diagnosis in `data.json_body`; the same
-call with no resolvable CFE root returns `EXIT_CFE_UNAVAILABLE` (3) with the `cfe:unresolved` message
-on stderr, no subprocess spawned.
-
-One implementation note beyond the Code Map: `recipe.py`'s docstrings and `cli.py`'s dispatch comment
-initially spelled out the literal CFE script filename (`failure_analyzer.py`) in prose, which tripped
-`test_adapter_sole_caller.py`'s category-(b) scan (CFE script filename, no allowlist anywhere outside
-`cfe.py`, docstrings included). Fixed by describing the script only as "CFE's failure analyzer" in
-every file but `cfe.py` itself -- consistent with AD-3's existing rule, not a spec deviation.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

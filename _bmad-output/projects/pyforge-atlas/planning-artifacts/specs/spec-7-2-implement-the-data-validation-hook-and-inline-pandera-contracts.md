@@ -220,3 +220,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     `_sink is None`; the raised exception carries `.alert`, so nothing is lost at the raise site,
     only unconsumed. Both reviewers flagged; the _build_alert robustness fix (JSON-native evidence
     + rule fallback) landed in F2 so a real sink can't be crashed by a third-party backend.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

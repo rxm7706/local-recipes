@@ -132,7 +132,4 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
-- `pixi run --frozen -e pyforge-steward steward deploy status` -- expected: prints this repo's real last dashboard-touching commit
-
-**Results (2026-08-07):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 122 passed (114 pre-existing + 8 new in `test_deploy_status.py`).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

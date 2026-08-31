@@ -236,6 +236,4 @@ picks the effective floor when more than one table declares it.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py src/shared/packages/pyforge-doctor/tests/unit/test_models.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py -v` -- expected: all pass, including the registry/schema/independence exhaustiveness tests with zero hand-edits beyond the Code Map's listed files.
-- `pixi run -e local-recipes python -m pyforge.doctor.sources bmad-method-version-drift` -- expected: one `warn` line naming `6.10.0` vs `>=6.11.0` against this repo's own current state (proves the real drift fires live, matching the Spec's own success signal).
-
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

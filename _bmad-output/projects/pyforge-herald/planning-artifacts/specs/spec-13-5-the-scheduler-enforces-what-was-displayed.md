@@ -145,8 +145,7 @@ delegate to it, avoids a third copy of the same four lines.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full suite green, including new `test_scheduler.py` and `test_cli_epic13.py`
-- `pixi run --frozen -e pyforge-herald herald scheduler run --repo-root /tmp/herald-demo --json` -- expected: valid JSON summary, exit 0, against a scratch `.herald/` dir
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `docs/cli-runbooks.md`'s crontab line is copy-pasteable and matches the actual `herald scheduler run` invocation added to `cli.py`.

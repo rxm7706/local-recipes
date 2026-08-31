@@ -198,10 +198,7 @@ story's job is the verb-surface-level behavior a `mason package ship` invocation
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: the suite is green, including the new
-  `tests/meta/test_cfe_independence.py` file, with zero tests skipped/xfailed in it.
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_cfe_independence.py -v`
-  -- expected: every test in the new file passes.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -180,11 +180,7 @@ malformed local one does (folds into `_fetch_latest_upstream_version`'s own `Non
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py src/shared/packages/pyforge-doctor/tests/unit/test_models.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py -v` -- expected: all pass, zero live network calls made.
-- `pixi run -e local-recipes python -m pyforge.doctor.sources bmad-method-version-drift` --
-  expected: today's live state (installed `6.10.0`) reports drift against both the declared
-  floor (`>=6.11.0`) and the actual latest npm release (`6.11.0` as of this story's authoring)
-  -- 2 Findings, both WARN currently since they coincide.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

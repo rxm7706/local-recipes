@@ -285,14 +285,7 @@ in `test-architecture.md` and is not a defect to work around here.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (236 existing +
-  new fixture-self-tests), still excludes `slow` (none exist yet, so behavior is unchanged from
-  today's unfiltered run).
-- `pixi run -e pyforge-mason pyforge-mason-test-slow` -- expected: `no tests ran` (exit code 5) --
-  documented in Design Notes, not a failure of this story.
-- `python3 src/shared/packages/pyforge-mason/tests/fixtures/fake_cfe_root/.claude/scripts/conda-forge-expert/validate_recipe.py`
-  -- expected: prints the real script's `--json` shape (`{"passed": true, "errors": [], ...}`) and
-  exits `0`, run directly with no pytest involved, proving the stub is a genuine standalone script.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

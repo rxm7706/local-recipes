@@ -195,14 +195,7 @@ this story executes its last task, not the number written here.
 ## Verification
 
 **Commands:**
-- `python scripts/deferred_work_baseline.py --write-baseline` -- expected: stamps
-  `scripts/.deferred-work-baseline.json` with one entry per discovered project; counts match a
-  fresh, independent count run against each project's `deferred-work.md`.
-- `python -m pytest tests/scripts/test_deferred_work_baseline.py -q` -- expected: all pass.
-- `pixi run -e pyforge-ci pyforge-doctor-scripts-test` -- expected: green (the new test file is
-  picked up by the existing `tests/scripts -q` task with no pixi.toml change).
-- `python -m pyforge.doctor.sources deferred-work` -- expected: UNCHANGED output vs. before
-  this story (`deferred-work: ok`) -- proves this story adds no detector-side behavior change.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git diff --stat` touches only `scripts/deferred_work_baseline.py`,

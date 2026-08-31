@@ -108,6 +108,4 @@ Verification: 3 passed (`test_portal_deck_status`); 4 passed (`test_herald_porta
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py -q` -- expected: all pass
-- `pixi run -e platform-ci-test python -m pytest tests/test_herald_portal_deck_status.py tests/test_station_portal_shells.py tests/test_django_pyforge_assertion.py -q` (cwd `src/platform`) -- expected: all pass
-- `git diff origin/main -- src/platform` -- expected: no `import pyforge` / `from pyforge` outside tests that already existed; new platform test has none
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

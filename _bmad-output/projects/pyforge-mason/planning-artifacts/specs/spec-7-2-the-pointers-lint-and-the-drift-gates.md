@@ -173,15 +173,7 @@ context's explicit convention pointer and the `*_check.py` exemplars already in 
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes failure-catalog-check` -- expected: exit 0, `null_rows` reported,
-  zero findings against the real committed catalog.
-- `python scripts/detectors.py --list` -- expected: `failure_catalog_check` listed, scope=repo,
-  resolved task, no new registry finding.
-- `pixi run -e local-recipes test` -- expected: full CFE suite (incl. the 7.1 freshness meta-test)
-  still green.
-- `python -m pytest tests/scripts/test_failure_catalog_check.py -q` -- expected: all new tests
-  pass, including the bogus-pointer and drift red-first cases.
-
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

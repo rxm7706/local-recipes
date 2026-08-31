@@ -183,9 +183,7 @@ of this exact recovery.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, including the
-  extended and new `test_sources_hygiene.py` cases and the unchanged `test_read_only_guard.py`
-  suite.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

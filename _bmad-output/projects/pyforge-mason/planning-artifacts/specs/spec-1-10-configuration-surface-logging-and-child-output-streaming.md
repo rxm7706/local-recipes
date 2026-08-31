@@ -646,10 +646,7 @@ third and fourth passes established is unchanged.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (242 existing + new
-  tests), still excludes `slow`.
-- `python3 scripts/detectors.py --scope repo` -- expected: `spec_surface_check` passes; other
-  detectors' pre-existing branch-staleness findings (if any) are out of scope.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

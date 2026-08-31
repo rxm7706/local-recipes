@@ -359,10 +359,7 @@ new_jira_baseline = _serialize_baseline({**jira.baseline, _TRACKED_FIELD: target
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (including
-  updated and newly added tests), exit 0, zero live network calls.
-- `pixi run -e pyforge-steward pyforge-steward-dogfood` -- expected: unaffected (`steward
-  --version && steward keys audit --drift` still succeeds).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

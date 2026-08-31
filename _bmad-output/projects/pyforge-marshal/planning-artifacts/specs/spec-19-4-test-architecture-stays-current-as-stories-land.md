@@ -112,9 +112,8 @@ python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py -q` -- expected: all passed
-- `pixi run -e local-recipes tea-playwright-check` -- expected: exit 0 on current main tree (or after any intentional regen in this PR)
-- `python _bmad/scripts/bmad_tea_playwright.py --project pyforge-herald --dry-run` and `--project pyforge-marshal --dry-run` -- expected: exit 0, no TBD
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

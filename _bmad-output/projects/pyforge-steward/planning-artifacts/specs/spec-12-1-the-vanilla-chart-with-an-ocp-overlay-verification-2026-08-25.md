@@ -83,3 +83,8 @@ oc get route platform-ocp -o jsonpath='{.status.ingress[0].conditions}'
 oc exec platform-postgres-0 -- id
 curl -sk -o /dev/null -w '%{http_code}' https://platform.apps-crc.testing/ht/
 ```
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

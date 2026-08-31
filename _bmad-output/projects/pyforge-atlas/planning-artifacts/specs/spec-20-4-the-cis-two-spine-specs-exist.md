@@ -309,3 +309,9 @@ medium-severity deferred item for Story 20.5 to re-verify before treating "19" a
 ledger-self-report-verification gap (deferred, medium severity) means this story's own `done`/
 `closed` marks are not independently machine-verified — they were manually re-counted during
 this review pass, but no repo tooling currently backs that check going forward.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -124,8 +124,7 @@ to be absent outside an operator's own machine.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, including the new scope/degrade tests.
-- `python -m pyforge.doctor check --scope runtime --json` (from a directory with no findings expected) -- expected: `{"findings": []}` shape, exit 0.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

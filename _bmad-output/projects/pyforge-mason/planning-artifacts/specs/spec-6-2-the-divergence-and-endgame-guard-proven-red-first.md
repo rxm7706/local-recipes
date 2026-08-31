@@ -166,10 +166,7 @@ instead — noted here so a future reader doesn't chase the dead reference.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes cfe-rebuild-guard-check` -- expected: exit 0 against the real, unmodified repo state
-- `pixi run -e local-recipes pytest tests/scripts/test_cfe_rebuild_guard_check.py -v` -- expected: all fixture cases pass, including the three red-proving cases
-- `python3 scripts/detectors.py --list` -- expected: `cfe_rebuild_guard_check` listed under `repo`, with its pixi task
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- expected: unaffected, still green (this story touches nothing under `src/shared/packages/pyforge-mason/`)
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

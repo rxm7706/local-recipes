@@ -174,8 +174,7 @@ def fit_text(text, width_emu, height_emu, *, max_pt, min_pt) -> FittedText:
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full suite green, including the extended `test_pptx_pipeline.py`.
-- `pixi run -e pyforge-herald herald deck pptx-fill <content_plan_with_shapes.json> -o /tmp/out.pptx` -- expected: valid `.pptx`; unzip and confirm real `<a:t>` runs for every shape.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Open the Warden-appendix acceptance output in real PowerPoint at least once during review and confirm every persona card's text is visible with no visual overflow or clipping -- the Pillow-based measurement is a strong proxy but not a substitute for the real target application (mirrors Story 15.1's own documented caveat).

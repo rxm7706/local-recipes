@@ -195,8 +195,7 @@ write" shape `commit_and_push_dashboard` already uses for a detached HEAD.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: full suite green,
-  including the new/updated `deploy` conformance tests and the new meta invariant.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

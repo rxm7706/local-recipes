@@ -74,3 +74,8 @@ This story created the headroom every later Epic 6 story spends: 5.2's durabilit
 before this ran. It is also the epic's cleanest instance of a measurement contradicting the
 hypothesis that prompted it — the deferred-work entry assumed a slow check, and the profile
 found a blind one.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

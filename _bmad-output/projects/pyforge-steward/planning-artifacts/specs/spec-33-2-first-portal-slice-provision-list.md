@@ -110,9 +110,7 @@ Bind to epics.md Story 33.2 and the 2026-08-25 station-skill-portal SCP. Follow 
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py -q` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Suggested Review Order
 

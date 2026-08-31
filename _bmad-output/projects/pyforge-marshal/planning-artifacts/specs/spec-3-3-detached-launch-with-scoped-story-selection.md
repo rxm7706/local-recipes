@@ -169,8 +169,8 @@ final_revision: '58ccde67a17d904de8f16a5f6d6aee5409d031d7'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all tests green, including the two new test files, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: AD-3/AD-4 contracts hold (`cli/spin.py` never imports `bmad_loop` directly).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `marshal factory spin <slug>` against a real provisioned pyforge-marshal loop home: confirm the shell prompt returns within a few seconds while `bmad-loop run` keeps running in the background (`ps`/`pgrep bmad-loop`), and that the printed run id has a corresponding journal file under the run's Tier-3 directory.

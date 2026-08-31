@@ -191,14 +191,8 @@ for `pyforge-doctor`'s attribute-shape pin).
 ## Verification
 
 **Commands:**
-- `retired-console-check` -- expected: exits 0, per-project resolution/match
-  summary prints, `data.js` regenerates with resolved fields on every row.
-- `retired-console-check` -- expected: renders clean, same line/dream/chain
-  counts as before this change.
-- New `resolve_project()` unit tests -- expected: all I/O Matrix scenarios pass, including the
-  unresolvable-slug case exiting non-zero and naming the slug.
-- `pixi run -e local-recipes test -- src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_dashboard_drift.py`
-  -- expected: still green, unmodified.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Diff `docs/dashboard/data.js` before/after regeneration for the current fleet; confirm only

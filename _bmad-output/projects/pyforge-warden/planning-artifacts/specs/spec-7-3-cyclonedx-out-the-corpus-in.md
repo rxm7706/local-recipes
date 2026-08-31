@@ -54,3 +54,8 @@ discipline (deterministic when serial_number + timestamp are fixed), and land th
 - [x] Renderer
 - [x] Corpus + NOTICE
 - [x] Unit tests
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -104,14 +104,7 @@ a bigger surprise than leaving it in place.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- full suite green.
-- `ruff format --check` / `ruff check` clean on every file this story touches.
-- `herald deck pull --help` -- shows `--commit`.
-
-**Deferred live-MCP proof (NOT run by this session):** the orchestrating session must run one real
-`herald deck pull <slug> --commit` against an already-seeded pilot deck with a genuine Design-side
-edit pending, confirming the resulting commit is well-formed (correct paths staged, sensible message,
-no unrelated files swept in). Never run from this session (constraint: never a live MCP call).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

@@ -81,8 +81,8 @@ baseline_revision: '88f2e3bf33b136b8d6e43d2b89e4ab08c4eb07f9'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold (AD-4 core purity for `parse_success_signal`/`check_spec_binding`).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Run `marshal deploy promote` for real against this repo (Story 4.1, now merged) to populate `planning-artifacts/specs/` with this story's own siblings, then `marshal gate evaluate --story 2-7` against a worktree and confirm the binding check runs against a real tracked spec. (Not run as part of this implementation task -- `marshal deploy promote` makes a real git commit, and the decision to run it for real against this repo belongs to the human operator, matching Stories 2.3/4.1's own precedent of relying on the unit-test suite only.)

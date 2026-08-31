@@ -95,5 +95,4 @@ Governed production DDL does not capture ephemeral DBs (FR-25, canopy AD-9 last 
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test -- python -m pytest tests/policy/test_test_databases_still_migrate.py -q` (cwd `src/platform`) -- expected: pass
-- `pixi run -e platform-ci-test -- python -m pytest tests/policy/test_liquibase_ddl_governance.py tests/policy/test_sqlmigrate_extraction.py -q` (cwd `src/platform`) -- expected: pass (27.2/27.3 unchanged)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

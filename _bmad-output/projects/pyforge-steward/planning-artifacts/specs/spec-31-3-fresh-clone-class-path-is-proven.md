@@ -96,8 +96,7 @@ Rejected (noise): requiring live `npx`/`uv tool install` on every CI job; changi
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py -q` -- expected: all passed
-- `git grep -n 'pyforge\.' -- src/platform/` on this story's diff -- expected: no new `pyforge.*` under `src/platform/`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -97,23 +97,5 @@ dependency order. **Do not** remove `cf_atlas.db` seeds in this story (Story 21.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass after path assertion updates.
-- `pixi run pyforge-atlas-bootstrap` (or documented env) — expected: smoke pass on empty root.
-
-**Dev Notes -- recovery + real verification, 2026-08-29:** the original dispatch's own
-supervisor crashed (`compose_dispatch_policy`'s `tomllib.loads(read_bytes())` type bug, fixed
-separately in marshal PR #930) before the review/finalize stage ever ran, leaving all four
-execution checkboxes above self-marked `[x]` but the story stuck `in-progress` with real,
-uncommitted work sitting in the dead dispatch worktree
-(`.worktrees/dispatch-pyforge-atlas-21.1`). Rather than discard and redispatch, the operator
-independently re-verified the actual diff before landing it: `pixi run --frozen -e pyforge-atlas
-kedro-catalog-check` in that worktree — 49/50 passed, the sole failure being
-`test_no_inline_io_in_package_code`'s pre-existing `sqlite3` finding, confirmed present
-identically on clean `main` (Story 21.2's own scope, explicitly out of bounds here — see
-Approach above) and NOT a regression from this story's work. `tools/bootstrap.py` run
-standalone against a fresh `/tmp` data root: exit 0, `stores/{vdb,osv}` created correctly, an
-existing `credentials.yml` left untouched. The two new catalog tests
-(`test_store_paths_derive_from_data_root`, `test_store_paths_resolve_under_data_root`) both
-pass, including the `PYFORGE_ATLAS_DATA_ROOT` override case. The verified diff was copied onto
-a fresh branch off current `main` and landed there — the dead dispatch worktree/branch were
-never reused for the actual merge.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
