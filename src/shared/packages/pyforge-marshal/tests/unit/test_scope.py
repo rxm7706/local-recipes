@@ -21,6 +21,52 @@ from pyforge.marshal.core.journal import FrozenPath
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
 
+# --- Story 28.14: default_epic_surface / resolve_policy_surface ---------------
+
+
+def test_default_epic_surface_covers_package_tree_specs_impl_artifacts_and_bookkeeping():
+    assert gate.default_epic_surface("acme") == (
+        "src/shared/packages/acme/**",
+        "_bmad-output/projects/acme/planning-artifacts/specs/**",
+        "_bmad-output/projects/acme/implementation-artifacts/**",
+        ".gitignore",
+        "pixi.toml",
+        "pixi.lock",
+        "environment.yaml",
+        "scripts/.spec-surface-baseline.json",
+    )
+
+
+def test_default_epic_surface_does_not_grant_the_full_planning_artifacts_tree():
+    """Review pass 1: the default must NOT let an unconfigured epic touch
+    governance files like marshal-policy.toml/epics.md/PRD.md -- only the
+    narrower planning-artifacts/specs/** subtree is in the default."""
+    default = gate.default_epic_surface("acme")
+    assert "_bmad-output/projects/acme/planning-artifacts/**" not in default
+    assert not any(glob.endswith("/planning-artifacts/*") for glob in default)
+
+
+def test_default_epic_surface_depends_on_nothing_but_the_slug_argument():
+    assert gate.default_epic_surface("acme") == gate.default_epic_surface("acme")
+    assert gate.default_epic_surface("acme") != gate.default_epic_surface("other")
+
+
+def test_resolve_policy_surface_returns_declared_value_when_present():
+    epic_surfaces = {"2": ("recipes/x/**",)}
+    assert gate.resolve_policy_surface(epic_surfaces, 2, "acme") == ("recipes/x/**",)
+
+
+def test_resolve_policy_surface_falls_back_to_default_when_epic_key_absent():
+    assert gate.resolve_policy_surface({}, 2, "acme") == gate.default_epic_surface("acme")
+
+
+def test_resolve_policy_surface_never_merges_declared_with_default():
+    epic_surfaces = {"2": ("recipes/x/**",)}
+    result = gate.resolve_policy_surface(epic_surfaces, 2, "acme")
+    assert "src/shared/packages/acme/**" not in result
+    assert result == ("recipes/x/**",)
+
+
 # --- compute_effective_surface: the AD-27 combinator --------------------------
 
 

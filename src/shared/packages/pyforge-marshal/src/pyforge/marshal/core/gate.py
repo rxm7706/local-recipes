@@ -118,6 +118,7 @@ is untouched; only the cycle allowance varies.
 from __future__ import annotations
 
 import fnmatch
+from collections.abc import Mapping
 
 from pyforge.core.process import ProcessResult
 
@@ -342,6 +343,87 @@ def describe_gate_mode(gate_mode: str) -> dict[str, object]:
 def _valid_glob_tuple(value: object, *, name: str) -> None:
     if not isinstance(value, tuple) or not all(isinstance(item, str) for item in value):
         raise TypeError(f"{name} must be a tuple of str, got {value!r}")
+
+
+# --- Story 28.14: auto-derived effective surface, no manual per-story
+# widening (CAP-16) ------------------------------------------------------
+
+_COMMON_BOOKKEEPING_PATHS: tuple[str, ...] = (
+    ".gitignore",
+    "pixi.toml",
+    "pixi.lock",
+    "environment.yaml",
+    "scripts/.spec-surface-baseline.json",
+)
+
+
+def default_epic_surface(project_slug: str) -> tuple[str, ...]:
+    """The safe per-station default ``policy_surface`` for an epic with no
+    declared ``[epic_surfaces]`` entry (Story 28.14, CAP-16) -- the toil
+    ``MRS-GATE-007`` otherwise forces onto an operator, who must hand-widen
+    the policy TOML per story just to let legitimate within-station work
+    land (the live 2026-08-31 ``"28"`` station-wide-wildcard stopgap in
+    ``pyforge-marshal``'s own ``marshal-policy.toml`` exists only because of
+    this).
+
+    Pure, GENERATED from ``project_slug`` alone -- no filesystem I/O, no
+    existence check -- mirroring ``core/policy.py::_base_worktree_seed_
+    paths``'s own FR-50 precedent: a hardcoded project name would defeat
+    the entire point of an AUTO-derived default. This function does not
+    validate ``project_slug``'s shape itself; both call sites already
+    guard on ``policy._is_valid_project_slug`` (or an equivalent) before a
+    scope check ever runs, matching every other consumer of an
+    already-validated ``project_slug`` in this package.
+
+    Covers exactly four things, matching the ONLY concrete precedent for
+    this shape in the repo -- ``marshal-policy.toml``'s own live ``"22"``/
+    ``"28"`` ``[epic_surfaces]`` entries:
+
+    - the station's own package tree, ``src/shared/packages/{slug}/**``;
+    - its TRACKED STORY SPECS, ``_bmad-output/projects/{slug}/planning-
+      artifacts/specs/**`` -- deliberately NOT the full ``planning-
+      artifacts/**`` tree (review pass 1, Spec Change Log): the precedent
+      scopes planning-artifact access to tracked specs specifically,
+      leaving governance files (``marshal-policy.toml`` itself,
+      ``epics.md``, ``PRD.md``, the sprint-status ledger, gate reports)
+      OUTSIDE the default, so an unconfigured epic can never silently gain
+      write access to its own project's planning documents;
+    - its implementation-artifact tree, unscoped, ``_bmad-output/projects/
+      {slug}/implementation-artifacts/**`` -- matching the same precedent;
+    - the five bookkeeping paths every hand-authored ``[epic_surfaces]``
+      entry in this repo already repeats, ``_COMMON_BOOKKEEPING_PATHS``.
+    """
+    return (
+        f"src/shared/packages/{project_slug}/**",
+        f"_bmad-output/projects/{project_slug}/planning-artifacts/specs/**",
+        f"_bmad-output/projects/{project_slug}/implementation-artifacts/**",
+        *_COMMON_BOOKKEEPING_PATHS,
+    )
+
+
+def resolve_policy_surface(
+    epic_surfaces: Mapping[str, tuple[str, ...]], epic: int, project_slug: str
+) -> tuple[str, ...]:
+    """The single "declared value wins outright, else fall back to the
+    auto-derived default" resolver (Story 28.14, CAP-16), called identically
+    by BOTH scope-check call sites -- ``cli/gate.py::_run_scope_check`` and
+    ``dispatch_verify.py::evaluate_dispatch_verification`` -- so this
+    safety-relevant branching (it is what preserves AD-27's "declared
+    always wins outright" asymmetry) lives in exactly one place, never
+    duplicated per call site (review pass 1, Spec Change Log).
+
+    ``epic_surfaces.get(str(epic))`` returning ``None`` is the ONLY signal
+    that nothing is declared for this epic -- a caller's own ``.get(key,
+    ())`` default is deliberately never reproduced here, since that would
+    make a genuinely-declared empty entry indistinguishable from nothing
+    declared at all. Whenever a value IS present -- including an empty
+    one -- it is returned outright, unmodified: the auto-derived default is
+    consulted ONLY when the key is absent, never merged with or used to
+    widen an already-declared entry."""
+    declared = epic_surfaces.get(str(epic))
+    if declared is not None:
+        return declared
+    return default_epic_surface(project_slug)
 
 
 def compute_effective_surface(

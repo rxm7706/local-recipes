@@ -593,7 +593,9 @@ def _run_scope_check(
             ),
         )
 
-    policy_surface = effective.epic_surfaces.value.get(str(story_key.epic), ())
+    policy_surface = gate.resolve_policy_surface(
+        effective.epic_surfaces.value, story_key.epic, project_slug
+    )
     try:
         spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
     except SurfaceParseError as exc:
