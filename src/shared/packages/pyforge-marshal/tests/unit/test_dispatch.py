@@ -17,6 +17,7 @@ from pyforge.marshal.ports.build_harness import (
     HarnessCandidateSkip,
     HarnessResolution,
 )
+from pyforge.marshal.ports.fs import AdvisoryLock
 
 
 def _init_git_repo(path: Path) -> None:
@@ -58,6 +59,15 @@ class FakeFs:
 
     def read_text(self, path: Path) -> str | None:
         return self.files.get(path)
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        # Story 22.11: `dispatch --stories` delegates to `run_fleet_drain`,
+        # which acquires the fleet-wide cycle lock -- a no-op fake, matching
+        # `test_dispatch_fleet.py`'s own `FakeFs`.
+        return AdvisoryLock(path=path.with_suffix(path.suffix + ".lock"), handle=None)
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        pass
 
 
 class FakeVcs:
@@ -821,3 +831,110 @@ def test_only_one_dispatch_branch_derivation_site() -> None:
     ):
         assert derivation.search(caught), caught
     assert derivation.search('".marshal/plan.json"') is None
+
+
+# --------------------------------------------------------------------------
+# Story 22.11: `dispatch <slug> --stories k1,k2,...` chains an explicit
+# sequence via the same machinery `drain` uses (FR-193 CAP-10)
+# --------------------------------------------------------------------------
+
+
+class _FakeLedgerHarness:
+    """``HarnessPort.ledger_story_statuses`` over an in-memory ledger."""
+
+    def __init__(self, ledgers: dict[str, tuple[tuple[str, str], ...]]) -> None:
+        self.ledgers = ledgers
+
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        slug = path.parent.parent.name
+        return self.ledgers.get(slug, ())
+
+
+def test_dispatch_refuses_when_neither_story_nor_stories_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    args = argparse.Namespace(slug="pyforge-marshal", story=None, stories=None, format="json")
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+
+
+def test_dispatch_refuses_when_both_story_and_stories_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    args = argparse.Namespace(
+        slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json"
+    )
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+
+
+def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`dispatch <slug> --stories a,b` reuses `run_fleet_drain`'s own
+    chaining/preflight/journal machinery -- no second implementation."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    _seed_spec(tmp_path, slug, "22-11-fleet")
+    _seed_spec(tmp_path, slug, "22-12-next")
+    monkeypatch.chdir(tmp_path)
+    harness = _FakeLedgerHarness(
+        {slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))}
+    )
+    build_harness = FakeBuildHarness()
+    args = argparse.Namespace(
+        slug=slug, story=None, stories="22-12-next,22-11-fleet", format="json"
+    )
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+        harness=harness,
+    )
+    assert code == EXIT_OK
+    assert build_harness.calls
+    assert build_harness.calls[0]["story_key"] == "22.12"
+
+
+def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    _seed_spec(tmp_path, slug, "22-11-fleet")
+    monkeypatch.chdir(tmp_path)
+    harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"),)})
+    vcs = FakeVcs(tmp_path)
+    build_harness = FakeBuildHarness()
+    args = argparse.Namespace(
+        slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json"
+    )
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+    # Nothing was provisioned: no worktree add, no session launch.
+    assert vcs.added == []
+    assert build_harness.calls == []

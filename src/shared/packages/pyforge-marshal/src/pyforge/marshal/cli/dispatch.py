@@ -15,6 +15,17 @@ spec promotion) has an advanced ledger and a free slot, so the next cycle
 dispatches its next story. This supersedes ``.cursor/pyforge-fleet-drain/``'s
 hand-driven coordinator; campaign state lives in-repo under
 ``pyforge-marshal``, never in session-local ``.cursor/`` YAML.
+
+Story 22.11 (FR-193 CAP-10) extends this same surface with two pure
+read-scope/read-order overrides -- never a second campaign implementation:
+``drain --station <slug>`` restricts one cycle to exactly one station's own
+tracked backlog (``execute_fleet_cycle``'s ``station`` argument), and
+``dispatch <slug> --stories k1,k2,...`` chains a caller-supplied ordered
+sequence on that station instead of its ledger order
+(``execute_fleet_cycle``'s ``explicit_stories`` argument, backed by
+``dispatch_fleet.explicit_story_backlog``). ``dispatch --stories`` is a thin
+translation layer over ``run_fleet_drain`` itself -- both surfaces share one
+preflight/journal/campaign-supervisor implementation.
 """
 
 from __future__ import annotations
@@ -143,11 +154,33 @@ def add_factory_dispatch_subparser(factory_subparsers: argparse._SubParsersActio
             "Provisions a fresh isolated worktree from origin/main, launches "
             "exactly one detached session harness run with BMAD_ACTIVE_PROJECT "
             "per-invocation and physical artifact paths, journals the launch, "
-            "and returns promptly."
+            "and returns promptly. With --stories (Story 22.11, FR-193 "
+            "CAP-10), chains a caller-supplied ordered sequence on this one "
+            "station instead -- a thin translation over `factory drain`'s own "
+            "campaign machinery (fleet-wide advisory lock, journal, detached "
+            "supervisor), never a second implementation."
         ),
     )
     parser.add_argument("slug", help="The BMAD project slug (station).")
-    parser.add_argument("story", help="The backlog story key to dispatch.")
+    parser.add_argument(
+        "story",
+        nargs="?",
+        default=None,
+        help="The backlog story key to dispatch (omit when passing --stories).",
+    )
+    parser.add_argument(
+        "--stories",
+        default=None,
+        help=(
+            "Comma-separated ordered story keys to chain on this station "
+            "instead of a single story (Story 22.11, FR-193 CAP-10) -- "
+            "launched one dispatch at a time via the same chaining "
+            "`factory drain` already uses. Every key must already be "
+            "eligible on the station's TRACKED backlog (not done, not "
+            "unknown) or the whole sequence is refused before any "
+            "worktree is provisioned."
+        ),
+    )
     parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -710,12 +743,60 @@ def run_dispatch(
     vcs: VcsPort | None = None,
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
+    harness: HarnessPort | None = None,
     context: MarshalContext | None = None,
 ) -> int:
+    """``marshal factory dispatch <slug> <story>`` -- or, with ``--stories``
+    (Story 22.11, FR-193 CAP-10), a caller-supplied ordered sequence chained
+    on this one station via ``run_fleet_drain``'s existing campaign machinery
+    -- never a second preflight, landing, or campaign-journal path.
+    """
     del context
+    raw_story = getattr(args, "story", None)
+    raw_stories = getattr(args, "stories", None)
+    if raw_story and raw_stories:
+        finding = Finding(
+            code="MRS-DISP-032",
+            severity=Severity.ERROR,
+            message="pass exactly one of a `story` positional or `--stories` -- not both",
+        )
+        return _emit(args, {"slug": args.slug}, [finding])
+    if not raw_story and not raw_stories:
+        finding = Finding(
+            code="MRS-DISP-032",
+            severity=Severity.ERROR,
+            message="pass exactly one of a `story` positional or `--stories`",
+        )
+        return _emit(args, {"slug": args.slug}, [finding])
+    if raw_stories:
+        # Extend the surface, don't fork it (the spec's own Approach): a
+        # caller-supplied sequence is just `drain --mode drain_to_zero
+        # --station <slug> --stories <raw_stories>` under the hood -- the
+        # SAME chaining/preflight/journal machinery Story 22.7 built,
+        # scoped to this one station's explicit list instead of its ledger
+        # order.
+        drain_args = argparse.Namespace(
+            mode=dispatch_fleet.FleetCampaignMode.DRAIN_TO_ZERO.value,
+            station=args.slug,
+            stories=raw_stories,
+            leave_remaining=0,
+            once=False,
+            max_cycles=0,
+            tick_seconds=_FLEET_TICK_SECONDS,
+            campaign=None,
+            format=getattr(args, "format", "text"),
+        )
+        return run_fleet_drain(
+            drain_args,
+            fs=fs,
+            vcs=vcs,
+            build_harness=build_harness,
+            process=process,
+            harness=harness,
+        )
     attempt = dispatch_once(
         slug=args.slug,
-        story=args.story,
+        story=raw_story,
         fs=fs,
         vcs=vcs,
         build_harness=build_harness,
@@ -1569,6 +1650,29 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
         ),
     )
     parser.add_argument(
+        "--station",
+        default=None,
+        help=(
+            "Restrict this campaign to exactly one station's own tracked "
+            "backlog (Story 22.11, FR-193 CAP-10) -- accepts either the "
+            "bare name (`scribe`) or the full slug (`pyforge-scribe`). "
+            "Every other station is untouched by this invocation. Omit "
+            "for the fleet-wide default (all live pyforge stations)."
+        ),
+    )
+    parser.add_argument(
+        "--stories",
+        default=None,
+        help=(
+            "Chain a caller-supplied ordered story-key sequence on "
+            "--station's own backlog instead of its ledger order (Story "
+            "22.11, FR-193 CAP-10) -- comma-separated, requires --station. "
+            "Normally reached via `marshal factory dispatch <slug> "
+            "--stories ...`; --once/--campaign chaining consumes this "
+            "same flag across supervised cycles."
+        ),
+    )
+    parser.add_argument(
         "--leave-remaining",
         type=int,
         default=1,
@@ -1798,8 +1902,26 @@ def execute_fleet_cycle(
     build_harness: BuildHarnessPort,
     process: ProcessPort,
     harness: HarnessPort,
+    station: str | None = None,
+    explicit_stories: tuple[str, ...] | None = None,
 ) -> FleetCycleReport:
-    """One fleet-drain cycle: plan every station, dispatch the eligible ones."""
+    """One fleet-drain cycle: plan every station, dispatch the eligible ones.
+
+    Story 22.11 (FR-193 CAP-10): ``station``, when given, restricts this
+    cycle to exactly one station's own tracked backlog -- every other
+    station's ledger is never even read, so it is provably untouched by
+    this invocation. ``explicit_stories``, when given (only meaningful
+    alongside ``station``), replaces that one station's ledger-derived
+    backlog with the caller's own ordered sequence (re-filtered to
+    not-yet-``done`` every cycle) instead of reordering the full backlog
+    the way ``order_override`` does.
+    """
+    if explicit_stories is not None and station is None:
+        # Story 22.11 patch pass (review finding): `explicit_stories` is
+        # only meaningful scoped to one station -- without this guard, a
+        # future caller passing it alone would silently apply the caller's
+        # sequence as every station's own backlog instead of just one.
+        raise ValueError("explicit_stories requires station")
     findings: list[Finding] = []
     results: list[dispatch_fleet.StationCycleResult] = []
     overrides, configured_skips, config_findings = _read_fleet_queue_config(fs, repo_root)
@@ -1808,6 +1930,31 @@ def execute_fleet_cycle(
     slugs = dispatch_fleet.fleet_station_slugs(
         dispatch_core.list_station_slugs(repo_root)
     )
+    if station is not None:
+        normalized_station = dispatch_fleet.normalize_station_slug(station)
+        if normalized_station not in slugs:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-013",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"unknown station {normalized_station!r}: not among "
+                        f"the live pyforge stations ({', '.join(slugs) or 'none found'})"
+                    ),
+                )
+            )
+            return FleetCycleReport(
+                results=(),
+                findings=tuple(findings),
+                data={
+                    "mode": mode.value,
+                    "stations": [],
+                    "remaining_total": 0,
+                    "dispatched": [],
+                    "unresolved": [],
+                },
+            )
+        slugs = (normalized_station,)
     if not slugs:
         # Distinct from "every station is drained": `campaign_complete(())`
         # is vacuously True, so without this the operator would get a clean,
@@ -1852,8 +1999,12 @@ def execute_fleet_cycle(
             )
             continue
 
-        backlog = dispatch_fleet.station_backlog(
-            statuses, order_override=overrides.get(slug)
+        backlog = (
+            dispatch_fleet.explicit_story_backlog(statuses, explicit_stories)
+            if explicit_stories is not None
+            else dispatch_fleet.station_backlog(
+                statuses, order_override=overrides.get(slug)
+            )
         )
         effective_policy = _compose_policy(slug)
         station_skips = configured_skips.get(slug, {})
@@ -2134,6 +2285,8 @@ def _spawn_campaign_supervisor(
     leave_remaining: int,
     max_cycles: int,
     tick_seconds: int,
+    station: str | None = None,
+    stories: tuple[str, ...] | None = None,
 ) -> int:
     """Detach the campaign supervisor -- the loop that chains next stories.
 
@@ -2143,6 +2296,12 @@ def _spawn_campaign_supervisor(
     ~600 s watchdog that killed the hand ritual's busy-waiting parent has
     nothing to kill here. Raises ``ProcessError`` when the spawn fails; the
     cycle that already ran still stands.
+
+    Story 22.11 (FR-193 CAP-10): ``station``/``stories`` are threaded
+    through so every SUPERVISED tick re-runs the SAME scoped/sequenced
+    campaign -- omitting them here would silently widen a station-scoped or
+    explicit-sequence campaign back to fleet-wide/ledger-order on its very
+    first re-tick.
     """
     return process.spawn_detached(
         [
@@ -2155,6 +2314,8 @@ def _spawn_campaign_supervisor(
             str(leave_remaining),
             str(max_cycles),
             str(tick_seconds),
+            station or "",
+            ",".join(stories) if stories else "",
         ],
         cwd=repo_root,
         log_path=run_dir / _FLEET_SUPERVISOR_LOG_FILENAME,
@@ -2231,6 +2392,47 @@ def run_fleet_drain(
         )
         return _emit(args, data, findings, command="factory drain")
 
+    # Story 22.11 (FR-193 CAP-10): --station restricts this campaign to one
+    # station's own tracked backlog (unknown-station refusal lives inside
+    # `execute_fleet_cycle`, which re-checks it every cycle -- cheap and
+    # correct on every supervised tick, not just the first). --stories
+    # names an explicit ordered sequence on that station instead of its
+    # ledger order; it REQUIRES --station, since a sequence names exactly
+    # one station's backlog.
+    raw_station = getattr(args, "station", None)
+    station: str | None = None
+    if raw_station is not None and str(raw_station).strip():
+        station = dispatch_fleet.normalize_station_slug(str(raw_station))
+        data["station"] = station
+
+    raw_stories = getattr(args, "stories", None)
+    explicit_stories: tuple[str, ...] | None = None
+    if raw_stories:
+        explicit_stories = dispatch_fleet.parse_story_sequence(raw_stories)
+        if not explicit_stories:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-032",
+                    severity=Severity.ERROR,
+                    message="--stories must name at least one non-blank story key",
+                )
+            )
+            return _emit(args, data, findings, command="factory drain")
+        data["stories"] = list(explicit_stories)
+        if station is None:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-014",
+                    severity=Severity.ERROR,
+                    message=(
+                        "--stories requires --station -- an explicit "
+                        "sequence names exactly one station's backlog, "
+                        "never the whole fleet's"
+                    ),
+                )
+            )
+            return _emit(args, data, findings, command="factory drain")
+
     raw_campaign = getattr(args, "campaign", None)
     if raw_campaign is not None and not _is_safe_campaign_id(str(raw_campaign)):
         # `--campaign` names a DIRECTORY under the campaign runs tree, so an
@@ -2248,6 +2450,82 @@ def run_fleet_drain(
             )
         )
         return _emit(args, data, findings, command="factory drain")
+
+    if explicit_stories is not None:
+        # First cycle of a FRESH campaign only: every named key must
+        # already be eligible on the station's tracked backlog before
+        # anything is minted or provisioned. A later supervised tick
+        # always passes --campaign naming a run this SAME flow already
+        # minted, so it is deliberately NOT re-validated then -- a key
+        # that legitimately landed (flipped to `done`) between cycles
+        # must not be misread as an unknown/invalid one;
+        # `explicit_story_backlog`'s own per-cycle re-derivation already
+        # drops it correctly. An operator-typed `--campaign` id that
+        # never actually ran (no run directory on disk) is still a first
+        # launch in every way that matters here, so it is validated like
+        # one rather than trusted as a resume (review finding, Story
+        # 22.11 patch pass).
+        is_resumed = raw_campaign is not None and fs.is_dir(
+            dispatch_fleet.fleet_run_dir(repo_root, str(raw_campaign))
+        )
+        if not is_resumed:
+            assert station is not None  # enforced above: --stories requires --station
+            # Check station liveness BEFORE touching the filesystem for its
+            # ledger -- an unknown `--station` must surface as MRS-DRAIN-013
+            # ("not among the live stations") rather than as a misleading
+            # MRS-DRAIN-015 ledger-read failure (review finding, Story 22.11
+            # patch pass; `execute_fleet_cycle` re-checks this too, cheaply,
+            # on every cycle).
+            live_slugs = dispatch_fleet.fleet_station_slugs(
+                dispatch_core.list_station_slugs(repo_root)
+            )
+            if station not in live_slugs:
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-013",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"unknown station {station!r}: not among the live "
+                            f"pyforge stations ({', '.join(live_slugs) or 'none found'})"
+                        ),
+                    )
+                )
+                return _emit(args, data, findings, command="factory drain")
+            ledger_path = dispatch_fleet.station_ledger_path(repo_root, station)
+            try:
+                statuses = harness.ledger_story_statuses(ledger_path)
+            except (HarnessError, OSError, ValueError) as exc:
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-015",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"station {station!r}: cannot read the tracked "
+                            f"ledger at {ledger_path}: {exc} -- nothing was "
+                            "provisioned"
+                        ),
+                        path=str(ledger_path),
+                    )
+                )
+                return _emit(args, data, findings, command="factory drain")
+            backlog = dispatch_fleet.station_backlog(statuses)
+            unresolved = dispatch_fleet.unresolved_story_sequence_keys(
+                explicit_stories, backlog
+            )
+            if unresolved:
+                findings.append(
+                    Finding(
+                        code="MRS-DISP-032",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"refusing dispatch: --stories names key(s) unknown "
+                            f"or already done on station {station!r}'s tracked "
+                            f"backlog: {', '.join(unresolved)} -- nothing was "
+                            "provisioned"
+                        ),
+                    )
+                )
+                return _emit(args, data, findings, command="factory drain")
 
     run_id = raw_campaign or mint_run_id(
         dispatch_fleet.FLEET_JOURNAL_SLUG,
@@ -2306,6 +2584,8 @@ def run_fleet_drain(
             build_harness=build_harness,
             process=process,
             harness=harness,
+            station=station,
+            explicit_stories=explicit_stories,
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:
@@ -2329,9 +2609,20 @@ def run_fleet_drain(
                 leave_remaining=leave_remaining,
                 max_cycles=max_cycles,
                 tick_seconds=tick_seconds,
+                station=station,
+                stories=explicit_stories,
             )
             data["supervisor_log"] = str(run_dir / _FLEET_SUPERVISOR_LOG_FILENAME)
         except ProcessError as exc:
+            # Story 22.11 patch pass: a station-scoped/sequenced campaign's
+            # recovery command must repeat --station/--stories, or following
+            # this message literally silently widens the resumed cycle back
+            # to fleet-wide/ledger-order (review finding).
+            recovery_flags = ""
+            if station:
+                recovery_flags += f" --station {station}"
+            if explicit_stories:
+                recovery_flags += f" --stories {','.join(explicit_stories)}"
             findings.append(
                 Finding(
                     code="MRS-DRAIN-007",
@@ -2339,11 +2630,11 @@ def run_fleet_drain(
                     message=(
                         f"the cycle completed but the campaign supervisor "
                         f"could not be spawned: {exc} -- re-run "
-                        f"`marshal factory drain --mode {mode.value} "
-                        f"--campaign {run_id}` to advance THIS campaign "
-                        "(omitting --campaign mints a new one, which starts "
-                        "with an empty blocked map and spawns a second "
-                        "supervisor)"
+                        f"`marshal factory drain --mode {mode.value}"
+                        f"{recovery_flags} --campaign {run_id}` to advance "
+                        "THIS campaign (omitting --campaign mints a new one, "
+                        "which starts with an empty blocked map and spawns a "
+                        "second supervisor)"
                     ),
                 )
             )

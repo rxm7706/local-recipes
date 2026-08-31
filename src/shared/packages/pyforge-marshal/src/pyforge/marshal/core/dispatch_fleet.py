@@ -293,6 +293,88 @@ def apply_order_override(
     return tuple(present + tail)
 
 
+def parse_story_sequence(raw: str) -> tuple[str, ...]:
+    """Split ``--stories``' comma-separated value into ordered raw entries
+    (Story 22.11, FR-193 CAP-10).
+
+    Blank segments (a trailing comma, doubled commas, surrounding
+    whitespace) are dropped rather than becoming an empty-string key that
+    fails ``normalize()`` with a confusing message.
+    """
+    return tuple(part.strip() for part in str(raw).split(",") if part.strip())
+
+
+def unresolved_story_sequence_keys(
+    stories: Sequence[str], backlog: Sequence[str]
+) -> tuple[str, ...]:
+    """Which caller-supplied ``--stories`` entries are NOT eligible to
+    dispatch (Story 22.11, FR-193 CAP-10).
+
+    An entry is eligible when it normalizes to a ``StoryKey`` matching (by
+    normalized identity, never raw string equality) some entry in the
+    station's own tracked, not-yet-``done`` ``backlog`` -- the same source
+    ``station_backlog`` reads. A malformed entry, an unknown key, or a key
+    already ``done`` on the tracked ledger are all "not eligible": ``done``
+    keys are already absent from ``backlog`` (``station_backlog`` drops
+    them), so no separate done-check is needed. Empty return means every
+    key is eligible -- the caller refuses BEFORE any worktree is
+    provisioned when this is non-empty, never partway through the sequence.
+    """
+    backlog_keys: set[StoryKey] = set()
+    for raw in backlog:
+        try:
+            backlog_keys.add(normalize(raw))
+        except MalformedStoryKeyError:
+            continue
+    unresolved: list[str] = []
+    for raw in stories:
+        try:
+            key = normalize(raw)
+        except MalformedStoryKeyError:
+            unresolved.append(raw)
+            continue
+        if key not in backlog_keys:
+            unresolved.append(raw)
+    return tuple(unresolved)
+
+
+def explicit_story_backlog(
+    statuses: Iterable[tuple[str, str]], stories: Sequence[str]
+) -> tuple[str, ...]:
+    """The caller's own ``--stories`` sequence, filtered to not-yet-``done``
+    (Story 22.11, FR-193 CAP-10) -- the effective backlog for a
+    ``dispatch --stories`` campaign.
+
+    Unlike ``station_backlog``'s ``order_override`` (which reorders the
+    FULL ledger backlog and leaves the untouched tail after it), this IS
+    the entire effective backlog: only the caller's own keys, in the
+    caller's own order, never the rest of the station's tracked backlog.
+    Re-derived every cycle from the LIVE ``statuses``, exactly as
+    ``station_backlog`` is, so a key that lands mid-campaign naturally
+    advances the head to the next one.
+    """
+    done: set[StoryKey] = set()
+    for raw_key, raw_status in statuses:
+        if not isinstance(raw_key, str):
+            continue
+        if str(raw_status).strip().lower() != DONE_STATUS:
+            continue
+        try:
+            done.add(normalize(raw_key))
+        except MalformedStoryKeyError:
+            continue
+    backlog: list[str] = []
+    for raw in stories:
+        try:
+            key = normalize(raw)
+        except MalformedStoryKeyError:
+            continue
+        if key in done:
+            continue
+        backlog.append(raw)
+    return tuple(backlog)
+
+
 def plan_station_queue(
     *,
     slug: str,
