@@ -199,6 +199,16 @@ verify_commands = [
   # not the whole skill tree.
   ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md",
   ".claude/skills/bmad-build-auto/compile-epic-context.md",
+  # Story 28.8: derived-context layer + scribe_cli seam + context CLI.
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/derived_context.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/parity.py",
+  "src/shared/packages/pyforge-marshal/tests/meta/test_derived_context_skill_contract.py",
+  "src/shared/packages/pyforge-marshal/tests/meta/test_no_engine_or_scribe_internals_import.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_cli_context.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_derived_context.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_scribe_cli.py",
 ]
 
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,

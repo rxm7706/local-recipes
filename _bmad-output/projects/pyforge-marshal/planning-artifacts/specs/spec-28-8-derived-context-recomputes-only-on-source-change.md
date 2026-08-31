@@ -4,6 +4,7 @@ type: 'feature'
 created: '2026-08-30'
 status: 'in-review'
 baseline_revision: '1e1eb736c70e4909d23f49454d0d947c04ea3f5f'
+surface: [".claude/skills/bmad-build-auto/compile-epic-context.md", ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md", "src/shared/packages/pyforge-marshal/**", "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**", "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md", "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/.memlog.md", "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md", ".gitignore", "pixi.toml", "pixi.lock", "environment.yaml", "scripts/.spec-surface-baseline.json"]
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
