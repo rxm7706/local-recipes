@@ -132,7 +132,17 @@ paths:
   osv_offline_store: ${paths.data_root}/stores/osv
   pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json
   # Story 21.6 (CAP-3 identity join): the live recipes/ tree LocalRecipesOverlayDataset
-  # scans (discovery_local_recipes_raw) — repo-root-relative, mirrors the P9 convention
-  # above (resolves against the process CWD; the documented invocation is the pixi task
-  # from the repo root).
-  local_recipes_dir: ${env_or:PYFORGE_ATLAS_LOCAL_RECIPES_DIR,recipes}
+  # scans (discovery_local_recipes_raw) — resolves against the process CWD like every
+  # other path here, but its REAL invocation differs from data_root/seed_root's: a live
+  # `kedro run` (the `pyforge-atlas-bootstrap` pixi task, or a manual `cd
+  # src/shared/packages/pyforge-atlas && kedro run`) runs with cwd = the KEDRO PROJECT
+  # ROOT (the pyforge-atlas member dir), not the repo root — `kedro` requires its own
+  # `conf/`/`pyproject.toml` under cwd. `recipes/` only exists at the actual repo root
+  # (verified: no `src/shared/packages/pyforge-atlas/recipes`), four levels above the
+  # member dir (pyforge-atlas -> packages -> shared -> src -> repo root) — a bare
+  # `recipes` default would silently resolve to an always-empty directory on every real
+  # run (review finding). `local_recipes_dir` is therefore member-dir-relative, unlike
+  # data_root/seed_root above (repo-root-relative, correct for the pytest-based gates,
+  # which run with cwd = repo root) — see tests/catalog/conftest.py's
+  # MEMBER_DIR_RELATIVE_PATHS for the containment check this asymmetry requires.
+  local_recipes_dir: ${env_or:PYFORGE_ATLAS_LOCAL_RECIPES_DIR,../../../../recipes}

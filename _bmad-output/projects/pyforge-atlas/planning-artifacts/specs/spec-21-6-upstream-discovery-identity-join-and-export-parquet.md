@@ -8,6 +8,60 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/identity-contract.md'
 warnings: ['oversized']
+deferred:
+  - summary: >-
+      No Atlas dataset yet carries a per-package source_repository_url, so
+      from_inventory's git-purl fallback branch never fires against real
+      production data (only against synthetic parity-fixture values).
+    evidence: |-
+      _id_universe_frame (nodes.py) hardcodes source_repository_url="" for
+      every row because no catalog entry supplies it today; the git-purl
+      transform logic (_id_git_purl, _id_from_inventory) is ported and
+      unit-tested but structurally unreachable through the real
+      build_identity_packages_primary entry point until a future story adds
+      that column to some Atlas source.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py:_id_universe_frame
+    severity: medium
+  - summary: >-
+      StagedRecipesPRDataset's per-open-PR files() fetch only reads the first
+      100 changed files per PR, so the file-path ranking tier is incomplete
+      for PRs with more than 100 files.
+    evidence: |-
+      _do_refresh's files-fanout loop issues one GET per open PR
+      (`.../pulls/{number}/files?per_page=100`) with no pagination loop, unlike
+      the PR-listing fetch above it which does paginate. Most single-recipe
+      PRs have far fewer than 100 files, so this is a narrow, currently-cold
+      edge (bulk/mass staged-recipes PRs), not a general regression.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:StagedRecipesPRDataset._do_refresh
+    severity: low
+  - summary: >-
+      discovery_local_recipes_raw's Local_Recipes_URL always points at
+      github.com/rxm7706/local-recipes regardless of the new
+      PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a
+      different checkout would still generate URLs into this repo.
+    evidence: |-
+      _LOCAL_RECIPES_TREE_URL_TEMPLATE is a module-level constant hardcoding
+      the repo slug; only the scanned filesystem path is configurable. Narrow
+      in practice — the override is documented for pointing at an alternate
+      path within this same repo (e.g. test fixtures), not a different GitHub
+      repo.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:_LOCAL_RECIPES_TREE_URL_TEMPLATE
+    severity: low
+  - summary: >-
+      spec Code Map's instruction to update tests/parity/test_parity_complete.py
+      node counts does not apply — that file's _PIPELINES tuple never included
+      upstream_discovery to begin with, in this story or any prior one.
+    evidence: |-
+      Verified by reading tests/parity/test_parity_complete.py: _PIPELINES =
+      ("core", "vcs_health", "pypi_intelligence", "vulnerability"). This is a
+      pre-existing inaccuracy in the spec's own Code Map, not something this
+      story's diff broke or needs to fix.
+    location: >-
+      src/shared/packages/pyforge-atlas/tests/parity/test_parity_complete.py
+    severity: low
 ---
 
 <intent-contract>
@@ -331,3 +385,22 @@ this).
 - `kedro run --pipelines upstream_discovery` on fixture-backed catalog inputs — expected:
   exit 0, `identity_packages_primary` and `identity_export_parquet` both materialize with
   the documented schemas.
+
+## Review Triage Log
+
+### 2026-08-30 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 7 (high 1, medium 3, low 3)
+- defer: 4 (medium 1, low 3)
+- reject: 9
+- addressed_findings:
+  - `[high]` `[patch]` `paths.local_recipes_dir` default (`globals.yml`) resolves relative to the kedro project dir (`src/shared/packages/pyforge-atlas`), the actual cwd of the only documented invocation (`pyforge-atlas-bootstrap` pixi task) — not the repo root where `recipes/` lives, so `discovery_local_recipes_raw` silently always resolves empty in every real run. Fixed the default to `../../../../recipes`.
+  - `[medium]` `[patch]` No test guarded `enterprise_jfrog_names` (read for the first time by `build_identity_packages_primary`) staying produced by a pipeline in the documented bootstrap set — a future edit dropping `artifactory_downloads` from `pyforge-atlas-bootstrap`'s `--pipelines` list would crash with no test failure. Added a DAG-completeness assertion.
+  - `[medium]` `[patch]` `LocalRecipesOverlayDataset.load()`'s `recipes_dir.iterdir()` walk was unguarded against `OSError` (e.g. a permission-denied directory), contradicting the class's own never-raise contract. Wrapped it to degrade to an empty frame.
+  - `[medium]` `[patch]` `parse_purl_associator_index`'s `alternative_purls`/`cpes` extraction iterated the raw JSON value without checking it is a list first — a malformed upstream payload (string instead of list) would char-split into fabricated single-character entries. Added a list-type guard, degrading to `[]` otherwise.
+  - `[low]` `[patch]` `_id_universe_frame` always preferred `conda_name` over `pypi_name` when both are present on an `enterprise_jfrog_names` row, discarding the PyPI identity whenever the two names normalize to different PEP-503 keys (currently dormant — `artifactory.virtual_repos` defaults to `[]` — but a real gap once enterprise JFrog activates). Now registers both names' keys.
+  - `[low]` `[patch]` Three bounded fetch loops (`OpenTeamsBoardDataset`'s 500-page cap, `StagedRecipesPRDataset`'s 200-page cap and 500-PR open-files fan-out cap) truncated silently on hitting their cap, unlike every other degrade path in `identity_sources.py` which logs a `logger.warning`. Added warnings on cap-hit.
+  - `[low]` `[patch]` `_id_metadata_url` interpolated the package name into a URL with no encoding; a name containing `/`, `?`, `&`, or spaces would produce a malformed URL. Wrapped the segment in `urllib.parse.quote`.
+
+Findings investigated and rejected after verification: `PurlAssociatorMappingsDataset.fetch_shard` being unwired from the join is correct, not a gap — the module's own investigation confirmed the legacy parity target (`lookup_assoc`/`from_assoc`) never performs a second/shard fetch either, so wiring it would break byte-for-byte parity with the legacy script, the story's primary mandate; `_id_pep503` vs. `_normalize_pypi_name` stripping-behavior mismatch is real but requires a leading/trailing-hyphen package name to manifest (negligible in practice, already documented as deliberate); `_ID_GIT_HOST_RE` matching `codeberg.org` while `_id_git_purl` returns `None` for it is spec-compliant — the I/O matrix scopes "recognizable" source URLs to github/gitlab/bitbucket only; duplicate `assoc_key` last-wins is structurally unreachable (the JSON source object has unique keys and the store is replaced, not merged, on each refresh); the untracked parity-fixture test files flagged by the verification-gap reviewer are resolved automatically by this step's own Finalize (all reviewed-diff files get committed); the remaining rejects (`LocalRecipesOverlayDataset` per-run scan cost, no reciprocal legacy-script comment, no fixture for conflicting `conda_purl` values, uniform weekly TTL cadence across the three new sources) are non-behavioral/informational observations with no test or contract impact.

@@ -314,3 +314,57 @@ def test_enterprise_jfrog_names_has_exactly_one_writer():
     producers = [n.name for n in artifactory.nodes if "enterprise_jfrog_names" in n.outputs]
     assert producers == ["project_artifactory_names"]
 
+
+# -- Story 21.6 (review finding, patch): DAG-completeness for build_identity_packages_primary's
+# cross-pipeline free inputs -----------------------------------------------------------------
+
+
+# Entries upstream_discovery's free inputs legitimately have NO producer NODE
+# for — raw/seed sources whose load() reads a git-tracked seed or the live
+# filesystem directly (mirrors discovery_aoss_free_python_raw's own
+# no-trigger-node shape, asserted separately in
+# test_tier_1_external_refresh_stores_have_exactly_one_writer_each above).
+_NO_PRODUCER_NEEDED = {"discovery_curated_groups_seed", "discovery_local_recipes_raw"}
+
+
+def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeline_set():
+    """``build_identity_packages_primary`` reads several free (cross-pipeline)
+    inputs — ``enterprise_jfrog_names`` (artifactory_downloads),
+    ``core_feedstock_attribution`` / ``core_packages_enumerated`` (core), and
+    ``pypi_universe`` / ``pypi_conda_mapping`` / ``pypi_intelligence_enriched``
+    (pypi_intelligence). Each is a plain ``pandas.ParquetDataset`` with NO AD-13
+    missing-file degrade, so a fresh-clone run needs every one of them actually
+    produced by SOME node in the same combined DAG — the exact
+    ``pyforge-atlas-bootstrap`` pixi task's pipeline list (core, pypi_intelligence,
+    vulnerability, vcs_health, upstream_discovery, derived_artifacts, seed_gaps,
+    artifactory_downloads). This pins that completeness so a future edit reverting
+    the pixi.toml artifactory_downloads addition (or dropping any other producer)
+    fails loudly here instead of only at a live, credentialed `kedro run`.
+
+    ``Pipeline.outputs()`` is the FREE-output set (produced but never consumed
+    WITHIN that same pipeline) — every one of these inputs IS consumed again
+    internally by a later node in its owning pipeline (e.g. ``pypi_universe`` is
+    also read by ``flag_cross_channel``), so it never appears there. The
+    "was this produced by ANY node at all" question is ``all_outputs()``."""
+    combined = (
+        core_create() + vcs_create() + pypi_create() + vuln_create()
+        + seed_create() + sbom_create() + derived_create() + discovery_create()
+        + artifactory_create()
+    )
+    combined_all_outputs = combined.all_outputs()
+    free_inputs = discovery_create().inputs() - discovery_create().outputs()
+    # params:* entries are parameter bindings, never produced by a node's outputs=
+    # — excluded from the "must be produced somewhere" check on that basis alone.
+    unresolved = {
+        name
+        for name in (free_inputs - combined_all_outputs)
+        if not name.startswith("params:") and name not in _NO_PRODUCER_NEEDED
+    }
+    assert not unresolved, (
+        f"upstream_discovery free input(s) with no producer in the bootstrap "
+        f"pipeline set: {unresolved}"
+    )
+    # Named assertion for the specific Story 21.6 dependency the finding called
+    # out — a clearer failure message than the set-diff above if this regresses.
+    assert "enterprise_jfrog_names" in (discovery_create() + artifactory_create()).all_outputs()
+

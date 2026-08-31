@@ -21,6 +21,8 @@ from .conftest import (
     EXPECTED_FETCHER_URLS,
     EXPECTED_LIVE_OVERRIDE_POINTS,
     EXPECTED_OVERRIDE_POINTS,
+    MEMBER_DIR,
+    MEMBER_DIR_RELATIVE_PATHS,
     PATHS_ENV_VARS,
     REPO_ROOT,
     RESERVED_OVERRIDE_POINTS,
@@ -166,7 +168,13 @@ def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
         defaults[key] = m.group(2) if m else str(value)
     escapees = {}
     for key, default in defaults.items():
-        resolved = (REPO_ROOT / default).resolve()
+        # Story 21.6 (review finding, patch): local_recipes_dir's real consumer is
+        # a live `kedro run`, which executes with cwd = the kedro project root
+        # (MEMBER_DIR), not the repo root every other path here resolves against
+        # (P9) — resolve it against the base its own real invocation actually
+        # uses, still asserting the result lands inside the repo.
+        base = MEMBER_DIR if key in MEMBER_DIR_RELATIVE_PATHS else REPO_ROOT
+        resolved = (base / default).resolve()
         if not resolved.is_relative_to(REPO_ROOT):
             escapees[key] = str(resolved)
     assert not escapees, f"path defaults escape the repo root: {escapees}"
