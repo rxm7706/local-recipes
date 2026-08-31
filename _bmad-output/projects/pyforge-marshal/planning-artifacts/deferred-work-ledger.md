@@ -3707,3 +3707,69 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-28-3-9: A hand-edited deployed caveman skill is clobbered with no `--force`, no backup, and no status that distinguishes "absent" from "present but edited".
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: A hand-edited deployed caveman skill is clobbered with no `--force`, no backup, and no status that distinguishes "absent" from "present but edited".
+  evidence: `_apply_caveman_skill` unconditionally writes the packaged upstream body plus the carve-out over whatever is at the target. `KitStatus.MISSING` conflates an absent file with one whose carve-out was removed, and the remedy row in `docs/finding-remedy-reference.md` tells the operator to run `--apply`, which overwrites. This departs from the package's own managed-artifact discipline for `copied-managed` artifacts, where `check` reports and `update` refuses without `--force`: the kit vocabulary has no `managed-file-modified` equivalent. Adding one means deciding whether a loop home's skill is operator-editable at all, which is a policy question this story did not settle.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred 0a46e03876f3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-10: Kit provisioning takes no lock, so concurrent writers can race one loop home.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Kit provisioning takes no lock, so concurrent writers can race one loop home.
+  evidence: `run_kit` acquires nothing, although `FsPort.acquire_advisory_lock` exists and is used elsewhere in this package. `marshal preflight` (during dispatch) and an operator's `marshal seed kit --apply` can run against the same home at once, as can two supervisors — `marshal factory spin` is already known not to serialize, so a second spin launches a concurrent supervisor. Two `codegraph init` runs against one `.codegraph/` or two writers on one `SKILL.md` is the failure. Unreached today because the layers ship disabled; the fix is an advisory lock on the home, whose scope (per-home vs per-item) is a design choice.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred 8178fd4b3fce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-11: Creating the CCR store directory is gated on an instrument that a bare `mkdir` does not need.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Creating the CCR store directory is gated on an instrument that a bare `mkdir` does not need.
+  evidence: `kit_checks` probes the instrument before the artifact for all three items, so with the `wire` layer on and `headroom` absent from PATH, `<home>/.marshal/wire` is never created and the check reports `instrument-unavailable` rather than any verdict about the directory. This is consistent with AC 3 read literally ("the layer is skipped"), and in tension with AC 1 ("verifies ... the CCR store dir"). The module docstring's own justification for creating it eagerly — so a check before the first wrapped launch can tell "the store is provisioned" from "the wrapper silently fell back to a user-global cache" — describes precisely the case the gate prevents. Ungating just this item is a one-line change, but it makes the three items stop behaving uniformly, which is why it is a decision not a patch.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
+  origin: spec-deferred e218776cdd35 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-12: The kit's ignore rules live only in this repository's `.gitignore`, so applying the kit to an external project dirties that project's worktree.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: The kit's ignore rules live only in this repository's `.gitignore`, so applying the kit to an external project dirties that project's worktree.
+  evidence: This story added `**/.claude/skills/caveman/` and `**/.codegraph/` to THIS repo's `.gitignore` after a real apply left `?? .claude/` and `?? .codegraph/` in `git status` — which blocks `bmad-loop run`. `marshal seed kit --apply` against a loop home outside this repository reproduces the original problem there, with nothing to seed the equivalent rules. The fix is to write the two rules into the TARGET repo as a marshal-seed managed region, which means the kit starts owning a region in a file Genesis does not currently manage.
+  location: .gitignore
+  origin: spec-deferred 7c87406934d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-13: `resolve_context_layers` trusts the home's `.active-project` marker without confirming the project it names actually exists.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: `resolve_context_layers` trusts the home's `.active-project` marker without confirming the project it names actually exists.
+  evidence: If a home's marker is stale or names another project, the `[context]` block — and therefore which kit items get provisioned — is resolved from that other project's policy, silently. The repo's own convention treats the marker as unreliable shared state (CLAUDE.md's PARALLEL AGENTS rule exists because the marker and the artifact symlinks desync). Verifying the marker is backed by a real project policy file before trusting it is cheap; deciding what to do when it is not — fall back to all-off, or report a finding — is the open question.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
+  origin: spec-deferred 5e5c838e618b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-14: Nothing reports when the `output` layer is on but the home's adapter is not `claude`.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Nothing reports when the `output` layer is on but the home's adapter is not `claude`.
+  evidence: `CAVEMAN_SKILL_RELPATH` is a fixed `.claude/skills/caveman/SKILL.md` with no adapter awareness, while `run_preflight` resolves a per-home adapter and five harness profiles ship (`claude`, `copilot`, `cursor`, `devin`, `gemini`). The Claude-only path is backed by the canonical contract — `integration-layers.md` Layer 0 says "Claude Code skill deployed per loop home by Genesis" — so this is not a contract divergence, and the missing piece is only the report: a `copilot` home with `output` on gets a skill deployed where its agent will never look, and the check calls that conformant.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py
+  origin: spec-deferred 8d8f251e290d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
