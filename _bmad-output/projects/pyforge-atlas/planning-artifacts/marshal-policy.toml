@@ -88,6 +88,8 @@ verify_commands = [
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "tests/packaging/test_openteams_handoffs.py",
 ]
 "22" = [
   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
