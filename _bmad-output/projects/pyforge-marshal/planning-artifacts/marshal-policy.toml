@@ -95,9 +95,22 @@ verify_commands = [
 ]
 
 "28" = [
+  # Stopgap (2026-08-31): MRS-GATE-007 stalled Stories 21.7/28.2 for over an
+  # hour apiece with no self-service recovery -- this station-wide wildcard is
+  # the operator-directed "off for now" until Story 28.15 ships the real
+  # per-station hard/warn/off flag (default warn) to replace it. Individual
+  # entries below are kept as documentation of what each landed story
+  # actually touched, not because the wildcard needs narrowing.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-1-the-context-policy-block-rendered-once-for-both-engines.md",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md",
-  ".gitignore",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py",
