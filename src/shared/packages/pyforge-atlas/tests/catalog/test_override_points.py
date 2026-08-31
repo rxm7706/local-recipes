@@ -21,6 +21,7 @@ from .conftest import (
     EXPECTED_FETCHER_URLS,
     EXPECTED_LIVE_OVERRIDE_POINTS,
     EXPECTED_OVERRIDE_POINTS,
+    MEMBER_DIR,
     PATHS_ENV_VARS,
     REPO_ROOT,
     RESERVED_OVERRIDE_POINTS,
@@ -138,11 +139,18 @@ def test_store_paths_resolve_under_data_root(monkeypatch):
 
 
 def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
-    """P9: relative dataset paths resolve against the process CWD, and the
-    documented invocation is the pixi task from the REPO ROOT — so every
-    shipped default must stay inside the repo when resolved from there
-    (the pre-review `../../../../` escapes silently depended on a
-    member-dir CWD nobody uses). The seed root (git-tracked) must exist on
+    """P9, corrected by Story 21.8 (DW-FU-21-2): relative `filepath`/`path`
+    catalog values are absolutized by Kedro's own
+    ``_convert_paths_to_absolute_posix`` against `project_path` — the Kedro
+    MEMBER dir (`src/shared/packages/pyforge-atlas`), which is also the pixi
+    `cwd` `pyforge-atlas-bootstrap` actually runs `kedro run` from — never an
+    assumed repo-root CWD. A live end-to-end bootstrap run (Story 21.8)
+    proved the old REPO_ROOT-anchored premise false: it reproduced the exact
+    `DatasetError` DW-FU-21-2 predicted for `seed_root`. Every shipped
+    default must still stay inside the REPO as a whole once resolved from
+    the member dir (a legitimate `../../../../` escape, like `seed_root`'s
+    fix, is fine; escaping the repo entirely — e.g. a stray extra `../`
+    reaching `/etc` — is not). The seed root (git-tracked) must exist on
     disk; the store defaults are gitignored runtime state and may
     legitimately be absent in a fresh container, so they get the
     containment assertion only."""
@@ -166,13 +174,21 @@ def test_path_defaults_resolve_inside_the_repo_root(globals_raw):
         defaults[key] = m.group(2) if m else str(value)
     escapees = {}
     for key, default in defaults.items():
-        resolved = (REPO_ROOT / default).resolve()
+        resolved = (MEMBER_DIR / default).resolve()
         if not resolved.is_relative_to(REPO_ROOT):
             escapees[key] = str(resolved)
     assert not escapees, f"path defaults escape the repo root: {escapees}"
     # git-tracked seed root + the three seeds must exist here and now
-    seed_root = (REPO_ROOT / defaults["seed_root"]).resolve()
+    seed_root = (MEMBER_DIR / defaults["seed_root"]).resolve()
     assert seed_root.is_dir(), f"seed_root default missing on disk: {seed_root}"
+    # Containment alone is not enough — a WRONG-but-still-contained path (e.g. the
+    # original DW-FU-21-2 bug, which resolved one level short of the real seed dir
+    # but still landed inside the repo) would pass the escapees check above and go
+    # undetected. Pin the exact expected location too.
+    expected_seed_root = (REPO_ROOT / ".claude/skills/conda-forge-expert/data").resolve()
+    assert seed_root == expected_seed_root, (
+        f"seed_root resolved to {seed_root}, expected {expected_seed_root}"
+    )
     for seed in ("lts-registry.yaml", "cwe_categories_seed.json", "spdx.schema.json"):
         assert (seed_root / seed).is_file(), f"seed file missing: {seed_root / seed}"
 
