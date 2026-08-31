@@ -157,3 +157,60 @@ diff needs to be preserved before anything touches this worktree again."
   22.11 (FR-193 CAP-10, station-scoped drain) already owns — `factory drain` /
   `factory dispatch --stories` — rather than a new epic. Decomposition (this
   Dream → Spec → epic/story placement in `pyforge-marshal`) will confirm.
+
+## Addendum (2026-08-31) — the scope gate is real, but manually-fed
+
+Landing `21.7` and `28.2` (the same two stories this Dream is written from)
+surfaced a third finding in the same family: both got stuck in the identical
+observation loop this Dream already describes, but the actual cause was
+neither A nor B above. It was `MRS-GATE-007` — the AD-27 scope-containment
+gate, deliberately non-waivable (`SCOPE_VIOLATION`, AD-49: "cannot itself be
+waived to green"). Its `effective_surface` is `policy_surface ∩ spec_surface`,
+and since no story spec anywhere in this repo declares its own `surface:`,
+`effective_surface` collapses to `policy_surface` alone — a glob list
+hand-authored per epic in `marshal-policy.toml`. `pyforge-marshal`'s epic-28
+entry was scoped to exactly what Story 28.1 touched, with a comment already
+admitting the gap: *"widen per-story as later Epic 28 stories land, same
+pattern atlas used."* That's real, load-bearing operator toil sitting between
+every future story and `drain_to_zero` actually reaching zero — an autonomous
+loop that deadlocks on its own safety gate every single story isn't
+autonomous, it's manual with extra steps.
+
+**This Dream's stance stays what it was for A and B: the gate itself is not
+the bug, the missing automation around it is.** `MRS-GATE-007` catches a real
+class of mistake (a session touching files nobody scoped it to touch,
+including a different station's package entirely) — the fix is to stop
+requiring a human to hand-enumerate every path per story, not to remove the
+containment property.
+
+**C. Auto-derived effective surface, no manual per-story widening.**
+`policy_surface` resolution (feeding AD-27's existing narrow-only combinator,
+unchanged) auto-derives a safe per-station default — the station's own full
+package tree (`src/shared/packages/pyforge-<slug>/**`, already how
+`pyforge-atlas`'s epic-21 entry avoided most of this friction), its planning/
+implementation-artifact trees, and the same common bookkeeping paths every
+epic surface already repeats by hand (`.gitignore`, `pixi.toml`, `pixi.lock`,
+`environment.yaml`, `scripts/.spec-surface-baseline.json`) — computed once at
+`spin`/`dispatch` policy composition, not requiring an `[epic_surfaces]` entry
+to exist at all. An explicit `[epic_surfaces]` entry, where an operator wants
+tighter containment than the station-wide default, still narrows via the
+existing `spec_surface`-style intersection.
+
+**D. Scope-violation enforcement mode, policy-declared, default unchanged.**
+A `hard`/`warn` flag (default `hard` — today's non-waivable refuse, byte-
+identical for every station that declares nothing) lets an operator who
+trusts C's auto-derivation opt a station into `warn`: `MRS-GATE-007`/`008`
+still fire, still name the offending path, but land as an advisory finding
+instead of a landing refusal. This is explicit, per-station, opt-in — never a
+silent global downgrade of AD-49's non-waivable default.
+
+**Gates for C/D:**
+- Does a broadened default `policy_surface` blunt the gate's actual value —
+  catching a session that touches a *different station's* package, or repo
+  config nothing in this epic should ever need? The per-station package-tree
+  default should preserve exactly that cross-station containment while
+  dropping the within-station, per-file enumeration toil.
+- `warn` mode's advisory finding needs to be loud enough that "unless anyone
+  reads findings" (the real risk named when this was scoped) doesn't quietly
+  become "nobody ever reads findings" — `marshal status`/`fleet-picture`
+  surfacing it, not just the journal, is probably required, not optional.

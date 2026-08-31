@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 240
+# stories: 242
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -126,6 +126,8 @@ development_status:
   28-11-difficulty-tiers-route-across-providers-and-pools: backlog
   28-12-dependency-derived-dispatch-ordering: backlog
   28-13-sanctioned-retry-after-an-operator-initiated-stop: backlog
+  28-14-auto-derived-effective-surface-no-manual-per-story-widening: backlog
+  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: backlog
   28-2-wire-compression-at-the-harness-seam: done
   28-3-genesis-seeds-the-token-economy-kit: backlog
   28-4-savings-telemetry-in-journals-and-status: backlog

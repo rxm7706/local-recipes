@@ -4145,9 +4145,10 @@ So that one operator job works in HTMX on the host.
 
 ## Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
 
-Decomposes `spec-marshal-token-economy` (CAP-1..CAP-15; CAP-11/CAP-12 added 2026-08-30
+Decomposes `spec-marshal-token-economy` (CAP-1..CAP-17; CAP-11/CAP-12 added 2026-08-30
 from the operator's model/cost catalog — Stories 28.10/28.11; CAP-14/CAP-15 added
-2026-08-31 from a live dispatch-ordering/retry incident — Stories 28.12/28.13; Dream:
+2026-08-31 from a live dispatch-ordering/retry incident — Stories 28.12/28.13; CAP-16/
+CAP-17 added 2026-08-31 from the same incident's landing — Stories 28.14/28.15; Dream:
 `docs/dreams/marshal-token-economy.md` + `docs/dreams/marshal-dependency-aware-dispatch.md`).
 Marshal owns spend *brakes* (E3 ceilings, idle
 ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
@@ -4311,3 +4312,33 @@ So that stopping a run to reprioritize never permanently blocks that story, and 
 **And** a retry against a worktree already carrying uncommitted changes reports the diff (file count, line count) before proceeding
 **And** liveness detection (`MRS-DISP-011`) does not treat leftover uncommitted worktree changes alone as proof a session process is still alive
 **And** `MRS-DISP-011`'s refusal while a session process is genuinely still alive is unchanged
+
+### Story 28.14: Auto-derived effective surface, no manual per-story widening
+
+As a marshal operator,
+I want `policy_surface` resolution to auto-derive a safe per-station default at spin/dispatch time,
+So that `MRS-GATE-007` never requires hand-widening `[epic_surfaces]` per story to let legitimate, within-station work land.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-16
+**Given** a story touching only files under its own station's package tree and the common bookkeeping paths (`.gitignore`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `scripts/.spec-surface-baseline.json`) **When** verification runs with zero `[epic_surfaces]` entry declared **Then** `MRS-GATE-007` passes
+**And** a story touching a different station's package, or repo config outside the computed default, still fails `MRS-GATE-007` — cross-station containment is preserved
+**And** an existing `[epic_surfaces]` entry that narrows further continues to behave exactly as today (AD-27's intersection-only combinator is unchanged)
+
+### Story 28.15: Scope-violation enforcement mode, policy-declared, default warn
+
+As a marshal operator,
+I want a per-station `hard`/`warn`/`off` policy flag for `MRS-GATE-007`/`008`, defaulting to `warn`,
+So that scope violations stay visible without permanently deadlocking an autonomous drain, with `hard` (today's non-waivable refuse) and `off` (no check at all) available as explicit opt-in per station.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-17
+**Given** no scope-violation mode declared **When** a scope violation occurs **Then** it lands as a named, journaled advisory finding and does not refuse landing (the new `warn` default)
+**And** with `hard` declared for a station **When** a scope violation occurs **Then** behavior reproduces today's non-waivable refuse exactly
+**And** with `off` declared for a station **When** files change **Then** `MRS-GATE-007`/`008` are not evaluated at all — zero findings, zero journal entries
+**And** `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not journal-only
+**And** the mode is per-station — one station's declared mode never changes another's
+
+Operational note: `pyforge-marshal`'s `[epic_surfaces]."28"` was widened to a
+station-wide wildcard (`src/shared/packages/pyforge-marshal/**` + common
+bookkeeping paths) as an immediate stopgap on 2026-08-31, unblocking the live
+Epic 28 drain campaign without waiting on this story's own implementation.
+This story ships the real mechanism to replace that stopgap.
