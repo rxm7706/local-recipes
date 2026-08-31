@@ -59,7 +59,7 @@ development_status:
   21-5-tier-2-sources-about-curated-orgs-artifactory-names: done
   21-6-upstream_discovery-identity-join-and-export-parquet: done
   21-7-quartet-thin-out-and-gist-wrapper: done
-  21-8-end-to-end-verification-gate: backlog
+  21-8-end-to-end-verification-gate: done
   21-9-vizro-bootstrap-health-pages-optional-cap-5: backlog
   22-1-ranked-export-bridge-quartet-vizro-feed: backlog
   22-2-vizro-identity-catalog-page: backlog
