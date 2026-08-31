@@ -83,6 +83,16 @@ verify_commands = [
 # Epic 28 stories land, same pattern atlas used.
 [epic_surfaces]
 "22" = [
+  # Widened 2026-08-31 for consistency with the epic-28 stopgap and atlas's
+  # own epic-21/22/23 convention -- see epic-28's comment for why.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py",
@@ -95,6 +105,20 @@ verify_commands = [
 ]
 
 "28" = [
+  # Stopgap (2026-08-31): MRS-GATE-007 stalled Stories 21.7/28.2 for over an
+  # hour apiece with no self-service recovery -- this station-wide wildcard is
+  # the operator-directed "off for now" until Story 28.15 ships the real
+  # per-station hard/warn/off flag (default warn) to replace it. Individual
+  # entries below are kept as documentation of what each landed story
+  # actually touched, not because the wildcard needs narrowing.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-1-the-context-policy-block-rendered-once-for-both-engines.md",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md",
@@ -107,7 +131,6 @@ verify_commands = [
   # Self-referential: widening this file's own epic_surfaces entry is itself
   # a changed path under the OLD surface that didn't yet cover it.
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
-  ".gitignore",
   # Story 28.3: the two operator-facing surfaces that describe the seed verb
   # set. Nothing else would catch a seventh verb going undocumented.
   ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md",

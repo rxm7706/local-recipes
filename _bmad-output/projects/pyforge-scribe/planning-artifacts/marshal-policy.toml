@@ -46,6 +46,14 @@ verify_commands = [
 # later Epic 6 stories land, same pattern atlas used.
 [epic_surfaces]
 "6" = [
+  # Widened 2026-08-31 for consistency with pyforge-marshal's epic-28 stopgap
+  # and pyforge-atlas's own convention -- see that epic's comment for why.
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
   ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md",
   "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-1-the-graphify-ingest-extra-and-its-move-list-verbs.md",
   "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-2-the-cocoindex-incremental-ingest-extra.md",

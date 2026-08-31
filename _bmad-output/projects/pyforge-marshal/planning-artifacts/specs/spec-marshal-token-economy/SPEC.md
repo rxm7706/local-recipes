@@ -166,6 +166,43 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     diff (files, line count) before proceeding; `MRS-DISP-011`'s refusal correctly reflects
     actual process liveness, not stale worktree state left behind by an external kill;
     `MRS-DISP-011`'s live-session-process refusal is otherwise unchanged.
+- **CAP-16**
+  - **intent:** `policy_surface` resolution (feeding AD-27's existing narrow-only
+    `compute_effective_surface` combinator, unchanged) auto-derives a safe per-station
+    default at `spin`/`dispatch` policy composition — the station's own full package tree
+    (`src/shared/packages/pyforge-<slug>/**`), its planning/implementation-artifact trees,
+    and the common bookkeeping paths every hand-authored `[epic_surfaces]` entry already
+    repeats (`.gitignore`, `pixi.toml`, `pixi.lock`, `environment.yaml`,
+    `scripts/.spec-surface-baseline.json`) — without requiring an `[epic_surfaces]` entry to
+    exist. An explicit `[epic_surfaces]` entry still narrows further via the existing
+    intersection when an operator wants tighter containment than the station-wide default.
+  - **success:** A story touching only files under its own station's package tree and the
+    common bookkeeping paths passes `MRS-GATE-007` with zero `[epic_surfaces]` entry
+    declared; a story touching a *different* station's package, or repo config outside the
+    computed default, still fails it — the cross-station containment property is preserved,
+    only the within-station per-file enumeration toil is removed; an existing
+    `[epic_surfaces]` entry that narrows further continues to behave exactly as today.
+- **CAP-17**
+  - **intent:** A policy-declared, per-station scope-violation enforcement mode with three
+    values — `hard` (today's non-waivable `SCOPE_VIOLATION` refuse), `warn` (`MRS-GATE-007`/
+    `008` still fire, still name the offending path, land as an advisory finding — journaled
+    AND surfaced in `marshal status`/`fleet-picture`, never journal-only — but never block
+    landing), `off` (the check does not run at all: no finding, no journal entry, zero scope
+    containment). **Default is `warn`**, not `hard` — an explicit operator decision (2026-08-
+    31, after this exact gate stalled two live dispatches for over an hour apiece with no
+    self-service recovery path) that visible-but-non-blocking is the right steady state once
+    CAP-16's auto-derivation is trusted, with `hard` and `off` both available as an explicit
+    opt-in for a station that wants tighter or looser posture. `pyforge-marshal` is set to
+    `off` immediately as an operational stopgap (unblocks the live Epic 28 drain campaign
+    without waiting on CAP-16/17's own implementation) — this story ships the real `hard`/
+    `warn`/`off` mechanism to replace that stopgap, not to introduce it.
+  - **success:** A station with no mode declared runs `warn` (visible, non-blocking) — the
+    new default, not today's `hard`; `hard` declared for a station reproduces exactly
+    today's non-waivable refuse behavior; `off` declared for a station means `MRS-GATE-007`/
+    `008` are not evaluated at all for that station — zero findings, zero journal entries,
+    by design; `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not
+    only the journal; the mode is per-station, so one station's choice never changes
+    another's.
 
 ## Constraints
 
