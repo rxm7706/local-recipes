@@ -2,7 +2,8 @@
 title: 'The graphify ingest extra and its move-list verbs (Story 6.1, Epic 6)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e38f269cc5f642e86b3a379a720a191b94fb0129'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
