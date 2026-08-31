@@ -54,6 +54,17 @@ corrupted double-write and never red cron mail.
 
 Zero required network calls (AD-6): the only subprocess invoked is
 `git log` (local, read-only -- never `fetch`/`pull`/`clone`/`ls-remote`).
+
+**Optional seventh surface (Story 6.1).** When `SCRIBE_GRAPHIFY_EXTRA` is
+truthy, `compile_graph()` also ingests `src/shared/packages/` with the
+graphify `compile_surface` extra (`pyforge.scribe.extras.graphify`),
+writing `code`-kind `GraphNode`s through this SAME `GraphStore` -- never a
+parallel store. Off by default (AD-6): the env var is checked before the
+extra's own lazy `graphify` import ever runs, so an off-mode compile is
+byte-for-byte identical to the six-surface compile that predates this
+story. If the extra is on but graphifyy fails to import (or errors during
+extraction), that degrades to a warning like every other optional surface
+here -- it does not abort the rest of the compile.
 """
 
 from __future__ import annotations
@@ -71,6 +82,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+from pyforge.scribe.extras.graphify import graphify_extra_enabled, ingest_repo
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import CAPTURE_TYPES, GraphNode, GraphNodeKind, parse_capture_file
 from pyforge.scribe.transcripts import (
@@ -202,6 +214,13 @@ def compile_graph(
         )
         for node in transcript_nodes:
             store.upsert_node(node)
+
+        if graphify_extra_enabled():
+            try:
+                for node in ingest_repo(repo_root, warnings=warnings):
+                    store.upsert_node(node)
+            except Exception as exc:  # noqa: BLE001 -- an extra degrades, it never aborts a nightly compile
+                warnings.append(f"graphify compile_surface extra failed -- skipped: {exc}")
 
         invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
 

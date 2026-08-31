@@ -17,7 +17,8 @@ Compiles `src/shared/packages/pyforge-scribe/` (PyPI `pyforge-scribe` 0.1.0) as 
 agentskills.io content skill for the **scribe** station. Source: local path
 `src/shared/packages/pyforge-scribe` @ commit `a5e9dad59ab` (`source_ref: local`).
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
-4 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `main`).
+7 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `index_build`,
+`index_report`, `index_move_list`, `main`).
 The package `__init__.py` exports only `__version__` — other components integrate
 via the CLI, never by importing internal modules [SRC:src/pyforge/scribe/__init__.py:L9-L14].
 
@@ -36,6 +37,9 @@ Run from the repository root (never a hardcoded absolute path)
 pixi run -e pyforge-scribe scribe capture --type project --text "..."
 pixi run -e pyforge-scribe scribe graph compile
 pixi run -e pyforge-scribe scribe recall "why did we pin typer"
+pixi run -e pyforge-scribe scribe index build            # graphify extra, explicit
+pixi run -e pyforge-scribe scribe index report            # GRAPH_REPORT + God nodes
+pixi run -e pyforge-scribe scribe index move-list          # foundry-cutover move list
 ```
 
 **Capture** (`scribe capture`) [SRC:src/pyforge/scribe/cli.py:L73-L139]:
@@ -44,10 +48,32 @@ pixi run -e pyforge-scribe scribe recall "why did we pin typer"
 prints `captured: <path>`.
 
 **Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L251-L269]:
-full rebuild of the graph; never prompts.
+full rebuild of the graph; never prompts. When `SCRIBE_GRAPHIFY_EXTRA` is truthy,
+also ingests `src/shared/packages/` through the graphify extra (Story 6.1) as a
+seventh, optional compile source -- off by default (air-gap).
 
 **Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py:L272-L285]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
+
+**Index** (`scribe index build|report|move-list`, Story 6.1) -- the graphify
+`compile_surface` extra's explicit verbs:
+- `scribe index build [--target PATH]`: ingests `PATH` (default
+  `src/shared/packages/`) with graphifyy and writes `code`-kind `GraphNode`s
+  through the SAME persist port `scribe graph compile` uses -- never a parallel
+  store. Requires the `pyforge-scribe[graphify]` extra installed; exits 2 with a
+  clear message otherwise. Does not consult `SCRIBE_GRAPHIFY_EXTRA` -- invoking
+  it is itself the deliberate opt-in.
+- `scribe index report [--target PATH]`: writes a GRAPH_REPORT-style summary
+  (node/edge counts, God-node findings via `graphify.god_nodes`) to
+  `.claude/data/pyforge-scribe/graph-report.md` (derived, gitignored).
+- `scribe index move-list`: scans for the foundry-cutover move-list signals
+  (host `import pyforge.*` sites, `sys.path` inserts, `five_tier` roots, CFE
+  callers) and writes `.claude/data/pyforge-scribe/move-list.json` (derived,
+  gitignored). Independent of graphifyy -- always available.
+
+Consumers (foundry-cutover move-list, marshal Story 28.9's planning-corpus
+retrieval) bind to this grammar only -- never to `pyforge.scribe.extras`
+internals.
 
 <!-- [MANUAL:additional-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->
@@ -78,15 +104,21 @@ then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
 | `capture_cmd` | CLI capture / promote / transcripts | `--type`, `--text`, `--promote`, `--transcripts` |
 | `graph_compile` | Rebuild compiled graph | `--nightly` |
 | `recall_cmd` | Cited recall over compiled graph | `query` |
+| `index_build` | Explicit graphify ingest through the persist port | `--target` |
+| `index_report` | GRAPH_REPORT-style summary + God nodes | `--target` |
+| `index_move_list` | Foundry-cutover move-list scan | — |
 | `capture` | Append-only write under memory_root | `memory_root`, `capture_type`, `text` |
 | `compile_graph` | Full graph rebuild via GraphStore port | `memory_root`, `repo_root`, `nightly` |
 | `answer` | Lexical (default) or semantic recall | `query`, `store`, `repo_root`, `mode` |
 | `open_graph_store` | Factory; default flat-file plugin | `store_path` |
+| `ingest_repo` | graphify extra: folder -> `GraphNode`s | `repo_root`, `target`, `warnings` |
+| `scan_move_list` | Move-list signal scan (no graphifyy needed) | `repo_root` |
 
 ## Key Exports
 
 Public SKF extract of `cli.py` (Quick mode): `capture_cmd`, `graph_compile`,
-`recall_cmd`, `main` [SRC:src/pyforge/scribe/cli.py]. Console script:
+`recall_cmd`, `index_build`, `index_report`, `index_move_list`, `main`
+[SRC:src/pyforge/scribe/cli.py]. Console script:
 `scribe = pyforge.scribe.cli:main` [SRC:pyproject.toml:L25-L26].
 
 ## Usage
@@ -95,6 +127,12 @@ Always invoke `scribe` from repo root. Do not `from pyforge.scribe import captur
 in other stations. Graph engine is selected via `pyforge.core.hooks` plugins
 (`scribe-graphstore-flatfile`, `scribe-graphstore-pg`) — callers use
 `open_graph_store`, not a driver client [SRC:src/pyforge/scribe/graph_store_plugins.py:L1-L8].
+
+The graphify `compile_surface` extra (Story 6.1) is off by default
+(`SCRIBE_GRAPHIFY_EXTRA` unset/falsy) — `graphifyy` is imported lazily and only
+inside `pyforge.scribe.extras.graphify`; install it via the `pyforge-scribe[graphify]`
+optional dependency. Consumers (foundry-cutover move-list, marshal Story 28.9) bind to
+the `scribe index …` CLI grammar, never to `pyforge.scribe.extras` internals.
 
 ## Key Types
 
@@ -127,10 +165,17 @@ scribe capture --promote [--source PATH]
 scribe capture --transcripts [--source PATH]
 scribe graph compile [--nightly]
 scribe recall <query>
+scribe index build [--target PATH]
+scribe index report [--target PATH]
+scribe index move-list
 ```
 
 `--promote` and `--transcripts` are mutually exclusive with each other and with
 `--type`/`--text` (exit 2) [SRC:src/pyforge/scribe/cli.py:L110-L132].
+
+`scribe index build`/`report` exit 2 if graphifyy is not installed
+(`GraphifyUnavailableError`); `scribe index move-list` never depends on
+graphifyy [SRC:src/pyforge/scribe/extras/graphify.py].
 
 <!-- [MANUAL:api-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->

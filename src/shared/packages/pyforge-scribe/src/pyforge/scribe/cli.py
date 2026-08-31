@@ -4,20 +4,26 @@ The CLI is the sole public contract: `capture` (direct write, Wave 1,
 `--promote` scan-classify-propose-confirm, Story 1.3, or `--transcripts`
 scan-propose-confirm over raw session transcripts, Story 3.1), `graph
 compile [--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph,
-unattended) and `recall <query>` (Story 2.4 -- grounded, cited retrieval
-over that compiled graph). Other components integrate with Scribe via this
-CLI, never by importing internal modules directly (AD-7).
+unattended), `recall <query>` (Story 2.4 -- grounded, cited retrieval over
+that compiled graph), and `index build|report|move-list` (Story 6.1 -- the
+graphify `compile_surface` extra's explicit ingest + report verbs). Other
+components integrate with Scribe via this CLI, never by importing internal
+modules directly (AD-7).
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
 
+from pyforge.core.atomic_write import atomic_write_text
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import CompileInProgressError, compile_graph, default_store_path
+from pyforge.scribe.extras.graphify import GraphifyUnavailableError, build_graph_report, ingest_repo
+from pyforge.scribe.extras.move_list import scan_move_list
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
@@ -40,6 +46,10 @@ app = typer.Typer(
 )
 graph_app = typer.Typer(help="Knowledge-graph projection commands (Epic 2).")
 app.add_typer(graph_app, name="graph")
+index_app = typer.Typer(
+    help="graphify compile_surface ingest + report verbs (Story 6.1)."
+)
+app.add_typer(index_app, name="index")
 
 # Resolved relative to the current working directory at invocation time —
 # `scribe` is always run from the repo root (never a hardcoded absolute
@@ -305,6 +315,75 @@ def recall_cmd(
         typer.echo(f"[source: {result.citation}]")
     else:
         typer.echo("no grounded answer found")
+
+
+def _index_artifact_path(repo_root: Path, name: str) -> Path:
+    """Derived, gitignored home for `scribe index`'s own artifacts --
+    alongside `graph.json` (AC3), never a foundry-root product dir."""
+    return repo_root / ".claude" / "data" / "pyforge-scribe" / name
+
+
+_TARGET_OPTION = typer.Option(
+    None,
+    "--target",
+    help="Folder to ingest, repo-relative (default: src/shared/packages).",
+)
+
+
+@index_app.command("build")
+def index_build(target: Path | None = _TARGET_OPTION) -> None:
+    """Ingest `target` with graphifyy and write GraphNodes through the
+    persist port (`open_graph_store`) -- never a parallel store (Story 6.1,
+    AC2). Explicit and deliberate: unlike `scribe graph compile`'s automatic
+    fan-in, this command does not consult `SCRIBE_GRAPHIFY_EXTRA`."""
+    repo_root = Path.cwd()
+    warnings: list[str] = []
+    try:
+        nodes = ingest_repo(repo_root, target=target, warnings=warnings)
+    except GraphifyUnavailableError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    store = open_graph_store(default_store_path(repo_root))
+    for node in nodes:
+        store.upsert_node(node)
+    store.commit()
+    for warning in warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(f"indexed {len(nodes)} code node(s) -> {default_store_path(repo_root)}")
+
+
+@index_app.command("report")
+def index_report(target: Path | None = _TARGET_OPTION) -> None:
+    """Write a GRAPH_REPORT-style summary (incl. God-node findings) to a
+    derived, gitignored artifact (Story 6.1, AC3)."""
+    repo_root = Path.cwd()
+    try:
+        report_text = build_graph_report(repo_root, target=target)
+    except (GraphifyUnavailableError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    report_path = _index_artifact_path(repo_root, "graph-report.md")
+    atomic_write_text(report_path, report_text)
+    typer.echo(f"wrote {report_path}")
+
+
+@index_app.command("move-list")
+def index_move_list() -> None:
+    """Scan for the foundry-cutover move-list signals (host `import
+    pyforge.*` sites, `sys.path` inserts, `five_tier` roots, CFE callers)
+    and write the result to a derived, gitignored artifact (Story 6.1, AC3).
+    Does not require graphifyy or `SCRIBE_GRAPHIFY_EXTRA`."""
+    repo_root = Path.cwd()
+    findings = scan_move_list(repo_root)
+    document = {
+        "findings": [
+            {"category": f.category, "path": f.path, "line": f.line, "snippet": f.snippet}
+            for f in findings
+        ]
+    }
+    move_list_path = _index_artifact_path(repo_root, "move-list.json")
+    atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    typer.echo(f"wrote {move_list_path} ({len(findings)} finding(s))")
 
 
 def main() -> None:

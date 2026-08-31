@@ -192,6 +192,55 @@ def test_malformed_transcript_citation_is_not_waved_through(
     assert result.citation is None
 
 
+def test_code_citation_with_line_is_resolvable(repo_with_citation: Path) -> None:
+    """Story 6.1 fix: a graphify-ingested `code` node's `<path>:L<line>`
+    citation must resolve -- before this fix, every such node was
+    unrecallable (the whole `"...py:L120"` string was checked as a literal
+    filename and never found)."""
+    (repo_with_citation / "src").mkdir()
+    (repo_with_citation / "src" / "example.py").write_text(
+        "def foo():\n    pass\n", encoding="utf-8"
+    )
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="code:python:example.foo",
+            kind="code",
+            title="foo()",
+            text="function foo (src/example.py)",
+            citation="src/example.py:L1",
+        )
+    )
+    store.commit()
+
+    result = answer("what does foo do", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "src/example.py:L1"
+
+
+def test_code_citation_pointing_at_a_missing_file_is_not_resolvable(
+    repo_with_citation: Path,
+) -> None:
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="code:python:ghost",
+            kind="code",
+            title="ghost()",
+            text="function ghost nowhere on disk",
+            citation="src/does_not_exist.py:L42",
+        )
+    )
+    store.commit()
+
+    result = answer("ghost function", store, repo_root=repo_with_citation)
+
+    assert result.grounded is False
+
+
 def test_determinism_two_independent_store_instances_same_file_same_answer(
     repo_with_citation: Path,
 ) -> None:
