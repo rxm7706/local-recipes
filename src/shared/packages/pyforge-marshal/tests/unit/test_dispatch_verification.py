@@ -137,8 +137,16 @@ class FakeProcess:
 
 
 class FakeVcs:
+    def __init__(
+        self,
+        changed: tuple[str, ...] = (
+            "src/shared/packages/pyforge-marshal/src/leak.py",
+        ),
+    ) -> None:
+        self._changed = changed
+
     def changed_files(self, repo_root: Path, worktree: Path, *, base: str):
-        return ("src/shared/packages/pyforge-marshal/src/leak.py",)
+        return self._changed
 
 
 def test_evaluate_dispatch_verification_runs_gates_not_self_report(
@@ -165,8 +173,106 @@ def test_evaluate_dispatch_verification_runs_gates_not_self_report(
     inp = DispatchVerificationInput(findings=envelope.findings)
     assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
     assert any(f.code == "MRS-GATE-001" for f in envelope.findings)
+    # Story 28.14, CAP-16: zero declared epic_surfaces for epic 22, and the
+    # changed file sits under pyforge-marshal's OWN package tree -- the
+    # auto-derived default must suppress MRS-GATE-007 here, not just for
+    # cli/gate.py's own copy of this fallback.
+    assert not any(f.code == "MRS-GATE-007" for f in envelope.findings)
     assert would_land_on_self_report_only(
         DispatchVerificationInput(
             findings=envelope.findings, harness_self_report_shipped=True
         )
     )
+
+
+def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_default(
+    tmp_path: Path,
+) -> None:
+    """Story 28.14, CAP-16: dispatch_verify.py's own copy of the "declared
+    wins, else fall back to the auto-derived default" resolver must deny a
+    changed file OUTSIDE the auto-derived default exactly like
+    cli/gate.py's copy does -- not just the fact that its file matched the
+    default in the test above."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
+    )
+    assert any(f.code == "MRS-GATE-007" for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_declared_entry_wins_over_auto_derived_default(
+    tmp_path: Path,
+) -> None:
+    """Story 28.14, CAP-16: a DECLARED `[epic_surfaces]` entry is used
+    outright at the dispatch call site too -- the auto-derived default is
+    never consulted or merged in, even for a path (here `pixi.toml`) the
+    default would have permitted."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"epic_surfaces": {"22": ["recipes/x/**"]}},
+        flags={},
+    )
+
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("pixi.toml",)),
+    )
+    assert any(f.code == "MRS-GATE-007" for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_resolver(
+    tmp_path: Path,
+) -> None:
+    """Review pass 2 (finding 5): every OTHER test in this file passes
+    `project_slug="pyforge-marshal"` -- so a regression that hardcoded that
+    literal at `dispatch_verify.py:181-183` instead of threading this
+    function's own `project_slug` parameter through to
+    `gate.resolve_policy_surface` would pass every one of them undetected
+    (their slug happens to match the hardcoded value, and
+    `data["scope_check"]` never exposes `policy_surface` to catch it via
+    the payload either).
+
+    Uses a DIFFERENT slug (``"acme"``) and a changed file inside ONLY
+    acme's own auto-derived package-tree default
+    (``src/shared/packages/acme/**``, Story 28.14/CAP-16's
+    ``default_epic_surface``) -- deliberately NOT a bookkeeping path like
+    ``pixi.toml`` (identical across every slug's default, so it cannot
+    distinguish "real project_slug" from "hardcoded pyforge-marshal").
+    This only stays green if the real parameter -- not a hardcoded literal
+    -- drives the resolver."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(project_slug="acme", project={}, flags={})
+
+    envelope = evaluate_dispatch_verification(
+        project_slug="acme",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("src/shared/packages/acme/module.py",)),
+    )
+    assert not any(f.code == "MRS-GATE-007" for f in envelope.findings)
