@@ -260,13 +260,13 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_thirty_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 30, Story 28.1's `context` joining Story
-    22.8's `harness_preference`, Story 25.4's 5 bmad-loop 0.10/0.11
-    knobs, Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
-    Story 4.5's `landing_resync_commands`, Story 4.4's
-    `landing_base_branch`, and Story 4.7's 4 landing keys) keys prints
-    its effective value and winning layer' -- checked
+def test_config_prints_all_thirty_one_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 31, Story 28.15's `scope_violation_mode`
+    joining Story 28.1's `context`, Story 22.8's `harness_preference`,
+    Story 25.4's 5 bmad-loop 0.10/0.11 knobs, Story 3.13's `max_parallel`,
+    Story 6.9's `mcp_servers`, Story 4.5's `landing_resync_commands`,
+    Story 4.4's `landing_base_branch`, and Story 4.7's 4 landing keys)
+    keys prints its effective value and winning layer' -- checked
     exhaustively, not just a couple of spot-checked fields. The layer half
     is counted, not merely detected: exactly one `(layer=...)` suffix per
     key line, so a regression that drops the suffix from all but one line
@@ -290,6 +290,7 @@ def test_config_prints_all_thirty_keys(capsys, monkeypatch):
         "mcp_servers",
         "harness_preference",
         "context",
+        "scope_violation_mode",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -308,7 +309,7 @@ def test_config_prints_all_thirty_keys(capsys, monkeypatch):
         "stream_capture_kb",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 30
+    assert captured.out.count("(layer=") == 31
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -1759,8 +1760,39 @@ def _write_epic_surfaces_policy(tmp_path, monkeypatch, slug, epic_surfaces_toml,
     monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
     policy_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
     policy_dir.mkdir(parents=True, exist_ok=True)
-    (policy_dir / "marshal-policy.toml").write_text(
-        epic_surfaces_toml + extra, encoding="utf-8"
+    content = epic_surfaces_toml + extra
+    # Story 28.15 (CAP-17): this whole "Story 2.3: gate evaluate
+    # --scope-check" test block predates the warn-default enforcement-mode
+    # flip and asserts today's hard-refuse MRS-GATE-007/008 behavior
+    # throughout -- `hard` is declared here (unless a caller already
+    # declared its own mode) so every one of those tests keeps testing
+    # exactly what it always tested; the new default/warn/off/per-station
+    # behavior gets its own dedicated tests instead.
+    if "scope_violation_mode" not in content:
+        content += '\nscope_violation_mode = "hard"\n'
+    (policy_dir / "marshal-policy.toml").write_text(content, encoding="utf-8")
+
+
+def _write_clean_verification_spec(tmp_path, slug, epic, seq):
+    """A tracked spec whose ``## Verification`` section declares zero
+    commands -- ``parse_success_signal`` returns ``()``, not ``None``, so
+    Story 2.7's spec-binding check (``MRS-GATE-010``/``011``, the SAME
+    ``Verdict.SCOPE_VIOLATION`` rung ``MRS-GATE-007``/``008`` use) reports
+    nothing. Every scope-check test that also wants to assert on the
+    envelope's overall ``verdict``/exit code -- not just the finding codes
+    list -- needs this, or an UNRELATED ``MRS-GATE-010`` ("no tracked spec")
+    confounds the result (this fixture's own ``--story`` always resolves a
+    tracked-spec lookup, whether or not ``--scope-check`` itself cares)."""
+    from pyforge.marshal.core.identity import StoryKey, render_filename_slug
+
+    specs_dir = (
+        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    key = StoryKey(epic=epic, seq=seq)
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
+        "---\ntitle: 'x'\n---\n\n## Verification\n\n**Commands:**\n",
+        encoding="utf-8",
     )
 
 
@@ -2180,6 +2212,110 @@ def test_gate_evaluate_scope_check_declared_entry_wins_over_auto_derived_default
     assert payload["data"]["scope_check"]["policy_surface"] == ["recipes/x/**"]
     codes = [finding["code"] for finding in payload["findings"]]
     assert "MRS-GATE-007" in codes
+
+
+# --- Story 28.15: scope-violation enforcement mode (CAP-17) ------------------
+
+
+def test_gate_evaluate_scope_check_no_declared_mode_defaults_to_warn(
+    tmp_path, capsys, monkeypatch
+):
+    """AC1: no declared mode -- a violation lands as a named MRS-GATE-012
+    advisory finding, verdict/exit code stay ok, never SCOPE_VIOLATION."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    policy_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    policy_dir.mkdir(parents=True, exist_ok=True)
+    (policy_dir / "marshal-policy.toml").write_text(
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n', encoding="utf-8"
+    )
+    from pyforge.marshal.cli import config as config_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
+    _write_clean_verification_spec(tmp_path, "acme", 2, 3)
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["mode"] == "warn"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-012" in codes
+    assert payload["verdict"] != Verdict.SCOPE_VIOLATION.value
+    assert payload["status"] == "ok"
+    assert exit_code == 0
+
+
+def test_gate_evaluate_scope_check_off_mode_reports_zero_findings(
+    tmp_path, capsys, monkeypatch
+):
+    """AC3: off declared -- MRS-GATE-007/008 (and their warn-mode
+    advisories) are not evaluated at all, zero findings."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
+        'scope_violation_mode = "off"\n',
+    )
+    _write_clean_verification_spec(tmp_path, "acme", 2, 3)
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["mode"] == "off"
+    assert payload["data"]["scope_check"]["violations"] == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-012" not in codes
+    assert exit_code == 0
+
+
+def test_gate_evaluate_scope_check_two_stations_apply_their_own_mode_independently(
+    tmp_path, capsys, monkeypatch
+):
+    """AC5: one station's declared mode never changes another's -- station
+    'acme' declares hard (refuses), station 'other' declares warn
+    (advisory, never blocks), same violated glob shape for both."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    from pyforge.marshal.cli import config as config_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
+    for slug, mode in (("acme", "hard"), ("other", "warn")):
+        policy_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+        policy_dir.mkdir(parents=True, exist_ok=True)
+        (policy_dir / "marshal-policy.toml").write_text(
+            'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
+            f'scope_violation_mode = "{mode}"\n',
+            encoding="utf-8",
+        )
+        _write_clean_verification_spec(tmp_path, slug, 2, 3)
+
+    hard_args = _scope_check_args(project="acme", story="2.3")
+    gate_module.run_evaluate(hard_args, vcs=_FakeVcs(changed=("recipes/y/a.yaml",)))
+    hard_payload = json.loads(capsys.readouterr().out)
+    assert hard_payload["verdict"] == Verdict.SCOPE_VIOLATION.value
+    assert "MRS-GATE-007" in [f["code"] for f in hard_payload["findings"]]
+
+    warn_args = _scope_check_args(project="other", story="2.3")
+    gate_module.run_evaluate(warn_args, vcs=_FakeVcs(changed=("recipes/y/a.yaml",)))
+    warn_payload = json.loads(capsys.readouterr().out)
+    assert warn_payload["verdict"] != Verdict.SCOPE_VIOLATION.value
+    assert "MRS-GATE-012" in [f["code"] for f in warn_payload["findings"]]
 
 
 def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(

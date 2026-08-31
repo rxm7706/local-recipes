@@ -1299,6 +1299,16 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # composes and is reported, never rejected -- a project's own
 # `max_parallel > 1` setting is a legitimate, forward-looking declaration
 # for whenever the upstream scheduler ships, not a malformed value.
+#
+# Story 28.15 (scope-violation enforcement mode, policy-declared, default
+# warn, SPEC-marshal-token-economy CAP-17) adds `MRS-GATE-012`/`013`: the
+# `warn`-mode advisory siblings `core/gate.py::check_scope_with_mode` emits
+# in place of the raw `MRS-GATE-007`/`008` when a station's declared
+# `scope_violation_mode` is `warn` -- same offending path, `Verdict.WARN`
+# instead of `Verdict.SCOPE_VIOLATION`, so the finding is visible (journaled,
+# rendered by `marshal status`/`fleet-picture`) without refusing landing.
+# `mode == "off"` emits neither the raw nor the advisory code -- the check
+# is not evaluated at all.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1661,6 +1671,18 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # MRS-SPIN-017. A home with every layer off raises nothing at all:
         # there is no degradation to report about a layer nobody enabled.
         "MRS-PREFLIGHT-015",
+        # Story 28.15 (scope-violation enforcement mode, policy-declared,
+        # default warn, SPEC-marshal-token-economy CAP-17): MRS-GATE-012/013
+        # are the `warn`-mode advisory siblings of MRS-GATE-007/008 --
+        # `core/gate.py::check_scope_with_mode` emits one of THESE (never the
+        # raw 007/008 code) when a station's declared `scope_violation_mode`
+        # is `warn`, naming the same offending path but classifying
+        # `Verdict.WARN` instead of `Verdict.SCOPE_VIOLATION` (AD-31: a
+        # registered code's classification never varies by caller, so a
+        # NEW code is what lets the same fact carry two different lattice
+        # weights depending on the declared mode). Both WARN.
+        "MRS-GATE-012",
+        "MRS-GATE-013",
     }
 )
 

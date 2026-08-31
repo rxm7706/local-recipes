@@ -694,6 +694,7 @@ def _merge_dispatch_overlay(
         dispatch_completion_verdict=completion_verdict,
         dispatch_verification_verdict=journal.verification_verdict,
         dispatch_verification_failed_gate=journal.verification_failed_gate,
+        dispatch_verification_scope_advisories=journal.verification_scope_advisories,
         dispatch_supervisor_alive=supervisor_alive,
         dispatch_story_started_at=journal.story_started_at,
         dispatch_story_ended_at=journal.story_ended_at,
@@ -2032,6 +2033,24 @@ def _render_text_status(
                 f" FAILED_PATCHES n={len(failed)} pending={pending} "
                 f"unknown={unknown}"
             )
+        # Story 28.15 (CAP-17): the SAME `dispatch_verification_scope_
+        # advisories` list the `--format json` payload carries -- a pure
+        # projection (NFR-12), mirroring `failed`/`unpushed`'s own
+        # single-line-count convention. A `warn`-mode violation must be
+        # visible here, not journal-only (AC4).
+        scope_advisories = home.get("dispatch_verification_scope_advisories") or ()
+        if scope_advisories:
+            # Deduped (`dict.fromkeys`) so several violations sharing one code
+            # render once, not repeated -- `n=` above stays the true total,
+            # unaffected by the dedup. No isinstance guard needed here (unlike
+            # `scripts/fleet_picture.py`'s equivalent line): each entry is
+            # already filtered to a `dict` by `gather_dispatch_journal_facts`
+            # before it ever reaches `DispatchJournalFacts.verification_scope_
+            # advisories`.
+            codes = ",".join(dict.fromkeys(
+                entry.get("code", "?") for entry in scope_advisories
+            ))
+            line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
 
     if findings:

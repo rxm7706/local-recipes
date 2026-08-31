@@ -96,6 +96,17 @@ AD-34's egress-port set (argv/environment to a child process, and this
 CLI's own stdout, are inside Marshal's trust boundary, not a
 durable/third-party sink).
 
+**Scope-violation enforcement mode (Story 28.15, CAP-17).** ``core.gate.
+check_scope``'s raw ``MRS-GATE-007``/``008`` findings pass through ``core.
+gate.check_scope_with_mode`` before landing in this envelope, keyed on the
+active project's own declared ``scope_violation_mode`` (``effective.
+scope_violation_mode.value``). Default (undeclared) is ``warn``: the raw
+finding is replaced by its ``MRS-GATE-012``/``013`` advisory sibling
+(``Verdict.WARN``, never blocking) naming the same offending path.
+``hard`` reproduces today's non-waivable refuse exactly. ``off`` means
+``check_scope`` is never called -- zero findings. ``data["scope_check"]``
+carries the resolved ``mode`` alongside every other already-reported key.
+
 **Spec binding (Story 2.7, AD-4/AD-31/AD-49).** Reuses the SAME ``--story``
 flag -- no new one -- and runs whenever ``--story`` is supplied, with or
 without ``--scope-check``. The story key is resolved and its tracked spec
@@ -628,10 +639,18 @@ def _run_scope_check(
     )
     frozen_paths = fold_for_frozen.live_frozen_surfaces(seed_frozen)
 
-    scope_findings = gate.check_scope(effective_surface, frozen_paths, changed)
+    # Story 28.15 (CAP-17): the station's declared enforcement mode gates
+    # what `check_scope`'s raw findings become -- `check_scope_with_mode` is
+    # the ONE place this branching lives, shared verbatim with `dispatch_
+    # verify.py::evaluate_dispatch_verification`.
+    scope_violation_mode = effective.scope_violation_mode.value
+    scope_findings = gate.check_scope_with_mode(
+        effective_surface, frozen_paths, changed, mode=scope_violation_mode
+    )
     data: dict[str, object] = {
         "checked": True,
         "story": str(story_key),
+        "mode": scope_violation_mode,
         "policy_surface": list(policy_surface),
         "spec_surface": list(spec_surface) if spec_surface is not None else None,
         "effective_surface": list(effective_surface),

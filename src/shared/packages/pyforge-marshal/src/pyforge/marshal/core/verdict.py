@@ -368,6 +368,17 @@ regardless of what is requested) at ``Verdict.WARN``, the same tier as
 declaring ``max_parallel > 1`` today is a legitimate, forward-looking
 setting for whenever the upstream scheduler ships, not a malformed value.
 
+Story 28.15 (scope-violation enforcement mode, policy-declared, default warn,
+``SPEC-marshal-token-economy`` CAP-17) adds ``MRS-GATE-012``/``013``, both
+``Verdict.WARN`` -- deliberately NOT ``Verdict.SCOPE_VIOLATION``, the rung
+their raw ``MRS-GATE-007``/``008`` siblings classify: AD-31 forbids a
+registered code from classifying two different rungs, so the SAME underlying
+fact (a changed path outside the effective surface, or one touching the live
+frozen set) needs a NEW code, not a severity override, to carry a different
+lattice weight when a station's declared ``scope_violation_mode`` is ``warn``
+rather than ``hard``. ``core/gate.py::check_scope_with_mode`` is the sole
+emitter of either pair -- never both for the same violation.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -1085,6 +1096,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # here would violate the story's own "never blocking a seed on a missing
     # optional instrument".
     "MRS-PREFLIGHT-015": Verdict.WARN,
+    # Story 28.15 (scope-violation enforcement mode, policy-declared,
+    # default warn, SPEC-marshal-token-economy CAP-17): the `warn`-mode
+    # advisory siblings of MRS-GATE-007/008 -- WARN, deliberately never
+    # SCOPE_VIOLATION (AD-31: the same code never classifies two rungs), so
+    # a station's declared `warn` mode makes the identical underlying fact
+    # visible without refusing landing.
+    "MRS-GATE-012": Verdict.WARN,
+    "MRS-GATE-013": Verdict.WARN,
 }
 
 

@@ -5561,6 +5561,36 @@ class TestAwaitingOperatorTextProjections:
         )
         assert "preserve_ref=attempt-preserve/run1-abc123" in with_ref
 
+    def test_scope_advisory_renders_a_one_line_projection(self):
+        """Story 28.15 (CAP-17), AC4: a `warn`-mode scope-violation
+        advisory is visible in `marshal status`'s TEXT view too, not just
+        `--format json` -- a pure projection of the SAME
+        `dispatch_verification_scope_advisories` field (NFR-12)."""
+        text = status_cli._render_text_status(
+            {
+                "project": None,
+                "homes": [
+                    _fleet_row(
+                        dispatch_verification_scope_advisories=[
+                            {
+                                "code": "MRS-GATE-012",
+                                "message": "...",
+                                "path": "src/leak.py",
+                            }
+                        ],
+                    )
+                ],
+            },
+            (),
+        )
+        assert "SCOPE_ADVISORY n=1 codes=MRS-GATE-012" in text
+
+    def test_no_scope_advisory_renders_no_scope_advisory_marker(self):
+        text = status_cli._render_text_status(
+            {"project": None, "homes": [_fleet_row()]}, ()
+        )
+        assert "SCOPE_ADVISORY" not in text
+
     def _detail(self, **overrides: object) -> dict[str, object]:
         data: dict[str, object] = {
             "project": "acme",

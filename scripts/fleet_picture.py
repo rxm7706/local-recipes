@@ -469,6 +469,10 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 "story": r.get("current_story") or "",
                 "escalation_reason": r.get("escalation_reason"),
                 "escalation_artifact": r.get("escalation_artifact"),
+                # Story 28.15 (CAP-17), AC4: a station's warn-mode
+                # scope-violation advisories, visible here too -- never
+                # journal-only.
+                "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
             }
             if r.get("state") == "running":
                 running.add(slug)
@@ -572,6 +576,27 @@ def main() -> int:
         if blkd:
             watch.append(f"{slug}: {blkd} story(ies) BLOCKED -- will not run, "
                          f"not waiting on you")
+        # Story 28.15 (CAP-17), AC4: a warn-mode scope-violation advisory is
+        # visible, never blocking -- the `watch` bucket, matching every
+        # other non-blocking degrade above (unknown state, PR-query
+        # failure). One line names the count + codes; the run's own
+        # journal/`marshal status --format json` carries the full detail.
+        advisories = (live.get(slug, {}) or {}).get("scope_advisories") or []
+        if advisories:
+            # `advisories` comes from `marshal status --format json` subprocess
+            # stdout parsed in `running_stations()` (outside that function's own
+            # try/except) -- a non-dict item, or a `"code"` that is explicitly
+            # `None`, is guarded here rather than trusted, since `.get(...,
+            # "?")` only substitutes the default when the key is ABSENT.
+            # Deduped (`dict.fromkeys`) so several violations sharing one code
+            # render once, not repeated -- the `len(advisories)` count below
+            # stays the true total, unaffected by the dedup.
+            codes = ",".join(dict.fromkeys(
+                str(a.get("code") or "?") if isinstance(a, dict) else "?"
+                for a in advisories
+            ))
+            watch.append(f"{slug}: {len(advisories)} scope-violation advisory(ies) "
+                         f"(warn mode, not blocking) -- {codes}")
     try:
         prs = subprocess.run(
             ["gh", "pr", "list", "--repo", "rxm7706/local-recipes",

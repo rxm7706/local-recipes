@@ -129,6 +129,53 @@ def test_build_fleet_row_surfaces_refused_verification() -> None:
     assert row["dispatch_verification_failed_gate"] == "MRS-GATE-001"
 
 
+def test_build_fleet_row_surfaces_warn_mode_scope_advisories() -> None:
+    """Story 28.15 (CAP-17), AC4: 'marshal status ... render a warn-mode
+    violation finding, not journal-only'."""
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="28-15-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+        dispatch_verification_verdict="verified",
+        dispatch_verification_scope_advisories=(
+            {
+                "code": "MRS-GATE-012",
+                "message": "scope-violation mode is 'warn' ...",
+                "path": "src/leak.py",
+            },
+        ),
+    )
+    row, finding = build_fleet_row(facts)
+    assert finding is None
+    assert row["dispatch_verification_scope_advisories"] == [
+        {
+            "code": "MRS-GATE-012",
+            "message": "scope-violation mode is 'warn' ...",
+            "path": "src/leak.py",
+        }
+    ]
+
+
+def test_build_fleet_row_omits_scope_advisories_key_when_empty() -> None:
+    """The sparse-key convention every OTHER optional dispatch field in this
+    row already follows (`dispatch_verification_failed_gate` et al.) --
+    never a fabricated empty list."""
+    facts = FleetHomeFacts(
+        slug="pyforge-marshal",
+        branch="loop/pyforge-marshal",
+        has_run=False,
+        dispatch_story="28-15-example",
+        dispatch_engine_alive=False,
+        dispatch_completion_verdict="live",
+        dispatch_verification_verdict="verified",
+    )
+    row, _finding = build_fleet_row(facts)
+    assert "dispatch_verification_scope_advisories" not in row
+
+
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[0] == "false":
@@ -196,7 +243,15 @@ def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_d
     worktree = tmp_path / "wt"
     worktree.mkdir()
     story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
-    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+    # Story 28.15 (CAP-17): `hard` declared explicitly -- this test is about
+    # Story 28.14's surface computation, not about enforcement mode, and the
+    # default flipped to `warn` (MRS-GATE-012, not MRS-GATE-007) since this
+    # test was written.
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"scope_violation_mode": "hard"},
+        flags={},
+    )
 
     envelope = evaluate_dispatch_verification(
         project_slug="pyforge-marshal",
@@ -221,9 +276,15 @@ def test_evaluate_dispatch_verification_declared_entry_wins_over_auto_derived_de
     worktree = tmp_path / "wt"
     worktree.mkdir()
     story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    # Story 28.15 (CAP-17): `hard` declared explicitly for the same reason
+    # as the sibling test above -- this test is about Story 28.14's
+    # declared-entry-wins resolution, not about enforcement mode.
     effective, _ = policy.compose(
         project_slug="pyforge-marshal",
-        project={"epic_surfaces": {"22": ["recipes/x/**"]}},
+        project={
+            "epic_surfaces": {"22": ["recipes/x/**"]},
+            "scope_violation_mode": "hard",
+        },
         flags={},
     )
 
@@ -238,6 +299,117 @@ def test_evaluate_dispatch_verification_declared_entry_wins_over_auto_derived_de
         vcs=FakeVcs(changed=("pixi.toml",)),
     )
     assert any(f.code == "MRS-GATE-007" for f in envelope.findings)
+
+
+# --- Story 28.15: scope-violation enforcement mode (CAP-17) ------------------
+
+
+def test_evaluate_dispatch_verification_no_declared_mode_defaults_to_warn_and_verifies(
+    tmp_path: Path,
+) -> None:
+    """AC1/CAP-17: a violation under the undeclared (warn) default lands as
+    an MRS-GATE-012 advisory and independent verification still VERIFIES --
+    exactly the "never permanently deadlocks an autonomous drain" property
+    this story exists for."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(project_slug="pyforge-marshal", project={}, flags={})
+
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
+    )
+    assert envelope.data["scope_check"]["mode"] == "warn"
+    codes = [f.code for f in envelope.findings]
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-012" in codes
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_evaluate_dispatch_verification_off_mode_reports_zero_findings(
+    tmp_path: Path,
+) -> None:
+    """AC3: off declared -- MRS-GATE-007 (and its warn-mode advisory) never
+    appear at all."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"scope_violation_mode": "off"},
+        flags={},
+    )
+
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
+    )
+    assert envelope.data["scope_check"]["mode"] == "off"
+    assert envelope.data["scope_check"]["violations"] == 0
+    codes = [f.code for f in envelope.findings]
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-012" not in codes
+
+
+def test_evaluate_dispatch_verification_two_stations_apply_their_own_mode_independently(
+    tmp_path: Path,
+) -> None:
+    """AC5: one station's declared mode never changes another's."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-3-verification-is-the-product-no-landing-on-a-self-report")
+    hard_effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"scope_violation_mode": "hard"},
+        flags={},
+    )
+    warn_effective, _ = policy.compose(
+        project_slug="pyforge-atlas",
+        project={"scope_violation_mode": "warn"},
+        flags={},
+    )
+
+    hard_envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=hard_effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
+    )
+    warn_envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-atlas",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=warn_effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("recipes/anything/recipe.yaml",)),
+    )
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=hard_envelope.findings)
+    ) == DispatchVerificationVerdict.REFUSED
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=warn_envelope.findings)
+    ) == DispatchVerificationVerdict.VERIFIED
 
 
 def test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_resolver(

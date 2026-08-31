@@ -14,6 +14,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
+from ..core import gate as gate_core
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchCompletionInput,
@@ -395,6 +396,18 @@ def _run_and_journal_verification(
         DispatchVerificationInput(findings=envelope.findings)
     )
     failed = primary_gate_failure(envelope.findings)
+    # Story 28.15 (CAP-17): a `warn`-mode scope-violation advisory never
+    # becomes `failed` above (it classifies Verdict.WARN, ok-status) -- so
+    # without this it would be invisible outside the raw journal, exactly
+    # the "unless anyone reads findings" risk CAP-17's own Gates named.
+    # Named codes only (never the raw MRS-GATE-007/008, which `warn` mode
+    # never emits in the first place): a plain, JSON-safe list threaded to
+    # `marshal status`/`fleet-picture` via `gather_dispatch_journal_facts`.
+    scope_advisories = [
+        {"code": finding.code, "message": finding.message, "path": finding.path}
+        for finding in envelope.findings
+        if finding.code in gate_core._SCOPE_VIOLATION_ADVISORY_CODES.values()
+    ]
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
@@ -421,6 +434,7 @@ def _run_and_journal_verification(
             "ok": verification_verdict == DispatchVerificationVerdict.VERIFIED,
             "failed_gate": failed.code if failed is not None else None,
             "failed_message": failed.message if failed is not None else None,
+            "scope_violation_advisories": scope_advisories,
         },
     )
     counter += 1

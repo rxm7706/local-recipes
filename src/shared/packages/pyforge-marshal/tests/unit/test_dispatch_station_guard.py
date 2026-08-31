@@ -10,6 +10,7 @@ import pytest
 
 from pyforge.marshal.cli.dispatch import (
     cross_station_surface_overlap_advisories,
+    gather_dispatch_journal_facts,
     run_dispatch,
     station_in_flight_conflict,
 )
@@ -384,3 +385,86 @@ def test_overlap_advisory_is_warn_and_dispatch_proceeds(
         process=FakeProcess(),
     )
     assert code == EXIT_OK
+
+
+def test_gather_dispatch_journal_facts_round_trips_scope_violation_advisories(
+    tmp_path: Path,
+) -> None:
+    """Story 28.15 (CAP-17) write<->read round trip. ``dispatch_supervisor/
+    __main__.py::_run_and_journal_verification`` journals ``warn``-mode
+    scope-violation advisories under the ``scope_violation_advisories`` key
+    of a ``KIND_DISPATCH_VERIFICATION`` OUTCOME payload;
+    ``gather_dispatch_journal_facts`` folds that SAME key back into
+    ``DispatchJournalFacts.verification_scope_advisories``. Every existing
+    test touching this field either builds the dataclass by hand
+    (``test_status.py``, ``test_dispatch_verification.py``) or exercises
+    ``check_scope_with_mode`` in isolation -- none drove the real write side
+    and the real read side together over an actual journal payload, so a
+    key rename or a code-filter drift on either end could regress AC4's
+    "visible, never journal-only" promise with every other test still
+    green. Mirrors this file's own
+    ``test_redispatch_allowed_when_session_dead_and_verification_refused``,
+    which hand-writes a ``KIND_DISPATCH_VERIFICATION`` OUTCOME entry the
+    same way but never populates ``scope_violation_advisories``."""
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-scope", story_key="28.15"
+    )
+    journal_path = run_dir / "journal.jsonl"
+    advisories_payload = [
+        {
+            "code": "MRS-GATE-012",
+            "message": (
+                "scope-violation mode is 'warn' for this station -- "
+                "changed path 'src/outside/surface.py' is outside the "
+                "effective surface (would refuse landing under 'hard'; "
+                "landing proceeds)"
+            ),
+            "path": "src/outside/surface.py",
+        },
+        {
+            "code": "MRS-GATE-013",
+            "message": (
+                "scope-violation mode is 'warn' for this station -- a "
+                "frozen path was touched (would refuse landing under "
+                "'hard'; landing proceeds)"
+            ),
+            "path": None,
+        },
+    ]
+    verification_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-08-31T00:00:00.000Z",
+            run_id="run-scope",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "verified"},
+        )
+    ).line
+    verification_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-08-31T00:00:00.000Z",
+            run_id="run-scope",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={
+                "verdict": "verified",
+                "ok": True,
+                "failed_gate": None,
+                "failed_message": None,
+                "scope_violation_advisories": advisories_payload,
+            },
+        )
+    ).line
+    appended = verification_intent + "\n" + verification_outcome + "\n"
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(appended)
+    fs.files[journal_path] = fs.files[journal_path] + appended
+
+    facts = gather_dispatch_journal_facts(fs, run_dir, "run-scope")
+
+    assert facts.verification_scope_advisories == tuple(advisories_payload)

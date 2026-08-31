@@ -354,6 +354,7 @@ def gather_dispatch_journal_facts(
     completion_verdict: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    verification_scope_advisories: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
             raw_story = entry.payload.get("story_key")
@@ -392,6 +393,15 @@ def gather_dispatch_journal_facts(
             gate_val = entry.payload.get("failed_gate")
             if isinstance(gate_val, str):
                 verification_failed_gate = gate_val
+            # Story 28.15 (CAP-17): best-effort, matching every other
+            # journal-payload read in this function -- a malformed/missing
+            # entry degrades to the empty tuple rather than raising, never
+            # a fabricated advisory.
+            raw_advisories = entry.payload.get("scope_violation_advisories")
+            if isinstance(raw_advisories, list):
+                verification_scope_advisories = tuple(
+                    item for item in raw_advisories if isinstance(item, dict)
+                )
     story_started_at: str | None = None
     story_ended_at: str | None = None
     baseline_revision: str | None = None
@@ -431,6 +441,7 @@ def gather_dispatch_journal_facts(
         completion_verdict=completion_verdict,
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
+        verification_scope_advisories=verification_scope_advisories,
         story_started_at=story_started_at,
         story_ended_at=story_ended_at,
         baseline_revision=baseline_revision,

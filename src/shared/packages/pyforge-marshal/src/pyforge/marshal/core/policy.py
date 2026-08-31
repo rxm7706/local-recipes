@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 30-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 31-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -23,7 +23,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 14 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 15 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -60,7 +60,15 @@ the ONE place that expands a possibly-partial declaration into all 5 layer
 states, so ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
 spin) and ``cli/dispatch.py::dispatch_once`` (factory dispatch) resolve the
 identical payload from the identical function rather than each re-deriving
-"layer absent = off" on its own. 16
+"layer absent = off" on its own, and (Story 28.15) ``scope_violation_mode``
+-- SPEC-marshal-token-economy CAP-17's per-station scope-violation
+enforcement mode for ``core/gate.py``'s ``MRS-GATE-007``/``008`` check: one
+of ``hard`` (today's non-waivable refuse)/``warn`` (the new default: the
+finding still fires, named, but as a WARN-classified advisory, never
+blocking)/``off`` (the check does not run at all). STATIC for the identical
+reason ``epic_surfaces`` -- the sibling declaration the SAME check consumes
+-- is: project/policy-declared, never narrowed at runtime by a journal
+entry. 16
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -171,7 +179,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 30-key vocabulary -------------------------------------------
+# --- the closed 31-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -235,6 +243,15 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # validated here, never narrowed at runtime by a journal entry. See
         # `_valid_context_block`/`resolve_context_layers` below.
         "context",
+        # Story 28.15's 15th STATIC key, the vocabulary's 31st
+        # (SPEC-marshal-token-economy CAP-17): the per-station scope-
+        # violation enforcement mode (`hard`/`warn`/`off`) feeding
+        # `core/gate.py::check_scope_with_mode`. STATIC, not SEED -- like
+        # `epic_surfaces` (the sibling declaration the SAME MRS-GATE-007/008
+        # check consumes), it is project/policy-declared and never narrowed
+        # at runtime by a journal entry. See `_valid_scope_violation_mode`
+        # below.
+        "scope_violation_mode",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -288,6 +305,11 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
+# Story 28.15's closed 3-value vocabulary (CAP-17): the per-station
+# scope-violation enforcement mode `core/gate.py::check_scope_with_mode`
+# consumes. `_valid_scope_violation_mode` mirrors `_valid_gate_mode`'s own
+# shape exactly.
+_SCOPE_VIOLATION_MODES: frozenset[str] = frozenset({"hard", "warn", "off"})
 # Story 25.4's two review-knob vocabularies (CAP-4): mirror the installed
 # bmad_loop 0.11.0's own REVIEW_ON_TIMEOUT_MODES /
 # REVIEW_ON_STATUS_CONTRADICTION_MODES verbatim (bmad_loop/policy.py L31-32)
@@ -521,6 +543,15 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # byte-identical to today" hold (`resolve_context_layers` expands it to
     # all 5 layers at `enabled=False`).
     "context": {},
+    # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
+    # CAP-17): "warn", NOT "hard" -- an explicit operator decision
+    # (2026-08-31, after MRS-GATE-007 stalled two live autonomous drains for
+    # over an hour apiece with no self-service recovery path) that visible-
+    # but-non-blocking is the right steady state once Story 28.14's
+    # auto-derivation is trusted. `hard` (today's exact pre-28.15 behavior)
+    # and `off` (the check does not run at all) are both available as an
+    # explicit per-station opt-in via the project policy layer.
+    "scope_violation_mode": "warn",
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -1017,6 +1048,16 @@ def _valid_gate_mode(value: object) -> str | None:
     return None
 
 
+def _valid_scope_violation_mode(value: object) -> str | None:
+    """``scope_violation_mode`` (Story 28.15, CAP-17): the closed
+    ``_SCOPE_VIOLATION_MODES`` vocabulary -- same shape as ``_valid_gate_
+    mode``, a separate function per the ``_valid_landing_base_branch``
+    "unrelated questions" precedent."""
+    if isinstance(value, str) and value in _SCOPE_VIOLATION_MODES:
+        return value
+    return None
+
+
 def _valid_review_on_timeout(value: object) -> str | None:
     """``review_on_timeout`` (Story 25.4): the closed
     ``_REVIEW_ON_TIMEOUT_MODES`` vocabulary -- same shape as
@@ -1418,7 +1459,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 14 public STATIC
+    """The composed, immutable policy value (AD-10): 15 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1445,6 +1486,7 @@ class EffectivePolicy:
     mcp_servers: PolicyField
     harness_preference: PolicyField
     context: PolicyField
+    scope_violation_mode: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1463,6 +1505,7 @@ class EffectivePolicy:
             "mcp_servers",
             "harness_preference",
             "context",
+            "scope_violation_mode",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1513,6 +1556,7 @@ class EffectivePolicy:
                 "mcp_servers",
                 "harness_preference",
                 "context",
+                "scope_violation_mode",
             )
         )
         seed = ", ".join(
@@ -1567,6 +1611,7 @@ class EffectivePolicy:
             "mcp_servers": _field_payload(self.mcp_servers),
             "harness_preference": _field_payload(self.harness_preference),
             "context": _field_payload(self.context),
+            "scope_violation_mode": _field_payload(self.scope_violation_mode),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1612,7 +1657,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 30-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 31-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1782,6 +1827,16 @@ def compose(
         "context",
         _valid_context_block,
         DEFAULT_POLICY["context"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    scope_violation_mode = _merge_field(
+        "scope_violation_mode",
+        _valid_scope_violation_mode,
+        DEFAULT_POLICY["scope_violation_mode"],
         repo_defaults,
         project,
         flags,
@@ -1978,6 +2033,7 @@ def compose(
         mcp_servers=mcp_servers,
         harness_preference=harness_preference,
         context=context,
+        scope_violation_mode=scope_violation_mode,
         _seed=seed,
     )
     return effective, tuple(findings)

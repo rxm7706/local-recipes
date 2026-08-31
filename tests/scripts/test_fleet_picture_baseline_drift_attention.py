@@ -321,6 +321,60 @@ def test_main_attention_silent_on_baseline_drift_when_clean(monkeypatch, capsys,
     assert "none of the stations is waiting on you" in out
 
 
+def test_main_attention_watches_a_warn_mode_scope_advisory(monkeypatch, capsys, tmp_path):
+    """Story 28.15 (CAP-17), AC4: fleet-picture renders a warn-mode
+    scope-violation advisory (non-blocking -- the `watch` bucket, never
+    `needs`), reading it straight off the SAME row `marshal status
+    --format json` emits."""
+    fleet = _load_fleet()
+    _stub_fleet_main_ambient(fleet, monkeypatch, tmp_path)
+    ledger_dir = (
+        tmp_path
+        / "empty-repo"
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+    )
+    ledger_dir.mkdir(parents=True)
+    (ledger_dir / "sprint-status-ledger.yaml").write_text(
+        "development_status: {}\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        fleet,
+        "running_stations",
+        lambda: (
+            set(),
+            {
+                "marshal": {
+                    "state": "idle",
+                    "story": "",
+                    "escalation_reason": None,
+                    "escalation_artifact": None,
+                    "scope_advisories": [
+                        {
+                            "code": "MRS-GATE-012",
+                            "message": "...",
+                            "path": "src/leak.py",
+                        }
+                    ],
+                }
+            },
+        ),
+    )
+    monkeypatch.setattr(fleet, "baseline_drift_findings", lambda: [])
+
+    rc = fleet.main()
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "ATTENTION:" in out
+    assert "   - marshal: 1 scope-violation advisory(ies) (warn mode, not blocking) -- MRS-GATE-012" in out
+    # The advisory is `watch`, not `needs` -- CAP-17's own "never blocks
+    # landing" property -- so `needs` stays empty and this line still
+    # renders too (a watch-only item is not the same as nothing to watch).
+    assert "none of the stations is waiting on you" in out
+
+
 def test_no_bmad_loop_import_in_fleet_picture_or_detector():
     """CAP-2: loud defer only — fleet-picture probe path and detector never import bmad_loop."""
     for path in (FLEET_PATH, DETECTOR_PATH):
