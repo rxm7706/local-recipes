@@ -311,6 +311,13 @@ def test_registered_codes_contains_the_real_codes():
             # a layer disables itself with a named finding, never blocks.
             "MRS-DISP-033",
             "MRS-SPIN-017",
+            # Story 28.3 (Genesis seeds the token-economy kit,
+            # SPEC-marshal-token-economy CAP-3/CAP-4): MRS-PREFLIGHT-015 names
+            # a kit item preflight could not put in place -- an unavailable
+            # instrument (platform gap), a failed provisioning step, or an
+            # unloadable packaged seed manifest. WARN, the same tier and the
+            # same reason as the two Story 28.2 codes above.
+            "MRS-PREFLIGHT-015",
         }
     )
 

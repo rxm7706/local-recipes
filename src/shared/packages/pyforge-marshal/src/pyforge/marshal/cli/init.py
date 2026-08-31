@@ -245,7 +245,12 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort, WorktreeEntry
 from ..scope import UNRECOGNIZED, verify_scope
+from ..seed.detect.findings import Severity as SeedSeverity
+from ..seed.model.manifest import ManifestError
+from ..seed.verbs.kit import run_kit as run_seed_kit
+from ..seed.verbs.kit import timeout_note as kit_timeout_note
 from . import deploy
+from . import seed as seed_cli
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -257,6 +262,20 @@ ENV_LOOP_HOME_ROOT = "BMAD_LOOP_HOME_ROOT"
 ENV_MARSHAL_STATE_HOME = "MARSHAL_STATE_HOME"
 
 _STEP_NAMES: tuple[str, ...] = ("worktree", "tier3_backlink", "symlink", "marker")
+
+#: Story 28.3: the seed subsystem's HARD/DRIFT/INFO ladder projected onto
+#: this envelope's own presentational ERROR/WARN/INFO one. Total over
+#: `SeedSeverity`, so a fourth member added there fails loudly here (a
+#: `KeyError` at the call site) rather than silently taking a default.
+#: INFO maps to INFO -- that is the whole point (see the call site).
+#: DRIFT and HARD both map to WARN because `MRS-PREFLIGHT-015` classifies
+#: `Verdict.WARN` regardless, and a finding rendered `error` under a
+#: warn-classifying code would misrepresent the envelope's own verdict.
+_PREFLIGHT_SEVERITY_FOR_KIT: dict[SeedSeverity, Severity] = {
+    SeedSeverity.HARD: Severity.WARN,
+    SeedSeverity.DRIFT: Severity.WARN,
+    SeedSeverity.INFO: Severity.INFO,
+}
 
 
 def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -1377,7 +1396,25 @@ def run_preflight(
     vcs: VcsPort | None = None,
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
+    kit_probe=None,
+    kit_index_builder=None,
 ) -> int:
+    """Story 28.3 adds two more DI seams alongside ``vcs``/``fs``/``harness``:
+    ``kit_probe`` (a ``seed.detect.kit.probe_instrument``-shaped callable
+    deciding whether an instrument is available) and ``kit_index_builder``
+    (a ``seed.verbs.kit.IndexBuilder``). Production supplies neither, so the
+    real probes run.
+
+    They exist for the same reason the other three do, and one specific
+    failure made it necessary: without them a test's kit outcome is decided
+    by whether the DEVELOPER'S SHELL happens to carry
+    ``.pixi/envs/local-recipes/bin`` on ``PATH``. It does locally and does
+    not on CI -- ``.github/workflows/coverage-gates.yml`` installs the
+    ``pyforge-marshal`` env, which declares none of the three instruments --
+    nor on macOS, where caveman and codegraph cannot be installed at all.
+    A test that inherits availability from the machine is green here and red
+    there; injecting it makes the scenario the test claims to cover the one
+    it actually runs."""
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     harness = harness if harness is not None else resolve_loop_runner()
@@ -1777,6 +1814,104 @@ def run_preflight(
             halted = True
     data["seed_files"] = seed_entries
 
+    # --- token-economy kit (Story 28.3, SPEC-marshal-token-economy CAP-3/CAP-4) --
+    # Genesis owns provisioning: the caveman skill, the CCR store directory,
+    # and the codegraph index exist in a loop home because THIS step put
+    # them there, never because an operator ran a per-home ritual (the
+    # story's own Never bullet). Each item is gated by its own `[context]`
+    # layer, so a home with the block absent -- today, every home -- does
+    # exactly nothing here and reports an empty list.
+    #
+    # The `[context]` declaration is resolved from the HOME's own policy
+    # files rather than from `effective` above. `effective` composes without
+    # the repo-defaults layer (a pre-existing asymmetry Story 28.2 already
+    # deferred as out of proportion to fix here -- it would change
+    # resolution for all 30 policy keys on preflight), and reading it here
+    # would make preflight and `marshal seed kit --repo-root <home>`
+    # disagree about the same declaration. `seed_cli.resolve_context_layers`
+    # is the single site both now use.
+    #
+    # Cost, stated rather than hidden AND surfaced to the operator rather
+    # than left in this comment: with the `structure-graph` layer enabled
+    # and no index yet, this step runs a real `codegraph init` and can take
+    # minutes on a large repo. `seed.verbs.kit.timeout_note()` renders the
+    # actual ceilings (derived from the constants, never restated), and it
+    # goes into the reported line below so the number reaches a log.
+    #
+    # GATED ON `halted`: the seed-file loop above is explicitly
+    # halt-after-one-failure, and a home whose seeding hard-failed
+    # (MRS-PREFLIGHT-009, ERROR) is not a home to then spend up to
+    # `INDEX_TIMEOUT_S` provisioning. Skipping is reported, never silent --
+    # the same rule the seed loop itself follows for its own remaining
+    # entries.
+    if halted:
+        data["token_economy_kit"] = []
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-015",
+                severity=Severity.INFO,
+                message=(
+                    "token-economy kit not provisioned: seeding halted earlier in "
+                    "this preflight, so the home is not in a state to provision into"
+                ),
+            )
+        )
+    else:
+        try:
+            kit_result = run_seed_kit(
+                home,
+                seed_cli.resolve_context_layers(home, slug),
+                seed_cli.packaged_seed_model_version(),
+                fs=fs,
+                apply=True,
+                **(
+                    {"probe": kit_probe} if kit_probe is not None else {}
+                ),
+                **(
+                    {"index_builder": kit_index_builder}
+                    if kit_index_builder is not None
+                    else {}
+                ),
+            )
+        except (ManifestError, OSError, ValueError) as exc:
+            data["token_economy_kit"] = []
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-015",
+                    severity=Severity.WARN,
+                    message=f"the token-economy kit could not be provisioned: {exc}",
+                )
+            )
+        else:
+            data["token_economy_kit"] = [
+                outcome.to_json_dict() for outcome in kit_result.outcomes
+            ]
+            if any(
+                outcome.item_id == "codegraph-index"
+                and outcome.action.value in ("applied", "failed")
+                for outcome in kit_result.outcomes
+            ):
+                data["token_economy_kit_note"] = kit_timeout_note()
+            for finding in kit_result.findings:
+                # The kit's OWN severity is mapped through, never flattened
+                # to WARN. `seed/detect/kit.py` makes
+                # `kit-instrument-unavailable` INFO precisely so an operator
+                # on a platform where caveman/codegraph cannot exist is not
+                # handed a warning for a package that will never install
+                # there; re-labelling every kit finding WARN here would undo
+                # that decision one layer up. `MRS-PREFLIGHT-015` still
+                # classifies `Verdict.WARN` (AD-31: the lattice member comes
+                # from the CODE, never from this presentational enum), so
+                # the exit code is unchanged either way -- what changes is
+                # what the operator reads.
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-015",
+                        severity=_PREFLIGHT_SEVERITY_FOR_KIT[finding.severity],
+                        message=f"token-economy kit: {finding.message}",
+                    )
+                )
+
     # --- first-run acknowledgement -- ack write happens BEFORE the check --------
     try:
         ack_path = _ack_state_path()
@@ -1917,6 +2052,12 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
         lines.append("seed_files:")
         for entry in data["seed_files"]:
             lines.append(f"  {entry['path']}: {entry['status']}")
+    if "token_economy_kit" in data:
+        lines.append("token_economy_kit:")
+        for entry in data["token_economy_kit"]:
+            lines.append(f"  {entry['item']}: {entry['action']} -- {entry['detail']}")
+        if "token_economy_kit_note" in data:
+            lines.append(f"  note: {data['token_economy_kit_note']}")
     if "first_run_acknowledged" in data:
         lines.append(f"first_run_acknowledged: {data['first_run_acknowledged']}")
     if findings:

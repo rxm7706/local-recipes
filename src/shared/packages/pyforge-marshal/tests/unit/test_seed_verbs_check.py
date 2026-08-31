@@ -506,7 +506,11 @@ def test_json_report_has_a_stable_field_order(clean_repo):
     rendered = json.dumps(payload)  # must not raise
     parsed = json.loads(rendered)
 
-    assert list(parsed.keys()) == ["strict", "findings", "model_version", "failing"]
+    # Story 28.3 adds "kit" between "model_version" and "failing" -- the
+    # three token-economy checks, empty here because this call supplied no
+    # `context_layers` at all.
+    assert list(parsed.keys()) == ["strict", "findings", "model_version", "kit", "failing"]
+    assert parsed["kit"] == []
     assert len(parsed["findings"]) >= 1
     for finding in parsed["findings"]:
         assert list(finding.keys()) == ["severity", "type", "path", "message", "remedy"]

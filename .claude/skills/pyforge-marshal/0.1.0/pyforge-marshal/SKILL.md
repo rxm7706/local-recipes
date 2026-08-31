@@ -52,8 +52,16 @@ lists every discovered `loop/<slug>` worktree and verifies isolation. Read-only.
 **Check** (`marshal check`) [SRC:src/pyforge/marshal/cli/check.py:L88-L108]:
 routes to `scripts/detectors.py` (`--scope repo|runtime|all`, default `all`).
 
-**Seed check** (`marshal seed check`) [SRC:src/pyforge/marshal/cli/seed.py:L846-L861]:
-read-only Genesis conformance report.
+**Seed check** (`marshal seed check`) [SRC:src/pyforge/marshal/cli/seed.py:L413]:
+read-only Genesis conformance report. Seven verbs total:
+`init`/`adopt`/`check`/`update`/`explain`/`version`/`kit`.
+
+**Seed kit** (`marshal seed kit`) [SRC:src/pyforge/marshal/cli/seed.py:L945]:
+provisions a LOOP HOME's token-economy kit (caveman skill + articulate
+carve-out, CCR store dir, codegraph index), each gated by its own
+`[context]` layer. Dry-run by default, `--apply` provisions; exits 0 on
+every completed run -- an unavailable instrument skips its layer with a
+named finding and never blocks.
 
 <!-- [MANUAL:additional-notes] -->
 <!-- Persona grammar is `pyforge marshal …` (FR-13), not the `marshal` binary. -->
@@ -73,6 +81,9 @@ with `--scope` mirrored from `scripts/detectors.py`.
 **Genesis conformance:** `marshal seed check --repo-root .` then optional
 `marshal seed adopt` / `marshal seed update` [SRC:README.md:L25-L35].
 
+**Loop-home kit:** `marshal seed kit --repo-root <home> --apply` (or let
+`marshal preflight` do it) -- Story 28.3's per-home token-economy kit.
+
 ## Key API Summary
 
 | Function | Purpose | Key params |
@@ -81,7 +92,8 @@ with `--scope` mirrored from `scripts/detectors.py`.
 | `run_status` | Fleet-wide runtime status | `--project`, `--run` |
 | `run_homes` | List loop homes + isolation | `--format` |
 | `run_check` | Detector registry front door | `--scope`, `--project` |
-| `run_check` (seed) | Genesis read-only check | `--repo-root` |
+| `run_check` (seed) | Genesis read-only check | `--repo-root`, `--project`, `--strict` |
+| `run_kit` (seed) | Provision a loop home's token-economy kit | `--repo-root`, `--project`, `--apply` |
 
 ## Key Exports
 
@@ -129,6 +141,7 @@ marshal check [--scope repo|runtime|all] [--project SLUG]
 marshal seed check --repo-root .
 marshal seed init <PATH> --slug <SLUG>
 marshal seed adopt --repo-root . [--apply --yes]
+marshal seed kit --repo-root <LOOP-HOME> [--apply]
 ```
 
 Bare `marshal` prints usage and exits 0 [SRC:src/pyforge/marshal/cli/main.py:L345-L352].

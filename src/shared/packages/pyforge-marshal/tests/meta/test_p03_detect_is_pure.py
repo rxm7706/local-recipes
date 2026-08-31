@@ -30,6 +30,7 @@ from pyforge.marshal.seed.detect.inventory import (
     legacy_findings,
     writable_exemptions,
 )
+from pyforge.marshal.seed.detect.kit import kit_checks, kit_findings
 from pyforge.marshal.seed.detect.optout import classify_regions
 from pyforge.marshal.seed.detect.referenced_deps import referenced_dep_findings
 from pyforge.marshal.seed.model.manifest import (
@@ -139,6 +140,20 @@ def test_detect_surface_never_writes(detect_repo: Path, monkeypatch: pytest.Monk
     legacy_findings(inventory)
     coverage_findings(manifest)
     referenced_dep_findings(manifest, detect_repo)
+    # Story 28.3: the kit detector, with every layer ON so each of its three
+    # per-item branches actually runs (an off layer never touches disk, and
+    # would exercise nothing). Its module docstring invokes THIS test as its
+    # purity guard, so it has to be in the call list for that to be true --
+    # a defensive `mkdir` added inside one of those branches must fail here.
+    kit_findings(
+        kit_checks(
+            detect_repo,
+            {
+                layer: {"enabled": True, "aggressiveness": "medium"}
+                for layer in ("wire", "output", "structure-graph")
+            },
+        )
+    )
     check_managed_file("WHOLE.md", "managed whole\n", hash_content("managed whole\n"))
     hybrid_entry = _hybrid("hybrid", "HYBRID.md", "tiers")
     hybrid_text = (detect_repo / "HYBRID.md").read_text(encoding="utf-8")
