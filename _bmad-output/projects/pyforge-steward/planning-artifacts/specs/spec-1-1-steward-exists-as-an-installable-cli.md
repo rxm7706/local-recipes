@@ -34,3 +34,8 @@ As the repo maintainer, I want `pyforge-steward` to install and run as a real pa
 ## Notes
 
 This spec was recovered from epics.md-derived Intent + ACs only. Promote to full narrative spec + I/O matrix once story development context is available.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

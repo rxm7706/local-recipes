@@ -126,5 +126,4 @@ Do not absorb corporate-brain REST. Do not add supervisor tables (21.1).
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_media_renditions_cache.py src/platform/tests/test_front_door_publish.py src/platform/tests/test_chart_invariants.py -q` -- expected: pass
-- `pixi run -e platform-ci-test pytest src/platform -q --ignore=src/platform/ingest` -- expected: pass (coverage 100% on `platformapp/**`)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

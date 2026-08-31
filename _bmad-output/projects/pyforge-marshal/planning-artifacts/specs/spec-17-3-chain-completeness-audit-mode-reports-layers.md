@@ -79,8 +79,8 @@ baseline_revision: 3f4b28838bdbca05c7f425450c19d2d8240358f9
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py -q` -- expected: PASS
-- Live: `python -m pyforge.doctor.sources chain-completeness --layers --project pyforge-marshal --json` -- expected: layer matrix, no writes
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

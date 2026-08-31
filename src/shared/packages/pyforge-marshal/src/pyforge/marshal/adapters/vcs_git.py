@@ -306,7 +306,18 @@ class GitVcs:
         branch/tag collision produces detached HEAD; the bare form does
         not). ``branch_exists`` (the DETECTION step, not this write) is what
         needs the ``refs/heads/`` qualification, to avoid a same-named tag
-        being mistaken for the branch's existence in the first place."""
+        being mistaken for the branch's existence in the first place.
+
+        The mint-new-branch form always passes ``--no-track``: git's own
+        ``branch.autoSetupMerge`` default auto-configures the new branch's
+        upstream to ``base`` whenever ``base`` is a remote-tracking ref
+        (every dispatch/loop-home caller passes ``origin/main`` or similar).
+        Left alone, that silently makes ``push()``'s already-has-upstream
+        path push ``<branch>:main`` instead of ``<branch>:<branch>`` --
+        rejected by the remote as non-fast-forward, and indistinguishable
+        from a real landing failure until someone inspects
+        ``<branch>@{upstream}`` by hand (confirmed live: three concurrent
+        dispatches all silently blocked on exactly this, 2026-08-30/31)."""
         if self.branch_exists(repo_root, branch):
             args = ["git", "-C", str(repo_root), "worktree", "add", str(home), branch]
         else:
@@ -316,6 +327,7 @@ class GitVcs:
                 str(repo_root),
                 "worktree",
                 "add",
+                "--no-track",
                 "-b",
                 branch,
                 str(home),

@@ -58,9 +58,22 @@ class Severity(StrEnum):
 
 class FindingType(StrEnum):
     """The closed conformance-problem vocabulary every later detect/plan
-    story emits against -- exactly the 12 members the epics AC names,
-    kebab-case wire values matching this package's existing `ArtifactClass`
-    convention (`model/manifest.py`)."""
+    story emits against -- the 12 members the epics AC names plus Story
+    28.3's three token-economy-kit members, kebab-case wire values matching
+    this package's existing `ArtifactClass` convention
+    (`model/manifest.py`).
+
+    The three `KIT_*` members (Story 28.3, SPEC-marshal-token-economy
+    CAP-3/CAP-4) are deliberately DISTINCT types rather than reuses of
+    `artifact-missing`/`derived-stale`: a kit item is not a manifest
+    artifact (nothing in `templates/manifest.yaml` declares it, `seed
+    adopt`/`update` never materialize it), its remedy is a different
+    command, and -- the reason that matters -- `artifact-missing` is HARD
+    while every kit finding must be non-blocking. The spec's own constraint
+    is "an unavailable instrument disables its layer with a named finding,
+    never blocks a run"; borrowing a HARD type would have made a missing
+    optional instrument fail `marshal seed check`, which is exactly the
+    outcome that constraint forbids."""
 
     ARTIFACT_MISSING = "artifact-missing"
     MANAGED_FILE_MODIFIED = "managed-file-modified"
@@ -74,6 +87,9 @@ class FindingType(StrEnum):
     UNCOVERED = "uncovered"
     LEGACY_PRESENT = "legacy-present"
     OPTED_OUT = "opted-out"
+    KIT_ITEM_MISSING = "kit-item-missing"
+    KIT_ITEM_STALE = "kit-item-stale"
+    KIT_INSTRUMENT_UNAVAILABLE = "kit-instrument-unavailable"
 
 
 # Read-only, and with NO module-level mutable name behind it -- same reason
@@ -134,6 +150,18 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType({
         "Informational -- while this opt-out stands the tool will not "
         "re-insert this region. To bring it back under management, run "
         "`marshal seed adopt --reinstate <artifact>#<region>`."
+    ),
+    FindingType.KIT_ITEM_MISSING: (
+        "Run `marshal seed kit --apply` in the loop home to provision it, "
+        "or turn its `[context]` layer off if this home does not want it."
+    ),
+    FindingType.KIT_ITEM_STALE: (
+        "Run `marshal seed kit --apply` to refresh it; the item is there "
+        "but no longer matches what produced it."
+    ),
+    FindingType.KIT_INSTRUMENT_UNAVAILABLE: (
+        "Advisory -- install the named instrument (or accept the platform "
+        "gap); the layer stays off and nothing is blocked."
     ),
 })
 

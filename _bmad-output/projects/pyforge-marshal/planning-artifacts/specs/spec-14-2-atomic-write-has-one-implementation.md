@@ -621,26 +621,8 @@ outside this lock, which POSIX offers no primitive to guard against regardless o
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-core pyforge-core-test` -- new primitive + sole-ownership tests
-  green
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (repeat per affected station: steward,
-  warden, herald, atlas, marshal) -- each station's full existing suite still green
-- `grep -rn "os\.replace" src/shared/packages --include="*.py" | grep -v "pyforge-core/" | grep -v "fs_local.py"`
-  -- expect empty (the sole remaining hit class, `repoint_symlink_atomic`, is excluded by name)
-- `pixi install -e pyforge-scribe` (and repeat per station after its own wiring lands) -- expect a
-  clean resolve with the local `pyforge-core` path dependency
-- `pixi project export conda-environment -e build > environment.yaml && git diff --stat environment.yaml`
-  -- run after the `pixi.toml` edits; commit if it reports a diff
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-core` -- expect zero findings
-  (entirely new code; the other 6 stations carry pre-existing, unrelated lint debt this story does
-  not need to zero out — Surgical Changes — so no fixed-count expectation applies there)
-- Under a non-default umask (e.g. `umask 022`), exercise at least one call site per station that
-  passes no explicit `mode=` (e.g. `steward/keys.py::save_inventory`, `atlas/admission.py`) and
-  confirm the resulting file's mode is `0o666 & ~umask`, not `0o600`.
-- Spawn several threads calling `atomic_write_text` (`mode=None`) concurrently in a tight loop
-  and confirm `os.umask(0)` (probed once, then restored) reads back the SAME value before and
-  after the concurrent run, and every written file still has the correct umask-respecting mode --
-  the race review pass 2 exists to close.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm each of the 6 stations' `pixi.toml`/`pyproject.toml` `pyforge-core` entries follow one

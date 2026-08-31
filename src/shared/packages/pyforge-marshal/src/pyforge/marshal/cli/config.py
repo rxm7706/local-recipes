@@ -169,6 +169,11 @@ _UNSETTABLE_KEYS = frozenset(
         # validator" reason `verify_commands`/`landing_resync_commands` are
         # excluded for.
         "harness_preference",
+        # Story 28.1's `context` (SPEC-marshal-token-economy CAP-1) --
+        # Mapping[str, {enabled, aggressiveness?}], the same "no string
+        # value could ever satisfy this validator" reason
+        # `model_tier_map`/`epic_surfaces`/`mcp_servers` are excluded for.
+        "context",
     }
 )
 
@@ -203,6 +208,11 @@ _FIELD_ORDER: tuple[str, ...] = (
     # appends here: `marshal-policy.toml`/repo-defaults only, no `--set`
     # surface (list-typed).
     "harness_preference",
+    # Story 28.1's `context` (SPEC-marshal-token-economy CAP-1) -- the
+    # declared context pipeline, `marshal-policy.toml`/repo-defaults only,
+    # no `--set` surface (mapping-typed), same reason as every static key
+    # since `epic_surfaces`.
+    "context",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -341,7 +351,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 29 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 30 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -370,7 +380,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 29-key document matching ``schemas/policy.json`` exactly:
+    """The flat 30-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

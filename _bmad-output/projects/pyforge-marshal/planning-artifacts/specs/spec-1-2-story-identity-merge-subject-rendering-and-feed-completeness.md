@@ -138,8 +138,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite passes, including the new identity unit tests and the AD-23 meta-test
-- `pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: `2 kept, 0 broken` (unchanged; identity.py adds no new cross-boundary import)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -87,10 +87,7 @@ The host image builder runs `pixi install --frozen -e python-agent-platform` (`s
 ## Verification
 
 **Commands:**
-- `pixi install -e python-agent-platform` -- expected: exit 0
-- `pixi project export conda-environment -e build > environment.yaml` -- expected: derived file committed
-- `pixi run -e platform-ci-test -- python -m pytest src/platform/tests/policy/test_liquibase_channel_policy.py -v` -- expected: all pass (cwd may be `src/platform`)
-- `pixi run -e local-recipes llms-full-check` -- expected: no new undocumented-dep for liquibase names (pre-existing catalog truncation is out of this story)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

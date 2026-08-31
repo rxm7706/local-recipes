@@ -71,6 +71,114 @@ verify_commands = [
   "pixi run --frozen -e pyforge-ci pyforge-deps-test",
 ]
 
+# epic_surfaces (AD-27, MRS-GATE-007/Story 2.3): per-epic writable-surface allowlist,
+# narrowed further by a story spec's own `surface:` field when it declares one. The
+# DEFAULT for an undeclared epic is `()` -- deny by default, narrow-only, never
+# widened -- so an epic with no entry here blocks EVERY changed path from landing,
+# not just an unexpected one (see pyforge-atlas's own marshal-policy.toml, the first
+# station to hit this: Story 21.3 was the first story on ANY station to reach
+# marshal's fully-automated dispatch->verify->land path). Story 28.1 (2026-08-30)
+# was pyforge-marshal's own first story through that path and hit the same wall.
+# Scoped to what 28.1 actually touches, not a wildcard; widen per-story as later
+# Epic 28 stories land, same pattern atlas used.
+[epic_surfaces]
+"22" = [
+  # Widened 2026-08-31 for consistency with the epic-28 stopgap and atlas's
+  # own epic-21/22/23 convention -- see epic-28's comment for why.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_findings.py",
+]
+
+"28" = [
+  # Stopgap (2026-08-31): MRS-GATE-007 stalled Stories 21.7/28.2 for over an
+  # hour apiece with no self-service recovery -- this station-wide wildcard is
+  # the operator-directed "off for now" until Story 28.15 ships the real
+  # per-station hard/warn/off flag (default warn) to replace it. Individual
+  # entries below are kept as documentation of what each landed story
+  # actually touched, not because the wildcard needs narrowing.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-1-the-context-policy-block-rendered-once-for-both-engines.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md",
+  # Story 28.3: the spec's own `deferred:` entries need their tracked twins
+  # (`deferred-work` detector -> `scripts/deferred_work_intake.py --fix
+  # --project marshal`), and the owning spec's memlog is where a
+  # spec-surface change is reconciled before its baseline is re-stamped.
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md",
+  # Self-referential: widening this file's own epic_surfaces entry is itself
+  # a changed path under the OLD surface that didn't yet cover it.
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
+  # Story 28.3: the two operator-facing surfaces that describe the seed verb
+  # set. Nothing else would catch a seventh verb going undocumented.
+  ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md",
+  "src/shared/packages/pyforge-marshal/docs/adoption-guide.md",
+  "src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/build_harness.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json",
+  # Story 28.3 (Genesis seeds the token-economy kit, CAP-3/CAP-4): the
+  # Genesis seed subsystem's own kit surface -- one model leaf, one detect
+  # module, one verb, plus the finding vocabulary and the check verb they
+  # extend.
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/check.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py",
+  "src/shared/packages/pyforge-marshal/tests/integration/test_cli_contract.py",
+  "src/shared/packages/pyforge-marshal/tests/meta/test_kit_artifacts_ignored_not_the_tracked_skills.py",
+  "src/shared/packages/pyforge-marshal/tests/meta/test_p03_detect_is_pure.py",
+  "src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_findings.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadbuild.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_harness_profile.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_init.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_policy.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_check.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_findings.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_seed_kit.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_check.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_spin.py",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.

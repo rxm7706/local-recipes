@@ -276,6 +276,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "match_against_universe": 900,
     # -- derived_artifacts ------------------------------------------------- #
     "build_universe_sbom": 900,
+    "build_inventory_universe": 300,  # Story 23.8 -- 9-way in-memory union, no network
     # -- seed_gaps (read-only suggesters) ---------------------------------- #
     "report_lts_registry_gap": 120,
     "report_cwe_seed_gap": 120,

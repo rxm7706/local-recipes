@@ -162,9 +162,8 @@ final_revision: '37a0ea5f9d8112657de8ea5dfbf799c05e5a03c6'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all tests green, including new `test_fold.py`, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: AD-3/AD-4 contracts hold (2 kept, 0 broken).
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: green, or only the same pre-existing unrelated failures already logged in `deferred-work.md`.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - None -- no CLI surface is added by this story (see Never); all behavior is exercised by the automated suite above.

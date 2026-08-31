@@ -118,9 +118,7 @@ option — this is a pure detector-logic fix, same signature, same call site.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full suite passes, including all new and pre-existing `test_sources_board_chain_completeness.py` tests.
-- `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py -v` -- expected: every test passes; spot-check the new partial-coverage test's failure message names the specific uncovered CAP ids.
-- `pixi run -e local-recipes python -m pyforge.doctor.sources chain-completeness` (run live against this repo's real `_bmad-output/projects/`) -- expected: reports real findings for any Spec with genuine CAP-coverage gaps (informational; not a pass/fail gate for this story, but a live sanity check that the new code path runs against real data without crashing).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

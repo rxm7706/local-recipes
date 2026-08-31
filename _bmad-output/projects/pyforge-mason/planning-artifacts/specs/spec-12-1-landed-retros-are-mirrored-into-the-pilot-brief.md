@@ -298,3 +298,8 @@ brief hash; (3) the compiled `github_updater.py` remains BEHIND live with a stal
 Landing, the ledger flip for key `12-1-landed-retros-are-mirrored-into-the-pilot-brief`,
 and the `maintenance` PR label remain the dispatcher's; no `recipes/**` or `pixi.toml`
 change, so no env-sync.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

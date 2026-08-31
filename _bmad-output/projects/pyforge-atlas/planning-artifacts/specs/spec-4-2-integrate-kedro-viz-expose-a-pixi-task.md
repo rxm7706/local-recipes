@@ -154,3 +154,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
 > supersedes this section.
 
 ### Dev summary — merged PR #85: story(C2): integrate kedro-viz behind a pixi `viz` task (FR-6 / AC-3)
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

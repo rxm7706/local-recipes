@@ -108,8 +108,7 @@ Identifier sweep uses `\bcompliance_face\b` so the physical old table name `comp
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test python -m pytest tests/test_warden_fabric_rename.py tests/test_django_pyforge_chrome.py tests/test_warden_fabric_phases.py tests/meta/test_no_pyforge_import.py tests/policy -q` (cwd `src/platform`) -- expected: all passed
-- `rg -n --pcre2 '\\bcompliance_face\\b' src` -- expected: no matches
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

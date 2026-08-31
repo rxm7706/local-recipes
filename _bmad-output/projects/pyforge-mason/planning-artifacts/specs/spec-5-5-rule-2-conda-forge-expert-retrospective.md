@@ -969,14 +969,7 @@ miss the next one added.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes test-skill --unit` -- expected: 1352 passed, 11 skipped, 1 xpassed
-  (post-review-pass count; no regressions vs. pre-change baseline).
-- `pixi run -e local-recipes test-skill --meta` -- expected: 9 failed (pre-existing, unrelated —
-  `test_script_responds_to_help` x5 + `test_bmad_artifacts_integrity` + `test_no_redundant_or_
-  below_floor_python_min_in_context` + `test_all_recipe_yaml_parse` + `test_spec_surface_check_green`,
-  all confirmed identical with the change stashed vs. applied), 7489 passed, 3 skipped.
-- `pixi run -e local-recipes spec-surface-check` -- expected: no new gating/ungoverned finding beyond
-  the pre-existing baseline set.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

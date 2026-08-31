@@ -96,6 +96,12 @@ and pairs, never vendor SKU lists. A (harness, model) pair that names a harness 
 installed CLI degrades with a named finding at admission (same doctrine as the layer
 degradation in Story 28.1–28.3), never a mid-run surprise.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from the operator's 2026 model/cost catalog (CAP-12 minted same day; multi-provider + subscription-pool routing over the existing FR-51 seam)

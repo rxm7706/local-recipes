@@ -149,4 +149,4 @@ warnings: [oversized, spec-reconstructed-post-restart]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` — expected: ALL tests pass (180 story-1.1 unmodified + all 1.2 suites). Recovered-branch result 2026-07-13: **363 passed**.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

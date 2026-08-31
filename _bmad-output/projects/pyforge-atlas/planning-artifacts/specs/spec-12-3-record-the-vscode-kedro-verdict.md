@@ -75,10 +75,8 @@ final_revision: 'dae8b4ca6a'
 ## Verification
 
 **Commands:**
-- `python3 -c "import json; d=json.load(open('.vscode/extensions.json')); assert d=={'recommendations': ['kedro.Kedro']}"` -- expected: no error
-- `test -f _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/vscode-kedro-decision.md` -- expected: exit 0
-- `grep -qi "defer" _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/vscode-kedro-decision.md` -- expected: exit 0 (verdict is stated)
-- `git status --porcelain .vscode/settings.json` -- expected: no output (untouched)
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - Confirm the decision doc reads as evidence-backed (cites the live `gh api` re-check plus the agent-authorship/gate-duplication reasoning), not a bare assertion.

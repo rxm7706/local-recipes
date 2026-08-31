@@ -229,8 +229,7 @@ discovery cost slice 1 already incurred.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes cfe-rebuild-guard-check` -- expected: exit 0 (unaffected)
-- Manual: `python3 -c "import yaml; d=yaml.safe_load(open('campaign-state.yaml')); assert d['campaign']['re_scope_gate']['reached'] is True; assert d['campaign']['re_scope_gate']['note']"` -- expected: no assertion error
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -149,9 +149,22 @@ a never-adopted repo (`state is None`) is unconditionally `model-behind`
 error and never `ahead`/`current` (there is no recorded value to be either
 of those).
 
+**Story 28.3's token-economy kit (SPEC-marshal-token-economy CAP-3/CAP-4).**
+`run_check` gains ONE optional keyword, `context_layers`, and delegates the
+whole question to `detect.kit` -- three per-item checks in, findings out. No
+kit logic lives here: this module neither knows what a caveman skill is nor
+what makes a codegraph index fresh, matching its own standing rule that it
+composes sibling primitives rather than re-deriving them. Two properties of
+that delegation are load-bearing and stated so a later edit cannot lose them
+by accident: (1) `context_layers=None` produces an EMPTY `report.kit` and
+zero findings, which is what keeps every pre-28.3 caller byte-identical, and
+(2) no kit finding is ever HARD, so a token-economy gap can never turn a
+conformant repo's `marshal seed check` red -- the spec's "never blocks a
+run" constraint, enforced in `detect/kit.py`'s own severity table.
+
 **Import surface.** `detect.findings`/`detect.hashes`/`detect.inventory`/
-`detect.optout` (the finding vocabulary and every detect primitive this
-module composes), `plan.build.build_plan` (never `write_plan`, and never
+`detect.kit`/`detect.optout` (the finding vocabulary and every detect
+primitive this module composes), `plan.build.build_plan` (never `write_plan`, and never
 `plan.build.write_plan`'s sibling `default_plan_path`/`load_plan` -- this
 module persists nothing and reads no `plan.json`), `model.manifest`
 (`AppliesTo` -- Story 10.7's own addition, for the `applies_to`-vs-`state.
@@ -166,7 +179,8 @@ no write capability reachable from its own imports."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -174,8 +188,10 @@ from typing import Any
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, legacy_findings
+from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.referenced_deps import referenced_dep_findings
 from ..detect.optout import classify_regions, region_findings
+from pyforge.core.process import PosixProcess
 from ..errors import StateInvalid
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest
 from ..plan.build import build_plan
@@ -217,6 +233,16 @@ class CheckReport:
     manifest_model_version: str
     state_model_version: str | None
     model_version_status: ModelVersionStatus
+    #: Story 28.3: the token-economy kit's three per-item checks, in
+    #: ``KIT_ITEMS`` order. Empty when the caller supplied no
+    #: ``context_layers`` at all (nothing was asked, so nothing is claimed);
+    #: otherwise ALWAYS three entries, including the passing and the
+    #: declared-off ones -- AC 1 asks for three distinct checks, and a
+    #: report that only ever showed failures could not distinguish
+    #: "verified, fine" from "never looked". Defaulted so every existing
+    #: construction site (and every test that predates this story) keeps
+    #: working unchanged.
+    kit: tuple[KitCheck, ...] = field(default=())
 
     def by_severity(self, severity: Severity) -> tuple[Finding, ...]:
         """Every finding of exactly `severity`, in report order -- the one
@@ -250,6 +276,7 @@ class CheckReport:
                 "state": self.state_model_version,
                 "status": self.model_version_status.value,
             },
+            "kit": [check.to_json_dict() for check in self.kit],
             "failing": self.failing,
         }
 
@@ -295,7 +322,14 @@ def _model_version_status(
     return ModelVersionStatus.AHEAD, state_version
 
 
-def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> CheckReport:
+def run_check(
+    repo_root: Path,
+    manifest: Manifest,
+    *,
+    strict: bool = False,
+    context_layers: Mapping[str, Mapping[str, Any]] | None = None,
+    process: PosixProcess | None = None,
+) -> CheckReport:
     """Compose Epic 9's detect/plan primitives into one `CheckReport`
     against `repo_root`, writing nothing (no `.marshal/` creation, no
     `plan.json`, no state write) and raising nothing of its own (a caught
@@ -318,7 +352,20 @@ def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> C
     `build_plan` last, before the loop, so the loop can consult
     `plan.actions`'s artifact-id set for the one gate that needs it
     (`ARTIFACT_MISSING` suppression on a fully-opted-out hybrid entry -- see
-    the module docstring)."""
+    the module docstring).
+
+    `context_layers` (Story 28.3) is Story 28.1's already-RESOLVED
+    `[context]` declaration -- `core.policy.resolve_context_layers`'s
+    mapping, read from a policy file by `cli/seed.py` at the CLI boundary
+    exactly the way `manifest` is. `None` (the default) means the caller
+    asked no token-economy question at all: `report.kit` is empty and not
+    one kit finding is produced, so every pre-28.3 call site keeps its
+    byte-identical behavior. A mapping with every layer off produces three
+    `KitCheck`s and still zero findings -- AC 4's "declared-off, not
+    missing". `process` is the same injectable `PosixProcess` the kit's own
+    freshness probe takes, threaded rather than left to default so a caller
+    that has one (a test, or `run_kit`) is not silently forced back onto a
+    real `git log` subprocess."""
     findings: list[Finding] = []
 
     state: SeedState | None
@@ -445,6 +492,16 @@ def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> C
     findings.extend(legacy_findings(inventory))
     findings.extend(referenced_dep_findings(manifest, repo_root))
 
+    # Story 28.3's three token-economy-kit checks. Computed even when every
+    # layer is off (so the report can SHOW three checks), but contributing
+    # findings only for a layer the operator actually declared on.
+    kit = (
+        kit_checks(repo_root, context_layers, process=process)
+        if context_layers is not None
+        else ()
+    )
+    findings.extend(kit_findings(kit))
+
     model_version_status, state_model_version = _model_version_status(manifest, state)
     if model_version_status is ModelVersionStatus.BEHIND:
         state_version_text = "no recorded model_version (never adopted)" if state is None else (
@@ -466,4 +523,5 @@ def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> C
         manifest_model_version=str(manifest.model_version),
         state_model_version=state_model_version,
         model_version_status=model_version_status,
+        kit=kit,
     )

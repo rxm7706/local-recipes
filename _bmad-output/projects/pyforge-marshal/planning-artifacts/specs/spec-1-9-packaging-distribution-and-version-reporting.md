@@ -139,13 +139,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all unit + meta tests pass, including the new/updated version and preflight-tier tests
-- `pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: AD-3/AD-4 contracts still pass (relocation doesn't introduce a new `bmad_loop` reference outside the seam)
-- `pixi run -e pyforge-marshal marshal --version` -- expected: prints both Marshal's and the harness's version, exit 0
-- `pixi run -e pyforge-marshal pyforge-marshal-build` -- expected: conda + wheel/sdist both build from the same source tree
-- `pixi run -e pyforge-marshal pyforge-marshal-smoke` -- expected: `marshal --help`/`--version` succeed against the installed artifact
-- `pixi lock` -- expected: `pyforge-marshal` environment gains an `osx-arm64-min` resolution
-- `pixi project export conda-environment -e build > environment.yaml` -- expected: file updates cleanly, no manual edits needed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

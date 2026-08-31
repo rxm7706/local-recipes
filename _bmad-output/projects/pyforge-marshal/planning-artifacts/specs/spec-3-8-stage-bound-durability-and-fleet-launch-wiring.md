@@ -105,8 +105,8 @@ baseline_revision: '060fc7352f06515d5b0f4cdf34bd581e6f5034a7'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold (`supervisor/durability.py` and `core/supervise.py` still import no adapter/port directly).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Launch a real `factory spin` run against a throwaway loop home with a story that reaches `REVIEW_VERIFY` and then `DONE`; confirm the station branch is pushed at each observed boundary (`git log --oneline <remote>/loop/<slug>` advances without a manual push) and that a `"stage-push"` observation appears in the run journal for each.

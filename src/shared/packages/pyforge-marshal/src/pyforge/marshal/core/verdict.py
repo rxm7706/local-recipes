@@ -1047,6 +1047,44 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tier).
     "MRS-DISP-030": Verdict.ERROR,
     "MRS-DISP-031": Verdict.WARN,
+    # Story 22.11 station-scoped drain + an explicit story sequence
+    # (CAP-10): `dispatch`'s sequence-argument validation -- neither/both of
+    # `story`/`--stories` given, or `--stories` names a key unknown or
+    # already `done` on the tracked backlog -- refuses before any worktree
+    # is provisioned, so it is ERROR like the other pre-flight refusals
+    # above (MRS-DISP-001..008), not the per-station relay tier.
+    "MRS-DISP-032": Verdict.ERROR,
+    # `--station` naming a slug that is not among the live pyforge stations,
+    # `--stories` given without `--station`, and the tracked ledger being
+    # unreadable while validating a fresh `--stories` sequence all make the
+    # invocation a no-op before anything is provisioned -- the same ERROR
+    # tier as MRS-DRAIN-010/011/012 above, not the per-station report tier.
+    "MRS-DRAIN-013": Verdict.ERROR,
+    "MRS-DRAIN-014": Verdict.ERROR,
+    "MRS-DRAIN-015": Verdict.ERROR,
+    # Story 28.2 (wire compression at the harness seam,
+    # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
+    # LAYER that did not engage over a launch that is otherwise entirely
+    # viable -- the spec's own constraint is "an unavailable instrument
+    # disables its layer with a named finding, never blocks a run", so
+    # WARN, never the pre-flight refusal tier. MRS-DISP-033 is the factory
+    # dispatch engine's (no `[wrapper]` declared, its binary unresolved, or
+    # an uncreatable CCR store); MRS-SPIN-017 is the bmad-loop engine's
+    # structural gap (bmad-loop launches the coding CLI itself, so
+    # marshal's harness seam has nothing to wrap there) -- the same WARN
+    # tier as MRS-SPIN-004/006/007/008/009 and for the same reason.
+    "MRS-DISP-033": Verdict.WARN,
+    "MRS-SPIN-017": Verdict.WARN,
+    # Story 28.3 (Genesis seeds the token-economy kit,
+    # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
+    # could not put in place -- its instrument is unavailable on this
+    # platform, its provisioning step failed, or the packaged seed manifest
+    # would not load. The SAME WARN tier and the SAME reason as
+    # MRS-DISP-033/MRS-SPIN-017 above: a token-economy layer that did not
+    # engage over a loop home that is otherwise entirely viable. Blocking
+    # here would violate the story's own "never blocking a seed on a missing
+    # optional instrument".
+    "MRS-PREFLIGHT-015": Verdict.WARN,
 }
 
 

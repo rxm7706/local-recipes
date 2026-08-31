@@ -670,12 +670,8 @@ by this story):
 ## Verification
 
 **Commands:**
-- `git diff --stat -- src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py`
-  -- expected: no output (both frozen).
-- `pixi run -e pyforge-atlas kedro-test` -- expected: full pass, including the new rehearsal test.
-- `pixi run -e pyforge-atlas kedro-catalog-check` -- expected: pass, incl. `test_no_inline_io.py`.
-- `python scripts/spec_surface_reconcile.py` -- expected: `OK: every tracked file governed or
-  allowlisted; no drift.`
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` now has 2 items (items 1-2

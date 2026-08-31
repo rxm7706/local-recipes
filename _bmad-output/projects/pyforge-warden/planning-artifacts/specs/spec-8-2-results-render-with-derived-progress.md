@@ -55,3 +55,8 @@ keys-not-blobs task signature.
 - [x] Phase guard + derived progress
 - [x] Status/report endpoints
 - [x] Unit tests without pytest-django
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

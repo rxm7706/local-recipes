@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: '2026-08-30'  # Epic 6 added (compile_surface extras: graphify + cocoindex behind the CAP-18 ports; unifying-strategy stack.md "bind now" rows + Grounding 2026-08-30; consumers: foundry-cutover move-list and marshal Epic 28 Stories 28.8/28.9).
+updated: '2026-08-31'  # Epic 6 added (compile_surface extras: graphify + cocoindex behind the CAP-18 ports; unifying-strategy stack.md "bind now" rows + Grounding 2026-08-30; consumers: foundry-cutover move-list and marshal Epic 28 Stories 28.8/28.9). Story 6.3 added 2026-08-31 (graph-node staleness flag, spec-marshal-token-economy CAP-13 -- closes the gap found comparing Mem0's consolidation model against Story 2.3's author-declared-only supersession; marshal Story 28.9 carries the consumer half as its fifth AC).
 currency_review: "Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -441,6 +441,18 @@ So that derived artifacts (the move list, marshal's epic-context distills) stay 
 **And** with the extra on, unchanged sources across two consecutive runs yield zero recompute, and one changed source yields exactly one refresh touching only the affected derived rows
 **And** outputs write through the persist port or land as derived gitignored artifacts — cocoindex is the freshness engine, never a GraphStore engine and never a store of record
 **And** no `cocoindex.serve` MCP product and no `@coco.fn` lineage surface is introduced (OpenLineage rides CAP-8)
+
+### Story 6.3: The graph-node staleness flag
+
+As a scribe operator,
+I want compile_graph to flag a node `stale: true` when its source has moved since compile with no declared supersession,
+So that consumers like marshal's planning-graph retrieval (Story 28.9) never silently serve outdated planning context as if it were current.
+
+**Type:** feature • **Effort:** M • **Deps:** S-2.3 • **FR/AD:** spec-marshal-token-economy CAP-13
+**Given** a node whose source file's latest git commit postdates the node's own `valid_from` and no `supersedes:` edge points at it **When** compile runs **Then** the node is flagged `stale: true`
+**And** given an unchanged source, or a node with a declared `supersedes:` edge pointing at it **When** compile runs **Then** the node is never flagged stale
+**And** given a retrieval that resolves to a stale-flagged node **When** the answer is served **Then** the consumer falls back to its non-graph path rather than serving the stale node silently
+**And** the check is a git-timestamp comparison only — no LLM call, no new external dependency, and Story 2.3's existing `supersedes:` mechanism is unchanged
 
 ## Currency validation — 2026-08-26
 

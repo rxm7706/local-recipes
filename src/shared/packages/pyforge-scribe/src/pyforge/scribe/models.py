@@ -120,8 +120,9 @@ class CaptureRecord(BaseModel):
 
 
 #: What kind of real-tool surface a compiled `GraphNode` was read from
-#: (Story 2.2's named input surfaces, plus Story 3.2's transcript surface).
-GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript"]
+#: (Story 2.2's named input surfaces, plus Story 3.2's transcript surface,
+#: plus Story 6.1's optional graphify `compile_surface` extra).
+GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript", "code"]
 
 
 class GraphNode(BaseModel):
@@ -140,6 +141,15 @@ class GraphNode(BaseModel):
     for a transcript node is format-checked only, never re-resolved against
     a live file, since a session transcript is per-user/local and can be
     pruned or rotated outside Scribe's control (AD-8, Story 3.2).
+
+    `stale` (Story 6.3, CAP-13) is a git-timestamp-only signal, orthogonal to
+    `is_current`: `compile_graph()` sets it on a CURRENT node (Story 2.3's
+    supersession already handles the non-current case) whose citation's
+    source file has a git commit postdating this node's own `valid_from`,
+    with no `supersedes:` edge naming it. It is never set by an LLM call or
+    any judgment beyond that comparison. `recall.py` treats a stale node the
+    same as an unresolvable citation -- excluded from candidacy, so a
+    consumer never sees it served as if it were current.
     """
 
     id: str
@@ -150,6 +160,7 @@ class GraphNode(BaseModel):
     valid_from: datetime
     valid_until: Optional[datetime] = None
     superseded_by: Optional[str] = None
+    stale: bool = False
 
     @property
     def is_current(self) -> bool:

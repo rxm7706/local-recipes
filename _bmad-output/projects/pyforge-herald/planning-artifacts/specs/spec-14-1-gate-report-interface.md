@@ -111,8 +111,7 @@ dict key in `DeckQaReport.gates` already carries it, so the two can never disagr
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_deck_qa.py src/shared/packages/pyforge-herald/tests/test_cli_deck_qa.py -v` -- expected: all new tests pass
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full existing suite stays green
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

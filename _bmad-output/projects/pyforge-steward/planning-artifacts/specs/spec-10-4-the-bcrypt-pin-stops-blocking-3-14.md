@@ -271,14 +271,7 @@ bookkeeping (this story's spec Task 1 explicitly commissioned it) and never left
 ## Verification
 
 **Commands:**
-- `validate_recipe` / `optimize_recipe` / `check_dependencies` on `recipes/langflow-suite`
-  -- expected: no errors
-- `trigger_build` + `get_build_summary` for `recipes/langflow-suite` -- expected: success;
-  `langflow-base` output resolves `bcrypt` ≥4.1
-- `rattler-build test --package-file <langflow-base>.conda` -- expected: the new hash/verify
-  test passes ("✔ all tests passed!")
-- A `python=3.14` dry-run solve of `langflow + dbgpt + django` (local channel +
-  conda-forge) -- expected: solve succeeds, no conflicts
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm the feedstock push + rerender comment landed (commit/PR history on

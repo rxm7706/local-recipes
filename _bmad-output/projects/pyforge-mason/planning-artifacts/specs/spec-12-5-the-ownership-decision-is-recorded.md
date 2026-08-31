@@ -271,3 +271,8 @@ cfe-rebuild-guard-check` exits clean before and after every edit in this run; `g
 
 **Residual risks:** none beyond the 5 deferred cosmetic/sourcing items above, all low
 severity and pre-existing in the operator's own ruling text.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

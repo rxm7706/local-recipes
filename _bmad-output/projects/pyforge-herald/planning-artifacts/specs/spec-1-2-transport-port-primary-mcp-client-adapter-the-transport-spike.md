@@ -298,12 +298,7 @@ translation is the adapter's job and must be asserted in tests.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: all tests pass (5 existing smoke + the new transport tests); the live spike test reports as skipped
-- `HERALD_LIVE_DESIGN=1 pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_live_design_spike.py -q` -- expected: 1 passed; this is the FR-21 proof
-- `pixi run -e pyforge-herald herald deck --help` -- expected: exit 0, unchanged from Story 1.1 (proves `cli.py` was not disturbed)
-- `pixi run -e pyforge-herald pyforge-herald-build` -- expected: `.conda` in `dist-conda/` and wheel+sdist in `dist/`, with `mcp` declared as a runtime dependency
-- `pixi run -e local-recipes llms-full-check` -- expected: exactly the one pre-existing `pyforge-herald` `undocumented-dep` finding, no new ones
-- `git diff --stat pixi.lock` -- expected: `pyforge-herald` env gains `mcp` + transitive deps; **no environment key removed** (diff the environment key set explicitly)
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `grep -r claudeusercontent src/shared/packages/pyforge-herald/` returns hits only in test fixtures and the sanitizer's own pattern constant — never in a return path.

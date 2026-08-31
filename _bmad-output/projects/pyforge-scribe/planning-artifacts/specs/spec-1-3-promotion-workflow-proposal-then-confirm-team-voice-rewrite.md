@@ -1,12 +1,10 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-02. Recovered via PR #168 (d68187f4b3, 2026-07-31) after a bmad-loop dev-session timeout reset the 1-3 worktree branch and discarded the original commit from reachable history; a follow-on Story 1.4 session traced and escalated the recovery (see implementation-artifacts/bmad-dev-auto-result-1-4-pointer-stub-write-back-idempotent-re-invocation.md). Status corrected done->backlog->done drift found and fixed 2026-08-02: code has been on main since 2026-07-31 (47/47 tests passing, independently verified), but all three status trackers still read backlog until this session. -->
 ---
 title: 'Promotion workflow — proposal-then-confirm, team-voice rewrite (Story 1.3)'
 type: 'feature'
 created: '2026-07-30'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
-final_revision: 'd68187f4b3'
 context: []
 warnings: ['oversized']
 baseline_revision: '491f3ec45b6a9db0a4d1b8311efde1c97ea3a96e'

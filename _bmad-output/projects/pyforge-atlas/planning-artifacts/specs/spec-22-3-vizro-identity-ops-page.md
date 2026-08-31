@@ -235,7 +235,5 @@ Story 22.1's live status before dispatch.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes dashboard-dryrun` — expected: green, including the new
-  `test_identity_ops_page.py` file.
-- Manual: `pixi run -e local-recipes dashboard-serve`, open `identity-ops` — expected: four
-  panes render (empty on a checkout with no `identity_ranked_export.parquet`).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

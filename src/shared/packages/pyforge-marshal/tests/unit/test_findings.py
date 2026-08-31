@@ -291,6 +291,33 @@ def test_registered_codes_contains_the_real_codes():
             # branch and proceeds under an advisory.
             "MRS-DISP-030",
             "MRS-DISP-031",
+            # Story 22.11 (station-scoped drain + an explicit story
+            # sequence, FR-193 CAP-10): 032 `dispatch`'s sequence-argument
+            # validation (neither/both of `story`/`--stories`, or an
+            # unknown/already-done key). MRS-DRAIN-013 unknown `--station`;
+            # 014 `--stories` without `--station`; 015 the tracked ledger
+            # unreadable while validating a fresh `--stories` sequence.
+            "MRS-DISP-032",
+            "MRS-DRAIN-013",
+            "MRS-DRAIN-014",
+            "MRS-DRAIN-015",
+            # Story 28.2 (wire compression at the harness seam,
+            # SPEC-marshal-token-economy CAP-2): MRS-DISP-033 an enabled
+            # `[context]` wire layer that factory dispatch could not apply
+            # (no `[wrapper]`, an unresolved wrapper binary, an uncreatable
+            # CCR store); MRS-SPIN-017 the same layer enabled on the
+            # bmad-loop engine, which launches the coding CLI itself and so
+            # has no argv for marshal's harness seam to wrap. Both WARN --
+            # a layer disables itself with a named finding, never blocks.
+            "MRS-DISP-033",
+            "MRS-SPIN-017",
+            # Story 28.3 (Genesis seeds the token-economy kit,
+            # SPEC-marshal-token-economy CAP-3/CAP-4): MRS-PREFLIGHT-015 names
+            # a kit item preflight could not put in place -- an unavailable
+            # instrument (platform gap), a failed provisioning step, or an
+            # unloadable packaged seed manifest. WARN, the same tier and the
+            # same reason as the two Story 28.2 codes above.
+            "MRS-PREFLIGHT-015",
         }
     )
 

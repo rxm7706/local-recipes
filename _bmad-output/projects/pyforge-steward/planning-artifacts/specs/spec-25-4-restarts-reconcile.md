@@ -86,9 +86,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_boot_reconcile.py -q` -- expected: all pass
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_restarts_reconcile.py src/platform/tests/meta/test_no_pyforge_import.py -q` -- expected: pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

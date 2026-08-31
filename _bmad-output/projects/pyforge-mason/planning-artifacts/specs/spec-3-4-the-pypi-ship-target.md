@@ -253,9 +253,7 @@ requested `channel:<name>`/`conda-forge` in the same invocation) or refactor to 
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass (default
-  `-m "not slow"` loop); no real `twine` upload occurs anywhere in this suite (all `subprocess.run`
-  calls mocked, matching `test_engines_pep517.py`/`test_engines_pixi.py`'s own convention).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

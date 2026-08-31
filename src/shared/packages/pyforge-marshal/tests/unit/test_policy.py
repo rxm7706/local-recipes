@@ -448,6 +448,160 @@ def test_mcp_servers_value_is_deeply_immutable():
         effective.mcp_servers.value["atlas"] = {"command": "other"}  # type: ignore[index]
 
 
+# --- context validation (Story 28.1, SPEC-marshal-token-economy CAP-1) --------
+
+
+def test_context_is_static_not_seed():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert "context" not in effective.seed_view()
+    assert isinstance(effective.context, PolicyField)
+
+
+def test_context_default_is_empty_mapping():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.context.value == {}
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert effective.context.layer is PolicyLayer.DEFAULT
+
+
+def test_context_valid_shape_accepted():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"enabled": True, "aggressiveness": "high"}}},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.context.value == {"wire": {"enabled": True, "aggressiveness": "high"}}
+    assert effective.context.layer is PolicyLayer.PROJECT
+
+
+def test_context_enabled_without_aggressiveness_omits_the_key():
+    effective, findings = compose(
+        project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={}
+    )
+    assert findings == ()
+    assert effective.context.value == {"wire": {"enabled": True}}
+
+
+def test_context_rejects_non_mapping_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme", project={"context": "not-a-mapping"}, flags={}
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert effective.context.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_rejects_unknown_layer_name():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"bogus-layer": {"enabled": True}}},
+        flags={},
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_rejects_missing_enabled():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"aggressiveness": "high"}}},
+        flags={},
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_rejects_non_bool_enabled():
+    effective, findings = compose(
+        project_slug="acme", project={"context": {"wire": {"enabled": "yes"}}}, flags={}
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_rejects_malformed_aggressiveness():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"enabled": True, "aggressiveness": "extreme"}}},
+        flags={},
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_rejects_unknown_entry_key():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"enabled": True, "bogus": 1}}},
+        flags={},
+    )
+    assert effective.context.value == DEFAULT_POLICY["context"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_context_value_is_deeply_immutable():
+    effective, _ = compose(
+        project_slug="acme", project={"context": {"wire": {"enabled": True}}}, flags={}
+    )
+    with pytest.raises(TypeError):
+        effective.context.value["output"] = {"enabled": True}  # type: ignore[index]
+
+
+# --- resolve_context_layers (Story 28.1's single composition site) -----------
+
+
+def test_resolve_context_layers_default_all_off():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    resolved = policy.resolve_context_layers(effective)
+    assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
+    for layer in policy.CONTEXT_LAYER_NAMES:
+        assert resolved[layer] == {"enabled": False, "aggressiveness": "medium"}
+
+
+def test_resolve_context_layers_reflects_a_partial_declaration():
+    effective, _ = compose(
+        project_slug="acme",
+        project={"context": {"wire": {"enabled": True, "aggressiveness": "high"}}},
+        flags={},
+    )
+    resolved = policy.resolve_context_layers(effective)
+    assert resolved["wire"] == {"enabled": True, "aggressiveness": "high"}
+    for layer in policy.CONTEXT_LAYER_NAMES:
+        if layer == "wire":
+            continue
+        assert resolved[layer] == {"enabled": False, "aggressiveness": "medium"}
+
+
+def test_resolve_context_layers_fills_default_aggressiveness_when_omitted():
+    effective, _ = compose(
+        project_slug="acme", project={"context": {"output": {"enabled": True}}}, flags={}
+    )
+    resolved = policy.resolve_context_layers(effective)
+    assert resolved["output"] == {"enabled": True, "aggressiveness": "medium"}
+
+
+def test_resolve_context_layers_returns_a_fresh_plain_dict():
+    """JSON-safe on every call -- both `render_policy_toml` and
+    `dispatch_once` hand this straight to `json.dumps`/`tomlkit` without a
+    second conversion step (unlike `PolicyField.value`, which is frozen)."""
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    resolved = policy.resolve_context_layers(effective)
+    assert isinstance(resolved, dict)
+    for layer_dict in resolved.values():
+        assert isinstance(layer_dict, dict)
+    import json as _json
+
+    _json.dumps(resolved)  # must not raise
+
+
 # --- epic_surfaces validation (Story 2.3, AD-27) ------------------------------
 
 
@@ -1641,6 +1795,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
+            context=PolicyField(value={}, layer="default", raw_source={}),
             _seed=seed,
         )
 
@@ -1661,6 +1816,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
+            context=PolicyField(value={}, layer="default", raw_source={}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1681,6 +1837,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
+            context=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1734,7 +1891,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_twenty_nine_keys():
+def test_schema_file_declares_the_thirty_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -1754,6 +1911,7 @@ def test_schema_file_declares_the_twenty_nine_keys():
         "landing_resync_commands",
         "mcp_servers",
         "harness_preference",
+        "context",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",

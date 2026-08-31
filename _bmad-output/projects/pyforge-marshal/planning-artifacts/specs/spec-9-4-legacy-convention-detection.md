@@ -278,9 +278,8 @@ the legacy state is unconditional on presence alone.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite passes, including
-  the new/modified `test_seed_detect_inventory.py` cases.
-- `pixi run -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_inventory.py -q` -- expected: all pass, no regressions in S-9.2's existing cases.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

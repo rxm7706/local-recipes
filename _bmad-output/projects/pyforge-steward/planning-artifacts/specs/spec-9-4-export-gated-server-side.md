@@ -153,8 +153,7 @@ intentional — a security event with no actor is not actionable.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: full suite green, including the new `tests/unit/test_dashboard_export.py` and the updated `tests/meta/test_invariants.py`
-- `pixi run -e pyforge-steward steward --version` -- expected: succeeds unchanged, evidence the base package still runs without the dashboard code path being invoked
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

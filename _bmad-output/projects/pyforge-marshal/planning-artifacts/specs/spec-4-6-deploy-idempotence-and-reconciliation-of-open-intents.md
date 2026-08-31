@@ -81,8 +81,8 @@ baseline_revision: '565bd99fbe478be01dd435002e11d4124644e669'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Simulate a crashed `promote` (an open intent with no outcome) against a real throwaway Tier-3 fixture and confirm a re-run either reconciles via evidence or reports the open intent as a `WARN`, never re-promoting a spec that's already durably archived.

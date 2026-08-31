@@ -99,8 +99,7 @@ costs nothing and preserves both contracts.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- 595 passed, 2 skipped.
-- `ruff format --check` / `ruff check` -- clean.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

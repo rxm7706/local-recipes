@@ -40,7 +40,7 @@ behavior — it exists for scheduling clarity in cron lines and logs.
 ```
 $ cd /path/to/local-recipes
 $ pixi run -e pyforge-scribe scribe graph compile --nightly
-compiled 812 node(s), 1 invalidated -> /path/to/local-recipes/.claude/data/pyforge-scribe/graph.json
+compiled 812 node(s), 1 invalidated, 3 stale -> /path/to/local-recipes/.claude/data/pyforge-scribe/graph.json
 ```
 
 A degraded surface (no `git` on PATH, a malformed memory entry, a missing

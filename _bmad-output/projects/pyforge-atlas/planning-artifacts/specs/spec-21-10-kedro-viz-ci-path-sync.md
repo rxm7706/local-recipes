@@ -126,10 +126,8 @@ operator confusion actually surfaces.
 ## Verification
 
 **Commands:**
-- `git diff .github/workflows/kedro-viz-publish.yml` — expected: only the `paths:` list
-  changed, 3 lines added, nothing else.
-- `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance` — expected: label
-  applied (required since this PR touches `.github/**`, not `recipes/**`).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Re-read the edited `paths:` block and confirm it still parses as a valid YAML list under

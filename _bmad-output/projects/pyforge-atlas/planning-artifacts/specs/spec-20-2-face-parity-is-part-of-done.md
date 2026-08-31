@@ -223,3 +223,9 @@ core mechanism is proven sound. The two `@requires_duckdb_server`-gated tests on
 parity for real when the binary is provisioned (true in this env and the documented
 pyforge-atlas linux-64 pixi env); elsewhere they skip cleanly rather than failing, matching
 Story 20.1's own established pattern for this dependency.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

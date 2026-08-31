@@ -4,20 +4,38 @@ The CLI is the sole public contract: `capture` (direct write, Wave 1,
 `--promote` scan-classify-propose-confirm, Story 1.3, or `--transcripts`
 scan-propose-confirm over raw session transcripts, Story 3.1), `graph
 compile [--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph,
-unattended) and `recall <query>` (Story 2.4 -- grounded, cited retrieval
-over that compiled graph). Other components integrate with Scribe via this
-CLI, never by importing internal modules directly (AD-7).
+unattended), `recall <query>` (Story 2.4 -- grounded, cited retrieval over
+that compiled graph), and `index build|report|move-list|refresh` (Story 6.1
+-- the graphify `compile_surface` extra's explicit ingest + report verbs;
+Story 6.2 adds `refresh`, the cocoindex incremental-ingest extra's own
+verb). Other components integrate with Scribe via this CLI, never by
+importing internal modules directly (AD-7).
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
 
+from pyforge.core.atomic_write import atomic_write_text
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import CompileInProgressError, compile_graph, default_store_path
+from pyforge.scribe.extras.cocoindex_flow import (
+    CocoindexUnavailableError,
+    DerivedArtifact,
+    cocoindex_extra_enabled,
+    refresh_incremental,
+)
+from pyforge.scribe.extras.graphify import (
+    DEFAULT_GRAPHIFY_TARGET,
+    GraphifyUnavailableError,
+    build_graph_report,
+    ingest_repo,
+)
+from pyforge.scribe.extras.move_list import move_list_sources, scan_move_list
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
@@ -40,6 +58,13 @@ app = typer.Typer(
 )
 graph_app = typer.Typer(help="Knowledge-graph projection commands (Epic 2).")
 app.add_typer(graph_app, name="graph")
+index_app = typer.Typer(
+    help=(
+        "graphify compile_surface ingest + report verbs (Story 6.1); "
+        "cocoindex incremental refresh (Story 6.2)."
+    )
+)
+app.add_typer(index_app, name="index")
 
 # Resolved relative to the current working directory at invocation time —
 # `scribe` is always run from the repo root (never a hardcoded absolute
@@ -280,8 +305,8 @@ def graph_compile(
     for warning in result.warnings:
         typer.echo(f"warning: {warning}", err=True)
     typer.echo(
-        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated "
-        f"-> {result.store_path}"
+        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated, "
+        f"{result.stale_count} stale -> {result.store_path}"
     )
 
 
@@ -305,6 +330,161 @@ def recall_cmd(
         typer.echo(f"[source: {result.citation}]")
     else:
         typer.echo("no grounded answer found")
+
+
+def _index_artifact_path(repo_root: Path, name: str) -> Path:
+    """Derived, gitignored home for `scribe index`'s own artifacts --
+    alongside `graph.json` (AC3), never a foundry-root product dir."""
+    return repo_root / ".claude" / "data" / "pyforge-scribe" / name
+
+
+_TARGET_OPTION = typer.Option(
+    None,
+    "--target",
+    help="Folder to ingest, repo-relative (default: src/shared/packages).",
+)
+
+
+@index_app.command("build")
+def index_build(target: Path | None = _TARGET_OPTION) -> None:
+    """Ingest `target` with graphifyy and write GraphNodes through the
+    persist port (`open_graph_store`) -- never a parallel store (Story 6.1,
+    AC2). Explicit and deliberate: unlike `scribe graph compile`'s automatic
+    fan-in, this command does not consult `SCRIBE_GRAPHIFY_EXTRA`."""
+    repo_root = Path.cwd()
+    warnings: list[str] = []
+    try:
+        count = _write_graph_index(repo_root, target, warnings)
+    except GraphifyUnavailableError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(f"indexed {count} code node(s) -> {default_store_path(repo_root)}")
+
+
+@index_app.command("report")
+def index_report(target: Path | None = _TARGET_OPTION) -> None:
+    """Write a GRAPH_REPORT-style summary (incl. God-node findings) to a
+    derived, gitignored artifact (Story 6.1, AC3)."""
+    repo_root = Path.cwd()
+    try:
+        report_text = build_graph_report(repo_root, target=target)
+    except (GraphifyUnavailableError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    report_path = _index_artifact_path(repo_root, "graph-report.md")
+    atomic_write_text(report_path, report_text)
+    typer.echo(f"wrote {report_path}")
+
+
+@index_app.command("move-list")
+def index_move_list() -> None:
+    """Scan for the foundry-cutover move-list signals (host `import
+    pyforge.*` sites, `sys.path` inserts, `five_tier` roots, CFE callers)
+    and write the result to a derived, gitignored artifact (Story 6.1, AC3).
+    Does not require graphifyy or `SCRIBE_GRAPHIFY_EXTRA`."""
+    repo_root = Path.cwd()
+    count = _write_move_list(repo_root)
+    typer.echo(f"wrote {_index_artifact_path(repo_root, 'move-list.json')} ({count} finding(s))")
+
+
+def _write_move_list(repo_root: Path) -> int:
+    """Run the move-list scan and write it -- shared by `index move-list`
+    and `index refresh`'s cocoindex-gated derive step (Story 6.2)."""
+    findings = scan_move_list(repo_root)
+    document = {
+        "findings": [
+            {"category": f.category, "path": f.path, "line": f.line, "snippet": f.snippet}
+            for f in findings
+        ]
+    }
+    move_list_path = _index_artifact_path(repo_root, "move-list.json")
+    atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    return len(findings)
+
+
+def _write_graph_index(repo_root: Path, target: Path | None, warnings: list[str]) -> int:
+    """Ingest `target` with graphifyy and upsert through the persist port --
+    shared by `index build` and `index refresh`'s cocoindex-gated derive
+    step (Story 6.2). Raises `GraphifyUnavailableError` unchanged; callers
+    decide how to report it."""
+    nodes = ingest_repo(repo_root, target=target, warnings=warnings)
+    store = open_graph_store(default_store_path(repo_root))
+    for node in nodes:
+        store.upsert_node(node)
+    store.commit()
+    return len(nodes)
+
+
+@index_app.command("refresh")
+def index_refresh(target: Path | None = _TARGET_OPTION) -> None:
+    """Incrementally refresh Story 6.1's two derived artifacts -- the
+    graphify-ingested code graph and the foundry-cutover move list -- via
+    the cocoindex `compile_surface` extra (Story 6.2): an artifact whose
+    declared sources are unchanged since the last `index refresh` is
+    skipped entirely (AC2). Off by default (`SCRIBE_COCOINDEX_EXTRA` unset)
+    this behaves exactly like running `index build` then `index move-list`
+    -- both artifacts recomputed every time, no fingerprint index read or
+    written (AC1)."""
+    repo_root = Path.cwd()
+    warnings: list[str] = []
+
+    if not cocoindex_extra_enabled():
+        try:
+            graph_count = _write_graph_index(repo_root, target, warnings)
+        except GraphifyUnavailableError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=2) from exc
+        move_count = _write_move_list(repo_root)
+        for warning in warnings:
+            typer.echo(f"warning: {warning}", err=True)
+        typer.echo(
+            f"refreshed: graphify-ingest ({graph_count} node(s)), "
+            f"move-list ({move_count} finding(s)) -- cocoindex extra off, full rebuild"
+        )
+        return
+
+    graph_target = target if target is not None else DEFAULT_GRAPHIFY_TARGET
+    # Per-artifact counts for the report line below, captured by each
+    # derive() closure as it actually runs -- kept CLI-local (never threaded
+    # through `DerivedArtifact`/`RefreshResult`, which stay opaque per the
+    # Design Notes: the generic engine must not special-case its callers).
+    counts: dict[str, str] = {}
+
+    def _derive_move_list() -> None:
+        counts["move-list"] = f"{_write_move_list(repo_root)} finding(s)"
+
+    def _derive_graph_index() -> None:
+        counts["graphify-ingest"] = f"{_write_graph_index(repo_root, target, warnings)} node(s)"
+
+    artifacts = [
+        DerivedArtifact(
+            name="move-list",
+            sources=tuple(move_list_sources(repo_root)),
+            derive=_derive_move_list,
+        ),
+        DerivedArtifact(
+            name="graphify-ingest",
+            sources=(repo_root / graph_target,),
+            derive=_derive_graph_index,
+        ),
+    ]
+    try:
+        result = refresh_incremental(repo_root, artifacts, warnings=warnings)
+    except (GraphifyUnavailableError, CocoindexUnavailableError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    refreshed_desc = ", ".join(
+        f"{name} ({counts[name]})" if name in counts else name for name in result.refreshed
+    )
+    typer.echo(
+        f"refreshed: {refreshed_desc or '(none)'}; "
+        f"skipped (unchanged): {', '.join(result.skipped) or '(none)'} "
+        f"-> {result.index_path}"
+    )
 
 
 def main() -> None:

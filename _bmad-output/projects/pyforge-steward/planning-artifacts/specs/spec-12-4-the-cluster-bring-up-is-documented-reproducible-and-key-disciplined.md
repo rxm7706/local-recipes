@@ -78,3 +78,8 @@ warnings: []
 
 - Mints the OpenShift/registry-posture AD the steward spine anticipates (`epics.md` Story 12.4 FR/AD).
 - Story 12.9's optional CI job will consume the registry commands from `cluster-bringup-facts.md`; this story lands the human runbook those commands belong to.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

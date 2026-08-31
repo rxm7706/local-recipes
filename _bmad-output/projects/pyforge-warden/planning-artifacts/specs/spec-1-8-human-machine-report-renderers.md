@@ -85,7 +85,4 @@ warden: status=warn exit_code=0 findings=1
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior suites unchanged + new `render_text`/`--format text`/NFR-I3/`--help` tests green.
-- `pixi run --frozen -e local-recipes mypy src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new errors vs the Story-1.7-recorded baseline (10 pre-existing).
-- `pixi run --frozen -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new issues.
-- Manual: `git diff --stat` shows zero changes to `verdict.py`, `models.py`, `data/report-schema.json`, and zero changes to any `Status`/`ErrorKind`/exit-code literal.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

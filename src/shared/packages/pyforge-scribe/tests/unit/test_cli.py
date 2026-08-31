@@ -16,8 +16,62 @@ from typer.testing import CliRunner
 
 import pyforge.scribe.cli as cli_module
 from pyforge.scribe.cli import app
+from pyforge.scribe.extras import cocoindex_flow as cocoindex_module
+from pyforge.scribe.extras import graphify as graphify_module
 
 runner = CliRunner()
+
+
+class _FakeGraph:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def nodes(self, data: bool = False):
+        items = list(self._nodes.items())
+        return items if data else [nid for nid, _ in items]
+
+    def number_of_nodes(self) -> int:
+        return len(self._nodes)
+
+    def number_of_edges(self) -> int:
+        return 0
+
+
+class _FakeGraphifyModule:
+    def __init__(self, nodes: dict[str, dict], god: list[dict] | None = None) -> None:
+        self._nodes = nodes
+        self._god = god or []
+
+    def collect_files(self, target, root=None):
+        return [Path(target) / "a.py"]
+
+    def extract(self, files, cache_root=None, root=None, parallel=True):
+        return {"nodes": [], "edges": [], "hyperedges": []}
+
+    def build_from_json(self, extraction, root=None):
+        return _FakeGraph(self._nodes)
+
+    def god_nodes(self, graph, top_n=10):
+        return self._god
+
+
+class _FakeFingerprint:
+    """Duck-typed double for `cocoindex._internal.core.Fingerprint` --
+    mirrors `test_extras_cocoindex_flow.py`'s own fake exactly."""
+
+    def __init__(self, obj: object) -> None:
+        import hashlib
+
+        self._digest = hashlib.sha256(repr(obj).encode("utf-8")).digest()[:16]
+
+    def __bytes__(self) -> bytes:
+        return self._digest
+
+
+class _FakeCocoindexModule:
+    def memo_fingerprint(self, obj: object) -> _FakeFingerprint:
+        return _FakeFingerprint(obj)
+
 
 _MEMORY_MD_STARTER = """# Team Memory Index
 
@@ -635,3 +689,286 @@ def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
     output = _combined_output(result)
     assert "We decided to use SQLite for the local cache." in output
     assert "[source: session-a.jsonl:L1]" in output
+
+
+# --- Story 6.1: `scribe index build|report|move-list` -----------------------
+
+
+def test_index_build_missing_target_reports_zero_and_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 0
+    assert "indexed 0 code node(s)" in _combined_output(result)
+
+
+def test_index_build_happy_path_writes_nodes_through_the_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 0
+    assert "indexed 1 code node(s)" in _combined_output(result)
+    store_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json"
+    assert store_path.is_file()
+    document = json.loads(store_path.read_text(encoding="utf-8"))
+    assert "code:python:example" in document["nodes"]
+
+
+def test_index_build_graphify_unavailable_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    try:
+        import graphify  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("graphifyy is installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "build"])
+
+    assert result.exit_code == 2
+
+
+def test_index_report_writes_derived_gitignored_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    fake_nodes = {"a": {"label": "A", "source_file": "src/shared/packages/a.py"}}
+    god = [{"id": "a", "label": "A", "degree": 3}]
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes, god)
+    )
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 0
+    report_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph-report.md"
+    assert report_path.is_file()
+    text = report_path.read_text(encoding="utf-8")
+    assert "GRAPH_REPORT" in text
+    assert "A (degree=3)" in text
+
+
+def test_index_report_missing_target_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "report"])
+
+    assert result.exit_code == 2
+
+
+def test_index_move_list_writes_json_with_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    src = tmp_path / "src" / "platform" / "app.py"
+    src.parent.mkdir(parents=True)
+    src.write_text(
+        "import pyforge.scribe\nimport sys\nsys.path.insert(0, 'x')\n", encoding="utf-8"
+    )
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    move_list_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "move-list.json"
+    assert move_list_path.is_file()
+    document = json.loads(move_list_path.read_text(encoding="utf-8"))
+    categories = {f["category"] for f in document["findings"]}
+    assert "import_pyforge" in categories
+    assert "sys_path_insert" in categories
+
+
+def test_index_move_list_does_not_require_graphify(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The move-list scan is independent of graphifyy/SCRIBE_GRAPHIFY_EXTRA."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["index", "move-list"])
+
+    assert result.exit_code == 0
+    assert "0 finding(s)" in _combined_output(result)
+
+
+# --- Story 6.2: `scribe index refresh` (cocoindex incremental extra) --------
+
+
+def test_index_refresh_off_by_default_always_rebuilds_both_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: `SCRIBE_COCOINDEX_EXTRA` unset -- behaves like `index build` +
+    `index move-list` back to back, every invocation, no fingerprint index."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+
+    first = runner.invoke(app, ["index", "refresh"])
+    second = runner.invoke(app, ["index", "refresh"])
+
+    assert first.exit_code == 0
+    assert second.exit_code == 0
+    for result in (first, second):
+        output = _combined_output(result)
+        assert "cocoindex extra off, full rebuild" in output
+        assert "graphify-ingest (1 node(s))" in output
+        assert "move-list (0 finding(s))" in output
+    index_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
+    assert not index_path.exists()
+
+
+def test_index_refresh_on_mode_second_run_unchanged_skips_both(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2: two consecutive `index refresh` runs over unchanged sources ->
+    zero recompute on the second run."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+
+    first = runner.invoke(app, ["index", "refresh"])
+    assert first.exit_code == 0
+    first_output = _combined_output(first)
+    assert "refreshed: move-list (0 finding(s)), graphify-ingest (1 node(s))" in first_output
+    assert "skipped (unchanged): (none)" in first_output
+
+    second = runner.invoke(app, ["index", "refresh"])
+
+    assert second.exit_code == 0
+    second_output = _combined_output(second)
+    assert "refreshed: (none)" in second_output
+    assert "skipped (unchanged): move-list, graphify-ingest" in second_output
+
+
+def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2: exactly one changed source -> exactly one refresh, the other
+    derived artifact stays skipped/untouched."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+    move_list_source = tmp_path / "src" / "platform" / "app.py"
+    move_list_source.parent.mkdir(parents=True)
+    move_list_source.write_text("x = 1\n", encoding="utf-8")
+
+    assert runner.invoke(app, ["index", "refresh"]).exit_code == 0
+    move_list_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "move-list.json"
+    move_list_written_at = move_list_path.stat().st_mtime_ns
+
+    move_list_source.write_text("import pyforge.scribe\n", encoding="utf-8")
+    result = runner.invoke(app, ["index", "refresh"])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "refreshed: move-list (1 finding(s))" in output
+    assert "skipped (unchanged): graphify-ingest" in output
+    assert move_list_path.stat().st_mtime_ns != move_list_written_at
+    document = json.loads(move_list_path.read_text(encoding="utf-8"))
+    assert any(f["category"] == "import_pyforge" for f in document["findings"])
+
+
+def test_index_refresh_graphify_unavailable_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    try:
+        import graphify  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("graphifyy is installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "src" / "shared" / "packages"
+    target.mkdir(parents=True)
+    (target / "example.py").write_text("x = 1\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "refresh"])
+
+    assert result.exit_code == 2
+
+
+def test_index_refresh_cocoindex_unavailable_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC/fix: `SCRIBE_COCOINDEX_EXTRA` on but `cocoindex` not installed ->
+    a clean exit 2 (`CocoindexUnavailableError`), never an unhandled
+    traceback. Deliberately does NOT fake `_import_cocoindex` -- mirrors
+    `test_index_refresh_graphify_unavailable_exits_2`'s own
+    skip-if-actually-installed shape."""
+    try:
+        import cocoindex  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("cocoindex is installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+
+    result = runner.invoke(app, ["index", "refresh"])
+
+    assert result.exit_code == 2
+    assert "cocoindex" in _combined_output(result).lower()

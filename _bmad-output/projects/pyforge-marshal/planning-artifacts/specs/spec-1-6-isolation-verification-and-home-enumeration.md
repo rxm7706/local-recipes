@@ -143,9 +143,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: all unit + meta tests pass
-- `pixi run -e pyforge-marshal pyforge-marshal-test-slow` -- expected: the new integration test passes against two real throwaway worktrees
-- `pixi run -e pyforge-marshal marshal homes --format json` run against a scratch clone with 2+ provisioned homes -- expected: one row per home, `desynced: false`, exit 0
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

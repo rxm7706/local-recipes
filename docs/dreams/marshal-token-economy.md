@@ -248,3 +248,35 @@ ways:
 Landed as CAP-11/CAP-12 in the spec and Stories 28.10/28.11 in Epic 28. The
 review-stage floor is explicitly protected under routing: review misses ship
 false-greens, so economy routing never touches the review model floor.
+
+## Addendum (2026-08-31) — Layer 4 retrieval is only as good as the graph's freshness
+
+A comparison against Mem0's OSS memory layer (docs.mem0.ai) surfaced a real gap in Layer
+4 (planning-graph retrieval, CAP-6 / Story 28.9). Mem0's consolidation pipeline retrieves
+the top-k semantically similar existing memories for every new fact and hands both to an
+LLM, which picks ADD/UPDATE/DELETE/NOOP — fully model-judged, no heuristics, by design (an
+LLM call on every write). Scribe's own supersession (Story 2.3) is the opposite: purely
+**author-declared** — a memory's frontmatter carries `supersedes: "<type>/<slug>"`, and
+compile mechanically walks only those declared links. Nothing detects a node that has gone
+stale because its source moved and nobody wrote the link.
+
+That gap lands on CAP-6/Story 28.9 directly: 28.9's own AC #4 already refuses to let a
+graph answer replace the verbatim story contract (spec/ACs) — but it says nothing about
+the surrounding *context* a graph node supplies, which could silently serve stale planning
+history with no signal.
+
+**Resolution — a deterministic check, not an LLM one.** Porting Mem0's per-write LLM
+judgment is not worth it here: scribe's memories are already structured (explicit
+`supersedes:`), so the only missing signal is "did the world move since this was
+compiled" — a timestamp comparison, not a judgment call. `compile_graph` (which already
+walks git history for other surfaces, `_read_git_surface`) gains one more cheap field:
+a node is flagged `stale: true` when its source file's latest commit postdates the node's
+own `valid_from` and no `supersedes:` edge points at it. Zero LLM calls, zero new
+dependency, one more field on data compile already touches every run.
+
+This is scribe's own compile-step capability (`GraphStore`/`compile_surface`, CAP-18) —
+28.9 cannot own it (its own Boundaries already forbid touching Scribe's station code
+beyond the consumer side). Landing: the staleness field ships as a new scribe Epic 6
+story (sibling to 6.1's graphify extra); Story 28.9 gains a fifth AC consuming it — a graph
+answer whose backing node is flagged stale falls back to the epic-context file path (Story
+28.8's proven fallback), never served silently. Landed as CAP-13 in the spec.

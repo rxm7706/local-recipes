@@ -17,6 +17,7 @@ from pyforge.marshal.ports.build_harness import (
     HarnessCandidateSkip,
     HarnessResolution,
 )
+from pyforge.marshal.ports.fs import AdvisoryLock
 
 
 def _init_git_repo(path: Path) -> None:
@@ -58,6 +59,15 @@ class FakeFs:
 
     def read_text(self, path: Path) -> str | None:
         return self.files.get(path)
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        # Story 22.11: `dispatch --stories` delegates to `run_fleet_drain`,
+        # which acquires the fleet-wide cycle lock -- a no-op fake, matching
+        # `test_dispatch_fleet.py`'s own `FakeFs`.
+        return AdvisoryLock(path=path.with_suffix(path.suffix + ".lock"), handle=None)
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        pass
 
 
 class FakeVcs:
@@ -192,6 +202,46 @@ def test_run_dispatch_journals_and_returns(tmp_path: Path, monkeypatch: pytest.M
     assert any("dispatch-launch" in line for _, line, _ in fs.appended)
 
 
+def test_run_dispatch_surfaces_the_context_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Story 28.1 (SPEC-marshal-token-economy CAP-1): `dispatch_once`'s
+    returned AND journaled data both carry the SAME `context` payload
+    `core/policy.py::resolve_context_layers` computes -- the one
+    composition site both `render_policy_toml` (bmad-loop spin) and this
+    engine (factory dispatch) resolve from. No project declares a
+    `[context]` block for `pyforge-marshal` today, so every layer resolves
+    off at the default "medium" aggressiveness."""
+    import json
+
+    from pyforge.marshal.core import policy
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    spec = specs / f"spec-{story}.md"
+    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+
+    fs = FakeFs()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert code == EXIT_OK
+    expected = {layer: {"enabled": False, "aggressiveness": "medium"} for layer in policy.CONTEXT_LAYER_NAMES}
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["context"] == expected
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    assert any(json.loads(line)["payload"].get("context") == expected for line in launch_lines)
+
+
 def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _init_git_repo(tmp_path)
     slug = "pyforge-marshal"
@@ -206,6 +256,297 @@ def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytes
         process=FakeProcess(),
     )
     assert code != EXIT_OK
+
+
+def _enable_wire_layer(monkeypatch: pytest.MonkeyPatch, slug: str) -> None:
+    """Compose the SAME `EffectivePolicy` the real code composes, but with a
+    declared `[context] wire` layer -- the conventional project-policy file
+    `_compose_policy` reads lives at a module-derived repo path no test may
+    write to, so the composition is redirected, never faked."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={"context": {"wire": {"enabled": True, "aggressiveness": "high"}}},
+        flags={},
+    )
+    monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug: effective)
+
+
+def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire entry of the
+    SAME `[context]` payload Story 28.1 resolves is what reaches
+    `BuildHarnessPort.dispatch` -- one composition site, and only the layer
+    this seam implements (the launch has no business reading a layer it
+    cannot apply)."""
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    _enable_wire_layer(monkeypatch, slug)
+    harness = FakeBuildHarness()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    assert (
+        run_dispatch(
+            args,
+            fs=FakeFs(),
+            vcs=FakeVcs(tmp_path),
+            build_harness=harness,
+            process=FakeProcess(),
+        )
+        == EXIT_OK
+    )
+    payload = json.loads(capsys.readouterr().out)
+    expected = {"enabled": True, "aggressiveness": "high"}
+    assert harness.calls[0]["wire_layer"] == expected
+    assert payload["data"]["context"]["wire"] == expected
+
+
+def test_dispatch_journals_and_echoes_what_the_wire_layer_did(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """"Was this session wrapped?" is a RECORDED fact of every dispatch --
+    echoed in `data` and journaled in the launch outcome entry -- rather
+    than an inference from an argv nobody kept. An APPLIED layer raises no
+    finding: nothing degraded."""
+    import json
+
+    from pyforge.marshal.core.harness_profile import WireWrap
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    store = str(tmp_path / "wt" / ".marshal" / "wire")
+
+    class WrappingHarness(FakeBuildHarness):
+        def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
+            result = super().dispatch(worktree, **kwargs)
+            return DispatchLaunchResult(
+                pid=result.pid,
+                command=result.command,
+                model=result.model,
+                budget_env=result.budget_env,
+                profile=result.profile,
+                wire=WireWrap(
+                    applied=True,
+                    argv_prefix=("/bin/headroom", "wrap", "claude", "--"),
+                    store_dir=store,
+                    aggressiveness="high",
+                ),
+            )
+
+    _enable_wire_layer(monkeypatch, slug)
+    fs = FakeFs()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    assert (
+        run_dispatch(
+            args,
+            fs=fs,
+            vcs=FakeVcs(tmp_path),
+            build_harness=WrappingHarness(),
+            process=FakeProcess(),
+        )
+        == EXIT_OK
+    )
+    payload = json.loads(capsys.readouterr().out)
+    expected = {
+        "applied": True,
+        "reason": None,
+        "store_dir": store,
+        "aggressiveness": "high",
+    }
+    assert payload["data"]["wire"] == expected
+    assert [f for f in payload["findings"] if f["code"] == "MRS-DISP-033"] == []
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    assert any(json.loads(line)["payload"].get("wire") == expected for line in launch_lines)
+
+
+def test_dispatch_reports_a_degraded_wire_layer_as_a_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """CAP-2's graceful-degradation AC at the report boundary: the layer
+    disabling itself is NAMED (`MRS-DISP-033`), and it is a WARN over a
+    session that is already live and unwrapped -- never a refusal, never
+    silence."""
+    import json
+
+    from pyforge.marshal.core.harness_profile import WireWrap
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    reason = "wire-compression wrapper binary 'headroom' did not resolve"
+
+    class DegradingHarness(FakeBuildHarness):
+        def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
+            result = super().dispatch(worktree, **kwargs)
+            return DispatchLaunchResult(
+                pid=result.pid,
+                command=result.command,
+                model=result.model,
+                budget_env=result.budget_env,
+                profile=result.profile,
+                wire=WireWrap(applied=False, reason=reason, aggressiveness="high"),
+            )
+
+    _enable_wire_layer(monkeypatch, slug)
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=DegradingHarness(),
+        process=FakeProcess(),
+    )
+    # WARN, so the dispatch still succeeds -- the run is live and unwrapped
+    assert code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    [finding] = [f for f in payload["findings"] if f["code"] == "MRS-DISP-033"]
+    assert finding["severity"] == "warn"
+    assert finding["message"] == reason
+    assert payload["data"]["wire"]["applied"] is False
+    assert payload["data"]["wire"]["reason"] == reason
+
+
+def test_dispatch_with_no_wire_decision_reports_the_layer_as_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A harness that returns no wire decision at all (the port's field is
+    optional) still yields a stated disposition rather than a missing key --
+    and raises nothing, because nothing was enabled."""
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    assert (
+        run_dispatch(
+            args,
+            fs=FakeFs(),
+            vcs=FakeVcs(tmp_path),
+            build_harness=FakeBuildHarness(),
+            process=FakeProcess(),
+        )
+        == EXIT_OK
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["wire"] == {
+        "applied": False,
+        "reason": None,
+        "store_dir": None,
+        "aggressiveness": None,
+    }
+    assert [f for f in payload["findings"] if f["code"] == "MRS-DISP-033"] == []
+
+
+def test_dispatch_wire_payload_has_exactly_the_single_spellings_fields(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """``WireWrap.journal_payload()`` is the ONE spelling of this payload,
+    on both engines. The expected key set is derived FROM that method rather
+    than restated here, so adding a field to ``WireWrap`` fails this test
+    the moment a call site hand-spells the shape instead of projecting it --
+    the drift a literal dict makes silent."""
+    import json
+
+    from pyforge.marshal.core.harness_profile import WireWrap
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    fs = FakeFs()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    assert (
+        run_dispatch(
+            args,
+            fs=fs,
+            vcs=FakeVcs(tmp_path),
+            build_harness=FakeBuildHarness(),
+            process=FakeProcess(),
+        )
+        == EXIT_OK
+    )
+    expected_fields = set(WireWrap(applied=False).journal_payload())
+    payload = json.loads(capsys.readouterr().out)
+    assert set(payload["data"]["wire"]) == expected_fields
+    launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
+    journaled = [json.loads(line)["payload"]["wire"] for line in launch_lines if "wire" in json.loads(line)["payload"]]
+    assert journaled and all(set(entry) == expected_fields for entry in journaled)
+
+
+def test_dispatch_states_the_wire_disposition_even_when_the_launch_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """``ports/build_harness.py`` promises the wire disposition is "a
+    recorded fact of every dispatch", and ``cli/spin.py`` echoes its own
+    unconditionally -- but the ``BuildHarnessError`` branch returns without
+    ever reaching a launch result, so the key went missing from precisely
+    the envelope an operator most wants to inspect. A consumer reading
+    ``data["wire"]`` unguarded broke on the failure case alone."""
+    import json
+
+    from pyforge.marshal.adapters.harness_bmadbuild import BuildHarnessError
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "28-2-wire-compression-at-the-harness-seam"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    class FailingHarness(FakeBuildHarness):
+        def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
+            raise BuildHarnessError("cannot launch session harness: boom")
+
+    _enable_wire_layer(monkeypatch, slug)
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FailingHarness(),
+        process=FakeProcess(),
+    )
+    assert code != EXIT_OK  # the launch genuinely failed
+    payload = json.loads(capsys.readouterr().out)
+    assert [f for f in payload["findings"] if f["code"] == "MRS-DISP-008"]
+    assert payload["data"]["wire"] == {
+        "applied": False,
+        "reason": None,
+        "store_dir": None,
+        "aggressiveness": None,
+    }
 
 
 def test_run_dispatch_carries_profile_and_reports_skips(
@@ -781,3 +1122,110 @@ def test_only_one_dispatch_branch_derivation_site() -> None:
     ):
         assert derivation.search(caught), caught
     assert derivation.search('".marshal/plan.json"') is None
+
+
+# --------------------------------------------------------------------------
+# Story 22.11: `dispatch <slug> --stories k1,k2,...` chains an explicit
+# sequence via the same machinery `drain` uses (FR-193 CAP-10)
+# --------------------------------------------------------------------------
+
+
+class _FakeLedgerHarness:
+    """``HarnessPort.ledger_story_statuses`` over an in-memory ledger."""
+
+    def __init__(self, ledgers: dict[str, tuple[tuple[str, str], ...]]) -> None:
+        self.ledgers = ledgers
+
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        slug = path.parent.parent.name
+        return self.ledgers.get(slug, ())
+
+
+def test_dispatch_refuses_when_neither_story_nor_stories_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    args = argparse.Namespace(slug="pyforge-marshal", story=None, stories=None, format="json")
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+
+
+def test_dispatch_refuses_when_both_story_and_stories_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    args = argparse.Namespace(
+        slug="pyforge-marshal", story="22-11-fleet", stories="22-11-fleet", format="json"
+    )
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=FakeBuildHarness(), process=FakeProcess()
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+
+
+def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`dispatch <slug> --stories a,b` reuses `run_fleet_drain`'s own
+    chaining/preflight/journal machinery -- no second implementation."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    _seed_spec(tmp_path, slug, "22-11-fleet")
+    _seed_spec(tmp_path, slug, "22-12-next")
+    monkeypatch.chdir(tmp_path)
+    harness = _FakeLedgerHarness(
+        {slug: (("22-11-fleet", "backlog"), ("22-12-next", "backlog"))}
+    )
+    build_harness = FakeBuildHarness()
+    args = argparse.Namespace(
+        slug=slug, story=None, stories="22-12-next,22-11-fleet", format="json"
+    )
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=build_harness,
+        process=FakeProcess(),
+        harness=harness,
+    )
+    assert code == EXIT_OK
+    assert build_harness.calls
+    assert build_harness.calls[0]["story_key"] == "22.12"
+
+
+def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    _seed_spec(tmp_path, slug, "22-11-fleet")
+    monkeypatch.chdir(tmp_path)
+    harness = _FakeLedgerHarness({slug: (("22-11-fleet", "backlog"),)})
+    vcs = FakeVcs(tmp_path)
+    build_harness = FakeBuildHarness()
+    args = argparse.Namespace(
+        slug=slug, story=None, stories="22-11-fleet,99-9-ghost", format="json"
+    )
+    code = run_dispatch(
+        args, fs=FakeFs(), vcs=vcs, build_harness=build_harness, process=FakeProcess(), harness=harness
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-DISP-032" for f in payload["findings"])
+    # Nothing was provisioned: no worktree add, no session launch.
+    assert vcs.added == []
+    assert build_harness.calls == []

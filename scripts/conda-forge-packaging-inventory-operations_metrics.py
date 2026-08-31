@@ -12,6 +12,16 @@ direct pandas.read_parquet reads of the pyforge-atlas Kedro data plane's Tier 0
 outputs instead of live HTTP fetches or local snapshot files. See
 load_live_catalog() below. pandas/pyarrow are imported lazily inside that
 function only -- the default (no --live-catalog) path stays stdlib-only.
+
+Story 23.8 (--analysis-xlsx optional): --analysis-xlsx is no longer required.
+When --live-catalog PATH is set and --analysis-xlsx is absent, the package
+UNIVERSE (records / tab_packages / roles / the OpenTeams summary -- everything
+previously read from the workbook's sheets) is built from
+inventory_universe.parquet (the pyforge-atlas Kedro derived_artifacts output)
+instead. See load_universe_from_catalog() below. Exactly one universe source
+per run: the workbook when given, else inventory_universe.parquet. Neither
+given is an error. When --analysis-xlsx IS given, behavior is byte-identical
+to Story 21.3 (this story does not touch that path).
 """
 
 from __future__ import annotations
@@ -160,6 +170,25 @@ class LiveCatalogResult:
     parselmouth_pypi: set[str] = field(default_factory=set)
     warnings: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+
+
+@dataclass
+class UniverseResult:
+    """Result of load_universe_from_catalog() -- the --analysis-xlsx-absent
+    Story 23.8 loader. Mirrors LiveCatalogResult's degrade-and-continue shape,
+    except an absent/sub-floor universe is unconditionally fatal (``failed``)
+    -- unlike the three Tier 0 verification sets, there is no usable output to
+    degrade to without a universe."""
+
+    records: dict[str, PackageRecord] = field(default_factory=dict)
+    tab_packages: dict[str, set[str]] = field(default_factory=dict)
+    maint: set[str] = field(default_factory=set)
+    co: set[str] = field(default_factory=set)
+    openteams_summary: OpenTeamsSummary = field(default_factory=OpenTeamsSummary)
+    priority_map: dict[str, str] = field(default_factory=dict)
+    row_count: int = 0
+    warnings: list[str] = field(default_factory=list)
+    failed: bool = False
 
 
 class XlsxReader:
@@ -558,6 +587,157 @@ def load_live_catalog(root: Path) -> LiveCatalogResult:
     return result
 
 
+# Story 23.8: the derived_artifacts::build_inventory_universe output + the two
+# sibling Parquet files load_universe_from_catalog() also reads (the OpenTeams
+# board, for reproducing the OpenTeamsSummary counters; the not-yet-built Story
+# 23.3 priority assignments, read when present).
+_INVENTORY_UNIVERSE_REL_PATH = "derived/inventory_universe/inventory_universe.parquet"
+_OPENTEAMS_BOARD_REL_PATH = "raw/openteams_project_1_board_raw/openteams_project_1_board.parquet"
+_PRIORITY_ASSIGNMENTS_REL_PATH = "derived/inventory_priority_assignments/inventory_priority_assignments.parquet"
+
+# inventory_universe's `sources` provenance labels -> the bare "sheet" name
+# tab_packages is keyed by (matches parse_sheet_sources' own `f"tab:{sheet}"`
+# convention -- see that function and the Story 23.8 spec's Intent table).
+_UNIVERSE_TAB_LABELS: dict[str, str] = {
+    "tab:CDO-ENT-JFROG": "CDO-ENT-JFROG",
+    "tab:CDO-ENT-CONDA": "CDO-ENT-CONDA",
+    "tab:OpenTeams": "OpenTeams",
+    "tab:Conda-Forge": "Conda-Forge",
+    "tab:Basilisk": "Basilisk",
+    "tab:Anaconda-Main": "Anaconda-Main",
+    "tab:Anaaconda-Dist": "Anaaconda-Dist",
+    "tab:GAOSS-Free": "GAOSS-Free",
+    "tab:GAOSS-Premium": "GAOSS-Premium",
+}
+
+
+def load_universe_from_catalog(root: Path, *, floor: int = 10_000) -> UniverseResult:
+    """Build the package universe (records / tab_packages / roles / the OpenTeams
+    summary) from ``inventory_universe.parquet`` under ``root`` (a
+    ``PYFORGE_ATLAS_DATA_ROOT``) instead of the workbook's sheets -- Story 23.8,
+    used only when ``--analysis-xlsx`` is absent.
+
+    Unlike load_live_catalog()'s three verification sets, a missing/unreadable/
+    sub-floor universe is unconditionally fatal (``result.failed = True``, no
+    output to degrade to) -- the caller must exit 2 before writing anything.
+    The OpenTeams board read and the (not-yet-built Story 23.3) priority-source
+    read are best-effort: a missing/unreadable file there degrades to an empty
+    summary / an all-P9 default plus a warning, never raises.
+    """
+    import pandas as pd
+
+    result = UniverseResult()
+    universe_path = root / _INVENTORY_UNIVERSE_REL_PATH
+    try:
+        if not universe_path.exists():
+            result.failed = True
+            result.warnings.append(f"--live-catalog: inventory_universe missing at {universe_path}")
+            return result
+        universe = pd.read_parquet(universe_path)
+    except Exception as exc:
+        result.failed = True
+        result.warnings.append(f"--live-catalog: inventory_universe unreadable at {universe_path}: {exc}")
+        return result
+
+    if "core_python_package_name" not in universe.columns:
+        result.failed = True
+        result.warnings.append(
+            f"--live-catalog: inventory_universe at {universe_path} is missing "
+            "core_python_package_name"
+        )
+        return result
+
+    distinct = universe["core_python_package_name"].dropna().nunique()
+    result.row_count = int(distinct)
+    if distinct < floor:
+        result.failed = True
+        result.warnings.append(
+            f"--live-catalog: inventory_universe below floor ({distinct:,} distinct "
+            f"core_python_package_name < {floor:,} required)"
+        )
+        return result
+
+    for row in universe.itertuples(index=False):
+        raw_pkg = getattr(row, "core_python_package_name", None)
+        if not raw_pkg or (not isinstance(raw_pkg, str) and pd.isna(raw_pkg)):
+            continue
+        pkg = norm_pkg(str(raw_pkg))
+        if not looks_like_pkg(pkg):
+            continue
+        rec = result.records.setdefault(pkg, PackageRecord(core_name=pkg))
+
+        raw_inputs = getattr(row, "package_input_names", None)
+        if raw_inputs is not None:
+            for raw in raw_inputs:
+                if raw:
+                    rec.input_names.add(str(raw))
+
+        sources = getattr(row, "sources", None)
+        if sources is not None:
+            for src in sources:
+                src = str(src)
+                rec.sources.add(src)
+                sheet = _UNIVERSE_TAB_LABELS.get(src)
+                if sheet:
+                    rec.tabs.add(sheet)
+                    result.tab_packages.setdefault(sheet, set()).add(pkg)
+
+        role = getattr(row, "role", None)
+        if role == "Maintainer":
+            result.maint.add(pkg)
+        elif role == "Co-Maintainer":
+            result.co.add(pkg)
+
+    # OpenTeams summary counters -- reproduced from the same board rows the
+    # universe node itself reads (openteams_summary_from_xlsx's counters, over
+    # the board Parquet instead of the workbook's OpenTeams sheet).
+    board_path = root / _OPENTEAMS_BOARD_REL_PATH
+    try:
+        if board_path.exists():
+            board = pd.read_parquet(board_path, columns=["title"])
+            for raw_title in board["title"].dropna():
+                rule, pkgs = parse_openteams_title(str(raw_title))
+                if rule == "a":
+                    result.openteams_summary.rows_used_a += 1
+                    result.openteams_summary.unique_packages.update(pkgs)
+                elif rule == "b":
+                    result.openteams_summary.rows_used_b += 1
+                    result.openteams_summary.unique_packages.update(pkgs)
+                else:
+                    result.openteams_summary.rows_ignored_c += 1
+        else:
+            result.warnings.append(
+                f"--live-catalog: openteams board missing at {board_path} -- "
+                "OpenTeams summary will report zero"
+            )
+    except Exception as exc:
+        result.warnings.append(f"--live-catalog: openteams board unreadable at {board_path}: {exc}")
+
+    # Priority source (Story 23.3 -- not yet built as of this story): present ->
+    # per-name P bucket; absent -> P9 for every row + one counted warning (this
+    # story's own I/O matrix), never raises.
+    priority_path = root / _PRIORITY_ASSIGNMENTS_REL_PATH
+    try:
+        if priority_path.exists():
+            pdf = pd.read_parquet(priority_path, columns=["core_python_package_name", "P"])
+            for prow in pdf.itertuples(index=False):
+                name = getattr(prow, "core_python_package_name", None)
+                p = getattr(prow, "P", None)
+                if name and p:
+                    result.priority_map[norm_pkg(str(name))] = str(p)
+        else:
+            result.warnings.append(
+                f"--live-catalog: inventory_priority_assignments.parquet not found at "
+                f"{priority_path} -- Priority_Bucket defaulted to P9 for every package"
+            )
+    except Exception as exc:
+        result.warnings.append(
+            f"--live-catalog: inventory_priority_assignments unreadable at {priority_path}: {exc}"
+        )
+
+    return result
+
+
 def parse_channeldata_url(url: str, timeout: int) -> set[str]:
     data = fetch_json(url, timeout)
     pkgs = data.get("packages") or {}
@@ -839,26 +1019,29 @@ def write_revised_prompt(path: Path, args: argparse.Namespace) -> None:
     # list of args.* fields -- it does not dynamically echo every parsed
     # argument, so --live-catalog/--live-catalog-only must be appended
     # explicitly or a --live-catalog run's regenerated prompt silently omits
-    # the flags actually used.
-    extra_lines = ""
+    # the flags actually used. Story 23.8: --analysis-xlsx is now optional --
+    # omit that line entirely rather than printing the literal string "None".
+    lines = ["python3 scripts/conda-forge-packaging-inventory-operations_metrics.py"]
+    if args.analysis_xlsx is not None:
+        lines.append(f'--analysis-xlsx "{args.analysis_xlsx}"')
+    lines.append(f'--openteams-tsv "{args.openteams_tsv}"')
+    lines.append(f'--curated-config "{args.curated_config}"')
+    lines.append(f'--output-csv "{args.output_csv}"')
+    lines.append(f'--output-md "{args.output_md}"')
+    lines.append(f'--output-revised-prompt "{args.output_revised_prompt}"')
+    lines.append(f"--verify-mode {args.verify_mode}")
+    lines.append(f"--strict-max-live-checks {args.strict_max_live_checks}")
     if args.live_catalog is not None:
-        extra_lines += f' \\\n  --live-catalog "{args.live_catalog}"'
+        lines.append(f'--live-catalog "{args.live_catalog}"')
     if args.live_catalog_only:
-        extra_lines += " \\\n  --live-catalog-only"
+        lines.append("--live-catalog-only")
+    command = " \\\n  ".join(lines)
     text = f"""# docs/reference/conda-forge-packaging-inventory-operations_prompt.md
 
 Run consolidated verified package inventory generation from local exports.
 
 ```bash
-python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \\
-  --analysis-xlsx "{args.analysis_xlsx}" \\
-  --openteams-tsv "{args.openteams_tsv}" \\
-  --curated-config "{args.curated_config}" \\
-  --output-csv "{args.output_csv}" \\
-  --output-md "{args.output_md}" \\
-  --output-revised-prompt "{args.output_revised_prompt}" \\
-  --verify-mode {args.verify_mode} \\
-  --strict-max-live-checks {args.strict_max_live_checks}{extra_lines}
+{command}
 ```
 """
     path.write_text(text, encoding="utf-8")
@@ -872,10 +1055,22 @@ def main() -> int:
             "--live-catalog reads PyPI/conda-forge verification from the "
             "pyforge-atlas Kedro Parquet data plane instead of live HTTP "
             "fetches or --cf-channeldata/--pypi-simple/--parselmouth snapshot "
-            "files."
+            "files. --analysis-xlsx is optional (Story 23.8): when omitted, "
+            "--live-catalog is required and the package universe itself "
+            "(not just verification) is read from that same Kedro data plane's "
+            "inventory_universe.parquet instead of the workbook's sheets."
         ),
     )
-    parser.add_argument("--analysis-xlsx", type=Path, required=True)
+    parser.add_argument(
+        "--analysis-xlsx",
+        type=Path,
+        default=None,
+        help=(
+            "The legacy Excel workbook. Optional (Story 23.8): when omitted, "
+            "--live-catalog is required and supplies the package universe via "
+            "inventory_universe.parquet instead."
+        ),
+    )
     parser.add_argument("--openteams-tsv", type=Path, default=None)
     parser.add_argument("--curated-config", type=Path, default=Path("conf/conda-forge-packaging-inventory-operations_curated_groups.json"))
     parser.add_argument(
@@ -925,7 +1120,13 @@ def main() -> int:
             "instead of live HTTP fetches or --pypi-simple/--parselmouth "
             "snapshot files (fully unused when this is set). --cf-channeldata "
             "stays accepted and is NOT replaced by this flag -- it is still "
-            "read independently for has_src/the 10k-tab drop filter."
+            "read independently for has_src/the 10k-tab drop filter. When "
+            "--analysis-xlsx is also omitted (Story 23.8), PATH additionally "
+            "supplies the package universe itself via inventory_universe.parquet "
+            "(required: present, readable, >= 10,000 distinct names -- exit 2 "
+            "otherwise, with or without --live-catalog-only) and, when present, "
+            "Priority_Bucket via inventory_priority_assignments.parquet (else P9 "
+            "for every package)."
         ),
     )
     parser.add_argument(
@@ -935,7 +1136,10 @@ def main() -> int:
             "Require --live-catalog and all three of its required datasets "
             "present, readable, and above their scale floors (no floor for "
             "the Parselmouth mapping); exit 2 before writing any output "
-            "otherwise."
+            "otherwise. When --analysis-xlsx is also omitted, additionally "
+            "requires inventory_universe.parquet (same present/readable/"
+            "above-floor requirement, though that requirement already applies "
+            "unconditionally in that mode -- see --live-catalog's help)."
         ),
     )
     args = parser.parse_args()
@@ -944,7 +1148,15 @@ def main() -> int:
         print("--live-catalog-only requires --live-catalog", file=sys.stderr)
         return 2
 
-    if not args.analysis_xlsx.exists():
+    if args.analysis_xlsx is None and args.live_catalog is None:
+        print(
+            "either --analysis-xlsx (the workbook universe) or --live-catalog "
+            "(the inventory_universe.parquet universe) is required",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.analysis_xlsx is not None and not args.analysis_xlsx.exists():
         print(f"missing analysis workbook: {args.analysis_xlsx}", file=sys.stderr)
         return 2
     if args.openteams_tsv is not None and not args.openteams_tsv.exists():
@@ -956,6 +1168,7 @@ def main() -> int:
 
     warnings: list[str] = []
     live_catalog: LiveCatalogResult | None = None
+    universe: UniverseResult | None = None
     if args.live_catalog is not None:
         live_catalog = load_live_catalog(args.live_catalog)
         if args.live_catalog_only and live_catalog.failed:
@@ -964,15 +1177,36 @@ def main() -> int:
             return 2
         warnings.extend(live_catalog.warnings)
 
+        if args.analysis_xlsx is None:
+            # Story 23.8: workbook-free -- the universe itself, not just
+            # verification, comes from the Kedro data plane. Unlike the three
+            # sets above, a missing/sub-floor universe is fatal regardless of
+            # --live-catalog-only (there is no usable output to degrade to).
+            universe = load_universe_from_catalog(args.live_catalog, floor=10_000)
+            if universe.failed:
+                for w in universe.warnings:
+                    print(w, file=sys.stderr)
+                return 2
+            warnings.extend(universe.warnings)
+
     subdirs = [s.strip() for s in args.repodata_subdirs.split(",") if s.strip()]
-    xlsx = XlsxReader(args.analysis_xlsx)
+    xlsx = XlsxReader(args.analysis_xlsx) if args.analysis_xlsx is not None else None
     try:
-        records, tab_packages, analysis_cf_availability, analysis_not_on_cf = parse_sheet_sources(xlsx)
-        if args.openteams_tsv is not None:
-            tsv_rows, openteams_summary = parse_openteams_tsv(args.openteams_tsv)
-            integrate_openteams_rows(records, tsv_rows)
+        if xlsx is not None:
+            records, tab_packages, analysis_cf_availability, analysis_not_on_cf = parse_sheet_sources(xlsx)
+            if args.openteams_tsv is not None:
+                tsv_rows, openteams_summary = parse_openteams_tsv(args.openteams_tsv)
+                integrate_openteams_rows(records, tsv_rows)
+            else:
+                openteams_summary = openteams_summary_from_xlsx(xlsx)
         else:
-            openteams_summary = openteams_summary_from_xlsx(xlsx)
+            # Story 23.8: universe already loaded above (args.live_catalog is
+            # guaranteed non-None here -- the top-of-main() validation requires
+            # one of --analysis-xlsx/--live-catalog).
+            records = universe.records
+            tab_packages = universe.tab_packages
+            analysis_cf_availability, analysis_not_on_cf = {}, set()
+            openteams_summary = universe.openteams_summary
 
         source_sets: dict[str, set[str]] = {}
 
@@ -996,58 +1230,79 @@ def main() -> int:
         if args.live_catalog is not None:
             cf_packages = live_catalog.cf_packages
             source_sets["external:conda-forge-channel"] = cf_packages
-        else:
+        elif xlsx is not None:
             cf_packages = try_source(
                 "external:conda-forge-channel",
                 lambda: load_channeldata_names(args.cf_channeldata)
                 or parse_channeldata_url("https://conda.anaconda.org/conda-forge/channeldata.json", args.timeout),
                 lambda: parse_sheet_pkg_set(xlsx, "Conda-Forge", "Package_Name"),
             )
-        anaconda_main = try_source(
-            "external:anaconda-main-channel",
-            lambda: load_channeldata_names(args.main_channeldata)
-            or parse_channeldata_url("https://repo.anaconda.com/pkgs/main/channeldata.json", args.timeout),
-            lambda: parse_sheet_pkg_set(xlsx, "Anaconda-Main", "Package_Name"),
-        )
-        if args.use_live_html_sources:
-            anaconda_dist = try_source(
-                "external:anaconda-2026x",
-                lambda: parse_aoss_page("https://www.anaconda.com/docs/getting-started/anaconda/release/2026.x", args.timeout),
-                lambda: parse_sheet_pkg_set(xlsx, "Anaaconda-Dist", "Package_Name"),
+
+        if xlsx is not None:
+            anaconda_main = try_source(
+                "external:anaconda-main-channel",
+                lambda: load_channeldata_names(args.main_channeldata)
+                or parse_channeldata_url("https://repo.anaconda.com/pkgs/main/channeldata.json", args.timeout),
+                lambda: parse_sheet_pkg_set(xlsx, "Anaconda-Main", "Package_Name"),
             )
-            aoss_free = try_source(
-                "external:aoss-free",
-                lambda: parse_aoss_page("https://docs.cloud.google.com/assured-open-source-software/docs/supported-packages#python", args.timeout),
-                lambda: parse_sheet_pkg_set(xlsx, "GAOSS-Free", "Package_Name"),
-            )
-            aoss_premium = try_source(
-                "external:aoss-premium",
-                lambda: parse_aoss_page("https://web.archive.org/web/20260419090548/https://docs.cloud.google.com/security-command-center/docs/aoss-supported-packages-premium#python", args.timeout),
-                lambda: parse_sheet_pkg_set(xlsx, "GAOSS-Premium", "Package_Name"),
-            )
-            basilisk = try_source(
-                "external:basilisk",
-                lambda: parse_basilisk_page(args.timeout),
-                lambda: parse_sheet_pkg_set(xlsx, "Basilisk", "Package_Name"),
-            )
+            if args.use_live_html_sources:
+                anaconda_dist = try_source(
+                    "external:anaconda-2026x",
+                    lambda: parse_aoss_page("https://www.anaconda.com/docs/getting-started/anaconda/release/2026.x", args.timeout),
+                    lambda: parse_sheet_pkg_set(xlsx, "Anaaconda-Dist", "Package_Name"),
+                )
+                aoss_free = try_source(
+                    "external:aoss-free",
+                    lambda: parse_aoss_page("https://docs.cloud.google.com/assured-open-source-software/docs/supported-packages#python", args.timeout),
+                    lambda: parse_sheet_pkg_set(xlsx, "GAOSS-Free", "Package_Name"),
+                )
+                aoss_premium = try_source(
+                    "external:aoss-premium",
+                    lambda: parse_aoss_page("https://web.archive.org/web/20260419090548/https://docs.cloud.google.com/security-command-center/docs/aoss-supported-packages-premium#python", args.timeout),
+                    lambda: parse_sheet_pkg_set(xlsx, "GAOSS-Premium", "Package_Name"),
+                )
+                basilisk = try_source(
+                    "external:basilisk",
+                    lambda: parse_basilisk_page(args.timeout),
+                    lambda: parse_sheet_pkg_set(xlsx, "Basilisk", "Package_Name"),
+                )
+            else:
+                anaconda_dist = parse_sheet_pkg_set(xlsx, "Anaaconda-Dist", "Package_Name")
+                aoss_free = parse_sheet_pkg_set(xlsx, "GAOSS-Free", "Package_Name")
+                aoss_premium = parse_sheet_pkg_set(xlsx, "GAOSS-Premium", "Package_Name")
+                basilisk = parse_sheet_pkg_set(xlsx, "Basilisk", "Package_Name")
+                source_sets["external:anaconda-2026x"] = anaconda_dist
+                source_sets["external:aoss-free"] = aoss_free
+                source_sets["external:aoss-premium"] = aoss_premium
+                source_sets["external:basilisk"] = basilisk
+            maint = set()
+            co = set()
+            try:
+                maint, co = parse_feedstocks_from_about(args.timeout)
+            except Exception as exc:
+                if args.strict_fetch:
+                    raise
+                warnings.append(f"external:about-readme live fetch failed: {exc}")
+                maint, co = parse_cdo_ent_conda_roles(xlsx)
         else:
-            anaconda_dist = parse_sheet_pkg_set(xlsx, "Anaaconda-Dist", "Package_Name")
-            aoss_free = parse_sheet_pkg_set(xlsx, "GAOSS-Free", "Package_Name")
-            aoss_premium = parse_sheet_pkg_set(xlsx, "GAOSS-Premium", "Package_Name")
-            basilisk = parse_sheet_pkg_set(xlsx, "Basilisk", "Package_Name")
+            # Story 23.8: workbook-free -- these 5 sets (and maint/co) are
+            # already IN the universe (as tab:<Sheet> source labels / the
+            # role column); reproduce the SAME redundant external:*
+            # bookkeeping the workbook path always produces (source_sets
+            # keys, not verification), so the MD per-source matrix matches.
+            # No live HTTP call is made either way ("no duplicate HTTP
+            # clients when --live-catalog is set").
+            anaconda_main = tab_packages.get("Anaconda-Main", set())
+            anaconda_dist = tab_packages.get("Anaaconda-Dist", set())
+            aoss_free = tab_packages.get("GAOSS-Free", set())
+            aoss_premium = tab_packages.get("GAOSS-Premium", set())
+            basilisk = tab_packages.get("Basilisk", set())
+            source_sets["external:anaconda-main-channel"] = anaconda_main
             source_sets["external:anaconda-2026x"] = anaconda_dist
             source_sets["external:aoss-free"] = aoss_free
             source_sets["external:aoss-premium"] = aoss_premium
             source_sets["external:basilisk"] = basilisk
-        maint = set()
-        co = set()
-        try:
-            maint, co = parse_feedstocks_from_about(args.timeout)
-        except Exception as exc:
-            if args.strict_fetch:
-                raise
-            warnings.append(f"external:about-readme live fetch failed: {exc}")
-            maint, co = parse_cdo_ent_conda_roles(xlsx)
+            maint, co = universe.maint, universe.co
         source_sets["about:maintainer"] = maint
         source_sets["about:co-maintainer"] = co
 
@@ -1111,6 +1366,20 @@ def main() -> int:
             aoss_free_queue_path, aoss_free_candidates, must_keep, timestamp
         )
         cf_meta = load_channeldata_packages(args.cf_channeldata)
+
+        if xlsx is not None:
+            def priority_bucket_for(pkg: str) -> str:
+                return priority_bucket(records[pkg])
+        else:
+            # Story 23.8: Priority_Bucket comes from inventory_priority_assignments
+            # (Story 23.3) when present, else P9 for every package -- the
+            # "priority source absent" warning is already in `warnings`
+            # (load_universe_from_catalog appended it once, not per-row).
+            priority_map = universe.priority_map
+
+            def priority_bucket_for(pkg: str) -> str:
+                return priority_map.get(pkg, "P9")
+
         dropped_tenk = 0
         keep: list[str] = []
         for pkg in sorted(records):
@@ -1130,7 +1399,7 @@ def main() -> int:
             cf_ok = pkg in cf_or_pm
             if not cf_ok:
                 not_on_cf_count += 1
-            pbucket = priority_bucket(rec)
+            pbucket = priority_bucket_for(pkg)
             status = packaging_status(pypi_ok, cf_ok, pbucket)
 
             src = primary_source(rec.sources)
@@ -1190,6 +1459,13 @@ def main() -> int:
         print(f"  - unique packages extracted from that portion: {len(openteams_summary.unique_packages):,}")
         print()
         print(f"Dropped 10kClosed/10kOpen with no PyPI and no derived source repo: {dropped_tenk:,}")
+        if xlsx is None:
+            print(
+                "Note: workbook-free run (--live-catalog, no --analysis-xlsx, Story "
+                "23.8) -- the retired workbook's `10kClosed` sheet (~10,000 rows on "
+                "2026-08-12) has no catalog source and is not represented in this "
+                "universe; see spec-23-8-workbook-free-metrics-universe.md Design Notes."
+            )
         print(f"Wrote CSV: {args.output_csv}")
         print(f"Wrote Markdown report: {args.output_md}")
         print(
@@ -1209,7 +1485,8 @@ def main() -> int:
             )
         return 0
     finally:
-        xlsx.close()
+        if xlsx is not None:
+            xlsx.close()
 
 
 if __name__ == "__main__":

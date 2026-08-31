@@ -57,9 +57,9 @@ development_status:
   21-3-tier-0-harden-and-live-catalog-contract: done
   21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss: done
   21-5-tier-2-sources-about-curated-orgs-artifactory-names: done
-  21-6-upstream_discovery-identity-join-and-export-parquet: backlog
-  21-7-quartet-thin-out-and-gist-wrapper: backlog
-  21-8-end-to-end-verification-gate: backlog
+  21-6-upstream_discovery-identity-join-and-export-parquet: done
+  21-7-quartet-thin-out-and-gist-wrapper: done
+  21-8-end-to-end-verification-gate: done
   21-9-vizro-bootstrap-health-pages-optional-cap-5: backlog
   22-1-ranked-export-bridge-quartet-vizro-feed: backlog
   22-2-vizro-identity-catalog-page: backlog
@@ -74,7 +74,7 @@ development_status:
   23-5-identity_complete_export-parquet-canonical: backlog
   23-6-bsl-gist-aggregates-cap-8d: backlog
   23-7-zero-deferred-e2e-gate: backlog
-  23-8-workbook-free-metrics-universe: backlog
+  23-8-workbook-free-metrics-universe: done
   23-9-quartet-workbook-retirement: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done

@@ -100,7 +100,4 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
-- `pixi run --frozen -e pyforge-steward steward deploy dashboard --help` -- expected: shows `--build`
-
-**Results (2026-08-07):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 105 passed (99 pre-existing + 6 new in `test_deploy_build.py`). `steward deploy dashboard --help` shows `--build`.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

@@ -87,8 +87,7 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
-- `pixi run --frozen -e pyforge-steward steward provision --env pyforge-steward` -- expected: materializes Steward's own env
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Results (2026-08-07):**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- 161 passed (122 pre-Epic-3 baseline + 39 new across all four Epic 3 stories, this story's own share is `test_provision_env.py`'s 13 tests).

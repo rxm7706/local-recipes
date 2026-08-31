@@ -73,3 +73,8 @@ which extends it to bar the harness (`bmad_loop`) as well as the station package
 Python enum but not to `data/report-schema.json`. Nothing caught it precisely because the
 source had no caller — its findings had never been rendered, so they had never been
 validated. That is the split working as designed.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

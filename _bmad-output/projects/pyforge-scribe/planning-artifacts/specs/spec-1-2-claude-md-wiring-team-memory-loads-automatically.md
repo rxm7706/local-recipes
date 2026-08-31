@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'CLAUDE.md wiring — team memory loads automatically (Story 1.2)'
 type: 'feature'

@@ -424,9 +424,26 @@ def render_policy_toml(
 ) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
     Marshal's 11 mapped keys from ``effective``, apply FR-51 tier-batching,
-    and return ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
+    conditionally render Story 28.1's ``[context]`` block, and return
+    ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
     produces byte-identical output (AD-12/AD-35 "derived artifact"
     discipline).
+
+    Story 28.1 (SPEC-marshal-token-economy CAP-1): when
+    ``effective.context.value`` is non-empty (something was declared),
+    a ``[context.<layer>]`` sub-table is written for each of
+    ``policy.CONTEXT_LAYER_NAMES``, carrying the SAME
+    ``{enabled, aggressiveness}`` payload ``policy.resolve_context_layers``
+    computes -- the one composition site both this function and
+    ``cli/dispatch.py::dispatch_once`` consume (no second parser, no
+    engine-specific fork). ``_POLICY_TEMPLATE`` carries no ``[context]``
+    table at all and nothing is written when the declaration is absent (the
+    default, empty-mapping ``context`` value): this is what keeps a run
+    with no ``[context]`` block byte-identical to pre-Story-28.1 output.
+    ``bmad_loop`` 0.11's own loader (``policy.py::loads``) reads only its
+    own known top-level tables and never rejects an unrecognized one, so an
+    unread ``[context]`` table is inert to the harness today -- a later
+    story (CAP-2) is what wires actual behavior at the launch seam.
 
     The 11 mapped keys: ``gate_mode`` -> ``[gates].mode``,
     ``max_dev_attempts``/``max_review_cycles``/``max_followup_reviews`` ->
@@ -543,6 +560,20 @@ def render_policy_toml(
             if stage not in adapter_table:
                 adapter_table[stage] = tomlkit.table()
             adapter_table[stage]["model"] = stage_models[stage]
+
+    # Story 28.1 (CAP-1): only rendered when something was actually
+    # declared -- see this function's own docstring for why an absent
+    # `context` field (DEFAULT_POLICY's empty-mapping default) must render
+    # NO `[context]` table at all, byte-identical to pre-28.1 output.
+    if effective.context.value:
+        resolved_layers = policy.resolve_context_layers(effective)
+        context_table = tomlkit.table()
+        for layer_name in policy.CONTEXT_LAYER_NAMES:
+            layer_table = tomlkit.table()
+            layer_table["enabled"] = resolved_layers[layer_name]["enabled"]
+            layer_table["aggressiveness"] = resolved_layers[layer_name]["aggressiveness"]
+            context_table[layer_name] = layer_table
+        doc["context"] = context_table
 
     return tomlkit.dumps(doc)
 

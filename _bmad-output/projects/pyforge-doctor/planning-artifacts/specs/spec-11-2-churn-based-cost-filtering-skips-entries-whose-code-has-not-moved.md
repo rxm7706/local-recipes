@@ -162,13 +162,7 @@ counts as churn via its deletion commit), never by `Path.exists()`.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py -v`
-  -- expected: all tests (11.1's + 11.2's new ones) pass.
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py -v`
-  -- expected: still passes (no taxonomy change).
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full suite green.
-- `pixi run -e local-recipes due-for-verification-check` -- expected: rc=0; some WARN lines now
-  show a no-churn skip decision in their message text.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

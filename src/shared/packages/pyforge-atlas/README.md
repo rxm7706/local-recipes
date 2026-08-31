@@ -51,10 +51,16 @@ written by any pipeline — re-acquire them by running the two pure parsers
 under git review.
 
 Relative dataset paths (the `data/<layer>/<dataset_name>/` outputs and the
-store/seed defaults in `globals.yml paths:`) resolve against the **process
-CWD**, and the documented invocation is the pixi task run from the **repo
-root** — every shipped path default is therefore repo-root-relative, and
-`kedro-catalog-check` asserts none resolves outside the repo. `data_root`
+store/seed defaults in `globals.yml paths:`) are absolutized by Kedro's own
+`_convert_paths_to_absolute_posix` against `project_path` — the **Kedro
+member dir** (`src/shared/packages/pyforge-atlas`), which is also the pixi
+`cwd` `pyforge-atlas-bootstrap` runs `kedro run` from (corrected by Story
+21.8/DW-FU-21-2 — an earlier "resolves against the repo-root CWD" premise
+here did not hold for the one real `kedro run` this project has). `data_root`
+defaults member-relative (`data/`); `seed_root` defaults to a member-dir-
+relative escape (`../../../../.claude/skills/conda-forge-expert/data`) that
+lands on the true repo-root seed directory. `kedro-catalog-check` asserts
+every resolved default still stays inside the repo as a whole. `data_root`
 and `seed_root` are individually env-overridable (`PYFORGE_ATLAS_DATA_ROOT`,
 `PYFORGE_ATLAS_SEED_ROOT`). Since Story 21.1 (CAP-1) the three § 3.4
 external-refresh stores — `vdb_store`, `osv_offline_store`, `pypi_conda_map`
@@ -70,13 +76,18 @@ all three).
 pixi run -e pyforge-atlas pyforge-atlas-bootstrap
 ```
 
-Materializes the seven self-contained pipelines (`core`, `pypi_intelligence`,
+Materializes eight self-contained pipelines (`core`, `pypi_intelligence`,
 `vulnerability`, `vcs_health`, `upstream_discovery`, `derived_artifacts`,
-`seed_gaps`) as ONE combined Kedro run (`kedro run --pipelines <list>` sums
-them into a single DAG and lets Kedro's own topological sort order every
-node — no hand-guessed sequence) under `PYFORGE_ATLAS_DATA_ROOT`, with no
-prior `bootstrap-data` run and no `CF_ATLAS_DB` required on this path.
-`tools/bootstrap.py` runs first: it creates the `stores/vdb` /
+`seed_gaps`, `artifactory_downloads`) as ONE combined Kedro run (`kedro run
+--pipelines <list>` sums them into a single DAG and lets Kedro's own
+topological sort order every node — no hand-guessed sequence) under
+`PYFORGE_ATLAS_DATA_ROOT`, with no prior `bootstrap-data` run and no
+`CF_ATLAS_DB` required on this path. `artifactory_downloads` joined the
+chain with Story 21.6 (CAP-3): `build_identity_packages_primary` reads its
+`enterprise_jfrog_names` output as a cross-pipeline input, and
+`params:artifactory.virtual_repos` defaults to `[]`, so the pipeline stays
+functionally inert on a default run — zero live JFrog calls, zero new
+credentials. `tools/bootstrap.py` runs first: it creates the `stores/vdb` /
 `stores/osv` directories up front, and seeds an EMPTY
 `conf/local/credentials.yml` stub (`github_token` / `bigquery_adc`) only
 when one is not already there — Kedro resolves every catalog entry's
@@ -86,18 +97,22 @@ already degrade to an offline no-op by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
 
-**Operator env block:**
+**Operator env block (Story 21.8: extended past the CAP-1 subset to cover
+every variable touched by the full bootstrap + `--live-catalog` chain,
+21.1–21.7):**
 
 | Variable | Required for the smoke | Effect |
 |---|---|---|
-| `PYFORGE_ATLAS_DATA_ROOT` | No (defaults to the member `data/`) | Overrides `data_root` — every store/output path resolves under it |
-| `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Only consulted by an EXPLICIT live GitHub fan-out; the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2) |
+| `PYFORGE_ATLAS_DATA_ROOT` | No (defaults to the member `data/`) | Overrides `data_root` — every store/output path resolves under it; also the argument you point `--live-catalog` (below) at once the bootstrap completes |
+| `PYFORGE_ATLAS_SEED_ROOT` | No (defaults to the repo-root-relative `.claude/skills/conda-forge-expert/data`, resolved as a member-dir-relative escape — DW-FU-21-2, fixed by Story 21.8) | Overrides where the `seed_gaps` pipeline reads its three git-tracked seeds (`lts-registry.yaml`, `cwe_categories_seed.json`, `spdx.schema.json`); only needed if you relocate that shared skill-data directory |
+| `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` | No (defaults to `recipes`, Story 21.6) | Overrides the live `recipes/` tree `discovery_local_recipes_raw` scans for the identity join's `Local_Recipes_URL` / `Local_Build_Status` overlay. **Known gap:** like `seed_root` before Story 21.8's fix, this default is repo-root-relative but resolves against the Kedro member dir when the literal `pyforge-atlas-bootstrap` task runs — the identity join's local-recipes overlay is silently empty on a default bootstrap unless you set this to an absolute path (or a correctly escaped relative one). Not fixed by this story (Story 21.6 territory, and it does not block the bootstrap's exit code — `LocalRecipesOverlayDataset` degrades to an empty frame rather than raising); tracked as a residual finding for a future story. |
+| `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Reused by every GitHub-authenticated entry (Story 21.6 CAP-3): the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2); `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` (the identity join's board + staged-PR overlays) share the same credential and likewise degrade to empty/last-good rather than raising |
 | `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |
+| `--live-catalog PATH` (CLI flag, not an env var) | N/A | Passed to `scripts/conda-forge-packaging-inventory-operations_metrics.py` (Story 21.3) — point it at the SAME `PYFORGE_ATLAS_DATA_ROOT` a bootstrap run populated to read Tier 0–2 verification fields from Parquet instead of live HTTP/the legacy workbook; add `--live-catalog-only` to fail loudly (non-zero exit) instead of degrading when a required dataset is missing/stale |
 
 Excludes `universal_sbom` (entry-scoped, needs `--params sbom_intake_path`;
-spec non-goal), `semantic_packages` / `query_plane_cache` (downstream
-composition/cache pipelines, not data-fetch), and `artifactory_downloads`
-(enterprise JFROG, deferred past Epic 21). Re-running is idempotent (each
+spec non-goal) and `semantic_packages` / `query_plane_cache` (downstream
+composition/cache pipelines, not data-fetch). Re-running is idempotent (each
 external-refresh store honors its own TTL; AD-13 never clobbers last-good).
 
 ## Air-gapped / enterprise provisioning (AC-4)
@@ -188,7 +203,7 @@ endpoint.
 |---|---|
 | `kedro-test` | Wave A deterministic gate (AD-11): `pytest src/shared/packages/pyforge-atlas/tests -q` — `pyforge.atlas` + `pyforge.warden` + `kedro_dagster` import smokes, the Kedro bootstrap/session seam on the dotted package, scaffold-layout invariants (also collects `tests/catalog/`) |
 | `kedro-catalog-check` | Wave A gate 2 (Story A2, AD-11): `pytest src/shared/packages/pyforge-atlas/tests/catalog -q` — offline catalog resolution w/ stub credentials, no-inline-IO + AD-1 meta-tests, naming/layer/TTL/path conventions, 22 override points (19 live + 1 reserved + 2 Story 21.4; +`ANACONDA_API_BASE_URL` extra), per-host credential scoping |
-| `pyforge-atlas-bootstrap` | Story 21.1 (CAP-1): fresh-clone Kedro bootstrap — creates the `stores/{vdb,osv}` dirs + a credentials stub, then runs the seven self-contained pipelines as one combined `kedro run --pipelines <list>` under `PYFORGE_ATLAS_DATA_ROOT` (see the section above) |
+| `pyforge-atlas-bootstrap` | Story 21.1 (CAP-1): fresh-clone Kedro bootstrap — creates the `stores/{vdb,osv}` dirs + a credentials stub, then runs eight self-contained pipelines as one combined `kedro run --pipelines <list>` under `PYFORGE_ATLAS_DATA_ROOT` (see the section above) |
 | `pyforge-atlas-build-conda` | conda package via `pixi build` (pixi-build-python wraps the hatchling wheel) |
 | `pyforge-atlas-build-dist` | wheel + sdist via `python -m build --no-isolation` |
 | `pyforge-atlas-build` | both of the above |

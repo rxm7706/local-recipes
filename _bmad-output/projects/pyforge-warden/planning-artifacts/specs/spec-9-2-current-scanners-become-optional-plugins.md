@@ -123,8 +123,7 @@ Do not `PluginRegistry.invoke` every scan plugin as the engine runner — that w
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py src/shared/packages/pyforge-warden/tests/unit/test_hooks.py src/shared/packages/pyforge-warden/tests/meta/test_pr_gate_plugin_registration.py src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py -q` -- expected: all pass
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: default suite (`not slow`) still green
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

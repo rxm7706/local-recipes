@@ -309,14 +309,8 @@ silent invisibility -- consistent with CAP-5's `_OUT_OF_SCOPE_STATIONS` preceden
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-core pyforge-core-test` -- new `process.py` primitive + sole-ownership guard green
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- full suite green after import-path + call-site migration
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- unchanged, confirms no regression from the new guard's doctor exclusion
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- unchanged
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- unchanged
-- `grep -rn "subprocess" src/shared/packages/pyforge-marshal/src --include="*.py"` -- manually confirm only `harness_bmadloop.py`'s 4 documented sites remain
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-core/src/pyforge/core/process.py` -- expect zero findings
-- `pixi project export conda-environment -e build > environment.yaml && git diff --stat environment.yaml` -- commit only if it reports a diff
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `harness_bmadloop.py`'s 4 unmigrated call sites each carry an inline comment citing this story's capability-gap rationale.

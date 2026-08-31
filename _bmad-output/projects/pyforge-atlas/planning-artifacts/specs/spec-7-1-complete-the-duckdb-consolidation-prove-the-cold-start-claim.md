@@ -185,3 +185,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
   evidence: the grep gate is green offline; there is no in-container way to run a credentialed
     full cold build (no operator runtime data, AD-11). B4 retirement (DW-B4-2) is the
     precondition — legacy is not marked retired until its credentialed parity + sign-off land.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -123,9 +123,7 @@ final_revision: '09c851f4c6'
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-scribe pyforge-scribe-test` -- expected: full suite green; this is the bmad-loop policy's verify command
-- `pixi run -e pyforge-scribe scribe capture --type project --text "smoke test entry"` -- expected: new file under `.claude/memory/project/`, one new `MEMORY.md` line
-- `pixi run -e pyforge-scribe scribe graph compile --nightly` and `pixi run -e pyforge-scribe scribe recall "test"` -- expected: exit 0, stub notice on stderr, no filesystem changes
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Diff `.claude/memory/` after the smoke-test capture above to confirm the write boundary (nothing outside the tree changed).

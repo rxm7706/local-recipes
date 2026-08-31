@@ -108,6 +108,22 @@ fetcher_urls:
 # uses). kedro-catalog-check asserts no resolved default escapes the repo
 # root. `data_root` is env-overridable like every other path (P9).
 #
+# CORRECTION (Story 21.8, DW-FU-21-2): the "documented invocation... from the
+# REPO ROOT" premise above does not hold for the one real `kedro run` this
+# project has — `pyforge-atlas-bootstrap` sets pixi `cwd =
+# "src/shared/packages/pyforge-atlas"` (the Kedro member dir; Kedro's own
+# project-root discovery requires it). Kedro's `_convert_paths_to_absolute_
+# posix` absolutizes every relative `filepath`/`path` catalog value against
+# its `project_path` — the member dir — never an assumed repo-root CWD.
+# `data_root` (member-relative by design, README "member default") and the
+# three derived store paths already resolve correctly under that real
+# behavior. `seed_root` did not: a live end-to-end bootstrap run (Story
+# 21.8) reproduced the exact `DatasetError` DW-FU-21-2 predicted, so its
+# default below is now the member-dir-relative equivalent (a genuine, still-
+# needed `../../../../` escape to the true repo root — NOT the same class of
+# escape this comment used to disparage, which was about the THREE store
+# paths that no longer need to leave the member dir at all).
+#
 # Story 21.1 (CAP-1, "relocate atlas data defaults"): the three § 3.4
 # external-refresh stores used to default OUTSIDE the member, at the
 # legacy conda-forge-expert homes (`.claude/data/conda-forge-expert/…`),
@@ -127,7 +143,12 @@ fetcher_urls:
 # on it (Story 21.2 removes the `cf_atlas.db` SEED dependency separately).
 paths:
   data_root: ${env_or:PYFORGE_ATLAS_DATA_ROOT,data}
-  seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,.claude/skills/conda-forge-expert/data}
+  # DW-FU-21-2 fix (Story 21.8): member-dir-relative so Kedro's real
+  # project_path-anchored resolution lands on the true repo-root seed
+  # directory (../../../../ = pyforge-atlas -> packages -> shared -> src ->
+  # repo root). PYFORGE_ATLAS_SEED_ROOT still overrides with an absolute
+  # path exactly as before — only the shipped default changed.
+  seed_root: ${env_or:PYFORGE_ATLAS_SEED_ROOT,../../../../.claude/skills/conda-forge-expert/data}
   vdb_store: ${paths.data_root}/stores/vdb
   osv_offline_store: ${paths.data_root}/stores/osv
   pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json

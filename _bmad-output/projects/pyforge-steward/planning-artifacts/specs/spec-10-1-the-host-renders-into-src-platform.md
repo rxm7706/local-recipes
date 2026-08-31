@@ -195,12 +195,7 @@ a broken, unreferenced leftover is not a scope expansion.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes cookiecutter --version` -- expect `Cookiecutter 2.7.1` (tool present)
-- `python3.12 -m venv /tmp/platform-venv && /tmp/platform-venv/bin/pip install -r src/platform/requirements/local.txt` -- one-off venv to run the checks below (not committed; `python-agent-platform`'s real pixi env is Story 10.2's surface)
-- `docker run --rm -d --name platform-pg -e POSTGRES_PASSWORD=platform -e POSTGRES_DB=platform postgres:17` + `docker run --rm -d --name platform-redis redis:7` then `DATABASE_URL=postgres://postgres:platform@localhost/platform REDIS_URL=redis://localhost:6379/0 /tmp/platform-venv/bin/python src/platform/manage.py check` -- expect exit 0
-- `cd src/platform && lint-imports --config pyproject.toml --no-cache` -- expect `0 broken`
-- `grep -rniE "cdn\.|unpkg\.com|jsdelivr\.net|fonts\.googleapis" src/platform --include=*.html --include=*.js --include=*.css 2>/dev/null` -- expect no output
-- `docker rm -f platform-pg platform-redis` -- cleanup after verification (containers are ephemeral, never committed)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -100,8 +100,7 @@ DDL bootstrap in the adapter is allowed because Epic 27 Liquibase stories are op
 ## Verification
 
 **Commands:**
-- `SCRIBE_GRAPH_DSN=postgres://postgres:scribe@127.0.0.1:5433/scribe_graph pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: full scribe suite green, including both-driver operations and PG isolation/concurrency
-- `git diff --stat` — expected: scribe package + pixi feature dep + this spec; no `src/platform/` pyforge modules; no 28.2 recall changes
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

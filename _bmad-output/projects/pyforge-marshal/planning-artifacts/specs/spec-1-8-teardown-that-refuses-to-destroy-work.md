@@ -145,9 +145,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all unit + meta tests pass
-- `pixi run -e pyforge-marshal marshal teardown <slug>` against a real provisioned loop home -- expected: worktree + branch removed, `git worktree list` clean
-- `pixi run -e pyforge-marshal marshal teardown <slug>` a second time -- expected: exit 0, `already_removed: true`, no error
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -38,7 +38,7 @@ Required integrated sources:
 8. Curated groups from local config.
 
 Parsing requirements:
-1. Parse all workbook tabs dynamically, except output snapshot tabs `verified-all-packages`, `inventory-2026-08-12`, and `identity-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (durable copies of prior-run output — never ingest as sources).
+1. Parse all workbook tabs dynamically, except output snapshot tabs `verified-all-packages`, `inventory-2026-08-12`, and `identity-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (durable copies of prior-run output — never ingest as sources). `OUTPUT_TABS` is a dated hardcode: a differently-dated output tab (e.g. `identity-2026-08-20`) is NOT in this set and IS parsed as a source sheet — it contributes nothing only because its `Package` column isn't one of the known package columns (bullet 2). The workbook-free path (execution mode 5, Story 23.8) removes this whole class of bug by construction (no sheet parsing at all).
 2. Extract package names from known package columns (`name`, `Package_Name`, `raw_names`, `Item`, etc.).
 3. Must-include: every parseable name from `CDO-ENT-JFROG` (JFrog/Artifactory consumption inventory; formerly `Analysis_Dataset-2026-07-19`) and from `CDO-ENT-CONDA` is in the final inventory. `10kOpen` is a clone of the JFrog tab — do not double-count.
 4. OpenTeams 1:1: every parseable name in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` should have exactly one issue titled `[Conda-Forge Packaging] {name}` (OSS Enhancements project view; workbook `OpenTeams` tab is the snapshot). CVE `|` titles do not count. Report have / missing / surplus; 100% is the goal.
@@ -53,7 +53,10 @@ Verification and classification:
    source from live HTTP fetches, local snapshot files (`--cf-channeldata` /
    `--pypi-simple` / `--parselmouth`), or (Story 21.3) directly from the
    pyforge-atlas Kedro data plane's Parquet outputs via `--live-catalog` —
-   see execution mode 4 below.
+   see execution mode 4 below. When `--analysis-xlsx` is also omitted (Story
+   23.8, execution mode 5), the package universe itself is ALSO read from that
+   same Kedro data plane (`inventory_universe.parquet`) instead of the
+   workbook's sheets.
 2. Assign `Packaging_Candidate_Status`:
    - Already Packaged: PyPI = Yes and conda-forge = Yes
    - High Priority Candidate: PyPI = Yes and conda-forge = No and Priority P1–P8
@@ -71,6 +74,30 @@ Deliverables (local files):
 1. Full inventory (14 columns) — workbook tab `verified-all-packages`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
 2. Dated OpenTeams 1:1 universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) — workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (14 inventory columns + 8 handoff columns). Repo-root `cdao_consolidated_inventory-2026-08-12.csv` is not the stored copy.
 3. Identity snapshot — workbook tab `identity-2026-08-12`, then **edit in place** the pinned secret gist files `mgmt-wf-python-modernization-identity.md` (row catalog) and `mgmt-wf-python-modernization-dashboards.md` (canvas summaries) (`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`; gist id from `OPENTEAMS_IDENTITY_GIST_ID` / gitignored `conf/conda-forge-packaging-inventory-operations.local.env` / `--gist-id`; `--skip-gist` when no id). Do not create a new gist. Do not commit the id. `--create-issues` is a separate, **live and irreversible** flag: it opens one GitHub issue (+ adds it to OpenTeams project 1) per record still missing `OpenTeams_Issue_URL`. Absent (the default), the run is dry-run only — it prints/returns what would be created and makes no `gh` mutation call.
+
+   **Story 21.7 (quartet thin-out):** `main()` no longer fetches
+   `ASSOCIATOR_URL`, the OpenTeams board, `feedstock-outputs.json`, or
+   staged-recipes PRs itself — it reads the pyforge-atlas Kedro catalog's
+   `identity_export_parquet` (Story 21.6's `upstream_discovery` Phase D
+   join) via `PYFORGE_ATLAS_DATA_ROOT` (default `src/shared/packages/
+   pyforge-atlas/data`; run `pixi run -e pyforge-atlas
+   pyforge-atlas-bootstrap` first — a missing Parquet is a hard, named
+   error, never a live-fetch fallback). The `--tab-in` / `--associator` /
+   `--refresh-associator` / `--project-items` / `--feedstock-outputs` /
+   `--staged-prs` / `--staged-open-prs` / `--recipes-dir` /
+   `--refresh-staged-prs` flags are retired along with that fetch. Once
+   generated, the identity tab is ranked by `priority.py` as before.
+   `Local_Recipes_URL`/`Local_Build_Status` are the two columns the Parquet
+   does NOT supply: both are always freshly re-derived from a live
+   `recipes/` filesystem scan on every `main()`/`--gist-only` run, never
+   read from the Parquet. `--gist-only` republishes without regenerating
+   rows: it reads the same Parquet for identity columns and merges ranking
+   columns (`P`/`Rank`/`Score`/`Work` + JFROG/priority fields) from the
+   ranked identity tab by `Core_Python_Package_Name` — a name present in
+   the Parquet with no match in the ranked tab is dropped from the
+   published gist with a stderr warning (never silently, never a hard
+   failure); the existing "identity tab missing ranking columns" error is
+   unchanged.
 4. `cdao_consolidated_inventory_verified_all_packages.md`
 5. [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)
 6. AOSS-Free extra Mason queue — dated CSV `aoss-free-queue-YYYY-MM-DD.csv` (same directory as `--output-csv`), columns `Package_Name` / `Reason` / `Verification_Timestamp_UTC`: `GAOSS-Free` names that are on PyPI, absent from conda-forge, and absent from the OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`). Never merges into or expands that universe (`write_aoss_free_queue`).
@@ -150,16 +177,12 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
    output written) if any of the three required datasets is missing or unreadable, or
    (for the two floored datasets — the Parselmouth mapping has no documented floor,
    existence/readability only) below its scale floor.
-   **Scope (Story 21.3):** `--live-catalog` replaces exactly the three Tier 0
-   verification sets (conda-forge names, PyPI names, Parselmouth conda names). The
-   package universe itself (`records`), per-tab membership (`tab_packages` —
-   `CDO-ENT-JFROG` / `CDO-ENT-CONDA` / `10kOpen` / `10kClosed`), CDO-ENT-CONDA
-   roles, and the Tier 1 sheet fallbacks still come from `--analysis-xlsx`, which
-   stays required. `--live-catalog-only` means "fail unless the Tier 0 Parquet is
-   present", not "workbook-free". The workbook-free run is Story 23.8 (universe from
-   Parquet, `--analysis-xlsx` optional) + 23.9 (identity/priority/dashboards) —
-   see `sprint-change-proposal-2026-08-30.md` under the pyforge-atlas planning
-   artifacts.
+   **Scope (Story 21.3, when `--analysis-xlsx` is ALSO given):** `--live-catalog`
+   replaces exactly the three Tier 0 verification sets (conda-forge names, PyPI
+   names, Parselmouth conda names). The package universe itself (`records`),
+   per-tab membership (`tab_packages`), CDO-ENT-CONDA roles, and the Tier 1 sheet
+   fallbacks still come from the workbook. **Superseded when `--analysis-xlsx` is
+   omitted — see execution mode 5 (Story 23.8).**
 
 ```bash
 python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
@@ -171,6 +194,38 @@ python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
   --verify-mode fast \
   --cf-channeldata "/tmp/ext-src/cf-channeldata.json" \
   --live-catalog "src/shared/packages/pyforge-atlas/data"
+```
+
+5. `--live-catalog` WITHOUT `--analysis-xlsx` (Story 23.8, workbook-free): the
+   package universe itself — not just PyPI/conda-forge verification — is read
+   from `inventory_universe.parquet` under `PYFORGE_ATLAS_DATA_ROOT` (a
+   `derived_artifacts` Kedro output unioning the same 9 sources the retired
+   workbook's package-bearing sheets covered; provenance labels like
+   `tab:Conda-Forge` are stable strings inherited from the workbook, not live
+   sheet names). Requires `--live-catalog`; `inventory_universe.parquet` must be
+   present, readable, and carry at least 10,000 distinct names — exit 2
+   otherwise, **with or without** `--live-catalog-only` (unlike the three Tier 0
+   sets, there is no usable output to degrade to without a universe).
+   `Priority_Bucket` comes from `inventory_priority_assignments.parquet` (Story
+   23.3) when present, else `P9` for every package plus one counted warning. No
+   `.xlsx` is opened and no live HTTP call is made in this mode. `--analysis-xlsx`
+   and `--live-catalog` are otherwise mutually exclusive as universe sources —
+   neither given is an error. The retired workbook's `10kClosed` sheet
+   (~10,000 rows on 2026-08-12) has no catalog source and is not represented in
+   this universe (reported as a known delta in the run summary, not seeded —
+   see `spec-23-8-workbook-free-metrics-universe.md` Design Notes). The
+   `--analysis-xlsx` path (Story 23.9 retires it) still exists and stays
+   byte-identical to before this story.
+
+```bash
+python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
+  --live-catalog "src/shared/packages/pyforge-atlas/data" \
+  --live-catalog-only \
+  --curated-config "conf/conda-forge-packaging-inventory-operations_curated_groups.json" \
+  --output-csv "cdao_consolidated_inventory_verified_all_packages.csv" \
+  --output-md "cdao_consolidated_inventory_verified_all_packages.md" \
+  --skip-revised-prompt \
+  --verify-mode fast
 ```
 
 Terminal summary format must still include:

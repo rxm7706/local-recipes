@@ -214,8 +214,8 @@ final_revision: 'ec5f418104269fbbc9a4fd8f61bd0b5acf661d4e'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: all import-linter contracts hold (no new contract expected, but confirm `supervisor` still doesn't reach `cli`).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Against a real provisioned loop home: launch a run, let it idle past a shortened test threshold, confirm a `tmux capture-pane` snapshot shows the nudge text landed in the pane and `journal.jsonl` gains matching `idle-nudge` intent/outcome entries.

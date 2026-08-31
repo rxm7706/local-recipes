@@ -155,8 +155,7 @@ import or duplicate it without inheriting a write site.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, including new `classify_tier3_entries` fixture tests.
-- `python -c "from pyforge.doctor.sources.chain import classify_tier3_entries; ..."` against the real marshal `deferred-work.md` -- expected: line 54 (and the other 8 analogous lines) classify `LEGACY_FLAT`/`id=None`.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

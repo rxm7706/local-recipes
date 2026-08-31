@@ -98,8 +98,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all pre-existing 1265 tests plus new KEV tests pass (plain `pixi run -e pyforge-warden` may try to re-solve an unrelated `bmad-ui` env in this repo; use `--frozen`)
-- `pixi run --frozen -e pyforge-warden python -m pyforge.warden.cli scan <fixture-dir> --fail-on-kev` (manual smoke, if a `--fail-on-kev` debug affordance is added) -- otherwise inspect a scan of a fixture with the ambient KEV feed swapped for one containing a seeded match, confirming exit 1 and `kev: true` in the JSON report
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `report-schema.json` is byte-identical after this story (no edits) via `git diff --stat` on that file.

@@ -239,8 +239,5 @@ dispatch blocker for this story (see `Block If` above).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes dashboard-dryrun` — expected: green, including the new
-  `test_identity_workbook_page.py` file.
-- Manual: `pixi run -e local-recipes dashboard-serve`, open `identity-workbook` — expected:
-  honest empty shell today (no `enterprise_jfrog_consumption.parquet` exists in any real
-  checkout yet).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

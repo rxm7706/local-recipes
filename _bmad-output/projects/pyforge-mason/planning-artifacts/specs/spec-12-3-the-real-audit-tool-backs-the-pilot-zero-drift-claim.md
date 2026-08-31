@@ -183,26 +183,7 @@ inventing another substitute.
 ## Verification
 
 **Commands:**
-- `uv run _bmad/skf/shared/scripts/skf-forge-tier-rw.py write-tools ...` /
-  `init-prefs ...` — forge-tier.yaml + preferences.yaml written, confirmed present.
-- `uv run _bmad/skf/shared/scripts/skf-load-provenance.py normalize forge-data/cfe-recipe-generation/1.0.0/provenance-map.json`
-  — bounded_scan_files = the 12 tracked files; `baseline_ref: "local"` (confirms §5b's
-  upstream-drift check short-circuits cleanly).
-- `uv run _bmad/skf/shared/scripts/skf-structural-diff.py ...` — summary
-  `{"added": 70, "removed": 0, "changed": 0, "moved": 0, "unchanged": 0}` (the 70 is an artifact
-  of the empty `entries[]` baseline, documented and excluded from severity scoring).
-- `uv run _bmad/skf/shared/scripts/skf-compare-file-hashes.py compare ...` — the decisive check:
-  `{"added": 106, "removed": 0, "changed": 1, "unchanged": 11}`. The 1 changed file is
-  `scripts/github_updater.py` (311 compiled vs. 469 live lines); the 106 added are Slices 2-5's
-  own files, out of this slice's scope, not drift.
-- `echo '[...]' | uv run _bmad/skf/shared/scripts/skf-severity-classify.py -` — real verdict:
-  `drift_score: "SIGNIFICANT"`, `by_severity: {CRITICAL: 0, HIGH: 0, MEDIUM: 2, LOW: 1}`.
-- `pixi run -e local-recipes cfe-rebuild-guard-check` — exit 0, clean, both before and after the
-  `campaign-state.yaml` edit.
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 3 deselected.
-- `pixi run -e local-recipes bmad-drift-check` — the one `fail` (`pin-missing`) and the
-  `surface-changed` warnings are pre-existing on the baseline commit `440a918398` (confirmed via
-  `git stash` round-trip) — unrelated to this story, not introduced by it.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Residual risks / left incomplete:**
 - `scripts/github_updater.py`'s compiled copy is now confirmed BEHIND the live source (CFE

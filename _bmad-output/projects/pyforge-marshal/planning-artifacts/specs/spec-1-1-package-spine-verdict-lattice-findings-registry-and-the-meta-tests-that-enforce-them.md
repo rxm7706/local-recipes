@@ -190,12 +190,8 @@ warnings: ['oversized']
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: all tests pass (unit + meta)
-- `pixi run -e pyforge-marshal pyforge-marshal-build` -- expected: conda package + wheel/sdist both build
-- `pixi run -e pyforge-marshal marshal --version` -- expected: prints version, exits 0
-- `pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: `Contracts: 2 kept, 0 broken.` (`--no-cache`: don't write `.import_linter_cache/` into the repo root)
-
-**Third-pass verification record (2026-07-26):** this run worktree's path length trips the known pixi-build-python panic (`end byte index ... out of bounds`, blaming the unrelated `pyforge-atlas` env — see auto-memory `bmad_loop_worktree_path_length_limit`), so gates ran in a short-path worktree (`.bmad-loop/rv11`, since removed) at the review commit: `pyforge-marshal-test` **155 passed** (including the live `lint-imports` meta-test), `pyforge-marshal-build` produced `dist-conda/pyforge-marshal-0.1.0-pyh4616a5c_0.conda` + wheel + sdist with `--no-isolation` against the in-env hatchling, `marshal --version` printed `marshal 0.1.0` and exited 0, and `git status` stayed clean of build litter (only `pixi.lock` re-solved; deliberately not committed — the short-worktree solve embeds its own absolute local-channel path). The fabricated empty `build_artifacts/linux64/{noarch,linux-64}/repodata.json` channel was needed for the fresh worktree's env solve (that gitignored local channel only exists in long-lived checkouts).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

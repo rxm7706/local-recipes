@@ -3580,6 +3580,33 @@ that HAS diverged (real commits past baseline) **When** the same check runs **Th
 genuine "merged" ancestry answer is trusted exactly as before — this is a divergence
 guard on an existing fact, not a new completion signal or a rewrite of CAP-2.
 
+### Story 22.11: Station-scoped drain and an explicit story sequence
+
+**Type:** feature • **Effort:** M • **Deps:** S-22.7 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-10; decomposed 2026-08-31 — motivated by a live incident the same day)
+**Surface:** `cli/dispatch.py` (`drain`'s argparse + `run_fleet_drain`'s per-station backlog
+read; `dispatch`'s argparse), `tests/unit/test_dispatch.py`
+**Note:** found live 2026-08-31 wanting to complete just `pyforge-scribe`'s 2 remaining
+backlog stories (the fleet's only story with a declared cross-station `Deps:` link in the
+entire remaining backlog) without touching atlas's or marshal's own in-flight backlogs.
+`drain`'s six flags (`--mode`, `--leave-remaining`, `--once`, `--max-cycles`,
+`--tick-seconds`, `--campaign`) carry no station filter — it always reads all eight
+stations' ordered backlogs and launches one story per station in parallel; `dispatch
+<slug> <story>` launches exactly one story with no chaining at all. The only path available
+was two manual `dispatch` calls with an operator polling for landing between them,
+forfeiting `drain`'s chaining/preflight/campaign-journal machinery for no reason but scope.
+**Given** `drain --mode <mode> --station <slug>` **When** a cycle runs **Then** the
+campaign's chaining/preflight/journal (S-22.7) apply to exactly that station's own tracked
+backlog, and every other station's backlog is provably untouched by the same invocation;
+**given** `dispatch <slug> --stories <key1>,<key2>,...` **When** it runs **Then** the named
+stories launch in that order via the same chaining `drain` already uses, one dispatch at a
+time (not one agent handed the whole list — the epic's own "not backlog orchestration"
+non-goal is unchanged); **given** a `--stories` key that is unknown or already done on that
+station's tracked backlog **When** the command runs **Then** it refuses before any worktree
+is provisioned, the same zombie-refusal discipline `drain` already applies; **given**
+either new flag **When** a dispatch launches **Then** it reuses S-22.2's preflight,
+S-22.4's landing, and S-22.10's divergence guard unchanged — no second preflight or landing
+path is introduced.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion
@@ -4118,9 +4145,12 @@ So that one operator job works in HTMX on the host.
 
 ## Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
 
-Decomposes `spec-marshal-token-economy` (CAP-1..CAP-12; CAP-11/CAP-12 added 2026-08-30
-from the operator's model/cost catalog — Stories 28.10/28.11; Dream:
-`docs/dreams/marshal-token-economy.md`). Marshal owns spend *brakes* (E3 ceilings, idle
+Decomposes `spec-marshal-token-economy` (CAP-1..CAP-17; CAP-11/CAP-12 added 2026-08-30
+from the operator's model/cost catalog — Stories 28.10/28.11; CAP-14/CAP-15 added
+2026-08-31 from a live dispatch-ordering/retry incident — Stories 28.12/28.13; CAP-16/
+CAP-17 added 2026-08-31 from the same incident's landing — Stories 28.14/28.15; Dream:
+`docs/dreams/marshal-token-economy.md` + `docs/dreams/marshal-dependency-aware-dispatch.md`).
+Marshal owns spend *brakes* (E3 ceilings, idle
 ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
 policy-rendered, Genesis-seeded, supervisor-metered context pipeline over five
 already-packaged instruments (headroom-ai, caveman, codegraph, cocoindex, graphifyy).
@@ -4229,10 +4259,11 @@ As a marshal operator,
 I want story routing to retrieve scoped planning context from the graph when the seam exists,
 So that an epic-path iteration never loads `epics.md`/`prd.md` wholesale.
 
-**Type:** feature • **Effort:** L • **Deps:** S-28.8 • **FR/AD:** token-economy CAP-6
+**Type:** feature • **Effort:** L • **Deps:** S-28.8, scribe S-6.3 • **FR/AD:** token-economy CAP-6/CAP-13
 **Given** the Scribe-owned GraphStore seam is available **When** step-01 routes an epic story **Then** the iteration completes within the epic-context token target with zero full-document loads
 **And** disabling the seam proves the epic-context-file fallback
 **And** marshal consumes the graph — it does not build a second one
+**And** a graph answer whose backing node is flagged `stale` (scribe Story 6.3) falls back to the epic-context file path (Story 28.8) rather than being served silently
 
 ### Story 28.10: The model-cost catalog makes spend legible in dollars
 
@@ -4257,3 +4288,57 @@ So that easy stories run on economy-class models and flat-rate pools drain befor
 **And** subscription-marked pools are preferred and the serving pool is journaled; an exhausted or unavailable pool falls through, never blocks
 **And** this remains the FR-51 seam — no second selection mechanism, run-level batching unchanged
 **And** the review stage never routes below the policy-declared review floor
+
+### Story 28.12: Dependency-derived dispatch ordering
+
+As a marshal operator,
+I want `factory drain` to compute dispatch order from each story's declared `Deps:` instead of raw ledger order,
+So that a station's backlog never dispatches a story ahead of an unmet dependency, including across epics.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-14
+**Given** a station's tracked backlog with a `Deps:` graph spanning more than one epic **When** `factory drain` runs with no `--stories` override **Then** the computed dispatch order never violates a declared `Deps:` edge
+**And** stories with no unmet dependency either way fall back to ledger order (deterministic, no invented preference)
+**And** `--stories` continues to work unchanged as an explicit override
+
+### Story 28.13: Sanctioned retry after an operator-initiated stop
+
+As a marshal operator,
+I want an externally-stopped dispatch distinguished from a genuinely failed one, and a documented retry path for the former,
+So that stopping a run to reprioritize never permanently blocks that story, and a retry never silently steps on uncommitted work or misreads a dead worktree as live.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-15
+**Given** a dispatch session stopped by SIGTERM from outside marshal's own idle/budget ladder **When** the journal records the outcome **Then** it is not recorded as `failed` the way a genuine verdict/review/crash failure is
+**And** the story is retryable through `drain`/`dispatch --stories` without the undocumented bare-`dispatch <slug> <story>` workaround
+**And** a retry against a worktree already carrying uncommitted changes reports the diff (file count, line count) before proceeding
+**And** liveness detection (`MRS-DISP-011`) does not treat leftover uncommitted worktree changes alone as proof a session process is still alive
+**And** `MRS-DISP-011`'s refusal while a session process is genuinely still alive is unchanged
+
+### Story 28.14: Auto-derived effective surface, no manual per-story widening
+
+As a marshal operator,
+I want `policy_surface` resolution to auto-derive a safe per-station default at spin/dispatch time,
+So that `MRS-GATE-007` never requires hand-widening `[epic_surfaces]` per story to let legitimate, within-station work land.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-16
+**Given** a story touching only files under its own station's package tree and the common bookkeeping paths (`.gitignore`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `scripts/.spec-surface-baseline.json`) **When** verification runs with zero `[epic_surfaces]` entry declared **Then** `MRS-GATE-007` passes
+**And** a story touching a different station's package, or repo config outside the computed default, still fails `MRS-GATE-007` — cross-station containment is preserved
+**And** an existing `[epic_surfaces]` entry that narrows further continues to behave exactly as today (AD-27's intersection-only combinator is unchanged)
+
+### Story 28.15: Scope-violation enforcement mode, policy-declared, default warn
+
+As a marshal operator,
+I want a per-station `hard`/`warn`/`off` policy flag for `MRS-GATE-007`/`008`, defaulting to `warn`,
+So that scope violations stay visible without permanently deadlocking an autonomous drain, with `hard` (today's non-waivable refuse) and `off` (no check at all) available as explicit opt-in per station.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-17
+**Given** no scope-violation mode declared **When** a scope violation occurs **Then** it lands as a named, journaled advisory finding and does not refuse landing (the new `warn` default)
+**And** with `hard` declared for a station **When** a scope violation occurs **Then** behavior reproduces today's non-waivable refuse exactly
+**And** with `off` declared for a station **When** files change **Then** `MRS-GATE-007`/`008` are not evaluated at all — zero findings, zero journal entries
+**And** `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not journal-only
+**And** the mode is per-station — one station's declared mode never changes another's
+
+Operational note: `pyforge-marshal`'s `[epic_surfaces]."28"` was widened to a
+station-wide wildcard (`src/shared/packages/pyforge-marshal/**` + common
+bookkeeping paths) as an immediate stopgap on 2026-08-31, unblocking the live
+Epic 28 drain campaign without waiting on this story's own implementation.
+This story ships the real mechanism to replace that stopgap.

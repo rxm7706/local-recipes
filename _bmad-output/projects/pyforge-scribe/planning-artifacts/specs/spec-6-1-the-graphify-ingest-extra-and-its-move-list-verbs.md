@@ -2,7 +2,8 @@
 title: 'The graphify ingest extra and its move-list verbs (Story 6.1, Epic 6)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e38f269cc5f642e86b3a379a720a191b94fb0129'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
@@ -86,6 +87,11 @@ Bind to epics.md Story 6.1. The stack.md row: "`cocoindex` + `graphifyy` | scrib
 port; extras off by default. Consumers bind to the declared grammar only — marshal Story
 28.9 explicitly forbids importing graph internals, so whatever this story declares in the
 SKILL.md is the contract they get.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass, including coverage for the `graphify` `compile_surface` ingest extra (off by default via `SCRIBE_GRAPHIFY_EXTRA`), the `scribe index build|report|move-list` grammar, and the recall-citation fix that made graphify-ingested code nodes unrecallable via `scribe recall`.
 
 ## Spec Change Log
 

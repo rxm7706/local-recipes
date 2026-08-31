@@ -3,7 +3,7 @@ doc_type: deferred-work-ledger
 project: pyforge-atlas
 date: 2026-07-29
 status: restored
-entries: 59
+entries: 60
 ---
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
@@ -2790,7 +2790,26 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 6706c5adfb66 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+
+  resolution: **CLOSED 2026-08-31 by Story 21.8** (`spec-21-8-end-to-end-verification-gate.md`).
+    Root cause was narrower than "REPO_ROOT vs. member-dir CWD": Kedro's own
+    `_convert_paths_to_absolute_posix` absolutizes every relative `filepath:`/`path`
+    catalog value against `project_path` (the Kedro member dir) regardless of process
+    CWD — never an assumed repo-root CWD, which `globals.yml`'s P9 comment incorrectly
+    claimed. Fixed by changing `globals.yml`'s `seed_root` default from the repo-root-
+    relative `.claude/skills/conda-forge-expert/data` to the member-dir-relative escape
+    `../../../../.claude/skills/conda-forge-expert/data` (four levels: pyforge-atlas ->
+    packages -> shared -> src -> repo root), and correcting the one pre-existing test
+    (`tests/catalog/test_override_points.py::test_path_defaults_resolve_inside_the_repo_root`)
+    that encoded the same wrong REPO_ROOT-anchored premise, to anchor on `MEMBER_DIR`
+    instead (the real Kedro resolution point) while still requiring containment within
+    `REPO_ROOT` overall. Verified: `kedro-catalog-check` (61 passed) and full `kedro-test`
+    (1595 passed, 24 skipped, 0 failures) green after the fix; a live end-to-end
+    `pyforge-atlas-bootstrap` run on a genuinely empty `PYFORGE_ATLAS_DATA_ROOT` with no
+    `CF_ATLAS_DB` completed all 62/62 tasks, exit 0, in ~199s (previously failed at task
+    42/62 on this exact bug, reproduced first to confirm the diagnosis before patching).
+
+  status: closed
 
 ### DW-FU-21-2-2: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
 
@@ -2867,4 +2886,378 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 1b65e2207963 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
+  evidence: Read src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py L96-136 (match_source_urls): recipe_source_url-tier rows are appended from pypi_json_raw without re-checking core_packages_enumerated membership. Doesn't change the pypi_name-column decision (independently justified by load_parselmouth_pypi_names' pre-existing semantics and the intent's own downstream-unchanged-shape requirement), but the code comment justifying that decision should not overclaim the subset property universally.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py:96-136
+  origin: spec-deferred d6cf8714558a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-2: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
+  evidence: Pre-existing mechanism (scripts/conda-forge-packaging-inventory-operations_metrics.py, the `if pypi_index: ... elif args.verify_mode == "strict": pypi_exists(...)` block), not modified by this story, but --live-catalog is a new way to reach it. Confirmed independently by three review layers (blind hunter, edge case hunter, intent-alignment auditor).
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (pypi_verified loop)
+  origin: spec-deferred d80d9dd10d68 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-3: --strict-fetch has no effect on the three --live-catalog-acquired sets (they bypass try_source entirely); --live-catalog-only is the intentional analog for this path, but the interaction is undocumented.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: --strict-fetch has no effect on the three --live-catalog-acquired sets (they bypass try_source entirely); --live-catalog-only is the intentional analog for this path, but the interaction is undocumented.
+  evidence: Confirmed --strict-fetch exists (argparse) and is checked inside try_source() and one other call site, but load_live_catalog()'s three acquisitions never call try_source and never check args.strict_fetch.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), live_catalog branch)
+  origin: spec-deferred 96602f1588ca — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-4: load_live_catalog()'s except Exception blocks store only str(exc), no traceback -- a genuine bug (e.g. a future Kedro column rename) would look identical in the printed warning to an expected degrade (missing file / sub-floor count).
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: load_live_catalog()'s except Exception blocks store only str(exc), no traceback -- a genuine bug (e.g. a future Kedro column rename) would look identical in the printed warning to an expected degrade (missing file / sub-floor count).
+  evidence: Direct read of the (reverted, to-be-re-derived) loader's exception handling shape; applies to whatever the re-derived equivalent looks like.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
+  origin: spec-deferred e630c7349d75 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-5: --help/replay wording says "missing, unreadable, or below its scale floor" applies uniformly to "the three required datasets," but pypi_conda_mapping has no floor -- could mislead debugging of a --live-catalog-only failure on that dataset.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: --help/replay wording says "missing, unreadable, or below its scale floor" applies uniformly to "the three required datasets," but pypi_conda_mapping has no floor -- could mislead debugging of a --live-catalog-only failure on that dataset.
+  evidence: Boundaries & Constraints (this spec) explicitly documents no floor for pypi_conda_mapping; the planned --help/replay phrasing doesn't distinguish it from the two floored datasets.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
+  origin: spec-deferred 0e99ca6ac1f8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-6: --live-catalog's --help text names internal Python variables (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing concepts (conda-forge names / PyPI names / Parselmouth mapping) used elsewhere in the CLI's own output columns.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: --live-catalog's --help text names internal Python variables (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing concepts (conda-forge names / PyPI names / Parselmouth mapping) used elsewhere in the CLI's own output columns.
+  evidence: Direct read of the planned --help description text vs. the CSV's PyPI_Verified/CondaForge_Verified column names. Note (review pass 2): the re-derived --help text already uses user-facing concepts, not internal variable names -- this item appears already resolved as a side effect of the re-derivation, left here as historical record rather than pruned (no un-defer mechanism in this workflow).
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (--help text)
+  origin: spec-deferred 943cb282fe78 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-7: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit
+  evidence: Read scripts/conda-forge-packaging-inventory-operations_metrics.py's aoss_free_candidates construction (gated on `pkg not in cf_or_pm`) and write_aoss_free_queue's own "live and irreversible" framing. Confirmed independently by one review layer (blind hunter, pass 2); not corroborated by other layers, but the underlying mechanism (cf_or_pm membership) is directly verifiable in the diff.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (aoss_free_candidates / write_aoss_free_queue)
+  origin: spec-deferred f0a48ab7d22e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-8: load_live_catalog()'s scale-floor check counts distinct raw pre-normalization values (non_null.nunique()), while the set actually returned and consumed downstream is deduplicated post-norm_pkg() -- a column with many raw variants collapsing to the same normalized name could theoretically pass the floor with a materially smaller final set. Low real-world likelihood: conda-forge/PyPI catalog names are already close to normalized in the source Parquet.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: load_live_catalog()'s scale-floor check counts distinct raw pre-normalization values (non_null.nunique()), while the set actually returned and consumed downstream is deduplicated post-norm_pkg() -- a column with many raw variants collapsing to the same normalized name could theoretically pass the floor with a materially smaller final set. Low real-world likelihood: conda-forge/PyPI catalog names are already close to normalized in the source Parquet.
+  evidence: Direct read of load_live_catalog(): `distinct = non_null.nunique()` computed before `values = {norm_pkg(str(v)) for v in non_null}`. Corroborated by two independent review layers (blind hunter and intent-alignment auditor, pass 2), both rating it low-severity/likely inert.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
+  origin: spec-deferred 6bac90fa7f5f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-9: The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",") ...]` line was relocated (not behaviorally changed) by this story's diff and appears unused elsewhere in the file -- pre-existing dead/unused code unrelated to this story's purpose, surfaced incidentally by touching nearby lines.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",") ...]` line was relocated (not behaviorally changed) by this story's diff and appears unused elsewhere in the file -- pre-existing dead/unused code unrelated to this story's purpose, surfaced incidentally by touching nearby lines.
+  evidence: Blind hunter (review pass 2) noted the line is directly touched (moved) by this diff but never referenced elsewhere in the file; not independently re-verified beyond that report.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), subdirs)
+  origin: spec-deferred 7224f5e3c707 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-10: Nothing validates or warns when --live-catalog is set without --cf-channeldata, even though replay.md documents --cf-channeldata as still required (it independently drives has_src/the 10k-tab-drop filter). A user following only --help, not the replay doc, gets no signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`, almost certainly absent) silently changes which 10k-tab rows are kept.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: Nothing validates or warns when --live-catalog is set without --cf-channeldata, even though replay.md documents --cf-channeldata as still required (it independently drives has_src/the 10k-tab-drop filter). A user following only --help, not the replay doc, gets no signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`, almost certainly absent) silently changes which 10k-tab rows are kept.
+  evidence: Confirmed no code path checks args.cf_channeldata when args.live_catalog is set; args.cf_channeldata's default-path fallback behavior itself pre-dates this story and is unchanged by it. Found by review pass 3's blind hunter.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (main(), has_src)
+  origin: spec-deferred f9ec9c3d62cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-11: load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike every HTTP-based acquisition path elsewhere in this file (which all take an explicit timeout argument) -- a read against a slow/unresponsive network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike every HTTP-based acquisition path elsewhere in this file (which all take an explicit timeout argument) -- a read against a slow/unresponsive network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
+  evidence: Direct read of load_live_catalog(): the try/except wraps path.exists() and pd.read_parquet() but neither is time-bounded. Low real-world likelihood given the documented usage pattern (a local post-bootstrap data root). Found by review pass 3's edge case hunter.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (load_live_catalog)
+  origin: spec-deferred 0a9f7d8344c9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-4: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
+
+- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+  summary: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
+  evidence: Reproduced 2026-08-30: `ANACONDA_CHANNEL_BASE_URL=http://127.0.0.1:9 kedro run --nodes enumerate_anaconda_main_packages` -> ConnectionRefusedError, exit 1. The story's second AC therefore holds only for the upstream_discovery half (3 `.staleness.json` markers, exit 0) and the zero-network seed load (1,474 rows); the `core` half was verified LIVE instead (5,401 rows).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:393
+  origin: spec-deferred c432a3b3f1e9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-4-2: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
+
+- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+  summary: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
+  evidence: Verification-gap + blind reviewers both read `_STORE_TO_REFRESH_ASSET` and `_all_nodes()` in that module; `trending_candidates` (Story 13.1) was already missing before this story, so this is a pre-existing coverage gap the story extended rather than caused.
+  location: src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_single_writer.py
+  origin: spec-deferred dc248b290195 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-4-3: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
+
+- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+  summary: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
+  evidence: Edge-case reviewer, from the loop at core_sources.py::_fetch_channel_repodata and the `except Exception -> None` in `_fetch_repodata_at_url`. Pre-existing loop shape; the hardening doubled the combo count. Offline runs fail fast (refused/DNS) so the practical impact is limited to black-holed networks.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:556
+  origin: spec-deferred 14293eb46cc4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-4-4: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
+
+- source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
+  summary: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
+  evidence: Checked 2026-08-30 via register_pipelines() vs D.NODE_TIMEOUTS: 59 nodes, 54 mapped, 5 missing (all pre-existing). The 4 Story 21.4 nodes ARE mapped. Adding the completeness test now would fail on the pre-existing five, so it is deferred rather than patched.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py:219
+  origin: spec-deferred 17a48e05262b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
+
+- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+  summary: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
+  evidence: Confirmed empirically: writing invalid JSON to the file and loading the discovery_curated_groups_seed catalog entry through pyforge.atlas.mcp.session.bootstrapped_session() raised `DatasetError: discovery_curated_groups_seed: ... Failed while loading data from dataset ... JSONDataset`. This happens before load_org_audit_candidates's own never-raise/degrade logic ever runs, so that node-level contract can't help. However this exact exposure (bare `type: json.JSONDataset` for a git-tracked, hand-curated seed, with no degrade wrapper) already exists for the pre-existing `seed_cwe_categories` and `seed_spdx_schema` catalog entries — this story faithfully follows established precedent rather than introducing a new pattern, so it is fleet-wide pre-existing debt, not a regression unique to this story.
+  location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (discovery_curated_groups_seed entry)
+  origin: spec-deferred ed4e6c98baf8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5-2: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc
+
+- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+  summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc
+  evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
+  origin: spec-deferred 13d230071bb9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5-3: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
+
+- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+  summary: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
+  evidence: Confirmed empirically: moving core_feedstock_attribution.parquet aside and re-running `kedro run --pipelines upstream_discovery,artifactory_downloads` raised `DatasetError: core_feedstock_attribution: ... No such file or directory`. However this is a pre-existing, fleet-wide pattern, not a regression this story introduces: classify_trending_candidates (Story 13.2, already shipped) has the identical characteristic — a plain pandas.ParquetDataset input produced by a different pipeline (pypi_conda_mapping), with no missing-file tolerance. This story's own unit tests DO correctly verify join_enterprise_conda_maintainers's behavior when given None/empty input directly (the function-level contract in the I/O matrix), which is a different, narrower claim than "the full kedro run survives a truly empty data root" — the latter has never actually been true for any cross-pipeline dependency in this codebase, this story included.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-5-tier-2-sources.md (## Verification section)
+  origin: spec-deferred 7db7e06d1eb3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
+  evidence: write_gist_markdown has always unconditionally re-stamped Verification_Timestamp_UTC to a fresh datetime.now(...) for the gist -- confirmed unchanged at baseline commit 07da273ba7, so this pre-dates Story 21.7 and is not caused by it. main()/write_xlsx_tab/write_csv persist whatever the Parquet (or, before this story, the single per-run construction-time timestamp) carried instead.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:672-674
+  origin: spec-deferred 7dc984b08114 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-2: read_identity_export_records() has no try/except around pd.read_parquet, so a corrupt or unreadable Parquet crashes uncaught instead of producing a hard, named error.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: read_identity_export_records() has no try/except around pd.read_parquet, so a corrupt or unreadable Parquet crashes uncaught instead of producing a hard, named error.
+  evidence: The I/O & Edge-Case Matrix only enumerates "Parquet present" and "Parquet missing"; a present-but-corrupt Parquet is an unstated edge case. The missing-file path already returns a clean, named stderr error + None -- a malformed-but-present file should plausibly follow the same pattern, but that's an inference, not something the matrix states.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:read_identity_export_records
+  origin: spec-deferred 9c5773f6f416 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-3: RANKING_MERGE_COLUMNS (this script) and the Atlas-side gist-export column list are two independently hand-maintained copies of the same GIST_SCHEMA contract, with no test enforcing they stay aligned.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: RANKING_MERGE_COLUMNS (this script) and the Atlas-side gist-export column list are two independently hand-maintained copies of the same GIST_SCHEMA contract, with no test enforcing they stay aligned.
+  evidence: RANKING_MERGE_COLUMNS is derived from GIST_COLUMNS, so it self-updates on this side when GIST_SCHEMA changes -- but the pyforge-atlas upstream_discovery pipeline that produces identity_export_parquet lists its own export columns separately. Touching that file is out of this story's scope (Never: "Implement identity_export_parquet or the Atlas Phase D node").
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:132 vs. src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py
+  origin: spec-deferred 56173593f2cd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-4: No test exercises the real, Atlas-pipeline-produced identity_export_parquet -- every test builds its own hand-authored, already-conforming fixture.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: No test exercises the real, Atlas-pipeline-produced identity_export_parquet -- every test builds its own hand-authored, already-conforming fixture.
+  evidence: A genuine schema-parity check between this script's COLUMNS/GIST_SCHEMA expectations and what the real Story 21.6 Phase D join actually emits doesn't exist on either side of the contract. This is a cross-cutting testing-strategy gap, not something one story should absorb -- a fixture captured from a real pipeline run (matching pyforge-atlas's own Wave B parity-diff pattern) would be the natural shape for it.
+  location: tests/packaging/test_openteams_handoffs.py
+  origin: spec-deferred d22114b0f077 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-5: merge_ranking_columns merges ~12 secondary ranking/JFROG columns with a bare membership check and no warning if one is absent from the ranked tab.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: merge_ranking_columns merges ~12 secondary ranking/JFROG columns with a bare membership check and no warning if one is absent from the ranked tab.
+  evidence: Only the primary P/Rank/Score/Work columns get an explicit missing-columns error in publish_gist_from_tab; the remaining RANKING_MERGE_COLUMNS entries (Platforms, Downloads, JFROG fields, etc.) are copied with `if col in ranking_row`, so an older or hand-edited ranked tab missing one silently produces a blank cell with no observability.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:merge_ranking_columns
+  origin: spec-deferred 385d1badefdd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-6: A Parquet column holding a list/array value crashes pd.isna() in read_identity_export_records with an ambiguous-truth-value ValueError.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: A Parquet column holding a list/array value crashes pd.isna() in read_identity_export_records with an ambiguous-truth-value ValueError.
+  evidence: read_identity_export_records's per-cell stringify does `"" if pd.isna(v) else str(v).strip()` without first checking for a non-scalar value; pandas raises ValueError on pd.isna() for an array/list input rather than returning a scalar boolean.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:read_identity_export_records
+  origin: spec-deferred 78432b3f020b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-7: Two ranked-tab rows normalizing to the same pep503 name silently discard the earlier row in merge_ranking_columns, with no warning (unlike the miss case).
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: Two ranked-tab rows normalizing to the same pep503 name silently discard the earlier row in merge_ranking_columns, with no warning (unlike the miss case).
+  evidence: ranking_by_name is built as a dict keyed by pep503_name(Core_Python_Package_Name); a later duplicate overwrites an earlier one with no diagnostic, asymmetric with the explicit stderr warning merge_ranking_columns emits on a no-match miss.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:merge_ranking_columns
+  origin: spec-deferred e851d68d42a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-7-8: PYFORGE_ATLAS_DATA_ROOT="" (empty string) is falsy and silently resolves to the default path instead of being treated as an explicit-but-invalid override.
+
+- source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: PYFORGE_ATLAS_DATA_ROOT="" (empty string) is falsy and silently resolves to the default path instead of being treated as an explicit-but-invalid override.
+  evidence: identity_export_parquet_path() does `os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data")`, so an explicitly-set-but-empty env var (as opposed to unset) is indistinguishable from the unset default -- a narrow operator-error edge case, not currently triggered by any documented invocation.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:identity_export_parquet_path
+  origin: spec-deferred 30c6310fb55b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
+  evidence: Confirmed by static read of `LocalRecipesOverlayDataset.load()` (`datasets/identity_sources.py`): degrades to an empty frame when `recipes_dir.is_dir()` is False rather than raising, so the bootstrap AC's exit-0 requirement is unaffected, but `Local_Recipes_URL`/`Local_Build_Status` stay empty on a real bootstrap unless `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` is set to an absolute (or correctly member-dir-escaped) path. Same root cause as DW-FU-21-2 (globals.yml's now-corrected repo-root-CWD premise), fixed there for `seed_root` only per this story's narrow authorization ("that one bug only"); not fixed here (Story 21.6 territory, done per the tracked sprint-status ledger, though its own spec frontmatter still reads `in-review`).
+  location: src/shared/packages/pyforge-atlas/conf/base/globals.yml paths.local_recipes_dir; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py LocalRecipesOverlayDataset
+  origin: spec-deferred bf8cf6e650c6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-2: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
+  evidence: `git blame` on `catalog.yml`'s `core_packages_enumerated` filepath line dates the hardcoded pattern to commit `9ce95912dc5` (2026-07-17, Wave A1/A2 scaffold), predating Epic 21 by six weeks -- pre-existing and unrelated. Reproduced live: a Story 21.8 end-to-end bootstrap run with `PYFORGE_ATLAS_DATA_ROOT=/tmp/atlas-e2e-verify-21.8` (a genuinely empty dir, `CF_ATLAS_DB` unset) exited 0, but `core_packages_enumerated.parquet` / `pypi_universe.parquet` / `pypi_conda_mapping.parquet` / `inventory_universe.parquet` / `identity_export_parquet` all landed under `src/shared/packages/pyforge-atlas/data/` instead of the override root -- confirmed by `grep -c '^\s*filepath:\s*\${globals:paths\.data_root}'` (27) vs. `grep -cE '^\s*filepath:\s*data/'` (53) over `catalog.yml`, and by direct `find` over both directories after the run. Does not block this story's bootstrap-exit-0 AC (both locations start empty on a genuinely fresh clone), but materially contradicts the README/globals.yml claim that "every store/output path resolves under" `PYFORGE_ATLAS_DATA_ROOT` for an operator who explicitly relies on the override to relocate ALL data (e.g. a CI job with a scratch data root, or two concurrent local runs). Not fixed here -- 53 catalog `filepath:` edits is far beyond a narrow surgical fix and CAP-1 is proven read-only by this story, not extended.
+  location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (53 filepath: entries, layer: intermediate|primary|derived)
+  origin: spec-deferred b48252c51686 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-3: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
+  evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDataset, AnacondaDist2026Dataset
+  origin: spec-deferred 7ee5f76414ad — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-4: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
+  evidence: Confirmed by static read of `LocalRecipesOverlayDataset.load()` (`datasets/identity_sources.py`): degrades to an empty frame when `recipes_dir.is_dir()` is False rather than raising, so the bootstrap AC's exit-0 requirement is unaffected, but `Local_Recipes_URL`/`Local_Build_Status` stay empty on a real bootstrap unless `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` is set to an absolute (or correctly member-dir-escaped) path. Same root cause as DW-FU-21-2 (globals.yml's now-corrected repo-root-CWD premise), fixed there for `seed_root` only per this story's narrow authorization ("that one bug only"); not fixed here (Story 21.6 territory, done per the tracked sprint-status ledger, though its own spec frontmatter still reads `in-review`).
+  location: src/shared/packages/pyforge-atlas/conf/base/globals.yml paths.local_recipes_dir; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py LocalRecipesOverlayDataset
+  origin: spec-deferred e6fc2da0fe6c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-5: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
+  evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDa
+  origin: spec-deferred 7f6b777274fa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-6: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
+  evidence: Confirmed via review pass 1 (blind hunter): `DW-FU-21-8-2`/`DW-FU-21-8-3`'s ledger heading + `summary:` were both cut off at exactly 500 chars mid-word/mid-sentence, while the untruncated source text was intact in this spec's own frontmatter `deferred:` block -- confirmed by direct length/content comparison and by reading `_SUMMARY_LIMIT = 500` and the blind `[:limit]` slice in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650`. Hand-corrected this story's own two entries in both the spec frontmatter and the ledger (review pass 1 patch); did not touch the tool itself (out of this narrow story's authorized surface) or re-derive the other backlog entries' full text (would require locating each source spec's own frontmatter individually).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650 (_flatten_deferred_scalar, _SUMMARY_LIMIT)
+  origin: spec-deferred 31528b66d9fc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-7: `deferred-work-ledger.md`'s own "Why this file exists"/Provenance narrative prose (near the top, "All 52 real deferrals...") is now several generations stale after this story's ledger-wide catch-up run (`## DW-` heading count unchanged at 60, but `### DW-` sub-entry count jumped from 104 to 133 in one pass) -- the frontmatter `entries:` line was corrected (review pass 1 patch) but the prose describing a much smaller, "52 real deferrals" ledger was not reconciled to the current size.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `deferred-work-ledger.md`'s own "Why this file exists"/Provenance narrative prose (near the top, "All 52 real deferrals...") is now several generations stale after this story's ledger-wide catch-up run (`## DW-` heading count unchanged at 60, but `### DW-` sub-entry count jumped from 104 to 133 in one pass) -- the frontmatter `entries:` line was corrected (review pass 1 patch) but the prose describing a much smaller, "52 real deferrals" ledger was not reconciled to the current size.
+  evidence: Confirmed via review pass 1 (blind hunter): the ledger's own Provenance section still narrates "All 52 real deferrals recorded during the Kedro migration... the ledger is complete" while `grep -c "^### DW-"` = 133 after this story's catch-up run (up from 104 at baseline). The file's own text elsewhere acknowledges this is a recurring pattern ("Stale counts in a file that declares its own counting rule are exactly what [periodic verification campaigns catch]"), so this is consistent with existing practice, not a new failure mode -- but reconciling the full narrative prose is a larger rewrite than this narrow verification-gate story's authorized surface.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md (Provenance section, near top)
+  origin: spec-deferred 1f4ed5e45458 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-8: No GitHub Actions workflow runs `kedro-catalog-check` or `kedro-test` for `pyforge-atlas` on PRs, so this story's own `seed_root` regression fix (DW-FU-21-2) has no CI safety net -- a future PR that reintroduces the bug would show fully green CI, since nothing in `.github/workflows/` touches the affected code path.
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: No GitHub Actions workflow runs `kedro-catalog-check` or `kedro-test` for `pyforge-atlas` on PRs, so this story's own `seed_root` regression fix (DW-FU-21-2) has no CI safety net -- a future PR that reintroduces the bug would show fully green CI, since nothing in `.github/workflows/` touches the affected code path.
+  evidence: Confirmed via review pass 1 (verification-gap reviewer): `grep -rl "pyforge-atlas" .github/workflows/` matches only `kedro-viz-publish.yml`, which triggers on `push` to `main` only (never `pull_request`), path-filters on `pipelines/**` only (would not fire on a `conf/base/globals.yml` or `catalog.yml` change), and runs `kedro viz build` (DAG introspection only, no dataset `.load()`, no pytest). No `.github/workflows/pyforge-atlas.yml` exists, unlike sibling stations (`pyforge-core.yml`, `pyforge-steward-five-tier.yml`, `pyforge-steward-fresh-clone.yml`). This is a pre-existing, project-wide CI gap (predates this story), not something a narrow verification-gate story should take on -- flagged here since this story's own fix is exactly the kind of regression it would have silently let back in.
+  location: .github/workflows/ (missing pyforge-atlas.yml)
+  origin: spec-deferred 2778753746de — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

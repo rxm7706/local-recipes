@@ -3,6 +3,8 @@ id: SPEC-marshal-token-economy
 spec: marshal-token-economy
 status: ready
 owner-dream: docs/dreams/marshal-token-economy.md
+covers-dreams:
+  - docs/dreams/marshal-dependency-aware-dispatch.md   # folded in 2026-08-31 as CAP-14..CAP-17; satisfies INV-1 for this Dream
 companions:
   - integration-layers.md
   - model-economics.md
@@ -18,6 +20,7 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
 sources:
   - ../../../../../../docs/dreams/marshal-token-economy.md
+  - ../../../../../../docs/dreams/marshal-dependency-aware-dispatch.md
 open_questions: []
 ---
 
@@ -129,6 +132,79 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     per the map on both engines (rendered-launch diff); the serving pool is journaled; an
     exhausted or unavailable pool falls through to the next preference, never blocks; the
     FR-51 seam remains the only selection mechanism and run-level batching is unchanged.
+- **CAP-13**
+  - **intent:** Graph-node staleness flag: `compile_graph` (Scribe's own compile-step,
+    CAP-18) flags a node `stale: true` when its source file's latest git commit postdates
+    the node's own `valid_from` and no `supersedes:` edge points at it — CAP-6 retrieval
+    consumes the flag and falls back to the epic-context file path (CAP-5) instead of
+    silently serving a stale graph answer.
+  - **success:** A node whose source changed since compile with no declared supersession is
+    flagged stale; an unchanged source or a properly superseded node is never flagged; a
+    retrieval that hits a stale node demonstrably falls back, never serves it; zero LLM
+    calls and no new dependency (a git-timestamp comparison on data compile already walks).
+- **CAP-14**
+  - **intent:** `factory drain` (no caller-supplied `--stories`) derives dispatch order
+    from each backlog story's `Deps:` line instead of walking `sprint-status-ledger.yaml`
+    raw order — a topological sort over the tracked dependency graph, honoring cross-epic
+    edges, falling back to ledger order only among stories with no unmet dependency either
+    way. `--stories` remains as an explicit caller override.
+  - **success:** A station whose backlog has a cross-epic dependency (verified:
+    `pyforge-atlas` Story 23.9 → Story 22.1) dispatches in an order that never violates a
+    declared `Deps:` edge, without an operator hand-deriving it first; a station with no
+    `--stories` override still produces a valid order; `--stories` continues to work
+    unchanged as an override.
+- **CAP-15**
+  - **intent:** A dispatch ended by an external stop (SIGTERM outside marshal's own
+    idle/budget ladder) is distinguished, in the journal, from a genuine failure
+    (verdict-gated, review-rejected, crashed) — and is retryable through the normal
+    `drain`/`dispatch --stories` path without an undocumented workaround. Before a retry
+    touches a worktree carrying uncommitted changes, the size and file list of that diff is
+    surfaced, not silently ignored or discarded. Liveness detection for a station's current
+    dispatch does not treat "worktree has uncommitted changes" alone as proof a session
+    process is still alive.
+  - **success:** An externally-stopped story is not journaled `MRS-DRAIN-005 failed`; it
+    dispatches again through `drain`/`--stories` without requiring the bare-`dispatch <slug>
+    <story>` workaround; a retry against a worktree with uncommitted changes reports the
+    diff (files, line count) before proceeding; `MRS-DISP-011`'s refusal correctly reflects
+    actual process liveness, not stale worktree state left behind by an external kill;
+    `MRS-DISP-011`'s live-session-process refusal is otherwise unchanged.
+- **CAP-16**
+  - **intent:** `policy_surface` resolution (feeding AD-27's existing narrow-only
+    `compute_effective_surface` combinator, unchanged) auto-derives a safe per-station
+    default at `spin`/`dispatch` policy composition — the station's own full package tree
+    (`src/shared/packages/pyforge-<slug>/**`), its planning/implementation-artifact trees,
+    and the common bookkeeping paths every hand-authored `[epic_surfaces]` entry already
+    repeats (`.gitignore`, `pixi.toml`, `pixi.lock`, `environment.yaml`,
+    `scripts/.spec-surface-baseline.json`) — without requiring an `[epic_surfaces]` entry to
+    exist. An explicit `[epic_surfaces]` entry still narrows further via the existing
+    intersection when an operator wants tighter containment than the station-wide default.
+  - **success:** A story touching only files under its own station's package tree and the
+    common bookkeeping paths passes `MRS-GATE-007` with zero `[epic_surfaces]` entry
+    declared; a story touching a *different* station's package, or repo config outside the
+    computed default, still fails it — the cross-station containment property is preserved,
+    only the within-station per-file enumeration toil is removed; an existing
+    `[epic_surfaces]` entry that narrows further continues to behave exactly as today.
+- **CAP-17**
+  - **intent:** A policy-declared, per-station scope-violation enforcement mode with three
+    values — `hard` (today's non-waivable `SCOPE_VIOLATION` refuse), `warn` (`MRS-GATE-007`/
+    `008` still fire, still name the offending path, land as an advisory finding — journaled
+    AND surfaced in `marshal status`/`fleet-picture`, never journal-only — but never block
+    landing), `off` (the check does not run at all: no finding, no journal entry, zero scope
+    containment). **Default is `warn`**, not `hard` — an explicit operator decision (2026-08-
+    31, after this exact gate stalled two live dispatches for over an hour apiece with no
+    self-service recovery path) that visible-but-non-blocking is the right steady state once
+    CAP-16's auto-derivation is trusted, with `hard` and `off` both available as an explicit
+    opt-in for a station that wants tighter or looser posture. `pyforge-marshal` is set to
+    `off` immediately as an operational stopgap (unblocks the live Epic 28 drain campaign
+    without waiting on CAP-16/17's own implementation) — this story ships the real `hard`/
+    `warn`/`off` mechanism to replace that stopgap, not to introduce it.
+  - **success:** A station with no mode declared runs `warn` (visible, non-blocking) — the
+    new default, not today's `hard`; `hard` declared for a station reproduces exactly
+    today's non-waivable refuse behavior; `off` declared for a station means `MRS-GATE-007`/
+    `008` are not evaluated at all for that station — zero findings, zero journal entries,
+    by design; `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not
+    only the journal; the mode is per-station, so one station's choice never changes
+    another's.
 
 ## Constraints
 
@@ -140,6 +216,10 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   prefix byte-comparison.
 - **Reversible or absent:** lossy-with-retrieval (CCR) is acceptable; silently-lossy is
   not — a compressed FATAL line must be recoverable byte-exact.
+- **Staleness detection is deterministic, never LLM-judged (CAP-13):** a git-timestamp
+  comparison against the node's `valid_from`, not a per-write model call deciding
+  ADD/UPDATE/DELETE/NOOP (Mem0's OSS pattern) — consistent with the standing rule that
+  Scribe capture/recall is the fleet's only memory face (no `mem0.add` in its place).
 - **BSL boundary:** the caveman input proxy (`@caveman-ai/cli`, BSL-1.1) stays unpackaged
   and unwired; headroom-ai (Apache-2.0) is the input side.
 - **Telemetry stays advisory:** savings numbers and dollar estimates inform ceilings and

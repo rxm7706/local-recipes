@@ -70,7 +70,26 @@ marshal seed update --repo-root . --yes
 
 Review the two-phase plan (migrations, then materialization). Use `--force` only when you intend to accept local edits to tool-owned files as the new baseline.
 
-### 4. Wire `check` into CI
+### 4. Provision a loop home's token-economy kit
+
+`marshal seed kit` is the seventh verb and the only one scoped to a **loop home** rather than a repo. It provisions the per-home token-economy kit (Story 28.3): the caveman output-compression skill with Genesis's articulate carve-out, the loop-home-scoped CCR store directory, and the codegraph structure index. Each item is gated by its own `[context]` layer in the composed policy, so a home that declares no `[context]` block gets nothing and reports nothing.
+
+```bash
+marshal seed kit --repo-root <loop-home>            # dry-run (default)
+marshal seed kit --repo-root <loop-home> --apply    # provision
+```
+
+`marshal preflight` runs the same provisioning automatically for the home it is checking, so this verb is for provisioning a home by hand or for inspecting what preflight would do.
+
+Three things worth knowing before enabling a layer:
+
+- **It never blocks.** No kit finding is HARD, and `marshal seed kit` exits `0` on every completed run. An instrument that is not installed (caveman and codegraph are linux-64 only) skips its layer with a named `kit-instrument-unavailable` finding at **INFO** — advisory even under `--strict`.
+- **A first index build is slow.** With the `structure-graph` layer enabled and no index yet, this runs a real `codegraph init` unattended; the ceiling is 900s (an incremental resync, 300s). A timeout degrades into a named finding, never a hang.
+- **`marshal seed check` verifies it.** The kit's three checks appear in the report (text and `--json`) whenever the target's `[context]` resolves, including the passing and declared-off ones.
+
+Which project's policy supplies the `[context]` declaration is resolved from `--project`, then `BMAD_ACTIVE_PROJECT`, then the home's own `_bmad/custom/.active-project` marker — so inside a provisioned home no flag is needed.
+
+### 5. Wire `check` into CI
 
 Add a job that fails on conformance drift:
 

@@ -4,22 +4,34 @@ status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..1
 owner-dream: docs/dreams/deferred-work-visibility.md
 covers-dreams:
   - docs/dreams/deferred-work-audit-completeness.md   # folded in 2026-08-15 as CAP-4..9 (see § Why below); satisfies INV-1 for this Dream
-surface: []          # Governs no files of its own, and that is honest rather than a frontier
-                     # claim. CORRECTED 2026-08-10: the earlier note here claimed
-                     # `.claude/skills/bmad-dev-auto/**` was governed by mason's
-                     # spec-fleet-stewardship. It is NOT — verified two ways (zero hits for
-                     # `bmad-dev-auto` in scripts/.spec-surface-baseline.json, and no Spec
-                     # surface glob in any of the 8 projects matches
+surface:
+  - scripts/deferred_work_check.py    # Story 25.6 resurrected this as a thin CLI delegating to
+                                       # `python -m pyforge.doctor.sources deferred-work` — see
+                                       # note below, it is no longer the deleted shim.
+  - scripts/deferred_work_intake.py   # CAP-11..13 / marshal Story 25.6 (CAP-6): mutation-only
+                                       # spec-frontmatter-to-tracked-ledger intake bridge, new
+                                       # 2026-08-28. Mirrors `deferred_work_promote.py`'s shape
+                                       # but is surfaced here (not allowlisted) because it is
+                                       # this Spec's own CAP-11..13 capability, not a bystander.
+                     # SURFACED 2026-08-31 (recovered from an orphaned 2026-08-28 reconciliation
+                     # commit, re-verified against current main before landing): both files
+                     # above were `[ungoverned]` until now. HISTORY, kept for context: this
+                     # field was `[]` from spec creation through 2026-08-15 and that WAS honest
+                     # then — no code existed yet for this Spec to claim. CORRECTED 2026-08-10:
+                     # the earlier note here claimed `.claude/skills/bmad-dev-auto/**` was
+                     # governed by mason's spec-fleet-stewardship. It is NOT — verified two ways
+                     # (zero hits for `bmad-dev-auto` in scripts/.spec-surface-baseline.json, and
+                     # no Spec surface glob in any of the 8 projects matches
                      # `.claude/skills/bmad-dev-auto/step-04-review.md`). That path is
                      # ALLOWLISTED, not governed: spec_surface_allowlist.txt line 3,
-                     # `.claude/**  # non-CFE agent config`. The detector half IS governed, by
-                     # doctor's own station spec — and as of PR #394 it lives at
-                     # `Source.DEFERRED_WORK` in `pyforge/doctor/sources/`, not the deleted
-                     # shim. A glob matching nothing is silent by design. EXTENDED 2026-08-15
-                     # (CAP-4..10): still empty — the new capabilities also land in
-                     # `pyforge/doctor/sources/`, already governed by doctor's own station
-                     # spec, plus `scripts/.deferred-work-baseline.json` (same governance as
-                     # CAP-3's baseline) and `fleet_picture.py`'s ATTENTION block (CAP-10).
+                     # `.claude/**  # non-CFE agent config`. The detector half was, as of PR
+                     # #394, `Source.DEFERRED_WORK` in `pyforge/doctor/sources/` only — the
+                     # `scripts/deferred_work_check.py` shim was deleted then, which is why this
+                     # field stayed empty; Story 25.6 (2026-08-28) resurrected that same path as
+                     # a thin wrapper over the same source, now surfaced above rather than left
+                     # dark a second time. `scripts/.deferred-work-baseline.json` (same
+                     # governance as CAP-3's baseline) and `fleet_picture.py`'s ATTENTION block
+                     # (CAP-10) remain allowlisted/covered elsewhere, unchanged by this edit.
 companions: []
 sources:
   - ../../../../../../docs/dreams/deferred-work-visibility.md

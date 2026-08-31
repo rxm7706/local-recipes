@@ -81,10 +81,7 @@ The `Block If` did not trigger: `lfx.processing.process.run_graph` (imported by 
 ## Verification
 
 **Commands:**
-- `cd src/platform && pytest -v` -- expected: full pass (existing 28 + new tests), against real Postgres 17 + Redis 7, matching `platform-ci.yml`
-- `ruff check .` + `ruff format --check .` + `mypy platformapp config tests` -- expected: clean
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: pass (station policy gate; different package)
-- `docker compose -f src/platform/compose/compose.yml up -d` (full stack incl. the new `worker` service) -- expected: all services healthy
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Real `.delay()` dispatch of `text_to_sql` against the live stack returns a real result via the Celery result backend

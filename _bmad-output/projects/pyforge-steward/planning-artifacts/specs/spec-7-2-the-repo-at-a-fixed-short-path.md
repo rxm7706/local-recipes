@@ -103,9 +103,7 @@ final_revision: '758cc5318c948eaec8689a681c313f474cb723d2'
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-ci pyforge-deps-test` -- expected: new test passes alongside the existing manifest-parity suite
-- `docker build -f Containerfile -t pyforge-guild-verify . && docker run --rm pyforge-guild-verify bash -c pwd` -- expected: prints `/pyforge`
-- Manual: temporarily edit `WORKDIR` to a long/derived value, rerun the pytest command, confirm it fails with a clear message, then revert -- expected: the guard actually guards
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

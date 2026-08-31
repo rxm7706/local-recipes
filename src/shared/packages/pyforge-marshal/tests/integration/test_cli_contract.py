@@ -31,8 +31,11 @@ from pyforge.marshal.seed.model.manifest import (
 from pyforge.marshal.seed.model.version import ModelVersion
 
 _VERSION = ModelVersion.parse("1.0.0")
-_SEED_VERBS = ("init", "adopt", "check", "update", "explain", "version")
-_MUTATING_VERBS = ("init", "adopt", "update")
+# Story 28.3 adds the seventh verb, `kit`. Enrolled here (not exempted)
+# so FR-123/124/126 -- `--json`/`--quiet` acceptance, `--dry-run` on a
+# mutating verb, envelope-key parity -- cover it like every sibling.
+_SEED_VERBS = ("init", "adopt", "check", "update", "explain", "version", "kit")
+_MUTATING_VERBS = ("init", "adopt", "update", "kit")
 _ENVELOPE_OK_KEYS = ("verb", "ok", "result")
 _ENVELOPE_ERR_KEYS = ("verb", "ok", "error")
 _ERROR_KEYS = ("type", "message", "remedy")
@@ -161,9 +164,15 @@ def test_json_success_envelope_keys_match_across_verbs(tmp_path, capsys):
         ),
         manifest=manifest,
     )
+    seed_cli.run_kit(
+        parser.parse_args(
+            ["seed", "kit", "--repo-root", str(repo), "--dry-run", "--json"]
+        ),
+        manifest=manifest,
+    )
 
     payloads = _parse_json_documents(capsys.readouterr().out)
-    assert len(payloads) == 6
+    assert len(payloads) == 7
     for payload in payloads:
         assert tuple(payload.keys()) == _ENVELOPE_OK_KEYS
         assert payload["ok"] is True

@@ -134,11 +134,8 @@ SEED (not STATIC) because all five are scalar operator-tunable knobs — the `ga
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests -q` — expected: all pass (>5152).
-- `pixi run -e local-recipes marshal config --project pyforge-marshal --write-harness-policy <tmp-home> --format json` then `tomllib.loads` — expected: the five keys present, exact types.
-- `cd ~/.bmad-loops/<each of 8 homes> && pixi run -e local-recipes bmad-loop validate` — expected: clean, zero warnings, all 8.
-- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py .claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py -q` — expected: pass.
-- `python scripts/spec_surface_reconcile.py` — expected: 0 findings (append the owning Spec's `.memlog.md` + scoped `--write-baseline` AFTER `git add` if governed files moved).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

@@ -164,7 +164,7 @@ commit message's own paraphrase, not an oversight.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: all pass, including the 12 new `test_hygiene_definitions.py` cases and the two existing meta tests (`test_read_only_guard`, `test_every_real_sources_file_is_mapped_by_at_least_one_source`) still green.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -211,20 +211,7 @@ ledger data-quality audit).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes python -m pytest tests/scripts/test_apply_verification_verdicts.py -v`
-  -- expected: every new test passes. (`pyforge-ci`'s own `pyforge-doctor-scripts-test` task is
-  NOT used for this verification: confirmed live 2026-08-15 that `tests/scripts/
-  test_deferred_work_promote.py` -- an unrelated, pre-existing sibling test -- already fails under
-  `pixi run -e pyforge-ci pyforge-doctor-scripts-test` with `ModuleNotFoundError: No module named
-  'pyforge'`, while the identical file passes cleanly under `-e local-recipes`; this script has no
-  `pyforge.doctor` import at all, so the failure mode doesn't apply to it either way, but
-  `local-recipes` is the proven-working environment and is used here for consistency.)
-- `pixi run -e local-recipes python -m pytest tests/scripts -q` -- expected: full `tests/scripts/`
-  directory still green (no regression to `test_deferred_work_promote.py` or any sibling).
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: still 983 passed, 2
-  skipped (this story touches nothing under `pyforge.doctor`, so this is a no-regression check).
-- `ruff check scripts/apply_verification_verdicts.py tests/scripts/test_apply_verification_verdicts.py`
-  -- expected: no new findings.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

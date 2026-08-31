@@ -112,9 +112,8 @@ directory-scoped skill resolution is designed to surface when work touches that 
 ## Verification
 
 **Commands:**
-- `pixi run kedro-skills-audit` -- expected: lists `catalog-config` with its install status; exits 0.
-- `pixi run kedro-catalog-check` -- expected: all tests green after any catalog-adjacent change (none expected from this story, but the gate must stay green since it's the AD-invariant source of truth); use whatever N/N pytest actually reports, do not hardcode a remembered count.
-- `pixi run -e local-recipes llms-full-check` -- expected: no `kedro-skills`-related finding in the drift output.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `git status` inside `src/shared/packages/pyforge-atlas/` shows exactly the four tool-managed files as new/modified, plus the override append in both `.claude/` and `.agents/` copies — nothing else under `conf/`, `src/pyforge/`, or `pyproject.toml` changed.

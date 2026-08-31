@@ -14,7 +14,12 @@ Do **not** depend on any pre-existing repo script. Execute the full workflow you
 
 ## 1) Inputs (replace paths as needed)
 
-- Workbook export (`.xlsx`):  
+- Workbook export (`.xlsx`) — **optional as of Story 23.8**: when omitted, pass
+  `--live-catalog PATH` (a `PYFORGE_ATLAS_DATA_ROOT`) instead and the package
+  universe is read from that data plane's `inventory_universe.parquet` rather
+  than the workbook's sheets. See
+  [`conda-forge-packaging-inventory-operations_replay.md`](conda-forge-packaging-inventory-operations_replay.md)
+  execution mode 5 for the exact CLI shape.  
   `{{ANALYSIS_XLSX_PATH}}`
 - OpenTeams export (`.tsv`):  
   `{{OPENTEAMS_TSV_PATH}}`

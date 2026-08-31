@@ -10,9 +10,10 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,7 @@ import pytest
 from pyforge.scribe import compile as compile_module
 from pyforge.scribe.capture import _DESCRIPTION_MAX_LEN, _truncate, capture
 from pyforge.scribe.compile import compile_graph
+from pyforge.scribe.extras import graphify as graphify_module
 from pyforge.scribe.graph_store import FlatFileGraphStore
 
 _MEMORY_MD_STARTER = """# Team Memory Index
@@ -954,3 +956,404 @@ def test_transcript_surface_root_that_is_a_regular_file_warns_as_not_a_directory
     assert len(transcript_warnings) == 1
     assert "is not a directory" in transcript_warnings[0]
     assert "is not readable" not in transcript_warnings[0]
+
+
+# --- Story 6.1: the optional graphify compile_surface extra -----------------
+
+
+class _FakeGraph:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def nodes(self, data: bool = False):
+        items = list(self._nodes.items())
+        return items if data else [nid for nid, _ in items]
+
+    def number_of_nodes(self) -> int:
+        return len(self._nodes)
+
+    def number_of_edges(self) -> int:
+        return 0
+
+
+class _FakeGraphifyModule:
+    def __init__(self, nodes: dict[str, dict]) -> None:
+        self._nodes = nodes
+
+    def collect_files(self, target, root=None):
+        return [Path(target) / "a.py"]
+
+    def extract(self, files, cache_root=None, root=None, parallel=True):
+        return {"nodes": [], "edges": [], "hyperedges": []}
+
+    def build_from_json(self, extraction, root=None):
+        return _FakeGraph(self._nodes)
+
+    def god_nodes(self, graph, top_n=10):
+        return []
+
+
+def test_graphify_extra_off_by_default_is_a_no_op(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: absent or off (default) -- a compile is identical to today's
+    six builtins, and produces zero graphify-related noise."""
+    monkeypatch.delenv("SCRIBE_GRAPHIFY_EXTRA", raising=False)
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.node_count == 1
+    assert [n for n in store.iter_nodes() if n.kind == "code"] == []
+    assert all(("git" in w or "transcript" in w) for w in result.warnings)
+
+
+def test_graphify_extra_on_writes_code_nodes_through_the_same_store(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC2: with the extra on, folder ingest writes GraphNodes through the
+    SAME `GraphStore` the six builtins already use -- never a parallel
+    store."""
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "type": "module",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    code_nodes = [n for n in store.iter_nodes() if n.kind == "code"]
+    assert len(code_nodes) == 1
+    assert code_nodes[0].citation == "src/shared/packages/example.py:L1"
+    assert result.node_count == 2  # the memory node + the one code node
+
+
+def test_graphify_extra_on_but_unavailable_degrades_to_warning_not_abort(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    try:
+        import graphify  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("graphifyy is installed in this environment")
+
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.node_count == 1
+    assert any("graphify" in w for w in result.warnings)
+
+
+# --- Story 6.2: cocoindex extra does not hook into compile_graph() ----------
+
+
+def test_compile_graph_is_unaffected_by_the_cocoindex_extra_env_var(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1: `compile_graph()` deliberately does not consult
+    `SCRIBE_COCOINDEX_EXTRA` at all (see this module's own docstring for
+    why) -- a compile is byte-for-byte identical whether the extra is off
+    or on."""
+    monkeypatch.setenv("SCRIBE_GRAPHIFY_EXTRA", "1")
+    (tmp_path / "src" / "shared" / "packages").mkdir(parents=True)
+    (tmp_path / "src" / "shared" / "packages" / "example.py").write_text(
+        "x = 1\n", encoding="utf-8"
+    )
+    fake_nodes = {
+        "python:example": {
+            "label": "example",
+            "source_file": "src/shared/packages/example.py",
+            "source_location": "L1",
+        }
+    }
+    monkeypatch.setattr(
+        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes)
+    )
+    capture(memory_root, "feedback", "content")
+
+    monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    off_store = FlatFileGraphStore(tmp_path / "graph-off.json")
+    off_result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=off_store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
+    on_store = FlatFileGraphStore(tmp_path / "graph-on.json")
+    on_result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=on_store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert off_result.node_count == on_result.node_count == 2
+    assert [n.id for n in off_store.iter_nodes()] == [n.id for n in on_store.iter_nodes()]
+    index_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
+    assert not index_path.exists()
+
+
+def test_compile_module_does_not_import_the_cocoindex_extra() -> None:
+    """The cocoindex incremental extra lives entirely in `cli.py`'s `index
+    refresh` verb (see this module's own docstring) -- `compile.py` has no
+    import of it at all."""
+    import ast
+
+    tree = ast.parse(compile_module.__file__ and Path(compile_module.__file__).read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "cocoindex_flow" not in node.module
+
+
+# --- Story 6.3: the graph-node staleness flag (CAP-13) -----------------------
+
+
+def _init_git_and_commit_everything(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "test@example.com")
+    _git(tmp_path, "config", "user.name", "Test")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "commit touching the current tree")
+
+
+def test_stale_flag_set_when_source_commit_postdates_node_valid_from(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """AC1: a node whose source file's latest git commit postdates the
+    node's own `valid_from`, with no `supersedes:` edge naming it, is
+    flagged `stale: true`."""
+    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
+    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(result_capture.path, (old_mtime, old_mtime))
+
+    _init_git_and_commit_everything(tmp_path)  # commit authored "now" -- postdates 2020
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    node = next(n for n in store.iter_nodes() if n.id == "memory:project/plan-x")
+    assert node.stale is True
+    assert result.stale_count == 1
+
+
+def test_stale_flag_not_set_when_source_has_no_git_history(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """AC2 ("unchanged source"): a source with no git history at all (never
+    committed) has nothing to compare against -- never flagged stale."""
+    capture(memory_root, "project", "Original plan.", slug="plan-x")
+    # No git repo at all -- `_git_latest_commit_time` degrades to None.
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    node = next(n for n in store.iter_nodes() if n.id == "memory:project/plan-x")
+    assert node.stale is False
+    assert result.stale_count == 0
+
+
+def test_stale_flag_not_set_when_valid_from_postdates_the_commit(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """AC2 ("unchanged source"): a source WITH git history, but whose
+    `valid_from` is already at or after that history's latest commit (the
+    ordinary post-checkout steady state -- nothing has moved since), is
+    never flagged stale."""
+    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
+    _init_git_and_commit_everything(tmp_path)
+    future_mtime = (datetime.now(timezone.utc) + timedelta(days=1)).timestamp()
+    os.utime(result_capture.path, (future_mtime, future_mtime))
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    node = next(n for n in store.iter_nodes() if n.id == "memory:project/plan-x")
+    assert node.stale is False
+    assert result.stale_count == 0
+
+
+def test_superseded_node_is_never_flagged_stale_even_with_a_newer_commit(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """AC2 (second clause): a node with a declared `supersedes:` edge
+    pointing at it is never flagged stale, regardless of git timestamps --
+    Story 2.3's supersession already took it out of `is_current`."""
+    old = capture(memory_root, "project", "Original plan.", slug="plan-x")
+    new = capture(
+        memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x"
+    )
+    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(old.path, (old_mtime, old_mtime))
+    future_mtime = (datetime.now(timezone.utc) + timedelta(days=1)).timestamp()
+    os.utime(new.path, (future_mtime, future_mtime))
+
+    _init_git_and_commit_everything(tmp_path)  # postdates plan-x's 2020 mtime
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    nodes = {n.id: n for n in store.iter_nodes()}
+    assert nodes["memory:project/plan-x"].is_current is False
+    assert nodes["memory:project/plan-x"].stale is False
+    assert nodes["memory:project/plan-y"].stale is False
+    assert result.stale_count == 0
+
+
+def test_stale_flag_applies_to_memlog_and_doc_surfaces_too(tmp_path: Path, memory_root: Path) -> None:
+    """Design Notes: this is compile.py's general surface, not
+    graphify-specific -- a `.memlog.md`/CHANGELOG.md node gets the same
+    signal as a memory node."""
+    memlog_path = tmp_path / ".memlog.md"
+    memlog_path.write_text("session log entry\n", encoding="utf-8")
+    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(memlog_path, (old_mtime, old_mtime))
+
+    _init_git_and_commit_everything(tmp_path)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    node = next(n for n in store.iter_nodes() if n.id == "memlog:.memlog.md")
+    assert node.stale is True
+    assert result.stale_count == 1
+
+
+def test_transcript_and_commit_nodes_are_never_staleness_candidates(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """`commit:`/`transcript:` citations have no git-trackable source-file
+    counterpart (mirrors `recall.py::_citation_is_resolvable`'s own split)
+    -- neither kind is ever a staleness candidate, however old its
+    `valid_from`."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    _init_git_and_commit_everything(tmp_path)  # produces at least one commit node
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    non_memory_nodes = [n for n in store.iter_nodes() if n.kind in ("commit", "transcript")]
+    assert non_memory_nodes  # sanity: both kinds are present in this fixture
+    assert all(n.stale is False for n in non_memory_nodes)
+    assert result.stale_count == 0
+
+
+def test_staleness_check_makes_zero_network_calls(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC4: the staleness check is a git-timestamp comparison only -- no
+    LLM call, and by extension no network call at all (AD-6)."""
+    result_capture = capture(memory_root, "project", "Original plan.", slug="plan-x")
+    old_mtime = datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(result_capture.path, (old_mtime, old_mtime))
+    _init_git_and_commit_everything(tmp_path)
+
+    def _blocked_socket(*args, **kwargs):
+        raise AssertionError("network socket construction attempted -- AD-6 violation")
+
+    monkeypatch.setattr(socket, "socket", _blocked_socket)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(  # must not raise
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.stale_count == 1  # the check still ran and found the expected result
+
+
+def test_git_absent_staleness_check_degrades_to_warning_not_abort(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    capture(memory_root, "project", "Original plan.", slug="plan-x")
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    assert result.stale_count == 0
+    assert any("staleness" in w.lower() for w in result.warnings)

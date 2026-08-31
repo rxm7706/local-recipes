@@ -7,6 +7,10 @@ surface:
   - src/platform/**
   - pixi.toml
   - environment.yaml
+  # CAP-6 realization, Story 12.3 (spec-12-3-air-gap-parity-is-a-failing-check,
+  # AD-13): the pixi-mirror builder the air-gap-parity CI job runs before
+  # blocking egress. Never governed here until this reconciliation pass.
+  - scripts/build-pixi-mirror.py
 sources:
   - ../../../../../../docs/dreams/python-agent-platform.md
   - ../../../../../../docs/dreams/django-accelerator-framework.md

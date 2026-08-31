@@ -3509,3 +3509,267 @@ status: open
   evidence: station-unresolved: `resolve_config.py --key project` answered `pyforge-mason` while `readlink -f` of the destination puts it under `projects/pyforge-marshal/`, so the station is treated as unknown per the minting procedure (the id shape is the same for both branches, and every sibling id here already carries it). Confirmed by execution during review pass 5. `detect/optout.py::marker_region_names` asks `markers.parse_marker_line` of each line twice, raw and `str.strip()`ed, so rung 3 stands down whenever any marker line for the region survives. That normalization is what closes the trailing-space and indent variants, and it is deliberately conservative -- but it also normalizes a marker EXAMPLE written inside an ordinary four-space-indented Markdown code block straight into recognition, and `parse_regions` skips exactly such lines by design. So an artifact whose managed region documents the marker grammar in an indented block carries its own region name in `marker_region_names` on every run, and rung 3 can never fire for it: deleting those markers reports DRIFT `managed-region-missing` and is re-inserted on every `update`, forever, with nothing telling the operator why FR-112 is not being honoured there. The direction of the trade is right (the alternative, under-detection, silently retires a LIVE region and drops its `body_sha`), so this is a residual rather than a regression to revert -- and it is the OPPOSITE residual to `DW-FU-8-5-10`, which tracks the under-detection half. A real fix needs a scan that distinguishes a marker line from a rendering of one -- fence- and indent-awareness `regions/parse.py` already has and `parse_marker_line` does not -- which is the looser grammar `parse_marker_line`\s own docstring assigns to S-8.2. `regions/markers.py` is not in this story's Code Map, and hand-writing a second grammar in `optout.py` is an explicit Always-bullet violation.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+### DW-FU-22-11: A station-scoped/sequenced campaign's scope is not persisted anywhere, so a manual `--campaign <id>` resume that omits `--station`/`--stories` silently widens the resumed cycle back to a full fleet-wide, ledger-order drain under the same run id and journal.
+
+- source_spec: `planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md`
+  summary: A station-scoped/sequenced campaign's scope is not persisted anywhere, so a manual `--campaign <id>` resume that omits `--station`/`--stories` silently widens the resumed cycle back to a full fleet-wide, ledger-order drain under the same run id and journal.
+  evidence: `station`/`explicit_stories` are pure per-invocation CLI-argument inputs into `run_fleet_drain` -- nothing in `_journal_fleet_cycle` records that a given run id was scoped. The automated campaign supervisor always re-supplies both flags correctly (tested), so the risk is confined to a human manually typing `--campaign <id>` alone to inspect/recover a stalled campaign. The most likely trigger (the MRS-DRAIN-007 supervisor-spawn-failure recovery message) was patched in this review pass to always include `--station`/`--stories` when set, which closes the documented recovery path; an UNDOCUMENTED manual resume can still hit this. A full fix (persist scope into the run directory and read it back on resume) is a bigger design lift than a mechanical patch.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:run_fleet_drain
+  origin: spec-deferred 54751e8cbcd4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-11-2: `FleetCycleReport.complete` is vacuously `True` (`all()` over an empty `results` tuple) on the new `MRS-DRAIN-013` unknown-station early return, so the JSON envelope reports `"complete": true` alongside an ERROR finding for an outright refusal where nothing ran.
+
+- source_spec: `planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md`
+  summary: `FleetCycleReport.complete` is vacuously `True` (`all()` over an empty `results` tuple) on the new `MRS-DRAIN-013` unknown-station early return, so the JSON envelope reports `"complete": true` alongside an ERROR finding for an outright refusal where nothing ran.
+  evidence: Confirmed by reading `dispatch_fleet.campaign_complete` (`all(...)` over an empty iterable) and `FleetCycleReport.complete`'s delegation to it; `data["complete"] = report.complete` bakes this into the emitted JSON. This is NOT a regression introduced by this story: the pre-existing `MRS-DRAIN-012` ("no pyforge stations found") early return has the identical vacuous-truth shape and the file's own comment there already acknowledges it, relying on the accompanying ERROR finding (not `complete`) to signal the problem to callers. A caller/orchestrator that polls `data.complete` without also checking `findings` could still be misled. Fixing this properly means auditing every early-return `FleetCycleReport` construction fleet-wide, which is broader than this story's `--station`/`--stories` surface.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py:campaign_complete
+  origin: spec-deferred c953021a65b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2: The bmad-loop engine (`marshal factory spin`) is never wrapped; an enabled wire layer only reports its own inapplicability there.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: The bmad-loop engine (`marshal factory spin`) is never wrapped; an enabled wire layer only reports its own inapplicability there.
+  evidence: Marshal launches `bmad-loop run` on that engine and bmad-loop, not marshal, launches the coding CLI, so this seam has no argv to prefix. Confirmed reachable rather than impossible: bmad-loop's `adapters/profile.py` exposes `binary` / `launch_args` / `env`, `.bmad-loop/profiles/*.toml` is an overlay marshal already reads, and marshal already writes into the loop home at spin time. The missing piece is a loop-home-provisioned launcher shim, which epics.md places in Story 28.3 ("Genesis seeds the token-economy kit ... verifies caveman-skill deployment, CCR store dir"). Mitigating: `factory dispatch --fleet` is the drain engine, and it IS wrapped.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
+  origin: spec-deferred cb2a0ac6417d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-2: Two concurrent wrapped dispatches share the first launcher's proxy and therefore its CCR store, so the second session's store is not inside its own loop home.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: Two concurrent wrapped dispatches share the first launcher's proxy and therefore its CCR store, so the second session's store is not inside its own loop home.
+  evidence: `headroom wrap` defaults to port 8787 and attaches to an already-running proxy instead of starting a second one; reused-proxy settings come from the first proxy's process environment, including `HEADROOM_WORKSPACE_DIR`. Tearing down the first worktree then removes the store out from under the others. Verified that this is NOT scopable through the declarative `[wrapper.env]` surface: `wrap claude`'s `--port` is a plain `click.option(default=8787)` with no `envvar=` binding (unlike `headroom proxy`'s), so a per-launch port would need argv-level templating the current prefix schema cannot express. Documented as an operator caveat in `claude.toml`; not detected or reported at runtime, so `data["wire"].store_dir` can name a directory the session is not using. Blast radius today is zero — the layer ships disabled by default.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
+  origin: spec-deferred 9d09800ea2db — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-3: `factory spin` composes policy without the repo-defaults layer, so a repo-wide `[context.wire]` is invisible AND unreported there while dispatch acts on it.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: `factory spin` composes policy without the repo-defaults layer, so a repo-wide `[context.wire]` is invisible AND unreported there while dispatch acts on it.
+  evidence: `cli/dispatch.py::_compose_policy` folds in `read_repo_policy_defaults()`; `cli/spin.py`'s `policy.compose(project_slug=slug, project=..., flags={})` does not. A `[context.wire] enabled = true` in `_bmad-output/policy-defaults.toml` therefore wraps a factory dispatch and produces neither a wrap nor an `MRS-SPIN-017` on spin — the silent no-op this story set out to eliminate. The asymmetry PRE-DATES this story (the same shape feeds Story 28.1's `render_policy_toml` block); this change is what makes it produce a wrong report. Fixing it properly changes resolution for all 30 policy keys on spin, which is out of proportion to this seam. No test covers the repo-defaults layer for `[context]` on either engine.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
+  origin: spec-deferred 12bd76fc5e13 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-4: A `[wrapper]` may legally declare no store at all, in which case headroom falls back to a user-global `~/.headroom` workspace.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: A `[wrapper]` may legally declare no store at all, in which case headroom falls back to a user-global `~/.headroom` workspace.
+  evidence: `store_env`/`store_relpath` are validated both-or-neither, and both-absent is deliberately blessed (`test_wrapper_may_declare_neither_store_field`). For a headroom-shaped wrapper that means `HEADROOM_WORKSPACE_DIR` is left unset and the CCR store accumulates in a user-global cache — precisely what the loop-home scoping AC exists to prevent. `test_every_packaged_wrapper_is_reversible_and_loop_home_scoped` enforces the invariant for packaged profiles only; overlays go through the same validator and get a pass. Left open deliberately: the Approach also names a "transparent proxy for base-URL-only tools" form that may legitimately have no store, so making the store mandatory now could foreclose it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py
+  origin: spec-deferred 00cd291d6b65 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-5: `aggressiveness` is resolved, journaled and echoed on both engines but changes nothing about the launch.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: `aggressiveness` is resolved, journaled and echoed on both engines but changes nothing about the launch.
+  evidence: No mapping to any wrapper knob exists — no rung-specific argv token, no rung-specific env. An operator reading `wire: applied=True aggressiveness=high` will reasonably conclude a rung took effect. The graduated ladder is epics.md Story 28.6 (token-economy CAP-?), so the value is declaration-only until then; the payload does not say so.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py
+  origin: spec-deferred 4b1a8971cdda — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-6: A wrapped launch prepends the resolved CLI's whole directory to the child PATH, widening resolution beyond what the unwrapped launch had.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: A wrapped launch prepends the resolved CLI's whole directory to the child PATH, widening resolution beyond what the unwrapped launch had.
+  evidence: Wrapping replaces the absolute binary path with the wrapper prefix, so the CLI must be findable on PATH; the adapter prepends its directory. For the pixi-env case that puts every executable in `.pixi/envs/local-recipes/bin` ahead of the operator PATH for the whole agent session and everything it shells out to. The comment claims "exactly the reachability the unwrapped launch already had, and nothing more", which is true for the CLI and false for its neighbours. A per-launch symlink shim would deliver the stated minimality.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py
+  origin: spec-deferred c589f28e39a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-7: The journal records that a session was wrapped but not what wrapped it.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: The journal records that a session was wrapped but not what wrapped it.
+  evidence: `WireWrap.journal_payload()` emits `applied`/`reason`/`store_dir`/`aggressiveness`; neither the resolved wrapper binary path nor the launch argv is journaled. The wrapper version and invocation shape — the things that determine actual savings — are unrecoverable after the fact, which epics.md Story 28.5 (the pinned wrapped-vs-unwrapped benchmark, deps S-28.2 + S-28.3) will need.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py
+  origin: spec-deferred e7df26d783c5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-8: The new ignore-rule meta-test hardcodes the store path instead of deriving it from the packaged wrapper's `store_relpath`, so the two can still drift apart.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: The new ignore-rule meta-test hardcodes the store path instead of deriving it from the packaged wrapper's `store_relpath`, so the two can still drift apart.
+  evidence: Partly closed during this review pass: `tests/meta/test_wire_store_ignored_not_the_seed_namespace.py` now asserts effective `git check-ignore` behaviour in both directions (store ignored, seed namespace not), which is the right shape and mirrors `test_skill_projection_manifest_untracked.py`. What remains is that the path is a module-level literal rather than `load_packaged_profiles()["claude"].wrapper.store_relpath`, so relocating the store in the TOML would leave the test passing against a path nothing uses while the real store lands unignored — re-dirtying every loop worktree, which is the failure the ignore rule exists to prevent.
+  location: src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py
+  origin: spec-deferred ec68435c8501 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-2-9: The `HEADROOM_MODE = "cache"` pin is silently not honoured when `wrap` attaches to an already-running proxy.
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: The `HEADROOM_MODE = "cache"` pin is silently not honoured when `wrap` attaches to an already-running proxy.
+  evidence: `cli/wrap.py:658-661` forwards `HEADROOM_MODE` into `--mode` only inside the start-a-proxy path; the reuse path returns early after comparing only memory/learn/code-graph/backend/api-url, so the mode is never checked or reset. An operator with a `token`-mode proxy already listening gets marshal's wrapped session routed through the prompt-prefix-rewriting mode the spec lists under Block If (NFR-14). The same reuse path means `--code-memory none` does not prevent attaching to a proxy someone else started with `--memory`. Same root cause as the shared-proxy entry above.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/claude.toml
+  origin: spec-deferred ae350c33e269 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3: The codegraph AGENT INTEGRATION is not wired; only the index is provisioned.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: The codegraph AGENT INTEGRATION is not wired; only the index is provisioned.
+  evidence: The Approach names "codegraph index build + agent integration"; AC 1's own check list names only "a present+fresh codegraph index", which is what shipped. `codegraph install --target claude --location local --yes` is the integration command and it writes the home's `.mcp.json` — a file marshal ALREADY owns and renders from the `mcp_servers` policy key (`cli/init.py::_render_mcp_json`, probed by `MRS-PREFLIGHT-012`). A second writer to that file would fight the renderer every provisioning cycle. Wiring it properly means teaching the `mcp_servers` render to append a codegraph entry when the `structure-graph` layer is enabled, which is Story 28.1's policy-render surface, not this seam's. `codegraph install --print-config <agent>` exists and writes nothing, so the merge is reachable when someone owns that render.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred 49edf666b08e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-2: A first codegraph index build blocks `marshal preflight` for as long as it takes (bounded at 900s), with no progress output and no background mode.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: A first codegraph index build blocks `marshal preflight` for as long as it takes (bounded at 900s), with no progress output and no background mode.
+  evidence: `run_kit` calls `build_codegraph_index` synchronously; `codegraph init -y` on a large repo is genuinely slow, and provisioning runs unattended so the call is made quiet. A timeout degrades into a named WARN rather than a hang (`INDEX_TIMEOUT_S`), and the layer ships disabled, so blast radius today is zero — but an operator who enables `structure-graph` on a big station will see preflight appear to stall. A background/incremental build, or deferring the first build to `marshal seed kit --apply` only, would fix it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
+  origin: spec-deferred f0b59cf476b4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-4: The deployed caveman skill is a snapshot; an upstream version bump is invisible to `marshal seed check`.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: The deployed caveman skill is a snapshot; an upstream version bump is invisible to `marshal seed check`.
+  evidence: The check verifies the file exists and carries the `token-economy-articulate` region — never that its upstream half still matches the installed `caveman-installer` payload. A `caveman` package upgrade therefore leaves every already-seeded home on the old skill body, reported OK. A body hash recorded alongside (the `state.managed[]` idiom `verbs/check.py` already uses for manifest artifacts) would close it; the kit deliberately keeps no state file of its own in this story.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
+  origin: spec-deferred 13558453e031 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-5: AC 2 is proven structurally (the carve-out is deployed and verified), never behaviourally (that a session honours it).
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: AC 2 is proven structurally (the carve-out is deployed and verified), never behaviourally (that a session honours it).
+  evidence: Nothing in a test suite can prove an LLM did not compress a verdict. What IS proven: the carve-out region names every surface in `ARTICULATE_SURFACES`, a deployment missing it is reported as incomplete rather than conformant, and marshal's own verdicts/journals are composed by marshal code that never passes through the skill at all. The residual risk is a dev session's own review verdict prose.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py
+  origin: spec-deferred 6f62356ffe92 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-6: Kit writes go through `ports.FsPort`, so `seed/fs.py`'s `never_write` guard does not cover them.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Kit writes go through `ports.FsPort`, so `seed/fs.py`'s `never_write` guard does not cover them.
+  evidence: Deliberate (see `seed/verbs/kit.py`'s module docstring): a kit item is not a manifest artifact and the relevant boundary is AD-11's loop home, which `FsPort` is the observable seam for — which is what lets `run_preflight` provision with its OWN injected port and stay visible to `tests/meta/test_ad11_write_boundary.py`. `_guarded_target` re-derives loop-home containment per write so the property is structural, but a manifest `never_write` glob that happened to match a kit path would not be honoured. Unreachable today: all three kit paths are module constants.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred fa4575029cc0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-7: `run_preflight` still composes policy without the repo-defaults layer; only the `[context]` block was routed around it.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: `run_preflight` still composes policy without the repo-defaults layer; only the `[context]` block was routed around it.
+  evidence: The pre-existing asymmetry Story 28.2 deferred on `cli/spin.py` is the same one here. This story avoids inheriting it for the kit by resolving `[context]` from the HOME's own policy files (`seed_cli.resolve_context_layers`), so preflight and `marshal seed kit --repo-root <home>` agree — but the other 30 policy keys preflight reads still ignore `_bmad-output/policy-defaults.toml`. Fixing it properly changes resolution for all of them.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
+  origin: spec-deferred 412ef9deb416 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-8: Index freshness is a HEAD-timestamp comparison, so EVERY new commit marks the index stale — in a loop worktree that commits constantly, an enabled `structure-graph` layer sits in near-continuous `kit-item-stale` DRIFT.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Index freshness is a HEAD-timestamp comparison, so EVERY new commit marks the index stale — in a loop worktree that commits constantly, an enabled `structure-graph` layer sits in near-continuous `kit-item-stale` DRIFT.
+  evidence: `detect/kit.py::_codegraph_check` compares the index mtime against `git log -1 --format=%ct` and reports `stale` whenever `index_mtime < head_ts`. The dominant consequence is not the two accuracy bounds noted below but the CADENCE: a bmad-loop / dispatch worktree commits many times per story, and each commit moves HEAD's timestamp past the index's, so the layer re-reports DRIFT after essentially every commit until something re-syncs. `marshal preflight` does re-sync (and the successful-sync mtime stamp added in review keeps that from becoming PERMANENT drift), but nothing re-syncs between preflights — so a long-running story will show `kit-item-stale` on any `marshal seed check` taken mid-run. Secondary, and stated for completeness: uncommitted edits never mark the index stale, and a rebase that rewrites HEAD's timestamp forward marks it stale with no file change. The rule is deliberate — the same deterministic git-timestamp discipline SPEC-marshal-token-economy CAP-13 requires, no working-tree walk, and no possible false GREEN for the case that matters (commits landed, index not resynced). A cadence fix (a commit-count or time-window tolerance, or a post-commit hook that syncs) is a design choice this story deliberately did not make.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
+  origin: spec-deferred 58a0014567da — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-9: A hand-edited deployed caveman skill is clobbered with no `--force`, no backup, and no status that distinguishes "absent" from "present but edited".
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: A hand-edited deployed caveman skill is clobbered with no `--force`, no backup, and no status that distinguishes "absent" from "present but edited".
+  evidence: `_apply_caveman_skill` unconditionally writes the packaged upstream body plus the carve-out over whatever is at the target. `KitStatus.MISSING` conflates an absent file with one whose carve-out was removed, and the remedy row in `docs/finding-remedy-reference.md` tells the operator to run `--apply`, which overwrites. This departs from the package's own managed-artifact discipline for `copied-managed` artifacts, where `check` reports and `update` refuses without `--force`: the kit vocabulary has no `managed-file-modified` equivalent. Adding one means deciding whether a loop home's skill is operator-editable at all, which is a policy question this story did not settle.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred 0a46e03876f3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-10: Kit provisioning takes no lock, so concurrent writers can race one loop home.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Kit provisioning takes no lock, so concurrent writers can race one loop home.
+  evidence: `run_kit` acquires nothing, although `FsPort.acquire_advisory_lock` exists and is used elsewhere in this package. `marshal preflight` (during dispatch) and an operator's `marshal seed kit --apply` can run against the same home at once, as can two supervisors — `marshal factory spin` is already known not to serialize, so a second spin launches a concurrent supervisor. Two `codegraph init` runs against one `.codegraph/` or two writers on one `SKILL.md` is the failure. Unreached today because the layers ship disabled; the fix is an advisory lock on the home, whose scope (per-home vs per-item) is a design choice.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
+  origin: spec-deferred 8178fd4b3fce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-11: Creating the CCR store directory is gated on an instrument that a bare `mkdir` does not need.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Creating the CCR store directory is gated on an instrument that a bare `mkdir` does not need.
+  evidence: `kit_checks` probes the instrument before the artifact for all three items, so with the `wire` layer on and `headroom` absent from PATH, `<home>/.marshal/wire` is never created and the check reports `instrument-unavailable` rather than any verdict about the directory. This is consistent with AC 3 read literally ("the layer is skipped"), and in tension with AC 1 ("verifies ... the CCR store dir"). The module docstring's own justification for creating it eagerly — so a check before the first wrapped launch can tell "the store is provisioned" from "the wrapper silently fell back to a user-global cache" — describes precisely the case the gate prevents. Ungating just this item is a one-line change, but it makes the three items stop behaving uniformly, which is why it is a decision not a patch.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py
+  origin: spec-deferred e218776cdd35 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-12: The kit's ignore rules live only in this repository's `.gitignore`, so applying the kit to an external project dirties that project's worktree.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: The kit's ignore rules live only in this repository's `.gitignore`, so applying the kit to an external project dirties that project's worktree.
+  evidence: This story added `**/.claude/skills/caveman/` and `**/.codegraph/` to THIS repo's `.gitignore` after a real apply left `?? .claude/` and `?? .codegraph/` in `git status` — which blocks `bmad-loop run`. `marshal seed kit --apply` against a loop home outside this repository reproduces the original problem there, with nothing to seed the equivalent rules. The fix is to write the two rules into the TARGET repo as a marshal-seed managed region, which means the kit starts owning a region in a file Genesis does not currently manage.
+  location: .gitignore
+  origin: spec-deferred 7c87406934d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-13: `resolve_context_layers` trusts the home's `.active-project` marker without confirming the project it names actually exists.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: `resolve_context_layers` trusts the home's `.active-project` marker without confirming the project it names actually exists.
+  evidence: If a home's marker is stale or names another project, the `[context]` block — and therefore which kit items get provisioned — is resolved from that other project's policy, silently. The repo's own convention treats the marker as unreliable shared state (CLAUDE.md's PARALLEL AGENTS rule exists because the marker and the artifact symlinks desync). Verifying the marker is backed by a real project policy file before trusting it is cheap; deciding what to do when it is not — fall back to all-off, or report a finding — is the open question.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py
+  origin: spec-deferred 5e5c838e618b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-3-14: Nothing reports when the `output` layer is on but the home's adapter is not `claude`.
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Nothing reports when the `output` layer is on but the home's adapter is not `claude`.
+  evidence: `CAVEMAN_SKILL_RELPATH` is a fixed `.claude/skills/caveman/SKILL.md` with no adapter awareness, while `run_preflight` resolves a per-home adapter and five harness profiles ship (`claude`, `copilot`, `cursor`, `devin`, `gemini`). The Claude-only path is backed by the canonical contract — `integration-layers.md` Layer 0 says "Claude Code skill deployed per loop home by Genesis" — so this is not a contract divergence, and the missing piece is only the report: a `copilot` home with `output` on gets a skill deployed where its agent will never look, and the check calls that conformant.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py
+  origin: spec-deferred 8d8f251e290d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

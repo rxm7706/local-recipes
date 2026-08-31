@@ -78,6 +78,12 @@ ladder (Story 3.5) — same graduated-response idiom, new rung. Model movement i
 out of this story: declared difficulty (FR-51) covers the static tier, Story 3.12 covers the
 dynamic (upward-only) case, and `spec-adaptive-model-tiering` forbids downgrades.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)

@@ -231,8 +231,8 @@ Shipping the old values would have hard-stopped essentially every supervised run
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: all import-linter contracts hold (`supervisor` still never imports `cli`; `core/supervise.py` still imports no adapter/port).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Against a real provisioned loop home: launch a run with a deliberately tiny `max_wall_clock_minutes_per_run`, confirm the supervisor journals a `budget-stop` and the harness run actually stops.

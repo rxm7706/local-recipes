@@ -119,3 +119,8 @@ Adds one `Source` member (`BMAD_DRIFT`), its `report-schema.json` enum entry, an
 BMAD planning artifacts). The closed-taxonomy tripwire in `tests/unit/test_models.py` will
 fail until updated — that is the tripwire working, and it should be updated deliberately
 rather than pre-emptively.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

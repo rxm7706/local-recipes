@@ -131,9 +131,10 @@ def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
     assert remedy.count("will not re-insert") == 1
 
 
-def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():
+def test_finding_type_is_exactly_the_declared_member_set():
     # A count-only check would still pass a typo'd/renamed member -- pin the
-    # exact kebab-case value set the epics AC names.
+    # exact kebab-case value set: the 12 the epics AC names, plus Story
+    # 28.3's three token-economy-kit members.
     assert {member.value for member in FindingType} == {
         "artifact-missing",
         "managed-file-modified",
@@ -147,6 +148,14 @@ def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():
         "uncovered",
         "legacy-present",
         "opted-out",
+        # Story 28.3 (SPEC-marshal-token-economy CAP-3/CAP-4): the
+        # token-economy kit's three members. Distinct types rather than
+        # reuses -- a kit item is not a manifest artifact, and
+        # `artifact-missing` is HARD where every kit finding must be
+        # non-blocking (`seed/detect/findings.py`'s own note).
+        "kit-item-missing",
+        "kit-item-stale",
+        "kit-instrument-unavailable",
     }
 
 

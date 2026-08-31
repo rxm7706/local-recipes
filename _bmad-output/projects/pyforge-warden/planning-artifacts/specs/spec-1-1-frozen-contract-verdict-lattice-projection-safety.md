@@ -180,8 +180,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run -e python-deptry-osv-scanner python-deptry-osv-scanner-test` -- expected: all tests pass (existing 2 smoke tests + all new unit/meta/conformance tests), exit 0. This is the loop's deterministic verify gate.
-- If the env serves a stale build after source edits: `pixi install -e python-deptry-osv-scanner` then rerun the task.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

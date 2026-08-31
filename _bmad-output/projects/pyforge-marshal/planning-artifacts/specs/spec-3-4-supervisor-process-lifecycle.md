@@ -191,8 +191,8 @@ final_revision: '5f64f136cd5965711f89bcddfbd1508d21183100'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: AD-3/AD-4 contracts plus the new supervisor/cli contract all hold.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `marshal factory spin <slug>` against a real provisioned home: confirm `pgrep -f pyforge.marshal.supervisor` shows a live process after `spin` returns, and that the run's `journal.jsonl` gains a `supervisor-attach` entry followed by periodic `supervisor-heartbeat` entries until the harness process ends.

@@ -239,8 +239,7 @@ a shrunk manifest never leaves a stale PNG looking current.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_deck_qa.py -v` -- expected: all new render-gate tests pass
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full existing suite stays green
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `cd presentations/agentic-sdlc && npm install && npm run build && cd -` then

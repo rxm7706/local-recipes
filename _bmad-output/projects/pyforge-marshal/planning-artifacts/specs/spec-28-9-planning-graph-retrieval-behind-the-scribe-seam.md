@@ -10,6 +10,7 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
+  - _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-3-the-graph-node-staleness-flag.md
 warnings:
   - The seam is Scribe's CAP-18 port set (unifying-strategy Grounding 2026-08-30):
     `graph_store` (persist; CAP-18 plugins shipped as scribe Story 4.1), `compile_surface`
@@ -48,6 +49,10 @@ importing graph internals.
 - Given a graph answer, when it is used, then the story contract artifacts the agent binds
   to (spec, ACs) are still read verbatim — retrieval scopes the *context*, never the
   *contract*.
+- Given a graph answer whose backing node is flagged `stale` (Scribe Story 6.3's
+  compile-time check — the node's source moved with no declared `supersedes:`), when the
+  answer is used, then step-01 falls back to the epic-context file path (Story 28.8) instead
+  of serving the stale node silently.
 
 ## Boundaries & Constraints
 
@@ -87,7 +92,19 @@ cross-station seam. The same graphify extra also produces the foundry-cutover mo
 reports (unifying-strategy stack.md § Estate leverage) — one binding, two consumers; do not
 duplicate its ingest for planning artifacts.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
 - 2026-08-30: seam named precisely as Scribe's CAP-18 ports (`graph_store` persist + `compile_surface` graphify extra, scribe Stories 4.1/6.1) per the unifying-strategy Grounding 2026-08-30; noted the shared-with-cutover binding
+- 2026-08-31: gained a fifth AC (`spec-marshal-token-economy` CAP-13, minted the same day from
+  a Mem0 OSS comparison against Scribe Story 2.3's author-declared-only supersession) — a
+  graph answer whose backing node is flagged stale falls back to Story 28.8's file path
+  rather than being served silently. The staleness check itself is Scribe Story 6.3's own
+  compile-step work (this story's Boundaries already forbid touching Scribe's station code
+  beyond the consumer side); this story only gains the consumer-side fallback behavior.

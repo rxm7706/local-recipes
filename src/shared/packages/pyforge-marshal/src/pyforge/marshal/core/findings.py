@@ -1604,6 +1604,63 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # never silent).
         "MRS-DISP-030",
         "MRS-DISP-031",
+        # Story 22.11 (station-scoped drain + an explicit story sequence,
+        # FR-193 CAP-10): 032 `dispatch`'s sequence-argument validation --
+        # neither/both of a `story` positional and `--stories` given, or
+        # `--stories` names a key unknown or already `done` on the
+        # station's tracked backlog (ERROR; refuses before any worktree is
+        # provisioned, never partway through the sequence).
+        "MRS-DISP-032",
+        # Story 22.11 (FR-193 CAP-10): `drain`'s station-scoping and
+        # explicit-sequence surface, extended (not forked) from Story
+        # 22.7's fleet-wide campaign: 013 `--station` names a slug that is
+        # not among the live pyforge stations (ERROR); 014 `--stories` was
+        # given without `--station` -- an explicit sequence names exactly
+        # one station's backlog, never the whole fleet's (ERROR); 015 the
+        # tracked ledger could not be read while validating a FRESH
+        # `--stories` sequence, before anything was provisioned (ERROR --
+        # distinct from MRS-DRAIN-003's per-station WARN relay, since this
+        # one stops the whole invocation rather than excluding one station
+        # from an otherwise-continuing cycle).
+        "MRS-DRAIN-013",
+        "MRS-DRAIN-014",
+        "MRS-DRAIN-015",
+        # Story 28.2 (wire compression at the harness seam,
+        # SPEC-marshal-token-economy CAP-2): the declared `[context]`
+        # `wire` layer was ENABLED but could not be applied to this launch
+        # -- the resolved harness profile declares no `[wrapper]`, the
+        # wrapper binary did not resolve, or its loop-home-scoped CCR store
+        # could not be created. WARN, not ERROR: the spec's own
+        # graceful-degradation constraint is "disables its layer with a
+        # named finding, never blocks a run", and this launch is already
+        # viable unwrapped. A DISABLED wire layer raises nothing at all --
+        # there is no degradation to report about a layer nobody enabled.
+        "MRS-DISP-033",
+        # Story 28.2, the same layer on the OTHER engine: `marshal factory
+        # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
+        # launches the coding CLI, so marshal's harness-seam wrapper has no
+        # command to wrap there. Enabling the wire layer for a spin run
+        # therefore reports what did NOT happen (WARN, the
+        # MRS-SPIN-004/006/007/008/009 advisory tier) instead of leaving
+        # the operator to believe a bmad-loop run was compressed.
+        "MRS-SPIN-017",
+        # Story 28.3 (Genesis seeds the token-economy kit,
+        # SPEC-marshal-token-economy CAP-3/CAP-4): `run_preflight` provisions
+        # the per-loop-home kit (caveman skill, CCR store directory,
+        # codegraph index), each gated by its own `[context]` layer.
+        # `MRS-PREFLIGHT-015` names ANY item that did not end up in place:
+        # its instrument is unavailable here (a platform gap -- caveman and
+        # codegraph are linux-64-only -- or simply not installed), its
+        # provisioning step failed, or the whole kit could not be attempted
+        # because the packaged seed manifest would not load. WARN, never
+        # ERROR, and deliberately so: the spec's own constraint is "an
+        # unavailable instrument disables its layer with a named finding,
+        # never blocks a run", and this story's Never bullets forbid
+        # blocking a seed on a missing optional instrument -- the same
+        # reasoning (and the same tier) as Story 28.2's MRS-DISP-033 /
+        # MRS-SPIN-017. A home with every layer off raises nothing at all:
+        # there is no degradation to report about a layer nobody enabled.
+        "MRS-PREFLIGHT-015",
     }
 )
 

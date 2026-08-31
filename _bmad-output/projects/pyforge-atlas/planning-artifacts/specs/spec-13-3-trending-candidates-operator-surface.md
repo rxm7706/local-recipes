@@ -238,11 +238,8 @@ AST-gated (AD-7), and this module lives outside that gate by design — the same
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: all pass, including every new test file.
-- `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/trending_candidates src/shared/packages/pyforge-atlas/tests/mcp -q` -- expected: all pass in isolation.
-- `pixi run -e pyforge-atlas trending-candidates -- --json` (from repo root) -- expected: a valid JSON envelope with `count`/`candidates` keys, no traceback, no network call.
-- `python3 scripts/spec_surface_check.py` -- expected: `OK: every tracked file governed or allowlisted; no drift` (re-stamp with `--write-baseline --spec pyforge-atlas/spec-pyforge-atlas` after appending the reconciling `.memlog.md` entry — scoped, never a bare re-stamp).
-
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

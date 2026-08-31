@@ -210,13 +210,7 @@ evaluated first regardless of the order these lines run in.
 ## Verification
 
 **Commands:**
-- `python -m pytest -v src/platform/tests/... ` (or wherever the mirror-builder's unit test
-  lands) -- expected: passes against a fixture lockfile, no network.
-- This job cannot be fully exercised locally (no GH Actions runner, no guaranteed `sudo`
-  iptables access in this sandboxed environment) -- state that honestly in the PR rather than
-  claiming a local green run, matching Story 12.1/12.2's own "no live-cluster deploy claim"
-  precedent. Verify the new job's YAML is syntactically valid and the mirror-builder script runs
-  correctly against the real `pixi.lock` in a network-available (non-egress-blocked) dry run.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Read the rendered `air-gap-parity` job YAML and confirm every check step ends in `exit 1` on

@@ -260,9 +260,9 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_twenty_nine_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 29, Story 22.8's `harness_preference`
-    joining Story 25.4's 5 bmad-loop 0.10/0.11
+def test_config_prints_all_thirty_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 30, Story 28.1's `context` joining Story
+    22.8's `harness_preference`, Story 25.4's 5 bmad-loop 0.10/0.11
     knobs, Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
     Story 4.5's `landing_resync_commands`, Story 4.4's
     `landing_base_branch`, and Story 4.7's 4 landing keys) keys prints
@@ -289,6 +289,7 @@ def test_config_prints_all_twenty_nine_keys(capsys, monkeypatch):
         "landing_resync_commands",
         "mcp_servers",
         "harness_preference",
+        "context",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -307,7 +308,7 @@ def test_config_prints_all_twenty_nine_keys(capsys, monkeypatch):
         "stream_capture_kb",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 29
+    assert captured.out.count("(layer=") == 30
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):

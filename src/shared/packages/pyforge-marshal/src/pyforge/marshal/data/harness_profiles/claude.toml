@@ -29,3 +29,60 @@ authcheck_args = ["auth", "status"]
 authcheck_ok_pattern = "\"loggedIn\":\\s*true"
 verified = true
 notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocation shape."
+
+# Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-compression
+# wrapper, applied ONLY when policy's `[context]` block enables the `wire`
+# layer (Story 28.1). Absent that declaration nothing below is read and the
+# launch is byte-identical to pre-28.2.
+#
+# Shape read from `headroom wrap claude --help` (headroom-ai 0.37.0, the
+# version pixi activates here, 2026-08-31): `wrap` starts the compressing
+# proxy, points ANTHROPIC_BASE_URL at it, and launches Claude Code with
+# everything after `--` passed through verbatim. That `--` is why this
+# argv is a legal PREFIX: the profile's own rendered tail (`-p
+# --permission-mode bypassPermissions [--model X] <prompt>`) follows it
+# unchanged, byte for byte.
+#
+# `--code-memory none`: `wrap claude` otherwise registers the Serena
+# code-memory MCP by default. This spec's own Never forbids standing up a
+# second memory store-of-record behind Scribe's back (capture/recall is the
+# fleet's only sanctioned memory face), and the code-structure layer is
+# CAP-4/codegraph's job, not this one's. `--memory` (headroom's persistent
+# cross-session memory) is likewise never passed -- it is off by default
+# and stays off.
+#
+# NOT verified against a live wrapped session: doing so costs a real
+# provider round-trip. The argv shape and the two env keys are read from
+# the installed 0.37.0's own `--help`; the seam itself is proven by the
+# station tests through an injectable stub wrapper.
+#
+# Operator caveat: `headroom wrap` defaults to proxy port 8787 and attaches
+# to an already-running proxy rather than starting a second one. Two
+# concurrent wrapped dispatches therefore share the FIRST launcher's CCR
+# store, not their own worktree's. Marshal's station-in-flight guard makes
+# that rare per station; it is a headroom-side property, not something this
+# seam can scope away.
+[wrapper]
+binary = "headroom"
+argv = ["wrap", "claude", "--code-memory", "none", "--"]
+fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+# HEADROOM_WORKSPACE_DIR is headroom's canonical read-write state root
+# (headroom/paths.py::workspace_dir), and the CCR store defaults to
+# `<workspace>/ccr_store.db` (headroom/cache/compression_store.py::
+# _create_default_ccr_backend). Pointing it INSIDE the loop home is what
+# makes the store torn down with the worktree. `.marshal/` is gitignored so
+# the store never dirties a loop worktree (`bmad-loop run` refuses to start
+# on a dirty tree) and no `git add -A` can sweep it into a commit.
+store_env = "HEADROOM_WORKSPACE_DIR"
+store_relpath = ".marshal/wire"
+reversible = true
+notes = "headroom-ai 0.37.0 (Apache-2.0), conda-forge. CCR retrieval left ON (no --no-ccr): compression is reversible or it is inadmissible."
+
+[wrapper.env]
+# The NFR-14 admission requirement, declared rather than assumed: headroom's
+# `cache` mode freezes prior turns to maximise the provider prefix-cache hit
+# rate, where `token` mode may rewrite them for extra savings. `cache` is
+# also the upstream default -- pinned here so a stray HEADROOM_MODE in an
+# operator's environment cannot promote a marshal launch into the
+# prefix-rewriting mode the spec declares inadmissible.
+HEADROOM_MODE = "cache"

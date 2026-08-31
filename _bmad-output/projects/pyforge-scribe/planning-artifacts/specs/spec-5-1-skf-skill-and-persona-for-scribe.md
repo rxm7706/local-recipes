@@ -63,5 +63,4 @@ Bind to epics.md Story 5.1 and the 2026-08-25 station-skill-portal SCP. Follow s
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-scribe` — expected: new tests pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

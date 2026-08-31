@@ -181,15 +181,7 @@ same project `registry.py`'s own module docstring cites), overridable per call v
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- 346 passed, 2 skipped (was 311 passed, 2
-  skipped after Story 1.3; +35 net new tests this story across `test_deck_pipeline.py`,
-  `test_cli_seed.py`, and the `test_bridge.py` extensions).
-- `ruff format --check` / `ruff check` from the package root -- clean on every file this story
-  touches; pre-existing findings elsewhere (import ordering in `test_bridge.py`/`test_registry.py`,
-  `SIM117`/`FURB188` in `mcp_transport.py`/`base.py`) are untouched and out of scope.
-- `herald deck seed --help` -- exit 0, argparse-generated help naming `slug`, `--repo-root`,
-  `--support-source-project`.
-- `herald deck seed` (no slug) -- exit 2 (usage error).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `grep -n "MODERNIST_DESIGN_SYSTEM_ID" transport/base.py transport/mcp_transport.py` confirms the

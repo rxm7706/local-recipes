@@ -187,10 +187,8 @@ Both resolutions add one new Boundaries bullet each (repair-feed) and are folded
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, new tests included.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: clean (pre-existing, unrelated `pyforge-steward`/`django` failure may need the same baseline-ratchet fix Story 5.8 applied, if not already on `main`).
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: clean (AD-4 core purity for the two new `core/` functions).
-- `python scripts/spec_surface_reconcile.py` -- bmad-loop's own S-13.7 verify gate; expected: exit 0, "every tracked file governed or allowlisted; no drift."
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

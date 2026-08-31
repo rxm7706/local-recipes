@@ -94,5 +94,4 @@ First-party = migration modules whose path sits under `src/platform/` or `src/sh
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test -- python -m pytest tests/policy/test_sqlmigrate_extraction.py tests/policy/test_liquibase_ddl_governance.py -q` (cwd `src/platform`) -- expected: pass
-- `pixi run -e platform-ci-test -- python -m db.sqlmigrate_extraction` (cwd `src/platform`) -- expected: exit 0
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

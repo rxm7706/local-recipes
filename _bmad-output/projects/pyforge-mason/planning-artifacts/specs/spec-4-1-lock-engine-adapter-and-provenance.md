@@ -181,9 +181,7 @@ already know that from context.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass, including
-  the new `test_engines_condalock.py` and the extended `test_errors.py`; `test_dependency_direction`/
-  `test_adapter_sole_caller`/`test_no_recipe_knowledge` remain green with `condalock.py` present.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

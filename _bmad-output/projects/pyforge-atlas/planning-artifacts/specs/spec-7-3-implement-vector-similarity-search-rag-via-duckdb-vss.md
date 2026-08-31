@@ -213,3 +213,9 @@ Independent/Gemini review produced follow-up fix commit(s) on PR `#94`:
     provisioning-in-a-clean-environment step is the deferred/attended piece.
   evidence: `rag/store.py::load_vss_offline` (offline LOAD or VssNotProvisionedError) vs
     `provision_vss` (the only INSTALL); the rag gate proves the consumer path makes no network call.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
