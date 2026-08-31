@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 237
+# stories: 238
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -96,6 +96,7 @@ development_status:
   21-5-configurable-per-project-invocation: done
   22-1-the-dispatch-verb-launches-one-governed-isolated-story-session: done
   22-10-branch-merged-requires-real-divergence-not-just-ancestry: done
+  22-11-station-scoped-drain-and-an-explicit-story-sequence: backlog
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done

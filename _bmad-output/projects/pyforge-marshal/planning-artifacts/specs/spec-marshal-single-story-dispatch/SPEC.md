@@ -191,6 +191,24 @@ mode beside `spin`, never a replacement.**
     working. Once the branch carries real commits past baseline, a genuine "merged"
     ancestry answer is trusted exactly as before (CAP-2 is otherwise unchanged) — this is
     a divergence guard, not a rewrite of the ancestry check itself.
+- **CAP-10** *(added 2026-08-31 — motivated by a live incident the same day: wanting to
+  drain just `pyforge-scribe`'s 2 remaining backlog stories without touching atlas's or
+  marshal's own in-flight backlogs found no CLI primitive for it — `drain`'s six flags
+  carry no station filter, and `dispatch` chains nothing)*
+  - **intent:** Station-scoped and sequence-scoped dispatch, both handed as an override to
+    CAP-7's own per-station ordered-backlog reader rather than a second campaign
+    implementation: `drain --mode <mode> --station <slug>` restricts CAP-7's
+    chaining/preflight/journal to exactly one station's backlog instead of all eight;
+    `dispatch <slug> --stories <key1>,<key2>,...` chains a caller-supplied ordered list
+    instead of the ledger's own backlog order, for prioritizing specific stories without
+    editing `fleet-drain-queue.yaml`'s `order_overrides` for a one-off push. Every named key
+    is validated against the station's actual tracked backlog before anything launches.
+  - **success:** `--station` scopes one drain cycle to that station's next backlog story
+    only — every other station's backlog is provably untouched by that invocation;
+    `--stories` launches its list in the given order via the same chaining `drain` already
+    uses, and refuses before any worktree is provisioned when a named key is unknown or
+    already done; both reuse CAP-2's zombie/in-flight preflight, CAP-4's landing machinery,
+    and CAP-9's divergence guard unchanged — no second preflight or landing path exists.
 
 ## Constraints
 
@@ -212,6 +230,11 @@ mode beside `spin`, never a replacement.**
   gate, landing, or promotion implementation.
 - **Always:** FR-184's in-loop `max_parallel` clamp stays untouched; the driver's
   concurrency lives only on the cross-project plane.
+- **Always (CAP-10):** `--station` and `--stories` change ONLY which stories, on which
+  stations, the campaign reads — never a lighter-weight preflight or landing path. A
+  `--stories` list naming a story already done or absent from the station's tracked
+  backlog refuses before any worktree is provisioned, the same zombie-refusal discipline
+  fleet-wide `drain` already applies.
 
 ## Non-goals
 
