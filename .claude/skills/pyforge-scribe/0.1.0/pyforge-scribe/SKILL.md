@@ -50,7 +50,13 @@ prints `captured: <path>`.
 **Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L251-L269]:
 full rebuild of the graph; never prompts. When `SCRIBE_GRAPHIFY_EXTRA` is truthy,
 also ingests `src/shared/packages/` through the graphify extra (Story 6.1) as a
-seventh, optional compile source -- off by default (air-gap).
+seventh, optional compile source -- off by default (air-gap). Every current node
+also gets a `stale` flag (Story 6.3, CAP-13): `true` when its citation's source
+file has a git commit postdating the node's own `valid_from` with no `supersedes:`
+edge naming it -- a git-timestamp comparison only, no LLM call. `scribe recall`
+never serves a stale node; external consumers (e.g. marshal's planning-graph
+retrieval) reading `GraphNode.stale` from the compiled graph must fall back to
+their own non-graph path instead of serving it.
 
 **Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py:L272-L285]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
@@ -145,6 +151,13 @@ the `scribe index …` CLI grammar, never to `pyforge.scribe.extras` internals.
 **`RecallAnswer`** [SRC:src/pyforge/scribe/recall.py:L56] — `grounded`, `text`,
 `citation`, `node_id`. `grounded=False` is the explicit miss, never fabricated
 prose.
+
+**`GraphNode`** [SRC:src/pyforge/scribe/models.py:L128] — `id`, `kind`, `title`,
+`text`, `citation`, `valid_from`, `valid_until`, `superseded_by`, `stale`
+(Story 6.3). `is_current` is `valid_until is None`. `stale` is set only on a
+current node; external consumers reading the compiled graph must treat
+`stale: true` as a signal to fall back to their own non-graph path, never
+serve it as current.
 
 ## Architecture at a Glance
 

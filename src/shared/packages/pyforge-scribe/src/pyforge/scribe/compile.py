@@ -55,6 +55,18 @@ corrupted double-write and never red cron mail.
 Zero required network calls (AD-6): the only subprocess invoked is
 `git log` (local, read-only -- never `fetch`/`pull`/`clone`/`ls-remote`).
 
+**Staleness flag (Story 6.3, CAP-13).** After supersession runs, every
+still-CURRENT node whose citation resolves to a git-tracked repo file gets
+one more git-timestamp comparison: if that file's latest commit postdates
+the node's own `valid_from`, the node is re-upserted with `stale=True`
+(`models.GraphNode.stale`). A node Story 2.3 already invalidated (a
+declared `supersedes:` edge points at it) is skipped -- it is not current,
+so it was never a staleness candidate in the first place. This is the same
+git-timestamp-only mechanism epic-wide (memlog/changelog/retro/memory/code
+nodes alike) -- no LLM call, no new dependency, and `_apply_supersession()`
+is untouched. `commit:`/`transcript:` citations have no git-trackable
+source-file counterpart and are never checked.
+
 **Optional seventh surface (Story 6.1).** When `SCRIBE_GRAPHIFY_EXTRA` is
 truthy, `compile_graph()` also ingests `src/shared/packages/` with the
 graphify `compile_surface` extra (`pyforge.scribe.extras.graphify`),
@@ -73,6 +85,7 @@ import contextlib
 import fnmatch
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -132,6 +145,7 @@ class CompileResult:
 
     node_count: int
     invalidated_count: int
+    stale_count: int
     store_path: Path
     warnings: tuple[str, ...]
 
@@ -224,11 +238,14 @@ def compile_graph(
 
         invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
 
+        stale_count = _apply_staleness(store, repo_root, warnings)
+
         store.commit()
 
     return CompileResult(
         node_count=len(list(store.iter_nodes())),
         invalidated_count=invalidated_count,
+        stale_count=stale_count,
         store_path=resolved_path,
         warnings=tuple(warnings),
     )
@@ -701,3 +718,94 @@ def _apply_supersession(
             store.invalidate_edge(target_id, ended_at=ended_at, superseded_by=source_id)
             invalidated += 1
     return invalidated
+
+
+# --- staleness flag (Story 6.3, CAP-13) ---------------------------------------
+
+#: A `code` node's citation (Story 6.1's graphify extra) carries a
+#: `:L<line>` suffix the underlying source file's own path does not --
+#: strip it before treating the citation as a path. Every other citation
+#: shape checked here (`memory`/`memlog`/`doc`) is already a bare
+#: repo-relative path.
+_STALENESS_CODE_CITATION_RE = re.compile(r"^(?P<path>.+):L[0-9]+$")
+
+#: Node kinds with no git-trackable source-file counterpart to compare
+#: against: a `commit` node's citation (`commit:<sha>`) names the commit
+#: itself, not a file, and a `transcript` node's citation is a per-user,
+#: per-machine session log that is never part of this repo's git history
+#: (Story 3.2) -- mirrors `recall.py::_citation_is_resolvable`'s own split.
+_STALENESS_EXEMPT_KINDS = frozenset({"commit", "transcript"})
+
+
+def _staleness_source_path(node: GraphNode) -> str | None:
+    """The repo-relative path to compare `node`'s `valid_from` against, or
+    `None` when this node's citation has no git-trackable source file."""
+    if node.kind in _STALENESS_EXEMPT_KINDS:
+        return None
+    if node.kind == "code":
+        match = _STALENESS_CODE_CITATION_RE.match(node.citation)
+        return match.group("path") if match else node.citation
+    return node.citation
+
+
+def _apply_staleness(store: GraphStore, repo_root: Path, warnings: list[str]) -> int:
+    """Flag `stale=True` on every CURRENT node (Story 6.3, CAP-13) whose
+    source file's latest git commit postdates the node's own `valid_from`.
+
+    A git-timestamp comparison only -- no LLM call, no new dependency, and
+    `_apply_supersession()` above is untouched: this function only READS
+    `node.is_current`, it never writes `valid_until`/`superseded_by`. A node
+    Story 2.3 already invalidated is not current, so it is skipped here --
+    "a node with a declared `supersedes:` edge pointing at it ... is never
+    flagged stale" holds for free, without re-deriving the supersedes graph.
+    """
+    git_bin = shutil.which("git")
+    if git_bin is None:
+        warnings.append("git binary not found on PATH -- skipping staleness check")
+        return 0
+
+    flagged = 0
+    for node in list(store.iter_nodes()):
+        if not node.is_current or node.stale:
+            continue
+        relpath = _staleness_source_path(node)
+        if relpath is None:
+            continue
+        latest_commit_time = _git_latest_commit_time(repo_root, relpath, git_bin)
+        if latest_commit_time is None:
+            continue
+        if latest_commit_time > node.valid_from:
+            store.upsert_node(node.model_copy(update={"stale": True}))
+            flagged += 1
+    return flagged
+
+
+def _git_latest_commit_time(repo_root: Path, relpath: str, git_bin: str) -> datetime | None:
+    """The authored date of the latest commit touching `relpath`, or `None`
+    when it has no git history (never committed -- the ordinary case for a
+    just-captured or gitignored source, not an error) or `git` itself
+    fails/times out -- degrades like every other optional git read in this
+    module rather than aborting the compile."""
+    argv = [git_bin, "log", "-1", "--format=%aI", "--", relpath]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    output = completed.stdout.strip()
+    if not output:
+        return None
+    try:
+        return datetime.fromisoformat(output)
+    except ValueError:
+        return None

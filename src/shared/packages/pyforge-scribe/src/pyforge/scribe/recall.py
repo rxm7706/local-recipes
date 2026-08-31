@@ -22,6 +22,13 @@ compiled graph file's content plus the query string -- no randomness, no
 per-session cache, no mutable global state. Two operators (or two
 independent `FlatFileGraphStore` instances loading the same file) always get
 the identical answer.
+
+A `stale`-flagged node (Story 6.3, CAP-13) is excluded from candidacy the
+same way an `is_current is False` node already is -- this is the "consumer
+falls back to its non-graph path rather than serving the stale node
+silently" contract: `scribe recall` never returns a stale node's content as
+if it were current, falling through to the next resolvable, non-stale
+candidate, or to the explicit "no grounded answer found" result.
 """
 
 from __future__ import annotations
@@ -107,7 +114,7 @@ def answer(
 
     scored: list[tuple[int, GraphNode]] = []
     for node in store.iter_nodes():
-        if not node.is_current:
+        if not node.is_current or node.stale:
             continue
         node_tokens = _tokenize(f"{node.title} {node.text}")
         overlap = len(query_tokens & node_tokens)
@@ -128,7 +135,7 @@ def _answer_semantic(query: str, store: GraphStore, *, repo_root: Path) -> Recal
     if not query.strip():
         return _no_grounded_answer()
     for node in store.query_similar(query, limit=16):
-        if not node.is_current:
+        if not node.is_current or node.stale:
             continue
         if _citation_is_resolvable(node.citation, repo_root):
             return RecallAnswer(

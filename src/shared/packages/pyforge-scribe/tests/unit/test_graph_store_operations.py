@@ -53,6 +53,18 @@ def test_upsert_commit_reopen_round_trips(graph_store_factory: StoreFactory) -> 
     assert nodes[0].is_current
 
 
+def test_upsert_stale_commit_reopen_round_trips(graph_store_factory: StoreFactory) -> None:
+    store = graph_store_factory()
+    store.reset()
+    store.upsert_node(_node(stale=True))
+    store.commit()
+
+    reopened = graph_store_factory()
+    nodes = list(reopened.iter_nodes())
+    assert [n.id for n in nodes] == ["memory:feedback/x"]
+    assert nodes[0].stale is True
+
+
 def test_query_by_citation_finds_matching_node(graph_store_factory: StoreFactory) -> None:
     store = graph_store_factory()
     store.reset()

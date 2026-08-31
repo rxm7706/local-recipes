@@ -52,8 +52,15 @@ class PlaneGraphStore:
         self._con.execute(
             "CREATE TABLE IF NOT EXISTS scribe_nodes ("
             "id VARCHAR PRIMARY KEY, kind VARCHAR, title VARCHAR, text VARCHAR, "
-            "citation VARCHAR, valid_from VARCHAR, valid_until VARCHAR, superseded_by VARCHAR)"
+            "citation VARCHAR, valid_from VARCHAR, valid_until VARCHAR, superseded_by VARCHAR, "
+            "stale BOOLEAN)"
         )
+        # Story 6.3: a table created by a pre-6.3 version of this module
+        # already exists (the CREATE above is a no-op for it) -- add the
+        # column so `stale` persists across a commit/reload for this
+        # backend too, matching Story 2.3's `valid_until`/`superseded_by`
+        # precedent.
+        self._con.execute("ALTER TABLE scribe_nodes ADD COLUMN IF NOT EXISTS stale BOOLEAN")
         self._con.execute(
             f"CREATE TABLE IF NOT EXISTS scribe_embeddings ("
             f"id VARCHAR PRIMARY KEY, emb FLOAT[{EMBEDDING_DIM}])"
@@ -61,8 +68,8 @@ class PlaneGraphStore:
 
     def _load(self) -> None:
         rows = self._con.execute(
-            "SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by "
-            "FROM scribe_nodes"
+            "SELECT id, kind, title, text, citation, valid_from, valid_until, superseded_by, "
+            "stale FROM scribe_nodes"
         ).fetchall()
         loaded: dict[str, GraphNodeModel] = {}
         for row in rows:
@@ -76,6 +83,7 @@ class PlaneGraphStore:
                 valid_from=datetime.fromisoformat(row[5]),
                 valid_until=until,
                 superseded_by=row[7],
+                stale=bool(row[8]),
             )
         self._nodes = loaded
 
@@ -107,6 +115,7 @@ class PlaneGraphStore:
             f"SELECT n.id FROM scribe_embeddings e "
             f"JOIN scribe_nodes n ON n.id = e.id "
             f"WHERE n.valid_until IS NULL "
+            f"AND (n.stale IS NULL OR NOT n.stale) "
             f"ORDER BY array_distance(e.emb, CAST(? AS FLOAT[{EMBEDDING_DIM}])) ASC, n.id ASC "
             f"LIMIT ?",
             [list(vector), int(limit)],
@@ -119,7 +128,7 @@ class PlaneGraphStore:
         self._con.execute("DELETE FROM scribe_embeddings")
         for node in snapshot:
             self._con.execute(
-                "INSERT INTO scribe_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO scribe_nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     node.id,
                     node.kind,
@@ -129,6 +138,7 @@ class PlaneGraphStore:
                     node.valid_from.isoformat(),
                     node.valid_until.isoformat() if node.valid_until else None,
                     node.superseded_by,
+                    node.stale,
                 ],
             )
             embedding = embed_text(f"{node.title} {node.text}")
