@@ -379,6 +379,15 @@ lattice weight when a station's declared ``scope_violation_mode`` is ``warn``
 rather than ``hard``. ``core/gate.py::check_scope_with_mode`` is the sole
 emitter of either pair -- never both for the same violation.
 
+Story 28.8 (derived context recomputes only on source change,
+``SPEC-marshal-token-economy`` CAP-5) opens the ``MRS-CTX`` area for
+``marshal context``: ``MRS-CTX-001`` at ``Verdict.UNEVALUABLE`` (the
+derived-context declaration itself could not be resolved -- there is no
+freshness answer either way) and ``MRS-CTX-002`` at ``Verdict.WARN`` (an
+ENABLED ``derived-context`` layer degraded to today's compile-on-hunch
+behavior with a named reason -- the same graceful-degradation tier as
+``MRS-DISP-033``/``MRS-PREFLIGHT-015``, never a blocked iteration).
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -1104,6 +1113,18 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # visible without refusing landing.
     "MRS-GATE-012": Verdict.WARN,
     "MRS-GATE-013": Verdict.WARN,
+    # Story 28.8 (derived context recomputes only on source change,
+    # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
+    # reason MRS-POLICY-001 is: marshal could not determine WHAT the
+    # derived-context declaration even is (malformed slug/epic, no
+    # planning-artifacts directory), so there is no freshness answer to
+    # report either way. 002 is WARN for the same reason MRS-DISP-033 and
+    # MRS-PREFLIGHT-015 are: an enabled token-economy layer did not engage
+    # over an iteration that is otherwise entirely viable, and the spec's
+    # own constraint is "disables its layer with a named finding, never
+    # blocks a run".
+    "MRS-CTX-001": Verdict.UNEVALUABLE,
+    "MRS-CTX-002": Verdict.WARN,
 }
 
 

@@ -51,7 +51,14 @@ If the invocation prompt does not contain enough intent to identify what to impl
 
      1. Identify the epic number `{epic_num}` and (if present) the story number `{story_num}`. If you can't identify an epic number, use path B.
 
-     2. **Check for a valid cached epic context.** Look for `{{.implementation_artifacts}}/epic-<N>-context.md` (where `<N>` is the epic number). A file is **valid** when it exists, is non-empty, starts with `# Epic <N> Context:` (with the correct epic number), and no file in `{{.planning_artifacts}}` is newer.
+     2. **Check for a valid cached epic context.** Look for `{{.implementation_artifacts}}/epic-<N>-context.md` (where `<N>` is the epic number). A file is **valid** when it exists, is non-empty, starts with `# Epic <N> Context:` (with the correct epic number), and its declared planning sources have not changed since it was compiled.
+
+        Answer that last clause with the **derived-context freshness check** rather than by guessing. Run, from the repo root, `marshal context refresh --project <slug> --epic <N> --format json` (add `--root <path>` when you are not in the main checkout), and read `data.mode`:
+        - `incremental` — the declared sources were checked. Find the `data.artifacts` entry whose `name` ends `:epic-<N>-context`. `state: fresh` means its declared sources are unchanged, so the cached file is valid; `state: stale` or `state: unknown` means recompile.
+        - `compile-on-hunch` — the `derived-context` layer is declared off (the default), or it degraded and said so in a `MRS-CTX-*` finding. Fall back to the previous rule verbatim: the file is valid when no file in `{{.planning_artifacts}}` is newer.
+        - The command not existing, not running, or printing anything you cannot parse as that envelope is the same as `compile-on-hunch`. Read `data.mode`, never the exit code: `MRS-CTX-001` exits `1` while still reporting `compile-on-hunch`, which is a usable answer, not a failure.
+
+        A `MRS-CTX-*` finding is advisory: report it and continue. Never HALT on it — freshness is an optimization, and the fallback always produces an answer.
         - **If valid:** load it as the primary planning context. Do not load raw planning docs (PRD, architecture, UX, etc.).
         - **If missing, empty, or invalid:** compile it in the next bullet.
 
@@ -60,6 +67,10 @@ If the invocation prompt does not contain enough intent to identify what to impl
      4. **Verify if compiled.** If epic context was compiled, verify the output file exists, is non-empty, and starts with `# Epic <N> Context:`. If valid, load it. If verification fails, HALT with status `blocked` and blocking condition `context compilation verification failed`.
 
      5. **Previous story continuity.** Regardless of which context source succeeded above, scan `{{.implementation_artifacts}}` for specs from the same epic with `status: done` and a lower story number. Load the most recent one (highest story number below current). Extract its **Code Map**, **Design Notes**, **Spec Change Log**, and **task list** as continuity context for step-02 planning. If no `done` spec is found but an `in-review` spec exists for the same epic with a lower story number, HALT with status `blocked` and blocking condition `missing previous-story continuity decision`.
+
+        Under `mode: incremental` only (item 2's check), this extract is kept between iterations: find the `data.artifacts` entry whose `name` ends `:epic-<N>-continuity`. When it reports `state: fresh` and the file at its `output` exists and is non-empty, load that file as the continuity context instead of re-reading the previous story's spec body. Otherwise extract as above and write the result to that `output` path. Under `compile-on-hunch` write nothing at all and extract exactly as before — the previous behavior is unchanged when the layer is off.
+
+        The `status`/story-number scan that decides WHICH spec is the predecessor — and therefore the HALT condition above — always runs, in every mode: it reads statuses from the listing, not spec bodies, and a cached extract must never let a blocking `in-review` predecessor go unnoticed.
 
      **B) Freeform path** — if the intent is not an epic story:
      - Planning artifacts are the output of BMAD phases 1-3. Typical files include:

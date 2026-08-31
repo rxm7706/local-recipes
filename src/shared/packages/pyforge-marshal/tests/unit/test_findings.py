@@ -323,6 +323,16 @@ def test_registered_codes_contains_the_real_codes():
             # advisory siblings of MRS-GATE-007/008.
             "MRS-GATE-012",
             "MRS-GATE-013",
+            # Story 28.8 (derived context recomputes only on source change,
+            # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
+            # own area. 001 UNEVALUABLE (the derived-context declaration
+            # itself could not be resolved -- a malformed slug/epic, or no
+            # planning-artifacts directory to list); 002 WARN (an ENABLED
+            # layer degraded to today's compile-on-hunch behavior with a
+            # named reason -- the same never-blocking tier as MRS-DISP-033
+            # and MRS-PREFLIGHT-015).
+            "MRS-CTX-001",
+            "MRS-CTX-002",
         }
     )
 

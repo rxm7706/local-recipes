@@ -1309,6 +1309,21 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # rendered by `marshal status`/`fleet-picture`) without refusing landing.
 # `mode == "off"` emits neither the raw nor the advisory code -- the check
 # is not evaluated at all.
+#
+# Story 28.8 (derived context recomputes only on source change,
+# SPEC-marshal-token-economy CAP-5) opens a NEW area, `MRS-CTX`, for the
+# `[context]` pipeline's own command surface (`marshal context`):
+# `MRS-CTX-001` (the declaration could not be resolved at all -- a
+# malformed slug/epic, or no planning-artifacts directory to list;
+# UNEVALUABLE, the same tier as `MRS-POLICY-001`) and `MRS-CTX-002` (the
+# enabled `derived-context` layer degraded -- the scribe grammar did not
+# resolve, did not accept the declaration, or answered unparseably, or the
+# manifest could not be written; WARN, the same graceful-degradation tier
+# and the same reasoning as Story 28.2's `MRS-DISP-033` and Story 28.3's
+# `MRS-PREFLIGHT-015`: the iteration is entirely viable on today's
+# compile-on-hunch behavior, so a disabled layer is reported, never
+# blocking). A layer declared OFF raises neither -- there is nothing to
+# report about a layer nobody enabled.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1683,6 +1698,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # weights depending on the declared mode). Both WARN.
         "MRS-GATE-012",
         "MRS-GATE-013",
+        # Story 28.8 (derived context recomputes only on source change,
+        # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
+        # own two codes -- 001 UNEVALUABLE (the declaration itself could
+        # not be resolved), 002 WARN (the enabled layer degraded to
+        # today's compile-on-hunch behavior with a named reason).
+        "MRS-CTX-001",
+        "MRS-CTX-002",
     }
 )
 

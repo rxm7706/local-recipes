@@ -60,7 +60,16 @@ the ONE place that expands a possibly-partial declaration into all 5 layer
 states, so ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
 spin) and ``cli/dispatch.py::dispatch_once`` (factory dispatch) resolve the
 identical payload from the identical function rather than each re-deriving
-"layer absent = off" on its own, and (Story 28.15) ``scope_violation_mode``
+"layer absent = off" on its own. Three of the five layers are load-bearing
+today: ``wire`` (Story 28.2, the harness-seam wrapper), ``output``/
+``structure-graph`` (Story 28.3, the per-loop-home kit Genesis provisions
+and ``marshal seed check`` verifies), and ``derived-context`` (Story 28.8 --
+``core/derived_context.py`` + ``cli/context.py`` declare an epic's derived
+planning artifacts and their sources, and ``adapters/scribe_cli.py`` asks
+Scribe's ``compile_surface`` cocoindex extra, through the ``scribe index
+refresh`` grammar, whether those sources moved; marshal renders the flag,
+the extra owns freshness). ``planning-graph`` stays declaration-only until
+Story 28.9. Also (Story 28.15) ``scope_violation_mode``
 -- SPEC-marshal-token-economy CAP-17's per-station scope-violation
 enforcement mode for ``core/gate.py``'s ``MRS-GATE-007``/``008`` check: one
 of ``hard`` (today's non-waivable refuse)/``warn`` (the new default: the

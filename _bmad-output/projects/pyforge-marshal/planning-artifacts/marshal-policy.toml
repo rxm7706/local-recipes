@@ -192,6 +192,13 @@ verify_commands = [
   "src/shared/packages/pyforge-marshal/tests/unit/test_status.py",
   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py",
   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py",
+  # Story 28.8 (CAP-5): the derived-context layer's freshness CONSUMERS are
+  # the repo-level bmad-build-auto skill's own two files -- the spec's own
+  # `warnings:` block names them as this story's surface, and no
+  # station-package path can stand in for them. Scoped to those two files,
+  # not the whole skill tree.
+  ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md",
+  ".claude/skills/bmad-build-auto/compile-epic-context.md",
 ]
 
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,

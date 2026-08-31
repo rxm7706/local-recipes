@@ -28,6 +28,11 @@ CLI_ONLY_VERBS: frozenset[str] = frozenset(
     {
         "adapters",
         "chain",
+        # Story 28.8: `marshal context` answers derived-planning-context
+        # freshness for ONE epic of ONE station, consumed by
+        # bmad-build-auto's own routing step -- not a fleet-status read an
+        # MCP client would call. CLI-only until a consumer needs it there.
+        "context",
         "planning",
         "config",
         "deploy",
