@@ -84,6 +84,11 @@ artifacts start with Story 6.1's (graph, move list); marshal Story 28.8 register
 epic-context/continuity distills against the same grammar later — this story must not
 special-case marshal, only expose the generic "declare sources → derived artifact" surface.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass, including this story's own new/updated test coverage.
+
 ## Spec Change Log
 
 - 2026-08-30: drafted as Epic 6 preflight (unifying-strategy stack.md "bind now" rows; pairs with marshal Epic 28's token-economy consumers)

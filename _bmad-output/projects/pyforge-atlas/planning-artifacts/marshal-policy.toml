@@ -111,6 +111,7 @@ verify_commands = [
   "scripts/openteams_identity_dashboards.py",
   "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
   "scripts/tests/test_openteams_identity_dashboards*.py",
+  "scripts/tests/fixtures/**",
   "conf/conda-forge-packaging-inventory-operations*",
   "docs/reference/conda-forge-packaging-inventory-operations_*.md",
   "pixi.toml",

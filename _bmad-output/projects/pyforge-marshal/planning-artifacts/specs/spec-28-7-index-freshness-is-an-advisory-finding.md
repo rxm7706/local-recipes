@@ -70,6 +70,12 @@ Bind to epics.md Story 28.7 and spec-marshal-token-economy CAP-10. Depends on St
 seeded kit (there must be an index to judge). Advisory doctrine: findings inform, the
 existing gates decide.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
