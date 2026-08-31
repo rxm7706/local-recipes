@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'CLAUDE.md wiring — team memory loads automatically (Story 1.2)'
 type: 'feature'
@@ -93,7 +92,8 @@ A prior dev attempt (bmad-loop attempt 1) crashed after marking this spec `in-re
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- expected: full suite still green (regression check; this story doesn't touch Scribe's code)
+- `git diff --stat` -- expected: only `CLAUDE.md` listed
 
 **Manual checks (if no CLI):**
 - Open `CLAUDE.md` and confirm the new `## Team Memory` section appears near the end, contains `@.claude/memory/MEMORY.md`, and every other section is byte-identical to before the edit except that one insertion.
