@@ -4145,9 +4145,11 @@ So that one operator job works in HTMX on the host.
 
 ## Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
 
-Decomposes `spec-marshal-token-economy` (CAP-1..CAP-12; CAP-11/CAP-12 added 2026-08-30
-from the operator's model/cost catalog — Stories 28.10/28.11; Dream:
-`docs/dreams/marshal-token-economy.md`). Marshal owns spend *brakes* (E3 ceilings, idle
+Decomposes `spec-marshal-token-economy` (CAP-1..CAP-15; CAP-11/CAP-12 added 2026-08-30
+from the operator's model/cost catalog — Stories 28.10/28.11; CAP-14/CAP-15 added
+2026-08-31 from a live dispatch-ordering/retry incident — Stories 28.12/28.13; Dream:
+`docs/dreams/marshal-token-economy.md` + `docs/dreams/marshal-dependency-aware-dispatch.md`).
+Marshal owns spend *brakes* (E3 ceilings, idle
 ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
 policy-rendered, Genesis-seeded, supervisor-metered context pipeline over five
 already-packaged instruments (headroom-ai, caveman, codegraph, cocoindex, graphifyy).
@@ -4285,3 +4287,27 @@ So that easy stories run on economy-class models and flat-rate pools drain befor
 **And** subscription-marked pools are preferred and the serving pool is journaled; an exhausted or unavailable pool falls through, never blocks
 **And** this remains the FR-51 seam — no second selection mechanism, run-level batching unchanged
 **And** the review stage never routes below the policy-declared review floor
+
+### Story 28.12: Dependency-derived dispatch ordering
+
+As a marshal operator,
+I want `factory drain` to compute dispatch order from each story's declared `Deps:` instead of raw ledger order,
+So that a station's backlog never dispatches a story ahead of an unmet dependency, including across epics.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-14
+**Given** a station's tracked backlog with a `Deps:` graph spanning more than one epic **When** `factory drain` runs with no `--stories` override **Then** the computed dispatch order never violates a declared `Deps:` edge
+**And** stories with no unmet dependency either way fall back to ledger order (deterministic, no invented preference)
+**And** `--stories` continues to work unchanged as an explicit override
+
+### Story 28.13: Sanctioned retry after an operator-initiated stop
+
+As a marshal operator,
+I want an externally-stopped dispatch distinguished from a genuinely failed one, and a documented retry path for the former,
+So that stopping a run to reprioritize never permanently blocks that story, and a retry never silently steps on uncommitted work or misreads a dead worktree as live.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-15
+**Given** a dispatch session stopped by SIGTERM from outside marshal's own idle/budget ladder **When** the journal records the outcome **Then** it is not recorded as `failed` the way a genuine verdict/review/crash failure is
+**And** the story is retryable through `drain`/`dispatch --stories` without the undocumented bare-`dispatch <slug> <story>` workaround
+**And** a retry against a worktree already carrying uncommitted changes reports the diff (file count, line count) before proceeding
+**And** liveness detection (`MRS-DISP-011`) does not treat leftover uncommitted worktree changes alone as proof a session process is still alive
+**And** `MRS-DISP-011`'s refusal while a session process is genuinely still alive is unchanged

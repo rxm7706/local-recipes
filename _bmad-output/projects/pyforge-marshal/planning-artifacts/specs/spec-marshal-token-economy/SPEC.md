@@ -18,6 +18,7 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
 sources:
   - ../../../../../../docs/dreams/marshal-token-economy.md
+  - ../../../../../../docs/dreams/marshal-dependency-aware-dispatch.md
 open_questions: []
 ---
 
@@ -139,6 +140,32 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     flagged stale; an unchanged source or a properly superseded node is never flagged; a
     retrieval that hits a stale node demonstrably falls back, never serves it; zero LLM
     calls and no new dependency (a git-timestamp comparison on data compile already walks).
+- **CAP-14**
+  - **intent:** `factory drain` (no caller-supplied `--stories`) derives dispatch order
+    from each backlog story's `Deps:` line instead of walking `sprint-status-ledger.yaml`
+    raw order — a topological sort over the tracked dependency graph, honoring cross-epic
+    edges, falling back to ledger order only among stories with no unmet dependency either
+    way. `--stories` remains as an explicit caller override.
+  - **success:** A station whose backlog has a cross-epic dependency (verified:
+    `pyforge-atlas` Story 23.9 → Story 22.1) dispatches in an order that never violates a
+    declared `Deps:` edge, without an operator hand-deriving it first; a station with no
+    `--stories` override still produces a valid order; `--stories` continues to work
+    unchanged as an override.
+- **CAP-15**
+  - **intent:** A dispatch ended by an external stop (SIGTERM outside marshal's own
+    idle/budget ladder) is distinguished, in the journal, from a genuine failure
+    (verdict-gated, review-rejected, crashed) — and is retryable through the normal
+    `drain`/`dispatch --stories` path without an undocumented workaround. Before a retry
+    touches a worktree carrying uncommitted changes, the size and file list of that diff is
+    surfaced, not silently ignored or discarded. Liveness detection for a station's current
+    dispatch does not treat "worktree has uncommitted changes" alone as proof a session
+    process is still alive.
+  - **success:** An externally-stopped story is not journaled `MRS-DRAIN-005 failed`; it
+    dispatches again through `drain`/`--stories` without requiring the bare-`dispatch <slug>
+    <story>` workaround; a retry against a worktree with uncommitted changes reports the
+    diff (files, line count) before proceeding; `MRS-DISP-011`'s refusal correctly reflects
+    actual process liveness, not stale worktree state left behind by an external kill;
+    `MRS-DISP-011`'s live-session-process refusal is otherwise unchanged.
 
 ## Constraints
 
