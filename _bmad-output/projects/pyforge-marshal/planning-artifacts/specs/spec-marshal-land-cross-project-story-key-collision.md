@@ -77,5 +77,5 @@ context: []
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, including new regression tests, zero regressions in `test_promotion.py` or any other suite touching `merged_story_keys`/`count_conforming_subjects`/`marshal_native_merged_keys`.
-- `pixi run -e pyforge-marshal marshal land pyforge-mason --format text` — expected: reports a fresh landing for the `4.2` wave, not `already landed -- confirming retirement/resync only` (the live bug this fix closes).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

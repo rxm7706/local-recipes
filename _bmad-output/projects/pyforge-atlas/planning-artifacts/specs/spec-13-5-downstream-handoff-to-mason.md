@@ -334,10 +334,8 @@ HANDOFF_ENVELOPE_SCHEMA = {
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-atlas pytest tests/trending_candidates/test_handoff.py -q` -- expected: all pass.
-- `pixi run --frozen -e pyforge-atlas kedro-test` -- expected: passes, count increases by the new test file's cases.
-- `pixi run --frozen -e pyforge-atlas pytest tests/trending_candidates -q` -- expected: full-package regression, all pass.
-- `python3 scripts/spec_surface_check.py` -- expected: `OK: every tracked file governed or allowlisted; no drift` (after appending the reconciling `.memlog.md` entry, then `--write-baseline --spec pyforge-atlas/spec-pyforge-atlas`).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

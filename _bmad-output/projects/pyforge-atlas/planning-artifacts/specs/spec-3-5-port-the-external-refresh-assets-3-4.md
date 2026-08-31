@@ -265,3 +265,9 @@ Status: review (left at `review` per the orchestrator-owns-git mandate — NOT a
 - **Residual risk:** the concrete refresher/fetcher injection + live Dagster Schedule (`dagster-dryrun`) are C1's (DW-B5-2), so an unattended run cannot actually refresh (offline: keep last-good + mark stale, by design, mirroring B1/B2's deferred fetch); the G/G' consumer-side degrade-to-indeterminate on an air-gapped empty store is DW-B5-4; the `name_resolver.py`/`recipe-generator.py` Q6 re-point is DW-B5-1.
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

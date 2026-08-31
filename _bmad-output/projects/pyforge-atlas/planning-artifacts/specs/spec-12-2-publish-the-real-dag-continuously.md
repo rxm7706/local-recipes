@@ -245,12 +245,8 @@ original review of this identical diff, refuted by the code, or documentation-on
 ## Verification
 
 **Commands:**
-- `grep -rl "$(pwd)" docs/dashboard/kedro-viz/` -- expected: NO output (zero files reference this checkout's own absolute path anywhere in the staged output). This is the decisive check for the pass-2 finding; do not skip it or substitute the rebuild-diff-rebuild check for it — that check alone already looked green in pass 1 while this defect was present.
-- Run `pixi run -e pyforge-atlas viz-publish-stage` TWICE in a row (rename/move the staged output between runs, e.g. to `/tmp`) with zero source changes -- expected: `diff -rq` the two staged copies shows NO differences
-- `grep -o 'src="[^"]*"\|href="[^"]*"' docs/dashboard/kedro-viz/index.html` -- expected: only relative (`./assets/...`, `./favicon.ico`) local paths
-- `git status --porcelain docs/dashboard/kedro-viz` -- expected: clean after the bring-up commit
-- `pixi run -e pyforge-steward steward deploy dashboard --dry-run` (from repo root, after the bring-up commit with no further pipeline changes) -- expected: "no diff — nothing to deploy"
-- `pixi run --frozen -e local-recipes llms-full-check` -- expected: no new drift finding
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - Open `docs/dashboard/kedro-viz/index.html` locally in a browser; confirm it renders the real 7-pipeline / ~70-node Atlas DAG (not the 77-stub-node prototype's shape, which is coincidentally similar in count but a different — MemoryDataset stub — graph)

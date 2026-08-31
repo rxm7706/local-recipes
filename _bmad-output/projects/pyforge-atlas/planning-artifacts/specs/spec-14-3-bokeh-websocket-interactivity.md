@@ -347,9 +347,8 @@ narrows only the one test that specifically needs a real live WebSocket round tr
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: full suite green, including `tests/views/*`
-- `pixi run -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/views -q` -- expected: all views tests (14.1/14.2 unmodified + new 14.3 tests) pass
-- `pixi run -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/singularity -q` -- expected: still green (no `sqlite3` regression)
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

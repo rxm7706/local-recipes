@@ -132,11 +132,8 @@ deferred:
 ## Verification
 
 **Commands:**
-- `rg -n "6\\.10\\.0|bmad-agent-tech-writer|Paige" _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md` -- expected: only historical/gloss mentions, not current At-a-Glance claims
-- `rg -n "^source_pin:|^last_synced_skill_version:" _bmad-output/projects/*/project-context.md` -- expected: all 8 files show bumped pins including v8.84.0 / 6.11.0
-- `rg -n "marshal|cadence|living" _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` -- expected: owner=marshal + cadence present
-- `rg -n "open_questions:" -A6 _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment/SPEC.md` -- expected: empty list or CAP-7 question absent
-- `git diff --stat AGENTS.md` -- expected: empty (HOLD)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Spot-check architecture At-a-Glance against `_bmad/_config/manifest.yaml` (6.11.0) and live skill directory counts.

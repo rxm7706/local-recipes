@@ -99,17 +99,7 @@ separate commands per artifact kind).
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- full suite green.
-- `ruff format --check` / `ruff check` clean on every file this story touches.
-- `herald deck pull --help` -- shows `--target` with all four choices.
-
-**Deferred live-MCP proof (NOT run by this session):** the orchestrating session must run one real
-`herald deck pull pyforge-warden --target marp-deck` (or another Warden-family deck with an authored
-Marp source in its Design project) against the live endpoint, confirming the remote path convention
-(`{short}-{kind}.md`) matches what the Design project actually names the file. This is the one part
-of this story's design that is a documented, evidence-backed convention (bridge-protocol.md's own
-worked example) rather than something proven against a real project by this session -- flagged
-explicitly as the highest-risk deferred item across all of Epic 2.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

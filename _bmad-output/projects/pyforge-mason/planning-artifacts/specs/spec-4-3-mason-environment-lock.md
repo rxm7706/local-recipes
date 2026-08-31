@@ -252,9 +252,7 @@ output needs -- mirrors `package.py::build()` wrapping `pep517`/`pixi` engine re
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass, including
-  new `environment.py::lock()` and `environment lock` CLI dispatch coverage;
-  `test_capability_tiers.py`/`test_dependency_direction.py` remain green.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -89,8 +89,7 @@ Canary paths are values the templates must *not* interpolate. `redis.password` i
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run -e platform-dev pytest src/platform/tests/test_chart_invariants.py -q --override-ini 'addopts=--import-mode=importlib' -k 'secret_ref or secret_value or secrets_http or vault_csi or chart_values_check'` -- expected: 10 passed
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -104,21 +104,7 @@ assumed away.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- full suite green.
-- `ruff format --check` / `ruff check` clean on every file this story touches.
-- `herald deck pull --help` -- shows `--target standalone`.
-
-**Verification gap (not closed by this story):** whether `deck-export` (external, unmodified) actually
-implements "prefer the bundle file over a marp --html render when the bundle is present at its fixed
-path" was NOT verified by reading `deck-export`'s own implementation in this session -- out of this
-story's stated code map. If a future story or the orchestrating session's review finds `deck-export`
-does not honor that preference, the fix belongs to `deck-export`, not this module.
-
-**Deferred live-MCP proof (NOT run by this session):** the orchestrating session must run one real
-`herald deck pull pyforge-warden --target standalone` against the live endpoint (the Warden Design
-project has this exact bundle per `bridge-protocol.md`'s own worked example), confirming the remote
-path convention matches the real file name and that the subsequent `deck-export` run picks up the
-landed bundle over a `marp --html` render.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

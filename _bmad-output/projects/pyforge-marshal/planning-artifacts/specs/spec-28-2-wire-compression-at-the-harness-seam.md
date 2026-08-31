@@ -86,6 +86,12 @@ is live-zone-only compression (provider cache hot zone untouched) — headroom's
 design; the test proves the property, not the vendor claim. Profile wrapper field follows the
 harness-profile packaging convention (Story 1.10 / harness_profile.py precedent).
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)

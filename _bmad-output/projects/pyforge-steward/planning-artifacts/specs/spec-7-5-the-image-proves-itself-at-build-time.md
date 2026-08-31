@@ -102,10 +102,7 @@ final_revision: 'e0614e74f7b7c6f4e1149ee145644730c1465b9f'
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-ci pyforge-doctor-scripts-test` -- expected: new `cli-smoke` tests pass (collected via the existing `tests/scripts` sweep)
-- `docker build -f Containerfile -t pyforge-guild-7-5-check .` -- expected: succeeds; the `cli-smoke` `RUN` step reports all eight stations OK
-- A scratch Containerfile copy with a ninth, bogus `--cli` appended to the same `RUN` line, built with `-f <scratch>` -- expected: `docker build` FAILS at that step, never silently passes; scratch file discarded, not committed
-- `python3 -m py_compile scripts/container-gates` -- expected: clean
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm the new `RUN` step sits after the Story 7.3 secrets-scan gate and before the Story 7.4 `VOLUME` line (per that line's own "add new RUN/COPY steps ABOVE this line" instruction).

@@ -278,14 +278,8 @@ recorded outcome per the epics AC, not a mid-execution ambiguity.
 ## Verification
 
 **Commands:**
-- `git status --porcelain` -- expect exactly one path,
-  `_bmad-output/projects/pyforge-marshal/planning-artifacts/spike-0-copier-api-fit-report.md`
-  (the only git-tracked deliverable); **zero** paths under `src/`. This spec file and
-  `deferred-work.md` are gitignored (`implementation-artifacts/`), so they will not appear here
-  — check them by direct existence instead (next bullet).
-- `test -f _bmad-output/implementation-artifacts/spec-7-6-spike-0-copier-api-fit.md && grep -c 'source_spec.*spec-7-6-spike-0-copier-api-fit' _bmad-output/implementation-artifacts/deferred-work.md`
-  -- expect the spec file to exist and at least 2 matching `deferred-work.md` entries (the
-  mechanism-findings entry and the test-coverage-gaps entry).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm the scratch-directory venv, throwaway template, and destination repos used for the

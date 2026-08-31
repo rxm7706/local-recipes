@@ -139,8 +139,7 @@ Default `COMPONENT_WAGTAIL_ADMIN_GROUP=wagtail-admin`.
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_front_door_publish.py src/platform/tests/test_oidc_identity.py src/platform/tests/test_health_endpoint.py -q` -- expected: pass
-- `pixi run -e platform-ci-test pytest src/platform -q --ignore=src/platform/ingest` -- expected: pass (coverage 100% on `platformapp/**`)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

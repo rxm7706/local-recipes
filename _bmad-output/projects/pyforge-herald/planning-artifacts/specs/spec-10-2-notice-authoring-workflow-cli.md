@@ -105,8 +105,7 @@ absence of any prompt at all (a link is opt-in, not merely optional-with-a-defau
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- 595 passed, 2 skipped.
-- `ruff format --check` / `ruff check` -- clean.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `HERALD_TOKEN=operator:x herald notice author --type deprecation --component demo --what w

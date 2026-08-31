@@ -265,8 +265,8 @@ input, rather than a new `CoverageReport` wrapper type the AC does not ask for.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test` -- expected: full suite passes.
-- `pixi run -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_inventory.py src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py -q` -- expected: all pass, no regressions.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

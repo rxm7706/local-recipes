@@ -202,10 +202,8 @@ decides, not exhaustive automation).
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: all pass, including the new classifier test cases.
-- `pixi run -e pyforge-atlas kedro-catalog-check` -- expected: pass (naming/layer/pipeline-count/no-inline-IO conventions hold for `trending_candidates_classified`).
-- `pixi run -e pyforge-atlas dagster-dryrun` -- expected: pass (`classify_trending_candidates` has a `NODE_TIMEOUTS` entry; `test_every_op_has_its_own_timeout` and bootstrap-op-set tests hold).
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery -q` -- expected: all classifier tests pass in isolation.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

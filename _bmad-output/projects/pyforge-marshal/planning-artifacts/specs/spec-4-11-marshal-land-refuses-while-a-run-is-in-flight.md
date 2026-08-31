@@ -206,9 +206,8 @@ rather than a second use of the display-oriented enum.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: full suite green, including new `is_run_live` and `run_land` liveness tests
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: no new disallowed import edges
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: clean
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

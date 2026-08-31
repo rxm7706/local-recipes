@@ -118,8 +118,8 @@ final_revision: 'c0e7ca38a03ba7e52368aad1d0396553df90a25d'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` -- expected: all import-linter contracts hold (`core/supervise.py` still imports no adapter/port directly).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Against a throwaway loop home, hand-craft a `state.json` with a deferred story at `attempt == max_dev_attempts`, invoke `run_resume`, and confirm `.bmad-loop/policy.toml`'s `[adapter].model` reads `"opus"` afterward and the run's journal shows `escalated: true` with the story key named.

@@ -312,3 +312,9 @@ all 5 join inputs, just not independently proven by a dedicated test for 3 of th
 functional or correctness risk identified. The intermittent `test_dashboard_e2e_navigation_and_rendering`
 full-suite flake is pre-existing resource-contention behavior, not introduced by this story,
 but is worth a future look if it recurs.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

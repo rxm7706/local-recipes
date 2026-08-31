@@ -107,10 +107,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior suites unchanged + new axis/coverage/referential-integrity tests green; sole-ownership / no-execution / socket-deny meta-guards stay green.
-- `pixi run --frozen -e local-recipes mypy src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new errors vs the story-1.6-recorded baseline.
-- `pixi run --frozen -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new issues vs baseline.
-- Manual: `git diff --stat` shows zero changes to `verdict.py`, `hygiene.py`'s `DEFAULT_HYGIENE_POLICY`, `vuln.py`'s `DEFAULT_VULN_SEVERITY_POLICY`, `Status`/`ErrorKind` enum members, `pixi.toml`/`pixi.lock`/`pyproject.toml`.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

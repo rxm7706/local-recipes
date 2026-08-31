@@ -49,6 +49,9 @@ verify_commands = [
   ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md",
   "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-1-the-graphify-ingest-extra-and-its-move-list-verbs.md",
   "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-2-the-cocoindex-incremental-ingest-extra.md",
+  "pixi.toml",
+  "pixi.lock",
+  "src/shared/packages/pyforge-scribe/docs/cli-runbooks.md",
   "src/shared/packages/pyforge-scribe/pyproject.toml",
   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
@@ -57,6 +60,6 @@ verify_commands = [
   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_cli.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_compile.py",
-  "src/shared/packages/pyforge-scribe/tests/unit/test_graphify_extra.py",
+  "src/shared/packages/pyforge-scribe/tests/unit/test_*graphify*.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py",
 ]

@@ -118,8 +118,7 @@ Conformance is a **best-effort static** scan of sibling station `pyproject.toml`
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-core pyforge-core-test` -- expected: new hooks + conformance + leaf constraint pass. Pre-existing sibling sole-ownership failures may remain (deferred).
-- `pixi run -e pyforge-core pytest src/shared/packages/pyforge-core/tests/unit/test_hooks.py src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py -q` -- expected: all pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

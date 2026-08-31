@@ -226,3 +226,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
     step; `tests/wasm/test_wasm_smoke.py` `static_server` fixture `pytest.skip`s when
     `build/index.html` is absent. `wasm-build` uses the network (npm + `extensions.duckdb.org`
     via curl); `wasm-smoke` is offline (loopback static host + asserted zero external requests).
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

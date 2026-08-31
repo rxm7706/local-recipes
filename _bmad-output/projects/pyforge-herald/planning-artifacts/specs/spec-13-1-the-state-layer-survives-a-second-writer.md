@@ -685,10 +685,7 @@ tell the operator to re-run) when any does not.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/test_locking.py src/shared/packages/pyforge-herald/tests/test_state.py src/shared/packages/pyforge-herald/tests/test_progress.py src/shared/packages/pyforge-herald/tests/test_claims.py src/shared/packages/pyforge-herald/tests/test_notices.py -v` -- expected: all pass, including new concurrency tests
-- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/` -- expected: full herald suite green, no regressions
-
-
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

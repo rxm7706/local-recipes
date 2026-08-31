@@ -246,3 +246,9 @@ Independent/Gemini review produced follow-up fix commit(s) on PR `#97`:
     `wasm/build.py::_csv_to_parquet` produces the flat file; the emitter produces
     `core_feedstock_health/core_feedstock_health-0000.parquet` + `manifest.json`. The publish gate
     IS a manifest consumer (proves the layout); G1 is not yet.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

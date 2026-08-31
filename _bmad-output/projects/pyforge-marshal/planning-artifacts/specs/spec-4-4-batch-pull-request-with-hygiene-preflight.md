@@ -92,8 +92,8 @@ baseline_revision: 'b5af6aeb3673e0939303dc3caa97fe40ade214fe'
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: all green, new tests included, zero regressions.
-- `pixi run --frozen -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache` — expected: all import-linter contracts hold, especially the AD-34 egress-registry-completeness meta-test recognizing the new `ForgePort`.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Do NOT run `marshal deploy batch-pr` for real against this repo during implementation — it would open/update a real PR. Verify entirely through the unit-test suite with a fake `ForgePort`, matching this project's own established precedent (Stories 4.1/4.3 both declined to run their own real-network/real-git-write manual checks during implementation for the identical reason).

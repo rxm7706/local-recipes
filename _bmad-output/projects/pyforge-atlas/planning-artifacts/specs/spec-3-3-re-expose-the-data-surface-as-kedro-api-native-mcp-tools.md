@@ -146,3 +146,9 @@ No adversarial-review patches recorded (agent stalled pre-review); orchestrator 
 review substituted for this thin passthrough surface. Any follow-up → DW-B3.
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

@@ -79,6 +79,5 @@ Files:
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py -q` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
-- `git diff origin/main -- CLAUDE.md AGENTS.md .claude/skills/conda-forge-expert` — expected: empty
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

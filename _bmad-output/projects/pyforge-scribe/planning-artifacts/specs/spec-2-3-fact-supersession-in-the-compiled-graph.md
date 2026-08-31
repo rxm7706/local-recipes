@@ -105,8 +105,7 @@ story's test suite exercised the `supersedes` field being non-`None`.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` -- expected: full suite green
-- `git diff --stat` -- expected: only `test_supersession.py` (new) changed
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

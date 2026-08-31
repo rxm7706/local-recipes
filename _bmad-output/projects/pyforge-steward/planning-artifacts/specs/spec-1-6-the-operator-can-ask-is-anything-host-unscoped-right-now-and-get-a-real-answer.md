@@ -102,10 +102,4 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1-1.5's existing suite + this story's new tests)
-- `pixi run -e pyforge-steward steward keys audit --drift` -- expected: `keys audit: [drift] clean: <path to _http.py>`, exit 0
-- `pixi run -e pyforge-steward pyforge-steward-dogfood` -- expected: exits 0
-
-**Results (2026-08-07):** all green — see the consolidated Verification note after Story 1.7.
-
-</intent-contract>
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

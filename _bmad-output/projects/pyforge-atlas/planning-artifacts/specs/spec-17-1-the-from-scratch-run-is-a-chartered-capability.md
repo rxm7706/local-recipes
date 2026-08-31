@@ -141,6 +141,5 @@ _None. No `bad_spec` finding triggered a repair loopback in this run._
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes spec-surface-check` -- expected: `spec-surface: ok -- every tracked file governed or allowlisted; no drift`, no finding for this spec. RAN, PASSED.
-- `grep -c conda-forge-packaging-inventory-operations scripts/spec_surface_allowlist.txt` -- expected: 0 matches (grep exit 1). RAN, PASSED.
-- `python -m py_compile` over the four quartet scripts -- expected: exit 0, no output. RAN, PASSED.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

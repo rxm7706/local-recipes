@@ -413,60 +413,7 @@ calls `optimize()`/`scan()` with `cfe_python_arg=sys.executable` exercises a REA
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green, including the new
-  `optimize_recipe`/`scan_for_vulnerabilities`/`recipe optimize`/`recipe scan`-verb tests and the
-  updated 5-entry `_CFE_SCRIPTS` table-shape assertion.
-
-**Result:** PASS. Ran 2026-08-12 against this worktree, attempt-2 (post-escalation-resolution)
-implementation:
-
-```
-pixi run -e pyforge-mason pyforge-mason-test
-785 passed in 8.76s
-```
-
-Baseline (pre-story, same command, story's changes reverted): `723 passed in 8.53s`. Net +62 new
-tests, all green, zero regressions -- 2 more than attempt-1's 783 (the two new "unrelated floor entry
-is NOT rejected" tests added per-verb to cover the acceptance criterion the whole-floor design in
-attempt-1 could not satisfy). Covers: `cfe.py`'s `optimize_recipe`/`scan_for_vulnerabilities` mocked
-I/O-matrix + per-operation-default-timeout + table-entry-identity + real-fixture round-trip tests
-(`test_cfe.py`); the 5-entry `_CFE_SCRIPTS` table-shape assertion and its
-`test_adapter_sole_caller.py` counterpart; `recipe.py`'s `optimize()`/`scan()` composition tests
-(mocked against `cfe.probe_import_floor`, not `cfe.ensure_import_floor`), CFE-unresolved propagation,
-a positive "`probe_import_floor` is called" test, a positive "an unrelated missing floor entry does
-NOT reject the call" test per verb, a REAL unmocked import-floor-missing propagation test against
-`sys.executable` (self-diagnosing: asserts the precondition directly against
-`cfe.probe_import_floor(sys.executable).missing` before relying on it -- the pyforge-mason pixi env
-genuinely lacks `ruamel.yaml`/`requests`/`pyyaml`), and a real-fixture round-trip test with the floor
-faked via `cfe.probe_import_floor` (`test_recipe.py`); `cli.py`'s `recipe optimize`/`recipe scan` verb
-registration + dispatch, text/JSON rendering, flag/env resolution, `CfeUnresolvedError` ->
-`EXIT_CFE_UNAVAILABLE`, `CfeImportFloorError` -> `EXIT_FAILED` (via the existing generic `MasonError`
-branch -- no new branch needed), and a real-fixture end-to-end test per verb (`test_cli.py`); the
-AD-14 credential-sentinel test extended to both new call sites (and its own guard shaped this attempt:
-see the deviation note below).
-
-**Note (dev-verify repair pass, 2026-08-12):** the "785 passed" figure above was stale/incorrect even
-at the time it was written -- independently reverified this pass at 787 passed against the identical
-committed code (see the Review Triage Log's dev-verify-repair entry), and 788 after this pass's own
-one added test. This paragraph's prose (net +62, "2 more than attempt-1's 783") is left as historical
-record of what was believed at the time rather than rewritten; the corrected counts are 723 -> 787 ->
-788 (net +65 over attempt-1's 783 baseline once this pass's own coverage addition is included).
-
-Two deviations surfaced and were corrected during implementation:
-1. (Carried over from attempt-1, re-confirmed here) A self-correction against
-   `tests/meta/test_adapter_sole_caller.py`'s AD-3 guard: `recipe.py`'s module and function docstrings
-   must never name the wrapped scripts literally (`recipe_optimizer.py`/`vulnerability_scanner.py`) --
-   the guard's category-(b) CFE-script-filename detector flags that in ANY string constant including
-   docstrings (no docstring exemption for that category, unlike category (a)'s CFE-path detector).
-   Described generically ("the wrapped optimizer" / "the wrapped scanner") throughout.
-2. (New this attempt) `tests/meta/test_credential_isolation.py`'s AD-14 guard flags a banned
-   HTTP-client name (`"requests"`) spelled as a string constant passed as a call argument anywhere in
-   `src/pyforge/mason/` -- `recipe.py`'s first-draft `_SCAN_RELEVANT_FLOOR = frozenset({"requests",
-   "pyyaml"})` tripped it, since `frozenset({...})` is itself a call. Declared as a plain tuple literal
-   instead (`_SCAN_RELEVANT_FLOOR: tuple[str, ...] = ("requests", "pyyaml")`), which is not a call
-   expression, alongside `_OPTIMIZE_RELEVANT_FLOOR` for consistency -- `"requests"` here names CFE's
-   own import-floor dependency (probed inside the CFE interpreter, never imported by Mason itself), the
-   same sanctioned exception `cfe.CFE_IMPORT_FLOOR`'s own data table already relies on.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

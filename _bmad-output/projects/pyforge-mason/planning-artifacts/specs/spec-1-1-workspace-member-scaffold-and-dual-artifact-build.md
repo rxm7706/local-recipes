@@ -47,3 +47,8 @@ As a **maintainer of this repository**, I want **`pyforge-mason` to build as bot
 ## Notes
 
 This spec was recovered from epics.md-derived Intent + ACs only. Promote to full narrative spec + I/O matrix once story development context is available.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

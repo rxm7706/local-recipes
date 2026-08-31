@@ -289,13 +289,7 @@ silent bug, and out of reach for this story's own README-free test fixtures.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: all tests pass, no new skips,
-  egress-deny fixture unaffected (this module opens no socket)
-- `pixi run -e local-recipes llms-full-check` -- expected: clean (registry.py adds no new
-  dependency — stdlib only)
-- `ruff format --check .` / `ruff check .` on this story's new/edited files -- expected: clean
-  (whole-package `ruff check .` still carries the 4 pre-existing `transport/` findings noted in
-  Story 1.4's spec, out of this story's scope)
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

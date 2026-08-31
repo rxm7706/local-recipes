@@ -107,6 +107,4 @@ The 1068-line decision record (`finding-id-verdict-encoding-decision.md`, in `co
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: full suite green; the exact-N `Component` meta-test passes at 15 fields; `test_additive_extra_fields_still_validate`, `test_verdict_sole_ownership`, and `test_socket_deny_alive` all pass.
-- `pixi run -e pyforge-warden python -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('src/shared/packages/pyforge-warden/src/pyforge/warden/data/report-schema.json')))"` -- expected: the amended schema is itself a valid Draft 2020-12 document (no typos in the new `$defs`/`allOf`).
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/conformance/test_report_schema.py -q` -- expected: schema-conformance (additive-fields, new families, coherence rejects) green.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

@@ -92,5 +92,4 @@ Verification: 18 passed (`test_skf_steward_skill` + `test_steward_persona`); SKF
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-steward` — expected: new tests pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

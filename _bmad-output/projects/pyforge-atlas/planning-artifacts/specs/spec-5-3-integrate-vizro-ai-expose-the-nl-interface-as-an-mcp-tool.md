@@ -229,3 +229,9 @@ No separate review-fix commit; findings (if any) folded into the impl commit. Fu
 - source_spec: `d3-integrate-vizro-ai-nl-interface-mcp-tool.md`
   summary: D3 delivers the NL surface as an MCP tool (callable from Claude Code). Surfacing the same NL query as an interactive FIELD in the D2 Vizro dashboard is deferred with the D2 CIS-two-spine page work (DW-D2-1) + its live LLM backend (DW-D3-1) — it needs both the rendered dashboard breadth and a configured backend, and the visual verification is the DEV-AUTO pass D2 defers.
   evidence: D3 AC "a Vizro-AI natural-language query field AND a query_vizro_ai MCP tool"; the MCP tool is shipped, the in-UI field rides on D2's deferred CIS-spine dashboard breadth.
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

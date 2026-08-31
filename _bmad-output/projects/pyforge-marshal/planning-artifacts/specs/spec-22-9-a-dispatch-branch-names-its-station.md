@@ -338,3 +338,9 @@ the implementer's report):
   `marshal/22.9`, which `resolve_dispatch_branch` was verified to still resolve. Per the
   always-on PR gate, the PR needs the `maintenance` label (nothing under `recipes/` changed);
   `pixi.toml` is untouched, so no `environment.yaml` re-export is required.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

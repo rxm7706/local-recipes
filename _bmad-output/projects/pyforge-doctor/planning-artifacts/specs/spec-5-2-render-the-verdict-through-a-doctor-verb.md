@@ -77,3 +77,8 @@ Mutation-tested by removing the member.
 That both-directions set-equality lesson recurs: Story 6.7's AD-13 conformance test asserts
 set equality against the installed harness for the same reason, and was likewise
 mutation-tested before landing. A subset check passes in exactly the case worth catching.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

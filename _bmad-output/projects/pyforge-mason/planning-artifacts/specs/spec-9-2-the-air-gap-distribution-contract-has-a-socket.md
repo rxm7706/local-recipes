@@ -59,3 +59,8 @@ shape-validation + register helpers with unit tests. No installer is built here.
 - [x] Contract doc
 - [x] Empty registry + validate/register
 - [x] Unit tests
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

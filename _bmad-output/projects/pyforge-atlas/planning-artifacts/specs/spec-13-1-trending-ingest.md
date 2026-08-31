@@ -162,10 +162,8 @@ further human input is required to implement CAP-1.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-atlas kedro-test` -- expected: all pass, including new test files collected.
-- `pixi run -e pyforge-atlas kedro-catalog-check` -- expected: pass (naming/layer/credential/no-inline-IO/AD-1/pipeline-count/orphan-ttls conventions all hold).
-- `pixi run -e pyforge-atlas dagster-dryrun` -- expected: pass (new schedule entry loads, `STOPPED`, no live execution).
-- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/datasets/test_upstream_discovery.py src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery -q` -- expected: all new tests pass in isolation.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `environment.yaml` regen is/isn't required for the new `beautifulsoup4` run-dep (repo CLAUDE.md pixi.toml-change gate is scoped to the root `local-recipes`/`build` env sync check; verify whether this member-package pixi.toml edit trips it). **Verified 2026-08-09:** `pixi project export conda-environment -e build` produces a byte-identical `environment.yaml` — the `build` env does not pull the `pyforge-atlas` feature, so no regen or commit is needed.

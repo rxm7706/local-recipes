@@ -81,9 +81,7 @@ Do not close estate-wide `DW-OM-2026-08-24` from this story.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py -q` -- expected: all pass
-- `pixi run -e pyforge-core pytest src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py -q` -- expected: pass (canonical group only)
-- `pixi run -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests -q` -- expected: pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

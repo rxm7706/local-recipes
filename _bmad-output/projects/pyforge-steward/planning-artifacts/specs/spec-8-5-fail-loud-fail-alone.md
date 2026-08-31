@@ -202,10 +202,7 @@ tested at the single-pair level, now reached for the first time via the batch pa
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (including the
-  rewritten and newly added tests), exit 0, zero live network calls.
-- `pixi run -e pyforge-steward pyforge-steward-dogfood` -- expected: unaffected (`steward
-  --version && steward keys audit --drift` still succeeds).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

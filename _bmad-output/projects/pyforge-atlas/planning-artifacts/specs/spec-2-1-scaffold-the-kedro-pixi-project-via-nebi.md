@@ -721,3 +721,9 @@ Review-pass modifications (2026-07-17, step-04 patches):
   orchestrator-owned; deviation from step-04's "commit" finalize, recorded).
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

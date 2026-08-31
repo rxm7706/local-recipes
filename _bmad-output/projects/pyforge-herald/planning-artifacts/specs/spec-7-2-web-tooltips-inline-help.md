@@ -124,10 +124,7 @@ treated as the AC's evident intent rather than a literal timer applied everywher
 ## Verification
 
 **Commands:**
-- `npm run test` (`vitest run`) -- 3 passing tests in `Tooltip.test.jsx` (200ms delay held/appears,
-  disappears on mouse-leave, immediate show/hide on focus/blur) + the Story 7.1 suite unaffected
-  (9 total across both files).
-- `npm run build` -- clean.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (Playwright against `npm run preview`):**
 - Clicking the date-range `HelpIcon` button and then hovering the search input in the same

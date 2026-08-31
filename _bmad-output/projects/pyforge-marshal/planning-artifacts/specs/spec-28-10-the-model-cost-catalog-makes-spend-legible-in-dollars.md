@@ -80,6 +80,12 @@ Refresh discipline. Layers on top of Story 28.4's savings fields (deps S-28.1, S
 Story 28.11 consumes the same catalog for pool-preference routing, so the catalog schema
 must carry pool membership even though this story does not route.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from the operator's 2026 model/cost catalog (CAP-11 minted same day; companion model-economics.md is the seed snapshot)

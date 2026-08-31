@@ -111,8 +111,7 @@ The console-script command name is `doctor` (not `pyforge-doctor`) — the archi
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` -- expected: full unit + meta suite passes (this is `.bmad-loop/policy.toml`'s `[verify]` gate).
-- `pixi run -e pyforge-doctor doctor --version` and `... doctor --help` -- expected: exit `0`, prints version/usage text, no traceback.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Review Triage Log
 

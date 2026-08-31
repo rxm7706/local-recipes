@@ -102,9 +102,7 @@ Rejected (verified, not fixed): the already-computed `steps` dict (each script's
 ## Verification
 
 **Commands:**
-- `cd src/shared/packages/pyforge-steward && python3 -m pytest tests/conformance/test_provision_module.py -q` -- all tests (existing + new) pass
-- `cd src/shared/packages/pyforge-steward && python3 -m pytest tests -q` -- full existing suite stays green
-- `python3 scripts/spec_surface_check.py` -- exit 0, no drift (after the memlog updates)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (real backend, no mocks):**
 - From repo root, with `local-recipes` on PATH: `pixi run -e pyforge-steward steward provision --module bmb`, confirm the happy path still reports `ok=True` against the real `bmb` backend (unaffected by the new verification gate, since the real backend always lands the section on exit 0).

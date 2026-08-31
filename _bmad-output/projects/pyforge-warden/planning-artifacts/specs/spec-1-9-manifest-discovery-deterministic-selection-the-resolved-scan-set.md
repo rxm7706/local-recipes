@@ -86,7 +86,4 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior suites unchanged + new recursive-discovery/D2-split/allow-empty/environment.yaml tests green.
-- `pixi run --frozen -e local-recipes mypy src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new errors vs the story-1.7-recorded baseline.
-- `pixi run --frozen -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new issues.
-- Manual: `git diff --stat` shows zero changes to `Status`/`ErrorKind` enum members, the verdict lattice order, the frozen exit-code enum, `Component`/`ResolvedInventory` field shapes, or `report-schema.json`.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

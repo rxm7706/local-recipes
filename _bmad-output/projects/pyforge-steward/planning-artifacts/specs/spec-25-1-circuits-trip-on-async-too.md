@@ -70,9 +70,7 @@ PyBreaker on conda-forge is sync / Tornado; `breaker.call(async_fn)` returns the
 ## Verification
 
 **Commands:**
-- `export BMAD_ACTIVE_PROJECT=pyforge-steward`
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_circuits_trip_on_async_too.py -q` -- expected: all pass
-- `pixi run -e platform-ci-test pytest src/platform/tests/meta/test_no_pyforge_import.py -q` -- expected: pass
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

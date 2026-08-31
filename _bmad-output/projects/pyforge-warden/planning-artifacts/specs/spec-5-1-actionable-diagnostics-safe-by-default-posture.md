@@ -215,8 +215,7 @@ warden: doctor status=ok checks=5
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: full suite green, no regressions in existing `render_text`/`OsvEngine`/`EngineResult` call sites (every new parameter is additive/defaulted).
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py src/shared/packages/pyforge-warden/tests/conformance/test_doctor.py -q` -- expected: new tests pass, including the never-exit-1 assertion.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Read the updated README section and confirm it names all four paths (local/pixi-pack/nebi/first-contact) plus `--doctor`'s exit contract, without copying `docs/specs/pyforge-warden.md` verbatim.

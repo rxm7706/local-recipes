@@ -150,6 +150,4 @@ Do not reuse `config.local_dev.tokens.mint_token` (OIDC `aud`, 15m default).
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test python -m pytest tests/test_django_pyforge_assertion.py tests/meta/test_no_pyforge_import.py -q` (cwd `src/platform`) -- expected: all passed
-- `pixi run -e local-recipes python -m pytest tests/meta/test_leaf_constraint.py -q` (cwd `src/shared/packages/pyforge-core`) -- expected: all passed
-- `pixi run -e platform-ci-test python -m ruff check` on touched Python -- expected: clean
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

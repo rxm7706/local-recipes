@@ -236,8 +236,7 @@ even though the import happens.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green (existing tests
-  updated for the real doctor output, plus every new test listed above).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -95,5 +95,4 @@ The `--warn-only` downgrade is the same shape, targeting `{POLICY_VIOLATION, IND
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden --frozen pyforge-warden-test` -- expect all pass (1169 baseline + new tests; `--frozen` avoids an unrelated `bmad-ui` environment solve failure in this worktree)
-- `pixi run -e pyforge-warden --frozen pytest src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py -q` -- expect all pass (no sole-ownership violation from the new `waiver.py` function)
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

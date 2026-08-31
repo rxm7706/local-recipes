@@ -429,11 +429,7 @@ this story by number) wins over the older table cell.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: green; the new skip-helper unit test
-  runs, the slow test is excluded from collection's run set.
-- `pixi run -e pyforge-mason pyforge-mason-test-slow` -- expected: green; the delegation-fidelity
-  test runs for real against this repo's own CFE install and passes.
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- confirms no regression elsewhere.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

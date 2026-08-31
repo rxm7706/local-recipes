@@ -97,7 +97,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: full suite green, including `tests/meta/test_verdict_sole_ownership.py` with `waiver.py` present.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - `pixi run -e pyforge-warden warden-scan tests/fixtures/projects/vuln_critical --bypass --reason "test"` -- inspect the printed stanza shape and exit code 0.

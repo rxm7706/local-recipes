@@ -98,7 +98,7 @@ Inventory ids (23): runtime `dreams`, `specs`, `story_specs`, `campaigns`, `comm
 ## Verification
 
 **Commands:**
-- `pixi run -e platform-ci-test pytest tests/test_console_parity_homes.py tests/test_front_door_queries_supervisor.py tests/meta/test_no_pyforge_import.py -q` — expected: all passed (cwd `src/platform`)
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

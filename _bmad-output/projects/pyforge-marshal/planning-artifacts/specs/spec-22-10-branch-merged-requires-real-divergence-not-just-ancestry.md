@@ -288,3 +288,9 @@ session's working tree, the ledger flip for key
 `22-10-branch-merged-requires-real-divergence-not-just-ancestry`, and the `maintenance` PR
 label — this touches `src/` and `_bmad-output/`, never `recipes/**`) is the dispatcher's,
 matching every other story landed this session.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

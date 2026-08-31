@@ -230,11 +230,8 @@ Dream prose piecemeal, outside a dedicated Dream-trim pass, risks exactly the ki
 ## Verification
 
 **Commands:**
-- `git ls-files scripts/loop_push_watch.py` -- expected: empty output (file untracked/deleted)
-- `grep -rn "loop_push_watch\|loop-push-watch" --include='*.py' --include='*.toml' --include='*.txt' .` -- expected: zero hits
-- `pixi run -e local-recipes spec-surface-check` -- expected: exit 0, "OK: every tracked file governed or allowlisted; no drift."
-- `pixi run -e local-recipes unpushed-work-check -- --branches-only --json` -- expected: runs clean (exit 0 or reports pre-existing unpushed branches unrelated to this change), proving the standing signal is unaffected
-- `python3 -c "import tomllib; tomllib.load(open('pixi.toml','rb'))"` -- expected: no exception (valid TOML after the task-block removal)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

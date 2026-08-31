@@ -191,9 +191,7 @@ of its own (would itself be re-deriving the wrapped tool's judgment).
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: full suite green, including the new
-  `build_native`/`build_docker`/`detect_native_build_config`/`recipe.build`/`recipe build`-verb tests
-  and the updated `_CFE_SCRIPTS`-shape assertion.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

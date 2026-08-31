@@ -92,9 +92,4 @@ warnings: []
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1-1.4's existing suite + this story's new tests)
-- `pixi run -e pyforge-steward steward keys list --help` -- expected: shows `--inventory`/`--json`
-
-**Results (2026-08-07):** all green — see the consolidated Verification note after Story 1.7.
-
-</intent-contract>
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

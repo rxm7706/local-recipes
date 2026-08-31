@@ -92,8 +92,8 @@ Render surface = timing-strip class labels (not a second velocity series). Veloc
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_renders.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_resolve_project.py -q` -- expected: all PASS
-- `Lane 1 /console/ (Guildhall generator retired) --source git` -- expected: doctor dual totalLabel; no wall-clock sids on velocity bars; warden/atlas curated timing unchanged
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

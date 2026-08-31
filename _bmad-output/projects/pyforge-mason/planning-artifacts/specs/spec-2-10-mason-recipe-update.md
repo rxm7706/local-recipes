@@ -269,12 +269,7 @@ argument surface.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/` -- expected: full
-  suite green, including the updated `test_cfe_scripts_table_has_exactly_the_five_stubbed_fixture_entries`
-  (renamed/updated to seven) and the new `update` coverage.
-- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/` -- expected: all
-  seam-enforcement meta-tests green (AD-1..AD-16 guards) -- in particular `test_no_recipe_knowledge`
-  and `test_adapter_sole_caller`, proving the two new script filenames are named only in `cfe.py`.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

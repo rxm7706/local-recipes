@@ -97,8 +97,4 @@ deferred: []
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor pyforge-doctor-test` — 1262 passed, 1 skipped
-- `pixi run -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests -q` — 913+ passed after five-tier import fix (re-run after ast restore)
-- `pixi run -e local-recipes python -m pytest tests/scripts/test_detectors_doctor_sources.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_resolve_project.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py -q` — 49 passed
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests -q -k 'generate or fleet_scan or promote or dashboard'` — 78 passed
-- Platform Django tests need Postgres (CI); `test_generator_gone_kedro_viz_kept` is in `src/platform/tests/test_console_parity_homes.py`; duplicate gate `test_guildhall_generator_stays_deleted` in steward meta.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

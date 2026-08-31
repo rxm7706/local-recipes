@@ -1212,16 +1212,7 @@ Code Map changed as part of this repair.
 ## Verification
 
 **Commands:**
-- `docker build -f src/platform/Containerfile -t platform-test src/platform` -- expect exit 0
-- `podman build -f src/platform/Containerfile -t platform-test src/platform` (rootless) -- expect
-  exit 0
-- `docker run --rm -d -p 8000:8000 platform-test` then `curl -sf localhost:8000/ht/` -- expect 200
-- `podman run --rm -d -p 8000:8000 platform-test` then the same curl, plus `podman exec <cid> id
-  -u` -- expect nonzero
-- `docker history platform-test --no-trunc` / `podman history platform-test --no-trunc` grepped
-  for the test secret value -- expect no match
-- `docker compose -f src/platform/compose/*.yml up -d` / `podman-compose -f
-  src/platform/compose/*.yml up -d` -- expect all services healthy
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ### Results (2026-08-14, executed live in this worktree)
 

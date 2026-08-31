@@ -73,6 +73,12 @@ truth for status (never a hand-maintained feed) — extend that pipeline, don't 
 This story chips at `DW-FU-3-6-6` (token ceilings dark mid-session) but does not claim to
 close it.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)

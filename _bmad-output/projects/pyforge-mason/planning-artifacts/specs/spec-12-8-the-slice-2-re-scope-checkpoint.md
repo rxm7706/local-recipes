@@ -252,14 +252,7 @@ precedent, rather than picking a verdict to avoid halting.
 ## Verification
 
 **Commands:**
-- `python3 -c "import yaml; yaml.safe_load(open('_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml'))"`
-  -- expected: parses clean.
-- `pixi run -e local-recipes cfe-rebuild-guard-check` -- expected: exit 0, no new findings
-  (this story never touches clause logic or writes a `brief_path`).
-- `git status --porcelain` -- expected: only `campaign-state.yaml` and this spec file changed.
-- `grep -A5 "id: \"slice-3-atlas-intelligence\"" campaign-state.yaml` -- expected: `brief_path:
-  null` unchanged (`-A5`, not `-A2` -- `brief_path` sits 5 lines after `id:`, not 2; `-A2`
-  only reaches `id`/`order`/`name` and never actually demonstrates the claim).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

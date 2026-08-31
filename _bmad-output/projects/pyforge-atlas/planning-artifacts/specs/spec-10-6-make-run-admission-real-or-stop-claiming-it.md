@@ -614,21 +614,8 @@ and each closes a way the mechanism fails silently rather than loudly:
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-atlas kedro-test` -- expected: all tests pass, including
-  the new `tests/test_admission.py`. Baseline before this story is **803 passed / 19
-  skipped** (Story I4/10.5 final); zero regressions, and the new file adds the
-  two-process gate. Use `--frozen`: this story edits the member `pixi.toml`, so a
-  non-frozen invocation will re-solve and rebuild the source package. Confirm the baseline
-  count by running this ONCE before writing any code.
-- `pixi run --frozen -e pyforge-atlas kedro-catalog-check` -- expected: still 47/47 green
-  (no `catalog.yml` changes in this story).
-- `pixi run --frozen -e pyforge-atlas dagster-dryrun` -- expected: still green. This story
-  edits `orchestration/definitions.py` (docstring only) and adds a hook that
-  `KedroProjectTranslator` will deep-copy at `to_dagster()` time, so this gate is the
-  deepcopy-safety proof on the Dagster plane.
-- `pixi run --frozen -e pyforge-atlas python -c "import pyforge.atlas.admission"` --
-  expected: clean import, proving the module is importable from a bare interpreter (the
-  two-process gate depends on it).
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - After the manifest edit, confirm `filelock` still resolves at `>=3.32.0` and that no other

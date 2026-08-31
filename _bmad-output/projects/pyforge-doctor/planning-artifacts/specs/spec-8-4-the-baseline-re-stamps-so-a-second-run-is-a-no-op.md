@@ -152,8 +152,7 @@ it here would risk reintroducing exactly that.
 ## Verification
 
 **Commands:**
-- `python -m pytest tests/scripts/test_deferred_work_promote.py -v` -- expected: all pass, including the re-stamp and second-run-no-op tests.
-- `python -m pytest tests/scripts/test_deferred_work_baseline.py -v` -- expected: all pass, unaffected by the factored-out function (confirms the CLI path still behaves identically).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

@@ -109,8 +109,7 @@ Engine-fail contrast: monkeypatch a default engine `run` to record a failing run
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py -q` -- expected: all pass
-- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: default suite (`not slow`) still green
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

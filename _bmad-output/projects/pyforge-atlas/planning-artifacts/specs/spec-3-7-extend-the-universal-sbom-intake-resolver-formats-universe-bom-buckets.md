@@ -216,3 +216,9 @@ Status: review (left at `review` per the orchestrator-owns-git mandate — NOT a
 - **Residual risk:** UPDATE-FEEDSTOCK cannot fire from live data until `core_packages_enumerated` carries `upstream_version` (DW-B7-1 — the AC-4 fixture proves the bucket); the concrete transitive resolver + its wall-clock guard are injected/deferred (DW-B7-2); the universe-BOM ARTIFACT is conda-centric (membership comes from `pypi_universe` directly — DW-B7-3, not a matcher-correctness hole). All three are additive-signal / wiring gaps, not correctness holes on the shipped surface.
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

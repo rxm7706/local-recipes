@@ -213,10 +213,8 @@ fixed; only the concrete filepath is TBD.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes dashboard-dryrun` — expected: pass, including the 3 new pages'
-  structural + BSL-schema assertions.
-- `pixi run -e local-recipes dashboard-serve` (manual, after a green Epic 21 bootstrap) —
-  expected: the 3 new pages are visible in the page nav with non-empty tables.
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Open each of the 3 new pages against an empty `PYFORGE_ATLAS_DATA_ROOT` and confirm the

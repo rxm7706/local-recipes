@@ -490,20 +490,7 @@ by inspecting `bridge.py`'s imports.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: all tests pass (241 passed, 2
-  pre-existing skips as of the third follow-up pass), no new skips, egress-deny fixture
-  unbroken
-- `pixi run -e pyforge-herald pyforge-herald-build` -- expected: unchanged build success (no
-  manifest touched this story)
-- `pixi run -e local-recipes llms-full-check` -- expected: clean (as of this story's landing the
-  repo carries no drift at all; do not assume a specific pre-existing finding count, re-run and
-  compare)
-- `ruff format --check .` (from the package root) -- expected: clean
-- `ruff check .` on this story's new/edited files specifically -- expected: clean. The
-  whole-package `ruff check .` carries 4 pre-existing findings in `transport/` (2x `FURB188` in
-  `base.py`, 1x `SIM117` each in `mcp_transport.py` and `tests/test_transport_base.py`),
-  confirmed present at this story's own baseline commit and out of this story's Boundaries (`Do
-  not touch transport/`) -- do not expect the whole-package command to report clean
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

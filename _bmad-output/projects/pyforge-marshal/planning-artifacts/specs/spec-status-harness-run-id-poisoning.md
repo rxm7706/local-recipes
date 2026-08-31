@@ -99,3 +99,9 @@ directory, which is what `harness.run_status_snapshot` actually keys on (confirm
 / "runs" / run_id`). The new helper must glob the LATTER path, not reuse `_latest_run_dir`
 itself — it is new, small, and analogous in shape, not a call-site reuse of the existing
 function.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).

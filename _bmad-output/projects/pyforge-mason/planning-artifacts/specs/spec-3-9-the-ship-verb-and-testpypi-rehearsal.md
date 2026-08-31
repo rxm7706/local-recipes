@@ -724,16 +724,7 @@ remaining clobbering path, and found no deletion-check regressions.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-mason pyforge-mason-test` -- expected: all unit + meta tests pass (default
-  `-m "not slow"` loop, including `tests/meta/test_capability_tiers.py` and
-  `tests/meta/test_render_ownership.py`, which `ship()`'s lazy-vs-eager import shape and `cli.py`'s
-  new render call must both satisfy).
-- **Pass 4 (2026-08-14, follow-up review):** `pixi run -e pyforge-mason pyforge-mason-test` --
-  **1276 passed, 1 deselected** (1270 before this pass; +6 new tests, 0 failures). All three patches
-  additionally live-verified directly against the real CLI/parser/renderer (not just the test suite):
-  `--yes --recipe-path X build .` now exits `EXIT_USAGE` with a clean message; a `package ship`
-  result with an embedded-newline message now renders as indented `key: value` sub-lines with no
-  `repr()`-shaped substring; `parse_ship_targets("")` confirmed raising `InvalidShipTargetError`.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

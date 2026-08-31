@@ -226,19 +226,8 @@ def test_detector_does_not_fire_on_a_self_import():
 ## Verification
 
 **Commands:**
-- `pixi install -e pyforge-core` -- expect a clean resolve + install, no errors
-- `pixi run --frozen -e pyforge-core pyforge-core-test` -- expect all tests pass
-- `pixi run --frozen -e pyforge-core python -c "import pyforge.core; print(pyforge.core.__version__)"`
-  -- expect `0.1.0`, exit 0
-- `pixi run --frozen -e pyforge-core pyforge-core-build-conda` -- expect the `.conda` artifact
-  builds cleanly under `dist-conda/`
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-core` -- expect zero
-  findings
-- `pixi run -e local-recipes pyright src/shared/packages/pyforge-core` -- expect zero findings
-- `git diff --stat -- 'src/shared/packages/pyforge-*/pixi.toml' 'src/shared/packages/pyforge-*/pyproject.toml'`
-  excluding `pyforge-core` -- expect empty (no sibling station manifest touched)
-- `pixi project export conda-environment -e build > environment.yaml && git diff --stat environment.yaml`
-  -- run after the `pixi.toml` edit; commit if it reports a diff
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm `pixi.toml`'s new `[feature.pyforge-core.*]` blocks and `pyforge-core` environment

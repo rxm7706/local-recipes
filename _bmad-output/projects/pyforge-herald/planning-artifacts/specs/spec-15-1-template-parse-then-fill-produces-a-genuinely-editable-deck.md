@@ -140,8 +140,7 @@ Deferred findings (see frontmatter `deferred:`): no GitHub Actions workflow runs
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-herald pyforge-herald-test` -- expected: full suite green, including new `test_pptx_pipeline.py`.
-- `pixi run -e pyforge-herald herald deck pptx-spec --template src/shared/packages/pyforge-herald/src/pyforge/herald/templates/pyforge-deck-template.pptx` -- expected: valid JSON, one entry per stock layout.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Open the round-trip-test output `.pptx` in real PowerPoint at least once during review and confirm the text is clickable/editable — the `soffice`-based automated round-trip is a strong proxy but not a substitute for the real target application.

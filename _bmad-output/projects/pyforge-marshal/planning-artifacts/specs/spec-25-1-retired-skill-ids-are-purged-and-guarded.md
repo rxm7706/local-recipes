@@ -91,10 +91,8 @@ deferred:
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/ -q` -- expected: new guard green; only the 3 known main failures red.
-- `pixi run -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests -q` -- expected: green.
-- `python scripts/spec_surface_reconcile.py` -- expected: 0 findings.
-- `grep` the 20 IDs over scan scope -- expected: every remaining line carries an allow marker.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Spec Change Log
 

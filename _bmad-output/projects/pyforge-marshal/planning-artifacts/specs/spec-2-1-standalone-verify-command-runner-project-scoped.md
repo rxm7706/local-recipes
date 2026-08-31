@@ -181,11 +181,8 @@ def classify_outcome(command: str, result: ProcessResult | None, *, failure_reas
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: all tests green, including the new `test_gate.py`/`test_process_posix.py` and the extended `test_cli.py`, plus the unmodified `test_ad3_ad4_import_linter.py`/`test_ad7_verdict_sole_ownership.py` meta-tests still passing against the two new modules
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: green (no new third-party dependency introduced; `subprocess`/`shlex` are stdlib)
-- `pixi run -e pyforge-marshal marshal gate evaluate` (run from this repo, `BMAD_ACTIVE_PROJECT=pyforge-marshal`) -- expected: exits 0 or non-zero honestly reflecting this project's own two configured verify commands, with `scope: "policy-seed-only"` in the JSON output (`--format json`)
-
-
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

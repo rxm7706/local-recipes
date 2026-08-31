@@ -244,12 +244,7 @@ hygiene, not upstream drift, and per-env findings would multiply noise in a warn
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests -q` —
-  expected: all pass, zero live network calls.
-- `pixi run -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py -q` — expected: green (no pixi.toml change, no new task).
-- `pixi run -e local-recipes python -m pyforge.doctor.sources bmad-method-version-drift --json`
-  — expected live today: CAP-1/2 ok + one suite ok Finding (registry reachable) naming the
-  checked count; exit 0.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

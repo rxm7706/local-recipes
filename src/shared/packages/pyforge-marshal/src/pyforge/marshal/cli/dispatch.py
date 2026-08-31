@@ -822,6 +822,13 @@ def dispatch_once(
     budget_env = dispatch_core.build_budget_env(effective_policy)
     data["model"] = model
     data["budget_env"] = dict(budget_env)
+    # Story 28.1 (SPEC-marshal-token-economy CAP-1): the SAME composition
+    # site `adapters/harness_bmadloop.py::render_policy_toml` (bmad-loop
+    # spin) resolves its `[context]` block from -- one function, both
+    # engines. Declaration plumbing only: no launch behavior changes on
+    # this key yet (CAP-2 wires the harness seam).
+    context_payload = policy.resolve_context_layers(effective_policy)
+    data["context"] = context_payload
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
@@ -992,6 +999,7 @@ def dispatch_once(
             "bmad_active_project": slug,
             "baseline_head_sha": baseline_head_sha,
             "harness_profile": resolution.profile,
+            "context": context_payload,
         },
     )
     try:

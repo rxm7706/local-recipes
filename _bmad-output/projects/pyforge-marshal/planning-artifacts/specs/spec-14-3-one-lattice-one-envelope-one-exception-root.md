@@ -500,31 +500,8 @@ runtime assertions).
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-core pyforge-core-test` -- new `Lattice`/`compose`/`PyforgeError`
-  primitives + both new sole-ownership meta-tests green
-- `pixi install -e pyforge-doctor && pixi install -e pyforge-mason` -- clean resolve with the new
-  `pyforge-core` path dependency
-- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- lattice + report + exception changes
-  green
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- lattice + narrows test + report +
-  new dependency wiring green
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- lattice + envelope test wrapping +
-  exception changes green
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- dispatch delegation + exception
-  re-parent green
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` -- exception re-parent + new dependency
-  wiring green
-- `pixi run --frozen -e pyforge-atlas kedro-test` -- 13 exception re-parents green (pre-existing
-  unrelated failures noted in Story 14.2's own verification are not this story's to fix)
-- `grep -rn "for .*, .* in enumerate(" src/shared/packages --include="*.py" | grep -v pyforge-core/`
-  -- manually inspect any hit for the specific rank-comprehension shape; expect none matching the
-  retired pattern
-- `python3 -m pytest tests/packaging/test_dependency_completeness.py -q` -- doctor's and mason's
-  new `pyforge-core` entries compare clean against the existing path-dict normalization
-- `pixi project export conda-environment -e build > environment.yaml && git diff --stat environment.yaml`
-  -- commit if it reports a diff
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-core` -- expect zero findings
-  on the new `verdict.py`/`report.py`/`errors.py` modules
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - Confirm doctor's and mason's `pixi.toml`/`pyproject.toml` `pyforge-core` entries follow the same

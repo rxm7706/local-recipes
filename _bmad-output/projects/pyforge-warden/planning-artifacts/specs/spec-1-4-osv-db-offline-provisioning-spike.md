@@ -114,8 +114,7 @@ warnings: [oversized]
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` -- expected: **all prior 1.1/1.2/1.3 suites still pass unchanged** (zero production `src/` edits) **plus** `test_osv_offline_db_spike.py` green — osv-scanner detects the seeded advisory **offline** (exit 1), clean pin → exit 0, `-L` temp-name override parses a non-`requirements.txt` file, the DB-absent path is not silently clean, and the builder is twice-run byte-identical. Hard-fails if osv-scanner is absent. (`--frozen` mandatory in the loop worktree — `deferred-work.md`.)
-- Sole-ownership / no-execution / socket-deny meta-guards stay green (trivially — no production edits).
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks:**
 - `planning-artifacts/osv-db-offline-provisioning-decision.md` exists, is git-**tracked** (`git status` shows it as a new tracked file, not under the gitignored `implementation-artifacts/`), covers all 12 § Design-Notes sections with a grounded recommendation + evidence + downstream owner each, and states the "gates 1.5 + 2.4, not 1.3" disposition.

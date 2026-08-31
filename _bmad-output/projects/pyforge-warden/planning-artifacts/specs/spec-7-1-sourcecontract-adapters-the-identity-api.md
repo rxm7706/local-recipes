@@ -308,11 +308,7 @@ rule, not a signal that residual work remains.
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-warden/tests/unit/test_sources.py -v` -- expected: all new tests pass.
-- `pixi run -e local-recipes pytest src/shared/packages/pyforge-warden/tests/ -q` -- expected: full existing suite stays green (no regression to `inventory.py`/`discovery.py`/`extract/`/`engines.py` — none are modified).
-- `pixi run -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py src/shared/packages/pyforge-warden/tests/unit/test_sources.py` -- expected: clean.
-
-**Note (verification environment correction, not a spec defect worth a loopback):** the commands above name `pixi run -e local-recipes`, but `pyforge.warden` is not importable in that environment (`ModuleNotFoundError`) -- pyforge-warden has its own dedicated, lean `pixi.toml` environment. `pytest` commands were run via `pixi run -e pyforge-warden pytest ...` (or the equivalent `pyforge-warden-test` task) instead; `ruff check` works under either environment and was run under `-e local-recipes` as written.
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

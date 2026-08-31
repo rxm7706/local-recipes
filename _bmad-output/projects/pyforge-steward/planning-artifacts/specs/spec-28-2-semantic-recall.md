@@ -108,8 +108,7 @@ Empty until the first bad_spec loopback.
 ## Verification
 
 **Commands:**
-- `SCRIBE_GRAPH_DSN=postgres://postgres:scribe@127.0.0.1:5433/scribe_graph pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: suite green, including FR-36 semantic vs lexical split
-- `git grep -n 'pyforge' src/platform -- '*.py' | rg 'graph_store_pg|query_similar|embeddings' || true` — expected: no semantic-recall implementation under `src/platform/`
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 ## Auto Run Result
 

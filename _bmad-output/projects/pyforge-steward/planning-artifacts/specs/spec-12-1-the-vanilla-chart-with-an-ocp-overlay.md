@@ -124,12 +124,7 @@ The DB-GPT sidecar (AD-6 bounded exception, PVC + singleton) is deliberately abs
 **Precondition (11.4-precedent ephemeral bootstrap):** the pytest/mypy commands below assume the Story 11.4 bootstrap: the `platform-dev` conda env ships helm/PyYAML/ruff but NOT the pytest stack, so install it ephemerally with pinned `pip --no-deps` (nothing is committed -- no pixi.toml/pixi.lock/environment.yaml/requirements change). The minimum set for THIS module's tests (pytest itself + the pytest-django/django-environ pair the `config.settings.test` conftest wiring imports): `pip install --no-deps pytest==8.4.1 pluggy==1.6.0 iniconfig==2.1.0 pytest-django==4.11.1 django-environ==0.12.0`. mypy must run from a scratch venv built from `requirements/local.txt` (the CI-faithful surface) -- the conda-env mypy INTERNAL-ERRORs following imports into the env's langchain, exactly as 11.4 documented.
 
 **Commands:**
-- `pixi run -e platform-dev helm lint src/platform/deploy/charts/platform src/platform/deploy/overlays/ocp/chart` -- expected: 0 chart(s) failed
-- `pixi run -e platform-dev helm template test-release src/platform/deploy/charts/platform` -- expected: renders; no `route.openshift.io` anywhere in output
-- `pixi run -e platform-dev helm template test-release src/platform/deploy/charts/platform -f src/platform/deploy/overlays/ocp/core-overrides.yaml` -- expected: renders; no Ingress; no runAsUser on data services
-- `pixi run -e platform-dev helm template test-route src/platform/deploy/overlays/ocp/chart` -- expected: exactly Route resource(s)
-- `cd src/platform && pytest -v tests/test_chart_invariants.py` (with helm on PATH via the platform-dev env) -- expected: all pass; without helm: helm-gated tests skip naming the capability, companions pass
-- `cd src/platform && ruff check tests/test_chart_invariants.py && ruff format --check tests/test_chart_invariants.py && mypy platformapp config tests` -- expected: clean
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 
 **Manual checks (if no CLI):**
 - A real cluster deploy (OCP Route admission, SCC enforcement) is AD-16 Tier 3 — attended-only for Story 12.1 itself. **Story 12.7 live record (2026-08-25):** `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md` in this folder. Live red/green of *render* tests: temporarily violate an invariant in a scratch render (e.g. add `runAsUser` to the web pod) and watch the real test go RED, then restore GREEN; evidence in Dev Notes.

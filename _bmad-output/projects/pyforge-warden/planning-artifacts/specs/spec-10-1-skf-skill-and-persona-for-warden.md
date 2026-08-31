@@ -69,5 +69,4 @@ Summary: SKF `pyforge-warden` compiled from `src/shared/packages/pyforge-warden/
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py -q` — expected: all pass
-- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).

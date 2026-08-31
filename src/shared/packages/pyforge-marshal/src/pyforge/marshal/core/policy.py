@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 29-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 30-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -23,7 +23,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 13 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 14 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -47,7 +47,20 @@ never narrowed by a journal entry, and (Story 22.8) ``harness_preference``
 the identical structural-declaration reason ``verify_commands`` is: an
 ordered tuple of profile names declared and validated here, consumed by
 ``cli/dispatch.py``'s resolution and ``adapters/harness_bmadloop.py``'s
-``[adapter].name`` derivation, never narrowed by a journal entry. 16
+``[adapter].name`` derivation, never narrowed by a journal entry, and
+(Story 28.1) ``context`` -- SPEC-marshal-token-economy CAP-1's declared
+context pipeline: ``Mapping[str, {enabled: bool, aggressiveness?: str}]``
+keyed by one of the companion's own closed 5-layer matrix (``wire``,
+``output``, ``structure-graph``, ``derived-context``, ``planning-graph``),
+STATIC for the identical structural-declaration reason ``epic_surfaces``/
+``mcp_servers`` are: a project/policy-declared shape, never narrowed at
+runtime by a journal entry. Absent, or a layer omitted from the declared
+mapping, means that layer is OFF -- ``resolve_context_layers()`` below is
+the ONE place that expands a possibly-partial declaration into all 5 layer
+states, so ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
+spin) and ``cli/dispatch.py::dispatch_once`` (factory dispatch) resolve the
+identical payload from the identical function rather than each re-deriving
+"layer absent = off" on its own. 16
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -158,7 +171,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 29-key vocabulary -------------------------------------------
+# --- the closed 30-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -214,6 +227,14 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # dispatch-time resolution's concern, reported as MRS-DISP-027/003),
         # never narrowed at runtime by a journal entry.
         "harness_preference",
+        # Story 28.1's 14th STATIC key, the vocabulary's 30th
+        # (SPEC-marshal-token-economy CAP-1): the declared context
+        # pipeline -- Mapping[str, {enabled, aggressiveness?}] keyed by one
+        # of the companion's closed 5-layer matrix. STATIC for the
+        # identical reason `epic_surfaces`/`mcp_servers` are: declared and
+        # validated here, never narrowed at runtime by a journal entry. See
+        # `_valid_context_block`/`resolve_context_layers` below.
+        "context",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -275,6 +296,29 @@ _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-app
 # a loop home's next run at policy load.
 _REVIEW_ON_TIMEOUT_MODES: frozenset[str] = frozenset({"retry", "salvage-if-done", "defer"})
 _REVIEW_ON_STATUS_CONTRADICTION_MODES: frozenset[str] = frozenset({"escalate", "retry"})
+# Story 28.1's `context` block (SPEC-marshal-token-economy CAP-1): the
+# companion's own closed 5-layer matrix (`integration-layers.md`'s Layer
+# matrix table), in the exact order this story's own Design Notes name
+# them -- wire, output, structure-graph, derived-context, planning-graph.
+# Public: `resolve_context_layers` (below) and both rendering consumers
+# (`adapters/harness_bmadloop.py`, `cli/dispatch.py`) iterate it, so a
+# future 6th layer is added here once, never independently in either
+# consumer.
+CONTEXT_LAYER_NAMES: tuple[str, ...] = (
+    "wire",
+    "output",
+    "structure-graph",
+    "derived-context",
+    "planning-graph",
+)
+# A closed 3-rung vocabulary for a layer's declared `aggressiveness` --
+# CAP-8's later graduated ladder escalates a story through these rungs as
+# it approaches its token ceiling; this story only shapes the value, never
+# interprets or escalates it. "medium" is the resolved default
+# (`resolve_context_layers`) for an enabled layer that declares no
+# aggressiveness of its own.
+_CONTEXT_AGGRESSIVENESS: frozenset[str] = frozenset({"low", "medium", "high"})
+_CONTEXT_DEFAULT_AGGRESSIVENESS = "medium"
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
 # the default because it matches this repo's own observed real practice
 # (`git log --merges` shows real, non-squash merge commits throughout).
@@ -469,6 +513,14 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # repo/project layers (`_bmad-output/policy-defaults.toml` expresses
     # this machine's), never tuned here.
     "harness_preference": ("claude", "cursor", "copilot", "gemini", "devin"),
+    # Story 28.1's `context` (SPEC-marshal-token-economy CAP-1): no layer
+    # declared until a project's own policy says otherwise -- the same
+    # "nothing declared yet" posture `epic_surfaces`/`mcp_servers` already
+    # carry for the identical STATIC/empty-mapping shape. An empty mapping
+    # here is what makes "absent block = every layer off, rendered output
+    # byte-identical to today" hold (`resolve_context_layers` expands it to
+    # all 5 layers at `enabled=False`).
+    "context": {},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -723,6 +775,52 @@ def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
             return None
         seen.add(entry)
     return base
+
+
+def _valid_context_block(value: object) -> dict[str, dict[str, object]] | None:
+    """``context`` (Story 28.1, SPEC-marshal-token-economy CAP-1):
+    ``Mapping[str, {enabled: bool, aggressiveness?: str}]`` keyed by ONE of
+    ``CONTEXT_LAYER_NAMES``'s closed 5-layer vocabulary. Mirrors
+    ``_valid_mcp_servers``'s/``_valid_epic_surfaces``'s shape-checking
+    pattern exactly: reject a non-mapping, reject an unknown layer-name key
+    (an "unknown layer name" is a malformed block per this story's own AC,
+    not a silently-ignored one), reject an entry with an unknown field or a
+    malformed ``enabled``/``aggressiveness`` -- the whole field is excluded
+    for THAT layer [of policy precedence] on any single malformed entry
+    (the same "one bad entry poisons the layer, not the whole field"
+    semantics every other mapping-typed validator in this module already
+    applies). A layer name absent from the mapping is not validated here at
+    all -- it composes to OFF via ``resolve_context_layers``'s own default,
+    never via this function inventing an entry for it. ``enabled`` is
+    REQUIRED (a declared layer with no ``enabled`` says nothing); a plain
+    ``bool`` only, the same strict-no-coercion posture ``_valid_bool``
+    applies. ``aggressiveness`` is OPTIONAL, drawn from the closed
+    ``_CONTEXT_AGGRESSIVENESS`` vocabulary when present -- CAP-8's later
+    graduated ladder escalates it, this story only shapes it."""
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, dict[str, object]] = {}
+    for layer_name, settings in value.items():
+        if layer_name not in CONTEXT_LAYER_NAMES:
+            return None
+        if isinstance(settings, str) or not isinstance(settings, Mapping):
+            return None
+        if not set(settings.keys()) <= {"enabled", "aggressiveness"}:
+            return None
+        enabled = settings.get("enabled")
+        if not isinstance(enabled, bool):
+            return None
+        entry: dict[str, object] = {"enabled": enabled}
+        if "aggressiveness" in settings:
+            aggressiveness = settings["aggressiveness"]
+            if (
+                not isinstance(aggressiveness, str)
+                or aggressiveness not in _CONTEXT_AGGRESSIVENESS
+            ):
+                return None
+            entry["aggressiveness"] = aggressiveness
+        result[layer_name] = entry
+    return result
 
 
 def _valid_bool(value: object) -> bool | None:
@@ -1320,7 +1418,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 13 public STATIC
+    """The composed, immutable policy value (AD-10): 14 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1346,6 +1444,7 @@ class EffectivePolicy:
     landing_resync_commands: PolicyField
     mcp_servers: PolicyField
     harness_preference: PolicyField
+    context: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1363,6 +1462,7 @@ class EffectivePolicy:
             "landing_resync_commands",
             "mcp_servers",
             "harness_preference",
+            "context",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1412,6 +1512,7 @@ class EffectivePolicy:
                 "landing_resync_commands",
                 "mcp_servers",
                 "harness_preference",
+                "context",
             )
         )
         seed = ", ".join(
@@ -1465,6 +1566,7 @@ class EffectivePolicy:
             "landing_resync_commands": _field_payload(self.landing_resync_commands),
             "mcp_servers": _field_payload(self.mcp_servers),
             "harness_preference": _field_payload(self.harness_preference),
+            "context": _field_payload(self.context),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1473,11 +1575,44 @@ class EffectivePolicy:
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, object]]:
+    """Story 28.1's own single composition site (SPEC-marshal-token-economy
+    CAP-1's AC: "both resolve the same declaration from one composition
+    site -- no second parser, no engine-specific fork"): expands
+    ``effective.context.value`` -- the possibly-partial declared
+    ``[context]`` block -- into ALL 5 of ``CONTEXT_LAYER_NAMES``, each a
+    plain ``{"enabled": bool, "aggressiveness": str}`` dict (JSON-safe: a
+    fresh plain ``dict`` on every call, never a ``PolicyField``-style frozen
+    proxy, so both callers below can hand this straight to ``json.dumps``
+    or a ``tomlkit`` table without a second conversion step). A layer
+    absent from the declared mapping resolves to ``enabled=False,
+    aggressiveness="medium"`` -- this is what makes "absent block = every
+    layer off" hold for the WHOLE block too (``DEFAULT_POLICY["context"]``
+    is ``{}``, so a policy with no declaration at all resolves every layer
+    off here).
+
+    Both ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
+    spin's ``policy.toml`` render) and ``cli/dispatch.py::dispatch_once``
+    (factory dispatch's launch data/journal) call this SAME function rather
+    than each re-deriving "layer absent = off" independently."""
+    declared = effective.context.value
+    resolved: dict[str, dict[str, object]] = {}
+    for layer in CONTEXT_LAYER_NAMES:
+        layer_declared = declared.get(layer, {})
+        resolved[layer] = {
+            "enabled": bool(layer_declared.get("enabled", False)),
+            "aggressiveness": layer_declared.get(
+                "aggressiveness", _CONTEXT_DEFAULT_AGGRESSIVENESS
+            ),
+        }
+    return resolved
+
+
 def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 29-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 30-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1637,6 +1772,16 @@ def compose(
         "harness_preference",
         _valid_harness_preference,
         DEFAULT_POLICY["harness_preference"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    context = _merge_field(
+        "context",
+        _valid_context_block,
+        DEFAULT_POLICY["context"],
         repo_defaults,
         project,
         flags,
@@ -1832,6 +1977,7 @@ def compose(
         landing_resync_commands=landing_resync_commands,
         mcp_servers=mcp_servers,
         harness_preference=harness_preference,
+        context=context,
         _seed=seed,
     )
     return effective, tuple(findings)

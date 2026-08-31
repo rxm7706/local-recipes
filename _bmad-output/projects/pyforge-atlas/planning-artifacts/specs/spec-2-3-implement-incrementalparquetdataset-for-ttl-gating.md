@@ -552,3 +552,9 @@ claude-opus-4-8 (A3 patch-round session, 2026-07-17; DEV-AUTO in-container)
 - Appended: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/deferred-work.md` (P10, P11, TTL-parity)
 
 ---
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (this station's own verify suite; backfilled generically, no per-story claim).
