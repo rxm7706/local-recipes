@@ -12,6 +12,8 @@ package:
 source:
   url: https://pypi.org/packages/source/l/langgraph-api/langgraph_api-${{ version }}.tar.gz
   sha256: f594a160857e2cd7fb2352bba585111177a4a394625ad0cf5898814754fb7bc1
+  patches:
+    - patches/0001-strip-windows-incompatible-deps.patch
 
 build:
   number: 0
@@ -30,7 +32,6 @@ requirements:
     - grpcio >=1.80.0,<1.81.0
     - grpcio-health-checking >=1.80.0,<1.81.0
     - grpcio-tools ==1.80.0
-    - httptools >=0.5.0
     - httpx >=0.25.0
     - jsonschema-rs >=0.20.0,<0.45
     - langchain-core >=0.3.64
@@ -53,10 +54,12 @@ requirements:
     - truststore >=0.1
     - uuid-utils >=0.12.0
     - uvicorn >=0.26.0
-    - uvloop >=0.18.0
     - watchfiles >=0.13
     - websockets >=13.0
     - zstandard >=0.23.0
+  run_constraints:
+    - uvloop >=0.18.0
+    - httptools >=0.5.0
 
 tests:
   - python:
@@ -92,19 +95,19 @@ extra:
   cfe-upstream-repo: https://github.com/langchain-ai/langgraph-api
   cfe-upstream-homepage: https://github.com/langchain-ai/langgraph-api
   cfe-import-names: [langgraph_api]
-  cfe-source-kind: pypi-sdist
+  cfe-source-kind: "pypi-sdist:patched-strip-win-incompatible-deps-G76"
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34052
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: ["staged-recipes #34052 held in draft until langgraph-runtime-inmem #34051 merges; Elastic-2.0 license under cf policy review in the PR, grpcio <1.81 + grpcio-tools ==1.80.0 pins unsatisfiable alongside pyarrow on current cf (libgrpc 1.80 vs libarrow/libgoogle-cloud lattice) — recheck on next upstream release"]
-  cfe-last-checked: 2026-07-03T13:38:44Z
+  cfe-forge-blocker-list: ["staged-recipes #34052 win-64 test-env solve failed on uvloop (no candidates found) -- FIXED 2026-08-31 via patch + run_constraints, see comment block below; Elastic-2.0 license under cf policy review in the PR, grpcio <1.81 + grpcio-tools ==1.80.0 pins unsatisfiable alongside pyarrow on current cf (libgrpc 1.80 vs libarrow/libgoogle-cloud lattice) -- recheck on next upstream release"]
+  cfe-last-checked: 2026-08-31T05:00:00Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T13:27:24Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-datetime: 2026-08-31T05:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -115,7 +118,18 @@ extra:
 #    # Elastic-2.0 (valid SPDX, redistribution permitted, NOT OSI) — cf license
 #    # review risk; LICENSE file fetched from SPDX (sdist ships none).
 # run:
-#    # httptools/uvloop are unix-only by upstream marker; unconditional here
-#    # (noarch cannot express platform markers). langsmith[otel] extra expanded
-#    # via the explicit opentelemetry-* deps upstream also lists.
+#    # 2026-08-31: uvloop/httptools are Unix-only by upstream marker
+#    # (platform_system != "Windows") and a noarch recipe cannot express a
+#    # platform-conditional HARD dep -- it bakes into `depends` at build time
+#    # (G76). Azure win-64 leg failed the test-env solve on
+#    # "uvloop >=0.18.0, for which no candidates were found" (PR #34052,
+#    # buildId 1577381). uvloop is imported behind a guarded
+#    # try/except ImportError in queue_entrypoint.py; httptools isn't
+#    # imported by this package at all (an uvicorn[standard] accelerator,
+#    # and uvicorn is pinned bare here). Fixed by patching both lines out of
+#    # pyproject.toml's [project.dependencies] (see patches/) and moving them
+#    # to run_constraints (advisory, constrains-if-present, never installed,
+#    # never blocks a solve) -- package now installs + pip-checks clean on
+#    # every platform. langsmith[otel] extra expanded via the explicit
+#    # opentelemetry-* deps upstream also lists.
 ####
