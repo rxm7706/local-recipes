@@ -29,7 +29,7 @@ development_status:
   4-1-register-graphstore-as-cap-18-plugins: done
   5-1-skf-skill-and-persona-for-scribe: done
   5-2-first-portal-slice-recall-query: done
-  6-1-the-graphify-ingest-extra-and-its-move-list-verbs: backlog
+  6-1-the-graphify-ingest-extra-and-its-move-list-verbs: done
   6-2-the-cocoindex-incremental-ingest-extra: backlog
   epic-1: done
   epic-1-retrospective: optional
