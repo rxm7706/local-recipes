@@ -3773,3 +3773,113 @@ status: open
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-28-14: compute_effective_surface's literal-string-set intersection silently defeats the auto-derived glob-form default whenever a story's own spec declares a `surface:` field with literal file paths.
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: compute_effective_surface's literal-string-set intersection silently defeats the auto-derived glob-form default whenever a story's own spec declares a `surface:` field with literal file paths.
+  evidence: Every populated `surface:` field found in this repo's own tracked specs (e.g. spec-marshal-token-economy/SPEC.md, spec-risk-tiered-review-depth/SPEC.md, spec-fleet-status-supervisor-fallback/SPEC.md) uses exact literal file paths, never glob syntax. `compute_effective_surface` does `set(policy_surface) & set(spec_surface)` -- exact string-set intersection, not glob-vs-literal matching -- so a glob-only policy_surface (declared OR auto-derived) never intersects with a literal-path spec_surface, and `effective_surface` comes out empty, meaning MRS-GATE-007 fires for every changed file regardless of the new fallback. This is a pre-existing property of the AD-27 combinator (Story 2.3), unchanged and out of scope for this story to fix (it would require modifying compute_effective_surface's intersection-only body, which this story's own boundaries and meta-test explicitly forbid touching) -- confirmed identical behavior already existed for any hand-declared glob-only `[epic_surfaces]` entry before this story. Severity raised medium -> high on review pass 2 (Blind Hunter): every populated `surface:` field found in this repo's tracked specs uses literal paths, so this is the COMMON case a real story hits, not a rare edge case -- it likely nullifies the "no manual per-story widening" promise for any story that also declares its own `surface:` field.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py::compute_effective_surface
+  origin: spec-deferred 3c002bae8e2b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-14-2: default_epic_surface(project_slug) assumes a src/shared/packages/<slug>/ package tree exists; for a BMAD project without that convention the derived default silently collapses to near-empty with no diagnostic.
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: default_epic_surface(project_slug) assumes a src/shared/packages/<slug>/ package tree exists; for a BMAD project without that convention the derived default silently collapses to near-empty with no diagnostic.
+  evidence: The function is a pure string-interpolation with no existence check by design (matches the FR-50 precedent). For a project_slug that isn't one of the 8 PyForge Guild stations, the package-tree and artifact-tree globs simply never match any real file, leaving only the 5 bookkeeping paths as the effective default -- not a regression (it is never worse than the pre-story deny-all), but the story's stated benefit does not materialize for such a project, silently. Review pass 2 (Blind Hunter): a future fix shape could mirror MRS-GATE-004's precedent (a WARN advisory finding for an analogous "nothing meaningfully configured" state) rather than staying silent.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py::default_epic_surface
+  origin: spec-deferred c87ec9651f88 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-14-3: evaluate_dispatch_verification's project_slug parameter has no shape validation before flowing into the auto-derived default, unlike cli/gate.py's _run_scope_check which validates first.
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: evaluate_dispatch_verification's project_slug parameter has no shape validation before flowing into the auto-derived default, unlike cli/gate.py's _run_scope_check which validates first.
+  evidence: cli/gate.py:546 guards `if not project_slug or not policy._is_valid_project_slug(...)` before ever reaching the scope-check logic. dispatch_verify.py::evaluate_dispatch_verification has no equivalent guard, but this is a pre-existing trust-boundary characteristic, not newly introduced: the same unvalidated project_slug already flows into compose_dispatch_policy's own path construction in the caller (dispatch_supervisor/__main__.py::_run_and_journal_verification), upstream of this story's change, with identical exposure.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py::evaluate_dispatch_verification
+  origin: spec-deferred 044a0679f529 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-14-4: pyforge-marshal's own live "22"/"28" [epic_surfaces] stopgap entries are intentionally left in place by this story (per its own Never boundary and the epics.md operational note), but no deferred-work-ledger entry tracks that follow-up removal yet.
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: pyforge-marshal's own live "22"/"28" [epic_surfaces] stopgap entries are intentionally left in place by this story (per its own Never boundary and the epics.md operational note), but no deferred-work-ledger entry tracks that follow-up removal yet.
+  evidence: epics.md's own operational note for Epic 28 says the "28" stopgap is replaced by a LATER story's work, not this one, and this spec's Never section explicitly defers stopgap removal as separate follow-up work -- both are grounded in the intent itself, not an out-of-scope call this spec invented. The gap is purely that nothing in this diff creates a trackable ledger entry for the follow-up removal, so it risks being forgotten.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml:107
+  origin: spec-deferred 81e284bb3430 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-14-5: dispatch_verify.py's scope_check JSON payload never exposes policy_surface (only effective_surface/changed_files/violations), unlike cli/gate.py's payload -- a pre-existing reporting-shape asymmetry that review pass 2 found newly more meaningful now that declared vs. auto-derived policy_surface values can differ materially.
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: dispatch_verify.py's scope_check JSON payload never exposes policy_surface (only effective_surface/changed_files/violations), unlike cli/gate.py's payload -- a pre-existing reporting-shape asymmetry that review pass 2 found newly more meaningful now that declared vs. auto-derived policy_surface values can differ materially.
+  evidence: dispatch_verify.py::evaluate_dispatch_verification's data["scope_check"] dict (around line 213) was already missing a policy_surface key before this story; this story does not change that dict's shape, only the value flowing into effective_surface. In the common case (no spec surface: field) effective_surface equals policy_surface, so an operator can usually still infer the resolved surface from the existing field -- this is an observability nicety, not a correctness gap, so left as pre-existing.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py::evaluate_dispatch_verification
+  origin: spec-deferred 699f26404447 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-15: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+  summary: The spec's own title and filename say "default unchanged" but the Approach/AC1 text and epics.md both say the default flips from hard to warn.
+  evidence: Title: 'Scope-violation enforcement mode, policy-declared, default unchanged (Story 28.15, Epic 28)'; Approach text: "Default is `warn`, not `hard`." A future grep for "default unchanged" lands on a spec that changed the default.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (title, frontmatter)
+  origin: spec-deferred 45b90f34673c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-15-2: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+  summary: The spec's own `warnings:` block and SPEC-marshal-token-economy/SPEC.md both claim pyforge-marshal's own policy was already set to `scope_violation_mode = off` as an immediate 2026-08-31 stopgap, but no `marshal-policy.toml` in the repo (past or present) ever declares that key -- the claimed stopgap action was never actually applied.
+  evidence: `grep -rn "scope_violation_mode" --include="*.toml" .` matches nothing outside this story's own diff/spec. Functionally moot now that this story's default (`warn`) matches the intended steady state, but the warning text is inaccurate about what was actually done.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md (frontmatter `warnings:`)
+  origin: spec-deferred 419b8bc6384a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-15-3: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged.md`
+  summary: epics.md's Story 28.15 operational note attributes the real 2026-08-31 stopgap to widening `[epic_surfaces]."28"` to a station-wide wildcard (Story 28.14 territory), directly conflicting with the spec/SPEC.md's claim that the stopgap was `scope_violation_mode = off` (this story's own CAP-17 territory).
+  evidence: Two tracked planning documents disagree about which mechanism was actually used for the same named 2026-08-31 operator stopgap.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md (Story 28.15 operational note) vs. this spec's `warnings:` block
+  origin: spec-deferred 97033ed2d534 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-8: Scribe's `index refresh` grammar has no caller-declaration surface, so marshal's consumer binding degrades on every real invocation until scribe ships one.
+
+- source_spec: `planning-artifacts/specs/spec-28-8-derived-context-recomputes-only-on-source-change.md`
+  summary: Scribe's `index refresh` grammar has no caller-declaration surface, so marshal's consumer binding degrades on every real invocation until scribe ships one.
+  evidence: Scribe Story 6.2 shipped the GENERIC "declare sources -> derived artifact" engine (`extras/cocoindex_flow.py::DerivedArtifact` / `refresh_incremental`, with an `index_path` override "for programmatic callers"), and its own Design Notes say "marshal Story 28.8 registers its epic-context/continuity distills against the same grammar later". What it wired into the CLI is only its OWN two registrations: `scribe index refresh [--target PATH]` takes no caller manifest. This story is the CONSUMER side by its own Code Map ("consumer side only here"), and its Never bullet forbids a marshal-private cocoindex flow, so marshal cannot add the missing option itself. `adapters/scribe_cli.py` therefore renders the declared grammar plus a `--declare <manifest>` argument and reports a scribe that rejects it as an ordinary layer degradation (`MRS-CTX-002`, WARN) — the layer-off fallback is proven and today's compile-on-hunch behavior is byte-identical, so nothing is broken, but the incremental path cannot engage live until scribe exposes the option. The moment it does, marshal lights up with zero further change. The scribe-side work is a small addition to `cli.py::index_refresh` (read a manifest, build `DerivedArtifact`s with a no-op derive for freshness-only callers) and belongs to Scribe Epic 6.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py
+  origin: spec-deferred 88222e3fa512 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-28-8-2: An enabled `derived-context` layer invokes the scribe CLI once per routing, with no journalled record of what it cost or whether it engaged.
+
+- source_spec: `planning-artifacts/specs/spec-28-8-derived-context-recomputes-only-on-source-change.md`
+  summary: An enabled `derived-context` layer invokes the scribe CLI once per routing, with no journalled record of what it cost or whether it engaged.
+  evidence: `marshal context refresh` is invoked by the bmad-build-auto skill during step-01 routing, and its degradation reason is printed into that session's transcript only. CAP-7 (Story 28.4, savings telemetry) is the seam that puts per-layer engagement and savings into the run journal and `marshal status`; until it lands, an operator whose `derived-context` layer has been silently degrading for a week has no fleet-level signal — only per-session output nobody re-reads. CAP-10 (Story 28.7, index freshness as an advisory `marshal check` finding) is the other half.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py
+  origin: spec-deferred ff61f248d1a7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

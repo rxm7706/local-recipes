@@ -56,6 +56,24 @@ Use these headings:
 - **Never hallucinate content.** If source material doesn't say something, don't invent it.
 - **Omit empty sections entirely**, except Goal and Stories, which are always required.
 
+## Freshness (who decides this task runs at all)
+
+Nothing in this file changes with the freshness mechanism: the output path, the exact
+headings, the 800–1500 token target, and every rule above are the contract, and they are
+identical whether the caller reached this task from a cache miss or from a declared-source
+change.
+
+What changed is only the *decision* upstream. `step-01-clarify-and-route.md` item 1.A.2 no
+longer guesses validity from "is any file in the planning-artifacts directory newer" — it
+asks `marshal context refresh` whether this epic's **declared** planning sources moved. The
+declared sources are exactly the documents this task reads: the epics file plus the standard
+planning documents (PRD, architecture, UX/design, product brief). Story specs, sprint
+ledgers, retros, and research notes are not sources, because this task never reads them — so
+one of them landing is no longer a reason to recompile.
+
+When the `derived-context` layer is declared off (the default), the upstream decision falls
+back to the previous mtime rule and this task is invoked exactly as often as it was before.
+
 ## Error handling
 
 - **If the epics file is missing or the target epic is not found:** write nothing and report the problem to the calling agent. Goal and Stories cannot be populated without a usable epics file.
