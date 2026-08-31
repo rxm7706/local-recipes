@@ -469,6 +469,10 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 "story": r.get("current_story") or "",
                 "escalation_reason": r.get("escalation_reason"),
                 "escalation_artifact": r.get("escalation_artifact"),
+                # Story 28.15 (CAP-17), AC4: a station's warn-mode
+                # scope-violation advisories, visible here too -- never
+                # journal-only.
+                "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
             }
             if r.get("state") == "running":
                 running.add(slug)
@@ -572,6 +576,16 @@ def main() -> int:
         if blkd:
             watch.append(f"{slug}: {blkd} story(ies) BLOCKED -- will not run, "
                          f"not waiting on you")
+        # Story 28.15 (CAP-17), AC4: a warn-mode scope-violation advisory is
+        # visible, never blocking -- the `watch` bucket, matching every
+        # other non-blocking degrade above (unknown state, PR-query
+        # failure). One line names the count + codes; the run's own
+        # journal/`marshal status --format json` carries the full detail.
+        advisories = (live.get(slug, {}) or {}).get("scope_advisories") or []
+        if advisories:
+            codes = ",".join(a.get("code", "?") for a in advisories)
+            watch.append(f"{slug}: {len(advisories)} scope-violation advisory(ies) "
+                         f"(warn mode, not blocking) -- {codes}")
     try:
         prs = subprocess.run(
             ["gh", "pr", "list", "--repo", "rxm7706/local-recipes",

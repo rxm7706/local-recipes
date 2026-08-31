@@ -318,6 +318,11 @@ def test_registered_codes_contains_the_real_codes():
             # unloadable packaged seed manifest. WARN, the same tier and the
             # same reason as the two Story 28.2 codes above.
             "MRS-PREFLIGHT-015",
+            # Story 28.15 (scope-violation enforcement mode, policy-declared,
+            # default warn, CAP-17): MRS-GATE-012/013 are the warn-mode
+            # advisory siblings of MRS-GATE-007/008.
+            "MRS-GATE-012",
+            "MRS-GATE-013",
         }
     )
 

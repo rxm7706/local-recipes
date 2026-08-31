@@ -982,6 +982,10 @@ class FleetHomeFacts:
     # failed gate; self-report is never the verdict input.
     dispatch_verification_verdict: str | None = None
     dispatch_verification_failed_gate: str | None = None
+    # Story 28.15 (CAP-17): the station's own `warn`-mode scope-violation
+    # advisories from its latest dispatch verification -- visible here (not
+    # journal-only), matching AC4.
+    dispatch_verification_scope_advisories: tuple[dict[str, object], ...] = ()
     # Story 22.6 (dispatch operator survival, FR-193 CAP-6): supervision and
     # per-story timing / preserve refs from the dispatch journal alone.
     dispatch_supervisor_alive: bool = False
@@ -1017,6 +1021,10 @@ def _apply_dispatch_overlay(
     if facts.dispatch_verification_failed_gate is not None:
         patched["dispatch_verification_failed_gate"] = (
             facts.dispatch_verification_failed_gate
+        )
+    if facts.dispatch_verification_scope_advisories:
+        patched["dispatch_verification_scope_advisories"] = list(
+            facts.dispatch_verification_scope_advisories
         )
     patched["dispatch_supervisor_alive"] = facts.dispatch_supervisor_alive
     if facts.dispatch_story_started_at is not None:

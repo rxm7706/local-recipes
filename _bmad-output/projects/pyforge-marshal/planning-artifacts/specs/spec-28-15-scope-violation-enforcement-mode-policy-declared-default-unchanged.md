@@ -2,10 +2,11 @@
 title: 'Scope-violation enforcement mode, policy-declared, default unchanged (Story 28.15, Epic 28)'
 type: 'feature'
 created: '2026-08-31'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
+baseline_revision: '7a13ea55d5ca052cab79edc498afa56fc8716453'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
   - docs/dreams/marshal-dependency-aware-dispatch.md

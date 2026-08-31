@@ -82,6 +82,13 @@ class DispatchJournalFacts:
     completion_verdict: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    # Story 28.15 (CAP-17): the station's own `warn`-mode scope-violation
+    # advisories from the LATEST dispatch verification -- a tuple of plain
+    # ``{code, message, path}`` dicts (JSON-safe), never journal-only (AC4:
+    # ``marshal status``/``fleet-picture`` must render them). Empty when the
+    # station's declared mode is `hard`/`off`, or when `warn` mode produced
+    # no violation.
+    verification_scope_advisories: tuple[dict[str, object], ...] = ()
     landing_verdict: str | None = None
     harness_self_report_shipped: bool = False
     story_started_at: str | None = None

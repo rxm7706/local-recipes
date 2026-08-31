@@ -602,6 +602,75 @@ def test_resolve_context_layers_returns_a_fresh_plain_dict():
     _json.dumps(resolved)  # must not raise
 
 
+# --- scope_violation_mode validation (Story 28.15, CAP-17) --------------------
+
+
+def test_scope_violation_mode_is_static_not_seed():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert "scope_violation_mode" not in effective.seed_view()
+    assert isinstance(effective.scope_violation_mode, PolicyField)
+
+
+def test_scope_violation_mode_default_is_warn_not_hard():
+    """AC1: 'no scope-violation mode declared for a station ... warn
+    default' -- an explicit operator decision, not today's prior 'hard'."""
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.scope_violation_mode.value == "warn"
+    assert effective.scope_violation_mode.value == DEFAULT_POLICY["scope_violation_mode"]
+    assert effective.scope_violation_mode.layer is PolicyLayer.DEFAULT
+
+
+@pytest.mark.parametrize("mode", ["hard", "warn", "off"])
+def test_scope_violation_mode_accepts_closed_vocabulary(mode):
+    effective, findings = compose(
+        project_slug="acme", project={"scope_violation_mode": mode}, flags={}
+    )
+    assert findings == ()
+    assert effective.scope_violation_mode.value == mode
+    assert effective.scope_violation_mode.layer is PolicyLayer.PROJECT
+
+
+def test_scope_violation_mode_rejects_value_outside_closed_vocabulary():
+    effective, findings = compose(
+        project_slug="acme", project={"scope_violation_mode": "yolo"}, flags={}
+    )
+    assert effective.scope_violation_mode.value == DEFAULT_POLICY["scope_violation_mode"]
+    assert effective.scope_violation_mode.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+
+
+def test_scope_violation_mode_flag_layer_wins_over_project():
+    effective, _ = compose(
+        project_slug="acme",
+        project={"scope_violation_mode": "hard"},
+        flags={"scope_violation_mode": "off"},
+    )
+    mode = effective.scope_violation_mode
+    assert mode.value == "off"
+    assert mode.layer is PolicyLayer.FLAG
+
+
+def test_scope_violation_mode_is_per_station_two_projects_compose_independently():
+    """AC5: 'two stations with different declared modes, when each violates
+    scope, then each station's mode applies independently' -- composition
+    itself is the per-station isolation boundary: each call gets its own
+    `project` mapping, so one station's declared mode can never leak into
+    another's composed EffectivePolicy."""
+    station_a, _ = compose(
+        project_slug="pyforge-a", project={"scope_violation_mode": "hard"}, flags={}
+    )
+    station_b, _ = compose(
+        project_slug="pyforge-b", project={"scope_violation_mode": "off"}, flags={}
+    )
+    station_c, _ = compose(project_slug="pyforge-c", project={}, flags={})
+    assert station_a.scope_violation_mode.value == "hard"
+    assert station_b.scope_violation_mode.value == "off"
+    assert station_c.scope_violation_mode.value == "warn"
+
+
 # --- epic_surfaces validation (Story 2.3, AD-27) ------------------------------
 
 
@@ -1796,6 +1865,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
+            scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             _seed=seed,
         )
 
@@ -1817,6 +1887,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
+            scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1838,6 +1909,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
+            scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1891,7 +1963,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_thirty_keys():
+def test_schema_file_declares_the_thirty_one_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -1912,6 +1984,7 @@ def test_schema_file_declares_the_thirty_keys():
         "mcp_servers",
         "harness_preference",
         "context",
+        "scope_violation_mode",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",

@@ -315,3 +315,115 @@ def test_check_scope_rejects_non_tuple_changed_files():
 def test_check_scope_returns_finding_instances():
     findings = gate.check_scope((), (), ("a",))
     assert all(isinstance(finding, Finding) for finding in findings)
+
+
+# --- Story 28.15: check_scope_with_mode (CAP-17) ------------------------------
+
+
+def test_check_scope_with_mode_hard_reproduces_check_scope_byte_identical():
+    """AC2: 'hard declared for a station, when a scope violation occurs,
+    then behavior reproduces today's non-waivable refuse exactly'."""
+    args = (("recipes/x/**",), (), ("recipes/y/recipe.yaml",))
+    assert gate.check_scope_with_mode(*args, mode="hard") == gate.check_scope(*args)
+
+
+def test_check_scope_with_mode_hard_no_violation_is_empty():
+    args = (("recipes/x/**",), (), ("recipes/x/recipe.yaml",))
+    assert gate.check_scope_with_mode(*args, mode="hard") == ()
+
+
+def test_check_scope_with_mode_off_is_always_empty_even_with_a_real_violation():
+    """AC3: 'off declared for a station, when files change outside surface,
+    then MRS-GATE-007/008 are not evaluated -- zero findings, zero journal
+    entries'."""
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="off"
+    )
+    assert findings == ()
+
+
+def test_check_scope_with_mode_off_never_calls_check_scope(monkeypatch):
+    """'not evaluated at all' is proven, not just observed as an empty
+    result: check_scope itself must never run in off mode."""
+    called = []
+    monkeypatch.setattr(
+        gate, "check_scope", lambda *a, **k: called.append(1) or ()
+    )
+    gate.check_scope_with_mode(("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="off")
+    assert called == []
+
+
+def test_check_scope_with_mode_warn_replaces_mrs_gate_007_with_advisory_012():
+    """AC1: 'no scope-violation mode declared for a station, when a scope
+    violation occurs, then it lands as a named, journaled advisory finding
+    and does not refuse landing (warn default)'."""
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
+    )
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.code == "MRS-GATE-012"
+    assert finding.severity == Severity.WARN
+    assert finding.path == "recipes/y/recipe.yaml"
+    assert classify(finding.code) != Verdict.SCOPE_VIOLATION
+
+
+def test_check_scope_with_mode_warn_replaces_mrs_gate_008_with_advisory_013():
+    frozen = (FrozenPath(path="recipes/x/recipe.yaml", story_key="6.1"),)
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",), frozen, ("recipes/x/recipe.yaml",), mode="warn"
+    )
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.code == "MRS-GATE-013"
+    assert finding.severity == Severity.WARN
+    assert finding.path == "recipes/x/recipe.yaml"
+
+
+def test_check_scope_with_mode_warn_never_emits_the_raw_error_severity_code():
+    """The raw MRS-GATE-007/008 code must never reach a caller's findings
+    in warn mode -- compute_verdict/judge_dispatch_verification key off
+    Finding.code (AD-31), not Finding.severity, so leaking the raw code
+    here would still refuse landing regardless of any severity override."""
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
+    )
+    codes = {finding.code for finding in findings}
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-008" not in codes
+
+
+def test_check_scope_with_mode_warn_names_the_offending_path_in_the_message():
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode="warn"
+    )
+    assert "recipes/y/recipe.yaml" in findings[0].message
+
+
+def test_check_scope_with_mode_warn_no_violation_is_empty():
+    args = (("recipes/x/**",), (), ("recipes/x/recipe.yaml",))
+    assert gate.check_scope_with_mode(*args, mode="warn") == ()
+
+
+def test_check_scope_with_mode_warn_every_offending_path_gets_its_own_advisory():
+    findings = gate.check_scope_with_mode(
+        ("recipes/x/**",),
+        (),
+        ("recipes/y/a.yaml", "recipes/z/b.yaml"),
+        mode="warn",
+    )
+    assert len(findings) == 2
+    assert {finding.code for finding in findings} == {"MRS-GATE-012"}
+
+
+def test_check_scope_with_mode_rejects_unknown_mode():
+    with pytest.raises(ValueError):
+        gate.check_scope_with_mode((), (), (), mode="bogus")
+
+
+def test_check_scope_with_mode_returns_finding_instances_in_every_mode():
+    for mode in ("hard", "warn", "off"):
+        findings = gate.check_scope_with_mode(
+            ("recipes/x/**",), (), ("recipes/y/recipe.yaml",), mode=mode
+        )
+        assert all(isinstance(finding, Finding) for finding in findings)

@@ -528,6 +528,94 @@ def check_scope(
     return tuple(result)
 
 
+# --- Story 28.15: scope-violation enforcement mode, policy-declared,
+# default warn (CAP-17) --------------------------------------------------
+
+_SCOPE_VIOLATION_MODES: frozenset[str] = frozenset({"hard", "warn", "off"})
+
+# The warn-mode advisory sibling for each raw SCOPE_VIOLATION code
+# `check_scope` can emit -- a NEW code per AD-31 (a registered code's
+# `verdict.classify()` entry never varies by caller/severity), so a
+# `warn`-mode finding can carry `Verdict.WARN` while `MRS-GATE-007`/`008`
+# themselves stay pinned to `Verdict.SCOPE_VIOLATION` for `hard`. Mirrors
+# `cli/status.py`'s own `MRS-STATUS-011` "withheld, re-reported at a fixed
+# WARN tier" precedent, one dedicated code per source fact rather than one
+# bundled code, matching `MRS-GATE-007`/`008`'s own per-fact split.
+_SCOPE_VIOLATION_ADVISORY_CODES: Mapping[str, str] = {
+    "MRS-GATE-007": "MRS-GATE-012",
+    "MRS-GATE-008": "MRS-GATE-013",
+}
+
+
+def check_scope_with_mode(
+    effective_surface: tuple[str, ...],
+    frozen_paths: tuple[FrozenPath, ...],
+    changed_files: tuple[str, ...],
+    *,
+    mode: str,
+) -> tuple[Finding, ...]:
+    """The ONE place both scope-check call sites (``cli/gate.py::
+    _run_scope_check``, ``dispatch_verify.py::evaluate_dispatch_
+    verification``) apply the policy-declared, per-station scope-violation
+    enforcement mode (Story 28.15, CAP-17) over ``check_scope``'s raw
+    output -- this branching is safety-relevant (it decides whether a
+    violation can land), so it lives in exactly one place, never
+    duplicated per call site, mirroring ``resolve_policy_surface``'s own
+    Story 28.14 precedent for the identical reason.
+
+    - ``mode == "off"``: ``check_scope`` is never called at all -- CAP-17's
+      own AC is "not evaluated at all", so this returns ``()`` before any
+      ``fnmatch`` pass over ``changed_files`` runs, not merely after
+      discarding its result.
+    - ``mode == "hard"`` (today's behavior, byte-identical): ``check_
+      scope``'s raw findings return unchanged -- ``MRS-GATE-007``/``008``,
+      ``Severity.ERROR``, classifying ``Verdict.SCOPE_VIOLATION`` (a
+      non-waivable refuse, AD-49).
+    - ``mode == "warn"`` (the new default): each raw finding is replaced --
+      never merely relabeled in place -- by its own ``_SCOPE_VIOLATION_
+      ADVISORY_CODES`` sibling at ``Severity.WARN``, preserving ``path``
+      and naming the original code/message in the advisory's own message.
+      ``compute_verdict``/``judge_dispatch_verification`` key off
+      ``Finding.code`` via ``verdict.classify()``, never ``Finding.
+      severity`` (AD-31) -- so the raw ``MRS-GATE-007``/``008`` code must
+      never reach either caller's own findings list in ``warn`` mode, or
+      landing would still refuse regardless of severity. The advisory
+      finding itself classifies ``Verdict.WARN``, so it is visible
+      (journaled, and rendered by ``marshal status``/``fleet-picture``)
+      without blocking.
+
+    An unrecognized ``mode`` raises ``ValueError`` -- mirrors ``describe_
+    gate_mode``'s own precedent for an out-of-vocabulary policy value:
+    ``core/policy.py``'s own ``_valid_scope_violation_mode`` already
+    restricts any composed ``EffectivePolicy.scope_violation_mode`` to
+    this same 3-value vocabulary at composition time, so this is a
+    programmer-error guard, never a real-world outcome an operator needs a
+    ``Finding`` for."""
+    if mode not in _SCOPE_VIOLATION_MODES:
+        raise ValueError(
+            f"mode {mode!r} is not one of the known scope-violation modes "
+            f"{sorted(_SCOPE_VIOLATION_MODES)}"
+        )
+    if mode == "off":
+        return ()
+    raw = check_scope(effective_surface, frozen_paths, changed_files)
+    if mode == "hard":
+        return raw
+    return tuple(
+        Finding(
+            code=_SCOPE_VIOLATION_ADVISORY_CODES[finding.code],
+            severity=Severity.WARN,
+            message=(
+                f"scope-violation mode is 'warn' for this station -- "
+                f"{finding.message} (would refuse landing under 'hard'; "
+                "landing proceeds)"
+            ),
+            path=finding.path,
+        )
+        for finding in raw
+    )
+
+
 # --- Story 2.7: a gate binds to the spec's Success signal (AD-4/AD-31/AD-49) -
 
 

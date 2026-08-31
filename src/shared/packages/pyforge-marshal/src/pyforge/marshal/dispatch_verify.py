@@ -206,13 +206,20 @@ def evaluate_dispatch_verification(
                 entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
             )
             frozen_paths = empty_fold.live_frozen_surfaces(seed_frozen)
-            scope_findings = gate.check_scope(
-                effective_surface, frozen_paths, changed
+            # Story 28.15 (CAP-17): the SAME mode-application function
+            # `cli/gate.py::_run_scope_check` uses -- this safety-relevant
+            # branching lives in exactly one place, never duplicated per
+            # call site (`core/gate.py::check_scope_with_mode`'s own
+            # docstring).
+            scope_violation_mode = effective.scope_violation_mode.value
+            scope_findings = gate.check_scope_with_mode(
+                effective_surface, frozen_paths, changed, mode=scope_violation_mode
             )
             findings.extend(scope_findings)
             data["scope_check"] = {
                 "checked": True,
                 "story": str(story_key),
+                "mode": scope_violation_mode,
                 "effective_surface": list(effective_surface),
                 "changed_files": list(changed),
                 "violations": len(scope_findings),

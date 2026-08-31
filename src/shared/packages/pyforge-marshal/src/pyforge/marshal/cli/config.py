@@ -101,6 +101,12 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
+        # CAP-17) -- same reason as the 5 bmad-loop knobs above: no AC asks
+        # for a `--set` surface, so `marshal-policy.toml`'s project layer is
+        # the only way to set it (the flags layer still composes uniformly
+        # in `compose()` for programmatic callers).
+        "scope_violation_mode",
     }
 )
 
@@ -174,10 +180,15 @@ _UNSETTABLE_KEYS = frozenset(
         # value could ever satisfy this validator" reason
         # `model_tier_map`/`epic_surfaces`/`mcp_servers` are excluded for.
         "context",
+        # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
+        # CAP-17) -- a plain scalar excluded for the `_PROJECT_POLICY_ONLY_
+        # KEYS` reason (no AC asks for a `--set` surface), never the "no
+        # string value could ever satisfy this validator" reason.
+        "scope_violation_mode",
     }
 )
 
-# Field render order: the 13 static keys, then the 16 seed keys -- matches
+# Field render order: the 15 static keys, then the 16 seed keys -- matches
 # the spec's own enumeration order (Boundaries & Constraints, second
 # bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
 # ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
@@ -213,6 +224,11 @@ _FIELD_ORDER: tuple[str, ...] = (
     # no `--set` surface (mapping-typed), same reason as every static key
     # since `epic_surfaces`.
     "context",
+    # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
+    # CAP-17) closes the static block -- `marshal-policy.toml`/repo-defaults
+    # only, no `--set` surface, same reason as `max_parallel`/the 5
+    # bmad-loop knobs below (a scalar with no AC-declared CLI override).
+    "scope_violation_mode",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -351,7 +367,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 30 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 31 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -380,7 +396,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 30-key document matching ``schemas/policy.json`` exactly:
+    """The flat 31-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}
