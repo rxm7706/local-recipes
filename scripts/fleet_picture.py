@@ -583,7 +583,18 @@ def main() -> int:
         # journal/`marshal status --format json` carries the full detail.
         advisories = (live.get(slug, {}) or {}).get("scope_advisories") or []
         if advisories:
-            codes = ",".join(a.get("code", "?") for a in advisories)
+            # `advisories` comes from `marshal status --format json` subprocess
+            # stdout parsed in `running_stations()` (outside that function's own
+            # try/except) -- a non-dict item, or a `"code"` that is explicitly
+            # `None`, is guarded here rather than trusted, since `.get(...,
+            # "?")` only substitutes the default when the key is ABSENT.
+            # Deduped (`dict.fromkeys`) so several violations sharing one code
+            # render once, not repeated -- the `len(advisories)` count below
+            # stays the true total, unaffected by the dedup.
+            codes = ",".join(dict.fromkeys(
+                str(a.get("code") or "?") if isinstance(a, dict) else "?"
+                for a in advisories
+            ))
             watch.append(f"{slug}: {len(advisories)} scope-violation advisory(ies) "
                          f"(warn mode, not blocking) -- {codes}")
     try:

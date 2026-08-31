@@ -531,7 +531,11 @@ def check_scope(
 # --- Story 28.15: scope-violation enforcement mode, policy-declared,
 # default warn (CAP-17) --------------------------------------------------
 
-_SCOPE_VIOLATION_MODES: frozenset[str] = frozenset({"hard", "warn", "off"})
+# The closed 3-value vocabulary lives in `core/policy.py::
+# _SCOPE_VIOLATION_MODES` (the one `_valid_scope_violation_mode` actually
+# validates `EffectivePolicy.scope_violation_mode` against) -- reused here
+# rather than re-declared, so there is exactly one place that names it.
+_SCOPE_VIOLATION_MODES = policy._SCOPE_VIOLATION_MODES
 
 # The warn-mode advisory sibling for each raw SCOPE_VIOLATION code
 # `check_scope` can emit -- a NEW code per AD-31 (a registered code's

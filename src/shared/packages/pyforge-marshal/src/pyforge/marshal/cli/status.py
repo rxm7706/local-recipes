@@ -2040,7 +2040,16 @@ def _render_text_status(
         # visible here, not journal-only (AC4).
         scope_advisories = home.get("dispatch_verification_scope_advisories") or ()
         if scope_advisories:
-            codes = ",".join(entry.get("code", "?") for entry in scope_advisories)
+            # Deduped (`dict.fromkeys`) so several violations sharing one code
+            # render once, not repeated -- `n=` above stays the true total,
+            # unaffected by the dedup. No isinstance guard needed here (unlike
+            # `scripts/fleet_picture.py`'s equivalent line): each entry is
+            # already filtered to a `dict` by `gather_dispatch_journal_facts`
+            # before it ever reaches `DispatchJournalFacts.verification_scope_
+            # advisories`.
+            codes = ",".join(dict.fromkeys(
+                entry.get("code", "?") for entry in scope_advisories
+            ))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
         lines.append(line)
 

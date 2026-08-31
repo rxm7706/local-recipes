@@ -14,6 +14,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
+from ..core import gate as gate_core
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
     DispatchCompletionInput,
@@ -405,7 +406,7 @@ def _run_and_journal_verification(
     scope_advisories = [
         {"code": finding.code, "message": finding.message, "path": finding.path}
         for finding in envelope.findings
-        if finding.code in {"MRS-GATE-012", "MRS-GATE-013"}
+        if finding.code in gate_core._SCOPE_VIOLATION_ADVISORY_CODES.values()
     ]
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
