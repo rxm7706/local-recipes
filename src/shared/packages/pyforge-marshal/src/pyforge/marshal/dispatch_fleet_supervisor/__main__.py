@@ -52,9 +52,18 @@ def build_cycle_argv(
     mode: str,
     leave_remaining: int,
     run_id: str,
+    station: str | None = None,
+    stories: str | None = None,
 ) -> list[str]:
-    """The documented one-cycle command this supervisor re-runs each tick."""
-    return [
+    """The documented one-cycle command this supervisor re-runs each tick.
+
+    Story 22.11 (FR-193 CAP-10): ``station``/``stories`` are re-appended on
+    EVERY tick when set -- a station-scoped or explicit-sequence campaign
+    must stay scoped/sequenced for its whole lifetime, not just its first
+    cycle, or a supervised re-tick would silently widen back to fleet-wide
+    ledger order.
+    """
+    argv = [
         sys.executable,
         "-m",
         "pyforge.marshal.cli.main",
@@ -70,6 +79,11 @@ def build_cycle_argv(
         "--format",
         "json",
     ]
+    if station:
+        argv += ["--station", station]
+    if stories:
+        argv += ["--stories", stories]
+    return argv
 
 
 def cycle_completion(stdout: str) -> bool | None:
@@ -109,10 +123,18 @@ def run_fleet_campaign_supervisor(
     leave_remaining: int,
     max_cycles: int,
     tick_seconds: int,
+    station: str | None = None,
+    stories: str | None = None,
     process: ProcessPort | None = None,
 ) -> int:
     process = process if process is not None else PosixProcess()
-    argv = build_cycle_argv(mode=mode, leave_remaining=leave_remaining, run_id=run_id)
+    argv = build_cycle_argv(
+        mode=mode,
+        leave_remaining=leave_remaining,
+        run_id=run_id,
+        station=station,
+        stories=stories,
+    )
     tick = max(1, tick_seconds)
     cycles = 0
     unreadable_streak = 0
@@ -175,6 +197,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("leave_remaining", type=int)
     parser.add_argument("max_cycles", type=int)
     parser.add_argument("tick_seconds", type=int, nargs="?", default=_DEFAULT_TICK_SECONDS)
+    # Story 22.11 (FR-193 CAP-10): both optional, empty string means "unset"
+    # -- `_spawn_campaign_supervisor` always supplies the full positional
+    # list (empty strings for an unscoped/unsequenced campaign), so there is
+    # no parsing ambiguity between these two trailing optional positionals.
+    parser.add_argument("station", nargs="?", default="")
+    parser.add_argument("stories", nargs="?", default="")
     args = parser.parse_args(argv)
     return run_fleet_campaign_supervisor(
         repo_root=Path(args.repo_root),
@@ -183,6 +211,8 @@ def main(argv: list[str] | None = None) -> int:
         leave_remaining=args.leave_remaining,
         max_cycles=args.max_cycles,
         tick_seconds=args.tick_seconds,
+        station=args.station or None,
+        stories=args.stories or None,
     )
 
 

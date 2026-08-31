@@ -1604,6 +1604,27 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # never silent).
         "MRS-DISP-030",
         "MRS-DISP-031",
+        # Story 22.11 (station-scoped drain + an explicit story sequence,
+        # FR-193 CAP-10): 032 `dispatch`'s sequence-argument validation --
+        # neither/both of a `story` positional and `--stories` given, or
+        # `--stories` names a key unknown or already `done` on the
+        # station's tracked backlog (ERROR; refuses before any worktree is
+        # provisioned, never partway through the sequence).
+        "MRS-DISP-032",
+        # Story 22.11 (FR-193 CAP-10): `drain`'s station-scoping and
+        # explicit-sequence surface, extended (not forked) from Story
+        # 22.7's fleet-wide campaign: 013 `--station` names a slug that is
+        # not among the live pyforge stations (ERROR); 014 `--stories` was
+        # given without `--station` -- an explicit sequence names exactly
+        # one station's backlog, never the whole fleet's (ERROR); 015 the
+        # tracked ledger could not be read while validating a FRESH
+        # `--stories` sequence, before anything was provisioned (ERROR --
+        # distinct from MRS-DRAIN-003's per-station WARN relay, since this
+        # one stops the whole invocation rather than excluding one station
+        # from an otherwise-continuing cycle).
+        "MRS-DRAIN-013",
+        "MRS-DRAIN-014",
+        "MRS-DRAIN-015",
     }
 )
 

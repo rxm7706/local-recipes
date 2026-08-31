@@ -1047,6 +1047,21 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tier).
     "MRS-DISP-030": Verdict.ERROR,
     "MRS-DISP-031": Verdict.WARN,
+    # Story 22.11 station-scoped drain + an explicit story sequence
+    # (CAP-10): `dispatch`'s sequence-argument validation -- neither/both of
+    # `story`/`--stories` given, or `--stories` names a key unknown or
+    # already `done` on the tracked backlog -- refuses before any worktree
+    # is provisioned, so it is ERROR like the other pre-flight refusals
+    # above (MRS-DISP-001..008), not the per-station relay tier.
+    "MRS-DISP-032": Verdict.ERROR,
+    # `--station` naming a slug that is not among the live pyforge stations,
+    # `--stories` given without `--station`, and the tracked ledger being
+    # unreadable while validating a fresh `--stories` sequence all make the
+    # invocation a no-op before anything is provisioned -- the same ERROR
+    # tier as MRS-DRAIN-010/011/012 above, not the per-station report tier.
+    "MRS-DRAIN-013": Verdict.ERROR,
+    "MRS-DRAIN-014": Verdict.ERROR,
+    "MRS-DRAIN-015": Verdict.ERROR,
 }
 
 

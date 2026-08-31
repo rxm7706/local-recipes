@@ -291,6 +291,16 @@ def test_registered_codes_contains_the_real_codes():
             # branch and proceeds under an advisory.
             "MRS-DISP-030",
             "MRS-DISP-031",
+            # Story 22.11 (station-scoped drain + an explicit story
+            # sequence, FR-193 CAP-10): 032 `dispatch`'s sequence-argument
+            # validation (neither/both of `story`/`--stories`, or an
+            # unknown/already-done key). MRS-DRAIN-013 unknown `--station`;
+            # 014 `--stories` without `--station`; 015 the tracked ledger
+            # unreadable while validating a fresh `--stories` sequence.
+            "MRS-DISP-032",
+            "MRS-DRAIN-013",
+            "MRS-DRAIN-014",
+            "MRS-DRAIN-015",
         }
     )
 
