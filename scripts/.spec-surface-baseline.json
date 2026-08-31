@@ -427,8 +427,11 @@
   "memlog": "0a9bd002df094cf61afc920e67e7a063f7b7217b"
  },
  "pyforge-doctor/spec-deferred-work-visibility": {
-  "files": {},
-  "memlog": "1235144e2df01517100a31e5fe545b91888af5b6"
+  "files": {
+   "scripts/deferred_work_check.py": "1e95096d8f1be2aceb37559ee4c5c81049571aae",
+   "scripts/deferred_work_intake.py": "8b86a25122e06ac7b7d7205563501660556875ad"
+  },
+  "memlog": "b5dceb45a4285509d1a65de0fce2b5a53ce1c242"
  },
  "pyforge-doctor/spec-fleet-hygiene-verification-exemplar-program": {
   "files": {},
