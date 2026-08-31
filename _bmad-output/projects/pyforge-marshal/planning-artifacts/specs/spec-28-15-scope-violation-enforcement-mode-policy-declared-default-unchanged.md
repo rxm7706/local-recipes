@@ -7,6 +7,7 @@ review_loop_iteration: 0
 followup_review_recommended: true
 difficulty: medium
 baseline_revision: '7a13ea55d5ca052cab79edc498afa56fc8716453'
+surface: ["scripts/fleet_picture.py", "tests/scripts/test_fleet_picture_baseline_drift_attention.py", "src/shared/packages/pyforge-marshal/**", "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**", "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**", ".gitignore", "pixi.toml", "pixi.lock", "environment.yaml", "scripts/.spec-surface-baseline.json"]
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
   - docs/dreams/marshal-dependency-aware-dispatch.md

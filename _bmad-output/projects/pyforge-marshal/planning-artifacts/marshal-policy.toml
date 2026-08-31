@@ -177,6 +177,21 @@ verify_commands = [
   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_kit.py",
   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_check.py",
   "src/shared/packages/pyforge-marshal/tests/unit/test_spin.py",
+  # Story 28.15 (CAP-17): fleet-picture ATTENTION visibility for warn-mode scope
+  # advisories — in-scope for this story's AC4, not a cross-station leak.
+  "scripts/fleet_picture.py",
+  "tests/scripts/test_fleet_picture_baseline_drift_attention.py",
+  # Story 28.15: gate/status/dispatch-verify/supervisor seam for scope_violation_mode.
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py",
+  "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_scope.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_status.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py",
+  "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py",
 ]
 
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
