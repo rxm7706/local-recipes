@@ -2757,19 +2757,40 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "449b3179a8fb3a8fde7373d7562282012dbe51fe",
+   "pixi.toml": "06d8ab4ffe48dc63114c12dcb3b4b17d9d836935",
    "src/shared/packages/pyforge-core/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
-   "src/shared/packages/pyforge-core/README.md": "eb9b93c06168d70f50357a799319553c616e342a",
+   "src/shared/packages/pyforge-core/README.md": "5648f54285f46fbf234e6d131377d5f7e1b20031",
    "src/shared/packages/pyforge-core/pixi.toml": "7974c46731748dd56e3f5e2b39f3f4570e4cf9b6",
-   "src/shared/packages/pyforge-core/pyproject.toml": "40c4b6d34b441a0558e9484244f3875768a34ca9",
-   "src/shared/packages/pyforge-core/src/pyforge/core/__init__.py": "011d8c0d468a6ee517c73337ccb5f29413077aaa",
+   "src/shared/packages/pyforge-core/pyproject.toml": "375d4db9e6af77ba6dd021114409db8a3360a174",
+   "src/shared/packages/pyforge-core/src/pyforge/core/__init__.py": "b289f95a2340ac37df757ed458c2f890ff093c1d",
+   "src/shared/packages/pyforge-core/src/pyforge/core/assertion.py": "898ac91c2ee0e4dca30d3896b045fa682125dd9a",
    "src/shared/packages/pyforge-core/src/pyforge/core/atomic_write.py": "83dcab588f9937899ad9bf27abdec94d0527089d",
+   "src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py": "5e72f7228e9bc62c99ca68256a204b5f40e0918c",
+   "src/shared/packages/pyforge-core/src/pyforge/core/errors.py": "ed2b0b30f46ecaef90633cb0a9aba24dd146212f",
+   "src/shared/packages/pyforge-core/src/pyforge/core/hooks.py": "ed5e6b0bf07edd0465724b4b20388c203a437b0f",
+   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "26c7d0e7dd915e8725764e650dc6bd40efc5ef2e",
+   "src/shared/packages/pyforge-core/src/pyforge/core/process.py": "ab89a24bb554bc1b153c035589fa3d01a0d70716",
    "src/shared/packages/pyforge-core/src/pyforge/core/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/pyforge-core/tests/meta/test_atomic_write_sole_ownership.py": "4afe35b9b978f3ce8a62cd9a118bdc708fcf6f90",
+   "src/shared/packages/pyforge-core/src/pyforge/core/report.py": "abb9d871d75657b41f2d484b24da533a0112cbff",
+   "src/shared/packages/pyforge-core/src/pyforge/core/verdict.py": "1dbc7ab1e8b1b3cf4e5a94ab7e6d052d9af27eae",
+   "src/shared/packages/pyforge-core/tests/meta/conftest.py": "d8da03a4d7f57be4b116cb1c9cb0ec50a8df3362",
+   "src/shared/packages/pyforge-core/tests/meta/test_atomic_write_sole_ownership.py": "c6f736157b3d79e3edd30bb5559769e75b53b1ec",
+   "src/shared/packages/pyforge-core/tests/meta/test_cli_parity_matrix.py": "83c71a96a68f02a83a4663f8b3c88f37dbe0da2f",
+   "src/shared/packages/pyforge-core/tests/meta/test_exception_root_sole_ownership.py": "b68f3e3acfbcad283072542aee01a58898b253ec",
    "src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py": "8d891d0f493e14a19e78b277c46d1b7761905b7c",
-   "src/shared/packages/pyforge-core/tests/unit/test_atomic_write.py": "a1b0e7c954d85a6ecbf1342a4536fb71b21af3ba"
+   "src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py": "843832cd4fc3edf155e83a091ee057d01a250134",
+   "src/shared/packages/pyforge-core/tests/meta/test_process_sole_ownership.py": "990ebc58053d5bd3abf0bde2cc95b7670596449d",
+   "src/shared/packages/pyforge-core/tests/meta/test_verdict_lattice_sole_ownership.py": "759b463efec38e909632ef8b7e2c30f1f14640fa",
+   "src/shared/packages/pyforge-core/tests/unit/test_atomic_write.py": "a1b0e7c954d85a6ecbf1342a4536fb71b21af3ba",
+   "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "6b41ab1f3258c29103bc2ce8a816da23b1fb0e24",
+   "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "84448de5b3e5ef6c0fdc7c96f80cda0fd5d0e497",
+   "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "476f51b4cf35dc4c78cd6a79af8762a73e1fadd8",
+   "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "c8ff83bafa64c3b2fdbf5c0d63bd6526f2eaba77",
+   "src/shared/packages/pyforge-core/tests/unit/test_process.py": "c1c47e9b9794210e8886a37bf28a442a5322eb53",
+   "src/shared/packages/pyforge-core/tests/unit/test_report.py": "8fc7d80039bc741d9b5cc54a8452d7bcfda3a9fd",
+   "src/shared/packages/pyforge-core/tests/unit/test_verdict.py": "e4446939e5efa7d21593c1f55f9a239c2ee160e7"
   },
-  "memlog": "d84dbab434c099f9337de4e0cdfa0ece1694c71c"
+  "memlog": "71620a3da73b42cb02ee8be250d731376e172037"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
