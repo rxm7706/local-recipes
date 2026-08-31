@@ -4404,8 +4404,15 @@
   "memlog": "7d8744d0684204a4c9ffa95355cde13291cf4933"
  },
  "pyforge-steward/spec-bmad-suite-install-class-wiring": {
-  "files": {},
-  "memlog": "8e793ffeabb258d7c40a01e65fe1ae824e975e7e"
+  "files": {
+   ".github/workflows/pyforge-steward-fresh-clone.yml": "aa9978d00386fa47a354722a8db5664181374e8d",
+   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md": "10bd942fdd0a25340760d889bd274915941cfe4e",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "ddabd136ce138081276be736e8377e60835c3ea8",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py": "0395bc32babb361379a34e377f30a247f2a54559",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "2c0acf9a99fb4d917176783370ae58cb77cc1cad",
+   "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e4078969ba96a3ee78303d0f19b9270609b3aa67"
+  },
+  "memlog": "2045817258d842e357586e339bd5b6a1504def0c"
  },
  "pyforge-steward/spec-build-league-scorecard": {
   "files": {},
