@@ -86,6 +86,13 @@ verify_commands = [
   # Widened 2026-08-31 for consistency with the epic-28 stopgap and atlas's
   # own epic-21/22/23 convention -- see epic-28's comment for why.
   "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py",
