@@ -48,13 +48,13 @@
   "files": {
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
-   "scripts/conda-forge-packaging-inventory-operations_metrics.py": "ef0b9e7513e64ee9947d07748c68d3dc95f3899f",
-   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "a2dc4d8facd2686a6ddd5d1edbf9cdd85a075a7c",
+   "scripts/conda-forge-packaging-inventory-operations_metrics.py": "973a9c8309e8e63f498c2f768d8d8905dcc348c6",
+   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "6ca4370240838b65f9078a8fff31eb193850e626",
    "scripts/conda-forge-packaging-inventory-operations_priority.py": "fe4b53df7c08d63aabdf06cfb0462498ed534663",
    "scripts/openteams_identity_dashboards.py": "0b0bcf2ccddbefade59b4f9578af4513b418a204",
-   "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": "7840c1ac605e4562a8190806af2366b0274a53e5"
+   "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": "2282436d150bbee9ce854d16ae2ec2013b4d67da"
   },
-  "memlog": "1e32a25dbf527da57567bde40441a87a4bb3bc8e"
+  "memlog": "f3bfd10c71522b06f3a414f2f4c276a0f28e8c25"
  },
  "pyforge-atlas/spec-enterprise-data-models-and-apis": {
   "files": {},

@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Build OpenTeams identity rows: PURL Associator join + inventory-derived PURLs.
+"""Build OpenTeams identity rows from the Atlas Phase D identity export.
 
-One row per inventory-2026-08-12 Core_Python_Package_Name.
-Associator (conda-forge names) is preferred. Names not in that index are
-minted from PyPI_PURL + Source_Repository_URL. Conda PURLs are copied only
-when CondaForge_Verified is Yes.
+Since Story 21.7, this script never fetches ASSOCIATOR_URL, the OpenTeams
+board, feedstock-outputs, or staged-recipes PRs itself: `main()` reads
+`identity_export_parquet` (pyforge-atlas Kedro catalog, Story 21.6's
+`upstream_discovery` join -- PURL Associator + OpenTeams board + feedstock/
+staged-PR/local-recipe overlays, one row per
+CDO-ENT-JFROG/CDO-ENT-CONDA package plus board-only extras) via
+`PYFORGE_ATLAS_DATA_ROOT`. Run `pixi run -e pyforge-atlas
+pyforge-atlas-bootstrap` first; a missing Parquet is a hard error, never a
+live-fetch fallback.
 
 Packaging location URLs (same columns the conda-forge packages page and
-the two recipe trees expose):
-
-- Conda-Forge_FeedStock_URL / Conda-Forge_Metadata_URL from
-  https://conda-forge.org/packages/ (feedstock-outputs map + metadata Browse)
-- Staged_Recipes_PR_URL from conda-forge/staged-recipes PRs
-- Local_Recipes_URL from rxm7706/local-recipes/tree/main/recipes
-- Local_Build_Status from the live recipes/ CFE stamp
+the two recipe trees expose) -- Conda-Forge_FeedStock_URL/Metadata_URL,
+Staged_Recipes_PR_URL -- come from that same Parquet. Local_Recipes_URL
+and Local_Build_Status are the two exceptions: they are always freshly
+re-derived from a live `recipes/` filesystem scan (`overlay_live_local`,
+run unconditionally on every `main()`/`--gist-only` invocation) -- the
+Parquet's own values for those two columns are never used downstream.
 
 After writing the workbook tab, publish (edit in place, never create) the
 pinned secret gist files mgmt-wf-python-modernization-identity.md (row
@@ -21,6 +25,9 @@ catalog) and mgmt-wf-python-modernization-dashboards.md (P/work, issue
 gap, census, Artifactory map) unless --skip-gist. The gist id is not in
 git: set OPENTEAMS_IDENTITY_GIST_ID,
 conf/conda-forge-packaging-inventory-operations.local.env, or --gist-id.
+`--gist-only` republishes from the identity Parquet merged with ranking
+columns (P/Rank/Score/Work + JFROG) from the ranked identity tab
+(`priority.py`'s output) by name, without regenerating identity rows.
 
 Default output snapshot tab identity-2026-08-12 is not a source input.
 Pass --tab-out to write a dated tab without overwriting an older snapshot.
@@ -31,17 +38,16 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import urllib.request
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 from openpyxl import load_workbook
 
 COLUMNS = [
@@ -65,18 +71,22 @@ COLUMNS = [
     "Verification_Timestamp_UTC",
 ]
 
-GIT_RE = re.compile(
-    r"https?://(?:www\.)?(github\.com|gitlab\.com|bitbucket\.org|codeberg\.org)/([^/]+)/([^/#?\s]+)",
-    re.I,
-)
-TAB_IN = "inventory-2026-08-12"
 TAB_OUT = "identity-2026-08-12"
 OSS_MILESTONE = "OSS Enhancements (Conda Forge, Pixi, ect)"
 PACKAGING_TITLE_RE = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
 DEFAULT_GH = Path(__file__).resolve().parent.parent / ".pixi/envs/local-recipes/bin/gh"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path("/tmp/openteams-identity")
-ASSOCIATOR_URL = "https://prefix-dev.github.io/purl-associator/mappings-index.json"
+# Story 21.7 (CAP-4, quartet thin-out): identity rows come from the Atlas Phase D
+# join (Story 21.6's identity_export_parquet) -- never a direct fetch. Path mirrors
+# the PYFORGE_ATLAS_DATA_ROOT / ${paths.data_root} convention globals.yml uses
+# (Story 21.1), resolved the same way `kedro run` resolves a relative data_root:
+# against the pyforge-atlas project directory (the documented bootstrap task's cwd).
+PYFORGE_ATLAS_DATA_ROOT_ENV = "PYFORGE_ATLAS_DATA_ROOT"
+PYFORGE_ATLAS_PROJECT_DIR = REPO_ROOT / "src/shared/packages/pyforge-atlas"
+IDENTITY_EXPORT_PARQUET_RELPATH = Path(
+    "derived/identity_export_parquet/identity_export_parquet.parquet"
+)
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
 GIST_DASHBOARD_FILENAME = "mgmt-wf-python-modernization-dashboards.md"
 GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
@@ -119,11 +129,10 @@ GIST_SCHEMA = [
     ("internal_lob_count", "int", "no", "JFROG internal LOB count."),
 ]
 GIST_COLUMNS = [name for name, _typ, _req, _meaning in GIST_SCHEMA]
-FEEDSTOCK_OUTPUTS_URL = (
-    "https://raw.githubusercontent.com/conda-forge/feedstock-outputs/"
-    "single-file/feedstock-outputs.json"
-)
-METADATA_URL = "https://conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}"
+# Ranking + JFROG columns merged from the ranked identity tab at --gist-only
+# publish time (Story 21.7; identity-contract.md "Ranking columns"). Derived,
+# not hand-listed, so a future GIST_SCHEMA addition is picked up automatically.
+RANKING_MERGE_COLUMNS = [c for c in GIST_COLUMNS if c not in COLUMNS and c != "Package"]
 LOCAL_RECIPES_URL = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{dir}"
 CFE_BUILD_STATUS_RE = re.compile(r"(?m)^  cfe-local-build-status:\s*(\S+)")
 LOCAL_DIR_FROM_URL_RE = re.compile(r"/recipes/([^/\s]+)\s*$")
@@ -147,32 +156,6 @@ BUILD_STATUS_ORDER = (
     "blocked-missing-ortools",
     "not-attempted",
     "blank",
-)
-STAGED_PR_API = "/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100"
-RECIPE_FILE_RE = re.compile(r"^recipes/([^/]+)/")
-TITLE_PREFIX_RE = re.compile(
-    r"""(?ix)^(?:
-        add(?:s|ed|ing)?|
-        new|
-        create[ds]?|creating|
-        initial(?:\s+commit)?(?:\s+of|\s+for)?|
-        conda(?:-forge)?\s+recipe(?:s)?(?:\s+for)?
-    )\s+
-    (?:(?:the|a|an)\s+)?
-    (?:
-        (?:conda(?:-forge)?\s+)?(?:python\s+)?(?:r\s+)?(?:new\s+)?
-        recipes?(?:\.ya?ml)?\s+(?:for\s+)?
-        |
-        meta\.yaml\s+(?:for\s+)?
-    )?
-    """
-)
-TITLE_VERSION_RE = re.compile(r"\s+v?\d+(?:\.\d+)+(?:[a-z0-9.-]*)\s*$", re.I)
-TITLE_JUNK_RE = re.compile(
-    r"""(?ix)
-    \s+(?:as\s+a\s+)?packages?\s*$|
-    \s+\([^)]*\)\s*$
-    """
 )
 TITLE_STOP = {
     "recipe",
@@ -202,7 +185,6 @@ TITLE_STOP = {
     "bump",
     "r",
 }
-SKIP_RECIPE_DIRS = {"example", "example-v1"}
 RECIPE_NAME_RE = re.compile(
     r"(?m)^(?:package:\s*\n(?:[ \t].*\n)*?[ \t]+name:\s*|"
     r"[ \t]+- name:\s*|"
@@ -210,49 +192,8 @@ RECIPE_NAME_RE = re.compile(
 )
 
 
-def na(value: str | None) -> bool:
-    v = (value or "").strip()
-    return (not v) or v in {"N/A", "n/a", "NA"}
-
-
 def join_list(values: list[str]) -> str:
     return "; ".join(v for v in values if v)
-
-
-def git_purl(url: str) -> str | None:
-    if na(url):
-        return None
-    m = GIT_RE.search(url)
-    if not m:
-        return None
-    host, ns, repo = m.group(1).lower(), m.group(2), m.group(3)
-    repo = re.sub(r"\.git$", "", repo, flags=re.I)
-    if host == "github.com":
-        return f"pkg:github/{ns}/{repo}"
-    if host == "gitlab.com":
-        return f"pkg:gitlab/{ns}/{repo}"
-    if host == "bitbucket.org":
-        return f"pkg:bitbucket/{ns}/{repo}"
-    return None
-
-
-def alt_purls(rec: dict) -> list[str]:
-    out: list[str] = []
-    for item in rec.get("alternative_purls") or []:
-        if isinstance(item, str) and item:
-            out.append(item)
-        elif isinstance(item, dict) and item.get("purl"):
-            out.append(item["purl"])
-    return out
-
-
-def lookup_assoc(name: str, packages: dict) -> tuple[dict | None, str | None]:
-    if name in packages:
-        return packages[name], name
-    for cand in (name.replace("-", "."), name.replace("-", "_")):
-        if cand in packages:
-            return packages[cand], cand
-    return None, None
 
 
 def pep503_name(value: str) -> str:
@@ -297,59 +238,6 @@ def resolve_gist_id(cli_value: str | None) -> str | None:
     return None
 
 
-def fetch_project_issues(gh: str) -> list[dict]:
-    query = """
-    query($cursor: String) {
-      organization(login: "OpenTeams-WFT-CDO") {
-        projectV2(number: 1) {
-          items(first: 100, after: $cursor) {
-            pageInfo { hasNextPage endCursor }
-            nodes {
-              content {
-                __typename
-                ... on Issue {
-                  number
-                  title
-                  url
-                  state
-                  milestone { title }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    """
-    items: list[dict] = []
-    cursor = None
-    while True:
-        args = [gh, "api", "graphql", "-f", f"query={query}"]
-        if cursor:
-            args += ["-f", f"cursor={cursor}"]
-        data = json.loads(subprocess.check_output(args, text=True))
-        conn = data["data"]["organization"]["projectV2"]["items"]
-        items.extend(conn["nodes"])
-        if not conn["pageInfo"]["hasNextPage"]:
-            break
-        cursor = conn["pageInfo"]["endCursor"]
-    return items
-
-
-def board_packaging_urls(items: list[dict]) -> dict[str, str]:
-    """PEP 503 name -> issue URL for [Conda-Forge Packaging] titles on project 1."""
-    out: dict[str, str] = {}
-    for node in items:
-        content = node.get("content") or {}
-        if content.get("__typename") != "Issue":
-            continue
-        name = packaging_name_from_title(content.get("title") or "")
-        url = content.get("url") or ""
-        if name and url and name not in out:
-            out[name] = url
-    return out
-
-
 ISSUE_CREATE_REPO = "OpenTeams-WFT-CDO/mgmt-wf-python-modernization"
 PROJECT_OWNER = "OpenTeams-WFT-CDO"
 PROJECT_NUMBER = "1"
@@ -363,14 +251,16 @@ def create_missing_issues(
 ) -> list[tuple[str, str]]:
     """One GitHub issue per record missing ``OpenTeams_Issue_URL``.
 
-    Additive-only and idempotent: this only ever creates issues for names the
-    board join (``board_packaging_urls``) did not already find -- it never
-    edits, closes, or re-titles an existing issue. A row with a blank/missing
-    ``Core_Python_Package_Name`` is skipped (never produces a garbage
-    ``[Conda-Forge Packaging] `` title).
+    Additive-only and idempotent: this only ever creates issues for records
+    that don't already carry an ``OpenTeams_Issue_URL`` (Story 21.7: that
+    join now happens once, upstream, in Atlas's Phase D identity export) --
+    it never edits, closes, or re-titles an existing issue. A row with a
+    blank/missing ``Core_Python_Package_Name`` is skipped (never produces a
+    garbage ``[Conda-Forge Packaging] `` title).
 
-    A created issue is also added to OpenTeams project 1 so a subsequent
-    run's board join sees it and treats the name as ``Already tracked``.
+    A created issue is also added to OpenTeams project 1. ``board`` is a
+    write-only bookkeeping sink here (never read back by this script since
+    Story 21.7 -- a future Atlas pipeline run's own board join picks it up):
     ``row["OpenTeams_Issue_URL"]``/``board[...]`` are only updated once BOTH
     the issue-create and the project-item-add calls succeed -- if item-add
     fails after a successful create, the row is left unmarked (still
@@ -440,14 +330,6 @@ def create_missing_issues(
     return created
 
 
-def issue_url(inv: dict, board: dict[str, str]) -> str:
-    name = pep503_name(inv.get("Core_Python_Package_Name", ""))
-    if name in board:
-        return board[name]
-    raw = inv.get("OpenTeams_Issue_URL", "")
-    return "" if na(raw) else raw
-
-
 def name_keys(row: dict[str, str]) -> list[str]:
     keys: list[str] = []
     for raw in (
@@ -467,159 +349,6 @@ def first_map(mapping: dict[str, str], keys: list[str]) -> str:
         if key in mapping and mapping[key]:
             return mapping[key]
     return ""
-
-
-def feedstock_repo_name(repo: str) -> str:
-    return repo if repo == "cdt-builds" else f"{repo}-feedstock"
-
-
-def metadata_url(pkg: str) -> str:
-    return METADATA_URL.format(pkg=pkg)
-
-
-def download_json(url: str, dest: Path) -> dict:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {url} ...", flush=True)
-    with urllib.request.urlopen(url, timeout=120) as resp:
-        dest.write_bytes(resp.read())
-    return json.loads(dest.read_text())
-
-
-def load_feedstock_outputs(path: Path) -> tuple[dict[str, str], dict[str, str]]:
-    """Return (feedstock_url_by_key, metadata_url_by_key) from feedstock-outputs.json."""
-    if path.is_file():
-        data = json.loads(path.read_text())
-    else:
-        data = download_json(FEEDSTOCK_OUTPUTS_URL, path)
-    fs_map: dict[str, str] = {}
-    meta_map: dict[str, str] = {}
-    for pkg, repos in data.items():
-        if not isinstance(repos, list) or not repos:
-            continue
-        urls = join_list(
-            f"https://github.com/conda-forge/{feedstock_repo_name(str(r))}"
-            for r in repos
-            if r
-        )
-        meta = metadata_url(pkg)
-        for key in (pkg, pkg.lower(), pep503_name(pkg), pkg.replace("-", "_")):
-            if key and key not in fs_map:
-                fs_map[key] = urls
-                meta_map[key] = meta
-    return fs_map, meta_map
-
-
-def names_from_pr_title(title: str) -> list[str]:
-    t = (title or "").strip().strip("`\"'")
-    t = TITLE_PREFIX_RE.sub("", t).strip(" :.-")
-    t = TITLE_JUNK_RE.sub("", t).strip()
-    t = TITLE_VERSION_RE.sub("", t).strip()
-    if not t:
-        return []
-    parts = re.split(r"\s+(?:and|&)\s+|,\s*|;\s+|\s+/\s+", t)
-    names: list[str] = []
-    for part in parts:
-        part = part.strip().strip("`\"'").strip(" .")
-        part = re.sub(r"\s+recipe\.ya?ml$", "", part, flags=re.I)
-        if not part or len(part.split()) > 3:
-            continue
-        token = pep503_name(part.replace(" ", "-"))
-        if not token or len(token) < 2 or token in TITLE_STOP:
-            continue
-        if token not in names:
-            names.append(token)
-    return names
-
-
-def load_staged_prs(
-    tsv_path: Path,
-    open_json: Path,
-    gh: str | None,
-    refresh: bool,
-) -> dict[str, str]:
-    """PEP 503 name -> best staged-recipes PR URL."""
-    if refresh or not tsv_path.is_file():
-        if not gh:
-            raise SystemExit("gh not found; pass --staged-prs")
-        tsv_path.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Fetching staged-recipes PR titles via {gh} ...", flush=True)
-        text = subprocess.check_output(
-            [
-                gh,
-                "api",
-                "--paginate",
-                "-q",
-                '.[] | [.number, .state, (.merged_at // ""), .html_url, .title] | @tsv',
-                STAGED_PR_API,
-            ],
-            text=True,
-        )
-        tsv_path.write_text(text)
-    if refresh or not open_json.is_file():
-        if not gh:
-            raise SystemExit("gh not found; pass --staged-open-prs")
-        open_json.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Fetching open staged-recipes PR files via {gh} ...", flush=True)
-        text = subprocess.check_output(
-            [
-                gh,
-                "pr",
-                "list",
-                "--repo",
-                "conda-forge/staged-recipes",
-                "--state",
-                "open",
-                "--limit",
-                "2000",
-                "--json",
-                "number,title,url,files",
-            ],
-            text=True,
-        )
-        open_json.write_text(text)
-
-    best: dict[str, tuple[int, int, str]] = {}
-
-    def consider(name: str, rank: int, number: int, url: str) -> None:
-        if not name or not url:
-            return
-        prev = best.get(name)
-        if prev is None or (rank, -number) < (prev[0], -prev[1]):
-            best[name] = (rank, number, url)
-
-    for pr in json.loads(open_json.read_text()):
-        number = int(pr.get("number") or 0)
-        url = pr.get("url") or ""
-        for fileinfo in pr.get("files") or []:
-            m = RECIPE_FILE_RE.match(fileinfo.get("path") or "")
-            if not m:
-                continue
-            dirname = m.group(1)
-            if dirname in SKIP_RECIPE_DIRS:
-                continue
-            consider(pep503_name(dirname), 0, number, url)
-        for name in names_from_pr_title(pr.get("title") or ""):
-            consider(name, 1, number, url)
-
-    with tsv_path.open(encoding="utf-8") as f:
-        for line in f:
-            parts = line.rstrip("\n").split("\t", 4)
-            if len(parts) != 5:
-                continue
-            number_s, state, merged_at, url, title = parts
-            try:
-                number = int(number_s)
-            except ValueError:
-                continue
-            if state == "open":
-                rank = 1
-            elif merged_at:
-                rank = 2
-            else:
-                rank = 3
-            for name in names_from_pr_title(title):
-                consider(name, rank, number, url)
-    return {name: url for name, (_rank, _n, url) in best.items()}
 
 
 def load_local_recipes(recipes_dir: Path) -> dict[str, str]:
@@ -769,126 +498,6 @@ def emit_status_block(lines: list[str], indent: str, counts: Counter) -> None:
         lines.append(f"{indent}{status}: {counts[status]}")
 
 
-def inventory_feedstock_fallback(inv: dict[str, str] | None) -> str:
-    if not inv:
-        return ""
-    raw = inv.get("Conda-Forge_FeedStock_URL", "")
-    return "" if na(raw) else raw
-
-
-def attach_packaging_urls(
-    row: dict[str, str],
-    fs_map: dict[str, str],
-    meta_map: dict[str, str],
-    staged_map: dict[str, str],
-    local_map: dict[str, str],
-    inv: dict[str, str] | None,
-) -> dict[str, str]:
-    keys = name_keys(row)
-    fs_url = first_map(fs_map, keys) or inventory_feedstock_fallback(inv)
-    meta_url = first_map(meta_map, keys)
-    if fs_url and not meta_url:
-        pkg = row.get("associator_key") or row.get("Core_Python_Package_Name") or ""
-        meta_url = metadata_url(pkg) if pkg else ""
-    if not fs_url:
-        meta_url = ""
-    row["Conda-Forge_FeedStock_URL"] = fs_url
-    row["Conda-Forge_Metadata_URL"] = meta_url
-    row["Staged_Recipes_PR_URL"] = first_map(staged_map, keys)
-    row["Local_Recipes_URL"] = first_map(local_map, keys)
-    return row
-
-
-def from_assoc(
-    inv: dict, rec: dict, matched_as: str, timestamp: str, board: dict[str, str]
-) -> dict[str, str]:
-    conda = "" if na(inv.get("Conda-forge_PURL")) else inv["Conda-forge_PURL"]
-    src = "" if na(inv.get("Source_Repository_URL")) else inv["Source_Repository_URL"]
-    return {
-        "Core_Python_Package_Name": inv["Core_Python_Package_Name"],
-        "OpenTeams_Title": inv["OpenTeams_Title"],
-        "identity_source": "purl-associator",
-        "associator_key": matched_as,
-        "associator_status": rec.get("status") or "",
-        "primary_purl": rec.get("purl") or "",
-        "primary_type": rec.get("type") or "",
-        "alternative_purls": join_list(alt_purls(rec)),
-        "cpes": join_list(list(rec.get("cpes") or [])),
-        "conda_purl": conda,
-        "source_repository_url": src,
-        "OpenTeams_Issue_URL": issue_url(inv, board),
-        "Verification_Timestamp_UTC": timestamp,
-    }
-
-
-def from_inventory(inv: dict, timestamp: str, board: dict[str, str]) -> dict[str, str]:
-    pypi = "" if na(inv.get("PyPI_PURL")) else inv["PyPI_PURL"]
-    src = "" if na(inv.get("Source_Repository_URL")) else inv["Source_Repository_URL"]
-    gp = git_purl(src)
-    primary = pypi
-    ptype = "pypi" if pypi else ""
-    alts: list[str] = []
-    if pypi and gp:
-        alts.append(gp)
-    elif not pypi and gp:
-        primary = gp
-        ptype = "github" if gp.startswith("pkg:github/") else "git"
-    if primary:
-        source, status = "inventory", "inventory-derived"
-    else:
-        source, status = "none", "unmapped"
-    return {
-        "Core_Python_Package_Name": inv["Core_Python_Package_Name"],
-        "OpenTeams_Title": inv["OpenTeams_Title"],
-        "identity_source": source,
-        "associator_key": "",
-        "associator_status": status,
-        "primary_purl": primary,
-        "primary_type": ptype,
-        "alternative_purls": join_list(alts),
-        "cpes": "",
-        "conda_purl": "" if na(inv.get("Conda-forge_PURL")) else inv["Conda-forge_PURL"],
-        "source_repository_url": src,
-        "OpenTeams_Issue_URL": issue_url(inv, board),
-        "Verification_Timestamp_UTC": timestamp,
-    }
-
-
-def from_board_only(name: str, url: str, packages: dict, timestamp: str) -> dict[str, str]:
-    rec, key = lookup_assoc(name, packages)
-    if rec and key:
-        row = from_assoc(
-            {
-                "Core_Python_Package_Name": name,
-                "OpenTeams_Title": f"[Conda-Forge Packaging] {name}",
-                "Conda-forge_PURL": "",
-                "Source_Repository_URL": "",
-                "OpenTeams_Issue_URL": url,
-            },
-            rec,
-            key,
-            timestamp,
-            board={name: url},
-        )
-        row["identity_source"] = "openteams-board"
-        return row
-    return {
-        "Core_Python_Package_Name": name,
-        "OpenTeams_Title": f"[Conda-Forge Packaging] {name}",
-        "identity_source": "openteams-board",
-        "associator_key": "",
-        "associator_status": "unmapped",
-        "primary_purl": "",
-        "primary_type": "",
-        "alternative_purls": "",
-        "cpes": "",
-        "conda_purl": "",
-        "source_repository_url": "",
-        "OpenTeams_Issue_URL": url,
-        "Verification_Timestamp_UTC": timestamp,
-    }
-
-
 def read_xlsx_tab(xlsx: Path, tab: str) -> list[dict[str, str]]:
     wb = load_workbook(xlsx, read_only=True, data_only=True)
     ws = wb[tab]
@@ -901,8 +510,77 @@ def read_xlsx_tab(xlsx: Path, tab: str) -> list[dict[str, str]]:
     return rows
 
 
-def read_inventory_tab(xlsx: Path, tab: str = TAB_IN) -> list[dict[str, str]]:
-    return read_xlsx_tab(xlsx, tab)
+def identity_export_parquet_path() -> Path:
+    """Physical location of the Atlas Kedro catalog's ``identity_export_parquet``
+    dataset (Story 21.6, CAP-3) -- the ONLY input to this script's identity rows
+    since Story 21.7. Mirrors ``${paths.data_root}`` (default ``data``, override
+    via ``PYFORGE_ATLAS_DATA_ROOT``), resolved against the pyforge-atlas project
+    directory the same way the documented ``pyforge-atlas-bootstrap`` task's
+    ``kedro run`` (cwd ``src/shared/packages/pyforge-atlas``) resolves it."""
+    data_root = Path(os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data"))
+    if not data_root.is_absolute():
+        data_root = PYFORGE_ATLAS_PROJECT_DIR / data_root
+    return data_root / IDENTITY_EXPORT_PARQUET_RELPATH
+
+
+def read_identity_export_records() -> list[dict[str, str]] | None:
+    """Read the Atlas Phase D identity export Parquet -- replaces the retired
+    ASSOCIATOR_URL/board/feedstock-outputs/staged-prs fetch-and-join block
+    (Story 21.7). Never falls back to a live fetch: a missing Parquet is a
+    hard, named error (I/O & Edge-Case Matrix), reported here and signaled to
+    the caller as ``None`` rather than raising."""
+    path = identity_export_parquet_path()
+    if not path.is_file():
+        print(
+            f"identity_export_parquet not found at {path} -- run "
+            "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first",
+            file=sys.stderr,
+        )
+        return None
+    df = pd.read_parquet(path)
+    return [
+        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
+        for row in df.to_dict(orient="records")
+    ]
+
+
+def merge_ranking_columns(
+    identity_records: list[dict[str, str]], ranked_records: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Merge ``RANKING_MERGE_COLUMNS`` (P/Rank/Score/Work + JFROG/priority
+    fields) from ``ranked_records`` (the priority.py-ranked identity tab) onto
+    ``identity_records`` (the Atlas Phase D Parquet export), matched by
+    ``Core_Python_Package_Name``. A Parquet name with no match in the ranked
+    tab is dropped -- P/Rank/Score/Work are GIST_SCHEMA-required, so a row
+    that cannot carry them is never published -- and a stderr warning names
+    it (I/O & Edge-Case Matrix "a name has no cross-source match": never
+    silent-drop, never raise). ``Package`` (GIST_SCHEMA-required) is set on
+    every merged row from ``Core_Python_Package_Name`` -- it is deliberately
+    excluded from ``RANKING_MERGE_COLUMNS`` (the ranked tab is not its source
+    of truth), so it must be set unconditionally here or every published gist
+    row would carry a blank required column."""
+    ranking_by_name = {
+        pep503_name(row["Core_Python_Package_Name"]): row
+        for row in ranked_records
+        if (row.get("Core_Python_Package_Name") or "").strip()
+    }
+    merged: list[dict[str, str]] = []
+    for row in identity_records:
+        name = row.get("Core_Python_Package_Name", "")
+        ranking_row = ranking_by_name.get(pep503_name(name))
+        if ranking_row is None:
+            print(
+                f"No ranking match for {name!r} in the identity tab; skipping row",
+                file=sys.stderr,
+            )
+            continue
+        out = dict(row)
+        out["Package"] = row.get("Core_Python_Package_Name", "")
+        for col in RANKING_MERGE_COLUMNS:
+            if col in ranking_row:
+                out[col] = ranking_row[col]
+        merged.append(out)
+    return merged
 
 
 def write_csv(path: Path, records: list[dict[str, str]]) -> None:
@@ -1202,7 +880,9 @@ def publish_gist_from_tab(
     ops_canvas: Path | None = None,
     workbook_canvas: Path | None = None,
 ) -> int:
-    """Edit the pinned gist from the current identity tab. Does not rewrite the tab."""
+    """Edit the pinned gist from the Atlas identity export Parquet, merged with
+    ranking columns from the current identity tab (Story 21.7). Does not
+    rewrite the tab or the Parquet."""
     gist_id = resolve_gist_id(gist_id_cli)
     if not gist_id:
         print(
@@ -1215,13 +895,23 @@ def publish_gist_from_tab(
     if not gh:
         print("gh not found; cannot publish identity gist", file=sys.stderr)
         return 1
-    records = read_xlsx_tab(xlsx, tab)
-    if not records:
+    ranked = read_xlsx_tab(xlsx, tab)
+    if not ranked:
         print(f"No rows on {xlsx} tab {tab}", file=sys.stderr)
         return 1
-    missing = [c for c in ("P", "Rank", "Score", "Work") if c not in records[0]]
+    missing = [c for c in ("P", "Rank", "Score", "Work") if c not in ranked[0]]
     if missing:
         print(f"Identity tab is missing ranking columns {missing}", file=sys.stderr)
+        return 1
+    identity_records = read_identity_export_records()
+    if identity_records is None:
+        return 1
+    records = merge_ranking_columns(identity_records, ranked)
+    if not records:
+        print(
+            f"No rows survived the ranking merge for {xlsx} tab {tab}",
+            file=sys.stderr,
+        )
         return 1
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     md_path = CACHE_DIR / GIST_FILENAME
@@ -1244,24 +934,9 @@ def main() -> int:
         default=Path("docs/Analysis_Dataset-2026-08-12.xlsx"),
     )
     p.add_argument(
-        "--tab-in",
-        default=TAB_IN,
-        help="Inventory source tab. Default: inventory-2026-08-12.",
-    )
-    p.add_argument(
         "--tab-out",
         default=TAB_OUT,
         help="Identity output tab. Default: identity-2026-08-12.",
-    )
-    p.add_argument(
-        "--associator",
-        type=Path,
-        default=Path("/tmp/purl-associator-mappings-index.json"),
-    )
-    p.add_argument(
-        "--refresh-associator",
-        action="store_true",
-        help="Re-download mappings-index.json even if --associator exists.",
     )
     p.add_argument(
         "--output-csv",
@@ -1270,45 +945,10 @@ def main() -> int:
         help="Optional CSV path. Default: skip CSV (workbook tab only).",
     )
     p.add_argument(
-        "--project-items",
-        type=Path,
-        default=None,
-        help="Cached GitHub project items JSON. Default: fetch live project 1.",
-    )
-    p.add_argument(
         "--cache-dir",
         type=Path,
         default=CACHE_DIR,
-        help="Cache dir for feedstock-outputs and staged-recipes PR lists.",
-    )
-    p.add_argument(
-        "--feedstock-outputs",
-        type=Path,
-        default=None,
-        help="feedstock-outputs.json (conda-forge.org/packages data).",
-    )
-    p.add_argument(
-        "--staged-prs",
-        type=Path,
-        default=None,
-        help="TSV of all staged-recipes PRs (number,state,merged_at,url,title).",
-    )
-    p.add_argument(
-        "--staged-open-prs",
-        type=Path,
-        default=None,
-        help="JSON from gh pr list --state open --json number,title,url,files.",
-    )
-    p.add_argument(
-        "--recipes-dir",
-        type=Path,
-        default=REPO_ROOT / "recipes",
-        help="Local recipes/ directory.",
-    )
-    p.add_argument(
-        "--refresh-staged-prs",
-        action="store_true",
-        help="Re-fetch staged-recipes PR lists even if cache exists.",
+        help="Cache dir for the gist markdown/dashboard files written before publish.",
     )
     p.add_argument(
         "--skip-gist",
@@ -1367,76 +1007,27 @@ def main() -> int:
         )
     if args.create_issues and not gh_bin():
         print(
-            "gh not found; cannot use --create-issues (pass --project-items and "
-            "omit --create-issues for a dry-run, or install gh)",
+            "gh not found; cannot use --create-issues (omit --create-issues for "
+            "a dry-run, or install gh)",
             file=sys.stderr,
         )
         return 1
 
-    cache = args.cache_dir
-    cache.mkdir(parents=True, exist_ok=True)
-    feedstock_path = args.feedstock_outputs or cache / "feedstock-outputs.json"
-    staged_tsv = args.staged_prs or cache / "staged-recipes-prs.tsv"
-    staged_open = args.staged_open_prs or cache / "staged-recipes-open-prs.json"
+    records = read_identity_export_records()
+    if records is None:
+        return 1
 
-    if args.refresh_associator or not args.associator.is_file():
-        download_json(ASSOCIATOR_URL, args.associator)
-    packages = json.loads(args.associator.read_text())["packages"]
-    inventory = read_inventory_tab(args.xlsx, args.tab_in)
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Single-live-snapshot guarantee: overlay the live recipes/ tree once, here,
+    # before ANY output (tab, CSV, or gist) is written -- write_gist_markdown's
+    # own internal overlay_live_local call (unchanged) then re-runs on this
+    # already-overlaid data for the gist step, so the persisted xlsx tab,
+    # --output-csv, and the published gist all agree on Local_Recipes_URL/
+    # Local_Build_Status/Verification_Timestamp_UTC within one run (Story 21.7
+    # review pass 1: this call was dropped along with the retired fetch+join
+    # block in the first attempt, letting the tab/CSV and gist silently diverge).
+    overlay_live_local(records, REPO_ROOT / "recipes")
 
-    if args.project_items:
-        items = json.loads(args.project_items.read_text())
-    else:
-        gh = gh_bin()
-        if not gh:
-            print("gh not found; pass --project-items", file=sys.stderr)
-            return 1
-        print(f"Fetching OpenTeams project 1 via {gh} ...", flush=True)
-        items = fetch_project_issues(gh)
-        dump = cache / "project1-live.json"
-        dump.write_text(json.dumps(items), encoding="utf-8")
-        print(f"Wrote {len(items):,} project items to {dump}", flush=True)
-    board = board_packaging_urls(items)
-
-    fs_map, meta_map = load_feedstock_outputs(feedstock_path)
-    staged_map = load_staged_prs(
-        staged_tsv, staged_open, gh_bin(), args.refresh_staged_prs
-    )
-    local_map = load_local_recipes(args.recipes_dir)
-    inv_by_name = {
-        pep503_name(row["Core_Python_Package_Name"]): row for row in inventory
-    }
-
-    records = []
-    seen: set[str] = set()
-    for inv in inventory:
-        name = pep503_name(inv["Core_Python_Package_Name"])
-        seen.add(name)
-        rec, key = lookup_assoc(inv["Core_Python_Package_Name"], packages)
-        row = (
-            from_assoc(inv, rec, key, timestamp, board)
-            if rec and key
-            else from_inventory(inv, timestamp, board)
-        )
-        records.append(
-            attach_packaging_urls(row, fs_map, meta_map, staged_map, local_map, inv)
-        )
-    extra = 0
-    for name, url in sorted(board.items()):
-        if name in seen:
-            continue
-        row = from_board_only(name, url, packages, timestamp)
-        records.append(
-            attach_packaging_urls(
-                row, fs_map, meta_map, staged_map, local_map, inv_by_name.get(name)
-            )
-        )
-        extra += 1
-
-    overlay_live_local(records, args.recipes_dir)
-
-    created = create_missing_issues(gh_bin(), records, board, dry_run=not args.create_issues)
+    created = create_missing_issues(gh_bin(), records, {}, dry_run=not args.create_issues)
     if created:
         label = "Created" if args.create_issues else "Would create (dry-run)"
         print(f"{label} {len(created)} missing OpenTeams issue(s):")
@@ -1448,12 +1039,11 @@ def main() -> int:
         write_csv(args.output_csv, records)
 
     counts = Counter(r["identity_source"] for r in records)
+    timestamp = records[0].get("Verification_Timestamp_UTC", "") if records else ""
     print(f"Wrote {len(records):,} rows to {args.xlsx} tab {args.tab_out}")
     if args.output_csv:
         print(f"Wrote CSV {args.output_csv}")
     print("identity_source:", dict(counts))
-    print("board packaging issues:", len(board))
-    print("board-only extra rows:", extra)
     print("has primary_purl:", sum(1 for r in records if r["primary_purl"]))
     print("has conda_purl:", sum(1 for r in records if r["conda_purl"]))
     print("has OpenTeams_Issue_URL:", sum(1 for r in records if r["OpenTeams_Issue_URL"]))
@@ -1491,6 +1081,8 @@ def main() -> int:
     if not gh:
         print("gh not found; pass --skip-gist to skip identity gist publish", file=sys.stderr)
         return 1
+    cache = args.cache_dir
+    cache.mkdir(parents=True, exist_ok=True)
     md_path = cache / GIST_FILENAME
     dash_path = cache / GIST_DASHBOARD_FILENAME
     write_gist_markdown(md_path, records, args.xlsx, gist_id, args.tab_out)
