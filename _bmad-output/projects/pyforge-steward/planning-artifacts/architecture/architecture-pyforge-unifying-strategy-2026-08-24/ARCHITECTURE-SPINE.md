@@ -7,7 +7,7 @@ paradigm: "modular monolith: Django apps as the composition unit; one ASGI proce
 scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..19, FR-1..FR-50 plus FR-9a/9b/21a). CAP-1..18 closeout 2026-08-26 stands. CAP-19 first slice (Epic 34 + Lane 3 estate-cache) shipped 2026-08-26; live residual is the three query-plane OQs."
 status: final
 created: "2026-08-24"
-updated: "2026-08-26"
+updated: "2026-08-31"
 chain: pyforge-unifying-strategy
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10, CAP-11, CAP-12, CAP-13, CAP-14, CAP-15, CAP-16, CAP-17, CAP-18, CAP-19]
 sources:
@@ -16,6 +16,7 @@ sources:
   - ../../specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md
   - ../../specs/spec-python-agent-platform/SPEC.md
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
+  - ../../research/technical-pyforge-station-dossier-2026-08-30.md
 companions:
   - ../../specs/spec-pyforge-unifying-strategy/architecture-diagrams.md
   - ../../specs/spec-pyforge-unifying-strategy/resilience-invariants.md
@@ -229,6 +230,7 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 - **Binds:** CAP-18; estate operating model (Dream Grounding principle + Q8); station plugin surfaces; CAP-1 registration; CAP-13 profile flags choose which plugins load
 - **Prevents:** forking a process to swap a vendor; baking a deployment-profile tool into core; treating the principle as “every package is a Kedro project”; treating Atlas pipeline hooks as Warden’s PR-gate book
 - **Rule:** As far as possible, every layer is replaceable. The process owns **hook specifications** (named before / after / around points). A **plugin** implements or replaces a layer without a fork. [Kedro](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) names the spec-vs-plugin split; only Atlas is already a Kedro project. Warden owns PR-gate hook specs; scanners implement them (Q8). Other stations own their process hooks (build engines, runners, stores, exporters, deploy-profile / LLM adapters). **Not plugin surfaces:** Pixi task names, Golden Path artifact identity, parent AD-1 infra kinds, parent AD-2 host import boundary, the Warden verdict itself. A plugin must not publish a second verdict for a process another owner specified.
+- **Realization 2026-08-31 (chain-currency sweep, fleet-wide station dossier):** confirmed live in `pyforge-core` as `core.hooks` — one entry-point group (`pyforge.core.hooks`), stdlib `importlib.metadata` only — and imported by all seven non-core stations (Marshal, Doctor, Atlas, Mason, Steward, Scribe, Warden) with no station-specific alternative. `SecondVerdictError` on a repeat `publish_verdict` for a spec already owned is confirmed enforced in code, matching this AD's "must not publish a second verdict" rule. No design change; the dossier corroborates AD-21 as-built rather than surfacing a gap.
 
 ### AD-22 — One query plane; stations rebuild onto it `[ADOPTED]`
 

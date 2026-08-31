@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-08-26"
+updated: "2026-08-31"
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -128,3 +128,26 @@ SPEC's last three open questions were answered 2026-08-26 (`open_questions: []`)
 
 Downstream currency lives in the PRD and architecture-spine reconciliations of this same
 date; this brief needs no further maintenance unless the v1 record itself is contradicted.
+
+## Currency reconciliation — 2026-08-31
+
+`research/technical-pyforge-station-dossier-2026-08-30.md` (fleet-wide, all eight stations plus
+`pyforge-core`, chain `fleet-convention-consistency`) fired `research→brief` again. It does not
+contradict this brief's v1 record or either prior reconciliation above — one doc-drift finding is
+worth recording because it lands on this exact brief's own subject:
+
+- **The station README undercounts its own duties.** The dossier's §7 finding: Steward ships
+  **thirteen** duties (`keys`, `deploy`, `provision`, `budget`, `sync`, `workspace`, `upgrade`,
+  `suite`, plus a five-command bootstrap group) but the package README documents six — the same
+  "written once near a milestone, never revisited" pattern the dossier found at every station that
+  ships fast. This brief's own Success Criteria (line 30 above) are unaffected — they were written
+  against the four v1 duties and all four still hold — but a README refresh is a legitimate,
+  undersized follow-up the PRD/architecture layer has not picked up.
+- **Confirms, does not revise**, two things the 2026-08-26 reconciliation above already stated:
+  Steward owns Lane 1 `/console/` (the dossier independently arrives at "not a literal CMS," "zero
+  status derivation of its own," matching this brief's CAP-2 framing exactly), and Doctor consumes
+  Steward's fleet-scan output as a second status source (dossier §7 relationships list, confirming
+  the ← Doctor edge already implied by this brief's CAP references).
+
+No Scope, Success Criteria, or open-question change. `updated:` bumped to close the
+`chain-currency-sweep` staleness edge; the v1 record above remains authoritative.

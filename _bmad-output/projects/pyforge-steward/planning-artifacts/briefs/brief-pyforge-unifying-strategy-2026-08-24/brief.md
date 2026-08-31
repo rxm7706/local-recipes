@@ -2,7 +2,7 @@
 title: "Product Brief: the Canopy mounts the eight stations"
 status: "ready"
 created: "2026-08-23"
-updated: "2026-08-24"
+updated: "2026-08-31"
 chain: "pyforge-unifying-strategy"
 author: "steward"
 supersedes: "the 2026-08-23 pre-audit draft of this file (herald), written on a greenfield premise the audit disproved"
@@ -12,6 +12,7 @@ inputs:
   - "../../specs/spec-pyforge-unifying-strategy/convergence.md"
   - "../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md"
   - "../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md"
+  - "../../research/technical-pyforge-station-dossier-2026-08-30.md"
 ---
 
 # Product Brief: the Canopy mounts the eight stations
@@ -33,6 +34,15 @@ warden. Each shipped as a genuinely good command-line tool and stopped there. Th
 wants to see compliance findings, package health, fleet status and build queues opens eight
 terminals, holds eight mental models, and gets no help from the estate in relating them. No station
 can tell another that something happened.
+
+The 2026-08-30 fleet-wide station dossier (full-source, all eight stations plus `pyforge-core`)
+independently corroborates this from the documentation side: Marshal's installed skill documents
+4 of ~40 real commands, Doctor's README claims 28 shipped stories against code citing higher
+numbers, Steward's own README documents 6 of its 13 real duties, and Scribe's README contradicts
+itself between adjacent paragraphs. Each station's docs were written once, near a milestone, and
+never revisited as the surface kept growing underneath — the same fragmentation this brief is
+scoped to fix at the platform layer is already visible at the single-station documentation layer.
+Not new scope; corroborating evidence for the problem statement above.
 
 The Canopy already proved the fix is available. `src/platform/` is live: a Django host with OIDC
 single sign-on, Langflow and DB-GPT mounted as pluggable apps on isolated PostgreSQL schemas, a
@@ -82,7 +92,12 @@ local disk, which is why the published copy showed nothing. Keeping those surfac
 the supervisor that publishes run state as a service — so the replacement is held to a higher bar
 than the thing it replaces, deliberately. An **eighteenth** landed later the same day: one
 hook-spec + plugin-registration shape (**CAP-18**) — the missing story that Epics 18–30 do not
-implement. CAP-18 is **not** a scorecard.
+implement. CAP-18 is **not** a scorecard. The 2026-08-30 station dossier confirms the shape is
+already real, not speculative: `pyforge-core`'s `core.hooks` is live today as the fleet's one
+plugin-registration surface (one entry-point group, a plugin may only `publish_verdict` for the
+spec it owns), used by Marshal, Doctor, Atlas, Mason, Steward, Scribe, and Warden with no
+station-specific alternative — CAP-18 formalizes a convention the stations already converged on
+independently, it does not invent one.
 
 Underneath, the governance work: DDL authority enforced by database privilege rather than
 convention, four containment invariants so a failing dependency degrades its caller instead of

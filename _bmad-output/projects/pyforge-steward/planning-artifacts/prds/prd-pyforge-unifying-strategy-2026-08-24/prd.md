@@ -2,7 +2,7 @@
 title: "PRD: the Canopy mounts the eight stations"
 status: "in-progress"
 created: "2026-08-24"
-updated: "2026-08-26"
+updated: "2026-08-31"
 chain: "pyforge-unifying-strategy"
 owner: "steward"
 extends: "spec-python-agent-platform"
@@ -14,6 +14,7 @@ inputs:
   - "../../briefs/brief-pyforge-unifying-strategy-2026-08-24/brief.md"
   - "../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md"
   - "../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md"
+  - "../../research/technical-pyforge-station-dossier-2026-08-30.md"
 ---
 
 # PRD: the Canopy mounts the eight stations
@@ -1327,3 +1328,13 @@ sibling Dream — CAP-18 is **not** that board.
 re-dispatch 18–37. `django-lasuite` is not a Canopy FR. Mosaic
 `duckdb-server` stays optional until `query-plane-face` is answered.
 MCP slice 3 (retire ImportError skip) stays parked.
+
+**2026-08-31 reconciliation (chain-currency sweep, brief refresh):** re-derived against the brief's
+2026-08-31 update, which folded in `technical-pyforge-station-dossier-2026-08-30.md` (fleet-wide,
+all eight stations plus `pyforge-core`). No FR, CAP, or scope change — the dossier corroborates
+rather than contradicts: FR-43..45's CAP-18 hook-spec is confirmed already live in `pyforge-core`
+today (`core.hooks`, one entry-point group) and used by all seven non-core stations with no
+station-specific alternative, and the doc-drift pattern it found (Marshal's skill documents 4 of
+~40 commands, Doctor's and Steward's READMEs understate their real duty/story count, Scribe's
+README self-contradicts) is further evidence for the §1 Vision problem this PRD already targets,
+not new scope.
