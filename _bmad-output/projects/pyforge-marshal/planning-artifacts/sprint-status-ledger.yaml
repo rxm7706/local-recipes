@@ -120,7 +120,7 @@ development_status:
   26-1-extract-the-loop-runner-hook: done
   27-1-skf-skill-and-persona-for-marshal: done
   27-2-first-portal-slice-loop-homes: done
-  28-1-the-context-policy-block-rendered-once-for-both-engines: backlog
+  28-1-the-context-policy-block-rendered-once-for-both-engines: done
   28-10-the-model-cost-catalog-makes-spend-legible-in-dollars: backlog
   28-11-difficulty-tiers-route-across-providers-and-pools: backlog
   28-2-wire-compression-at-the-harness-seam: backlog
