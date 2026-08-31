@@ -300,6 +300,29 @@ def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
     assert result.stdout.strip() == "refs/heads/loop/tagged"
 
 
+def test_add_worktree_from_a_remote_tracking_base_sets_no_upstream(
+    vcs, cloned_repo, tmp_path
+):
+    """Regression (2026-08-30/31): minting a new branch from a
+    remote-tracking ``base`` (every dispatch/loop-home caller passes
+    ``origin/main``) must NOT auto-configure that branch's upstream to
+    ``base`` -- git's own ``branch.autoSetupMerge`` default silently did
+    exactly that, and `push()`'s already-has-upstream path then pushed
+    ``<branch>:main`` instead of ``<branch>:<branch>``, rejected by the
+    remote as non-fast-forward. Three concurrent dispatches all hit this
+    identically before `add_worktree` started passing `--no-track`."""
+    home = tmp_path / "home"
+    vcs.add_worktree(cloned_repo, home, "dispatch/acme/1.1", base="origin/main")
+    result = subprocess.run(
+        ["git", "-C", str(cloned_repo), "rev-parse", "--abbrev-ref", "dispatch/acme/1.1@{upstream}"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0, (
+        f"expected no upstream configured, got {result.stdout.strip()!r}"
+    )
+
+
 def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(
     vcs, repo, tmp_path
 ):
