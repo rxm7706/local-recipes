@@ -16,6 +16,9 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
   - ../../architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
+covers-dreams:
+  - docs/dreams/fleet-convention-consistency.md   # contract absorbed into Grounding 2026-08-30 (fully-qualified tags, exit-domain relationships, station-prefixed hooks, one status source per fact, MCP = host ASGI); satisfies INV-1 for this Dream — the Dream itself remains Marshal's ten-row evidence table and detector-practice home
+  - docs/dreams/pyforge-target-monorepo.md   # rulings bound by Grounding 2026-08-30 (foundry cutover, phases 0-6); the Dream's own text forbids a second Spec chain — satisfies INV-1
 extends: spec-python-agent-platform
 surface:
   - src/platform/**
