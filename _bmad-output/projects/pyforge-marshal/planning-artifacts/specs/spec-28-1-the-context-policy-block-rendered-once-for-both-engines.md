@@ -74,6 +74,12 @@ layered-policy composition/provenance idiom (Story 1.3/1.10 precedent) — the b
 like any other, not a side channel. Layer names should match the companion's layer matrix
 (wire, output, structure-graph, derived-context, planning-graph).
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including regression coverage for the `context` policy block: byte-identical rendered TOML when the block is absent, and an identical `context` payload surfaced by both `render_policy_toml` (`adapters/harness_bmadloop.py`) and `dispatch_once`'s returned/journaled data (`cli/dispatch.py`).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no new dependency surface introduced by this story).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)

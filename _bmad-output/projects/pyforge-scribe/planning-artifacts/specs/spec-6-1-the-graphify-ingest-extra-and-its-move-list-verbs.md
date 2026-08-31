@@ -87,6 +87,11 @@ port; extras off by default. Consumers bind to the declared grammar only — mar
 28.9 explicitly forbids importing graph internals, so whatever this story declares in the
 SKILL.md is the contract they get.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass, including coverage for the `graphify` `compile_surface` ingest extra (off by default via `SCRIBE_GRAPHIFY_EXTRA`), the `scribe index build|report|move-list` grammar, and the recall-citation fix that made graphify-ingested code nodes unrecallable via `scribe recall`.
+
 ## Spec Change Log
 
 - 2026-08-30: drafted as Epic 6 preflight (unifying-strategy stack.md "bind now" rows; pairs with marshal Epic 28's token-economy consumers)
