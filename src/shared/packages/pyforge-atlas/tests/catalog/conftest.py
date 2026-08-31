@@ -239,7 +239,16 @@ DERIVED_STORE_PATHS = {
 # test_path_defaults_resolve_inside_the_repo_root resolves entries in this set
 # against MEMBER_DIR instead of REPO_ROOT (still asserting the result lands
 # inside the repo).
-MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir"}
+#
+# `seed_root` joined this set 2026-08-31, landing this Story-21.6 branch: its
+# `../../../../.claude/skills/conda-forge-expert/data` default (globals.yml)
+# is the SAME MEMBER_DIR-relative depth as `local_recipes_dir`'s, not the
+# REPO_ROOT-relative shape this comment originally described it as — that
+# shape existed when this fix was authored (2026-08-26) and has since
+# changed on main. Resolving it against REPO_ROOT (the original single-key
+# set) overshoots four directories above the repo; against MEMBER_DIR it
+# lands correctly.
+MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
