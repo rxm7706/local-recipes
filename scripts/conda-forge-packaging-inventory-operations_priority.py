@@ -23,12 +23,45 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
+import sys
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 from openpyxl import load_workbook
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PYFORGE_ATLAS_DATA_ROOT_ENV = "PYFORGE_ATLAS_DATA_ROOT"
+PYFORGE_ATLAS_PROJECT_DIR = REPO_ROOT / "src/shared/packages/pyforge-atlas"
+IDENTITY_EXPORT_PARQUET_RELPATH = Path(
+    "derived/identity_export_parquet/identity_export_parquet.parquet"
+)
+IDENTITY_RANKED_EXPORT_RELPATH = Path(
+    "derived/identity_ranked_export/identity_ranked_export.parquet"
+)
+RANKED_EXPORT_COLUMNS = [
+    "Core_Python_Package_Name",
+    "P",
+    "Rank",
+    "Score",
+    "Work",
+    "Platforms",
+    "Apps",
+    "Downloads",
+    "Versions",
+    "Vuln",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "JFROG_risk_level",
+    "JFROG_latest_vuln_count",
+    "internal_component_count",
+    "internal_lob_count",
+    "Verification_Timestamp_UTC",
+]
 
 PACK = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
 TAB = "identity-2026-08-12"
@@ -124,6 +157,75 @@ def load_tab(wb, name: str):
     for raw in it:
         rows.append({h: (raw[i] if i < len(raw) else None) for i, h in enumerate(header)})
     return header, rows
+
+
+def _resolve_data_root() -> Path:
+    data_root = Path(os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data"))
+    if not data_root.is_absolute():
+        data_root = PYFORGE_ATLAS_PROJECT_DIR / data_root
+    return data_root
+
+
+def default_identity_parquet_path() -> Path:
+    return _resolve_data_root() / IDENTITY_EXPORT_PARQUET_RELPATH
+
+
+def default_ranked_export_path() -> Path:
+    return _resolve_data_root() / IDENTITY_RANKED_EXPORT_RELPATH
+
+
+def load_identity_parquet(path: Path) -> tuple[list[str], list[dict]]:
+    """Read Story 21.6's ``identity_export_parquet`` as the identity universe.
+
+    Returns the same ``(header, rows)`` shape as ``load_tab()`` so the ranking
+    loop needs no changes."""
+    if not path.is_file():
+        print(
+            f"identity_export_parquet not found at {path} -- run "
+            "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    df = pd.read_parquet(path)
+    header = [str(c) for c in df.columns]
+    rows = [
+        {h: (None if pd.isna(row.get(h)) else row.get(h)) for h in header}
+        for row in df.to_dict(orient="records")
+    ]
+    return header, rows
+
+
+def write_ranked_export(path: Path, records: list[dict]) -> None:
+    """Serialize already-computed ranking rows for Vizro Epic 22 (Story 22.1)."""
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows = []
+    for rec in records:
+        ident = rec["ident"]
+        pkg = ident.get("Core_Python_Package_Name") or rec["name"]
+        rows.append(
+            {
+                "Core_Python_Package_Name": pkg,
+                "P": rec["bucket"],
+                "Rank": rec["rank"],
+                "Score": rec["score100"],
+                "Work": rec["work"],
+                "Platforms": rec["plat"],
+                "Apps": rec["apps"],
+                "Downloads": rec["dl"],
+                "Versions": rec["ver"],
+                "Vuln": rec["vuln"] or "",
+                "Priority_Bucket_Description": PRIORITY_DESC.get(rec["bucket"], ""),
+                "Priority_Source": rec["src"],
+                "Priority_Reason": rec["why"],
+                "JFROG_risk_level": rec["risk"],
+                "JFROG_latest_vuln_count": rec["latest"],
+                "internal_component_count": rec["ic"],
+                "internal_lob_count": rec["lob"],
+                "Verification_Timestamp_UTC": stamp,
+            }
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows, columns=RANKED_EXPORT_COLUMNS).to_parquet(path, engine="pyarrow")
 
 
 def use_score(plat: int, apps: int, ic: int, lob: int, downloads: int, versions: int) -> float:
@@ -579,10 +681,27 @@ export default function IdentityPriorityAll() {
 
 
 def main() -> int:
-    repo = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--xlsx", type=Path, default=repo / "docs/Analysis_Dataset-2026-08-12.xlsx")
-    parser.add_argument("--tab", default=TAB, help="Identity tab to rank. Default: identity-2026-08-12.")
+    parser.add_argument("--xlsx", type=Path, default=REPO_ROOT / "docs/Analysis_Dataset-2026-08-12.xlsx")
+    parser.add_argument("--tab", default=TAB, help="Ranked identity tab name for xlsx write-back.")
+    parser.add_argument(
+        "--identity-parquet",
+        type=Path,
+        default=None,
+        help=(
+            "Atlas identity_export_parquet input (Story 21.6). "
+            f"Default: ${{PYFORGE_ATLAS_DATA_ROOT}}/{IDENTITY_EXPORT_PARQUET_RELPATH}"
+        ),
+    )
+    parser.add_argument(
+        "--ranked-export",
+        type=Path,
+        default=None,
+        help=(
+            "Parquet output for Vizro Epic 22. "
+            f"Default: ${{PYFORGE_ATLAS_DATA_ROOT}}/{IDENTITY_RANKED_EXPORT_RELPATH}"
+        ),
+    )
     parser.add_argument(
         "--skip-inventory-sync",
         action="store_true",
@@ -596,9 +715,11 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+    identity_parquet = args.identity_parquet or default_identity_parquet_path()
+    ranked_export = args.ranked_export or default_ranked_export_path()
 
     wb = load_workbook(args.xlsx, data_only=True)
-    ident_header, ident_rows = load_tab(wb, args.tab)
+    ident_header, ident_rows = load_identity_parquet(identity_parquet)
     _, jfrog_rows = load_tab(wb, "CDO-ENT-JFROG")
     _, ot_rows = load_tab(wb, "OpenTeams")
     _, inv_rows = load_tab(wb, "inventory-2026-08-12")
@@ -810,6 +931,9 @@ def main() -> int:
         args.canvas.parent.mkdir(parents=True, exist_ok=True)
         write_canvas(args.canvas, records, counts, args.tab)
         print("wrote", args.canvas)
+
+    write_ranked_export(ranked_export, records)
+    print("wrote", ranked_export)
     return 0
 
 

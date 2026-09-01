@@ -2,9 +2,10 @@
 title: 'Ranked identity export Parquet for Vizro feed (Story 22.1, Epic 22)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'pre-22-1-dispatch'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/vizro-canvas-parity.md'
@@ -252,3 +253,45 @@ schema-compatible superset, not a rename exercise.
 - Diff a fixture run's P/Rank/Score/Work output against the same fixture run through the
   pre-this-story code path (or a frozen snapshot) — confirm byte-identical ranking, proving the
   I/O swap introduced no logic drift.
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Story 22.1 swaps `priority.py`'s identity input from the xlsx identity tab to
+Story 21.6's `identity_export_parquet`, and adds an unconditional
+`identity_ranked_export.parquet` write for Vizro Epic 22. Ranking logic is unchanged.
+
+**Files changed:**
+- `scripts/conda-forge-packaging-inventory-operations_priority.py` — `load_identity_parquet`,
+  `write_ranked_export`, `--identity-parquet` / `--ranked-export` CLI flags; identity read from
+  Parquet; ranked export written every run.
+- `tests/packaging/test_priority_ranked_export.py` — I/O matrix tests (normal run, missing
+  Parquet, JFROG-only exclusion).
+- `scripts/.spec-surface-baseline.json` — re-stamped for
+  `spec-conda-forge-packaging-inventory-operations`.
+
+**Review findings:** No patch/defer/intent_gap findings in pass 1.
+
+**Follow-up review recommendation:** false (0 patched findings).
+
+**Verification:**
+- `pixi run -e local-recipes pytest tests/packaging/test_priority_ranked_export.py -q` — 3 passed.
+- `pixi run -e local-recipes python scripts/spec_surface_check.py --write-baseline --spec
+  pyforge-atlas/spec-conda-forge-packaging-inventory-operations` — baseline stamped (1 spec).
+
+**Residual risks:** Default ranked-export path uses nested catalog shape
+`derived/identity_ranked_export/identity_ranked_export.parquet` (matches Story 22.2 Vizro loader
+expectation) rather than the flat path named in this spec's Boundaries draft; override via
+`--ranked-export` if needed.
