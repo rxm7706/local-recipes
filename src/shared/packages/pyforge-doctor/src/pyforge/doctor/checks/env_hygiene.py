@@ -165,9 +165,13 @@ _PRUNED_DIR_NAMES = frozenset(
         "SDKs",
         # Build output
         "build_artifacts",  # conda-build / rattler-build
+        "output",  # rattler-build / local recipe output (gitignored; same class as build_artifacts)
         "build",
         "dist",
         ".eggs",
+        # Historical / vendored corpora (spec-surface allowlist: discarded material)
+        "archive",
+        "_skf-learn",
         # Tool caches and env matrices -- no source of any kind
         ".tox",
         ".nox",
@@ -573,6 +577,16 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
 def _scan_file(file_path: Path) -> list[Finding]:
     try:
         source = file_path.read_text(encoding="utf-8")
+        # Cheap whole-file prefilter before ast.parse: the v1 detector only
+        # fires on header-shaped subscript targets and os.environ/os.getenv
+        # reads (see module docstring). Files lacking both substrings cannot
+        # match; skipping them recovered SM-C1 headroom as the monorepo grew
+        # past Story 6.1's baseline without narrowing what CAN match.
+        lower = source.lower()
+        if "header" not in lower:
+            return []
+        if "environ" not in lower and "getenv" not in lower:
+            return []
         tree = ast.parse(source, filename=str(file_path))
         os_names, environ_names, getenv_names = _resolve_os_aliases(tree)
         visitor = _CredentialInjectionVisitor(

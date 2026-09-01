@@ -653,6 +653,7 @@ cmd = "marshal config"
 hatchling = ">=1.32.0"            # Python build backend (conda + wheel/sdist)
 python-build = ">=1.6.0"          # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                # test runner
+"ruamel.yaml" = ">=0.18.17"       # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
 pixi-build-python = ">=0.8.6"     # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.6"  # pixi build backend -> recipe-driven .conda
 twine = ">=7.0.0"                 # PyPI upload
