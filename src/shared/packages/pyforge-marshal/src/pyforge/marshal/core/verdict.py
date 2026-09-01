@@ -1125,6 +1125,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # blocks a run".
     "MRS-CTX-001": Verdict.UNEVALUABLE,
     "MRS-CTX-002": Verdict.WARN,
+    "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
     # WARN -- advisory only, never ERROR/SCOPE_VIOLATION. A stale index

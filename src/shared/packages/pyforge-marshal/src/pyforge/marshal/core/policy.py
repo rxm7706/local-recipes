@@ -68,8 +68,10 @@ and ``marshal seed check`` verifies), and ``derived-context`` (Story 28.8 --
 planning artifacts and their sources, and ``adapters/scribe_cli.py`` asks
 Scribe's ``compile_surface`` cocoindex extra, through the ``scribe index
 refresh`` grammar, whether those sources moved; marshal renders the flag,
-the extra owns freshness). ``planning-graph`` stays declaration-only until
-Story 28.9. Also (Story 28.15) ``scope_violation_mode``
+the extra owns freshness). ``planning-graph`` (Story 28.9 --
+``core/planning_graph.py`` + ``cli/context.py retrieve``) binds scoped
+planning retrieval through the ``scribe recall`` grammar with Story 28.8's
+epic-context file as the proven fallback. Also (Story 28.15) ``scope_violation_mode``
 -- SPEC-marshal-token-economy CAP-17's per-station scope-violation
 enforcement mode for ``core/gate.py``'s ``MRS-GATE-007``/``008`` check: one
 of ``hard`` (today's non-waivable refuse)/``warn`` (the new default: the

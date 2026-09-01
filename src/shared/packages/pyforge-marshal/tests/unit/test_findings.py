@@ -333,6 +333,10 @@ def test_registered_codes_contains_the_real_codes():
             # and MRS-PREFLIGHT-015).
             "MRS-CTX-001",
             "MRS-CTX-002",
+            # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
+            # `marshal context retrieve`'s degradation code -- WARN, never
+            # blocking; falls back to Story 28.8's epic-context file.
+            "MRS-PLAN-001",
             # Story 28.7 (index freshness is an advisory finding,
             # SPEC-marshal-token-economy CAP-10): `marshal check` gains
             # advisory codegraph/cocoindex staleness findings. Four codes:

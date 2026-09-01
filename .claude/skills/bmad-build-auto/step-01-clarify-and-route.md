@@ -51,6 +51,13 @@ If the invocation prompt does not contain enough intent to identify what to impl
 
      1. Identify the epic number `{epic_num}` and (if present) the story number `{story_num}`. If you can't identify an epic number, use path B.
 
+     1a. **Planning-graph retrieval (Story 28.9).** When `{story_num}` is known, run, from the repo root, `marshal context retrieve --project <slug> --epic <N> --story <M> --format json` (omit `--story` when unknown; add `--root <path>` when you are not in the main checkout), and read `data.mode`:
+        - `graph` — the Scribe recall seam answered with a grounded, non-stale hit. Use `data.text` as the primary planning context. Do **not** load `epics.md`, `prd.md`, or any other wholesale planning document, and skip items 2–4 below (the epic-context distill is unnecessary this iteration). The story contract spec the invocation names must still be read verbatim — retrieval scopes planning context, never the contract.
+        - `epic-context-fallback` — the `planning-graph` layer is declared off (the default), the grammar degraded (`MRS-PLAN-*` finding), or recall returned no grounded answer (including stale-only candidates). Continue to item 2 and follow Story 28.8's epic-context path unchanged.
+        - The command not existing, not running, or printing anything you cannot parse as that envelope is the same as `epic-context-fallback`. Read `data.mode`, never the exit code: advisory findings exit clean while still reporting the fallback mode.
+
+        A `MRS-PLAN-*` finding is advisory: report it and continue. Never HALT on it — the fallback always produces an answer.
+
      2. **Check for a valid cached epic context.** Look for `{{.implementation_artifacts}}/epic-<N>-context.md` (where `<N>` is the epic number). A file is **valid** when it exists, is non-empty, starts with `# Epic <N> Context:` (with the correct epic number), and its declared planning sources have not changed since it was compiled.
 
         Answer that last clause with the **derived-context freshness check** rather than by guessing. Run, from the repo root, `marshal context refresh --project <slug> --epic <N> --format json` (add `--root <path>` when you are not in the main checkout), and read `data.mode`:

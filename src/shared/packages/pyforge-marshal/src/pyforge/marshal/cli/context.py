@@ -50,6 +50,7 @@ from pyforge.core.atomic_write import atomic_write_text
 
 from ..adapters.scribe_cli import ScribeCli
 from ..core import derived_context as derived
+from ..core import planning_graph as planning
 from ..core.model import Finding, Severity, build_envelope
 from ..core.policy import _is_valid_project_slug
 from ..core.verdict import compute_verdict, exit_code_for
@@ -59,9 +60,10 @@ from .seed import _resolve_project_slug, resolve_context_layers
 #: The declaration could not be resolved at all (malformed slug or epic, or
 #: no planning-artifacts directory to list). UNEVALUABLE.
 _MRS_CTX_UNEVALUABLE = "MRS-CTX-001"
-#: An ENABLED layer degraded to today's compile-on-hunch behavior, with a
-#: reason. WARN, never blocking.
+#: An ENABLED layer degraded to Story 28.8's epic-context-file fallback.
 _MRS_CTX_DEGRADED = "MRS-CTX-002"
+#: Planning-graph retrieval degraded (Story 28.9). WARN, never blocking.
+_MRS_PLAN_DEGRADED = "MRS-PLAN-001"
 
 #: Derived, gitignored home for the declaration manifest -- alongside the
 #: rest of this repo's per-station derived data, never a tracked artifact.
@@ -130,6 +132,55 @@ def add_context_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     refresh.set_defaults(handler=run_context_refresh)
+
+    retrieve = context_sub.add_parser(
+        "retrieve",
+        help="Retrieve scoped planning context for one epic story (Story 28.9).",
+        description=(
+            "The planning-graph layer: answer with a bounded graph query when "
+            "Scribe's recall grammar is available, or report "
+            "epic-context-fallback so step-01 uses Story 28.8's distill path. "
+            "The story contract spec is never substituted -- retrieval scopes "
+            "planning context only."
+        ),
+    )
+    retrieve.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Project slug (default: BMAD_ACTIVE_PROJECT, then the repo's "
+            "active-project marker). Never scripts/bmad-switch."
+        ),
+    )
+    retrieve.add_argument(
+        "--epic",
+        required=True,
+        metavar="N",
+        help="Epic number whose planning context is being retrieved.",
+    )
+    retrieve.add_argument(
+        "--story",
+        default=None,
+        metavar="M",
+        help="Optional story number within the epic (narrows the query).",
+    )
+    retrieve.add_argument(
+        "--root",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Repo root to operate on (default: this checkout). Fixtures pass "
+            "an isolated tree; live runs omit this."
+        ),
+    )
+    retrieve.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    retrieve.set_defaults(handler=run_context_retrieve)
 
 
 def _listing(directory: Path) -> tuple[str, ...]:
@@ -294,6 +345,156 @@ def run_context_refresh(
             )
         )
     return _emit(args, findings, data)
+
+
+def run_context_retrieve(
+    args: argparse.Namespace, *, scribe: ScribeCli | None = None
+) -> int:
+    """CLI entry for ``marshal context retrieve``. ``scribe`` is an
+    injection seam so tests drive the grammar without a real install."""
+    findings: list[Finding] = []
+    root = Path(args.root).resolve() if args.root else repo_root()
+    epic = str(args.epic).strip()
+    story = str(args.story).strip() if args.story else None
+
+    layers = resolve_context_layers(root, args.project)
+    layer = layers.get(planning.PLANNING_GRAPH_LAYER)
+    enabled = planning.layer_enabled(layer)
+    slug = _resolve_project_slug(root, args.project)
+    fallback_path = (
+        derived.epic_context_output_relpath(slug, epic)
+        if slug and derived.valid_epic(epic)
+        else None
+    )
+    data: dict[str, object] = {
+        "epic": epic,
+        "story": story,
+        "layer": {
+            "name": planning.PLANNING_GRAPH_LAYER,
+            "enabled": enabled,
+            "aggressiveness": planning.layer_aggressiveness(layer),
+        },
+        "mode": planning.MODE_EPIC_CONTEXT_FALLBACK,
+        "grounded": False,
+        "text": None,
+        "citation": None,
+        "fallback": fallback_path,
+        "tokens_saved": None,
+        "contract_note": (
+            "The story contract spec and acceptance criteria must still be "
+            "read verbatim -- retrieval scopes planning context only."
+        ),
+    }
+
+    if not enabled:
+        return _emit_retrieve(args, findings, data)
+
+    if not slug or not derived.valid_epic(epic):
+        findings.append(
+            Finding(
+                code=_MRS_CTX_UNEVALUABLE,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot retrieve planning context for project {slug!r} "
+                    f"epic {epic!r} -- a usable project slug and a plain "
+                    "epic number are both required; Story 28.8's "
+                    "epic-context-file fallback applies"
+                ),
+                path=str(root),
+            )
+        )
+        return _emit_retrieve(args, findings, data)
+
+    data["project"] = slug
+    query = planning.build_routing_query(
+        project_slug=slug, epic=epic, story=story
+    )
+    data["query"] = query
+
+    outcome = (scribe if scribe is not None else ScribeCli()).recall(
+        repo_root=root, query=query
+    )
+    if not outcome.ok:
+        findings.append(
+            Finding(
+                code=_MRS_PLAN_DEGRADED,
+                severity=Severity.WARN,
+                message=str(outcome.reason),
+                path=str(root),
+            )
+        )
+        return _emit_retrieve(args, findings, data)
+
+    mode = planning.resolve_retrieval_mode(
+        layer_enabled=True, recall_ok=True, grounded=outcome.grounded
+    )
+    data["mode"] = mode
+    data["grounded"] = outcome.grounded
+    if outcome.grounded:
+        data["text"] = outcome.text
+        data["citation"] = outcome.citation
+        data["tokens_saved"] = planning.estimate_tokens_saved(mode=mode)
+    else:
+        findings.append(
+            Finding(
+                code=_MRS_PLAN_DEGRADED,
+                severity=Severity.WARN,
+                message=(
+                    "scribe recall returned no grounded answer (including "
+                    "when the only candidates were stale) -- Story 28.8's "
+                    "epic-context-file fallback applies"
+                ),
+                path=str(root),
+            )
+        )
+    return _emit_retrieve(args, findings, data)
+
+
+def _emit_retrieve(
+    args: argparse.Namespace, findings: list[Finding], data: dict[str, object]
+) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="context retrieve",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            _print_retrieve_text(data, findings, envelope.verdict)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+def _print_retrieve_text(
+    data: dict[str, object], findings: list[Finding], verdict: object
+) -> None:
+    layer = data.get("layer") or {}
+    print(
+        f"context retrieve epic={data.get('epic')} story={data.get('story')} "
+        f"layer={planning.PLANNING_GRAPH_LAYER} "
+        f"enabled={layer.get('enabled') if isinstance(layer, dict) else None} "
+        f"mode={data.get('mode')} grounded={data.get('grounded')} "
+        f"verdict={verdict}"
+    )
+    if data.get("mode") == planning.MODE_GRAPH and data.get("text"):
+        print("context:")
+        print(data["text"])
+        if data.get("citation"):
+            print(f"[source: {data['citation']}]")
+    elif data.get("fallback"):
+        print(f"fallback: {data['fallback']}")
+    if data.get("tokens_saved") is not None:
+        print(f"tokens_saved: {data['tokens_saved']}")
+    for finding in findings:
+        print(f"{finding.code} {finding.severity.value}: {finding.message}")
 
 
 def _resolvable(slug: str, epic: str) -> bool:
