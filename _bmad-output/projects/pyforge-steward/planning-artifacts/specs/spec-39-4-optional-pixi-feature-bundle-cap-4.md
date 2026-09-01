@@ -2,10 +2,10 @@
 title: Optional pixi feature bundle (CAP-4)
 type: feature
 created: '2026-09-01'
-status: ready
+status: done
 updated: '2026-09-01'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-metapackage/SPEC.md
@@ -15,7 +15,7 @@ context:
   - pixi.toml
 warnings: []
 deferred: []
-baseline_revision: 770672a1564c59cbe832a509d52907e66c4589ca
+baseline_revision: a35b7d5e59b731ef6bc7b9c42bb96c148cc57521
 ---
 
 <intent-contract>
@@ -84,6 +84,52 @@ baseline_revision: 770672a1564c59cbe832a509d52907e66c4589ca
 - `pixi run -e pyforge-steward pyforge-steward-test` → green (no steward code changes expected; packaging test is primary)
 - Manual: `install-matrix.md` greenfield section readable; `steward suite pipeline-truth` still reports 13 packages (factory pins unchanged)
 
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 0, medium 3, low 1)
+- defer: 0
+- reject: 15
+- addressed_findings:
+  - `[medium]` `[patch]` install-matrix.md claimed "the bundle does not fold dashboard installs in", but `bmad-suite`'s own run deps (verified against `recipes/bmad-suite/recipe.yaml` and the new `pixi.lock` entries) unconditionally pull `bmad-dashboard` and (linux/osx) `mybmad-dashboard` — corrected the wording to distinguish `feature.bmad-ui`'s separate install *surfaces* (VS Code extension, self-hosted web app) from the metapackage's transitive package set, which pulls all 13 active members by design per `spec-bmad-suite-metapackage`'s own CAP-4 success signal.
+  - `[medium]` `[patch]` the new live-solver test (`test_pixi_lock_check_resolves_the_bmad_suite_full_environment`) wasn't excluded from `pyforge-ci`'s documented pure-stdlib/no-network `pyforge-deps-test` sweep of `tests/packaging` — confirmed `pixi` is on PATH inside `pyforge-ci` too (`feature.python` pins it), so the `shutil.which` guard alone didn't skip it there. Added a second `skipif` on `PIXI_ENVIRONMENT_NAME == "pyforge-ci"`; verified `pixi run -e pyforge-ci python -m pytest tests/packaging/test_bmad_suite_full_feature.py -q` now shows the test skipped instead of executing a live solve.
+  - `[medium]` `[patch]` `bmad-suite` was undocumented in `docs/reference/library-llms-full.md`, confirmed via `pixi run -e local-recipes llms-full-check` reporting a real `undocumented-dep` finding (not speculative) — added a `bmad-suite-full` envs-table row and a `bmad-suite` catalog entry in § 12; detector now reports clean.
+  - `[low]` `[patch]` the `pixi add --feature bmad-suite-full bmad-suite` greenfield example didn't mention the target project also needs the `SelfExplainML` channel configured — added a note.
+
 ## Spec Change Log
 
 - 2026-09-01: Drafted from Epic 39.4 / `spec-bmad-suite-metapackage` CAP-4; unblocks steward fleet drain (`MRS-DISP-005`).
+
+## Auto Run Result
+
+**Summary:** Added an opt-in `[feature.bmad-suite-full]` (linux-64, channels `conda-forge`+`SelfExplainML`) that depends on the published `bmad-suite` metapackage (`>=2026.9.1`) plus a minimal `python` floor, and a lean `bmad-suite-full` proof environment composing only that feature. `local-recipes` is untouched — it keeps all 11 explicit `bmad-*` pins and does not compose the new feature. `install-matrix.md` gained a "Greenfield one-pin (CAP-4)" section documenting the install path and clarifying that `bmad-suite`'s transitive package set (all 13 active members, including the two dashboard packages) rides along even though `feature.bmad-ui`'s own install *surfaces* (VS Code extension / self-hosted web app) stay separate and unwired. `docs/reference/library-llms-full.md` gained matching catalog entries so its drift detector stays clean.
+
+**Files changed:**
+- `pixi.toml` — new `[feature.bmad-suite-full]` block + `bmad-suite-full` environment entry.
+- `pixi.lock` — additive-only regeneration for the new environment (0 deletions).
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md` — new Greenfield one-pin section (corrected during review to accurately describe dashboard-package transitivity; added a SelfExplainML-channel note to the `pixi add --feature` example).
+- `tests/packaging/test_bmad_suite_full_feature.py` (new) — 8 tomllib structural tests covering every I/O matrix row, plus a live `pixi lock --check` solver-proof test skipped both when `pixi` is absent and when running inside the lean `pyforge-ci` sweep.
+- `docs/reference/library-llms-full.md` — envs-table row for `bmad-suite-full` + a `bmad-suite` catalog entry (§ 12), closing an `llms-full-check` drift finding surfaced during review.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-39-4-optional-pixi-feature-bundle-cap-4.md` — this spec (status/baseline bookkeeping + this Auto Run Result).
+
+**Review findings breakdown:** 19 raised across 4 parallel layers (blind hunter, edge-case hunter, verification-gap, intent-alignment auditor) → 4 patched (0 high, 3 medium, 1 low), 0 deferred, 15 rejected (mostly blind-hunter items grounded-out on independent verification: `environment.yaml` re-export confirmed byte-identical, the 13-vs-11-member split already documented in the test's own comments, `review_loop_iteration` correctly stays 0 outside a bad_spec loopback, etc.). See `## Review Triage Log` above for the itemized pass.
+
+**Follow-up review recommendation:** `true` — this pass's patched findings score 3×medium(3) + 1×low(1) = 10 ≥ 5 (no high-severity patches).
+
+**Verification performed:**
+- `pytest tests/packaging/test_bmad_suite_full_feature.py -q` → 8 passed.
+- `pixi lock --check` → exit 0 (repo's pixi 0.78.0 has no per-environment `-e` selector on `lock`; documented deviation from the spec's literal `-e bmad-suite-full` form).
+- `pixi install -e bmad-suite-full` → solved and installed cleanly on linux-64 CI-capable hardware (this session's host).
+- `pixi run -e pyforge-steward pyforge-steward-test` → 993 passed.
+- `pixi run -e pyforge-steward steward suite pipeline-truth --json` → `package_count: 13` (factory pins unchanged).
+- `pixi run -e local-recipes llms-full-check` → clean (post-patch; was 1 finding pre-patch).
+- `pixi run -e local-recipes pixi-version-check` → clean.
+- `pixi run -e pyforge-ci python -m pytest tests/packaging/test_bmad_suite_full_feature.py -q` → 7 passed, 1 skipped (post-patch; confirms the live-solver test no longer runs inside the lean no-network sweep).
+- Manual: `install-matrix.md` greenfield section reviewed for accuracy against `recipes/bmad-suite/recipe.yaml`'s actual run deps.
+
+**Residual risks:**
+- `tests/packaging/test_openteams_handoffs.py` carries 4 pre-existing failures (missing local `pyforge-atlas-bootstrap` fixture) confirmed unrelated to this change via `git stash` — not touched, not this story's scope.
+- The spec's literal `pixi lock --check -e bmad-suite-full` verification command doesn't exist in this workspace's pinned pixi (0.78.0); the test and manual verification substitute a whole-workspace `pixi lock --check`, which still fails loudly on any unresolvable environment.
+- Applying the repo's `maintenance` label (required for any non-`recipes/` PR per CLAUDE.md's always-on gate) is a PR-open-time action, not yet performed as part of this build-auto run.

@@ -72,6 +72,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
 | `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`) ONTO `python-agent-platform` — one env for the full local Tier-1 dev baseline (engines + the PostgreSQL/Redis/k8s-CLI processes they need), zero containers or managed services. `pixi install -e platform-dev` alone provisions everything Epic 11's schema-isolation work needs. |
 | `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
+| `bmad-suite-full`| bmad-suite-full (no-default-feature)                | **linux-64 only.** CAP-4 greenfield one-pin proof env (`spec-bmad-suite-metapackage`, story 39.4): composes only `bmad-suite` (>=2026.9.1, SelfExplainML) + a minimal `python` floor — solver smoke without pulling the fat `local-recipes` graph. Not composed into `local-recipes`, which keeps its own 11 explicit `bmad-*` pins for pipeline-truth / doctor drift granularity. Docs: `install-matrix.md`'s Greenfield one-pin section. |
 
 ### Version pins agents must respect (don't fight the resolver)
 
@@ -632,6 +633,13 @@ in `CLAUDE.md` and `_bmad-output/`.
 - **mybmad-dashboard** (>=0.1.0.dev0) — MyBMAD Next.js web dashboard + `mybmad`
   launcher (local PostgreSQL on :3002). **`bmad-ui` env only, linux-64 only** —
   commented out in `local-recipes` (line 681 of `pixi.toml`). Task: `mybmad`.
+- **bmad-suite** (>=2026.9.1) — `noarch: generic` metapackage (CAP-1–4,
+  `spec-bmad-suite-metapackage`) pinning all 13 active suite members
+  (including `bmad-dashboard` + `mybmad-dashboard`) at upstream-aligned
+  floors; one install surface for greenfield operators. **`bmad-suite-full`
+  env only, linux-64 only** — not in `local-recipes`, which keeps its own
+  explicit member pins instead. Docs: `install-matrix.md`'s Greenfield
+  one-pin section.
 - **tmux** (>=3.7b_) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
   bmad-loop session spawning.
 
