@@ -110,6 +110,31 @@ every variable touched by the full bootstrap + `--live-catalog` chain,
 | `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |
 | `--live-catalog PATH` (CLI flag, not an env var) | N/A | Passed to `scripts/conda-forge-packaging-inventory-operations_metrics.py` (Story 21.3) — point it at the SAME `PYFORGE_ATLAS_DATA_ROOT` a bootstrap run populated to read Tier 0–2 verification fields from Parquet instead of live HTTP/the legacy workbook; add `--live-catalog-only` to fail loudly (non-zero exit) instead of degrading when a required dataset is missing/stale |
 | `identity_complete_export.parquet` (derived output path) | No (materialized by bootstrap) | Story 23.5 canonical 63-column complete export — lands at `${PYFORGE_ATLAS_DATA_ROOT}/derived/identity_complete_export/identity_complete_export.parquet` after the `derived_artifacts` pipeline runs; supersedes the quartet's gist-time four-way merge |
+| `OPENTEAMS_IDENTITY_GIST_ID` | No (only for `--gist-only` publish) | Secret gist id for `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py --gist-only`; also readable from `.env.local` at the repo root. Never commit the id. |
+| `--gist-only` (CLI flag, not an env var) | N/A | Passed to `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` (Story 23.6) — reads `${PYFORGE_ATLAS_DATA_ROOT}/derived/identity_complete_export/identity_complete_export.parquet` and republishes the identity gist markdown + canvas dashboards via `pyforge.atlas.dashboard.identity_gist`; add `--skip-gist` for offline tests |
+
+**Epic 21–23 steady-state operator flow (Story 23.7, zero Excel workbook):**
+
+```bash
+# 1. Materialize the full Kedro data plane (Tier 0–3 + enterprise + complete export)
+export PYFORGE_ATLAS_DATA_ROOT=/tmp/atlas-bootstrap-out   # optional; defaults to member data/
+unset CF_ATLAS_DB                                         # must stay unset on this path
+pixi run -e pyforge-atlas pyforge-atlas-bootstrap
+
+# 2. Regenerate the inventory metrics CSV/Markdown from Atlas Parquet (no workbook)
+python scripts/conda-forge-packaging-inventory-operations_metrics.py \
+  --live-catalog "$PYFORGE_ATLAS_DATA_ROOT" \
+  --output-csv /tmp/inventory-verified.csv
+
+# 3. Republish the OpenTeams identity gist from the complete export (no row regeneration)
+export OPENTEAMS_IDENTITY_GIST_ID=<secret>                # or set in .env.local
+python scripts/conda-forge-packaging-inventory-operations_openteams_identity.py \
+  --gist-only --skip-gist                                 # omit --skip-gist to publish live
+```
+
+No step reads `docs/Analysis_Dataset-2026-08-12.xlsx` or any successor workbook.
+Vizro identity pages (`identity-catalog`, `identity-ops`, `identity-workbook`) read
+`identity_complete_export.parquet` exclusively — not the retired 22.1 bridge export.
 
 Excludes `universal_sbom` (entry-scoped, needs `--params sbom_intake_path`;
 spec non-goal) and `semantic_packages` / `query_plane_cache` (downstream

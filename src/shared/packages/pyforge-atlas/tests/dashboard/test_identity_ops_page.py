@@ -115,7 +115,7 @@ def test_identity_ops_parity_with_write_ops_canvas(tmp_path, write_parquet, monk
     """Priority/Issues/Builds pane totals match write_ops_canvas DATA on a shared fixture."""
     records = _hand_built_fixture()
     data = _write_ops_canvas_data(records, tmp_path, monkeypatch)
-    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
 
     priority_df = dash_data.load_identity_ops_priority(parquet_path)
     priority_totals = priority_df.groupby("P", as_index=False)["package_count"].sum()
@@ -149,7 +149,7 @@ def test_identity_ops_parity_with_write_ops_canvas(tmp_path, write_parquet, monk
 def test_identity_ops_census_is_bsl_driven(write_parquet):
     """Census pane equals an independent build_identity_ops_model query (no canvas anchor)."""
     records = _hand_built_fixture()
-    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
 
     got = dash_data.load_identity_ops_census(parquet_path)
     table = models.duckdb_table_from_parquet(parquet_path)

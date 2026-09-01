@@ -195,7 +195,7 @@ def test_identity_workbook_loader_empty_when_enterprise_only(write_parquet, tmp_
 
 def test_identity_workbook_gap_message_names_both_missing():
     msg = dash_data.identity_workbook_gap_message("/nope/ranked.parquet", "/nope/enterprise.parquet")
-    assert dash_data.IDENTITY_RANKED_EXPORT_PARQUET in msg
+    assert dash_data.IDENTITY_COMPLETE_EXPORT_PARQUET in msg
     assert dash_data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET in msg
 
 
@@ -211,14 +211,14 @@ def test_identity_workbook_gap_message_names_ranked_only(tmp_path):
     enterprise_path = tmp_path / "enterprise.parquet"
     pd.DataFrame(jfrog_rows).to_parquet(enterprise_path)
     msg = dash_data.identity_workbook_gap_message("/nope/ranked.parquet", enterprise_path)
-    assert dash_data.IDENTITY_RANKED_EXPORT_PARQUET in msg
-    assert "Story 22.1" in msg
+    assert dash_data.IDENTITY_COMPLETE_EXPORT_PARQUET in msg
+    assert "Story 23.5" in msg
 
 
 def test_identity_workbook_page_card_names_both_missing(dashboard):
     page = next(p for p in dashboard.pages if p.id == "identity-workbook")
     about = next(c for c in page.components if c.id == "identity-workbook--about")
-    assert dash_data.IDENTITY_RANKED_EXPORT_PARQUET in about.text
+    assert dash_data.IDENTITY_COMPLETE_EXPORT_PARQUET in about.text
     assert dash_data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET in about.text
 
 
@@ -233,7 +233,7 @@ def test_identity_workbook_page_has_external_reference_card(dashboard):
 def test_identity_workbook_parity_with_write_workbook_canvas(tmp_path, write_parquet):
     records, jfrog_rows = _hand_built_fixture()
     data = _write_workbook_canvas_data(records, jfrog_rows, tmp_path)
-    ranked_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    ranked_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
     enterprise_path = tmp_path / "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
     loader_df = dash_data.load_identity_workbook(ranked_path, enterprise_path)
     got = _bucket_counts(loader_df)
@@ -246,7 +246,7 @@ def test_identity_workbook_parity_with_write_workbook_canvas(tmp_path, write_par
 
 def test_identity_workbook_page_is_bsl_driven(tmp_path, write_parquet):
     records, jfrog_rows = _hand_built_fixture()
-    ranked_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    ranked_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
     enterprise_path = tmp_path / "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
     enterprise_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(jfrog_rows).to_parquet(enterprise_path)
