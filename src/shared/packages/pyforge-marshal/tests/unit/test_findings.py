@@ -298,6 +298,14 @@ def test_registered_codes_contains_the_real_codes():
             # 014 `--stories` without `--station`; 015 the tracked ledger
             # unreadable while validating a fresh `--stories` sequence.
             "MRS-DISP-032",
+            # Story 28.16 (parallel dispatch fan-out when deps and surfaces
+            # are disjoint): 034 within-station effective-surface intersection
+            # refuses the candidate; 035 transitive Deps edge to an in-flight
+            # story refuses; MRS-DRAIN-016 wave member refused at scheduling
+            # time (WARN, serial fallback for that story).
+            "MRS-DISP-034",
+            "MRS-DISP-035",
+            "MRS-DRAIN-016",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",

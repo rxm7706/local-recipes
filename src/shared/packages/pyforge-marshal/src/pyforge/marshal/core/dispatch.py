@@ -42,6 +42,9 @@ KIND_DISPATCH_VERIFICATION = "dispatch-verification"
 KIND_DISPATCH_LAND = "dispatch-land"
 KIND_DISPATCH_TIMING = "dispatch-timing"
 KIND_DISPATCH_PRESERVE = "dispatch-preserve"
+#: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
+#: cap, refused candidates, and per-member terminal outcomes.
+KIND_DISPATCH_WAVE = "dispatch-wave"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"

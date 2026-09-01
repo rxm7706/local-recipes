@@ -55,6 +55,7 @@ def build_cycle_argv(
     station: str | None = None,
     stories: str | None = None,
     harness: str | None = None,
+    max_in_flight: int | None = None,
 ) -> list[str]:
     """The documented one-cycle command this supervisor re-runs each tick.
 
@@ -86,6 +87,8 @@ def build_cycle_argv(
         argv += ["--stories", stories]
     if harness:
         argv += ["--harness", harness]
+    if max_in_flight is not None:
+        argv += ["--max-in-flight", str(max_in_flight)]
     return argv
 
 
@@ -129,6 +132,7 @@ def run_fleet_campaign_supervisor(
     station: str | None = None,
     stories: str | None = None,
     harness: str | None = None,
+    max_in_flight: int | None = None,
     process: ProcessPort | None = None,
 ) -> int:
     process = process if process is not None else PosixProcess()
@@ -139,6 +143,7 @@ def run_fleet_campaign_supervisor(
         station=station,
         stories=stories,
         harness=harness,
+        max_in_flight=max_in_flight,
     )
     tick = max(1, tick_seconds)
     cycles = 0
@@ -209,7 +214,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("station", nargs="?", default="")
     parser.add_argument("stories", nargs="?", default="")
     parser.add_argument("harness", nargs="?", default="")
+    parser.add_argument("max_in_flight", nargs="?", default="")
     args = parser.parse_args(argv)
+    max_in_flight: int | None = None
+    if args.max_in_flight:
+        max_in_flight = int(args.max_in_flight)
     return run_fleet_campaign_supervisor(
         repo_root=Path(args.repo_root),
         run_id=args.run_id,
@@ -220,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         station=args.station or None,
         stories=args.stories or None,
         harness=args.harness or None,
+        max_in_flight=max_in_flight,
     )
 
 

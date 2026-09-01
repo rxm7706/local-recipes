@@ -24,8 +24,9 @@ from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 
-from .dispatch import canonical_repo_root
+from .dispatch import canonical_repo_root, find_declared_surface_overlaps
 from .identity import MalformedStoryKeyError, StoryKey, normalize
+from .spec_deps import ready_backlog, story_transitively_depends_on
 
 #: Journal kind for one fleet-drain cycle (intent/outcome pair).
 KIND_FLEET_CYCLE = "dispatch-fleet-cycle"
@@ -654,6 +655,115 @@ def unresolved_stations(
         if result.status in TERMINAL_STATION_STATUSES
         and result.status is not StationCycleStatus.DRAINED
     )
+
+
+@dataclass(frozen=True)
+class WaveRefused:
+    """One story refused from a parallel wave batch (Story 28.16, CAP-3)."""
+
+    story: str
+    reason: str
+    overlap_with: str | None = None
+    paths: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class WaveBatch:
+    """Up to ``cap`` ready stories with pairwise disjoint surfaces (CAP-1)."""
+
+    wave_id: str
+    members: tuple[str, ...]
+    refused: tuple[WaveRefused, ...] = ()
+    max_parallel: int = 1
+
+
+def _surface_known(surface: tuple[str, ...] | None) -> bool:
+    """``None`` means unknown/undeclared -- never fan out (CAP-5)."""
+    return surface is not None
+
+
+def _pairwise_disjoint(
+    left: tuple[str, ...] | None, right: tuple[str, ...] | None
+) -> bool:
+    if left is None or right is None:
+        return False
+    return not find_declared_surface_overlaps(left, right)
+
+
+def build_wave_batch(
+    *,
+    wave_id: str,
+    ready: Sequence[str],
+    cap: int,
+    surfaces: Mapping[str, tuple[str, ...] | None],
+    deps_graph: Mapping[str, tuple[StoryKey, ...]] | None = None,
+) -> WaveBatch:
+    """Select up to ``cap`` pairwise-disjoint ready stories (Story 28.16).
+
+    ``surfaces`` maps feed story key -> effective frozen surface tuple, or
+    ``None`` when unknown. Stories with unknown surfaces are skipped for
+    batching (conservative default, CAP-5). ``batch_deps`` holds story keys
+    already chosen in this batch -- a candidate that transitively depends on
+    any batch member is refused with reason ``dep-unmet``.
+    """
+    if cap <= 1:
+        if not ready:
+            return WaveBatch(wave_id=wave_id, members=(), max_parallel=cap)
+        return WaveBatch(
+            wave_id=wave_id, members=(ready[0],), max_parallel=cap
+        )
+    members: list[str] = []
+    refused: list[WaveRefused] = []
+    for story in ready:
+        if len(members) >= cap:
+            refused.append(WaveRefused(story=story, reason="cap"))
+            continue
+        surface = surfaces.get(story)
+        if not _surface_known(surface):
+            refused.append(WaveRefused(story=story, reason="unknown-surface"))
+            continue
+        blocked = False
+        for member in members:
+            member_surface = surfaces.get(member)
+            if deps_graph is not None and story_transitively_depends_on(
+                story, member, deps_graph
+            ):
+                refused.append(WaveRefused(story=story, reason="dep-unmet"))
+                blocked = True
+                break
+            if not _pairwise_disjoint(surface, member_surface):
+                overlap = find_declared_surface_overlaps(surface, member_surface)
+                paths = tuple(
+                    f"{left} ∩ {right}" for left, right in overlap
+                )
+                refused.append(
+                    WaveRefused(
+                        story=story,
+                        reason="surface-overlap",
+                        overlap_with=member,
+                        paths=paths,
+                    )
+                )
+                blocked = True
+                break
+        if blocked:
+            continue
+        members.append(story)
+    return WaveBatch(
+        wave_id=wave_id,
+        members=tuple(members),
+        refused=tuple(refused),
+        max_parallel=cap,
+    )
+
+
+def ordered_ready_backlog(
+    backlog: Sequence[str],
+    statuses: Iterable[tuple[str, str]],
+    graph: Mapping[str, tuple[StoryKey, ...]],
+) -> tuple[str, ...]:
+    """Ready-set among ``backlog``, preserving backlog order (28.12 tie-break)."""
+    return ready_backlog(backlog, statuses, graph)
 
 
 def render_cycle_summary(results: Sequence[StationCycleResult]) -> str:

@@ -175,7 +175,8 @@ def test_declared_globs_overlap_detects_shared_prefix() -> None:
     assert not dispatch_core.declared_globs_overlap("src/a/**", "src/b/**")
 
 
-def test_station_refuses_different_story_while_another_in_flight(tmp_path: Path) -> None:
+def test_serial_mode_still_refuses_unrelated_live_story(tmp_path: Path) -> None:
+    """``max_parallel=1`` stays byte-identical: any LIVE story blocks."""
     from pyforge.marshal.cli.dispatch import _compose_policy
 
     slug = "pyforge-marshal"
@@ -208,8 +209,97 @@ def test_station_refuses_different_story_while_another_in_flight(tmp_path: Path)
     )
     assert conflict is not None
     assert conflict.code == "MRS-DISP-021"
-    assert conflict.in_flight_story_key == "22.1"
-    assert "22.1" in conflict.message
+
+
+def test_unrelated_live_story_allowed_without_surface_data(
+    tmp_path: Path,
+) -> None:
+    """Story 28.16: unrelated LIVE stories no longer blanket-refuse."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1"
+    )
+
+    class LiveVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/changed.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=LiveVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="22-5-one-story-in-flight",
+        effective_policy=_compose_policy(slug),
+        parallel_dispatch=True,
+    )
+    assert conflict is None
+
+
+def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+    live_spec = specs / "spec-22-1-live.md"
+    live_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+    cand_spec = specs / "spec-22-5-candidate.md"
+    # AD-27 effective surface is policy ∩ spec (exact glob strings). The
+    # candidate must declare a glob that survives intersection with the
+    # auto-derived default so overlap is judged on effective surfaces.
+    cand_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+    _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1"
+    )
+
+    class LiveVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/changed.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=LiveVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="22-5-one-story-in-flight",
+        effective_policy=_compose_policy(slug),
+        candidate_spec_text=cand_spec.read_text(encoding="utf-8"),
+        parallel_dispatch=True,
+    )
+    assert conflict is not None
+    assert conflict.code == "MRS-DISP-034"
+    assert conflict.overlap_paths
 
 
 def test_redispatch_allowed_when_session_dead_and_verification_refused(
