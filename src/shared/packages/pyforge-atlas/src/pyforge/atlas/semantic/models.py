@@ -591,6 +591,23 @@ def build_identity_ops_model(table: Any) -> SemanticModel:
     )
 
 
+def build_identity_workbook_model(table: Any) -> SemanticModel:
+    """`identity-workbook` — JFROG consumption ⋈ ranked identity (Story 22.4)."""
+    return SemanticModel(
+        table=table,
+        name="identity_workbook",
+        dimensions={
+            "match_bucket": Dimension(expr=metrics.verification_match_bucket),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.core_python_package_name.count()),
+            "artifactory_downloads_total": Measure(
+                expr=lambda t: t.artifactory_downloads.sum().fill_null(0)
+            ),
+        },
+    )
+
+
 def build_license_map_gap_model(table: Any) -> SemanticModel:
     """`license-map-gap` — unmapped `pypi_intelligence.license_raw` strings ranked by
     package impact, with a HINT (non-authoritative) suggested SPDX candidate."""

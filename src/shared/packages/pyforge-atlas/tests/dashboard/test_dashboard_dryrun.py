@@ -631,6 +631,11 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
         ["has_feedstock", "has_staged_pr", "has_local_recipe"],
         ["package_count"],
     ),
+    "identity-workbook": (
+        models.build_identity_workbook_model,
+        ["match_bucket"],
+        ["package_count", "artifactory_downloads_total"],
+    ),
 }
 
 
