@@ -348,6 +348,12 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-IDXF-002",
             "MRS-IDXF-003",
             "MRS-IDXF-004",
+            # Story 28.5 (pinned wrapped-vs-unwrapped benchmark, CAP-9):
+            # `marshal benchmark compare`'s own area.
+            "MRS-BENCH-001",
+            "MRS-BENCH-002",
+            "MRS-BENCH-003",
+            "MRS-BENCH-004",
         }
     )
 

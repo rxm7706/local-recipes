@@ -133,7 +133,7 @@ development_status:
   28-2-wire-compression-at-the-harness-seam: done
   28-3-genesis-seeds-the-token-economy-kit: done
   28-4-savings-telemetry-in-journals-and-status: done
-  28-5-the-pinned-wrapped-vs-unwrapped-benchmark: backlog
+  28-5-the-pinned-wrapped-vs-unwrapped-benchmark: done
   28-6-the-graduated-compression-ladder: backlog
   28-7-index-freshness-is-an-advisory-finding: done
   28-8-derived-context-recomputes-only-on-source-change: done

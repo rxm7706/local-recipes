@@ -33,6 +33,10 @@ CLI_ONLY_VERBS: frozenset[str] = frozenset(
         # bmad-build-auto's own routing step -- not a fleet-status read an
         # MCP client would call. CLI-only until a consumer needs it there.
         "context",
+        # Story 28.5: `marshal benchmark` builds the CAP-9 counterfactual
+        # artifact from two recorded legs -- operator/recalibration surface,
+        # not an MCP fleet read.
+        "benchmark",
         "planning",
         "config",
         "deploy",
