@@ -69,7 +69,7 @@ development_status:
   22-6-canvas-deprecation-switch: backlog
   23-1-tier-3-bulk-os-indexes: done
   23-2-enterprise-jfrog-consumption-parquet: done
-  23-3-priority-rules-in-kedro-inventory_priority_assignments: backlog
+  23-3-priority-rules-in-kedro-inventory_priority_assignments: done
   23-4-deliverable-a-packaging_candidate_status: backlog
   23-5-identity_complete_export-parquet-canonical: backlog
   23-6-bsl-gist-aggregates-cap-8d: backlog
