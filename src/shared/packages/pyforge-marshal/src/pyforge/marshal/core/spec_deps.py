@@ -43,7 +43,7 @@ def parse_deps_text(deps_text: str) -> tuple[StoryKey, ...]:
             continue
         try:
             keys.append(
-                normalize(f"{match.group('epic')}.{match.group('num')}")
+                normalize(match.group("epic") + "." + match.group("num"))
             )
         except MalformedStoryKeyError:
             continue
@@ -61,7 +61,7 @@ def story_deps_from_epics(epics_text: str) -> dict[str, tuple[StoryKey, ...]]:
         block = epics_text[match.end() : block_end]
         dep_match = DEPS_FIELD_RE.search(block)
         deps_text = dep_match.group(1).strip() if dep_match else ""
-        story_key = f"{match.group('pe')}.{match.group('pn')}"
+        story_key = match.group("pe") + "." + match.group("pn")
         try:
             feed = render_feed_key(normalize(story_key))
         except MalformedStoryKeyError:

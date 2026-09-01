@@ -262,8 +262,11 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     cand_spec = specs / "spec-22-5-candidate.md"
+    # AD-27 effective surface is policy ∩ spec (exact glob strings). The
+    # candidate must declare a glob that survives intersection with the
+    # auto-derived default so overlap is judged on effective surfaces.
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/cli/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
     _seed_live_dispatch_journal(
