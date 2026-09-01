@@ -59,8 +59,23 @@ UNSUPERVISED_LIVENESS_FOLLOWUP = (
 )
 
 
+def ledger_story_done(stories: dict[str, str], story: str) -> bool:
+    """True when the tracked ledger marks ``story`` (or its epic-seq) done."""
+    if not story:
+        return False
+    if stories.get(story) == "done":
+        return True
+    m = re.match(r"(\d+-\d+)", story)
+    if not m:
+        return False
+    prefix = m.group(1) + "-"
+    return any(k.startswith(prefix) and v == "done" for k, v in stories.items())
+
+
 def station_state(*, running: bool, story: str, hstate: str, done: int,
-                  total: int, backlog: int) -> str:
+                  total: int, backlog: int,
+                  dispatch_phase: str | None = None,
+                  ledger_done: bool = False) -> str:
     """The state-column cell for one station row -- pure, so the meta test
     (test_fleet_picture_awaiting_operator.py) can pin the naming without
     driving main()'s subprocess sweep. `hstate` is `marshal status`'s own
@@ -72,7 +87,18 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     "needs re-spin" bucket: the parked story's work is already committed,
     so `bmad-loop confirm` is the next action, not a re-spin."""
     if running:
-        return f"RUNNING  {story[:38]}"
+        label = story[:38]
+        suffix: list[str] = []
+        if dispatch_phase == "verifying":
+            suffix.append("verifying")
+        elif dispatch_phase == "chaining":
+            if ledger_done:
+                suffix.append("merged, chaining")
+            else:
+                suffix.append("chaining")
+        if suffix:
+            return f"RUNNING  {label} ({', '.join(suffix)})"
+        return f"RUNNING  {label}"
     if hstate == "awaiting-operator":
         return AWAITING_OPERATOR_LABEL
     if hstate == "paused-on-escalation":
@@ -467,6 +493,7 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
             info[slug] = {
                 "state": r.get("state") or "unknown",
                 "story": r.get("current_story") or "",
+                "dispatch_phase": r.get("dispatch_phase"),
                 "escalation_reason": r.get("escalation_reason"),
                 "escalation_artifact": r.get("escalation_artifact"),
                 # Story 28.15 (CAP-17), AC4: a station's warn-mode
@@ -508,7 +535,7 @@ def main() -> int:
         rows.append((slug, len(stories), counts["done"], proj, counts["blocked"],
                      len(by_epic), ep_now, ep_proj, is_running,
                      live.get(slug, {}).get("state", "idle"), counts["backlog"],
-                     counts["awaiting-operator"]))
+                     counts["awaiting-operator"], stories))
         for k, v in (("tot", len(stories)), ("done", counts["done"]), ("proj", proj),
                      ("blkd", counts["blocked"]), ("ep", len(by_epic)),
                      ("epn", ep_now), ("epp", ep_proj)):
@@ -518,9 +545,14 @@ def main() -> int:
            f"{'epics':>7}{'ep now':>8}{'->proj':>8}  {'state'}")
     print(hdr)
     print("-" * (len(hdr) + 24))
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, _aw) in rows:
-        state = station_state(running=run, story=current.get(slug, ""),
-                              hstate=hstate, done=done, total=n, backlog=back)
+    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, _aw, stories) in rows:
+        story = current.get(slug, "")
+        state = station_state(
+            running=run, story=story, hstate=hstate, done=done, total=n,
+            backlog=back,
+            dispatch_phase=live.get(slug, {}).get("dispatch_phase"),
+            ledger_done=ledger_story_done(stories, story),
+        )
         print(f"{slug:<9}{n:>8}{done:>6}{proj:>8}{blkd:>6}{ep:>7}{epn:>8}{epp:>8}  {state}")
     print("-" * (len(hdr) + 24))
     print(f"{'PYFORGE':<9}{tot['tot']:>8}{tot['done']:>6}{tot['proj']:>8}"
@@ -543,7 +575,7 @@ def main() -> int:
     # which is why the report always states one or the other explicitly rather
     # than staying silent and letting "no news" mean two different things.
     needs, watch = [], []
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, awaiting) in rows:
+    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, awaiting, _stories) in rows:
         if hstate == "paused-on-escalation":
             reason = ((live.get(slug, {}) or {}).get("escalation_reason") or "unstated").split(chr(10))[0][:110]
             needs.append(f"{slug}: PAUSED on escalation ({reason}) -- "

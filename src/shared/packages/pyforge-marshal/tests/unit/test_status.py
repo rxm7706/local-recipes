@@ -1215,6 +1215,86 @@ class TestBuildFleetRow:
         assert row["state"] == "running"
         assert row["escalation_preserve_ref"] is None
 
+    def test_journal_unreadable_suppressed_when_factory_dispatch_is_running(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=True,
+            journal_unreadable=True,
+            dispatch_story="28-9-planning-graph-retrieval-behind-the-scribe-seam",
+            dispatch_engine_alive=True,
+            dispatch_elapsed_seconds=12.0,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "running"
+        assert row["current_story"] == "28-9-planning-graph-retrieval-behind-the-scribe-seam"
+        assert row["dispatch_phase"] == "building"
+        assert finding is None
+
+    def test_chaining_phase_surfaces_running_after_land(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-9-planning-graph-retrieval-behind-the-scribe-seam",
+            dispatch_engine_alive=False,
+            dispatch_landing_verdict="landed",
+            dispatch_elapsed_seconds=900.0,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert finding is None
+        assert row["state"] == "running"
+        assert row["dispatch_phase"] == "chaining"
+
+
+class TestDeriveDispatchPhase:
+    def test_building_when_harness_alive(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-5-example",
+            dispatch_engine_alive=True,
+        )
+        assert status.derive_dispatch_phase(facts) == "building"
+
+    def test_verifying_when_session_dead_and_not_landed(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-5-example",
+            dispatch_engine_alive=False,
+            dispatch_completion_verdict="live",
+        )
+        assert status.derive_dispatch_phase(facts) == "verifying"
+
+    def test_chaining_when_land_journal_succeeded(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-9-example",
+            dispatch_engine_alive=False,
+            dispatch_landing_verdict="landed",
+        )
+        assert status.derive_dispatch_phase(facts) == "chaining"
+
+    def test_chaining_when_completion_verdict_completed(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-9-example",
+            dispatch_engine_alive=False,
+            dispatch_completion_verdict="completed",
+        )
+        assert status.derive_dispatch_phase(facts) == "chaining"
+
+    def test_none_without_dispatch_story(self):
+        facts = status.FleetHomeFacts(slug="marshal", branch="loop/pyforge-marshal", has_run=False)
+        assert status.derive_dispatch_phase(facts) is None
+
 
 class TestSortFleetRows:
     """Story 5.3 (FR-38): escalated rows sort first, stable otherwise."""
