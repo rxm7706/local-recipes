@@ -3807,9 +3807,9 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     assert len(parsed["verify_commands"]) == 2
     assert len(parsed["landing_rules"]) == 2
     assert parsed["model_tier_map"] == {
-        "heavy": {"dev": "opus", "review": "opus"},
-        "medium": {"dev": "sonnet", "review": "opus"},
-        "easy": {"dev": "haiku"},
+        "heavy": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+        "medium": {"dev": "composer-2.5-fast", "review": "composer-2.5"},
+        "easy": {"dev": "composer-2.5-fast"},
     }
 
     effective, findings = policy_module.compose(
@@ -3819,5 +3819,5 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
 
     rendered_easy = render_policy_toml(effective, difficulty="easy")
     parsed_easy = tomllib.loads(rendered_easy)
-    assert parsed_easy["adapter"]["dev"]["model"] == "haiku"
+    assert parsed_easy["adapter"]["dev"]["model"] == "composer-2.5-fast"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
