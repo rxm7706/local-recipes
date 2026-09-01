@@ -562,3 +562,111 @@ def build_license_map_gap_model(table: Any) -> SemanticModel:
             "package_count": Measure(expr=lambda t: t.package_count.sum()),
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# identity_complete_export — gist/dashboard aggregates (Story 23.6, CAP-8d)
+# ---------------------------------------------------------------------------
+
+
+def _identity_status(t: Any) -> Any:
+    """Normalize blank ``Local_Build_Status`` to ``blank`` (legacy gist semantics)."""
+    raw = t.Local_Build_Status.fill_null("")
+    return (raw == "").ifelse("blank", raw)
+
+
+def _identity_filled(t: Any, col: str) -> Any:
+    return (t[col].fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
+
+
+def build_identity_complete_export_model(
+    table: Any, *, gist_columns: tuple[str, ...] | None = None
+) -> SemanticModel:
+    """Per-package identity complete export (Story 23.5 grain) for gist aggregates.
+
+    Declares the dimensions/measures the identity gist renderer queries — every
+    count/crosstab in ``identity_gist.render_identity_gist_markdown`` binds here
+    instead of re-implementing ``Counter``/dict logic in ``scripts/``.
+    """
+    feedstock_col = "Conda-Forge_FeedStock_URL"
+    measures: dict[str, Measure] = {
+        "identity_row_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
+        "has_issue_count": Measure(
+            expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "")
+            .ifelse(1, 0)
+            .sum()
+            .fill_null(0)
+        ),
+        "feedstock_count": Measure(
+            expr=lambda t: (t[feedstock_col].fill_null("") != "")
+            .ifelse(1, 0)
+            .sum()
+            .fill_null(0)
+        ),
+        "local_recipe_count": Measure(
+            expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "")
+            .ifelse(1, 0)
+            .sum()
+            .fill_null(0)
+        ),
+        "staged_pr_count": Measure(
+            expr=lambda t: (t.Staged_Recipes_PR_URL.fill_null("") != "")
+            .ifelse(1, 0)
+            .sum()
+            .fill_null(0)
+        ),
+        "build_success_count": Measure(
+            expr=lambda t: (_identity_status(t) == "success").ifelse(1, 0).sum().fill_null(0)
+        ),
+        "build_skipped_count": Measure(
+            expr=lambda t: _identity_status(t)
+            .isin(["build-clean-test-blocked", "blocked-missing-ortools"])
+            .ifelse(1, 0)
+            .sum()
+            .fill_null(0)
+        ),
+        "build_failed_count": Measure(
+            expr=lambda t: (_identity_status(t) == "failed").ifelse(1, 0).sum().fill_null(0)
+        ),
+    }
+    if gist_columns:
+        for col in gist_columns:
+            key = f"filled_{col.replace('-', '_').replace(' ', '_')}"
+            measures[key] = Measure(expr=lambda t, c=col: _identity_filled(t, c))
+
+    return SemanticModel(
+        table=table,
+        name="identity_complete_export",
+        dimensions={
+            "core_python_package_name": Dimension(expr=lambda t: t.Core_Python_Package_Name),
+            "P": Dimension(expr=lambda t: t.P.fill_null("?")),
+            "Work": Dimension(expr=lambda t: t.Work.fill_null("?")),
+            "identity_source": Dimension(expr=lambda t: t.identity_source.fill_null("")),
+            "Local_Build_Status": Dimension(expr=_identity_status),
+            "has_openteams_issue": Dimension(
+                expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "")
+                .ifelse("yes", "no")
+            ),
+            "has_feedstock": Dimension(
+                expr=lambda t: (t[feedstock_col].fill_null("") != "").ifelse("yes", "no")
+            ),
+            "has_local_recipe": Dimension(
+                expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "").ifelse("yes", "no")
+            ),
+            "has_staged_pr": Dimension(
+                expr=lambda t: (t.Staged_Recipes_PR_URL.fill_null("") != "").ifelse("yes", "no")
+            ),
+            "is_pypi": Dimension(
+                expr=lambda t: (
+                    (t.primary_type.fill_null("") == "pypi")
+                    | t.primary_purl.fill_null("").startswith("pkg:pypi/")
+                ).ifelse("yes", "no")
+            ),
+            "is_cf": Dimension(
+                expr=lambda t: (
+                    (t[feedstock_col].fill_null("") != "") | (t.conda_purl.fill_null("") != "")
+                ).ifelse("yes", "no")
+            ),
+        },
+        measures=measures,
+    )
