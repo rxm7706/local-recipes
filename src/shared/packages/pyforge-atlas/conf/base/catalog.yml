@@ -1255,6 +1255,20 @@ enterprise_jfrog_names:
   metadata:
     layer: derived
 
+# Story 23.2 (CAP-8): org Artifactory consumption telemetry rollup — raw fetch +
+# enterprise_jfrog_consumption derived Parquet (complete-export-contract.md §1).
+artifactory_consumption_raw:
+  type: pandas.ParquetDataset
+  filepath: data/raw/artifactory_consumption_raw/artifactory_consumption_raw.parquet
+  metadata:
+    layer: raw
+
+enterprise_jfrog_consumption:
+  type: pandas.ParquetDataset
+  filepath: data/derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # query_plane_cache — CAP-19 / FR-47 estate Parquet (steward Story 34.2)
 # =============================================================================

@@ -293,19 +293,21 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
     assert consumers == ["enumerate_anaconda_main_packages"]
 
 
-# -- Story 21.5: artifactory_downloads (4 nodes) + enterprise_jfrog_names wiring ----
+# -- Story 21.5 + 23.2: artifactory_downloads (6 nodes) ------------------------------------
 
 
-def test_artifactory_downloads_pipeline_has_four_nodes():
-    # Story 15.3 landed the original three; Story 21.5 added project_artifactory_names
-    # (the names-only enterprise_jfrog_names projection).
+def test_artifactory_downloads_pipeline_has_six_nodes():
+    # Story 15.3: three nodes; Story 21.5: +project_artifactory_names;
+    # Story 23.2: +fetch_artifactory_consumption + build_enterprise_jfrog_consumption.
     artifactory = artifactory_create()
-    assert len(artifactory.nodes) == 4
+    assert len(artifactory.nodes) == 6
     assert {n.name for n in artifactory.nodes} == {
         "fetch_artifactory_downloads",
         "join_artifactory_identity",
         "format_artifactory_purl_export",
         "project_artifactory_names",
+        "fetch_artifactory_consumption",
+        "build_enterprise_jfrog_consumption",
     }
 
 
