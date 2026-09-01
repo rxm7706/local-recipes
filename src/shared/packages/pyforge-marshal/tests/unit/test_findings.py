@@ -307,6 +307,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-035",
             "MRS-DISP-036",
             "MRS-DRAIN-016",
+            "MRS-DRAIN-017",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",

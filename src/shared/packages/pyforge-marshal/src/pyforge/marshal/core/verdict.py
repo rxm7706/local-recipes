@@ -1083,6 +1083,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-014": Verdict.ERROR,
     "MRS-DRAIN-015": Verdict.ERROR,
     "MRS-DRAIN-016": Verdict.WARN,
+    # Story 28.18 (CAP-1): unchanged refuse predicate -- rate-limited skip.
+    "MRS-DRAIN-017": Verdict.WARN,
     # Story 28.2 (wire compression at the harness seam,
     # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
     # LAYER that did not engage over a launch that is otherwise entirely

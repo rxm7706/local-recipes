@@ -1654,6 +1654,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # (surface overlap, cap, unknown surface, dep-unmet) -- named, never
         # silent.
         "MRS-DRAIN-016",
+        # Story 28.18 (CAP-1): a campaign-blocked story was skipped this
+        # tick because its refuse predicate is unchanged -- rate-limited,
+        # never silently looped.
+        "MRS-DRAIN-017",
         # Story 28.2 (wire compression at the harness seam,
         # SPEC-marshal-token-economy CAP-2): the declared `[context]`
         # `wire` layer was ENABLED but could not be applied to this launch

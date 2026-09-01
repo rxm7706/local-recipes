@@ -725,6 +725,63 @@ def test_a_non_liveness_refusal_is_not_retried_in_the_next_cycle(
     assert second.complete is True
 
 
+def test_missing_spec_refuse_re_preflights_when_spec_lands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 28.18: a refused MRS-DISP-005 head dispatches once spec appears."""
+    _init_git_repo(tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal").mkdir(parents=True)
+    specs = dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
+    specs.mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
+    args = _drain_args(once=True)
+    _run_drain(tmp_path, args, ledgers=ledgers)
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+
+    (specs / "spec-22-7-fleet.md").write_text(
+        '---\ndifficulty: medium\nsurface: ["src/**"]\n---\n',
+        encoding="utf-8",
+    )
+    harness = FakeBuildHarness()
+    capsys.readouterr()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=harness,
+    )
+    out = capsys.readouterr().out
+    assert harness.dispatched == [("pyforge-marshal", "22.7")]
+    assert "MRS-DRAIN-017" not in out
+
+
+def test_unchanged_refuse_predicate_is_rate_limited_across_campaign_cycles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 28.18: identical refuse predicate journals rate-limited skip."""
+    _init_git_repo(tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal").mkdir(parents=True)
+    dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
+    _run_drain(tmp_path, _drain_args(once=True), ledgers=ledgers)
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+
+    harness = FakeBuildHarness()
+    capsys.readouterr()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=harness,
+    )
+    out = capsys.readouterr().out
+    assert harness.dispatched == []
+    assert "MRS-DRAIN-017" in out
+    assert "MRS-DRAIN-005" in out
+
+
 def test_skip_on_blocked_moves_to_the_next_story_and_reports_the_skip(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1463,7 +1520,7 @@ def test_campaign_state_survives_an_over_threshold_cycle_payload(
     blob = next(iter((run_dir / "blobs").iterdir()))
     assert len(blob.read_text(encoding="utf-8").encode("utf-8")) > SIDECAR_THRESHOLD_BYTES
 
-    recovered = _campaign_blocked_from_journal(fs, run_dir, "camp-1")
+    recovered, _predicates = _campaign_blocked_from_journal(fs, run_dir, "camp-1")
     assert len(recovered) == 12
     assert recovered["pyforge-station-0"]["0-1-a-story-key-of-realistic-length"] == detail
 

@@ -68,6 +68,7 @@ from ..core.dispatch_retry import (
     exclude_harness_profiles_after_transient_failure,
     prune_blocked_stories_merged_on_main,
 )
+from ..core import dispatch_re_preflight
 from ..core import gate
 from ..core import promotion as promotion_core
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
@@ -2132,6 +2133,71 @@ def _preflight_explicit_story_specs(
     return tuple(missing)
 
 
+def _predicate_payload(predicate: dispatch_re_preflight.RefusePredicate) -> dict[str, str]:
+    return {
+        "gate": predicate.gate,
+        "spec_fingerprint": predicate.spec_fingerprint,
+        "verify_fingerprint": predicate.verify_fingerprint,
+        "digest": predicate.digest(),
+    }
+
+
+def _predicate_from_payload(raw: object) -> dispatch_re_preflight.RefusePredicate | None:
+    if not isinstance(raw, dict):
+        return None
+    gate = raw.get("gate")
+    spec = raw.get("spec_fingerprint")
+    verify = raw.get("verify_fingerprint")
+    if not isinstance(gate, str) or not isinstance(spec, str) or not isinstance(verify, str):
+        return None
+    return dispatch_re_preflight.RefusePredicate(
+        gate=gate,
+        spec_fingerprint=spec,
+        verify_fingerprint=verify,
+    )
+
+
+def _reconcile_campaign_blocked_for_re_preflight(
+    *,
+    repo_root: Path,
+    blocked: dict[str, dict[str, str]],
+    prior_predicates: dict[str, dict[str, dispatch_re_preflight.RefusePredicate]],
+    policy_flags: dict[str, object] | None,
+) -> tuple[dict[str, dict[str, str]], list[Finding]]:
+    """Drop or rate-limit campaign blocks whose refuse predicate can change."""
+    findings: list[Finding] = []
+    reconciled: dict[str, dict[str, str]] = {}
+    for slug, station_blocked in blocked.items():
+        effective_policy = _compose_policy(slug, flags=policy_flags)
+        verify_commands = effective_policy.verify_commands.value
+        prior = prior_predicates.get(slug, {})
+        kept, results = dispatch_re_preflight.reconcile_station_re_preflight(
+            repo_root=repo_root,
+            slug=slug,
+            blocked=station_blocked,
+            verify_commands=verify_commands,
+            prior_predicates=prior,
+        )
+        if kept:
+            reconciled[slug] = kept
+        for result in results:
+            if result.decision is dispatch_re_preflight.RePreflightDecision.CLEARED:
+                continue
+            if result.decision is dispatch_re_preflight.RePreflightDecision.RATE_LIMITED:
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-017",
+                        severity=Severity.WARN,
+                        message=(
+                            f"station {slug!r}: story {result.story!r} remains "
+                            f"blocked on {result.gate} with an unchanged refuse "
+                            "predicate -- rate-limited this tick, not re-dispatched"
+                        ),
+                    )
+                )
+    return reconciled, findings
+
+
 def _reconcile_campaign_blocked(
     *,
     vcs: VcsPort,
@@ -2786,6 +2852,19 @@ def execute_fleet_cycle(
             cycle_status = dispatch_fleet.StationCycleStatus.REFUSED
         else:
             cycle_status = dispatch_fleet.StationCycleStatus.IN_FLIGHT
+        refuse_predicate_payload: dict[str, str] | None = None
+        if cycle_status is dispatch_fleet.StationCycleStatus.REFUSED and last_detail:
+            gate = dispatch_re_preflight.parse_refuse_gate(last_detail)
+            if dispatch_re_preflight.is_re_preflightable_gate(gate):
+                assert gate is not None
+                predicate = dispatch_re_preflight.compute_refuse_predicate(
+                    repo_root=repo_root,
+                    slug=slug,
+                    story=primary_story,
+                    gate=gate,
+                    verify_commands=effective_policy.verify_commands.value,
+                )
+                refuse_predicate_payload = _predicate_payload(predicate)
         results.append(
             dispatch_fleet.StationCycleResult(
                 slug=slug,
@@ -2794,6 +2873,7 @@ def execute_fleet_cycle(
                 story=primary_story,
                 detail=last_detail,
                 skipped=plan.skipped,
+                refuse_predicate=refuse_predicate_payload,
             )
         )
 
@@ -2823,8 +2903,8 @@ def execute_fleet_cycle(
 
 def _campaign_blocked_from_journal(
     fs: FsPort, run_dir: Path, run_id: str
-) -> dict[str, dict[str, str]]:
-    """Rebuild "which stations are blocked" from this campaign's own journal.
+) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, dispatch_re_preflight.RefusePredicate]]]:
+    """Rebuild campaign blocks and last refuse predicates from the journal.
 
     Campaign state lives in the journal (the Spec's in-repo store), never in
     a driver process's memory: each cycle runs in its own process under the
@@ -2833,12 +2913,13 @@ def _campaign_blocked_from_journal(
     harness) would be retried on every single tick forever.
     """
     blocked: dict[str, dict[str, str]] = {}
+    predicates: dict[str, dict[str, dispatch_re_preflight.RefusePredicate]] = {}
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
     except (FsError, ValueError):
-        return blocked
+        return blocked, predicates
     if text is None:
-        return blocked
+        return blocked, predicates
     lines = text.split("\n")
     # AD-30 sidecars are NOT optional on this read side. A cycle payload
     # carries one row per station plus every skip reason and refusal detail,
@@ -2880,7 +2961,10 @@ def _campaign_blocked_from_journal(
             blocked.setdefault(slug, {})[story] = (
                 detail if isinstance(detail, str) and detail else "dispatch refused"
             )
-    return blocked
+            predicate = _predicate_from_payload(row.get("refuse_predicate"))
+            if predicate is not None:
+                predicates.setdefault(slug, {})[story] = predicate
+    return blocked, predicates
 
 
 def _journal_fleet_cycle(
@@ -3257,11 +3341,21 @@ def run_fleet_drain(
         return _emit(args, data, findings, command="factory drain")
 
     try:
+        campaign_blocked, prior_predicates = _campaign_blocked_from_journal(
+            fs, run_dir, run_id
+        )
         campaign_blocked = _reconcile_campaign_blocked(
             vcs=vcs,
             repo_root=repo_root,
-            blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
+            blocked=campaign_blocked,
         )
+        campaign_blocked, re_preflight_findings = _reconcile_campaign_blocked_for_re_preflight(
+            repo_root=repo_root,
+            blocked=campaign_blocked,
+            prior_predicates=prior_predicates,
+            policy_flags=policy_flags or None,
+        )
+        findings.extend(re_preflight_findings)
         report = execute_fleet_cycle(
             repo_root=repo_root,
             mode=mode,

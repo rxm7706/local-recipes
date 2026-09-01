@@ -2,9 +2,9 @@
 title: 'Re-preflight when the refuse predicate can change (Story 28.18, Epic 28)'
 type: 'feature'
 created: '2026-09-01'
-status: 'ready'
+status: 'done'
 updated: '2026-09-01'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 difficulty: medium
 baseline_revision: 20e88e8b0fd1ccd2cc38101691ac72aeb8df71cc
@@ -52,12 +52,45 @@ Ledger key: `28-18-re-preflight-when-the-refuse-predicate-can-change`.
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py`
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — spec lookup already used for `MRS-DISP-005`
-- Tests: new unit coverage next to `test_dispatch_hotfix.py` / fleet-drain tests
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py` — pure predicate hashing, reconcile, verify-rerun helper
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — `_reconcile_campaign_blocked_for_re_preflight`, journal `refuse_predicate` payload, `MRS-DRAIN-017`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py` — `StationCycleResult.refuse_predicate`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` / `core/verdict.py` — register `MRS-DRAIN-017`
+- Tests: `tests/unit/test_dispatch_hotfix.py`, `tests/unit/test_dispatch_fleet.py`
 
 ## Verification
 
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7365 passed
 - Fixture: refuse → create spec file → next tick dispatches
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Fleet drain now re-preflights campaign-blocked stories whose refuse predicate can change. When a missing spec (`MRS-DISP-005`) later appears, the block clears and the next tick dispatches. Unchanged predicates are rate-limited with `MRS-DRAIN-017` instead of silently looping `dispatch_once`. Verify fingerprint is hashed cheaply; `verify_rerun_needed()` distinguishes spec-only changes from verify-config changes.
+
+**Files changed:**
+- `core/dispatch_re_preflight.py` — new pure re-preflight module
+- `cli/dispatch.py` — integrate reconcile before each cycle; journal predicates
+- `core/dispatch_fleet.py` — optional `refuse_predicate` on cycle results
+- `core/findings.py`, `core/verdict.py` — `MRS-DRAIN-017`
+- `tests/unit/test_dispatch_hotfix.py`, `test_dispatch_fleet.py`, `test_findings.py`
+
+**Review:** No patch/defer/intent_gap findings on pass 1.
+
+**Follow-up review:** false (0 patched findings).
+
+**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7365 passed, 0 failed.
+
+**Residual risks:** Mergeable/GitHub predicate re-preflight deferred to a later story; supervisor skip-verify on spec-only change is modeled via `verify_rerun_needed()` but not yet wired into the dispatch supervisor spawn path.

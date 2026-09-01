@@ -160,9 +160,10 @@ class StationCycleResult:
     story: str | None = None
     detail: str | None = None
     skipped: tuple[tuple[str, str], ...] = field(default=())
+    refuse_predicate: dict[str, str] | None = None
 
     def to_payload(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "station": self.slug,
             "status": self.status.value,
             "remaining": self.remaining,
@@ -170,6 +171,9 @@ class StationCycleResult:
             "detail": self.detail,
             "skipped": [{"story": s, "reason": r} for s, r in self.skipped],
         }
+        if self.refuse_predicate is not None:
+            payload["refuse_predicate"] = dict(self.refuse_predicate)
+        return payload
 
 
 def fleet_station_slugs(slugs: Iterable[str]) -> tuple[str, ...]:
