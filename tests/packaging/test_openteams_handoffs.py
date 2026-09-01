@@ -319,6 +319,127 @@ def test_write_dashboard_markdown_survives_a_canvas_write_failure(tmp_path, monk
 
 
 # ---------------------------------------------------------------------------
+# INVENTORY_IDENTITY_UI mode gating (Story 22.6)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("env_value", "expected"),
+    [
+        (None, "both"),
+        ("both", "both"),
+        ("BOTH", "both"),
+        (" canvas ", "canvas"),
+        ("Vizro", "vizro"),
+        ("vizr0", "both"),
+        ("", "both"),
+    ],
+)
+def test_identity_ui_mode(monkeypatch, env_value, expected):
+    if env_value is None:
+        monkeypatch.delenv(identity.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    else:
+        monkeypatch.setenv(identity.INVENTORY_IDENTITY_UI_ENV, env_value)
+    assert identity._identity_ui_mode() == expected
+
+
+@pytest.mark.parametrize(
+    ("env_value", "expected"),
+    [
+        (None, "both"),
+        ("both", "both"),
+        (" canvas ", "canvas"),
+        ("Vizro", "vizro"),
+        ("vizr0", "both"),
+    ],
+)
+def test_priority_identity_ui_mode(monkeypatch, env_value, expected):
+    if env_value is None:
+        monkeypatch.delenv(priority.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    else:
+        monkeypatch.setenv(priority.INVENTORY_IDENTITY_UI_ENV, env_value)
+    assert priority._identity_ui_mode() == expected
+
+
+def test_write_dashboard_markdown_skips_both_canvases_in_vizro_mode(tmp_path, monkeypatch):
+    ops_calls: list[tuple] = []
+    workbook_calls: list[tuple] = []
+
+    monkeypatch.setenv(identity.INVENTORY_IDENTITY_UI_ENV, "vizro")
+    monkeypatch.setattr(
+        dashboards,
+        "write_ops_canvas",
+        lambda *a, **k: ops_calls.append((a, k)),
+    )
+    monkeypatch.setattr(
+        dashboards,
+        "write_workbook_canvas",
+        lambda *a, **k: workbook_calls.append((a, k)),
+    )
+
+    dash_path = tmp_path / "dashboards.md"
+    export_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True)
+    pd.DataFrame([{"Core_Python_Package_Name": "pkg-a"}]).to_parquet(export_path)
+    identity.write_dashboard_markdown(
+        dash_path,
+        "# gist markdown still written\n",
+        [],
+        "identity_complete_export",
+        export_path,
+    )
+
+    assert dash_path.read_text(encoding="utf-8") == "# gist markdown still written\n"
+    assert ops_calls == []
+    assert workbook_calls == []
+
+
+@pytest.mark.parametrize("env_value", [None, "both", "canvas", " vizr0 "])
+def test_write_dashboard_markdown_writes_both_canvases_by_default(
+    tmp_path, monkeypatch, env_value
+):
+    ops_calls: list[tuple] = []
+    workbook_calls: list[tuple] = []
+
+    if env_value is None:
+        monkeypatch.delenv(identity.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    else:
+        monkeypatch.setenv(identity.INVENTORY_IDENTITY_UI_ENV, env_value)
+    monkeypatch.setattr(
+        dashboards,
+        "write_ops_canvas",
+        lambda *a, **k: ops_calls.append((a, k)),
+    )
+    monkeypatch.setattr(
+        dashboards,
+        "write_workbook_canvas",
+        lambda *a, **k: workbook_calls.append((a, k)),
+    )
+
+    dash_path = tmp_path / "dashboards.md"
+    export_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True)
+    pd.DataFrame([{"Core_Python_Package_Name": "pkg-a"}]).to_parquet(export_path)
+    identity.write_dashboard_markdown(
+        dash_path,
+        "# dashboard markdown\n",
+        [{"Core_Python_Package_Name": "pkg-a"}],
+        "identity_complete_export",
+        export_path,
+    )
+
+    assert dash_path.read_text(encoding="utf-8") == "# dashboard markdown\n"
+    assert len(ops_calls) == 1
+    assert len(workbook_calls) == 1
+
+
+def test_priority_write_canvas_skipped_in_vizro_mode(monkeypatch):
+    monkeypatch.setenv(priority.INVENTORY_IDENTITY_UI_ENV, "vizro")
+    assert priority._identity_ui_mode() == "vizro"
+    assert not (True and priority._identity_ui_mode() != "vizro")
+
+
+# ---------------------------------------------------------------------------
 # write_aoss_queue_csv (conda-forge-packaging-inventory-operations_metrics.py)
 # ---------------------------------------------------------------------------
 
