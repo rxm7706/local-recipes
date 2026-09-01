@@ -1,5 +1,5 @@
-"""Story 22.1: priority.py reads identity_export_parquet and writes
-identity_ranked_export.parquet for Vizro Epic 22."""
+"""Story 22.1 / 23.9: priority.py shim reads inventory_priority_assignments and
+writes identity_ranked_export.parquet for Vizro Epic 22."""
 
 from __future__ import annotations
 
@@ -9,13 +9,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
-pytest.importorskip(
-    "openpyxl",
-    reason="target scripts import openpyxl at module load; only present under -e local-recipes",
-)
-
-from openpyxl import Workbook
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -37,99 +30,62 @@ def _load_priority():
 priority = _load_priority()
 
 
-def _identity_row(name: str, **extra) -> dict:
+def _assignment_row(name: str, **extra) -> dict:
     row = {
-        "Core_Python_Package_Name": name,
-        "OpenTeams_Issue_URL": "",
-        "conda_purl": "",
-        "Conda-Forge_FeedStock_URL": "",
+        "core_python_package_name": name,
+        "P": "P4",
+        "Rank": 1,
+        "Score": 88,
+        "Work": "Already tracked",
+        "Priority_Bucket_Description": "Used in one or more platform environments (platform_env_count > 0).",
+        "Priority_Source": "platform",
+        "Priority_Reason": "platform_env_count > 0",
+        "Proposed_Priority": "P4",
+        "Packaging_Work": "Already tracked",
+        "Priority_Rank": 1,
+        "Priority_Score": 88,
+        "risk_level": "LOW",
+        "vuln_status": "clean",
+        "jfrog_latest_vuln_count": 0,
     }
     row.update(extra)
     return row
 
 
-def _write_workbook(
-    path: Path,
-    *,
-    identity_rows: list[dict] | None = None,
-    jfrog_rows: list[dict] | None = None,
-    inventory_rows: list[dict] | None = None,
-) -> None:
-    wb = Workbook()
-    wb.remove(wb.active)
-
-    ident_ws = wb.create_sheet(priority.TAB)
-    ident_header = ["Core_Python_Package_Name", "OpenTeams_Issue_URL"]
-    ident_ws.append(ident_header)
-    for row in identity_rows or []:
-        ident_ws.append([row.get(h, "") for h in ident_header])
-
-    jfrog_ws = wb.create_sheet("CDO-ENT-JFROG")
-    jfrog_header = [
-        "name",
-        "platform_env_count",
-        "internal_app_count",
-        "internal_component_count",
-        "internal_lob_count",
-        "artifactory_downloads",
-        "artifactory_version_count",
-        "risk_level",
-        "vuln_status",
-        "basilisk_latest_version_known_vulnerabilities_count",
-    ]
-    jfrog_ws.append(jfrog_header)
-    for row in jfrog_rows or []:
-        jfrog_ws.append([row.get(h, 0) for h in jfrog_header])
-
-    ot_ws = wb.create_sheet("OpenTeams")
-    ot_ws.append(["Title", "Priority", "URL"])
-
-    inv_ws = wb.create_sheet("inventory-2026-08-12")
-    inv_header = [
-        "Core_Python_Package_Name",
-        "OpenTeams_Batch",
-        "OpenTeams_Cohort",
-        "OpenTeams_Coverage",
-        "Priority_Bucket",
-    ]
-    inv_ws.append(inv_header)
-    for row in inventory_rows or []:
-        inv_ws.append([row.get(h, "") for h in inv_header])
-
-    wb.save(path)
+def _jfrog_row(name: str, **extra) -> dict:
+    row = {
+        "core_python_package_name": name,
+        "platform_env_count": 2,
+        "internal_app_count": 0,
+        "internal_component_count": 1,
+        "internal_lob_count": 0,
+        "artifactory_downloads": 50,
+        "artifactory_version_count": 5,
+    }
+    row.update(extra)
+    return row
 
 
-def _write_identity_parquet(path: Path, rows: list[dict]) -> None:
+def _write_priority_assignments(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(path)
 
 
-def test_normal_run_writes_ranked_parquet_and_xlsx_tab(monkeypatch, tmp_path, capsys):
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    _write_workbook(
-        xlsx_path,
-        jfrog_rows=[
-            {
-                "name": "pkg-a",
-                "platform_env_count": 2,
-                "internal_app_count": 0,
-                "internal_component_count": 1,
-                "internal_lob_count": 0,
-                "artifactory_downloads": 50,
-                "artifactory_version_count": 5,
-                "risk_level": "LOW",
-                "vuln_status": "clean",
-                "basilisk_latest_version_known_vulnerabilities_count": 0,
-            }
-        ],
-    )
+def _write_jfrog_parquet(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_parquet(path)
 
-    identity_parquet = tmp_path / "identity_export.parquet"
-    _write_identity_parquet(
-        identity_parquet,
-        [_identity_row("pkg-a", OpenTeams_Issue_URL="https://github.com/x/y/issues/1")],
+
+def test_normal_run_writes_ranked_parquet_and_optional_csv(monkeypatch, tmp_path, capsys):
+    assignments_path = tmp_path / "inventory_priority_assignments.parquet"
+    _write_priority_assignments(
+        assignments_path,
+        [_assignment_row("pkg-a", Work="Already tracked", P="P4")],
     )
+    jfrog_path = tmp_path / "enterprise_jfrog_consumption.parquet"
+    _write_jfrog_parquet(jfrog_path, [_jfrog_row("pkg-a")])
     ranked_export = tmp_path / "identity_ranked_export.parquet"
+    ranked_csv = tmp_path / "identity_ranked.csv"
     canvas_path = tmp_path / "canvas.tsx"
 
     monkeypatch.setattr(
@@ -137,13 +93,14 @@ def test_normal_run_writes_ranked_parquet_and_xlsx_tab(monkeypatch, tmp_path, ca
         "argv",
         [
             "prog",
-            "--xlsx",
-            str(xlsx_path),
-            "--identity-parquet",
-            str(identity_parquet),
+            "--priority-assignments",
+            str(assignments_path),
+            "--jfrog-parquet",
+            str(jfrog_path),
             "--ranked-export",
             str(ranked_export),
-            "--skip-inventory-sync",
+            "--ranked-csv",
+            str(ranked_csv),
             "--canvas",
             str(canvas_path),
         ],
@@ -158,20 +115,17 @@ def test_normal_run_writes_ranked_parquet_and_xlsx_tab(monkeypatch, tmp_path, ca
     assert ranked_df.iloc[0]["Core_Python_Package_Name"] == "pkg-a"
     assert ranked_df.iloc[0]["P"] == "P4"
     assert ranked_df.iloc[0]["Work"] == "Already tracked"
+    assert ranked_df.iloc[0]["Platforms"] == 2
     assert ranked_df.iloc[0]["Verification_Timestamp_UTC"]
 
-    wb = __import__("openpyxl").load_workbook(xlsx_path, data_only=True)
-    ws = wb[priority.TAB]
-    rows = list(ws.iter_rows(values_only=True))
-    assert rows[0][0] == "P"
-    assert rows[1][0] == "P4"
-    assert rows[1][3] == "pkg-a"
+    csv_df = pd.read_csv(ranked_csv)
+    assert list(csv_df.columns) == priority.LEGACY_RANKED_CSV_COLUMNS
+    assert csv_df.iloc[0]["Package"] == "pkg-a"
+    assert csv_df.iloc[0]["P"] == "P4"
     assert "wrote" in capsys.readouterr().out
 
 
-def test_missing_identity_parquet_exits_nonzero(monkeypatch, tmp_path, capsys):
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    _write_workbook(xlsx_path)
+def test_missing_priority_assignments_exits_nonzero(monkeypatch, tmp_path, capsys):
     missing = tmp_path / "missing.parquet"
 
     monkeypatch.setattr(
@@ -179,13 +133,10 @@ def test_missing_identity_parquet_exits_nonzero(monkeypatch, tmp_path, capsys):
         "argv",
         [
             "prog",
-            "--xlsx",
-            str(xlsx_path),
-            "--identity-parquet",
+            "--priority-assignments",
             str(missing),
             "--ranked-export",
             str(tmp_path / "out.parquet"),
-            "--skip-inventory-sync",
         ],
     )
 
@@ -198,27 +149,20 @@ def test_missing_identity_parquet_exits_nonzero(monkeypatch, tmp_path, capsys):
     assert "pyforge-atlas-bootstrap" in err
 
 
-def test_jfrog_only_package_not_ranked(monkeypatch, tmp_path):
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    _write_workbook(
-        xlsx_path,
-        jfrog_rows=[
-            {
-                "name": "orphan-jfrog",
-                "platform_env_count": 1,
-                "internal_app_count": 0,
-                "internal_component_count": 0,
-                "internal_lob_count": 0,
-                "artifactory_downloads": 0,
-                "artifactory_version_count": 0,
-                "risk_level": "LOW",
-                "vuln_status": "clean",
-                "basilisk_latest_version_known_vulnerabilities_count": 0,
-            }
+def test_jfrog_only_package_not_in_assignments(monkeypatch, tmp_path):
+    assignments_path = tmp_path / "inventory_priority_assignments.parquet"
+    _write_priority_assignments(
+        assignments_path,
+        [_assignment_row("pkg-ranked", P="P5", Work="Create recipe")],
+    )
+    jfrog_path = tmp_path / "enterprise_jfrog_consumption.parquet"
+    _write_jfrog_parquet(
+        jfrog_path,
+        [
+            _jfrog_row("orphan-jfrog", platform_env_count=1),
+            _jfrog_row("pkg-ranked", internal_app_count=3, platform_env_count=0),
         ],
     )
-    identity_parquet = tmp_path / "identity_export.parquet"
-    _write_identity_parquet(identity_parquet, [_identity_row("pkg-ranked")])
     ranked_export = tmp_path / "identity_ranked_export.parquet"
     canvas_path = tmp_path / "canvas.tsx"
 
@@ -227,13 +171,12 @@ def test_jfrog_only_package_not_ranked(monkeypatch, tmp_path):
         "argv",
         [
             "prog",
-            "--xlsx",
-            str(xlsx_path),
-            "--identity-parquet",
-            str(identity_parquet),
+            "--priority-assignments",
+            str(assignments_path),
+            "--jfrog-parquet",
+            str(jfrog_path),
             "--ranked-export",
             str(ranked_export),
-            "--skip-inventory-sync",
             "--canvas",
             str(canvas_path),
         ],
@@ -244,3 +187,22 @@ def test_jfrog_only_package_not_ranked(monkeypatch, tmp_path):
     assert rc == 0
     ranked_df = pd.read_parquet(ranked_export)
     assert list(ranked_df["Core_Python_Package_Name"]) == ["pkg-ranked"]
+
+
+def test_retired_workbook_flags_exit_two(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "prog",
+            "--xlsx",
+            str(tmp_path / "Analysis_Dataset.xlsx"),
+            "--ranked-export",
+            str(tmp_path / "out.parquet"),
+        ],
+    )
+
+    rc = priority.main()
+
+    assert rc == 2
+    assert "retired by Story 23.9" in capsys.readouterr().err

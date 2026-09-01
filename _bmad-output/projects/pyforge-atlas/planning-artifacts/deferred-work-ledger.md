@@ -2446,7 +2446,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred fbab2ab4966a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-09-01
+  closed_by: Story 23.9 (`spec-23-9-quartet-workbook-retirement.md`) — `write_workbook_canvas` rewritten to read `enterprise_jfrog_consumption.parquet` via `load_jfrog_by()`; the openpyxl/`load_workbook`/`jfrog_by.setdefault` collision path deleted (`scripts/openteams_identity_dashboards.py`).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2459,7 +2461,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 8597dceacf93 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-09-01
+  closed_by: Story 23.9 — function deleted and replaced; the staged-recipes gap logic now lives only in the export-driven `load_jfrog_by` + identity join path shared with `render()` (`scripts/openteams_identity_dashboards.py`).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2472,7 +2476,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 7e75cc105aef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-09-01
+  closed_by: Story 23.9 — `load_workbook` removed from `write_workbook_canvas`; catalog source counts read from `inventory_universe.parquet` instead (`scripts/openteams_identity_dashboards.py`).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 

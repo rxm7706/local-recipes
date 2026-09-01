@@ -1,36 +1,29 @@
 #!/usr/bin/env python3
-"""Build OpenTeams identity rows from the Atlas Phase D identity export.
+"""Thin actuator over Atlas ``identity_complete_export.parquet`` (Story 23.9).
 
-Since Story 21.7, this script never fetches ASSOCIATOR_URL, the OpenTeams
-board, feedstock-outputs, or staged-recipes PRs itself: `main()` reads
-`identity_export_parquet` (pyforge-atlas Kedro catalog, Story 21.6's
-`upstream_discovery` join -- PURL Associator + OpenTeams board + feedstock/
-staged-PR/local-recipe overlays, one row per
-CDO-ENT-JFROG/CDO-ENT-CONDA package plus board-only extras) via
-`PYFORGE_ATLAS_DATA_ROOT`. Run `pixi run -e pyforge-atlas
-pyforge-atlas-bootstrap` first; a missing Parquet is a hard error, never a
+Since Story 21.7 this script never fetches ASSOCIATOR_URL, the OpenTeams
+board, feedstock-outputs, or staged-recipes PRs itself: ``main()`` and
+``--gist-only`` read ``identity_complete_export.parquet`` (Story 23.5 --
+ranking ``P``/``Rank``/``Score``/``Work`` plus JFROG columns already on the
+export) via ``PYFORGE_ATLAS_DATA_ROOT``. Run ``pixi run -e pyforge-atlas
+pyforge-atlas-bootstrap`` first; a missing Parquet is a hard error, never a
 live-fetch fallback.
 
-Packaging location URLs (same columns the conda-forge packages page and
-the two recipe trees expose) -- Conda-Forge_FeedStock_URL/Metadata_URL,
-Staged_Recipes_PR_URL -- come from that same Parquet. Local_Recipes_URL
-and Local_Build_Status are the two exceptions: they are always freshly
-re-derived from a live `recipes/` filesystem scan (`overlay_live_local`,
-run unconditionally on every `main()`/`--gist-only` invocation) -- the
-Parquet's own values for those two columns are never used downstream.
+Local_Recipes_URL and Local_Build_Status are always freshly re-derived
+from a live ``recipes/`` filesystem scan (``overlay_live_local``, run on
+every ``main()`` / ``--gist-only`` invocation) -- the Parquet's own values
+for those two columns are never used downstream.
 
-After writing the workbook tab, publish (edit in place, never create) the
-pinned secret gist files mgmt-wf-python-modernization-identity.md (row
-catalog) and mgmt-wf-python-modernization-dashboards.md (P/work, issue
-gap, census, Artifactory map) unless --skip-gist. The gist id is not in
-git: set OPENTEAMS_IDENTITY_GIST_ID,
-conf/conda-forge-packaging-inventory-operations.local.env, or --gist-id.
-`--gist-only` republishes from the identity Parquet merged with ranking
-columns (P/Rank/Score/Work + JFROG) from the ranked identity tab
-(`priority.py`'s output) by name, without regenerating identity rows.
+Publish (edit in place, never create) the pinned secret gist files
+``mgmt-wf-python-modernization-identity.md`` (row catalog) and
+``mgmt-wf-python-modernization-dashboards.md`` (P/work, issue gap, census,
+Artifactory map) unless ``--skip-gist``. The gist id is not in git: set
+``OPENTEAMS_IDENTITY_GIST_ID``,
+``conf/conda-forge-packaging-inventory-operations.local.env``, or
+``--gist-id``. ``--gist-only`` republishes from the complete export without
+regenerating identity rows.
 
-Default output snapshot tab identity-2026-08-12 is not a source input.
-Pass --tab-out to write a dated tab without overwriting an older snapshot.
+Passing ``--xlsx`` or ``--tab-out`` exits 2 with a retirement pointer.
 """
 
 from __future__ import annotations
@@ -48,7 +41,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import load_workbook
 
 COLUMNS = [
     "Core_Python_Package_Name",
@@ -71,24 +63,25 @@ COLUMNS = [
     "Verification_Timestamp_UTC",
 ]
 
-TAB_OUT = "identity-2026-08-12"
 OSS_MILESTONE = "OSS Enhancements (Conda Forge, Pixi, ect)"
+_DEFAULT_EXPORT_TAB_LABEL = "identity_complete_export"
 PACKAGING_TITLE_RE = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
 DEFAULT_GH = Path(__file__).resolve().parent.parent / ".pixi/envs/local-recipes/bin/gh"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path("/tmp/openteams-identity")
-# Story 21.7 (CAP-4, quartet thin-out): identity rows come from the Atlas Phase D
-# join (Story 21.6's identity_export_parquet) -- never a direct fetch. Path mirrors
+# Story 21.7 (CAP-4, quartet thin-out): identity rows come from the Atlas
+# ``identity_complete_export`` join (Story 23.5) -- never a direct fetch. Path mirrors
 # the PYFORGE_ATLAS_DATA_ROOT / ${paths.data_root} convention globals.yml uses
 # (Story 21.1), resolved the same way `kedro run` resolves a relative data_root:
 # against the pyforge-atlas project directory (the documented bootstrap task's cwd).
 PYFORGE_ATLAS_DATA_ROOT_ENV = "PYFORGE_ATLAS_DATA_ROOT"
 PYFORGE_ATLAS_PROJECT_DIR = REPO_ROOT / "src/shared/packages/pyforge-atlas"
-IDENTITY_EXPORT_PARQUET_RELPATH = Path(
-    "derived/identity_export_parquet/identity_export_parquet.parquet"
-)
 IDENTITY_COMPLETE_EXPORT_RELPATH = Path(
     "derived/identity_complete_export/identity_complete_export.parquet"
+)
+_RETIRED_WORKBOOK_MSG = (
+    "retired by Story 23.9 — use identity_complete_export.parquet under "
+    "PYFORGE_ATLAS_DATA_ROOT (and --gist-only to publish)"
 )
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
 GIST_DASHBOARD_FILENAME = "mgmt-wf-python-modernization-dashboards.md"
@@ -132,10 +125,6 @@ GIST_SCHEMA = [
     ("internal_lob_count", "int", "no", "JFROG internal LOB count."),
 ]
 GIST_COLUMNS = [name for name, _typ, _req, _meaning in GIST_SCHEMA]
-# Ranking + JFROG columns merged from the ranked identity tab at --gist-only
-# publish time (Story 21.7; identity-contract.md "Ranking columns"). Derived,
-# not hand-listed, so a future GIST_SCHEMA addition is picked up automatically.
-RANKING_MERGE_COLUMNS = [c for c in GIST_COLUMNS if c not in COLUMNS and c != "Package"]
 LOCAL_RECIPES_URL = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{dir}"
 CFE_BUILD_STATUS_RE = re.compile(r"(?m)^  cfe-local-build-status:\s*(\S+)")
 LOCAL_DIR_FROM_URL_RE = re.compile(r"/recipes/([^/\s]+)\s*$")
@@ -501,31 +490,6 @@ def emit_status_block(lines: list[str], indent: str, counts: Counter) -> None:
         lines.append(f"{indent}{status}: {counts[status]}")
 
 
-def read_xlsx_tab(xlsx: Path, tab: str) -> list[dict[str, str]]:
-    wb = load_workbook(xlsx, read_only=True, data_only=True)
-    ws = wb[tab]
-    rows_iter = ws.iter_rows(values_only=True)
-    header = [str(h) if h is not None else "" for h in next(rows_iter)]
-    rows = []
-    for raw in rows_iter:
-        rows.append({h: ("" if v is None else str(v).strip()) for h, v in zip(header, raw)})
-    wb.close()
-    return rows
-
-
-def identity_export_parquet_path() -> Path:
-    """Physical location of the Atlas Kedro catalog's ``identity_export_parquet``
-    dataset (Story 21.6, CAP-3) -- the ONLY input to this script's identity rows
-    since Story 21.7. Mirrors ``${paths.data_root}`` (default ``data``, override
-    via ``PYFORGE_ATLAS_DATA_ROOT``), resolved against the pyforge-atlas project
-    directory the same way the documented ``pyforge-atlas-bootstrap`` task's
-    ``kedro run`` (cwd ``src/shared/packages/pyforge-atlas``) resolves it."""
-    data_root = Path(os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data"))
-    if not data_root.is_absolute():
-        data_root = PYFORGE_ATLAS_PROJECT_DIR / data_root
-    return data_root / IDENTITY_EXPORT_PARQUET_RELPATH
-
-
 def identity_complete_export_parquet_path() -> Path:
     """Physical location of Story 23.5's ``identity_complete_export.parquet``."""
     data_root = Path(os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data"))
@@ -534,86 +498,39 @@ def identity_complete_export_parquet_path() -> Path:
     return data_root / IDENTITY_COMPLETE_EXPORT_RELPATH
 
 
-def read_identity_export_records() -> list[dict[str, str]] | None:
-    """Read the Atlas Phase D identity export Parquet -- replaces the retired
-    ASSOCIATOR_URL/board/feedstock-outputs/staged-prs fetch-and-join block
-    (Story 21.7). Never falls back to a live fetch: a missing Parquet is a
-    hard, named error (I/O & Edge-Case Matrix), reported here and signaled to
-    the caller as ``None`` rather than raising."""
-    path = identity_export_parquet_path()
+def read_identity_complete_export_records() -> list[dict[str, str]] | None:
+    """Read Story 23.5's ``identity_complete_export.parquet``.
+
+    Never falls back to a live fetch: a missing Parquet is a hard, named error
+    (I/O & Edge-Case Matrix), reported here and signaled to the caller as
+    ``None`` rather than raising."""
+    path = identity_complete_export_parquet_path()
     if not path.is_file():
         print(
-            f"identity_export_parquet not found at {path} -- run "
+            f"identity_complete_export not found at {path} -- run "
             "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first",
             file=sys.stderr,
         )
         return None
     df = pd.read_parquet(path)
+    if df.empty:
+        print(
+            f"identity_complete_export is empty at {path}; refusing to continue",
+            file=sys.stderr,
+        )
+        return None
     return [
         {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
         for row in df.to_dict(orient="records")
     ]
 
 
-def merge_ranking_columns(
-    identity_records: list[dict[str, str]], ranked_records: list[dict[str, str]]
-) -> list[dict[str, str]]:
-    """Merge ``RANKING_MERGE_COLUMNS`` (P/Rank/Score/Work + JFROG/priority
-    fields) from ``ranked_records`` (the priority.py-ranked identity tab) onto
-    ``identity_records`` (the Atlas Phase D Parquet export), matched by
-    ``Core_Python_Package_Name``. A Parquet name with no match in the ranked
-    tab is dropped -- P/Rank/Score/Work are GIST_SCHEMA-required, so a row
-    that cannot carry them is never published -- and a stderr warning names
-    it (I/O & Edge-Case Matrix "a name has no cross-source match": never
-    silent-drop, never raise). ``Package`` (GIST_SCHEMA-required) is set on
-    every merged row from ``Core_Python_Package_Name`` -- it is deliberately
-    excluded from ``RANKING_MERGE_COLUMNS`` (the ranked tab is not its source
-    of truth), so it must be set unconditionally here or every published gist
-    row would carry a blank required column."""
-    ranking_by_name = {
-        pep503_name(row["Core_Python_Package_Name"]): row
-        for row in ranked_records
-        if (row.get("Core_Python_Package_Name") or "").strip()
-    }
-    merged: list[dict[str, str]] = []
-    for row in identity_records:
-        name = row.get("Core_Python_Package_Name", "")
-        ranking_row = ranking_by_name.get(pep503_name(name))
-        if ranking_row is None:
-            print(
-                f"No ranking match for {name!r} in the identity tab; skipping row",
-                file=sys.stderr,
-            )
-            continue
-        out = dict(row)
-        out["Package"] = row.get("Core_Python_Package_Name", "")
-        for col in RANKING_MERGE_COLUMNS:
-            if col in ranking_row:
-                out[col] = ranking_row[col]
-        merged.append(out)
-    return merged
-
-
 def write_csv(path: Path, records: list[dict[str, str]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
+        w = csv.DictWriter(f, fieldnames=GIST_COLUMNS, extrasaction="ignore")
         w.writeheader()
         for rec in records:
-            w.writerow({c: rec.get(c, "") for c in COLUMNS})
-
-
-def write_xlsx_tab(xlsx: Path, records: list[dict[str, str]], tab: str = TAB_OUT) -> None:
-    wb = load_workbook(xlsx)
-    if tab in wb.sheetnames:
-        del wb[tab]
-    ws = wb.create_sheet(tab)
-    ws.append(COLUMNS)
-    for rec in records:
-        ws.append([rec.get(c, "") for c in COLUMNS])
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = ws.dimensions
-    wb.save(xlsx)
-    wb.close()
+            w.writerow({c: rec.get(c, "") for c in GIST_COLUMNS})
 
 
 def file_sha256(path: Path) -> str:
@@ -672,13 +589,11 @@ def write_dashboard_markdown(
     dashboards_md: str,
     records: list[dict[str, str]],
     tab: str,
+    export_path: Path,
     ops_canvas: Path | None = None,
     workbook_canvas: Path | None = None,
-    xlsx: Path | None = None,
 ) -> None:
     path.write_text(dashboards_md, encoding="utf-8")
-    # Canvas writers stay on the legacy in-script computation path (Story 23.6
-    # scope: markdown bodies only; canvas deprecation is Story 22.6).
     script_dir = str(Path(__file__).resolve().parent)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
@@ -695,17 +610,16 @@ def write_dashboard_markdown(
         write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
     except Exception as exc:
         print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
-    if xlsx is not None:
-        try:
-            write_workbook_canvas(
-                workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH,
-                records,
-                xlsx,
-                tab,
-                helpers=helpers,
-            )
-        except Exception as exc:
-            print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
+    try:
+        write_workbook_canvas(
+            workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH,
+            records,
+            export_path,
+            tab,
+            helpers=helpers,
+        )
+    except Exception as exc:
+        print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
 
 
 def gist_file_names(gh: str, gist_id: str) -> set[str]:
@@ -748,10 +662,9 @@ def publish_gist_files(
 def publish_gist_from_export(
     export_path: Path,
     gist_id_cli: str | None,
-    tab: str = TAB_OUT,
+    tab: str = _DEFAULT_EXPORT_TAB_LABEL,
     ops_canvas: Path | None = None,
     workbook_canvas: Path | None = None,
-    xlsx: Path | None = None,
     skip_gist: bool = False,
 ) -> int:
     """Edit the pinned gist from ``identity_complete_export.parquet`` (Story 23.6)."""
@@ -816,9 +729,9 @@ def publish_gist_from_export(
         dashboards_md,
         records,
         tab,
+        export_path,
         ops_canvas,
         workbook_canvas,
-        xlsx=xlsx,
     )
     if skip_gist:
         print(f"Wrote gist markdown offline ({len(records):,} rows) to {CACHE_DIR}", flush=True)
@@ -835,20 +748,18 @@ def publish_gist_from_export(
 
 
 def publish_gist_from_tab(
-    xlsx: Path,
     gist_id_cli: str | None,
-    tab: str = TAB_OUT,
+    tab: str = _DEFAULT_EXPORT_TAB_LABEL,
     ops_canvas: Path | None = None,
     workbook_canvas: Path | None = None,
 ) -> int:
-    """Legacy alias — Story 23.6 reads ``identity_complete_export.parquet`` only."""
+    """Legacy alias — Story 23.9 reads ``identity_complete_export.parquet`` only."""
     return publish_gist_from_export(
         identity_complete_export_parquet_path(),
         gist_id_cli,
         tab,
         ops_canvas,
         workbook_canvas,
-        xlsx=xlsx,
     )
 
 
@@ -857,18 +768,19 @@ def main() -> int:
     p.add_argument(
         "--xlsx",
         type=Path,
-        default=Path("docs/Analysis_Dataset-2026-08-12.xlsx"),
+        default=None,
+        help="Retired by Story 23.9 — exits 2 with a pointer to the Atlas export.",
     )
     p.add_argument(
         "--tab-out",
-        default=TAB_OUT,
-        help="Identity output tab. Default: identity-2026-08-12.",
+        default=None,
+        help="Retired by Story 23.9 — exits 2 with a pointer to the Atlas export.",
     )
     p.add_argument(
         "--output-csv",
         type=Path,
         default=None,
-        help="Optional CSV path. Default: skip CSV (workbook tab only).",
+        help="Optional CSV path. Default: skip CSV.",
     )
     p.add_argument(
         "--cache-dir",
@@ -927,15 +839,18 @@ def main() -> int:
         ),
     )
     args = p.parse_args()
+    if args.xlsx is not None or args.tab_out is not None:
+        print(_RETIRED_WORKBOOK_MSG, file=sys.stderr)
+        return 2
+    tab_label = _DEFAULT_EXPORT_TAB_LABEL
     if args.gist_only:
         export_path = identity_complete_export_parquet_path()
         return publish_gist_from_export(
             export_path,
             args.gist_id,
-            args.tab_out,
+            tab_label,
             args.ops_canvas,
             args.workbook_canvas,
-            xlsx=args.xlsx,
             skip_gist=args.skip_gist,
         )
     if args.create_issues and not gh_bin():
@@ -946,18 +861,10 @@ def main() -> int:
         )
         return 1
 
-    records = read_identity_export_records()
+    records = read_identity_complete_export_records()
     if records is None:
         return 1
 
-    # Single-live-snapshot guarantee: overlay the live recipes/ tree once, here,
-    # before ANY output (tab, CSV, or gist) is written -- write_gist_markdown's
-    # own internal overlay_live_local call (unchanged) then re-runs on this
-    # already-overlaid data for the gist step, so the persisted xlsx tab,
-    # --output-csv, and the published gist all agree on Local_Recipes_URL/
-    # Local_Build_Status/Verification_Timestamp_UTC within one run (Story 21.7
-    # review pass 1: this call was dropped along with the retired fetch+join
-    # block in the first attempt, letting the tab/CSV and gist silently diverge).
     overlay_live_local(records, REPO_ROOT / "recipes")
 
     created = create_missing_issues(gh_bin(), records, {}, dry_run=not args.create_issues)
@@ -967,13 +874,13 @@ def main() -> int:
         for name, title in created:
             print(f"  {name}: {title}")
 
-    write_xlsx_tab(args.xlsx, records, args.tab_out)
+    export_path = identity_complete_export_parquet_path()
     if args.output_csv:
         write_csv(args.output_csv, records)
 
     counts = Counter(r["identity_source"] for r in records)
     timestamp = records[0].get("Verification_Timestamp_UTC", "") if records else ""
-    print(f"Wrote {len(records):,} rows to {args.xlsx} tab {args.tab_out}")
+    print(f"Read {len(records):,} rows from {export_path}")
     if args.output_csv:
         print(f"Wrote CSV {args.output_csv}")
     print("identity_source:", dict(counts))
@@ -1003,12 +910,11 @@ def main() -> int:
         print("Skipped gist publish (--skip-gist)")
         return 0
     return publish_gist_from_export(
-        identity_complete_export_parquet_path(),
+        export_path,
         args.gist_id,
-        args.tab_out,
+        tab_label,
         args.ops_canvas,
         args.workbook_canvas,
-        xlsx=args.xlsx,
     )
 
 

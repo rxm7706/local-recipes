@@ -1,49 +1,30 @@
 """Story 23.3 — assign_inventory_priority + derive_basilisk_vuln_rollup.
 
-Frozen fixture corpus parity against ``priority.py`` (unmodified) on the same synthetic
-rows — the story's ``done_checkpoint``.
+Frozen fixture corpus parity against the inlined pre-23.9 ranking reference on the
+same synthetic rows — the story's ``done_checkpoint``.
 """
 
 from __future__ import annotations
-
-import importlib.util
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _INVENTORY_PRIORITY_COLUMNS,
+    _PRI_N,
+    _WORK_CREATE,
+    _WORK_ISSUE_CF,
+    _WORK_RANK,
+    _priority_assign_lane,
+    _priority_board_maps,
+    _priority_num,
+    _priority_pep503,
+    _priority_percentile_1_100,
+    _priority_use_score,
+    _priority_work_label,
     assign_inventory_priority,
     derive_basilisk_vuln_rollup,
 )
-
-_REPO_ROOT = Path(__file__).resolve().parents[7]
-_PRIORITY_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-operations_priority.py"
-
-
-def _load_priority_module():
-    import types
-
-    if "openpyxl" not in sys.modules:
-        stub = types.ModuleType("openpyxl")
-
-        def _load_workbook(*_args, **_kwargs):
-            raise RuntimeError("openpyxl stub — parity tests use synthetic rows only")
-
-        stub.load_workbook = _load_workbook
-        sys.modules["openpyxl"] = stub
-
-    spec = importlib.util.spec_from_file_location("priority_ref", _PRIORITY_SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["priority_ref"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-PRI = _load_priority_module()
 
 
 def _identity_row(name: str, **extra) -> dict:
@@ -79,10 +60,10 @@ def _run_priority_reference(
     inv_by: dict[str, dict],
     vuln_by: dict[str, dict],
 ) -> pd.DataFrame:
-    """Mirror priority.py main() ranking logic on synthetic rows (no xlsx)."""
+    """Mirror the pre-23.9 ranking logic on synthetic rows (no workbook I/O)."""
     jfrog = {}
     for r in jfrog_rows:
-        k = PRI.pep503(r.get("core_python_package_name") or r.get("name"))
+        k = _priority_pep503(r.get("core_python_package_name") or r.get("name"))
         if k:
             merged = dict(r)
             v = vuln_by.get(k)
@@ -90,25 +71,25 @@ def _run_priority_reference(
                 merged.update(v)
             jfrog[k] = merged
 
-    by_url, by_name = PRI.board_maps(ot_rows)
+    by_url, by_name = _priority_board_maps(ot_rows)
     records = []
-    for idx, ident in enumerate(identity_rows):
-        name = PRI.pep503(ident.get("Core_Python_Package_Name")) or str(
+    for ident in identity_rows:
+        name = _priority_pep503(ident.get("Core_Python_Package_Name")) or str(
             ident.get("Core_Python_Package_Name") or ""
         )
-        j = jfrog.get(PRI.pep503(ident.get("Core_Python_Package_Name")) or "")
-        plat = int(PRI.num(j.get("platform_env_count")) if j else 0)
-        apps = int(PRI.num(j.get("internal_app_count")) if j else 0)
-        ic = int(PRI.num(j.get("internal_component_count")) if j else 0)
-        lob = int(PRI.num(j.get("internal_lob_count")) if j else 0)
-        dl = int(PRI.num(j.get("artifactory_downloads")) if j else 0)
-        ver = int(PRI.num(j.get("artifactory_version_count")) if j else 0)
-        raw = PRI.use_score(plat, apps, ic, lob, dl, ver)
-        inv = inv_by.get(PRI.pep503(ident.get("Core_Python_Package_Name")) or "")
-        work = PRI.work_label(ident, inv, j)
+        j = jfrog.get(_priority_pep503(ident.get("Core_Python_Package_Name")) or "")
+        plat = int(_priority_num(j.get("platform_env_count")) if j else 0)
+        apps = int(_priority_num(j.get("internal_app_count")) if j else 0)
+        ic = int(_priority_num(j.get("internal_component_count")) if j else 0)
+        lob = int(_priority_num(j.get("internal_lob_count")) if j else 0)
+        dl = int(_priority_num(j.get("artifactory_downloads")) if j else 0)
+        ver = int(_priority_num(j.get("artifactory_version_count")) if j else 0)
+        raw = _priority_use_score(plat, apps, ic, lob, dl, ver)
+        inv = inv_by.get(_priority_pep503(ident.get("Core_Python_Package_Name")) or "")
+        work = _priority_work_label(ident, inv, j)
         cohort = str((inv or {}).get("OpenTeams_Cohort") or "").strip()
-        bucket, src, why = PRI.assign_lane(
-            ident, PRI.pep503(ident.get("Core_Python_Package_Name")), j, by_url, by_name
+        bucket, src, why = _priority_assign_lane(
+            ident, _priority_pep503(ident.get("Core_Python_Package_Name")), j, by_url, by_name
         )
         records.append(
             {
@@ -124,16 +105,16 @@ def _run_priority_reference(
             }
         )
 
-    scores = PRI.percentile_1_100([r["raw"] for r in records])
+    scores = _priority_percentile_1_100([r["raw"] for r in records])
     for r, s in zip(records, scores):
         r["score100"] = s
 
     remainder = [r for r in records if r["bucket"] is None]
     for r in remainder:
-        if r["work"] == PRI.WORK_CREATE:
+        if r["work"] == _WORK_CREATE:
             tier, src = "P8", "work-create-recipe"
             why = "leftover Create recipe: JFROG consumed, not on conda-forge"
-        elif r["work"] == PRI.WORK_ISSUE_CF:
+        elif r["work"] == _WORK_ISSUE_CF:
             if r.get("cohort") == "CONDA_ONLY":
                 tier, src = "P10", "work-file-issue-conda-only"
                 why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA)"
@@ -149,8 +130,8 @@ def _run_priority_reference(
 
     def sort_key(r: dict):
         return (
-            PRI.PRI_N[r["bucket"]],
-            PRI.WORK_RANK.get(r["work"], 9),
+            _PRI_N[r["bucket"]],
+            _WORK_RANK.get(r["work"], 9),
             -r["score100"],
             -r["raw"],
             -r["dl"],
