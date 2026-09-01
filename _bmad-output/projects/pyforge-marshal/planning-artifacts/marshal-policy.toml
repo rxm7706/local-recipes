@@ -39,6 +39,11 @@
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
+# harness_preference (Story 22.8, FR-193 CAP-8): cursor first on this machine
+# while Claude Code is spend-limited (2026-08-31). Overrides repo-defaults
+# layer; claude remains fallback once quota resets.
+harness_preference = ["cursor", "claude", "copilot", "gemini", "devin"]
+
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
