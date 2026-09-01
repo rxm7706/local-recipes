@@ -52,7 +52,7 @@ development_status:
   20-4-the-cis-two-spine-specs-exist: done
   20-5-port-the-remaining-nineteen-vizro-pages: done
   21-1-relocate-atlas-data-defaults-and-add-pyforge-atlas-bootstrap: done
-  21-10-kedro-viz-ci-path-sync-optional-cap-6: backlog
+  21-10-kedro-viz-ci-path-sync-optional-cap-6: done
   21-2-remove-cf_atlas-db-seeds-from-production-datasets: done
   21-3-tier-0-harden-and-live-catalog-contract: done
   21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss: done
