@@ -1,9 +1,10 @@
-"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8; Story 23.3; Story 23.4).
+"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8; Story 23.3; Story 23.4; Story 23.5).
 
 PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe``
 (workbook-free metrics universe), ``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority``
 (Story 23.3 priority hierarchy), ``build_inventory_verified_packages`` +
-``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue).
+``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
+``build_identity_complete_export`` (Story 23.5 complete export join).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -13,6 +14,7 @@ from kedro.pipeline import Pipeline, node
 
 from .nodes import (
     assign_inventory_priority,
+    build_identity_complete_export,
     build_inventory_aoss_free_queue,
     build_inventory_universe,
     build_inventory_verified_packages,
@@ -94,6 +96,22 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="inventory_aoss_free_queue",
                 name="build_inventory_aoss_free_queue",
+            ),
+            node(
+                func=build_identity_complete_export,
+                inputs=[
+                    "identity_packages_primary",
+                    "inventory_priority_assignments",
+                    "enterprise_jfrog_consumption",
+                    "enterprise_conda_maintainers",
+                    "inventory_verified_packages",
+                    "pypi_cross_channel_flags",
+                    "pypi_tier3_channel_flags",
+                    "inventory_universe",
+                    "parameters",
+                ],
+                outputs="identity_complete_export",
+                name="build_identity_complete_export",
             ),
         ]
     )

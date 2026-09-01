@@ -279,6 +279,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "build_inventory_universe": 300,  # Story 23.8 -- 9-way in-memory union, no network
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
     "build_inventory_aoss_free_queue": 120,  # Story 23.4 -- set-difference queue
+    "build_identity_complete_export": 300,  # Story 23.5 -- four-way complete export join
     # -- seed_gaps (read-only suggesters) ---------------------------------- #
     "report_lts_registry_gap": 120,
     "report_cwe_seed_gap": 120,

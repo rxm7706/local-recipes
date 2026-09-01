@@ -23,6 +23,11 @@ to Kedro-native Parquet over ``identity_packages_primary`` and enterprise inputs
 ``write_aoss_free_queue`` universe-subtraction semantics over ``inventory_universe`` and
 Tier-0 verification Parquet.
 
+``build_identity_complete_export`` (Story 23.5) — pure join over
+``identity_packages_primary``, ``inventory_priority_assignments``, enterprise telemetry,
+``inventory_verified_packages``, and cross-channel BOOL sources into the canonical
+63-column ``identity_complete_export.parquet``.
+
 PURE nodes: pandas + stdlib only; no inline IO; ``dagster``/``kedro_mcp`` never imported
 (AD-1). Reuses the ported purl primitives from the ``universal_sbom`` nodes.
 """
@@ -1129,3 +1134,289 @@ def build_inventory_aoss_free_queue(
     if not rows:
         return pd.DataFrame(columns=list(_INVENTORY_AOSS_FREE_QUEUE_COLUMNS))
     return pd.DataFrame(rows, columns=list(_INVENTORY_AOSS_FREE_QUEUE_COLUMNS))
+
+
+# ---------------------------------------------------------------------------
+# Story 23.5 — identity_complete_export (four-way join over materialized Parquet)
+# ---------------------------------------------------------------------------
+
+_IDENTITY_COMPLETE_EXPORT_COLUMNS: tuple[str, ...] = (
+    "P",
+    "Rank",
+    "Score",
+    "Package",
+    "Work",
+    "Platforms",
+    "Apps",
+    "Downloads",
+    "Versions",
+    "Vuln",
+    "Core_Python_Package_Name",
+    "OpenTeams_Title",
+    "identity_source",
+    "associator_key",
+    "associator_status",
+    "primary_purl",
+    "primary_type",
+    "alternative_purls",
+    "cpes",
+    "conda_purl",
+    "source_repository_url",
+    "OpenTeams_Issue_URL",
+    "Conda-Forge_FeedStock_URL",
+    "Conda-Forge_Metadata_URL",
+    "Staged_Recipes_PR_URL",
+    "Local_Recipes_URL",
+    "Local_Build_Status",
+    "Verification_Timestamp_UTC",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "JFROG_risk_level",
+    "JFROG_latest_vuln_count",
+    "internal_component_count",
+    "internal_lob_count",
+    "platform_env_count",
+    "internal_app_count",
+    "artifactory_downloads",
+    "artifactory_version_count",
+    "JFROG_vuln_status",
+    "OpenTeams_Cohort",
+    "OpenTeams_Batch",
+    "OpenTeams_Coverage",
+    "Repository_Source",
+    "Role",
+    "PyPI_Verified",
+    "CondaForge_Verified",
+    "Packaging_Candidate_Status",
+    "in_basilisk",
+    "in_aoss_free",
+    "in_aoss_premium",
+    "in_anaconda_main",
+    "in_anaconda_dist",
+    "in_selfexplainml",
+    "in_bioconda",
+    "in_pytorch",
+    "in_nvidia",
+    "in_robostack",
+    "in_homebrew",
+    "in_nixpkgs",
+    "in_spack",
+    "in_debian",
+    "in_fedora",
+)
+
+_CROSS_CHANNEL_TAB_COLUMNS: tuple[str, ...] = (
+    "in_basilisk",
+    "in_aoss_free",
+    "in_aoss_premium",
+    "in_anaconda_main",
+    "in_anaconda_dist",
+)
+
+_CROSS_CHANNEL_REPOS_COLUMNS: tuple[str, ...] = (
+    "in_selfexplainml",
+    "in_bioconda",
+    "in_pytorch",
+    "in_nvidia",
+    "in_robostack",
+)
+
+_TIER3_CHANNEL_COLUMNS: tuple[str, ...] = (
+    "in_homebrew",
+    "in_nixpkgs",
+    "in_spack",
+    "in_debian",
+    "in_fedora",
+)
+
+_IDENTITY_CORE_COLUMNS: tuple[str, ...] = (
+    "Core_Python_Package_Name",
+    "OpenTeams_Title",
+    "identity_source",
+    "associator_key",
+    "associator_status",
+    "primary_purl",
+    "primary_type",
+    "alternative_purls",
+    "cpes",
+    "conda_purl",
+    "source_repository_url",
+    "OpenTeams_Issue_URL",
+    "Conda-Forge_FeedStock_URL",
+    "Conda-Forge_Metadata_URL",
+    "Staged_Recipes_PR_URL",
+    "Local_Recipes_URL",
+    "Local_Build_Status",
+)
+
+
+def _export_timestamp(parameters: dict[str, Any] | None) -> str:
+    params = parameters or {}
+    override = params.get("identity_complete_export", {}).get("verification_timestamp_utc")
+    if override is not None:
+        return str(override)
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
+def _export_blank(value: Any) -> Any:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return pd.NA
+    if isinstance(value, str) and not value.strip():
+        return pd.NA
+    return value
+
+
+def _export_lookup_by_key(
+    df: pd.DataFrame | None, key_col: str, *, normalizer=_priority_pep503
+) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    if df is None or getattr(df, "empty", True) or key_col not in getattr(df, "columns", []):
+        return out
+    for row in df.to_dict(orient="records"):
+        raw = row.get(key_col)
+        key = normalizer(raw) if normalizer else str(raw or "")
+        if key:
+            out[key] = row
+    return out
+
+
+def _export_bool_flag(value: Any) -> bool:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    s = str(value).strip().lower()
+    return s in {"true", "1", "yes", "y"}
+
+
+def _export_conda_forge_verified(ident: dict[str, Any], verified: dict[str, Any] | None) -> bool:
+    cf = str((verified or {}).get("CondaForge_Verified") or "").strip().lower()
+    if cf == "yes":
+        return True
+    return _on_conda_forge(ident)
+
+
+def _export_openteams_cohort(
+    ident: dict[str, Any],
+    *,
+    in_jfrog: bool,
+    verified: dict[str, Any] | None,
+) -> str:
+    on_cf = _export_conda_forge_verified(ident, verified)
+    if in_jfrog and not on_cf:
+        return "JFROG_NEW"
+    if in_jfrog and on_cf:
+        return "JFROG_ON_CF"
+    return ""
+
+
+def _export_openteams_coverage(ident: dict[str, Any]) -> str:
+    return "Have_Issue" if _priority_filled(ident.get("OpenTeams_Issue_URL")) else ""
+
+
+def build_identity_complete_export(
+    identity_packages_primary: pd.DataFrame,
+    inventory_priority_assignments: pd.DataFrame,
+    enterprise_jfrog_consumption: pd.DataFrame,
+    enterprise_conda_maintainers: pd.DataFrame,
+    inventory_verified_packages: pd.DataFrame,
+    pypi_cross_channel_flags: pd.DataFrame,
+    pypi_tier3_channel_flags: pd.DataFrame,
+    inventory_universe: pd.DataFrame,
+    parameters: dict[str, Any] | None = None,
+) -> pd.DataFrame:
+    """PURE join node — one row per ``identity_packages_primary`` name with all 63
+    ``complete-export-contract.md`` §4 columns (Story 23.5). Never raises; absent
+    upstream Parquet degrades to blank/NULL columns (AD-13)."""
+    _ = enterprise_conda_maintainers  # consumed indirectly via upstream stories; kept for contract parity
+    timestamp = _export_timestamp(parameters)
+
+    if identity_packages_primary is None or getattr(identity_packages_primary, "empty", True):
+        return pd.DataFrame(columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
+    if "Core_Python_Package_Name" not in getattr(identity_packages_primary, "columns", []):
+        return pd.DataFrame(columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
+
+    priority_by = _export_lookup_by_key(inventory_priority_assignments, "core_python_package_name")
+    jfrog_by = _export_lookup_by_key(enterprise_jfrog_consumption, "core_python_package_name")
+    verified_by = _export_lookup_by_key(inventory_verified_packages, "Core_Python_Package_Name")
+    universe_by = _export_lookup_by_key(inventory_universe, "core_python_package_name")
+    cross_by = _export_lookup_by_key(pypi_cross_channel_flags, "conda_name")
+    tier3_by = _export_lookup_by_key(pypi_tier3_channel_flags, "pypi_name")
+
+    rows: list[dict[str, Any]] = []
+    for ident in identity_packages_primary.to_dict(orient="records"):
+        name = ident.get("Core_Python_Package_Name")
+        key = _priority_pep503(name)
+        is_board_only = str(ident.get("identity_source") or "") == "openteams-board"
+
+        pri = priority_by.get(key or "", {})
+        jfrog = {} if is_board_only else jfrog_by.get(key or "", {})
+        ver = {} if is_board_only else verified_by.get(key or "", {})
+        uni = universe_by.get(key or "", {})
+        cross = cross_by.get(key or "", {})
+        tier3 = tier3_by.get(key or "", {})
+
+        work = _export_blank(pri.get("Work"))
+        vuln_status = _export_blank(pri.get("vuln_status"))
+
+        in_jfrog = bool(not is_board_only and key and key in jfrog_by)
+        cohort = _export_openteams_cohort(ident, in_jfrog=in_jfrog, verified=ver or None)
+        coverage = _export_openteams_coverage(ident)
+
+        row: dict[str, Any] = {
+            "P": _export_blank(pri.get("P")),
+            "Rank": _export_blank(pri.get("Rank")),
+            "Score": _export_blank(pri.get("Score")),
+            "Package": name,
+            "Work": work,
+            "Platforms": _export_blank(jfrog.get("platform_env_count")),
+            "Apps": _export_blank(jfrog.get("internal_app_count")),
+            "Downloads": _export_blank(jfrog.get("artifactory_downloads")),
+            "Versions": _export_blank(jfrog.get("artifactory_version_count")),
+            "Vuln": vuln_status,
+            "Priority_Bucket_Description": _export_blank(pri.get("Priority_Bucket_Description")),
+            "Priority_Source": _export_blank(pri.get("Priority_Source")),
+            "Priority_Reason": _export_blank(pri.get("Priority_Reason")),
+            "JFROG_risk_level": _export_blank(pri.get("risk_level")),
+            "JFROG_latest_vuln_count": _export_blank(pri.get("jfrog_latest_vuln_count")),
+            "internal_component_count": _export_blank(jfrog.get("internal_component_count")),
+            "internal_lob_count": _export_blank(jfrog.get("internal_lob_count")),
+            "platform_env_count": _export_blank(jfrog.get("platform_env_count")),
+            "internal_app_count": _export_blank(jfrog.get("internal_app_count")),
+            "artifactory_downloads": _export_blank(jfrog.get("artifactory_downloads")),
+            "artifactory_version_count": _export_blank(jfrog.get("artifactory_version_count")),
+            "JFROG_vuln_status": vuln_status,
+            "OpenTeams_Cohort": cohort,
+            "OpenTeams_Batch": work,
+            "OpenTeams_Coverage": coverage,
+            "Repository_Source": _export_blank(ver.get("Repository_Source") if ver else pd.NA),
+            "Role": _export_blank(ver.get("Role") if ver else pd.NA),
+            "PyPI_Verified": _export_blank(ver.get("PyPI_Verified") if ver else pd.NA),
+            "CondaForge_Verified": _export_blank(ver.get("CondaForge_Verified") if ver else pd.NA),
+            "Packaging_Candidate_Status": _export_blank(
+                ver.get("Packaging_Candidate_Status") if ver else pd.NA
+            ),
+            "Verification_Timestamp_UTC": timestamp,
+        }
+
+        for col in _IDENTITY_CORE_COLUMNS:
+            row[col] = ident.get(col, pd.NA)
+
+        for col in _CROSS_CHANNEL_TAB_COLUMNS:
+            row[col] = _export_bool_flag(uni.get(col)) if uni else False
+        for col in _CROSS_CHANNEL_REPOS_COLUMNS:
+            row[col] = _export_bool_flag(cross.get(col)) if cross else False
+        for col in _TIER3_CHANNEL_COLUMNS:
+            row[col] = _export_bool_flag(tier3.get(col)) if tier3 else False
+
+        rows.append(row)
+
+    return pd.DataFrame(rows, columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
