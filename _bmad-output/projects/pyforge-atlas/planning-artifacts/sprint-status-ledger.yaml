@@ -73,7 +73,7 @@ development_status:
   23-4-deliverable-a-packaging_candidate_status: done
   23-5-identity_complete_export-parquet-canonical: done
   23-6-bsl-gist-aggregates-cap-8d: done
-  23-7-zero-deferred-e2e-gate: backlog
+  23-7-zero-deferred-e2e-gate: done
   23-8-workbook-free-metrics-universe: done
   23-9-quartet-workbook-retirement: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
