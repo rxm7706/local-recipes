@@ -2,7 +2,8 @@
 title: 'The graduated compression ladder (Story 28.6, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 'pending-operator-verify'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
@@ -88,3 +89,45 @@ dynamic (upward-only) case, and `spec-adaptive-model-tiering` forbids downgrades
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
 - 2026-08-30: ladder made compression-only — the original "may lower the model floor" clause conflicted with spec-adaptive-model-tiering's floor-raise-only constraint (found in the tiering/strategy fold-in analysis)
+- 2026-09-01: implemented CAP-8 — pure compression ladder in `core/supervise.py`, supervisor tick integration, policy `escalation_threshold`, spin sidecar `compression-ladder.json`, harness aggressiveness env mapping; status → in-review pending verification commands.
+
+## Auto Run Result
+
+### Summary
+
+Story 28.6 adds a graduated **compression-only** ladder: as per-story weighted token spend crosses
+`escalation_threshold` (default 0.8, from `[context]`), the supervisor journals
+`compression-escalation` and writes the target wire aggressiveness to
+`<home>/.marshal/wire/aggressiveness` **before** `budget-stop` or idle-ladder actions on the same
+tick. Model selection is untouched (FR-51 / Story 3.12 seams preserved).
+
+### Files changed
+
+- `src/.../core/supervise.py` — `CompressionEscalationDecision`, `evaluate_compression_ladder`,
+  `ACTION_PRECEDENCE`.
+- `src/.../core/policy.py` — `escalation_threshold` in `[context]`, `resolve_compression_escalation_threshold`.
+- `src/.../core/harness_profile.py` — `wire_env_for_aggressiveness`, `HEADROOM_TARGET_RATIO` mapping.
+- `src/.../supervisor/__main__.py` — sidecar load, `_maybe_escalate_compression`, journal + sidecar write.
+- `src/.../cli/spin.py` — writes `compression-ladder.json` at supervisor spawn when wire enabled.
+- `src/.../schemas/policy.json` — context field description updated for CAP-8.
+- `tests/unit/{test_supervise,test_policy,test_harness_profile,test_supervisor}.py` — ladder ordering,
+  threshold validation, supervisor I/O ordering test.
+
+### Verification performed
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` → **7198 passed**, 12 deselected,
+  **1 failed**: `test_skf_domain_skill::test_conda_forge_expert_not_replaced` (unrelated worktree
+  drift vs `origin/main` under `.claude/skills/conda-forge-expert` — not introduced by this story).
+  All Story 28.6 unit tests green, including supervisor ordering
+  (`test_compression_escalation_journals_before_story_budget_stop_on_same_tick`) and pure ladder
+  tests in `test_supervise.py`.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` → **118 passed**, 1 skipped.
+
+Stamp `baseline_revision` / `final_revision` from `git rev-parse HEAD` at merge and move status to
+`done`.
+
+### Residual risks
+
+- Mid-run aggressiveness sidecar is written by the supervisor; live headroom proxy hot-reload is
+  best-effort only (deferred — escalation still journaled with threshold facts).
+- Compression ladder stays off when wire layer is disabled or sidecar absent (today's behavior).

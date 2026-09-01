@@ -649,7 +649,11 @@ def test_applied_wire_scopes_the_ccr_store_inside_the_loop_home(tmp_path: Path):
     # inside the home, not merely named after it
     assert Path(wire.store_dir).is_relative_to(tmp_path)
     # the store-scoping var rides ALONGSIDE the wrapper's own declared env
-    assert dict(wire.env) == {"WRAP_MODE": "cache", "WRAP_STORE": wire.store_dir}
+    assert dict(wire.env) == {
+        "WRAP_MODE": "cache",
+        "WRAP_STORE": wire.store_dir,
+        "HEADROOM_TARGET_RATIO": "0.35",
+    }
     assert wire.aggressiveness == "low"
 
 
@@ -674,6 +678,18 @@ def test_malformed_aggressiveness_never_becomes_a_launch_value(tmp_path: Path):
         wrapper_binary_path="/opt/bin/wrapcli",
     )
     assert wire.aggressiveness is None
+
+
+def test_wire_aggressiveness_maps_to_launch_env(tmp_path: Path):
+    wire = resolve_wire_wrap(
+        _wrapped_profile(env={"WRAP_MODE": "cache"}),
+        wire_layer={"enabled": True, "aggressiveness": "high"},
+        home=tmp_path,
+        wrapper_binary_path="/opt/bin/wrapcli",
+    )
+    assert wire.applied is True
+    assert wire.env["HEADROOM_TARGET_RATIO"] == "0.85"
+    assert wire.env["WRAP_MODE"] == "cache"
 
 
 def test_wire_journal_payload_is_a_fresh_plain_json_safe_dict(tmp_path: Path):

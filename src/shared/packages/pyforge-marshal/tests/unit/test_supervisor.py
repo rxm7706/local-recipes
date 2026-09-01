@@ -93,6 +93,9 @@ class FakeFs:
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.written_texts[path] = content
 
+    def ensure_dir(self, path: Path) -> None:
+        pass
+
 
 class FakeProcess:
     """``is_alive`` reports ``True`` for the first ``alive_for`` calls, then
@@ -564,11 +567,12 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     # regression that read some other path entirely -- a dropped `runs/`
     # segment, `run_dir` itself -- still received this fake's journal text
     # and passed every assertion below).
-    _journal_path = (
-        supervisor_main._run_dir(_HOME, "acme", "acme-run-1")
-        / supervisor_main._JOURNAL_FILENAME
-    )
-    assert fs.read_text_calls == [_journal_path]
+    _run_dir_path = supervisor_main._run_dir(_HOME, "acme", "acme-run-1")
+    _journal_path = _run_dir_path / supervisor_main._JOURNAL_FILENAME
+    _compression_sidecar = _run_dir_path / supervisor_main._COMPRESSION_LADDER_SIDECAR
+    # Journal first, then Story 28.6's optional compression-ladder sidecar
+    # (absent -> None, ladder stays off).
+    assert fs.read_text_calls == [_journal_path, _compression_sidecar]
     # Every append lands in that same journal -- the WRITE half of the same
     # pin (review finding: every assertion here unpacked `_, line, _`, so
     # `_append` could have written to `observations.jsonl`, to `log_path`,
@@ -778,10 +782,12 @@ def test_attaches_when_the_only_run_launch_entry_is_sidecar_referenced():
         "supervisor-detach",
     ]
     # The blob is read from the run directory, exactly once, alongside the
-    # journal -- never re-read, and never from anywhere else.
+    # journal -- never re-read, and never from anywhere else. Story 28.6
+    # adds a third read for the optional compression-ladder sidecar.
     assert fs.read_text_calls == [
         run_dir / supervisor_main._JOURNAL_FILENAME,
         run_dir / prepared.sidecar_relative_path,
+        run_dir / supervisor_main._COMPRESSION_LADDER_SIDECAR,
     ]
 
 
@@ -2365,6 +2371,69 @@ def test_token_ceiling_breach_on_a_fresh_sample():
     # The state.json staleness query itself was made (path-aware, separate
     # from the idle ladder's own harness.log query).
     assert observer.state_json_mtime_calls
+
+
+def test_compression_escalation_journals_before_story_budget_stop_on_same_tick():
+    """Story 28.6 (CAP-8): ``compression-escalation`` strictly precedes
+    ``budget-stop`` when both fire on the same per-story token tick."""
+    run_dir = _run_dir()
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1") + "\n",
+        blobs={
+            run_dir
+            / supervisor_main._COMPRESSION_LADDER_SIDECAR: json.dumps(
+                {
+                    "escalation_threshold": 0.8,
+                    "wire": {"enabled": True, "aggressiveness": "low"},
+                },
+                sort_keys=True,
+            )
+            + "\n",
+        },
+    )
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=100.0,
+        run_weighted_tokens=100.0,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert "compression-escalation" in kinds
+    assert "budget-stop" in kinds
+    assert kinds.index("compression-escalation") < kinds.index("budget-stop")
+    comp_entry = next(e for e in entries if e["kind"] == "compression-escalation")
+    assert comp_entry["payload"]["threshold"] == 0.8
+    assert comp_entry["payload"]["declared_aggressiveness"] == "low"
+    assert comp_entry["payload"]["target_aggressiveness"] == "high"
+    assert comp_entry["payload"]["observed"] == 100.0
+    assert comp_entry["payload"]["limit"] == 100.0
+    aggressiveness_path = _HOME / supervisor_main._COMPRESSION_AGGRESSIVENESS_RELPATH
+    assert fs.written_texts[aggressiveness_path].strip() == "high"
 
 
 def test_stale_usage_sample_skips_both_token_ceilings_but_not_wall_clock():

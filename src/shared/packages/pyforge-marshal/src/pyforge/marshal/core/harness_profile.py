@@ -668,6 +668,30 @@ def translate_model(
     )
 
 
+# Story 28.6 (CAP-8): the ONE mapping from declared wire-layer
+# ``aggressiveness`` to headroom-shaped child env. ``resolve_wire_wrap``
+# merges these into the wrapper env so ``aggressiveness`` is not
+# declaration-only (DW-FU-28-2-5). Values are marshal-owned conventions
+# over headroom's ``HEADROOM_TARGET_RATIO`` knob -- cache mode stays pinned
+# separately (NFR-14); aggressiveness adjusts compression intensity only.
+_WIRE_AGGRESSIVENESS_ENV: Mapping[str, Mapping[str, str]] = {
+    "low": {"HEADROOM_TARGET_RATIO": "0.35"},
+    "medium": {"HEADROOM_TARGET_RATIO": "0.55"},
+    "high": {"HEADROOM_TARGET_RATIO": "0.85"},
+}
+
+
+def wire_env_for_aggressiveness(
+    base_env: Mapping[str, str], aggressiveness: str | None
+) -> dict[str, str]:
+    """Merge ``base_env`` with the rung-specific env ``aggressiveness`` names,
+    when recognized. Unknown/``None`` returns ``dict(base_env)`` unchanged."""
+    merged = dict(base_env)
+    if aggressiveness in _WIRE_AGGRESSIVENESS_ENV:
+        merged.update(_WIRE_AGGRESSIVENESS_ENV[aggressiveness])
+    return merged
+
+
 def resolve_wire_wrap(
     profile: HarnessProfile,
     *,
@@ -745,7 +769,7 @@ def resolve_wire_wrap(
             aggressiveness=aggressiveness,
         )
 
-    env = dict(wrapper.env)
+    env = wire_env_for_aggressiveness(dict(wrapper.env), aggressiveness)
     store_dir: str | None = None
     if wrapper.store_env:
         store_dir = str(Path(home) / wrapper.store_relpath)

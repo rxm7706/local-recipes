@@ -72,7 +72,7 @@ code on either side.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -542,3 +542,116 @@ def evaluate_retry_escalation(
         story.attempt >= max_dev_attempts or story.review_cycle >= max_review_cycles
         for story in deferred
     )
+
+
+# =============================================================================
+# Story 28.6: graduated compression ladder (SPEC-marshal-token-economy CAP-8)
+# -- a FIFTH pure decision, unrelated to idle/budget/escalation/retry above.
+# Classifies weighted token spend against a story/run ceiling and names the
+# wire-layer aggressiveness rung the supervisor should apply BEFORE any
+# terminal budget-stop or idle-ladder action on the same tick. Compression-
+# only: this function never names or changes a model tier (FR-51 / Story 3.12
+# own model movement exclusively).
+# =============================================================================
+
+
+_CONTEXT_AGGRESSIVENESS_ORDER: tuple[str, ...] = ("low", "medium", "high")
+
+
+@dataclass(frozen=True)
+class CompressionEscalationDecision:
+    """One compression-ladder evaluation (Story 28.6). ``declared`` is the
+    policy-composed baseline; ``target`` is the escalated rung the supervisor
+    should apply for this spend reading. ``observed``/``limit``/``threshold``
+    are the threshold facts journaled alongside the decision."""
+
+    observed: float
+    limit: float
+    threshold: float
+    declared: str
+    target: str
+
+    @property
+    def escalated(self) -> bool:
+        return _aggressiveness_index(self.target) > _aggressiveness_index(self.declared)
+
+
+def _aggressiveness_index(aggressiveness: str) -> int:
+    try:
+        return _CONTEXT_AGGRESSIVENESS_ORDER.index(aggressiveness)
+    except ValueError:
+        return _CONTEXT_AGGRESSIVENESS_ORDER.index("medium")
+
+
+def evaluate_compression_ladder(
+    observed: float,
+    limit: float,
+    *,
+    threshold: float,
+    declared_aggressiveness: str = "medium",
+) -> CompressionEscalationDecision | None:
+    """Pure: when ``observed/limit`` crosses ``threshold``, return the
+    compression aggressiveness the supervisor should apply. ``None`` when
+    spend is below the threshold (no escalation). Never touches model
+    selection -- wire-layer aggressiveness only.
+
+    Escalation is graduated across ``[threshold, 1)``: the first crossing
+    bumps one rung above ``declared_aggressiveness`` (capped at ``high``);
+    deeper pressure within the approaching zone continues stepping up until
+    ``high`` is reached BEFORE ``evaluate_ceiling`` can return ``BREACHED``
+    and the budget-stop ladder fires."""
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+        raise TypeError(f"threshold must be a number, got {threshold!r}")
+    if not (threshold > 0) or threshold > 1.0 or not math.isfinite(threshold):
+        raise ValueError(f"threshold must be in (0, 1], got {threshold!r}")
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        raise TypeError(f"limit must be a number, got {limit!r}")
+    if not (limit > 0) or not math.isfinite(limit):
+        raise ValueError(f"limit must be positive and finite, got {limit!r}")
+
+    ratio = observed / limit
+    if ratio < threshold:
+        return None
+
+    declared = (
+        declared_aggressiveness
+        if declared_aggressiveness in _CONTEXT_AGGRESSIVENESS_ORDER
+        else "medium"
+    )
+    declared_idx = _aggressiveness_index(declared)
+    max_bump = len(_CONTEXT_AGGRESSIVENESS_ORDER) - 1 - declared_idx
+    if max_bump <= 0:
+        return None
+
+    if ratio >= 1.0:
+        target_idx = len(_CONTEXT_AGGRESSIVENESS_ORDER) - 1
+    else:
+        span = 1.0 - threshold
+        progress = (ratio - threshold) / span if span > 0 else 1.0
+        bump = min(int(progress * max_bump) + 1, max_bump)
+        target_idx = declared_idx + bump
+
+    target = _CONTEXT_AGGRESSIVENESS_ORDER[target_idx]
+    if _aggressiveness_index(target) <= declared_idx:
+        return None
+    return CompressionEscalationDecision(
+        observed=observed,
+        limit=limit,
+        threshold=threshold,
+        declared=declared,
+        target=target,
+    )
+
+
+# Story 28.6 (CAP-8 AC): compression escalation strictly precedes terminal
+# budget-stop and idle-ladder actions. Lower rank = earlier on a tick.
+# Tests assert this ordering; the supervisor's tick loop evaluates compression
+# before ``_act_on_budget_transition`` and before the idle-ladder block.
+ACTION_PRECEDENCE: Mapping[str, int] = {
+    "compression-escalation": 10,
+    "budget-warn": 20,
+    "idle-nudge": 30,
+    "idle-stop-and-retry": 40,
+    "budget-stop": 50,
+    "idle-defer": 60,
+}

@@ -1207,6 +1207,30 @@ def _spawn_supervisor_sidecar(
         "max_wall_clock_minutes_per_run"
     ].value
 
+    # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
+    # threshold + wire layer from the same composition site as dispatch.
+    context_layers = policy.resolve_context_layers(effective_policy)
+    wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
+    if bool(wire_layer["enabled"]):
+        compression_sidecar = {
+            "escalation_threshold": policy.resolve_compression_escalation_threshold(
+                effective_policy
+            ),
+            "wire": {
+                "enabled": True,
+                "aggressiveness": wire_layer["aggressiveness"],
+            },
+        }
+        try:
+            LocalFs().write_text_atomic(
+                run_dir / "compression-ladder.json",
+                json.dumps(compression_sidecar, sort_keys=True) + "\n",
+            )
+        except FsError:
+            # Supplementary tuning surface -- never abort an otherwise-
+            # successful harness launch (same posture as MRS-SPIN-008).
+            pass
+
     try:
         supervisor_pid = process.spawn_detached(
             [

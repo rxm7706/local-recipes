@@ -352,6 +352,16 @@ CONTEXT_LAYER_NAMES: tuple[str, ...] = (
 # aggressiveness of its own.
 _CONTEXT_AGGRESSIVENESS: frozenset[str] = frozenset({"low", "medium", "high"})
 _CONTEXT_DEFAULT_AGGRESSIVENESS = "medium"
+# Story 28.6 (SPEC-marshal-token-economy CAP-8): the token-spend ratio at
+# which the graduated compression ladder may begin raising wire-layer
+# aggressiveness. Lives in the ``[context]`` block as ``escalation_threshold``
+# (a plain float in ``(0, 1]``, not a layer entry). Defaults to the same
+# 0.8 ratio ``evaluate_ceiling`` uses for ``APPROACHING`` -- compression
+# escalation and budget-warn therefore arm on the same spend signal, but
+# compression actions still strictly PRECEDE terminal budget-stop / idle
+# ladder actions on a tick (see ``core.supervise.ACTION_PRECEDENCE``).
+CONTEXT_ESCALATION_THRESHOLD_KEY = "escalation_threshold"
+_DEFAULT_COMPRESSION_ESCALATION_THRESHOLD = 0.8
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
 # the default because it matches this repo's own observed real practice
 # (`git log --merges` shows real, non-squash merge commits throughout).
@@ -819,10 +829,11 @@ def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
     return base
 
 
-def _valid_context_block(value: object) -> dict[str, dict[str, object]] | None:
+def _valid_context_block(value: object) -> dict[str, object] | None:
     """``context`` (Story 28.1, SPEC-marshal-token-economy CAP-1):
     ``Mapping[str, {enabled: bool, aggressiveness?: str}]`` keyed by ONE of
-    ``CONTEXT_LAYER_NAMES``'s closed 5-layer vocabulary. Mirrors
+    ``CONTEXT_LAYER_NAMES``'s closed 5-layer vocabulary, PLUS Story 28.6's
+    optional ``escalation_threshold`` scalar (CAP-8). Mirrors
     ``_valid_mcp_servers``'s/``_valid_epic_surfaces``'s shape-checking
     pattern exactly: reject a non-mapping, reject an unknown layer-name key
     (an "unknown layer name" is a malformed block per this story's own AC,
@@ -841,8 +852,16 @@ def _valid_context_block(value: object) -> dict[str, dict[str, object]] | None:
     graduated ladder escalates it, this story only shapes it."""
     if not isinstance(value, Mapping):
         return None
-    result: dict[str, dict[str, object]] = {}
+    result: dict[str, object] = {}
     for layer_name, settings in value.items():
+        if layer_name == CONTEXT_ESCALATION_THRESHOLD_KEY:
+            if isinstance(settings, bool) or not isinstance(settings, (int, float)):
+                return None
+            threshold = float(settings)
+            if not (threshold > 0) or threshold > 1.0 or not math.isfinite(threshold):
+                return None
+            result[CONTEXT_ESCALATION_THRESHOLD_KEY] = threshold
+            continue
         if layer_name not in CONTEXT_LAYER_NAMES:
             return None
         if isinstance(settings, str) or not isinstance(settings, Mapping):
@@ -1655,6 +1674,8 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
     resolved: dict[str, dict[str, object]] = {}
     for layer in CONTEXT_LAYER_NAMES:
         layer_declared = declared.get(layer, {})
+        if not isinstance(layer_declared, Mapping):
+            layer_declared = {}
         resolved[layer] = {
             "enabled": bool(layer_declared.get("enabled", False)),
             "aggressiveness": layer_declared.get(
@@ -1662,6 +1683,22 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
             ),
         }
     return resolved
+
+
+def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> float:
+    """Story 28.6 (CAP-8): the spend ratio at which compression escalation
+    may begin, read from ``effective.context.value``'s optional
+    ``escalation_threshold`` key. Returns
+    ``_DEFAULT_COMPRESSION_ESCALATION_THRESHOLD`` when absent or malformed --
+    never raises."""
+    declared = effective.context.value
+    raw = declared.get(CONTEXT_ESCALATION_THRESHOLD_KEY)
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return _DEFAULT_COMPRESSION_ESCALATION_THRESHOLD
+    threshold = float(raw)
+    if not (threshold > 0) or threshold > 1.0 or not math.isfinite(threshold):
+        return _DEFAULT_COMPRESSION_ESCALATION_THRESHOLD
+    return threshold
 
 
 def compose(
