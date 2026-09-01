@@ -369,7 +369,7 @@ from ..core.supervise import (
 )
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
-from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot
+from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot, UsageSnapshot
 from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.vcs import VcsPort
@@ -417,6 +417,59 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+
+
+def _layer_savings_payload(layer_savings: object) -> dict[str, object]:
+    from ..ports.harness import LayerSavings
+
+    if not isinstance(layer_savings, LayerSavings):
+        return {}
+    savings_dict: dict[str, object] = {}
+    if layer_savings.output_compression_saved is not None:
+        savings_dict["output_compression_saved"] = layer_savings.output_compression_saved
+    if layer_savings.wire_compression_saved is not None:
+        savings_dict["wire_compression_saved"] = layer_savings.wire_compression_saved
+    if layer_savings.graph_hits_vs_file_reads is not None:
+        hits, reads = layer_savings.graph_hits_vs_file_reads
+        savings_dict["graph_hits"] = hits
+        savings_dict["file_reads"] = reads
+    if layer_savings.derived_context_cache_hits is not None:
+        savings_dict["derived_context_cache_hits"] = layer_savings.derived_context_cache_hits
+    if layer_savings.planning_graph_tokens_saved is not None:
+        savings_dict["planning_graph_tokens_saved"] = (
+            layer_savings.planning_graph_tokens_saved
+        )
+    return savings_dict
+
+
+def _budget_usage_payload(
+    *,
+    story_key: str,
+    cost_estimate: int | None,
+    usage: UsageSnapshot | None = None,
+    cost_estimate_usd: float | None = None,
+    layer_savings_usd: dict[str, float] | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "story_key": story_key,
+        "cost_estimate": cost_estimate if cost_estimate else None,
+    }
+    if usage is not None and usage.layer_savings is not None:
+        savings_dict = _layer_savings_payload(usage.layer_savings)
+        if savings_dict:
+            payload["layer_savings"] = savings_dict
+    usd = cost_estimate_usd
+    savings_usd = layer_savings_usd
+    if usage is not None:
+        if usd is None:
+            usd = usage.cost_estimate_usd
+        if savings_usd is None:
+            savings_usd = usage.layer_savings_usd
+    if usd is not None:
+        payload["cost_estimate_usd"] = usd
+    if savings_usd:
+        payload["layer_savings_usd"] = dict(savings_usd)
+    return payload
 
 # Story 28.6 (CAP-8): compression escalation journals before terminal
 # budget-stop / idle-ladder actions on the same tick.
@@ -996,6 +1049,8 @@ def run_supervisor(
         # OUTGOING story at the moment it transitions away (see the
         # per-tick block below); never itself an enforcement input.
         last_story_weighted_tokens: int | None = None
+        last_story_cost_estimate_usd: float | None = None
+        last_story_layer_savings_usd: dict[str, float] | None = None
         # One CeilingStatus per (scope, metric) pair -- the ONLY way this
         # loop can detect a rising edge (`CeilingStatus` carries no
         # intrinsic ordering, mirroring `LadderRung`'s own convention
@@ -1695,33 +1750,13 @@ def run_supervisor(
                             # meaning no valid sample was ever attributed to
                             # this story, collapses to the same null).
                             # Story 28.4: Include per-layer savings alongside cost estimate
-                            payload = {
-                                "story_key": _feed_key_form(current_story_key),
-                                "cost_estimate": (
-                                    last_story_weighted_tokens
-                                    if last_story_weighted_tokens
-                                    else None
-                                ),
-                            }
-                            # Add savings data when available (CAP-7)
-                            if usage is not None and usage.layer_savings is not None:
-                                savings = usage.layer_savings
-                                savings_dict = {}
-                                if savings.output_compression_saved is not None:
-                                    savings_dict["output_compression_saved"] = savings.output_compression_saved
-                                if savings.wire_compression_saved is not None:
-                                    savings_dict["wire_compression_saved"] = savings.wire_compression_saved
-                                if savings.graph_hits_vs_file_reads is not None:
-                                    hits, reads = savings.graph_hits_vs_file_reads
-                                    savings_dict["graph_hits"] = hits
-                                    savings_dict["file_reads"] = reads
-                                if savings.derived_context_cache_hits is not None:
-                                    savings_dict["derived_context_cache_hits"] = savings.derived_context_cache_hits
-                                if savings.planning_graph_tokens_saved is not None:
-                                    savings_dict["planning_graph_tokens_saved"] = savings.planning_graph_tokens_saved
-                                # Only add savings field if we have data
-                                if savings_dict:
-                                    payload["layer_savings"] = savings_dict
+                            payload = _budget_usage_payload(
+                                story_key=_feed_key_form(current_story_key),
+                                cost_estimate=last_story_weighted_tokens,
+                                usage=usage,
+                                cost_estimate_usd=last_story_cost_estimate_usd,
+                                layer_savings_usd=last_story_layer_savings_usd,
+                            )
                             _append(_BUDGET_USAGE_KIND, payload)
                         current_story_key = new_story_key
                         story_started_monotonic = (
@@ -1734,8 +1769,12 @@ def run_supervisor(
                         story_wall_clock_status = CeilingStatus.NONE
                         story_tokens_status = CeilingStatus.NONE
                         last_story_weighted_tokens = None
+                        last_story_cost_estimate_usd = None
+                        last_story_layer_savings_usd = None
                     if usage is not None and new_story_key is not None:
                         last_story_weighted_tokens = usage.story_weighted_tokens
+                        last_story_cost_estimate_usd = usage.cost_estimate_usd
+                        last_story_layer_savings_usd = usage.layer_savings_usd
 
                     if current_story_key is not None and story_started_monotonic is not None:
                         story_elapsed_minutes = (
@@ -2428,34 +2467,16 @@ def run_supervisor(
         # breach, a failed retry), mirroring the transition-flush's own
         # payload shape exactly.
         if current_story_key is not None:
-            # Story 28.4: Capture final savings data along with cost estimate
-            payload = {
-                "story_key": _feed_key_form(current_story_key),
-                "cost_estimate": (
-                    last_story_weighted_tokens if last_story_weighted_tokens else None
-                ),
-            }
-            # Get final usage snapshot to capture end-of-run savings (CAP-7)
+            final_usage: UsageSnapshot | None = None
             if harness_run_id is not None:
                 final_usage = harness.usage_snapshot(home, harness_run_id)
-                if final_usage is not None and final_usage.layer_savings is not None:
-                    savings = final_usage.layer_savings
-                    savings_dict = {}
-                    if savings.output_compression_saved is not None:
-                        savings_dict["output_compression_saved"] = savings.output_compression_saved
-                    if savings.wire_compression_saved is not None:
-                        savings_dict["wire_compression_saved"] = savings.wire_compression_saved
-                    if savings.graph_hits_vs_file_reads is not None:
-                        hits, reads = savings.graph_hits_vs_file_reads
-                        savings_dict["graph_hits"] = hits
-                        savings_dict["file_reads"] = reads
-                    if savings.derived_context_cache_hits is not None:
-                        savings_dict["derived_context_cache_hits"] = savings.derived_context_cache_hits
-                    if savings.planning_graph_tokens_saved is not None:
-                        savings_dict["planning_graph_tokens_saved"] = savings.planning_graph_tokens_saved
-                    # Only add savings field if we have data
-                    if savings_dict:
-                        payload["layer_savings"] = savings_dict
+            payload = _budget_usage_payload(
+                story_key=_feed_key_form(current_story_key),
+                cost_estimate=last_story_weighted_tokens,
+                usage=final_usage,
+                cost_estimate_usd=last_story_cost_estimate_usd,
+                layer_savings_usd=last_story_layer_savings_usd,
+            )
             _append(_BUDGET_USAGE_KIND, payload)
 
         # --- Story 3.7: escalation detection (AD-45, FR-15) -----------------

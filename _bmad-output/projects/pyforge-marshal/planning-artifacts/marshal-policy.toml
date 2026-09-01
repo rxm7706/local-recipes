@@ -279,3 +279,46 @@ review = "composer-2.5"
 
 [model_tier_map.easy]
 dev = "composer-2.5-fast"
+
+# model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
+# spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
+# never fetched live, never a gate. Must stay LAST alongside model_tier_map
+# (TOML dotted-table scoping); placed after model_tier_map tables below.
+[model_cost_catalog.providers.cursor]
+subscription_pool = "cursor-ultra"
+
+[model_cost_catalog.providers.cursor.models."composer-2.5"]
+input_per_million = 0.50
+output_per_million = 2.50
+cache_read_per_million = 0.20
+
+[model_cost_catalog.providers.cursor.models."composer-2.5-fast"]
+input_per_million = 3.00
+output_per_million = 15.00
+cache_read_per_million = 0.50
+
+[model_cost_catalog.providers.anthropic]
+subscription_pool = "claude-max"
+
+[model_cost_catalog.providers.anthropic.models."sonnet-5"]
+input_per_million = 2.00
+output_per_million = 10.00
+cache_read_per_million = 0.20
+cache_write_per_million = 2.50
+
+[model_cost_catalog.providers.openai]
+subscription_pool = "copilot-pro"
+
+[model_cost_catalog.providers.openai.models."gpt-5.6-terra"]
+input_per_million = 2.00
+output_per_million = 12.00
+cache_read_per_million = 0.20
+cache_write_per_million = 2.50
+
+[model_cost_catalog.providers.google]
+subscription_pool = "gemini-api"
+
+[model_cost_catalog.providers.google.models."gemini-3.7-flash"]
+input_per_million = 0.75
+output_per_million = 3.75
+cache_read_per_million = 0.075

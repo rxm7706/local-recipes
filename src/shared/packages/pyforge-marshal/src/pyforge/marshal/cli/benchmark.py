@@ -143,6 +143,8 @@ def collect_leg_from_harness(
         context_layers=context_layers,
         run_id=run_id,
         policy_digest=policy_digest,
+        story_cost_estimate_usd=usage.cost_estimate_usd,
+        layer_savings_usd=usage.layer_savings_usd,
     )
 
 

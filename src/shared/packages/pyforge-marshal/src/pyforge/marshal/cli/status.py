@@ -187,6 +187,13 @@ _BUDGET_USAGE_KIND = "budget-usage"
 _MRS_STATUS_002 = "MRS-STATUS-002"
 
 
+def _format_dollar_estimate(amount: float | None) -> str:
+    """Format an advisory USD estimate for status display (Story 28.10, CAP-11)."""
+    if amount is None:
+        return ""
+    return f" ~${amount:.2f} est"
+
+
 def _format_savings_summary(layer_savings: dict[str, object]) -> str:
     """Format per-layer savings into a compact summary string for status display.
     
@@ -464,6 +471,11 @@ class _RunJournalFacts:
     # Story 28.4: Add per-layer savings telemetry (CAP-7)
     layer_savings: dict[str, object] = field(default_factory=dict)
     savings_by_story: dict[str, dict[str, object]] = field(default_factory=dict)
+    # Story 28.10 (CAP-11): advisory dollar estimates when catalog declared
+    budget_consumed_usd: float | None = None
+    budget_by_story_usd: dict[str, float] = field(default_factory=dict)
+    layer_savings_usd: dict[str, float] = field(default_factory=dict)
+    savings_usd_by_story: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
 def _gather_run_journal_facts(
@@ -478,7 +490,9 @@ def _gather_run_journal_facts(
     own "journal unreadable" signal."""
     empty = _RunJournalFacts(
         launch_pid=None, launched_at=None, supervisor_pid=None, budget_consumed=None,
-        layer_savings={}, savings_by_story={}
+        layer_savings={}, savings_by_story={},
+        budget_consumed_usd=None, budget_by_story_usd={},
+        layer_savings_usd={}, savings_usd_by_story={},
     )
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
@@ -539,10 +553,14 @@ def _gather_run_journal_facts(
                 supervisor_pid_ts = entry.ts
 
     budget_consumed: int | float | None = None
-    budget_by_story: dict[str, int | float] = {}
+    budget_consumed_usd: float | None = None
     # Story 28.4: Add savings telemetry extraction (CAP-7)
     layer_savings: dict[str, object] = {}
+    layer_savings_usd: dict[str, float] = {}
     savings_by_story: dict[str, dict[str, object]] = {}
+    savings_usd_by_story: dict[str, dict[str, float]] = {}
+    budget_by_story: dict[str, int | float] = {}
+    budget_by_story_usd: dict[str, float] = {}
     usage_entries = [
         entry
         for entry in fold_result.by_kind(_BUDGET_USAGE_KIND)
@@ -554,10 +572,19 @@ def _gather_run_journal_facts(
             candidate_cost, bool
         ):
             budget_consumed = candidate_cost
-        # Extract latest layer savings data
+        candidate_usd = usage_entries[-1].payload.get("cost_estimate_usd")
+        if isinstance(candidate_usd, (int, float)) and not isinstance(candidate_usd, bool):
+            budget_consumed_usd = float(candidate_usd)
         latest_entry_savings = usage_entries[-1].payload.get("layer_savings")
         if isinstance(latest_entry_savings, dict):
             layer_savings = latest_entry_savings.copy()
+        latest_entry_savings_usd = usage_entries[-1].payload.get("layer_savings_usd")
+        if isinstance(latest_entry_savings_usd, dict):
+            layer_savings_usd = {
+                key: float(value)
+                for key, value in latest_entry_savings_usd.items()
+                if isinstance(value, (int, float)) and not isinstance(value, bool)
+            }
     # Story 5.2: the SAME `usage_entries`, grouped by `story_key` instead of
     # collapsed to a single overall latest -- `by_kind`'s own chronological
     # order (fold's `(ts, id)` sort) means iterating in order and
@@ -572,11 +599,22 @@ def _gather_run_journal_facts(
             and not isinstance(cost, bool)
         ):
             budget_by_story[story_key] = cost
+        if isinstance(story_key, str) and story_key:
+            entry_usd = entry.payload.get("cost_estimate_usd")
+            if isinstance(entry_usd, (int, float)) and not isinstance(entry_usd, bool):
+                budget_by_story_usd[story_key] = float(entry_usd)
         # Story 28.4: Extract per-story savings data (CAP-7)
         if isinstance(story_key, str) and story_key:
             entry_savings = entry.payload.get("layer_savings")
             if isinstance(entry_savings, dict):
                 savings_by_story[story_key] = entry_savings.copy()
+            entry_savings_usd = entry.payload.get("layer_savings_usd")
+            if isinstance(entry_savings_usd, dict):
+                savings_usd_by_story[story_key] = {
+                    key: float(value)
+                    for key, value in entry_savings_usd.items()
+                    if isinstance(value, (int, float)) and not isinstance(value, bool)
+                }
 
     # Story 5.2: `core.journal.fold`'s own `FoldResult.open_intents` for
     # THIS run_id only, rendered to plain JSON-dicts here (never inside
@@ -597,6 +635,10 @@ def _gather_run_journal_facts(
         harness_run_id=harness_run_id,
         layer_savings=layer_savings,
         savings_by_story=savings_by_story,
+        budget_consumed_usd=budget_consumed_usd,
+        budget_by_story_usd=budget_by_story_usd,
+        layer_savings_usd=layer_savings_usd,
+        savings_usd_by_story=savings_usd_by_story,
     )
 
 
@@ -924,7 +966,9 @@ def _gather_home_facts(
         engine_alive=engine_alive,
         elapsed_seconds=elapsed_seconds,
         budget_consumed=journal_facts.budget_consumed,
+        budget_consumed_usd=journal_facts.budget_consumed_usd,
         layer_savings=journal_facts.layer_savings,
+        layer_savings_usd=journal_facts.layer_savings_usd,
         paused_reason=snapshot.paused_reason,
         escalated_spec_file=snapshot.escalated_spec_file,
         escalated_task_phase=snapshot.escalated_task_phase,
@@ -1905,6 +1949,8 @@ def _run_detail(
         gate_verdicts=gate_verdicts,
         budget_by_story=journal_facts.budget_by_story,
         savings_by_story=journal_facts.savings_by_story,
+        budget_by_story_usd=journal_facts.budget_by_story_usd,
+        savings_usd_by_story=journal_facts.savings_usd_by_story,
         open_intents=journal_facts.open_intents,
         # Story 25.5 (CAP-5): `None` when there is no snapshot (run state
         # unreadable) -- never fabricated as `{}`-clean.
@@ -2106,6 +2152,7 @@ def _render_text_status(
         # Story 28.4: Add savings display alongside budget consumption (CAP-7)
         savings_summary = _format_savings_summary(home.get('layer_savings', {}))
         savings_text = f" savings={savings_summary}" if savings_summary else ""
+        budget_usd_text = _format_dollar_estimate(home.get("budget_consumed_usd"))
         
         line = (
             f"  {prefix}{home['slug']} ({home['branch']}): {state_text} "
@@ -2115,7 +2162,7 @@ def _render_text_status(
             line += f"dispatch_phase={home['dispatch_phase']} "
         line += (
             f"elapsed_seconds={home['elapsed_seconds']} "
-            f"budget_consumed={home['budget_consumed']}{savings_text}"
+            f"budget_consumed={home['budget_consumed']}{budget_usd_text}{savings_text}"
         )
         if escalated:
             line += (
@@ -2256,12 +2303,13 @@ def _render_text_run_detail(
             # Story 28.4: Add per-story savings display (CAP-7)
             story_savings_summary = _format_savings_summary(story.get('layer_savings', {}))
             story_savings_text = f" savings={story_savings_summary}" if story_savings_summary else ""
+            story_budget_usd_text = _format_dollar_estimate(story.get("budget_consumed_usd"))
             
             line = (
                 f"  {story['story_key']} phase={story['phase']} "
                 f"commit_sha={story['commit_sha']} branch={story['branch']!r} "
                 f"gate_verdict={story['gate_verdict']} "
-                f"budget_consumed={story['budget_consumed']}{story_savings_text}"
+                f"budget_consumed={story['budget_consumed']}{story_budget_usd_text}{story_savings_text}"
             )
             # Story 25.5: the recovery pointer, appended only when set --
             # the fleet's standing non-destructive policy, now

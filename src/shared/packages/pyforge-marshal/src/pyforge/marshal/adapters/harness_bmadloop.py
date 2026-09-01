@@ -197,12 +197,13 @@ review cycles apart from one stuck on dev attempts. This story ALSO adds
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
 import time
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
 
@@ -215,6 +216,16 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 from ..core import policy
 from ..core.egress import to_redacted
 from ..core.harness_profile import bmadloop_adapter_for_preference
+from ..core.model_cost import (
+    TokenCounts,
+    adapter_provider,
+    catalog_declared,
+    estimate_layer_savings_usd,
+    estimate_spend_usd,
+    resolve_cache_read_ratio,
+    resolve_model_price,
+    weighted_total,
+)
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -230,6 +241,7 @@ from ..ports.harness import (
 
 LOOP_RUNNER_HOOK_SPEC = HookSpec(name="pyforge.marshal.loop_runner", owner="marshal")
 DEFAULT_LOOP_RUNNER_PLUGIN_ID = "bmad-loop"
+_MODEL_COST_CATALOG_SIDECAR = "marshal-model-cost-catalog.json"
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -576,7 +588,139 @@ def render_policy_toml(
             context_table[layer_name] = layer_table
         doc["context"] = context_table
 
+    # Story 28.10 (CAP-11): derive cache-read weight from declared catalog.
+    catalog = effective.model_cost_catalog.value
+    if catalog_declared(catalog):
+        resolved_adapter = adapter
+        if resolved_adapter is None:
+            resolved_adapter = bmadloop_adapter_for_preference(
+                effective.harness_preference.value
+            )
+        if resolved_adapter is None:
+            resolved_adapter = str(doc["adapter"]["name"])
+        provider = adapter_provider(resolved_adapter)
+        ratio = resolve_cache_read_ratio(catalog, provider=provider)
+        doc["limits"]["cache_read_weight"] = ratio
+
     return tomlkit.dumps(doc)
+
+
+def _plain_json(value: object) -> object:
+    """Recursively coerce policy mappings into JSON-serializable plain data."""
+    if isinstance(value, Mapping):
+        return {str(key): _plain_json(entry) for key, entry in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain_json(entry) for entry in value]
+    return value
+
+
+def _write_model_cost_catalog_sidecar(
+    effective: policy.EffectivePolicy, loop_home: Path
+) -> None:
+    """Persist declared catalog beside policy.toml for runtime telemetry."""
+    sidecar_path = Path(loop_home) / ".bmad-loop" / _MODEL_COST_CATALOG_SIDECAR
+    catalog = effective.model_cost_catalog.value
+    if not catalog_declared(catalog):
+        try:
+            if sidecar_path.is_file():
+                sidecar_path.unlink()
+        except OSError:
+            pass
+        return
+    try:
+        sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_bytes(
+            sidecar_path,
+            json.dumps(_plain_json(catalog), sort_keys=True).encode("utf-8"),
+        )
+    except (OSError, TypeError):
+        return
+
+
+def _load_model_cost_catalog(project: Path) -> dict[str, object] | None:
+    sidecar_path = Path(project) / ".bmad-loop" / _MODEL_COST_CATALOG_SIDECAR
+    try:
+        payload = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, TypeError):
+        return None
+    if not catalog_declared(payload):
+        return None
+    return payload
+
+
+def _read_policy_adapter_and_model(project: Path) -> tuple[str | None, str | None]:
+    policy_path = Path(project) / ".bmad-loop" / "policy.toml"
+    try:
+        doc = tomlkit.parse(policy_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        return None, None
+    adapter_table = doc.get("adapter")
+    if not isinstance(adapter_table, tomlkit.items.Table):
+        return None, None
+    adapter_name = adapter_table.get("name")
+    model_name = adapter_table.get("model")
+    dev_table = adapter_table.get("dev")
+    if isinstance(dev_table, tomlkit.items.Table):
+        dev_model = dev_table.get("model")
+        if isinstance(dev_model, str) and dev_model:
+            model_name = dev_model
+    adapter = adapter_name if isinstance(adapter_name, str) and adapter_name else None
+    model = model_name if isinstance(model_name, str) and model_name else None
+    return adapter, model
+
+
+def _token_counts_from_task(task: object) -> TokenCounts | None:
+    tokens = getattr(task, "tokens", None)
+    if tokens is None:
+        return None
+    return TokenCounts(
+        input_tokens=int(getattr(tokens, "input_tokens", 0) or 0),
+        output_tokens=int(getattr(tokens, "output_tokens", 0) or 0),
+        cache_read_tokens=int(getattr(tokens, "cache_read_tokens", 0) or 0),
+        cache_creation_tokens=int(getattr(tokens, "cache_creation_tokens", 0) or 0),
+    )
+
+
+def _usage_dollar_fields(
+    *,
+    catalog: dict[str, object],
+    adapter_name: str | None,
+    model_name: str | None,
+    story_tokens: TokenCounts | None,
+    layer_savings: LayerSavings | None,
+) -> tuple[float | None, dict[str, float] | None]:
+    provider = adapter_provider(adapter_name)
+    if provider is None or story_tokens is None:
+        return None, None
+    price = resolve_model_price(catalog, provider=provider, model=model_name)
+    if price is None:
+        return None, None
+    cost_usd = estimate_spend_usd(story_tokens, price)
+    savings_usd: dict[str, float] | None = None
+    if layer_savings is not None:
+        savings_dict: dict[str, object] = {}
+        if layer_savings.output_compression_saved is not None:
+            savings_dict["output_compression_saved"] = (
+                layer_savings.output_compression_saved
+            )
+        if layer_savings.wire_compression_saved is not None:
+            savings_dict["wire_compression_saved"] = layer_savings.wire_compression_saved
+        if layer_savings.graph_hits_vs_file_reads is not None:
+            hits, reads = layer_savings.graph_hits_vs_file_reads
+            savings_dict["graph_hits"] = hits
+            savings_dict["file_reads"] = reads
+        if layer_savings.derived_context_cache_hits is not None:
+            savings_dict["derived_context_cache_hits"] = (
+                layer_savings.derived_context_cache_hits
+            )
+        if layer_savings.planning_graph_tokens_saved is not None:
+            savings_dict["planning_graph_tokens_saved"] = (
+                layer_savings.planning_graph_tokens_saved
+            )
+        if savings_dict:
+            computed = estimate_layer_savings_usd(savings_dict, price)
+            savings_usd = computed or None
+    return cost_usd, savings_usd
 
 
 class HarnessPolicyWriteError(PyforgeError, Exception):
@@ -622,7 +766,9 @@ def write_policy_toml(
     ``render_policy_toml``.
     """
     text = render_policy_toml(effective, difficulty=difficulty, adapter=adapter)
-    return _atomic_write_policy_text(text, loop_home)
+    path = _atomic_write_policy_text(text, loop_home)
+    _write_model_cost_catalog_sidecar(effective, loop_home)
+    return path
 
 
 def _atomic_write_policy_text(text: str, loop_home: Path) -> Path:
@@ -1549,34 +1695,43 @@ class BmadLoopHarness:
         # only its initial load.
         try:
             state = load_state(run_dir)
+            catalog = _load_model_cost_catalog(project)
+            adapter_name, model_name = _read_policy_adapter_and_model(project)
             cache_read_weight = state.cache_read_weight()
+            if catalog is not None:
+                provider = adapter_provider(adapter_name)
+                cache_read_weight = resolve_cache_read_ratio(
+                    catalog,
+                    provider=provider,
+                    model=model_name,
+                    default=cache_read_weight,
+                )
+            if not math.isfinite(cache_read_weight):
+                return None
             non_terminal = [task for task in state.tasks.values() if not task.terminal]
             story_key: str | None = None
             story_weighted_tokens: int | None = None
+            story_token_counts: TokenCounts | None = None
             if len(non_terminal) == 1:
                 task = non_terminal[0]
-                # `if task.story_key` guards the pair, not just the tally
-                # (review finding). `UsageSnapshot`'s own docstring states
-                # `story_weighted_tokens` is `None` in LOCKSTEP with
-                # `story_key` -- "never a number attributed to 'no story'".
-                # `bmad_loop`'s `StoryTask.from_dict` does not reject a null
-                # or empty `story_key`, so a state.json carrying one made the
-                # sole non-terminal task set the tally while leaving the key
-                # `None`, publishing exactly the shape the docstring promises
-                # cannot occur. Both current supervisor consumers happen to
-                # re-check `usage.story_key is not None` independently, so
-                # nothing misbehaves today -- but an exposed invariant that
-                # only holds because every caller redundantly re-verifies it
-                # is a trap for the next one that reads the docstring and
-                # trusts it. Such a task's consumption still counts toward
-                # `run_weighted_tokens` below (it is summed over ALL tasks);
-                # it simply cannot be attributed to a story.
                 if task.story_key:
                     story_key = task.story_key
-                    story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
-            run_weighted_tokens = sum(
-                task.tokens.weighted_total(cache_read_weight) for task in state.tasks.values()
-            )
+                    story_token_counts = _token_counts_from_task(task)
+                    if story_token_counts is not None:
+                        story_weighted_tokens = weighted_total(
+                            story_token_counts, cache_read_weight
+                        )
+                    else:
+                        story_weighted_tokens = task.tokens.weighted_total(
+                            cache_read_weight
+                        )
+            run_weighted_tokens = 0
+            for task in state.tasks.values():
+                counts = _token_counts_from_task(task)
+                if counts is not None:
+                    run_weighted_tokens += weighted_total(counts, cache_read_weight)
+                else:
+                    run_weighted_tokens += task.tokens.weighted_total(cache_read_weight)
         # `ArithmeticError` and `RecursionError` alongside the rest (review
         # finding): neither is a `ValueError`, and both are reachable from a
         # syntactically-valid `state.json` this method promises never to
@@ -1601,13 +1756,26 @@ class BmadLoopHarness:
         # Story 28.4: Gather per-layer savings telemetry (CAP-7)
         # This collects available savings stats where layers are active
         layer_savings = self._gather_layer_savings(run_dir)
-        
+
+        cost_estimate_usd: float | None = None
+        layer_savings_usd: dict[str, float] | None = None
+        if catalog is not None:
+            cost_estimate_usd, layer_savings_usd = _usage_dollar_fields(
+                catalog=catalog,
+                adapter_name=adapter_name,
+                model_name=model_name,
+                story_tokens=story_token_counts,
+                layer_savings=layer_savings,
+            )
+
         return UsageSnapshot(
             story_key=story_key,
             story_weighted_tokens=story_weighted_tokens,
             run_weighted_tokens=run_weighted_tokens,
             sample_path=run_dir / "state.json",
             layer_savings=layer_savings,
+            cost_estimate_usd=cost_estimate_usd,
+            layer_savings_usd=layer_savings_usd,
         )
 
     def _gather_layer_savings(self, run_dir: Path) -> LayerSavings | None:

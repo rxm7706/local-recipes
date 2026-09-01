@@ -107,6 +107,9 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         # the only way to set it (the flags layer still composes uniformly
         # in `compose()` for programmatic callers).
         "scope_violation_mode",
+        # Story 28.10's `model_cost_catalog` (SPEC-marshal-token-economy
+        # CAP-11) -- mapping-typed declared price table; project layer only.
+        "model_cost_catalog",
     }
 )
 
@@ -185,6 +188,9 @@ _UNSETTABLE_KEYS = frozenset(
         # KEYS` reason (no AC asks for a `--set` surface), never the "no
         # string value could ever satisfy this validator" reason.
         "scope_violation_mode",
+        # Story 28.10's `model_cost_catalog` (CAP-11) -- nested mapping of
+        # provider/model prices, same exclusion reason as `context`.
+        "model_cost_catalog",
     }
 )
 
@@ -229,6 +235,9 @@ _FIELD_ORDER: tuple[str, ...] = (
     # only, no `--set` surface, same reason as `max_parallel`/the 5
     # bmad-loop knobs below (a scalar with no AC-declared CLI override).
     "scope_violation_mode",
+    # Story 28.10's `model_cost_catalog` (CAP-11) -- declared price table,
+    # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
+    "model_cost_catalog",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -396,7 +405,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 31-key document matching ``schemas/policy.json`` exactly:
+    """The flat 32-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

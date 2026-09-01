@@ -285,7 +285,10 @@ class UsageSnapshot:
     otherwise make every sample look permanently stale, silently disabling
     both token ceilings for a run's whole life behind nothing but a WARN).
     
-    Story 28.4 extends this to include per-layer savings telemetry (CAP-7)."""
+    Story 28.4 extends this to include per-layer savings telemetry (CAP-7).
+    Story 28.10 adds optional advisory dollar estimates (CAP-11) when a
+    declared model-cost catalog is present — absent when no catalog is
+    declared, never fabricated."""
 
     story_key: str | None
     story_weighted_tokens: int | None
@@ -293,6 +296,9 @@ class UsageSnapshot:
     sample_path: Path
     # Story 28.4: Add savings telemetry (CAP-7)
     layer_savings: LayerSavings | None = None
+    # Story 28.10: advisory dollar estimates (CAP-11) — only when catalog declared
+    cost_estimate_usd: float | None = None
+    layer_savings_usd: dict[str, float] | None = None
 
 
 @dataclass(frozen=True)

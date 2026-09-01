@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 31-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 32-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -23,7 +23,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 15 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 16 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -79,7 +79,11 @@ finding still fires, named, but as a WARN-classified advisory, never
 blocking)/``off`` (the check does not run at all). STATIC for the identical
 reason ``epic_surfaces`` -- the sibling declaration the SAME check consumes
 -- is: project/policy-declared, never narrowed at runtime by a journal
-entry. 16
+entry, and (Story 28.10) ``model_cost_catalog`` -- SPEC-marshal-token-economy
+CAP-11's declared price table (seed snapshot in ``model-economics.md``),
+STATIC for the identical structural-declaration reason ``context`` is:
+declared policy data, never fetched live, never narrowed at runtime by a
+journal entry. 16
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -190,7 +194,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 31-key vocabulary -------------------------------------------
+# --- the closed 32-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -263,6 +267,14 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # at runtime by a journal entry. See `_valid_scope_violation_mode`
         # below.
         "scope_violation_mode",
+        # Story 28.10's 16th STATIC key, the vocabulary's 32nd
+        # (SPEC-marshal-token-economy CAP-11): the declared model-cost
+        # catalog -- per provider/model input/output/cache-read/cache-write
+        # per 1M USD plus optional subscription-pool membership. STATIC for
+        # the identical reason `context`/`mcp_servers` are: declared policy
+        # data with a dated snapshot, never fetched live, never narrowed at
+        # runtime by a journal entry. See `_valid_model_cost_catalog` below.
+        "model_cost_catalog",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -573,6 +585,12 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # and `off` (the check does not run at all) are both available as an
     # explicit per-station opt-in via the project policy layer.
     "scope_violation_mode": "warn",
+    # Story 28.10's `model_cost_catalog` (CAP-11): no price table until a
+    # project's own policy declares one -- the same "nothing declared yet"
+    # posture `context` already carries. An empty mapping keeps journals,
+    # `marshal status`, and the benchmark artifact byte-identical to pre-
+    # 28.10 behavior (no dollar fields, never fabricated).
+    "model_cost_catalog": {},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -882,6 +900,99 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
             entry["aggressiveness"] = aggressiveness
         result[layer_name] = entry
     return result
+
+
+def _valid_model_cost_catalog(value: object) -> dict[str, object] | None:
+    """``model_cost_catalog`` (Story 28.10, CAP-11): declared price table.
+
+    Shape: ``{"providers": {<provider>: {"subscription_pool"?: str,
+    "models": {<model>: {"input_per_million": num, "output_per_million": num,
+    "cache_read_per_million"?: num, "cache_write_per_million"?: num,
+    "subscription_pool"?: str}}}}``. Unknown keys reject the whole field.
+    Models absent from the catalog are never fabricated downstream."""
+    if not isinstance(value, Mapping):
+        return None
+    if set(value.keys()) != {"providers"}:
+        return None
+    providers_raw = value.get("providers")
+    if not isinstance(providers_raw, Mapping):
+        return None
+    providers: dict[str, object] = {}
+    for provider_name, provider_block in providers_raw.items():
+        if not isinstance(provider_name, str) or not provider_name:
+            return None
+        if not isinstance(provider_block, Mapping):
+            return None
+        allowed_provider_keys = {"subscription_pool", "models"}
+        if not set(provider_block.keys()) <= allowed_provider_keys:
+            return None
+        models_raw = provider_block.get("models")
+        if not isinstance(models_raw, Mapping) or not models_raw:
+            return None
+        pool = provider_block.get("subscription_pool")
+        if pool is not None and (not isinstance(pool, str) or not pool):
+            return None
+        models: dict[str, object] = {}
+        for model_name, model_block in models_raw.items():
+            if not isinstance(model_name, str) or not model_name:
+                return None
+            if not isinstance(model_block, Mapping):
+                return None
+            allowed_model_keys = {
+                "input_per_million",
+                "output_per_million",
+                "cache_read_per_million",
+                "cache_write_per_million",
+                "subscription_pool",
+            }
+            if not set(model_block.keys()) <= allowed_model_keys:
+                return None
+            input_rate = model_block.get("input_per_million")
+            output_rate = model_block.get("output_per_million")
+            if (
+                isinstance(input_rate, bool)
+                or not isinstance(input_rate, (int, float))
+                or float(input_rate) < 0
+                or not math.isfinite(float(input_rate))
+            ):
+                return None
+            if (
+                isinstance(output_rate, bool)
+                or not isinstance(output_rate, (int, float))
+                or float(output_rate) < 0
+                or not math.isfinite(float(output_rate))
+            ):
+                return None
+            entry: dict[str, object] = {
+                "input_per_million": float(input_rate),
+                "output_per_million": float(output_rate),
+            }
+            for optional_key in (
+                "cache_read_per_million",
+                "cache_write_per_million",
+            ):
+                if optional_key not in model_block:
+                    continue
+                optional_val = model_block[optional_key]
+                if (
+                    isinstance(optional_val, bool)
+                    or not isinstance(optional_val, (int, float))
+                    or float(optional_val) < 0
+                    or not math.isfinite(float(optional_val))
+                ):
+                    return None
+                entry[optional_key] = float(optional_val)
+            model_pool = model_block.get("subscription_pool")
+            if model_pool is not None:
+                if not isinstance(model_pool, str) or not model_pool:
+                    return None
+                entry["subscription_pool"] = model_pool
+            models[model_name] = entry
+        provider_entry: dict[str, object] = {"models": models}
+        if pool is not None:
+            provider_entry["subscription_pool"] = pool
+        providers[provider_name] = provider_entry
+    return {"providers": providers}
 
 
 def _valid_bool(value: object) -> bool | None:
@@ -1489,7 +1600,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 15 public STATIC
+    """The composed, immutable policy value (AD-10): 16 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1517,6 +1628,7 @@ class EffectivePolicy:
     harness_preference: PolicyField
     context: PolicyField
     scope_violation_mode: PolicyField
+    model_cost_catalog: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1536,6 +1648,7 @@ class EffectivePolicy:
             "harness_preference",
             "context",
             "scope_violation_mode",
+            "model_cost_catalog",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1587,6 +1700,7 @@ class EffectivePolicy:
                 "harness_preference",
                 "context",
                 "scope_violation_mode",
+                "model_cost_catalog",
             )
         )
         seed = ", ".join(
@@ -1607,7 +1721,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (13 static + 16 seed) -- AD-35's naming primitive. Hashing only
+        (16 static + 16 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -1642,6 +1756,7 @@ class EffectivePolicy:
             "harness_preference": _field_payload(self.harness_preference),
             "context": _field_payload(self.context),
             "scope_violation_mode": _field_payload(self.scope_violation_mode),
+            "model_cost_catalog": _field_payload(self.model_cost_catalog),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1705,7 +1820,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 31-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 32-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1885,6 +2000,16 @@ def compose(
         "scope_violation_mode",
         _valid_scope_violation_mode,
         DEFAULT_POLICY["scope_violation_mode"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    model_cost_catalog = _merge_field(
+        "model_cost_catalog",
+        _valid_model_cost_catalog,
+        DEFAULT_POLICY["model_cost_catalog"],
         repo_defaults,
         project,
         flags,
@@ -2082,6 +2207,7 @@ def compose(
         harness_preference=harness_preference,
         context=context,
         scope_violation_mode=scope_violation_mode,
+        model_cost_catalog=model_cost_catalog,
         _seed=seed,
     )
     return effective, tuple(findings)
