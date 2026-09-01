@@ -2,10 +2,11 @@
 title: 'Deliverable A + Packaging_Candidate_Status derived export (Story 23.4, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'done'
+status: 'blocked'
 review_loop_iteration: 0
-followup_review_recommended: true
-baseline_revision: pending-local-verify
+followup_review_recommended: false
+baseline_revision: '26d94cf8aa7754981d709f579c072fa0b21ba971'
+implementation_commit: '855ff521f8c700b2588a8e080ad1642a6ba4aca3'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -14,6 +15,12 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-23-3-priority-rules-in-kedro.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
 warnings: []
+deferred:
+  - summary: >-
+      Verification commands (kedro-catalog-check + Story 23.4 parity tests) were not executed in the agent session because Shell was unavailable.
+    evidence: |-
+      bmad-build-auto step-03 requires running the spec's Verification section; every Shell invocation in this session returned Rejected with no output.
+    severity: medium
 ---
 
 <intent-contract>
@@ -256,26 +263,27 @@ isolation.
 
 ## Review Triage Log
 
-### 2026-09-01 — Review pass
+### 2026-09-01 — Review pass (static; review subagents not launched — shell blocked)
 - intent_gap: 0
 - bad_spec: 0
 - patch: 0
-- defer: 0
+- defer: 1: (high 0, medium 1, low 0)
 - reject: 0
 - addressed_findings:
   - none
 
 ## Auto Run Result
 
-Status: done
+Status: blocked
 
-Blocking condition: none (verification commands not executed in-agent — shell blocked; run locally)
+Blocking condition: implementation verification not executed (agent shell unavailable in this session)
 
 Summary of implemented change:
-- Added two PURE `derived_artifacts` nodes porting `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
-- Row grain uses `inventory_universe` (Story 23.8) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
+- Two PURE `derived_artifacts` nodes port `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
+- Row grain uses `inventory_universe` (Story 23.8 course correction) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
+- Static matrix audit: all nine I/O-matrix scenarios have dedicated tests; both files include `done_checkpoint` parity against unmodified `metrics.py`.
 
-Files changed:
+Files changed (commit `855ff521`, branch `dispatch/pyforge-atlas/23.4`):
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_inventory_verified_packages`, `build_inventory_aoss_free_queue`, verbatim helpers
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — wire two new nodes
 - `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — catalog entries for both outputs
@@ -285,14 +293,16 @@ Files changed:
 - `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — derived_artifacts 4→6 nodes, combined DAG 56→58
 - `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — EXPECTED_TOTAL 122→124
 
-Review findings breakdown: no automated review subagents (shell/subagent blocked); self-review found no patch items.
+Review findings breakdown: automated review layers skipped (shell/subagent blocked); static self-review found no patch items; one defer (verification commands not run in-agent).
 
-Follow-up review recommendation: true (verification not run in-agent)
+Follow-up review recommendation: false
 
 Verification performed:
-- Not run — agent shell unavailable. User should run:
+- **Not run** — every Shell invocation in this session was rejected. Run locally from the worktree:
   - `pixi run -e pyforge-atlas kedro-catalog-check`
   - `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_inventory_verified_packages.py tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py`
+- After both pass: set this spec's `status` to `done`, commit the spec update, and push the branch.
 
 Residual risks:
 - TENK_TABS row-drop filter from `metrics.py::main()` is intentionally omitted (Story 23.8 universe does not include 10kOpen/10kClosed); accepted delta per spec-23-8 Design Notes.
+- Main-checkout spec at `local-recipes/_bmad-output/.../spec-23-4-...md` still reads `ready-for-dev`; this worktree's `_bmad-output` copy is authoritative for dispatch branch `23.4`.
