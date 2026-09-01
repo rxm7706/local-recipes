@@ -2,7 +2,7 @@
 title: 'Dependency-derived dispatch ordering (Story 28.12, Epic 28)'
 type: 'feature'
 created: '2026-08-31'
-status: 'ready-for-dev'
+status: 'shipped'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
@@ -84,3 +84,4 @@ existing `factory drain`/`dispatch` machinery only). Motivating incident:
 ## Spec Change Log
 
 - 2026-08-31: drafted from marshal-dependency-aware-dispatch fold-in (CAP-14; bmad-correct-course sprint-change-proposal-2026-08-31)
+- 2026-09-01: shipped — `dependency_ordered_backlog` + epics `Deps:` parse in `dispatch_fleet.py`; `execute_fleet_cycle` loads deps when no `--stories`/`order_override`

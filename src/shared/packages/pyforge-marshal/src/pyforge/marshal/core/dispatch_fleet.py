@@ -16,6 +16,7 @@ decides WHICH story a station should be handed next.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -236,6 +237,166 @@ def normalize_station_slug(raw: str) -> str:
     return text if text.startswith(STATION_SLUG_PREFIX) else f"{STATION_SLUG_PREFIX}{text}"
 
 
+# Story 28.12 (CAP-14): dependency-derived dispatch ordering. Regex shapes
+# mirror ``pyforge.doctor.sources.deps`` -- marshal restates them (AD-13) so
+# core stays doctor-free; the conformance test pins parity separately.
+_STORY_HEADING_RE = re.compile(
+    r"^### Story (?P<pe>\d+)\.(?P<pn>\d+[a-z]?): ?"
+    r"(?P<title>.*?)(?:\s*\*\(.*?\)\*)?\s*$",
+    re.M,
+)
+_DEPS_FIELD_RE = re.compile(r"\*\*(?:Deps|Depends on):\*\* ?(.*?)(?:\s*•|\n|$)")
+_DEP_RE = re.compile(
+    r"(?:(?P<station>[a-z][a-z0-9-]*):)?S-(?P<epic>\d+)\.(?P<num>\d+[a-z]?|\*)",
+    re.I,
+)
+_NO_DEP_RE = re.compile(r"^\s*(?:—|–|-|none|nothing|n/?a)(?![\w-])", re.I)
+
+
+@dataclass(frozen=True)
+class ParsedStoryDeps:
+    """One story's machine-readable dependency declaration."""
+
+    story_keys: tuple[StoryKey, ...] = ()
+    whole_epics: tuple[int, ...] = ()
+
+
+def station_epics_paths(repo_root: Path, slug: str) -> tuple[Path, ...]:
+    """Every epics-family doc for ``slug`` that can carry a ``**Deps:**`` field."""
+    planning = (
+        canonical_repo_root(repo_root)
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+    )
+    if not planning.is_dir():
+        return ()
+    return tuple(
+        sorted(
+            p
+            for p in planning.glob("epics*.md")
+            if p.name != "epics-with-stories.md"
+        )
+    )
+
+
+def _story_key_from_dep_num(epic: int, num: str) -> StoryKey | None:
+    if num == "*":
+        return None
+    match = re.fullmatch(r"(\d+)([a-z]?)", num, re.I)
+    if match is None:
+        return None
+    suffix = (match.group(2) or "").lower()
+    return StoryKey(epic=epic, seq=int(match.group(1)), suffix=suffix)
+
+
+def parse_epics_dependencies(epics_text: str) -> dict[StoryKey, ParsedStoryDeps]:
+    """``{declaring_story: parsed_deps}`` from one epics-family document."""
+    headings = list(_STORY_HEADING_RE.finditer(epics_text))
+    out: dict[StoryKey, ParsedStoryDeps] = {}
+    for index, match in enumerate(headings):
+        block_end = (
+            headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
+        )
+        block = epics_text[match.end() : block_end]
+        declaring = _story_key_from_dep_num(int(match.group("pe")), match.group("pn"))
+        if declaring is None:
+            continue
+        deps_match = _DEPS_FIELD_RE.search(block)
+        deps_text = deps_match.group(1).strip() if deps_match else ""
+        if not deps_text or _NO_DEP_RE.match(deps_text):
+            out[declaring] = ParsedStoryDeps()
+            continue
+        story_keys: list[StoryKey] = []
+        whole_epics: list[int] = []
+        for dep_match in _DEP_RE.finditer(deps_text):
+            if dep_match.group("station"):
+                continue
+            epic = int(dep_match.group("epic"))
+            num = dep_match.group("num")
+            if num == "*":
+                whole_epics.append(epic)
+                continue
+            parsed = _story_key_from_dep_num(epic, num)
+            if parsed is not None:
+                story_keys.append(parsed)
+        out[declaring] = ParsedStoryDeps(
+            story_keys=tuple(story_keys),
+            whole_epics=tuple(sorted(set(whole_epics))),
+        )
+    return out
+
+
+def dependency_ordered_backlog(
+    backlog: Sequence[str],
+    *,
+    deps_by_story: Mapping[StoryKey, ParsedStoryDeps],
+) -> tuple[str, ...]:
+    """Topological order over ``backlog`` honoring declared ``Deps:`` edges.
+
+    Tie-break among ready stories is ledger order (``backlog``'s own sequence),
+    never story-key sort or an invented preference. Cycles fall back to ledger
+    order for the unresolved tail so empty/single-story backlogs never crash.
+    """
+    ordered = tuple(backlog)
+    if len(ordered) <= 1:
+        return ordered
+
+    ledger_index = {raw: index for index, raw in enumerate(ordered)}
+    key_to_raw: dict[StoryKey, str] = {}
+    raw_to_key: dict[str, StoryKey] = {}
+    for raw in ordered:
+        try:
+            key = normalize(raw)
+        except MalformedStoryKeyError:
+            continue
+        key_to_raw[key] = raw
+        raw_to_key[raw] = key
+
+    predecessors: dict[str, set[str]] = {raw: set() for raw in ordered}
+    successor_count: dict[str, int] = {raw: 0 for raw in ordered}
+
+    for raw in ordered:
+        declaring = raw_to_key.get(raw)
+        if declaring is None:
+            continue
+        parsed = deps_by_story.get(declaring, ParsedStoryDeps())
+        for dep_key in parsed.story_keys:
+            dep_raw = key_to_raw.get(dep_key)
+            if dep_raw is not None and dep_raw != raw:
+                if raw not in predecessors[dep_raw]:
+                    predecessors[dep_raw].add(raw)
+                    successor_count[raw] += 1
+        for epic in parsed.whole_epics:
+            for other_raw, other_key in raw_to_key.items():
+                if other_raw == raw:
+                    continue
+                if other_key.epic == epic:
+                    if raw not in predecessors[other_raw]:
+                        predecessors[other_raw].add(raw)
+                        successor_count[raw] += 1
+
+    ready = sorted(
+        (raw for raw in ordered if successor_count[raw] == 0),
+        key=lambda raw: ledger_index[raw],
+    )
+    result: list[str] = []
+    while ready:
+        current = ready.pop(0)
+        result.append(current)
+        for successor in sorted(predecessors[current], key=lambda raw: ledger_index[raw]):
+            successor_count[successor] -= 1
+            if successor_count[successor] == 0:
+                ready.append(successor)
+        ready.sort(key=lambda raw: ledger_index[raw])
+
+    if len(result) < len(ordered):
+        seen = set(result)
+        result.extend(raw for raw in ordered if raw not in seen)
+    return tuple(result)
+
+
 def _sort_key(raw_key: str) -> tuple[StoryKey, str]:
     # Story-key order, never lexicographic: the interim runner's plain
     # `sorted()` put "10-1-..." ahead of "2-1-...". A key that reaches here
@@ -247,6 +408,7 @@ def station_backlog(
     statuses: Iterable[tuple[str, str]],
     *,
     order_override: Sequence[str] | None = None,
+    deps_by_story: Mapping[StoryKey, ParsedStoryDeps] | None = None,
 ) -> tuple[str, ...]:
     """The station's ordered backlog from its tracked ledger's pairs.
 
@@ -254,6 +416,11 @@ def station_backlog(
     ``(key, status)`` output -- this function never reads a file, and never
     sees ``.cursor/pyforge-fleet-drain/queues.yaml``. A key that does not
     normalize is skipped (the established Epic 5 convention), never a crash.
+
+    Story 28.12: when ``order_override`` is absent and ``deps_by_story`` was
+    successfully loaded from the station's epics doc, dispatch order is a
+    topological sort over declared ``Deps:`` edges with ledger order as the
+    tie-break. ``order_override`` and caller ``--stories`` paths are unchanged.
     """
     backlog: list[str] = []
     for raw_key, raw_status in statuses:
@@ -266,7 +433,12 @@ def station_backlog(
         except MalformedStoryKeyError:
             continue
         backlog.append(raw_key)
-    return apply_order_override(tuple(backlog), order_override)
+    raw_backlog = tuple(backlog)
+    if order_override:
+        return apply_order_override(raw_backlog, order_override)
+    if deps_by_story is not None:
+        return dependency_ordered_backlog(raw_backlog, deps_by_story=deps_by_story)
+    return apply_order_override(raw_backlog, None)
 
 
 def apply_order_override(

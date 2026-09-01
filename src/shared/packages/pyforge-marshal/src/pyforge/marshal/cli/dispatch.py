@@ -69,7 +69,7 @@ from ..core.dispatch_retry import (
 from ..core import promotion as promotion_core
 from ..core.spec_surface import parse_declared_surface
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..core.identity import normalize, render_feed_key
+from ..core.identity import StoryKey, normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -1929,6 +1929,28 @@ def _reconcile_campaign_blocked(
     return reconciled
 
 
+def _load_station_story_deps(
+    fs: FsPort, repo_root: Path, slug: str
+) -> dict[StoryKey, dispatch_fleet.ParsedStoryDeps] | None:
+    """Read declared ``Deps:`` edges for one station (Story 28.12).
+
+    Returns ``None`` when no epics doc could be read -- ``station_backlog``
+    keeps its legacy story-key ordering. Returns a (possibly empty) mapping
+    when at least one epics-family doc parsed successfully.
+    """
+    combined: dict[StoryKey, dispatch_fleet.ParsedStoryDeps] = {}
+    read_any = False
+    for path in dispatch_fleet.station_epics_paths(repo_root, slug):
+        text = fs.read_text(path)
+        if text is None:
+            continue
+        read_any = True
+        combined.update(dispatch_fleet.parse_epics_dependencies(text))
+    if not read_any:
+        return None
+    return combined
+
+
 def _read_fleet_queue_config(
     fs: FsPort, repo_root: Path
 ) -> tuple[dict[str, tuple[str, ...]], dict[str, dict[str, str]], list[Finding]]:
@@ -2217,7 +2239,13 @@ def execute_fleet_cycle(
             dispatch_fleet.explicit_story_backlog(statuses, explicit_stories)
             if explicit_stories is not None
             else dispatch_fleet.station_backlog(
-                statuses, order_override=overrides.get(slug)
+                statuses,
+                order_override=overrides.get(slug),
+                deps_by_story=(
+                    None
+                    if overrides.get(slug)
+                    else _load_station_story_deps(fs, repo_root, slug)
+                ),
             )
         )
         effective_policy = _compose_policy(slug, flags=policy_flags)

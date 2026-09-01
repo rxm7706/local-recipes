@@ -124,7 +124,7 @@ development_status:
   28-1-the-context-policy-block-rendered-once-for-both-engines: done
   28-10-the-model-cost-catalog-makes-spend-legible-in-dollars: backlog
   28-11-difficulty-tiers-route-across-providers-and-pools: backlog
-  28-12-dependency-derived-dispatch-ordering: backlog
+  28-12-dependency-derived-dispatch-ordering: done
   28-13-sanctioned-retry-after-an-operator-initiated-stop: backlog
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done

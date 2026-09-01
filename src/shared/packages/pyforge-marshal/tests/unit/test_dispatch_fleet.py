@@ -29,13 +29,18 @@ from pyforge.marshal.core import dispatch_fleet
 from pyforge.marshal.core.dispatch_fleet import (
     FleetCampaignMode,
     InvalidCampaignModeError,
+    ParsedStoryDeps,
     StationCycleStatus,
     StationQueueOutcome,
     apply_order_override,
+    dependency_ordered_backlog,
+    explicit_story_backlog,
     parse_campaign_mode,
+    parse_epics_dependencies,
     plan_station_queue,
     station_backlog,
 )
+from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
@@ -2104,3 +2109,82 @@ def test_stale_campaign_id_with_stories_still_validates_unresolved_keys(
     assert build_harness.dispatched == []
     assert "MRS-DISP-032" in out
     assert "99-9-nonexistent" in out
+
+
+# --------------------------------------------------------------------------
+# Story 28.12 — dependency-derived dispatch ordering (CAP-14)
+# --------------------------------------------------------------------------
+
+
+_ATLAS_CROSS_EPIC_EPICS = """
+### Story 22.1: Earlier epic story
+**Type:** feature • **Effort:** M • **Deps:** —
+
+### Story 23.9: Quartet workbook retirement
+**Type:** feature • **Effort:** L • **Deps:** S-23.4, S-23.5, S-23.6, S-23.8, S-22.1
+"""
+
+
+def test_cross_epic_dependency_orders_prerequisite_first() -> None:
+    deps = parse_epics_dependencies(_ATLAS_CROSS_EPIC_EPICS)
+    backlog = (
+        "23-9-quartet-workbook-retirement",
+        "22-1-dashboard-provenance",
+    )
+    ordered = dependency_ordered_backlog(backlog, deps_by_story=deps)
+    assert ordered.index("22-1-dashboard-provenance") < ordered.index(
+        "23-9-quartet-workbook-retirement"
+    )
+
+
+def test_independent_stories_keep_ledger_order_tie_break() -> None:
+    deps = parse_epics_dependencies(
+        "### Story 2.1: A\n**Type:** feature • **Deps:** —\n\n"
+        "### Story 10.1: B\n**Type:** feature • **Deps:** —\n"
+    )
+    backlog = ("10-1-later", "2-1-earlier")
+    ordered = dependency_ordered_backlog(backlog, deps_by_story=deps)
+    assert ordered == ("10-1-later", "2-1-earlier")
+
+
+def test_station_backlog_uses_dependency_order_when_epics_loaded() -> None:
+    deps = parse_epics_dependencies(_ATLAS_CROSS_EPIC_EPICS)
+    statuses = (
+        ("23-9-quartet-workbook-retirement", "backlog"),
+        ("22-1-dashboard-provenance", "backlog"),
+    )
+    ordered = station_backlog(statuses, deps_by_story=deps)
+    assert ordered == (
+        "22-1-dashboard-provenance",
+        "23-9-quartet-workbook-retirement",
+    )
+
+
+def test_explicit_stories_override_is_unchanged_by_dependency_ordering() -> None:
+    deps = parse_epics_dependencies(_ATLAS_CROSS_EPIC_EPICS)
+    statuses = (
+        ("23-9-quartet-workbook-retirement", "backlog"),
+        ("22-1-dashboard-provenance", "backlog"),
+    )
+    explicit = ("23-9-quartet-workbook-retirement", "22-1-dashboard-provenance")
+    ordered = explicit_story_backlog(statuses, explicit)
+    assert ordered == explicit
+    # Caller override path never consults deps — station_backlog with override
+    # also unchanged.
+    assert station_backlog(
+        statuses,
+        order_override=("23-9-quartet-workbook-retirement",),
+        deps_by_story=deps,
+    ) == ("23-9-quartet-workbook-retirement", "22-1-dashboard-provenance")
+
+
+@pytest.mark.parametrize("backlog", [(), ("28-12-only",)])
+def test_dependency_ordering_never_crashes_on_small_backlogs(
+    backlog: tuple[str, ...],
+) -> None:
+    deps = {
+        StoryKey(28, 12): ParsedStoryDeps(story_keys=(StoryKey(28, 11),)),
+    }
+    assert dependency_ordered_backlog(backlog, deps_by_story=deps) == backlog
+    statuses = tuple((key, "backlog") for key in backlog)
+    assert station_backlog(statuses, deps_by_story=deps) == backlog
