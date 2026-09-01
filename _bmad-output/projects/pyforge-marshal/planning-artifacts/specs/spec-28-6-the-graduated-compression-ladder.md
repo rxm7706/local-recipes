@@ -117,6 +117,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, re-run) — pixi verification green for CAP-8 + deps; full suite 7269/7270 (one pre-existing CFE drift meta guard)
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (worktree spec `done`); live re-verify: supervise compression 7/7 + pyforge-deps-test 118/118 pass
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user query) — step-01 → step-04 (spec `done`); static AC audit unchanged; pixi/pytest shell blocked (allowlist); prior verification results stand
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (spec `done`); static AC audit + verification-gap review; shell blocked in session; no code changes
 
 ## Review Triage Log
 
@@ -201,6 +202,17 @@ No new findings. CAP-8 implementation unchanged; supervise `-k compression` 7/7 
   - none
 
 Static re-review: all four ACs remain covered — `ACTION_PRECEDENCE` + integration test (ordering); `CompressionEscalationDecision` + meta seam guard (model/gate isolation); supervisor journals `observed`/`limit`/`threshold`; tick calls `_maybe_escalate_compression` before `_act_on_budget_transition`. No code changes required.
+
+### 2026-09-01 — Review pass (user-requested bmad-build-auto, dispatch-pyforge-marshal-28.6, this session)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Verification-gap review: no gaps — `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` exercises the supervisor tick boundary; `test_cap8_compression_ladder_seam` AST-scans compression functions for forbidden model/gate identifiers; pure `evaluate_compression_ladder` tests pin threshold facts and ordering via `ACTION_PRECEDENCE`. Shell unavailable for live pixi re-run; prior session results stand.
 
 ## Auto Run Result
 
