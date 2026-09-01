@@ -1,37 +1,25 @@
 """Offline unit tests for Story 17.2 ("handoffs are execution-ready") and
-Story 21.7 ("quartet thin-out and gist wrapper"):
+Story 21.7 / 23.9 ("quartet thin-out and workbook retirement"):
 
 1. `create_missing_issues` in
    `conda-forge-packaging-inventory-operations_openteams_identity.py` -- one
    `gh issue create` (+ `gh project item-add`) per record missing
    `OpenTeams_Issue_URL`, disabled by default (dry-run) behind `--create-issues`.
-2. `write_aoss_free_queue` in `conda-forge-packaging-inventory-operations_metrics.py`
-   -- the dated AOSS-Free extra Mason queue, which must never expand the
-   OpenTeams universe (CDO-ENT-JFROG union CDO-ENT-CONDA).
+2. `write_aoss_queue_csv` in `conda-forge-packaging-inventory-operations_metrics.py`
+   -- formats the dated AOSS-Free extra Mason queue from Atlas exports.
 3. `write_ops_canvas` / `write_workbook_canvas` in
    `openteams_identity_dashboards.py` -- the two missing dashboard-canvas
    generators (catalog already existed via
    conda-forge-packaging-inventory-operations_priority.py::write_canvas).
-4. `identity_export_parquet_path` / `read_identity_export_records` /
-   `merge_ranking_columns` / `main()` / `publish_gist_from_tab` in
+4. `identity_complete_export_parquet_path` / `read_identity_complete_export_records`
+   / `main()` / `publish_gist_from_tab` in
    `conda-forge-packaging-inventory-operations_openteams_identity.py`
-   (Story 21.7) -- the identity script reads the Atlas Phase D
-   `identity_export_parquet` instead of live-fetching ASSOCIATOR_URL/board/
-   feedstock-outputs/staged-prs; `--gist-only` merges ranking columns from
-   the ranked identity tab by name.
+   (Story 23.9) -- the identity script reads ``identity_complete_export.parquet``
+   and publishes gist markdown from that export (ranking columns already present).
 
 Per this project's Testing Contract, this file never touches real GitHub
 credentials or the network: every `gh` call is mocked
 (`subprocess.check_output` / `subprocess.check_call`).
-
-`pytest.importorskip("openpyxl")` at module scope keeps this file collectible
-under the deliberately lean `pyforge-ci` environment that
-`pixi run -e pyforge-ci pyforge-deps-test` runs the rest of `tests/packaging`
-in (see test_dependency_completeness.py's module docstring) -- the three
-target scripts import `openpyxl` at module load time and only run under
-`-e local-recipes`, where the real quartet lives. Without this guard, adding
-this file to `tests/packaging/` would break that unrelated, pre-existing gate
-with a `ModuleNotFoundError` at collection time.
 """
 
 from __future__ import annotations
@@ -44,17 +32,8 @@ import sys
 import types
 from pathlib import Path
 
+import pandas as pd
 import pytest
-
-pytest.importorskip(
-    "openpyxl",
-    reason="target scripts import openpyxl at module load; only present under -e local-recipes",
-)
-
-# pandas ships alongside openpyxl only under -e local-recipes (Story 21.7's
-# identity_export_parquet read); the importorskip above already halts
-# collection under the lean pyforge-ci env before this import is reached.
-import pandas as pd  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -91,7 +70,7 @@ def test_discovery_is_not_vacuous():
     fail on AttributeError with a confusing traceback -- this fails loudly
     and specifically instead."""
     assert callable(identity.create_missing_issues)
-    assert callable(metrics.write_aoss_free_queue)
+    assert callable(metrics.write_aoss_queue_csv)
     assert callable(dashboards.write_ops_canvas)
     assert callable(dashboards.write_workbook_canvas)
 
@@ -314,7 +293,7 @@ def test_write_dashboard_markdown_survives_a_canvas_write_failure(tmp_path, monk
     `render` is stubbed here too so this test isolates the canvas guard from
     render()'s own (unrelated) real-xlsx requirement.
     """
-    monkeypatch.setattr(dashboards, "render", lambda *a, **k: "# stub dashboard markdown\n")
+    monkeypatch.setattr(dashboards, "render", lambda *a, **k: (_ for _ in ()).throw(AssertionError("render unused")))
     monkeypatch.setattr(
         dashboards, "write_ops_canvas", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("ops boom"))
     )
@@ -325,15 +304,22 @@ def test_write_dashboard_markdown_survives_a_canvas_write_failure(tmp_path, monk
     )
 
     dash_path = tmp_path / "dashboards.md"
+    export_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True)
+    pd.DataFrame([{"Core_Python_Package_Name": "pkg-a"}]).to_parquet(export_path)
     identity.write_dashboard_markdown(
-        dash_path, [], tmp_path / "missing.xlsx", "gist-id-123", "identity-2026-08-20"
+        dash_path,
+        "# stub dashboard markdown\n",
+        [],
+        "identity_complete_export",
+        export_path,
     )
 
     assert dash_path.read_text(encoding="utf-8") == "# stub dashboard markdown\n"
 
 
 # ---------------------------------------------------------------------------
-# write_aoss_free_queue (conda-forge-packaging-inventory-operations_metrics.py)
+# write_aoss_queue_csv (conda-forge-packaging-inventory-operations_metrics.py)
 # ---------------------------------------------------------------------------
 
 
@@ -342,43 +328,28 @@ def _read_csv_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
-def test_write_aoss_free_queue_excludes_the_openteams_universe(tmp_path):
+def test_write_aoss_queue_csv_writes_export_rows(tmp_path):
     path = tmp_path / "aoss-free-queue-2026-08-22.csv"
     ts = "2026-08-22T00:00:00Z"
+    rows = [
+        {
+            "Package_Name": "pkg-a",
+            "Reason": "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)",
+            "Verification_Timestamp_UTC": ts,
+        }
+    ]
+    metrics.write_aoss_queue_csv(path, rows)
 
-    written = metrics.write_aoss_free_queue(
-        path,
-        aoss_free_names={"pkg-a", "pkg-b"},
-        universe_names={"pkg-b"},  # pkg-b is in CDO-ENT-JFROG or CDO-ENT-CONDA
-        timestamp=ts,
-    )
-
-    assert written == ["pkg-a"]
-    rows = _read_csv_rows(path)
-    assert [r["Package_Name"] for r in rows] == ["pkg-a"]
-    assert rows[0]["Verification_Timestamp_UTC"] == ts
-    assert rows[0]["Reason"]
+    written = _read_csv_rows(path)
+    assert [r["Package_Name"] for r in written] == ["pkg-a"]
+    assert written[0]["Verification_Timestamp_UTC"] == ts
+    assert written[0]["Reason"]
 
 
-def test_write_aoss_free_queue_never_mutates_its_universe_argument(tmp_path):
-    """The queue is `aoss_free_names - universe_names`; the function must
-    never add names to (or otherwise expand) the universe set it was given."""
+def test_write_aoss_queue_csv_empty_input_writes_header_only(tmp_path):
     path = tmp_path / "aoss-free-queue-2026-08-22.csv"
-    universe = {"already-there"}
-    metrics.write_aoss_free_queue(
-        path,
-        aoss_free_names={"new-name"},
-        universe_names=universe,
-        timestamp="2026-08-22T00:00:00Z",
-    )
-    assert universe == {"already-there"}
+    metrics.write_aoss_queue_csv(path, [])
 
-
-def test_write_aoss_free_queue_empty_input_writes_header_only(tmp_path):
-    path = tmp_path / "aoss-free-queue-2026-08-22.csv"
-    written = metrics.write_aoss_free_queue(path, set(), set(), "2026-08-22T00:00:00Z")
-
-    assert written == []
     assert _read_csv_rows(path) == []
     header = path.read_text(encoding="utf-8").splitlines()[0]
     assert header == "Package_Name,Reason,Verification_Timestamp_UTC"
@@ -419,9 +390,11 @@ def test_write_ops_canvas_empty_records_is_valid_and_schema_shaped(tmp_path):
 def test_write_workbook_canvas_empty_records_is_valid_and_schema_shaped(tmp_path):
     path = tmp_path / "jfrog-workbook.canvas.tsx"
     helpers = types.SimpleNamespace(**vars(identity))
-    missing_xlsx = tmp_path / "missing-workbook.xlsx"
+    export_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True)
+    pd.DataFrame([{"Core_Python_Package_Name": "pkg-a"}]).to_parquet(export_path)
 
-    dashboards.write_workbook_canvas(path, [], missing_xlsx, "identity-2026-08-20", helpers)
+    dashboards.write_workbook_canvas(path, [], export_path, "identity_complete_export", helpers)
 
     text = path.read_text(encoding="utf-8")
     assert text.startswith(priority._CANVAS_PREFIX)
@@ -429,7 +402,7 @@ def test_write_workbook_canvas_empty_records_is_valid_and_schema_shaped(tmp_path
     assert data["neitherRows"] == []
     assert data["needPr"] == []
     assert data["boardGap"] == []
-    assert data["workbookTabs"] == []
+    assert data["catalogSources"] == []
     assert data["jfrogMap"] == {
         "parseable": 0,
         "skip": 0,
@@ -438,64 +411,91 @@ def test_write_workbook_canvas_empty_records_is_valid_and_schema_shaped(tmp_path
         "cfOnly": 0,
         "neither": 0,
     }
-    # Static reference data (not per-package) stays populated.
     assert len(data["externalCounts"]) == len(dashboards.EXTERNAL_LIVE)
 
 
 # ---------------------------------------------------------------------------
-# Story 21.7: identity_export_parquet_path / read_identity_export_records /
-# merge_ranking_columns / main() / publish_gist_from_tab
-# (conda-forge-packaging-inventory-operations_openteams_identity.py)
+# Story 23.9: identity_complete_export_parquet_path /
+# read_identity_complete_export_records / main() / publish_gist_from_tab
 # ---------------------------------------------------------------------------
 
 
-def test_identity_export_parquet_path_respects_data_root_env(monkeypatch, tmp_path):
+def _complete_export_row(**overrides: str) -> dict[str, str]:
+    row = {
+        "Core_Python_Package_Name": "pkg-a",
+        "OpenTeams_Title": "[Conda-Forge Packaging] pkg-a",
+        "identity_source": "inventory",
+        "associator_key": "",
+        "associator_status": "inventory-derived",
+        "primary_purl": "pkg:pypi/pkg-a",
+        "primary_type": "pypi",
+        "alternative_purls": "",
+        "cpes": "",
+        "conda_purl": "",
+        "source_repository_url": "",
+        "OpenTeams_Issue_URL": "https://github.com/x/y/issues/1",
+        "Conda-Forge_FeedStock_URL": "",
+        "Conda-Forge_Metadata_URL": "",
+        "Staged_Recipes_PR_URL": "",
+        "Local_Recipes_URL": "",
+        "Local_Build_Status": "",
+        "Verification_Timestamp_UTC": "2026-08-30T00:00:00Z",
+        "P": "P4",
+        "Rank": "1",
+        "Score": "80",
+        "Package": "pkg-a",
+        "Work": "Create recipe",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_identity_complete_export_parquet_path_respects_data_root_env(monkeypatch, tmp_path):
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path))
 
-    path = identity.identity_export_parquet_path()
+    path = identity.identity_complete_export_parquet_path()
 
-    assert path == tmp_path / "derived/identity_export_parquet/identity_export_parquet.parquet"
+    assert path == tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
 
 
-def test_identity_export_parquet_path_default_relative_to_atlas_project_dir(monkeypatch):
+def test_identity_complete_export_parquet_path_default_relative_to_atlas_project_dir(monkeypatch):
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
 
-    path = identity.identity_export_parquet_path()
+    path = identity.identity_complete_export_parquet_path()
 
     assert path == (
         identity.PYFORGE_ATLAS_PROJECT_DIR
-        / "data/derived/identity_export_parquet/identity_export_parquet.parquet"
+        / "data/derived/identity_complete_export/identity_complete_export.parquet"
     )
 
 
-def test_read_identity_export_records_reads_parquet_and_stringifies_nulls(
+def test_read_identity_complete_export_records_reads_parquet_and_stringifies_nulls(
     monkeypatch, tmp_path
 ):
-    parquet_path = tmp_path / "identity_export_parquet.parquet"
+    parquet_path = tmp_path / "identity_complete_export.parquet"
     df = pd.DataFrame(
         [
-            {"Core_Python_Package_Name": "pkg-a", "identity_source": "purl-associator", "P": pd.NA},
-            {"Core_Python_Package_Name": "pkg-b", "identity_source": "inventory", "P": pd.NA},
+            _complete_export_row(P=pd.NA),
+            _complete_export_row(Core_Python_Package_Name="pkg-b", Package="pkg-b"),
         ]
     )
     df.to_parquet(parquet_path)
-    monkeypatch.setattr(identity, "identity_export_parquet_path", lambda: parquet_path)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: parquet_path)
 
-    records = identity.read_identity_export_records()
+    records = identity.read_identity_complete_export_records()
 
-    assert records == [
-        {"Core_Python_Package_Name": "pkg-a", "identity_source": "purl-associator", "P": ""},
-        {"Core_Python_Package_Name": "pkg-b", "identity_source": "inventory", "P": ""},
-    ]
+    assert records is not None
+    assert records[0]["P"] == ""
+    assert records[1]["Core_Python_Package_Name"] == "pkg-b"
 
 
-def test_read_identity_export_records_missing_file_returns_none_and_names_it(
+def test_read_identity_complete_export_records_missing_file_returns_none_and_names_it(
     monkeypatch, tmp_path, capsys
 ):
-    missing = tmp_path / "no-bootstrap-yet" / "identity_export_parquet.parquet"
-    monkeypatch.setattr(identity, "identity_export_parquet_path", lambda: missing)
+    missing = tmp_path / "no-bootstrap-yet" / "identity_complete_export.parquet"
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: missing)
 
-    result = identity.read_identity_export_records()
+    result = identity.read_identity_complete_export_records()
 
     assert result is None
     captured = capsys.readouterr()
@@ -503,46 +503,153 @@ def test_read_identity_export_records_missing_file_returns_none_and_names_it(
     assert "pyforge-atlas-bootstrap" in captured.err
 
 
-def test_merge_ranking_columns_merges_by_name_and_warns_on_a_miss(capsys):
-    identity_records = [
-        {"Core_Python_Package_Name": "pkg-a", "identity_source": "inventory"},
-        {"Core_Python_Package_Name": "pkg-b", "identity_source": "purl-associator"},
-    ]
-    ranked_records = [
-        {
-            "Core_Python_Package_Name": "pkg-a",
-            "P": "P4",
-            "Rank": "1",
-            "Score": "80",
-            "Work": "Create recipe",
-        }
-    ]
-
-    merged = identity.merge_ranking_columns(identity_records, ranked_records)
-
-    assert [r["Core_Python_Package_Name"] for r in merged] == ["pkg-a"]
-    assert merged[0]["P"] == "P4"
-    assert merged[0]["Work"] == "Create recipe"
-    assert merged[0]["identity_source"] == "inventory"  # identity column untouched
-    captured = capsys.readouterr()
-    assert "pkg-b" in captured.err
-    assert "No ranking match" in captured.err
+def test_xlsx_flag_exits_2_with_pointer(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["prog", "--xlsx", str(tmp_path / "book.xlsx"), "--skip-gist"],
+    )
+    rc = identity.main()
+    assert rc == 2
+    assert "Story 23.9" in capsys.readouterr().err
 
 
-def test_merge_ranking_columns_never_raises_on_a_total_miss():
-    merged = identity.merge_ranking_columns(
-        [{"Core_Python_Package_Name": "pkg-z"}],
+def test_main_reads_parquet_writes_csv_and_skips_gist(monkeypatch, tmp_path, capsys):
+    parquet_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    parquet_path.parent.mkdir(parents=True)
+    pd.DataFrame([_complete_export_row()]).to_parquet(parquet_path)
+    (tmp_path / "recipes").mkdir()
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: parquet_path)
+    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["prog", "--skip-gist"])
+
+    rc = identity.main()
+
+    assert rc == 0
+    assert "Skipped gist publish (--skip-gist)" in capsys.readouterr().out
+
+
+def _mock_identity_gist_render(monkeypatch):
+    from pyforge.atlas.dashboard import identity_gist
+
+    def _render(export_path, **kwargs):
+        df = pd.read_parquet(export_path)
+        body = "\n".join(
+            f"{r.get('Core_Python_Package_Name', '')} {r.get('P', '')} {r.get('Local_Build_Status', '')}"
+            for r in df.to_dict(orient="records")
+        )
+        return body, "# dash\n"
+
+    monkeypatch.setattr(identity_gist, "render_identity_gist_markdown", _render)
+
+
+def test_main_default_path_overlay_runs_before_csv_write(monkeypatch, tmp_path, capsys):
+    recipes_dir = tmp_path / "recipes"
+    pkg_dir = recipes_dir / "pkg-a"
+    pkg_dir.mkdir(parents=True)
+    (pkg_dir / "recipe.yaml").write_text(
+        "package:\n"
+        "  name: pkg-a\n"
+        "  version: '1.0'\n"
+        "extra:\n"
+        "  cfe-local-build-status: success\n",
+        encoding="utf-8",
+    )
+
+    parquet_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    parquet_path.parent.mkdir(parents=True)
+    pd.DataFrame(
+        [_complete_export_row(Local_Recipes_URL="", Local_Build_Status="not-attempted")]
+    ).to_parquet(parquet_path)
+    output_csv = tmp_path / "identity.csv"
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: parquet_path)
+    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
+    _mock_identity_gist_render(monkeypatch)
+    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
+    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
+    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda *a, **k: None)
+    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda *a, **k: None)
+    published: dict = {}
+
+    def _fake_publish_gist_files(gh, gist_id, identity_path, dashboard_path):
+        published["identity_md"] = identity_path.read_text(encoding="utf-8")
+
+    monkeypatch.setattr(identity, "publish_gist_files", _fake_publish_gist_files)
+    monkeypatch.setattr(identity, "CACHE_DIR", tmp_path / "cache")
+    monkeypatch.setattr(
+        sys,
+        "argv",
         [
-            {
-                "Core_Python_Package_Name": "pkg-y",
-                "P": "P1",
-                "Rank": "1",
-                "Score": "1",
-                "Work": "Already tracked",
-            }
+            "prog",
+            "--output-csv",
+            str(output_csv),
+            "--cache-dir",
+            str(tmp_path / "cache"),
         ],
     )
-    assert merged == []
+
+    rc = identity.main()
+
+    assert rc == 0
+    csv_rows = _read_csv_rows(output_csv)
+    assert csv_rows[0]["Local_Build_Status"] == "success"
+    assert "recipes/pkg-a" in csv_rows[0]["Local_Recipes_URL"]
+    assert "success" in published["identity_md"]
+
+
+def test_main_exits_nonzero_when_parquet_missing(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(
+        identity, "identity_complete_export_parquet_path", lambda: tmp_path / "missing.parquet"
+    )
+    monkeypatch.setattr(sys, "argv", ["prog", "--skip-gist"])
+
+    rc = identity.main()
+
+    assert rc == 1
+    assert "identity_complete_export not found" in capsys.readouterr().err
+
+
+def test_publish_gist_from_tab_reads_complete_export(monkeypatch, tmp_path):
+    parquet_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    parquet_path.parent.mkdir(parents=True)
+    pd.DataFrame([_complete_export_row()]).to_parquet(parquet_path)
+    (tmp_path / "recipes").mkdir()
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: parquet_path)
+    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
+    _mock_identity_gist_render(monkeypatch)
+    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
+    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
+    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda *a, **k: None)
+    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda *a, **k: None)
+    published: dict = {}
+    monkeypatch.setattr(
+        identity,
+        "publish_gist_files",
+        lambda gh, gist_id, identity_path, dashboard_path: published.update(
+            gist_id=gist_id, identity_path=identity_path, dashboard_path=dashboard_path
+        ),
+    )
+    monkeypatch.setattr(identity, "CACHE_DIR", tmp_path / "cache")
+
+    rc = identity.publish_gist_from_tab(None)
+
+    assert rc == 0
+    assert published["gist_id"] == "fake-gist-id"
+    md_text = published["identity_path"].read_text(encoding="utf-8")
+    assert "pkg-a" in md_text
+    assert "P4" in md_text
+
+
+def test_publish_gist_from_tab_returns_1_when_export_missing(monkeypatch, tmp_path, capsys):
+    missing = tmp_path / "missing.parquet"
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: missing)
+    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
+    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
+
+    rc = identity.publish_gist_from_tab(None)
+
+    assert rc == 1
+    assert "identity_complete_export not found" in capsys.readouterr().err
 
 
 def test_dead_flags_removed_from_argparse():
@@ -569,258 +676,3 @@ def test_dead_flags_removed_from_argparse():
         "--refresh-staged-prs",
     ):
         assert dead_flag not in proc.stdout, dead_flag
-
-
-def test_main_reads_parquet_writes_tab_and_skips_gist(monkeypatch, tmp_path, capsys):
-    from openpyxl import Workbook
-
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    Workbook().save(xlsx_path)
-
-    parquet_path = tmp_path / "identity_export_parquet.parquet"
-    df = pd.DataFrame(
-        [
-            {
-                "Core_Python_Package_Name": "pkg-a",
-                "OpenTeams_Title": "[Conda-Forge Packaging] pkg-a",
-                "identity_source": "inventory",
-                "associator_key": "",
-                "associator_status": "inventory-derived",
-                "primary_purl": "pkg:pypi/pkg-a",
-                "primary_type": "pypi",
-                "alternative_purls": "",
-                "cpes": "",
-                "conda_purl": "",
-                "source_repository_url": "",
-                "OpenTeams_Issue_URL": "https://github.com/x/y/issues/1",
-                "Conda-Forge_FeedStock_URL": "",
-                "Conda-Forge_Metadata_URL": "",
-                "Staged_Recipes_PR_URL": "",
-                "Local_Recipes_URL": "",
-                "Local_Build_Status": "",
-                "Verification_Timestamp_UTC": "2026-08-30T00:00:00Z",
-            }
-        ]
-    )
-    df.to_parquet(parquet_path)
-    (tmp_path / "recipes").mkdir()
-    monkeypatch.setattr(identity, "identity_export_parquet_path", lambda: parquet_path)
-    # Hermetic: main() unconditionally calls overlay_live_local(records,
-    # REPO_ROOT / "recipes"); without this, it would scan this actual
-    # repository's real recipes/ tree instead of the empty fixture dir above.
-    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(sys, "argv", ["prog", "--xlsx", str(xlsx_path), "--skip-gist"])
-
-    rc = identity.main()
-
-    assert rc == 0
-    rows = identity.read_xlsx_tab(xlsx_path, identity.TAB_OUT)
-    assert [r["Core_Python_Package_Name"] for r in rows] == ["pkg-a"]
-    assert rows[0]["identity_source"] == "inventory"
-    assert "Skipped gist publish (--skip-gist)" in capsys.readouterr().out
-
-
-def test_main_default_path_overlay_runs_before_tab_and_csv_write(
-    monkeypatch, tmp_path, capsys
-):
-    """Story 21.7 review pass 1 regression: main()'s default (non-`--skip-gist`)
-    path must overlay the live recipes/ tree ONCE, before the xlsx tab / CSV
-    are persisted -- not only later, inside write_gist_markdown's own internal
-    overlay_live_local call for the gist step. Plants a real
-    recipes/pkg-a/recipe.yaml whose CFE build-status stamp differs from the
-    Parquet fixture's Local_Build_Status/Local_Recipes_URL, then asserts the
-    xlsx tab (and the CSV, and what the mocked gist publish would have sent)
-    all already carry the live-scanned value -- not the stale Parquet one.
-    Before the Code Map fix, the tab/CSV were written pre-overlay and only the
-    later write_gist_markdown call mutated `records` in place, so the gist
-    could silently disagree with what was already persisted to disk."""
-    from openpyxl import Workbook
-
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    Workbook().save(xlsx_path)
-    output_csv = tmp_path / "identity.csv"
-
-    recipes_dir = tmp_path / "recipes"
-    pkg_dir = recipes_dir / "pkg-a"
-    pkg_dir.mkdir(parents=True)
-    (pkg_dir / "recipe.yaml").write_text(
-        "package:\n"
-        "  name: pkg-a\n"
-        "  version: '1.0'\n"
-        "extra:\n"
-        "  cfe-local-build-status: success\n",
-        encoding="utf-8",
-    )
-
-    parquet_path = tmp_path / "identity_export_parquet.parquet"
-    df = pd.DataFrame(
-        [
-            {
-                "Core_Python_Package_Name": "pkg-a",
-                "OpenTeams_Title": "[Conda-Forge Packaging] pkg-a",
-                "identity_source": "inventory",
-                "associator_key": "",
-                "associator_status": "inventory-derived",
-                "primary_purl": "pkg:pypi/pkg-a",
-                "primary_type": "pypi",
-                "alternative_purls": "",
-                "cpes": "",
-                "conda_purl": "",
-                "source_repository_url": "",
-                "OpenTeams_Issue_URL": "https://github.com/x/y/issues/1",
-                "Conda-Forge_FeedStock_URL": "",
-                "Conda-Forge_Metadata_URL": "",
-                "Staged_Recipes_PR_URL": "",
-                # Deliberately stale/blank vs. the live recipes/ tree planted
-                # above -- if main() forgot to overlay before persisting, these
-                # are the values that would end up on disk.
-                "Local_Recipes_URL": "",
-                "Local_Build_Status": "not-attempted",
-                "Verification_Timestamp_UTC": "2026-08-30T00:00:00Z",
-            }
-        ]
-    )
-    df.to_parquet(parquet_path)
-    monkeypatch.setattr(identity, "identity_export_parquet_path", lambda: parquet_path)
-    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
-    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
-    monkeypatch.setattr(dashboards, "render", lambda *a, **k: "# stub dashboard\n")
-    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda *a, **k: None)
-    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda *a, **k: None)
-    published: dict = {}
-
-    def _fake_publish_gist_files(gh, gist_id, identity_path, dashboard_path):
-        published["identity_md"] = identity_path.read_text(encoding="utf-8")
-
-    monkeypatch.setattr(identity, "publish_gist_files", _fake_publish_gist_files)
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "prog",
-            "--xlsx",
-            str(xlsx_path),
-            "--output-csv",
-            str(output_csv),
-            "--cache-dir",
-            str(tmp_path / "cache"),
-        ],
-    )
-
-    rc = identity.main()
-
-    assert rc == 0
-    # The persisted xlsx tab already reflects the live-scanned overlay -- not
-    # the stale Parquet-fixture value -- by the time it was written.
-    rows = identity.read_xlsx_tab(xlsx_path, identity.TAB_OUT)
-    assert rows[0]["Local_Build_Status"] == "success"
-    assert "recipes/pkg-a" in rows[0]["Local_Recipes_URL"]
-    # The CSV agrees.
-    csv_rows = _read_csv_rows(output_csv)
-    assert csv_rows[0]["Local_Build_Status"] == "success"
-    assert "recipes/pkg-a" in csv_rows[0]["Local_Recipes_URL"]
-    # ... and so does what the (mocked) gist publish would have sent -- the
-    # same live-scanned value, never the pre-overlay one.
-    assert "success" in published["identity_md"]
-
-
-def test_main_exits_nonzero_when_parquet_missing(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(
-        identity, "identity_export_parquet_path", lambda: tmp_path / "missing.parquet"
-    )
-    monkeypatch.setattr(
-        sys, "argv", ["prog", "--xlsx", str(tmp_path / "x.xlsx"), "--skip-gist"]
-    )
-
-    rc = identity.main()
-
-    assert rc == 1
-    assert "identity_export_parquet not found" in capsys.readouterr().err
-
-
-def test_publish_gist_from_tab_merges_ranking_and_never_falls_back_to_a_live_fetch(
-    monkeypatch, tmp_path
-):
-    """--gist-only reads the Parquet for identity/overlay columns and merges
-    ranking columns from the ranked tab by name (I/O & Edge-Case Matrix
-    "steady state" row) -- never a direct HTTP/GraphQL call."""
-    from openpyxl import Workbook
-
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    wb = Workbook()
-    wb.active.title = identity.TAB_OUT
-    ws = wb[identity.TAB_OUT]
-    ws.append(["Core_Python_Package_Name", "P", "Rank", "Score", "Work"])
-    ws.append(["pkg-a", "P4", "1", "80", "Create recipe"])
-    wb.save(xlsx_path)
-
-    parquet_path = tmp_path / "identity_export_parquet.parquet"
-    pd.DataFrame(
-        [{"Core_Python_Package_Name": "pkg-a", "identity_source": "inventory"}]
-    ).to_parquet(parquet_path)
-    (tmp_path / "recipes").mkdir()
-    monkeypatch.setattr(identity, "identity_export_parquet_path", lambda: parquet_path)
-    # Hermetic: write_gist_markdown (called internally below) always calls
-    # overlay_live_local(records, REPO_ROOT / "recipes"); without this, it
-    # would scan this actual repository's real recipes/ tree instead of the
-    # empty fixture dir above.
-    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
-    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
-    monkeypatch.setattr(dashboards, "render", lambda *a, **k: "# stub dashboard\n")
-    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda *a, **k: None)
-    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda *a, **k: None)
-    published: dict = {}
-    monkeypatch.setattr(
-        identity,
-        "publish_gist_files",
-        lambda gh, gist_id, identity_path, dashboard_path: published.update(
-            gist_id=gist_id, identity_path=identity_path, dashboard_path=dashboard_path
-        ),
-    )
-    monkeypatch.setattr(identity, "CACHE_DIR", tmp_path / "cache")
-
-    rc = identity.publish_gist_from_tab(xlsx_path, None)
-
-    assert rc == 0
-    assert published["gist_id"] == "fake-gist-id"
-    md_text = published["identity_path"].read_text(encoding="utf-8")
-    assert "pkg-a" in md_text
-    assert "P4" in md_text
-
-
-def test_publish_gist_from_tab_returns_1_when_tab_missing_ranking_columns(
-    monkeypatch, tmp_path, capsys
-):
-    """I/O & Edge-Case Matrix: `--gist-only`, tab missing ranking columns
-    (`priority.py` never ran) -- must return 1 with the existing error
-    message, unchanged from before this story. The ranked tab carries only
-    identity columns (no P/Rank/Score/Work), so `publish_gist_from_tab`
-    must fail on the missing-columns check before ever touching the
-    identity Parquet."""
-    from openpyxl import Workbook
-
-    xlsx_path = tmp_path / "Analysis_Dataset.xlsx"
-    wb = Workbook()
-    wb.active.title = identity.TAB_OUT
-    ws = wb[identity.TAB_OUT]
-    ws.append(["Core_Python_Package_Name", "identity_source"])
-    ws.append(["pkg-a", "inventory"])
-    wb.save(xlsx_path)
-
-    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
-    monkeypatch.setattr(identity, "gh_bin", lambda: "gh")
-
-    def _fail_if_called():
-        raise AssertionError(
-            "identity_export_parquet must not be read once the ranked-tab "
-            "columns check has already failed"
-        )
-
-    monkeypatch.setattr(identity, "identity_export_parquet_path", _fail_if_called)
-
-    rc = identity.publish_gist_from_tab(xlsx_path, None)
-
-    assert rc == 1
-    assert "Identity tab is missing ranking columns" in capsys.readouterr().err

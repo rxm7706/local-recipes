@@ -2,9 +2,9 @@
 
 You are an **Expert Python Ecosystem Analyst and Open Source Packaging Specialist**.
 
-Your job is to build a **single consolidated, deduplicated, verified package inventory** from a workbook plus external sources, then output:
-1. Full inventory (14 columns) — durable copy: workbook tab `verified-all-packages`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
-2. Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) — durable copy: workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx` (14 columns + 8 handoff columns). Do not treat a repo-root `cdao_consolidated_inventory-2026-08-12.csv` as the stored copy.
+Your job is to build a **single consolidated, deduplicated, verified package inventory** from the Atlas Kedro data plane (Story 23.8/23.9 workbook-free path), then output:
+1. Full inventory (14 columns) — durable copy: `derived/inventory_verified_packages/inventory_verified_packages.parquet`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
+2. Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) — durable copy: `derived/identity_complete_export/identity_complete_export.parquet` (ranking + identity handoff columns). Historical workbook tab names (`inventory-2026-08-12`, `identity-2026-08-12`) are retired.
 3. `cdao_consolidated_inventory_verified_all_packages.md`
 4. A brief terminal summary in the exact metrics format below.
 
@@ -14,26 +14,25 @@ Do **not** depend on any pre-existing repo script. Execute the full workflow you
 
 ## 1) Inputs (replace paths as needed)
 
-- Workbook export (`.xlsx`) — **optional as of Story 23.8**: when omitted, pass
-  `--live-catalog PATH` (a `PYFORGE_ATLAS_DATA_ROOT`) instead and the package
-  universe is read from that data plane's `inventory_universe.parquet` rather
-  than the workbook's sheets. See
+- Atlas data root (`PYFORGE_ATLAS_DATA_ROOT`) — **required (Story 23.9)**: pass
+  `--live-catalog PATH` to `conda-forge-packaging-inventory-operations_metrics.py`.
+  The package universe is read from `inventory_universe.parquet`; verified
+  deliverable A rows from `inventory_verified_packages.parquet`; the AOSS-Free
+  Mason queue from `inventory_aoss_free_queue.parquet`. See
   [`conda-forge-packaging-inventory-operations_replay.md`](conda-forge-packaging-inventory-operations_replay.md)
   execution mode 5 for the exact CLI shape.  
-  `{{ANALYSIS_XLSX_PATH}}`
+  `{{PYFORGE_ATLAS_DATA_ROOT}}`
 - OpenTeams export (`.tsv`):  
   `{{OPENTEAMS_TSV_PATH}}`
 - Optional curated groups file (`.json`):  
   `{{CURATED_GROUPS_JSON_PATH}}`  
   If missing, continue with empty curated groups and record that in report notes.
 
-Expected workbook tabs may include (not limited to):  
-`CDO-ENT-JFROG`, `GAOSS-Free`, `GAOSS-Premium`, `Anaconda-Main`, `Anaaconda-Dist`, `Conda-Forge`, `Basilisk`, `OpenTeams`, `10kOpen`, `10kClosed`, `CDO-ENT-CONDA`, etc.
+Catalog sources (Story 23.8 `inventory_universe.parquet` — replaces workbook sheet parsing):  
+`tab:CDO-ENT-JFROG`, `tab:GAOSS-Free`, `tab:GAOSS-Premium`, `tab:Anaconda-Main`, `tab:Anaaconda-Dist`, `tab:Conda-Forge`, `tab:Basilisk`, `tab:OpenTeams`, `tab:CDO-ENT-CONDA`.
 
-Output snapshot tabs (durable copies in `docs/Analysis_Dataset-2026-08-12.xlsx` — do **not** ingest as sources):  
-`verified-all-packages` (full inventory);  
-`inventory-2026-08-12` (dated OpenTeams handoff);  
-`identity-2026-08-12` (PURL Associator join + inventory-derived identity).
+Historical output snapshot tabs (retired 2026-08-30, Story 23.9 — do **not** ingest):  
+`verified-all-packages`, `inventory-2026-08-12`, `identity-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx`.
 
 Must-include (every parseable library from these two is in the final inventory; 100% inclusion):
 - `CDO-ENT-JFROG` is the CDO JFrog/Artifactory consumption inventory (`name` plus Artifactory/internal-use/packaging-tier columns). Formerly `Analysis_Dataset-2026-07-19`. `10kOpen` is a clone of this tab — do not double-count.
@@ -41,7 +40,7 @@ Must-include (every parseable library from these two is in the final inventory; 
 
 OpenTeams 1:1 packaging tracker (live board
 https://github.com/orgs/OpenTeams-WFT-CDO/projects/1/views/6?sliceBy%5Bvalue%5D=OSS+Enhancements+%28Conda+Forge%2C+Pixi%2C+ect%29 ;
-workbook `OpenTeams` tab is the snapshot): every parseable library in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` must have exactly one issue titled `[Conda-Forge Packaging] {name}` (example `[Conda-Forge Packaging] grpcio`). One name per issue. CVE `|` titles do not count.
+`openteams_project_1_board_raw.parquet` is the snapshot source): every parseable library in `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` must have exactly one issue titled `[Conda-Forge Packaging] {name}` (example `[Conda-Forge Packaging] grpcio`). One name per issue. CVE `|` titles do not count.
 
 ---
 
@@ -67,13 +66,13 @@ Use these sources and attribute packages to each source:
    - `List Of FeedStocks - As Co-Maintainer`
 8. Curated groups from provided JSON (if available): Apache, Django, Linux AI & Data, NumFOCUS, Jazzband, FINOS, PSF, PyPA, Trendshift, Google AOSS, Microsoft, Kedro, BMAD.
 
-If any live source is unavailable, fallback to workbook-derived equivalents when possible and document the fallback.
+If any live source is unavailable, fallback to the nearest materialized Atlas Parquet when possible and document the fallback.
 
 ---
 
 ## 3) Deep parsing requirements
 
-Parse **all workbook tabs** and extract package candidates from:
+Parse **all catalog sources** from `inventory_universe.parquet` and extract package candidates from:
 
 1. Direct package columns (case-insensitive names), including:
    - `name`, `Package_Name`, `raw_names`, `Item`, `pypi_name`, `conda_forge_name`, `import_name`

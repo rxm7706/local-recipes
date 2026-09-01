@@ -52,7 +52,7 @@
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "973a9c8309e8e63f498c2f768d8d8905dcc348c6",
    "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "6ca4370240838b65f9078a8fff31eb193850e626",
-   "scripts/conda-forge-packaging-inventory-operations_priority.py": "fe4b53df7c08d63aabdf06cfb0462498ed534663",
+   "scripts/conda-forge-packaging-inventory-operations_priority.py": "baa5ad31c0fd123a6e510a168f5dfee44cb789e7",
    "scripts/openteams_identity_dashboards.py": "0b0bcf2ccddbefade59b4f9578af4513b418a204",
    "scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_universe/inventory_universe.parquet": "2db4e0823a5cc08b040a8b22debaf98af77aebfd",
    "scripts/tests/fixtures/inventory_universe/catalog/intermediate/core_packages_enumerated/core_packages_enumerated.parquet": "7f93922ba372419eae99251b07a4aa20a87c2d6d",

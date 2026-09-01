@@ -2,9 +2,11 @@
 title: 'Deliverable A + Packaging_Candidate_Status derived export (Story 23.4, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '26d94cf8aa7754981d709f579c072fa0b21ba971'
+implementation_commit: '911f35817416fcc11cd622eb07e0a156acaf646d'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -13,6 +15,7 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-23-3-priority-rules-in-kedro.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/epic-21-context.md'
 warnings: []
+deferred: []
 ---
 
 <intent-contract>
@@ -252,3 +255,91 @@ isolation.
 - Manual/CI diff of `metrics.py`'s `packaging_status`/`write_aoss_free_queue` unmodified output
   against the new nodes' output on the same frozen fixture corpus — expected: identical column
   values per row (`done_checkpoint`).
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass (session 6; verification executed)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 1, low 0)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[medium]` `[patch]` Fixed `test_packaging_candidate_status_branches` setup for `Not on PyPI`: exclude that branch from `on_pypi=True` so both verification BOOLs are false.
+
+### 2026-09-01 — Review pass (session 5; Cursor dispatch, shell still blocked)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (session 4; user re-dispatch, shell still blocked)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (session 3; static re-verify, shell still blocked)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (session 2; static + test patches)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 2, low 0)
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - `[medium]` `[patch]` Extended malformed `Priority_Bucket` matrix coverage (`PX`, `bad`, `P` status-only cases) in `test_inventory_verified_packages.py`.
+  - `[medium]` `[patch]` Added CDO-ENT-CONDA-only AOSS universe exclusion test in `test_inventory_aoss_free_queue.py`.
+
+### 2026-09-01 — Review pass (static; review subagents not launched — shell blocked)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+Summary of implemented change:
+- Two PURE `derived_artifacts` nodes port `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
+- Row grain uses `inventory_universe` (Story 23.8 course correction) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
+- Session 6 fixed the `Not on PyPI` parametrized test setup and executed verification commands successfully.
+
+Files changed (branch `dispatch/pyforge-atlas/23.4`, baseline `26d94cf` → implementation commit `911f358`, plus session 6 test fix):
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_inventory_verified_packages`, `build_inventory_aoss_free_queue`, verbatim helpers
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — wire two new nodes
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — catalog entries for both outputs
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — Dagster op timeouts
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py` — I/O matrix + done_checkpoint parity (session 6: `Not on PyPI` branch setup fix)
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` — queue parity
+- `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — derived_artifacts 4→6 nodes, combined DAG 56→58
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — EXPECTED_TOTAL 122→124
+
+Review findings breakdown: session 6 applied 1 patch (test setup for `Not on PyPI`); prior sessions landed implementation and additional matrix tests.
+
+Follow-up review recommendation: false (1 medium patch; score 3 < 5)
+
+Verification performed:
+- `pixi run -e pyforge-atlas kedro-catalog-check` — **PASS** (68 passed)
+- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py -q` — **PASS** (18 passed)
+- I/O matrix audit: all nine intent-contract rows covered by dedicated tests; `done_checkpoint` parity tests compare against unmodified `metrics.py`.
+
+Residual risks:
+- TENK_TABS row-drop filter from `metrics.py::main()` is intentionally omitted (Story 23.8 universe does not include 10kOpen/10kClosed); accepted delta per spec-23-8 Design Notes.

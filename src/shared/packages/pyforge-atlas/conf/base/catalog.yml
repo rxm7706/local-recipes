@@ -955,6 +955,41 @@ inventory_universe:
   metadata:
     layer: derived
 
+# Story 23.3 — per-package Basilisk vuln rollup (risk_level / vuln_status / count).
+vulnerability_basilisk_rollup:
+  type: pandas.ParquetDataset
+  filepath: data/derived/vulnerability_basilisk_rollup/vulnerability_basilisk_rollup.parquet
+  metadata:
+    layer: derived
+
+# Story 23.3 — priority.py P1–P10 / Rank / Score / Work over Kedro Parquet inputs.
+inventory_priority_assignments:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet
+  metadata:
+    layer: derived
+
+# Story 23.4 — deliverable A (14-column verified inventory export).
+inventory_verified_packages:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_verified_packages/inventory_verified_packages.parquet
+  metadata:
+    layer: derived
+
+# Story 23.4 — AOSS-Free Mason queue (supplementary; never expands OpenTeams universe).
+inventory_aoss_free_queue:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet
+  metadata:
+    layer: derived
+
+# Story 23.5 — canonical single complete export (63-column join over Stories 21.6/23.2/23.3/23.4).
+identity_complete_export:
+  type: pandas.ParquetDataset
+  filepath: data/derived/identity_complete_export/identity_complete_export.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # upstream_discovery — GitHub-trending discovery ingest (Story 13.1, CAP-1; FR-64)
 # =============================================================================
