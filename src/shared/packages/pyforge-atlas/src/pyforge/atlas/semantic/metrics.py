@@ -380,6 +380,37 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# identity ops  (Story 22.3 — ranked export presence / issue / build signals)
+# ---------------------------------------------------------------------------
+
+
+def has_open_teams_issue(t: Any) -> Any:
+    """Package has an OpenTeams packaging-issue URL (null-safe, blank → false)."""
+    return (t.OpenTeams_Issue_URL.fill_null("") != "").fill_null(False)
+
+
+def has_feedstock(t: Any) -> Any:
+    """Package has a conda-forge feedstock URL (null-safe, blank → false)."""
+    return (t["Conda-Forge_FeedStock_URL"].fill_null("") != "").fill_null(False)
+
+
+def has_staged_pr(t: Any) -> Any:
+    """Package has a staged-recipes PR URL (null-safe, blank → false)."""
+    return (t.Staged_Recipes_PR_URL.fill_null("") != "").fill_null(False)
+
+
+def has_local_recipe(t: Any) -> Any:
+    """Package has a local-recipes URL (null-safe, blank → false)."""
+    return (t.Local_Recipes_URL.fill_null("") != "").fill_null(False)
+
+
+def identity_local_build_status(t: Any) -> Any:
+    """Normalize blank ``Local_Build_Status`` to ``blank`` (write_ops_canvas semantics)."""
+    raw = t.Local_Build_Status.fill_null("")
+    return (raw == "").ifelse("blank", raw)
+
+
 # Legacy feedstock-health filters that the migrated shape port does NOT carry, so
 # D1 deliberately does NOT declare them (would require fabricating a legacy signal).
 # Documented here + asserted by the provenance test so the gap is explicit, not silent.

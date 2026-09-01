@@ -466,3 +466,43 @@ def load_identity_catalog(parquet: str | os.PathLike[str] | None = None) -> pd.D
             "Vuln",
         ],
     )
+
+
+def load_identity_ops_priority(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-ops` Priority pane — P × Work counts."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_ops_model,
+        ["P", "Work"],
+        ["package_count"],
+    )
+
+
+def load_identity_ops_issues(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-ops` Issues pane — P × has-issue have/miss counts."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_ops_model,
+        ["P", "has_open_issue"],
+        ["package_count"],
+    )
+
+
+def load_identity_ops_builds(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-ops` Builds pane — Local_Build_Status totals (no recipe-type breakdown)."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_ops_model,
+        ["Local_Build_Status"],
+        ["package_count"],
+    )
+
+
+def load_identity_ops_census(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-ops` Census pane — feedstock / staged-PR / local-recipe presence."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_ops_model,
+        ["has_feedstock", "has_staged_pr", "has_local_recipe"],
+        ["package_count"],
+    )

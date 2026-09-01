@@ -300,6 +300,15 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "(Story 22.1's quartet bridge export, not a Kedro pipeline output); renders "
         "empty until priority.py's bridge write has run.",
     ),
+    PageDef(
+        "identity-ops",
+        "Identity Ops",
+        "identity-ops",
+        "bsl-shell",
+        note="Wired to build_identity_ops_model over identity_ranked_export.parquet "
+        "(Story 22.1); four panes (Priority/Issues/Builds/Census); renders empty until "
+        "the bridge export exists.",
+    ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
@@ -358,6 +367,32 @@ def _shell_page(page: PageDef, *, provenance: ProvenanceInfo) -> vm.Page:
         title=page.title,
         components=[_legibility_card(page, grounded=False, provenance=provenance)],
     )
+
+
+def _identity_ops_page(
+    page: PageDef,
+    *,
+    parquet: Path,
+    provenance: ProvenanceInfo,
+) -> vm.Page:
+    """Four-pane identity-ops page — one shared provenance Card + four BSL AgGrids."""
+    panes: tuple[tuple[str, str, Callable[[], Any]], ...] = (
+        ("priority", "Priority (P × Work)", lambda: _data.load_identity_ops_priority(parquet)),
+        ("issues", "Issues (packaging-issue gap)", lambda: _data.load_identity_ops_issues(parquet)),
+        ("builds", "Builds (local build status)", lambda: _data.load_identity_ops_builds(parquet)),
+        ("census", "Census (feedstock / staged / local)", lambda: _data.load_identity_ops_census(parquet)),
+    )
+    components: list[Any] = [
+        _legibility_card(page, grounded=False, provenance=provenance),
+    ]
+    for pane_id, heading, loader in panes:
+        key = f"data::{page.id}::{pane_id}"
+        data_manager[key] = loader
+        components.append(vm.Card(id=f"{page.id}--{pane_id}-hdr", text=f"### {heading}"))
+        components.append(
+            vm.AgGrid(id=f"{page.id}--{pane_id}-grid", figure=dash_ag_grid(key))
+        )
+    return vm.Page(id=page.id, title=page.title, components=components)
 
 
 def _factory_page(
@@ -649,6 +684,11 @@ def build_dashboard(
             by_id["identity-catalog"],
             lambda: _data.load_identity_catalog(root / _data.IDENTITY_RANKED_EXPORT_PARQUET),
             grounded=False,
+            provenance=identity_catalog_provenance,
+        ),
+        _identity_ops_page(
+            by_id["identity-ops"],
+            parquet=root / _data.IDENTITY_RANKED_EXPORT_PARQUET,
             provenance=identity_catalog_provenance,
         ),
         _factory_page(

@@ -20,6 +20,14 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 NOW = 1_700_000_000
+STAMP = "2024-11-14T22:13:20Z"
+
+
+@pytest.fixture()
+def dashboard():
+    from pyforge.atlas.dashboard import app
+
+    return app.build_dashboard(build_stamp=STAMP, data_root="/nonexistent-data-root", now=NOW)
 
 
 @pytest.fixture()

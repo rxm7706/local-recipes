@@ -2,7 +2,8 @@
 title: 'Vizro identity-ops page — four-pane canvas parity (Story 22.3, Epic 22)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'dispatch/pyforge-atlas/22.3-pre'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -237,3 +238,40 @@ Story 22.1's live status before dispatch.
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 1, low 0)
+- defer: 0
+- reject: 2: (high 0, medium 0, low 2)
+- addressed_findings:
+  - `[medium]` `[patch]` `test_registered_data_functions_are_callable_and_return_frames` expected a single `data::identity-ops` key; updated dryrun test to assert four pane keys (`priority`/`issues`/`builds`/`census`).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added the `identity-ops` Vizro page with four BSL-driven panes (Priority, Issues, Builds, Census) over `build_identity_ops_model` / `identity_ranked_export.parquet`, parity-tested against `write_ops_canvas` for the three canvas-exported aggregates.
+
+Files changed:
+- `semantic/metrics.py` — derived boolean helpers + blank-normalized build status
+- `semantic/models.py` — `build_identity_ops_model`
+- `dashboard/data.py` — four `load_identity_ops_*` loaders
+- `dashboard/app.py` — `PageDef`, `_identity_ops_page`, dashboard wiring
+- `tests/dashboard/test_identity_ops_page.py` — parity + BSL + structure tests (new)
+- `tests/dashboard/test_dashboard_dryrun.py` — multi-pane registration + loader/schema entries
+- `tests/dashboard/conftest.py` — shared `dashboard` fixture
+
+Review findings: 1 patch applied (dryrun multi-key registration); 2 low-severity stylistic findings rejected (pane Card headings, ibis deprecation warnings in upstream).
+
+Follow-up review recommendation: false (patched counts: high 0, medium 1, low 0; score 3 < 5).
+
+Verification:
+- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_ops_page.py -q` — 7 passed
+- `pixi run -e pyforge-atlas kedro-test -- -k identity_ops` — 7 passed
+- Full `kedro-test` / `kedro-catalog-check` — not re-run in this session after dryrun patch (recommended before merge)
+
+Residual risks: Census pane has no canvas JSON anchor (by design); Builds pane omits per-recipe-type breakdown (spec Never boundary).

@@ -244,7 +244,15 @@ def test_registered_data_functions_are_callable_and_return_frames(dashboard):
     """Every data/factory page registers a lazy data function that returns a DataFrame
     offline (empty here — no data root); the no-bsl shells register NO data function
     (no fabrication)."""
+    identity_ops_panes = ("priority", "issues", "builds", "census")
     for page in app.PAGE_INVENTORY:
+        if page.id == "identity-ops":
+            for pane in identity_ops_panes:
+                key = f"data::{page.id}::{pane}"
+                obj = _dm_get(key)
+                assert obj is not None, f"{page.id}::{pane} data function not registered"
+                assert isinstance(obj.load(), pd.DataFrame)
+            continue
         key = f"data::{page.id}"
         obj = _dm_get(key)
         if page.kind == "no-bsl-shell":
@@ -473,6 +481,19 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
             "Vuln",
         ],
     ),
+    "identity-ops-priority": (dash_data.load_identity_ops_priority, ["P", "Work", "package_count"]),
+    "identity-ops-issues": (
+        dash_data.load_identity_ops_issues,
+        ["P", "has_open_issue", "package_count"],
+    ),
+    "identity-ops-builds": (
+        dash_data.load_identity_ops_builds,
+        ["Local_Build_Status", "package_count"],
+    ),
+    "identity-ops-census": (
+        dash_data.load_identity_ops_census,
+        ["has_feedstock", "has_staged_pr", "has_local_recipe", "package_count"],
+    ),
 }
 
 
@@ -589,6 +610,26 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
             "Vuln",
         ],
         [],
+    ),
+    "identity-ops-priority": (
+        models.build_identity_ops_model,
+        ["P", "Work"],
+        ["package_count"],
+    ),
+    "identity-ops-issues": (
+        models.build_identity_ops_model,
+        ["P", "has_open_issue"],
+        ["package_count"],
+    ),
+    "identity-ops-builds": (
+        models.build_identity_ops_model,
+        ["Local_Build_Status"],
+        ["package_count"],
+    ),
+    "identity-ops-census": (
+        models.build_identity_ops_model,
+        ["has_feedstock", "has_staged_pr", "has_local_recipe"],
+        ["package_count"],
     ),
 }
 
