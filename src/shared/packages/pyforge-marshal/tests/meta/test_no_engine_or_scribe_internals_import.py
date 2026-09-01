@@ -1,5 +1,7 @@
-"""Meta test -- Story 28.8's Block-If, as a build-breaking package-wide
-guard (SPEC-marshal-token-economy CAP-5).
+"""Meta test -- Story 28.8's Block-If, extended by Story 28.9 (CAP-6):
+``graphify`` must not be imported inside ``pyforge.marshal`` either -- the
+planning graph lives behind Scribe's ``compile_surface`` extra; a
+marshal-private graph is the story's own Block-If.
 
 The story forbids two imports outright:
 
@@ -14,6 +16,8 @@ The story forbids two imports outright:
   public contract", restated by scribe Story 6.2's Design Notes for this
   exact consumer: bind "to this ``scribe index refresh``-shaped CLI grammar
   only, never to ``pyforge.scribe.extras.cocoindex_flow`` internals".
+- ``graphify`` **anywhere** in ``pyforge.marshal``. Story 28.9's Block-If:
+  the planning corpus graph is consumed through ``scribe recall`` only.
 
 AST-scans every module in the installed package, the same technique
 ``test_ad65_no_network_stack_imports.py`` and
@@ -36,7 +40,7 @@ if _PACKAGE_FILE is None:
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 
 #: Exact module names (or dotted prefixes) no marshal module may import.
-_FORBIDDEN_PREFIXES: tuple[str, ...] = ("cocoindex", "pyforge.scribe")
+_FORBIDDEN_PREFIXES: tuple[str, ...] = ("cocoindex", "graphify", "pyforge.scribe")
 
 
 def _package_modules() -> list[Path]:
@@ -92,6 +96,8 @@ def test_no_engine_or_producer_internals_import(path: Path):
         "from cocoindex import memo_fingerprint\n",
         "from pyforge.scribe.extras.cocoindex_flow import refresh_incremental\n",
         "import pyforge.scribe\n",
+        "import graphify\n",
+        "from graphify import god_nodes\n",
     ],
 )
 def test_guard_is_alive_on_synthetic_offenders(tmp_path: Path, source: str):

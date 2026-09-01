@@ -1,15 +1,18 @@
 """THE ONLY module permitted to invoke the ``scribe`` CLI (Story 28.8,
-SPEC-marshal-token-economy CAP-5) -- the same sole-ownership discipline
-``adapters/harness_bmadloop.py`` has for ``bmad-loop`` and
-``adapters/harness_bmadbuild.py`` has for a session-harness CLI.
+SPEC-marshal-token-economy CAP-5; Story 28.9 CAP-6 extends with ``recall``)
+-- the same sole-ownership discipline ``adapters/harness_bmadloop.py`` has
+for ``bmad-loop`` and ``adapters/harness_bmadbuild.py`` has for a
+session-harness CLI.
 
 The ``derived-context`` layer's freshness engine is Scribe's
-``compile_surface`` cocoindex extra (scribe Story 6.2). Marshal binds it
-through the ``scribe index refresh`` CLI grammar that station's SKILL.md
-declares -- never ``import cocoindex`` (this story's Block-If), never
-``import pyforge.scribe`` (that SKILL's own "the CLI is the public
+``compile_surface`` cocoindex extra (scribe Story 6.2). The
+``planning-graph`` layer's retrieval engine is Scribe's ``recall`` grammar
+(scribe Story 2.4/6.3 -- stale nodes never surface). Marshal binds both
+through the scribe CLI grammar that station's SKILL.md declares -- never
+``import cocoindex`` or ``import graphify`` (these stories' Block-If),
+never ``import pyforge.scribe`` (that SKILL's own "the CLI is the public
 contract; do not import pyforge.scribe internals"). Everything
-subprocess-shaped for that binding lives here and only here: binary
+subprocess-shaped for those bindings lives here and only here: binary
 probing across ``PATH`` plus the repo's pixi env bin dirs, the bounded
 invocation, and turning a failure into a REASON rather than an exception.
 
@@ -51,11 +54,13 @@ from pathlib import Path
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..core.derived_context import parse_refresh_report, render_scribe_refresh_argv
+from ..core.planning_graph import parse_recall_output, render_scribe_recall_argv
 
 __all__ = (
     "SCRIBE_BINARY",
     "SCRIBE_FALLBACK_BIN_DIRS",
     "ScribeCli",
+    "ScribeRecallOutcome",
     "ScribeRefreshOutcome",
 )
 
@@ -77,6 +82,25 @@ SCRIBE_FALLBACK_BIN_DIRS: tuple[str, ...] = (
 #: over a handful of planning documents, so this is generous; it exists to
 #: bound a wedged or prompting CLI, never to cut short real work.
 _REFRESH_TIMEOUT_S = 120.0
+_RECALL_TIMEOUT_S = 60.0
+
+
+@dataclass(frozen=True)
+class ScribeRecallOutcome:
+    """What one ``scribe recall`` invocation produced.
+
+    ``ok`` is true ONLY when the grammar ran and its output parsed --
+    every other shape is ``ok=False`` with a human ``reason``. ``grounded``
+    is meaningful only when ``ok`` is true; a miss (including stale-only
+    candidates excluded by scribe Story 6.3) is ``grounded=False`` with
+    ``ok=True`` -- the consumer falls back to epic-context files."""
+
+    ok: bool
+    grounded: bool = False
+    text: str = ""
+    citation: str | None = None
+    reason: str | None = None
+    argv: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -196,4 +220,64 @@ class ScribeCli:
         refreshed, skipped = parsed
         return ScribeRefreshOutcome(
             ok=True, refreshed=refreshed, skipped=skipped, argv=argv
+        )
+
+    def recall(
+        self,
+        *,
+        repo_root: Path,
+        query: str,
+        binary_path: str | None = None,
+    ) -> ScribeRecallOutcome:
+        """Run the declared ``scribe recall`` grammar and return what it
+        reported. Never raises."""
+        resolved = (
+            binary_path if binary_path is not None else self.resolve_binary(repo_root)
+        )
+        if resolved is None:
+            return ScribeRecallOutcome(
+                ok=False,
+                reason=(
+                    f"the {SCRIBE_BINARY!r} CLI did not resolve on PATH or in "
+                    f"{list(SCRIBE_FALLBACK_BIN_DIRS)!r} -- the planning-graph "
+                    "layer is off for this iteration and Story 28.8's "
+                    "epic-context-file fallback applies"
+                ),
+            )
+        argv = render_scribe_recall_argv(resolved, query)
+        try:
+            result = self._process.run(
+                argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S
+            )
+        except ProcessError as exc:
+            return ScribeRecallOutcome(
+                ok=False,
+                argv=argv,
+                reason=(
+                    f"the scribe recall grammar {list(argv)!r} could not run "
+                    f"({exc}) -- the planning-graph layer is off for this "
+                    "iteration and Story 28.8's epic-context-file fallback "
+                    "applies"
+                ),
+            )
+        output = (result.stdout or "") + (result.stderr or "")
+        if result.returncode != 0:
+            tail = output.strip().splitlines()[-1] if output.strip() else "<no output>"
+            return ScribeRecallOutcome(
+                ok=False,
+                argv=argv,
+                reason=(
+                    f"the scribe recall grammar {list(argv)!r} exited "
+                    f"{result.returncode} ({tail}) -- the planning-graph "
+                    "layer is off for this iteration and Story 28.8's "
+                    "epic-context-file fallback applies"
+                ),
+            )
+        parsed = parse_recall_output(output)
+        return ScribeRecallOutcome(
+            ok=True,
+            grounded=parsed.grounded,
+            text=parsed.text,
+            citation=parsed.citation,
+            argv=argv,
         )
