@@ -126,6 +126,7 @@ development_status:
   28-11-difficulty-tiers-route-across-providers-and-pools: backlog
   28-12-dependency-derived-dispatch-ordering: backlog
   28-13-sanctioned-retry-after-an-operator-initiated-stop: backlog
+  28-17-verify-fail-terminalization-and-transient-auto-redispatch: in-progress
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
   28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
   28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: backlog

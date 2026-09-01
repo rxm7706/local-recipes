@@ -8,8 +8,10 @@ from pyforge.marshal.core.dispatch_retry import (
     exclude_harness_profiles_after_transient_failure,
     prune_blocked_stories_merged_on_main,
 )
+from pyforge.marshal.core.dispatch_completion import DispatchGitFacts
 from pyforge.marshal.core.dispatch_supervisor_state import (
     should_retry_stuck_land,
+    should_terminalize_verify_refusal,
     supervisor_should_exit,
 )
 from pyforge.marshal.core.gate import widen_effective_surface_with_paths
@@ -138,3 +140,53 @@ def test_widen_effective_surface_with_paths() -> None:
     assert "src/foo/bar.py" in widened
     assert "docs/readme.md" in widened
     assert "src/**" in widened
+
+
+def _git_facts(*, baseline: str = "aaa", current: str = "bbb") -> DispatchGitFacts:
+    return DispatchGitFacts(
+        baseline_head_sha=baseline,
+        current_head_sha=current,
+        changed_paths=(),
+        branch_merged=False,
+        story_merged_on_main=False,
+    )
+
+
+def test_terminalize_verify_refusal_when_dead_session_and_refused() -> None:
+    assert should_terminalize_verify_refusal(
+        session_alive=False,
+        verification_verdict="refused",
+        git=_git_facts(),
+    )
+
+
+def test_no_terminalize_while_session_alive() -> None:
+    assert not should_terminalize_verify_refusal(
+        session_alive=True,
+        verification_verdict="refused",
+        git=_git_facts(),
+    )
+
+
+def test_no_terminalize_when_verify_still_pending() -> None:
+    assert not should_terminalize_verify_refusal(
+        session_alive=False,
+        verification_verdict=None,
+        git=_git_facts(),
+    )
+
+
+def test_no_terminalize_when_verify_passed() -> None:
+    assert not should_terminalize_verify_refusal(
+        session_alive=False,
+        verification_verdict="verified",
+        git=_git_facts(),
+    )
+
+
+def test_no_terminalize_without_git_progress() -> None:
+    assert not should_terminalize_verify_refusal(
+        session_alive=False,
+        verification_verdict="refused",
+        git=_git_facts(baseline="same", current="same"),
+    )

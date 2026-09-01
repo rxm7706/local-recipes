@@ -1,6 +1,9 @@
-"""Pure dispatch-supervisor tick helpers (hotfix 2026-09-01)."""
+"""Pure dispatch-supervisor tick helpers (hotfix 2026-09-01; Story 28.17)."""
 
 from __future__ import annotations
+
+from .dispatch_completion import DispatchGitFacts, has_git_progress
+from .dispatch_verification import DispatchVerificationVerdict
 
 # Default: five supervisor ticks (~5 minutes at 60s) before forcing another
 # land attempt when verify already passed but merge has not landed.
@@ -30,3 +33,22 @@ def supervisor_should_exit(
 ) -> bool:
     """Terminal states where the detached supervisor may stop heartbeating."""
     return story_merged_on_main or completion_verdict in {"completed", "failed"}
+
+
+def should_terminalize_verify_refusal(
+    *,
+    session_alive: bool,
+    verification_verdict: str | None,
+    git: DispatchGitFacts,
+) -> bool:
+    """Story 28.17: dead session + verify refused + git progress → FAILED exit.
+
+    Without this, ``judge_dispatch_completion`` stays ``LIVE`` (git facts) while
+    the supervisor heartbeats forever after ``MRS-GATE-001`` (or any verify
+    refuse), freezing ``--stories`` drains overnight.
+    """
+    if session_alive:
+        return False
+    if verification_verdict != DispatchVerificationVerdict.REFUSED.value:
+        return False
+    return has_git_progress(git)

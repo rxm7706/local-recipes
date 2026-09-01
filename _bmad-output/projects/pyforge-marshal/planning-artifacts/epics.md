@@ -4337,6 +4337,18 @@ So that scope violations stay visible without permanently deadlocking an autonom
 **And** `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not journal-only
 **And** the mode is per-station — one station's declared mode never changes another's
 
+### Story 28.17: Verify-fail terminalization and transient auto-redispatch
+
+As a marshal operator,
+I want a verify-refused dispatch with a dead session to terminalize as failed with preserve,
+So that overnight `--stories` drains retry transient test failures instead of heartbeating LIVE forever.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-verify-fail-terminalization CAP-1..3
+**Given** a dispatch whose build session is dead, verify outcome is `refused`, and git shows progress beyond baseline **When** the dispatch supervisor ticks **Then** it journals completion verdict `failed`, captures `failed/<story>/changes.patch`, and exits (no further LIVE heartbeats)
+**And** with the same verify outcome but the session process still alive **When** the supervisor ticks **Then** verdict remains `LIVE` unchanged
+**And** after a terminalized run with `MRS-GATE-001` **When** the next fleet `drain --once` cycle runs **Then** the story is not permanently blocked by `MRS-DRAIN-005` and may redispatch (transient retry)
+**And** sibling to Story 28.13 — does not replace SIGTERM/stopped taxonomy
+
 ### Story 28.16: Parallel dispatch fan-out when deps and surfaces are disjoint
 
 As a marshal operator,

@@ -214,3 +214,25 @@ silent global downgrade of AD-49's non-waivable default.
   reads findings" (the real risk named when this was scoped) doesn't quietly
   become "nobody ever reads findings" — `marshal status`/`fleet-picture`
   surfacing it, not just the journal, is probably required, not optional.
+
+## Addendum (2026-09-01) — verify-fail must terminalize, not heartbeat forever
+
+**Incident:** atlas **23.1** (2026-09-01 overnight drain). Build session finished
+and died; independent verify refused (`kedro-test` / `MRS-GATE-001`); WIP commit
+remained on the dispatch branch. Story **22.2** kept the run **`LIVE`** by git
+facts; the supervisor heartbeats every 60s indefinitely; **`dispatch-preserve`**
+never ran (it only fires on supervisor exit with verdict **`failed`**). The
+16-story atlas `--stories` chain stalled until an operator manual preserve,
+supervisor kill, worktree reset, and bare redispatch.
+
+**E. Verify-fail terminalization + transient auto-redispatch (Story 28.17).**
+When the session is **dead**, verify outcome is **`refused`**, and git shows
+progress — the supervisor must **stop as `failed`**: journal completion,
+capture `failed/<story>/changes.patch`, exit. The existing transient-block
+hotfix (`MRS-GATE-001` = retryable) then lets the next **`factory drain --once`**
+tick **redispatch the same story** without `MRS-DRAIN-005` permanent block.
+**Does not** change global 22.2 judge semantics; **does not** replace **28.13**
+(SIGTERM/stopped taxonomy) — composes with it.
+
+Spec: `spec-marshal-verify-fail-terminalization/SPEC.md` (CAP-1..3). Status:
+`specified` (addendum E satisfied by bmad-spec 2026-09-01).

@@ -40,6 +40,7 @@ from ..core.dispatch_verification import (
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_supervisor_state import (
     should_retry_stuck_land,
+    should_terminalize_verify_refusal,
     supervisor_should_exit,
 )
 from ..core.journal import (
@@ -620,6 +621,7 @@ def run_dispatch_supervisor(
             DispatchCompletionInput(session_alive=session_alive, git=git_facts)
         )
         if verdict == DispatchSessionVerdict.LIVE:
+            v_outcome = _verification_outcome_verdict(folded, run_id)
             if _session_awaits_verification(session_alive, git_facts):
                 if not _verification_already_journaled(folded, run_id):
                     _commit_pre_verify_wip(
@@ -641,25 +643,35 @@ def run_dispatch_supervisor(
                     text = fs.read_text(journal_path)
                     if text is not None:
                         folded = _fold_dispatch_journal(fs, run_dir, text)
-                v_outcome = _verification_outcome_verdict(folded, run_id)
-                landing_journaled = _landing_already_journaled(folded, run_id)
-                if (
+                    v_outcome = _verification_outcome_verdict(folded, run_id)
+                if should_terminalize_verify_refusal(
+                    session_alive=session_alive,
+                    verification_verdict=v_outcome,
+                    git=git_facts,
+                ):
+                    verdict = DispatchSessionVerdict.FAILED
+                elif (
                     v_outcome == DispatchVerificationVerdict.VERIFIED.value
                     and not git_facts.story_merged_on_main
-                    and not landing_journaled
+                    and not _landing_already_journaled(folded, run_id)
                 ):
                     stuck_land_ticks += 1
                 else:
                     stuck_land_ticks = 0
-                if (
-                    v_outcome == DispatchVerificationVerdict.VERIFIED.value
-                    and not git_facts.story_merged_on_main
-                    and not landing_journaled
-                ) or should_retry_stuck_land(
-                    verification_verdict=v_outcome,
-                    story_merged_on_main=git_facts.story_merged_on_main,
-                    landing_journaled=landing_journaled,
-                    stuck_land_ticks=stuck_land_ticks,
+                if verdict == DispatchSessionVerdict.LIVE and (
+                    (
+                        v_outcome == DispatchVerificationVerdict.VERIFIED.value
+                        and not git_facts.story_merged_on_main
+                        and not _landing_already_journaled(folded, run_id)
+                    )
+                    or should_retry_stuck_land(
+                        verification_verdict=v_outcome,
+                        story_merged_on_main=git_facts.story_merged_on_main,
+                        landing_journaled=_landing_already_journaled(
+                            folded, run_id
+                        ),
+                        stuck_land_ticks=stuck_land_ticks,
+                    )
                 ):
                     counter = _run_and_journal_landing(
                         fs=fs,
@@ -697,26 +709,27 @@ def run_dispatch_supervisor(
                         )
                     except (VcsCommandError, ValueError):
                         pass
-            heartbeat = build_entry(
-                id=JournalEntryId(writer_id, counter),
-                ts=_format_entry_ts(_now_utc()),
-                run_id=run_id,
-                kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
-                phase=Phase.OBSERVATION,
-                payload={
-                    "heartbeat": True,
-                    "session_alive": session_alive,
-                    "current_head_sha": git_facts.current_head_sha,
-                    "changed_path_count": len(git_facts.changed_paths),
-                },
-            )
-            counter += 1
-            try:
-                _append_entry(fs, run_dir, heartbeat, fsync=False)
-            except FsError:
-                pass
-            time.sleep(_TICK_SECONDS)
-            continue
+            if verdict == DispatchSessionVerdict.LIVE:
+                heartbeat = build_entry(
+                    id=JournalEntryId(writer_id, counter),
+                    ts=_format_entry_ts(_now_utc()),
+                    run_id=run_id,
+                    kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
+                    phase=Phase.OBSERVATION,
+                    payload={
+                        "heartbeat": True,
+                        "session_alive": session_alive,
+                        "current_head_sha": git_facts.current_head_sha,
+                        "changed_path_count": len(git_facts.changed_paths),
+                    },
+                )
+                counter += 1
+                try:
+                    _append_entry(fs, run_dir, heartbeat, fsync=False)
+                except FsError:
+                    pass
+                time.sleep(_TICK_SECONDS)
+                continue
 
         v_outcome = _verification_outcome_verdict(folded, run_id)
         landing_journaled = _landing_already_journaled(folded, run_id)
