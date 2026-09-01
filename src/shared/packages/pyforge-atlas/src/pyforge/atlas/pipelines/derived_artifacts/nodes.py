@@ -1358,7 +1358,7 @@ def build_identity_complete_export(
         is_board_only = str(ident.get("identity_source") or "") == "openteams-board"
 
         pri = priority_by.get(key or "", {})
-        jfrog = jfrog_by.get(key or "", {})
+        jfrog = {} if is_board_only else jfrog_by.get(key or "", {})
         ver = {} if is_board_only else verified_by.get(key or "", {})
         uni = universe_by.get(key or "", {})
         cross = cross_by.get(key or "", {})
@@ -1367,7 +1367,7 @@ def build_identity_complete_export(
         work = _export_blank(pri.get("Work"))
         vuln_status = _export_blank(pri.get("vuln_status"))
 
-        in_jfrog = bool(key and key in jfrog_by)
+        in_jfrog = bool(not is_board_only and key and key in jfrog_by)
         cohort = _export_openteams_cohort(ident, in_jfrog=in_jfrog, verified=ver or None)
         coverage = _export_openteams_coverage(ident)
 

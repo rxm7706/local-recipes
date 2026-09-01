@@ -3,7 +3,7 @@ title: 'identity_complete_export.parquet (canonical single export) (Story 23.5, 
 type: 'feature'
 created: '2026-08-30'
 status: 'done'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 baseline_revision: 'pre-23.5-dispatch'
 deferred:
@@ -390,6 +390,17 @@ its inputs exist.
 - addressed_findings:
   - none
 
+### 2026-09-01 — Review pass (dispatch verification)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 3: (high 0, medium 0, low 3)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[low]` `[patch]` Board-only rows now blank enterprise/JFROG shorthand columns per I/O matrix (not only verification BOOLs).
+  - `[low]` `[patch]` Parity test parses `GIST_SCHEMA` via AST so pyforge-atlas env need not import openpyxl-dependent legacy script.
+  - `[low]` `[patch]` Cross-channel bool assertions use `== True/False` for numpy scalar compatibility.
+
 ## Auto Run Result
 
 Status: done
@@ -409,13 +420,13 @@ Files changed:
 
 Pipeline placement resolution: `derived_artifacts` (confirmed per sibling Stories 23.3/23.4). Domain prefix: `identity_complete_export` → `derived_artifacts` (longest-prefix beats `identity` → `upstream_discovery`).
 
-Review findings: 0 patches applied; 1 deferred (low — no e2e kedro-run gate in unit suite); 2 rejected (intentional `enterprise_conda_maintainers` pass-through input; README shorthand path vs catalog nested path per spec).
+Review findings: 3 patches applied (board-only enterprise blanking, AST GIST_SCHEMA parse, numpy bool assertions); 1 deferred (low — no e2e kedro-run gate in unit suite); 2 rejected from prior pass (intentional `enterprise_conda_maintainers` pass-through input; README shorthand path vs catalog nested path per spec).
 
-Follow-up review recommendation: false (0 patched findings).
+Follow-up review recommendation: false (3 low patches only; score 3 < 5).
 
-Verification (agent session could not execute shell — run locally to confirm):
-- `pixi run -e pyforge-atlas kedro-catalog-check` — expected pass
-- `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_identity_complete_export.py -v` — expected 10 passed
+Verification:
+- `pixi run -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py -v` — **10 passed**
+- `pixi run -e pyforge-atlas kedro-catalog-check` — **68 passed**
 
 Matrix test audit: all six I/O-matrix rows covered — happy path (`test_happy_path_*`), absent enterprise (`test_absent_enterprise_*`), missing priority (`test_missing_priority_row_*`), board-only (`test_board_only_*`), absent Tier 3 (`test_absent_tier3_*`), re-stamped timestamp (`test_happy_path_*` + fixture corpus).
 

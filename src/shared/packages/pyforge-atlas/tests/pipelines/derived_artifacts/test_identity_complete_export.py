@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import importlib.util
+import ast
 import json
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -23,17 +22,19 @@ _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"identity_complete_export": {"verification_timestamp_utc": _FIXED_TS}}
 
 
-def _load_identity_module():
-    spec = importlib.util.spec_from_file_location("identity_ref", _IDENTITY_SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["identity_ref"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+def _gist_columns_from_script() -> list[str]:
+    """Parse ``GIST_SCHEMA`` names without importing the legacy script (openpyxl)."""
+    source = _IDENTITY_SCRIPT.read_text(encoding="utf-8")
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "GIST_SCHEMA":
+                    schema = ast.literal_eval(node.value)
+                    return [str(row[0]) for row in schema]
+    raise RuntimeError(f"GIST_SCHEMA not found in {_IDENTITY_SCRIPT}")
 
 
-IDENTITY_REF = _load_identity_module()
-GIST_COLUMNS = list(IDENTITY_REF.GIST_COLUMNS)
+GIST_COLUMNS = _gist_columns_from_script()
 
 
 def _identity_row(
@@ -179,9 +180,9 @@ def test_happy_path_populates_ranking_jfrog_and_verification():
     assert row["OpenTeams_Batch"] == row["Work"] == "Create recipe"
     assert row["OpenTeams_Coverage"] == "Have_Issue"
     assert row["PyPI_Verified"] == "Yes"
-    assert row["in_basilisk"] is True
-    assert row["in_pytorch"] is True
-    assert row["in_homebrew"] is True
+    assert row["in_basilisk"] == True
+    assert row["in_pytorch"] == True
+    assert row["in_homebrew"] == True
     assert row["Verification_Timestamp_UTC"] == _FIXED_TS
 
 
@@ -226,13 +227,16 @@ def test_board_only_row_has_blank_verification_and_enterprise():
     assert pd.isna(row["CondaForge_Verified"])
     assert pd.isna(row["Packaging_Candidate_Status"])
     assert pd.isna(row["Repository_Source"])
+    assert pd.isna(row["Platforms"])
+    assert pd.isna(row["internal_component_count"])
+    assert row["OpenTeams_Cohort"] == ""
 
 
 def test_absent_tier3_source_yields_false_not_failure():
     out = _run([_identity_row("no-tier3")], tier3_rows=None)
     row = out.iloc[0]
-    assert row["in_debian"] is False
-    assert row["in_fedora"] is False
+    assert row["in_debian"] == False
+    assert row["in_fedora"] == False
 
 
 def test_openteams_cohort_jfrog_new_vs_on_cf():
