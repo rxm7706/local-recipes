@@ -99,6 +99,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-08-30: ladder made compression-only — the original "may lower the model floor" clause conflicted with spec-adaptive-model-tiering's floor-raise-only constraint (found in the tiering/strategy fold-in analysis)
 - 2026-09-01: implemented CAP-8 — compression ladder in supervise/supervisor/policy/spin; added meta seam guard + sidecar test; status blocked pending verification commands (agent shell unavailable)
 - 2026-09-01: bmad-build-auto re-run — static review confirms AC coverage; verification still blocked (shell rejected in session)
+- 2026-09-01: bmad-build-auto Cursor dispatch — implementation confirmed present; verification still blocked (shell rejected in session)
 
 ## Review Triage Log
 
@@ -120,13 +121,22 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - addressed_findings:
   - none
 
+### 2026-09-01 — Review pass (bmad-build-auto Cursor dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
 Manual review (no diff subagents — shell/render_skill blocked): all four ACs have dedicated tests — `ACTION_PRECEDENCE` + `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` (ordering); `CompressionEscalationDecision` field set + `test_cap8_compression_ladder_seam` (model/gate seam isolation); supervisor journals `observed`/`limit`/`threshold`/`declared_aggressiveness`/`target_aggressiveness`; tick loop calls `_maybe_escalate_compression` before `_act_on_budget_transition` for story tokens and before the idle-ladder block.
 
 ## Auto Run Result
 
 Status: blocked
 
-Blocking condition: implementation verification could not run — agent session rejected all shell invocations (`render_skill.py`, `pixi run`, `git`); verification commands in § Verification were not executed.
+Blocking condition: implementation verification could not run — agent session rejected all shell invocations (`render_skill.py`, `pixi run`, `git`, including Smart Mode approval retry); verification commands in § Verification were not executed.
 
 Summary of implemented change: Story 28.6 (CAP-8) adds a graduated wire-compression ladder below the idle/budget kill ladders. As per-story weighted spend crosses `escalation_threshold` (default 0.8 from `[context]`), the supervisor journals `compression-escalation` with threshold facts and raises wire aggressiveness via `.marshal/wire/aggressiveness` before any `budget-stop` or idle-ladder action on the same tick. Model selection is untouched (FR-51 / Story 3.12 seams only).
 
