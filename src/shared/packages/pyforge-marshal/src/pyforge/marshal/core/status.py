@@ -886,6 +886,9 @@ class FleetHomeFacts:
     budget_consumed: int | float | None = None
     # Story 28.4 (CAP-7): Add per-layer savings telemetry alongside budget consumption
     layer_savings: dict[str, object] = field(default_factory=dict)
+    # Story 28.10 (CAP-11): advisory dollar estimates when catalog declared
+    budget_consumed_usd: float | None = None
+    layer_savings_usd: dict[str, float] = field(default_factory=dict)
     # Story 5.3 (FR-38): `RunStatusSnapshot`'s own already-shipped
     # `paused_reason`/`escalated_spec_file`/`escalated_task_phase` fields,
     # threaded through verbatim -- `_gather_home_facts` already reads
@@ -1265,6 +1268,9 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "current_story": _current_story_key(facts.tasks),
         "elapsed_seconds": facts.elapsed_seconds,
         "budget_consumed": facts.budget_consumed,
+        "budget_consumed_usd": facts.budget_consumed_usd,
+        "layer_savings": facts.layer_savings if facts.layer_savings else None,
+        "layer_savings_usd": facts.layer_savings_usd if facts.layer_savings_usd else None,
         "escalation_reason": escalation_reason,
         "escalation_artifact": escalation_artifact,
         # Story 25.5 (CAP-5): the escalated story's recovery pointer --
@@ -1407,6 +1413,10 @@ class RunDetailFacts:
     savings_by_story: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
+    budget_by_story_usd: Mapping[str, float] = field(default_factory=dict)
+    savings_usd_by_story: Mapping[str, Mapping[str, float]] = field(
+        default_factory=dict
+    )
     open_intents: tuple[dict[str, object], ...] = ()
     # Story 25.5 (CAP-5): `RunStatusSnapshot.sweeps_refused` verbatim --
     # trigger -> reason slug (the closed `SWEEP_REFUSED_*` vocabulary).
@@ -1470,6 +1480,12 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
         layer_savings = facts.savings_by_story.get(rendered_key)
         if layer_savings is not None:
             story_row["layer_savings"] = layer_savings
+        savings_usd = facts.savings_usd_by_story.get(rendered_key)
+        if savings_usd is not None:
+            story_row["layer_savings_usd"] = dict(savings_usd)
+        budget_usd = facts.budget_by_story_usd.get(rendered_key)
+        if budget_usd is not None:
+            story_row["budget_consumed_usd"] = budget_usd
         stories.append(story_row)
 
     deferred = [

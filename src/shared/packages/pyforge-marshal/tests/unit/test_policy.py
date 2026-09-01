@@ -1889,6 +1889,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
+            model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             _seed=seed,
         )
 
@@ -1911,6 +1912,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
+            model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1933,6 +1935,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             context=PolicyField(value={}, layer="default", raw_source={}),
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
+            model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1986,7 +1989,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_thirty_one_keys():
+def test_schema_file_declares_the_thirty_two_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -2024,6 +2027,7 @@ def test_schema_file_declares_the_thirty_one_keys():
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "model_cost_catalog",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 

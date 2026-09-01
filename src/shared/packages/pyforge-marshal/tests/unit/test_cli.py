@@ -260,17 +260,10 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_thirty_one_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 31, Story 28.15's `scope_violation_mode`
-    joining Story 28.1's `context`, Story 22.8's `harness_preference`,
-    Story 25.4's 5 bmad-loop 0.10/0.11 knobs, Story 3.13's `max_parallel`,
-    Story 6.9's `mcp_servers`, Story 4.5's `landing_resync_commands`,
-    Story 4.4's `landing_base_branch`, and Story 4.7's 4 landing keys)
-    keys prints its effective value and winning layer' -- checked
-    exhaustively, not just a couple of spot-checked fields. The layer half
-    is counted, not merely detected: exactly one `(layer=...)` suffix per
-    key line, so a regression that drops the suffix from all but one line
-    cannot ship green."""
+def test_config_prints_all_thirty_two_keys(capsys, monkeypatch):
+    """AC: every one of the 32 policy keys (Story 28.10's `model_cost_catalog`
+    joining Story 28.15's `scope_violation_mode`, Story 28.1's `context`, …)
+    prints its effective value and winning layer — checked exhaustively."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -307,9 +300,10 @@ def test_config_prints_all_thirty_one_keys(capsys, monkeypatch):
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "model_cost_catalog",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 31
+    assert captured.out.count("(layer=") == 32
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):

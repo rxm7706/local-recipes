@@ -67,6 +67,9 @@ class BenchmarkLegRecord:
     context_layers: Mapping[str, Mapping[str, object]]
     run_id: str | None = None
     policy_digest: str | None = None
+    # Story 28.10 (CAP-11): advisory dollar estimates when catalog declared
+    story_cost_estimate_usd: float | None = None
+    layer_savings_usd: Mapping[str, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -132,6 +135,10 @@ def _leg_to_dict(leg: BenchmarkLegRecord) -> dict[str, object]:
         payload["layer_savings"] = asdict(leg.layer_savings)
     else:
         payload["layer_savings"] = None
+    if leg.story_cost_estimate_usd is not None:
+        payload["story_cost_estimate_usd"] = leg.story_cost_estimate_usd
+    if leg.layer_savings_usd is not None:
+        payload["layer_savings_usd"] = dict(leg.layer_savings_usd)
     return payload
 
 
@@ -224,6 +231,8 @@ def build_totals(
         "weighted_tokens_delta": delta,
         "run_weighted_tokens_before": off_leg.run_weighted_tokens,
         "run_weighted_tokens_after": on_leg.run_weighted_tokens,
+        "story_cost_estimate_usd_before": off_leg.story_cost_estimate_usd,
+        "story_cost_estimate_usd_after": on_leg.story_cost_estimate_usd,
     }
 
 
@@ -294,6 +303,8 @@ def leg_from_mapping(payload: Mapping[str, object]) -> BenchmarkLegRecord:
         context_layers=context_layers,
         run_id=_optional_str(payload.get("run_id")),
         policy_digest=_optional_str(payload.get("policy_digest")),
+        story_cost_estimate_usd=_optional_float(payload.get("story_cost_estimate_usd")),
+        layer_savings_usd=_optional_float_mapping(payload.get("layer_savings_usd")),
     )
 
 
@@ -307,6 +318,20 @@ def _optional_str(value: object) -> str | None:
     if value is None:
         return None
     return str(value)
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
+def _optional_float_mapping(value: object) -> dict[str, float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ValueError(f"expected a mapping, got {value!r}")
+    return {str(key): float(entry) for key, entry in value.items()}
 
 
 def _optional_pair(value: object) -> tuple[int, int] | None:

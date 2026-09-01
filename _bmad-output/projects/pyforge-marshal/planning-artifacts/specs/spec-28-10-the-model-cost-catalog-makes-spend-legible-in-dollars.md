@@ -2,7 +2,9 @@
 title: 'The model-cost catalog makes spend legible in dollars (Story 28.10, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+updated: '2026-09-01'
+status: 'done'
+baseline_revision: 'dispatch/pyforge-marshal/28.10'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
@@ -86,6 +88,18 @@ must carry pool membership even though this story does not route.
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
 
+## Auto Run Result
+
+**Branch:** `dispatch/pyforge-marshal/28.10`  
+**Verified:** 2026-09-01
+
+- Added `model_cost_catalog` as the 32nd STATIC policy key (`core/policy.py`, `schemas/policy.json`, `cli/config.py`).
+- Pure helpers in `core/model_cost.py`; sidecar + per-provider `cache_read_weight` in `adapters/harness_bmadloop.py`.
+- Supervisor journals `cost_estimate_usd` / `layer_savings_usd`; `marshal status` and CAP-9 benchmark artifact render advisory `~$X.XX est` fields when catalog declared.
+- Seed catalog in `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml` (from `model-economics.md` snapshot).
+- **Tests:** `7306 passed` (`pyforge-marshal-test`); `118 passed` (`pyforge-deps-test`).
+
 ## Spec Change Log
 
+- 2026-09-01: shipped (Story 28.10, CAP-11) — model-cost catalog + advisory dollar telemetry
 - 2026-08-30: drafted from the operator's 2026 model/cost catalog (CAP-11 minted same day; companion model-economics.md is the seed snapshot)
