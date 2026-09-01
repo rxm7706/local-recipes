@@ -116,6 +116,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6) — static re-verification; shell blocked for pixi/git in session; implementation and AC tests unchanged
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, re-run) — pixi verification green for CAP-8 + deps; full suite 7269/7270 (one pre-existing CFE drift meta guard)
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (worktree spec `done`); live re-verify: supervise compression 7/7 + pyforge-deps-test 118/118 pass
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user query) — step-01 → step-04 (spec `done`); static AC audit unchanged; pixi/pytest shell blocked (allowlist); prior verification results stand
 
 ## Review Triage Log
 
@@ -189,6 +190,17 @@ Re-verified live: 12/12 compression-scoped tests pass; pyforge-deps-test 118/118
   - none
 
 No new findings. CAP-8 implementation unchanged; supervise `-k compression` 7/7 and pyforge-deps-test 118/118 re-verified in this session.
+
+### 2026-09-01 — Review pass (user-requested bmad-build-auto, dispatch-pyforge-marshal-28.6)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Static re-review: all four ACs remain covered — `ACTION_PRECEDENCE` + integration test (ordering); `CompressionEscalationDecision` + meta seam guard (model/gate isolation); supervisor journals `observed`/`limit`/`threshold`; tick calls `_maybe_escalate_compression` before `_act_on_budget_transition`. No code changes required.
 
 ## Auto Run Result
 
