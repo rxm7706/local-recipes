@@ -15,6 +15,7 @@ class HarnessSessionOutcome(StrEnum):
     OK = "ok"
     QUOTA_EXCEEDED = "quota_exceeded"
     AUTH_FAILURE = "auth_failure"
+    HARNESS_MISCONFIG = "harness_misconfig"
     UNKNOWN = "unknown"
 
 
@@ -35,6 +36,14 @@ _AUTH_MARKERS: tuple[str, ...] = (
     "unauthorized",
 )
 
+# Harness exits before git progress (model routing, profile config).
+_HARNESS_CONFIG_MARKERS: tuple[str, ...] = (
+    "cannot use this model",
+    "model not found",
+    "unknown model",
+    "is not an available model",
+)
+
 
 def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:
     if not log_text or not log_text.strip():
@@ -44,6 +53,8 @@ def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:
         return HarnessSessionOutcome.QUOTA_EXCEEDED
     if any(marker in lowered for marker in _AUTH_MARKERS):
         return HarnessSessionOutcome.AUTH_FAILURE
+    if any(marker in lowered for marker in _HARNESS_CONFIG_MARKERS):
+        return HarnessSessionOutcome.HARNESS_MISCONFIG
     return HarnessSessionOutcome.UNKNOWN
 
 
@@ -51,4 +62,5 @@ def is_transient_harness_session_outcome(outcome: HarnessSessionOutcome) -> bool
     return outcome in {
         HarnessSessionOutcome.QUOTA_EXCEEDED,
         HarnessSessionOutcome.AUTH_FAILURE,
+        HarnessSessionOutcome.HARNESS_MISCONFIG,
     }

@@ -29,6 +29,20 @@ def test_classify_session_log_auth() -> None:
     assert classify_session_log(log) is HarnessSessionOutcome.AUTH_FAILURE
 
 
+def test_classify_session_log_harness_model_mismatch() -> None:
+    log = "Cannot use this model: haiku. Available models: auto, gpt-5.3-codex"
+    assert classify_session_log(log) is HarnessSessionOutcome.HARNESS_MISCONFIG
+
+
+def test_transient_block_on_model_mismatch() -> None:
+    kind = classify_dispatch_block(
+        session_log="Cannot use this model: haiku",
+        failed_gate=None,
+        changed_path_count=0,
+    )
+    assert kind is DispatchBlockKind.TRANSIENT
+
+
 def test_transient_block_on_quota_with_no_git_progress() -> None:
     kind = classify_dispatch_block(
         session_log="monthly spend limit exceeded",
