@@ -230,6 +230,30 @@ class SpinResult:
 
 
 @dataclass(frozen=True)
+class LayerSavings:
+    """Per-layer token economy savings (Story 28.4, CAP-7) -- tracks what each
+    optimization layer saved during execution. Fields are optional and None
+    when the layer is disabled/degraded or has no stats available.
+    
+    - ``output_compression_saved``: Layer 0 (caveman) - bytes saved by compressing
+      agent output (~65% compression rate)
+    - ``wire_compression_saved``: Layer 1 (headroom) - bytes saved by compressing
+      tool outputs, logs, file reads (40-95% compression rate)  
+    - ``graph_hits_vs_file_reads``: Layer 2 (codegraph) - tuple of (graph_hits, file_reads)
+      showing structure queries answered from graph vs file re-reads
+    - ``derived_context_cache_hits``: Layer 3 (cocoindex) - count of epic-context /
+      continuity artifacts served from cache vs recomputed
+    - ``planning_graph_tokens_saved``: Layer 4 (graphifyy) - tokens saved by selective
+      retrieval vs full document loads from planning corpus"""
+    
+    output_compression_saved: int | None = None
+    wire_compression_saved: int | None = None
+    graph_hits_vs_file_reads: tuple[int, int] | None = None  # (hits, reads)
+    derived_context_cache_hits: int | None = None
+    planning_graph_tokens_saved: int | None = None
+
+
+@dataclass(frozen=True)
 class UsageSnapshot:
     """One tick's worth of adapter-reported usage (Story 3.6, AD-9/AD-32) --
     a plain, frozen value type ``HarnessPort.usage_snapshot`` returns,
@@ -259,12 +283,16 @@ class UsageSnapshot:
     derivations are a genuine duplication, now pinned by
     ``tests/meta/test_supervisor_run_path_agreement.py`` (a divergence would
     otherwise make every sample look permanently stale, silently disabling
-    both token ceilings for a run's whole life behind nothing but a WARN)."""
+    both token ceilings for a run's whole life behind nothing but a WARN).
+    
+    Story 28.4 extends this to include per-layer savings telemetry (CAP-7)."""
 
     story_key: str | None
     story_weighted_tokens: int | None
     run_weighted_tokens: int
     sample_path: Path
+    # Story 28.4: Add savings telemetry (CAP-7)
+    layer_savings: LayerSavings | None = None
 
 
 @dataclass(frozen=True)

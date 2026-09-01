@@ -881,6 +881,8 @@ class FleetHomeFacts:
     engine_alive: bool | None = None
     elapsed_seconds: float | None = None
     budget_consumed: int | float | None = None
+    # Story 28.4 (CAP-7): Add per-layer savings telemetry alongside budget consumption
+    layer_savings: dict[str, object] = field(default_factory=dict)
     # Story 5.3 (FR-38): `RunStatusSnapshot`'s own already-shipped
     # `paused_reason`/`escalated_spec_file`/`escalated_task_phase` fields,
     # threaded through verbatim -- `_gather_home_facts` already reads
