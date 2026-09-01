@@ -73,7 +73,7 @@ def test_every_pre_existing_state_cell_is_unchanged():
     shape."""
     mod = _load_fleet_picture()
     assert _state(mod, running=True, story="x" * 60, hstate="running") == (
-        "RUNNING  " + "x" * 38
+        "RUNNING " + "x" * 28
     )
     assert _state(mod, hstate="paused-on-escalation") == (
         "PAUSED - needs you (escalation)"

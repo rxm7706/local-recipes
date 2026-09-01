@@ -1,10 +1,4 @@
-"""Meta-test: factory-dispatch phase labels in fleet_picture.py.
-
-When marshal status reports ``dispatch_phase`` alongside a running station,
-``station_state()`` names the tail explicitly — especially ``merged, chaining``
-when the tracked ledger already marks the current story done but marshal still
-carries it while the drain chains to the next dispatch.
-"""
+"""Meta-test: factory-dispatch phase labels and completeness/projection in fleet_picture.py."""
 import importlib.util
 import sys
 from pathlib import Path
@@ -33,6 +27,7 @@ def _state(mod, **overrides):
         backlog=20,
         dispatch_phase=None,
         ledger_done=False,
+        queued_backlog=None,
     )
     kwargs.update(overrides)
     return mod.station_state(**kwargs)
@@ -41,29 +36,55 @@ def _state(mod, **overrides):
 def test_merged_chaining_when_ledger_done_and_phase_chaining():
     mod = _load_fleet_picture()
     cell = _state(mod, dispatch_phase="chaining", ledger_done=True)
-    assert cell.startswith("RUNNING")
-    assert "28-9-planning-graph-retrieval-behind-t" in cell
-    assert "(merged, chaining)" in cell
+    assert cell.startswith("CHAIN")
+    assert "28-9-planning-graph-retrieva" in cell
+    assert "(merged)" in cell
 
 
-def test_verifying_suffix_without_ledger_done():
+def test_verifying_uses_verify_prefix():
     mod = _load_fleet_picture()
     cell = _state(mod, dispatch_phase="verifying", ledger_done=False)
-    assert "(verifying)" in cell
-    assert "merged" not in cell
+    assert cell.startswith("VERIFY")
 
 
-def test_building_stays_plain_running():
+def test_building_shows_queued_suffix():
     mod = _load_fleet_picture()
-    cell = _state(mod, dispatch_phase="building")
-    assert cell == "RUNNING  28-9-planning-graph-retrieval-behind-t"
+    cell = _state(mod, dispatch_phase="building", queued_backlog=6)
+    assert cell.startswith("BUILDING")
+    assert "[6 queued]" in cell
 
 
-def test_ledger_story_done_matches_epic_seq_prefix():
+def test_stuck_on_verify_refused():
+    mod = _load_fleet_picture()
+    cell = _state(
+        mod,
+        dispatch_phase="building",
+        verification_verdict="refused",
+        verification_failed_gate="MRS-GATE-007",
+    )
+    assert cell.startswith("STUCK")
+    assert "MRS-GATE-007" in cell
+
+
+def test_story_completeness_includes_all_backlog():
+    mod = _load_fleet_picture()
+    stories = {"a": "done", "b": "backlog", "c": "blocked"}
+    assert mod.story_completeness(stories) == 2
+
+
+def test_story_projection_idle_is_done_only():
+    mod = _load_fleet_picture()
+    stories = {"a": "done", "b": "backlog"}
+    assert mod.story_projection(stories, queue_keys=["b"], dispatch_in_flight=False) == 1
+
+
+def test_story_projection_active_uses_queue_keys():
     mod = _load_fleet_picture()
     stories = {
-        "28-9-planning-graph-retrieval-behind-the-scribe-seam": "done",
-        "28-10-next-story": "backlog",
+        "28-6-x": "backlog",
+        "28-10-y": "backlog",
+        "28-5-z": "done",
+        "other": "backlog",
     }
-    assert mod.ledger_story_done(stories, "28-9-planning-graph-retrieval-behind-the-scribe-seam")
-    assert not mod.ledger_story_done(stories, "28-10-next-story")
+    queue = ["28-5-z", "28-6-x", "28-10-y"]
+    assert mod.story_projection(stories, queue_keys=queue, dispatch_in_flight=True) == 3

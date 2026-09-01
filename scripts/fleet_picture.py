@@ -5,23 +5,28 @@ Lives in scripts/ rather than a scratchpad so a scheduled status check survives 
 session restart; allowlisted in spec_surface_allowlist.txt for the same reason
 `unpushed_work_check.py` is -- it is operator tooling, not a governed surface.
 
-PyForge fleet progress: done / in-progress / projected / blocked, per station.
+PyForge fleet progress: done / completeness / projection / blocked, per station.
 
 Measured from each station's TRACKED sprint-status-ledger.yaml (the twin of the
 gitignored Tier-3 feed) — never from an ad-hoc regex over commit subjects, and
 never from the board, which lags until a merge to main.
 
-`->proj` is what the CURRENTLY RUNNING stations will reach if they work their
-backlog to completion: done + backlog for a running station, done alone for an
-idle one. Blocked stories are excluded from the projection by construction —
-they are not `backlog` and will not be dispatched.
+Column semantics (operator, Aug-2026):
 
-An epic counts as done only when EVERY story in it is done; `->proj` applies the
-same rule to the projected state, so a single blocked story keeps its epic open
-(steward E8 is exactly that case).
+- ``done`` — ledger ``status: done`` count today.
+- ``cmpl`` (**completeness**) — ``done + backlog``: the station's full reachable
+  count if every backlog story eventually ships (idle stations included).
+- ``proj`` (**projection**) — what this report expects to finish from what is
+  **running or explicitly queued** right now (``fleet-drain-queue.yaml``
+  ``order_overrides`` when a factory dispatch phase is active; otherwise ``done``
+  only). Idle backlog waiting on a future drain does not inflate ``proj``.
 
-Running stations are detected live from `marshal status`, so the table reflects
-reality rather than a hardcoded list that would rot the moment a run ends.
+An epic counts as done only when EVERY story in it is done; completeness/projection
+apply the same per-epic rules at the epic columns.
+
+Factory dispatch phases surface in the ``state`` column as BUILDING / VERIFY /
+CHAIN / STUCK — not a generic RUNNING. The footer reports ``N/8 building`` (live
+harness count), not marshal's raw ``running`` count.
 
 UNSUPERVISED rows (no Marshal supervisor sidecar) are supervision state, not
 engine liveness — the ATTENTION block names the CAP-2 follow-up before any
@@ -59,6 +64,78 @@ UNSUPERVISED_LIVENESS_FOLLOWUP = (
 )
 
 
+DRAIN_QUEUE_PATH = (
+    REPO / "_bmad-output/projects/pyforge-marshal/planning-artifacts"
+    / "fleet-drain-queue.yaml"
+)
+
+
+def load_drain_queue_overrides() -> dict[str, list[str]]:
+    """``order_overrides`` from ``fleet-drain-queue.yaml`` keyed by bare slug."""
+    if not DRAIN_QUEUE_PATH.is_file():
+        return {}
+    import yaml
+
+    data = yaml.safe_load(DRAIN_QUEUE_PATH.read_text()) or {}
+    raw = data.get("order_overrides") or {}
+    return {
+        str(station).replace("pyforge-", ""): list(keys)
+        for station, keys in raw.items()
+        if isinstance(keys, list)
+    }
+
+
+def dispatch_active(live_row: dict) -> bool:
+    """True when factory dispatch has an observable in-flight phase."""
+    phase = live_row.get("dispatch_phase")
+    if phase in ("building", "verifying", "chaining"):
+        return True
+    return live_row.get("state") == "running" and bool(live_row.get("story"))
+
+
+def story_completeness(stories: dict[str, str]) -> int:
+    """``done + backlog`` — full station reach if all backlog eventually ships."""
+    counts = collections.Counter(stories.values())
+    return counts["done"] + counts["backlog"]
+
+
+def story_projection(
+    stories: dict[str, str],
+    *,
+    queue_keys: list[str] | None,
+    dispatch_in_flight: bool,
+) -> int:
+    """Stories expected to complete from what is running/queued **now**."""
+    counts = collections.Counter(stories.values())
+    done = counts["done"]
+    if not dispatch_in_flight:
+        return done
+    if queue_keys:
+        queued_backlog = sum(1 for key in queue_keys if stories.get(key) == "backlog")
+        return done + queued_backlog
+    return done + counts["backlog"]
+
+
+def epic_completeness(by_epic: dict[int, list[str]]) -> int:
+    return sum(
+        1
+        for values in by_epic.values()
+        if values and all(v in ("done", "backlog") for v in values)
+    )
+
+
+def epic_projection(
+    by_epic: dict[int, list[str]], *, dispatch_in_flight: bool
+) -> int:
+    if not dispatch_in_flight:
+        return sum(1 for values in by_epic.values() if all(v == "done" for v in values))
+    return sum(
+        1
+        for values in by_epic.values()
+        if all(v == "done" or v == "backlog" for v in values)
+    )
+
+
 def ledger_story_done(stories: dict[str, str], story: str) -> bool:
     """True when the tracked ledger marks ``story`` (or its epic-seq) done."""
     if not story:
@@ -72,14 +149,37 @@ def ledger_story_done(stories: dict[str, str], story: str) -> bool:
     return any(k.startswith(prefix) and v == "done" for k, v in stories.items())
 
 
+def story_ledger_status(stories: dict[str, str], story: str) -> str | None:
+    """Ledger status for ``story``'s epic-seq key, if any."""
+    if not story:
+        return None
+    if story in stories:
+        return stories[story]
+    m = re.match(r"(\d+-\d+)", story)
+    if not m:
+        return None
+    prefix = m.group(1) + "-"
+    for key, value in stories.items():
+        if key.startswith(prefix):
+            return value
+    return None
+
+
 def station_state(*, running: bool, story: str, hstate: str, done: int,
                   total: int, backlog: int,
                   dispatch_phase: str | None = None,
-                  ledger_done: bool = False) -> str:
+                  ledger_done: bool = False,
+                  verification_verdict: str | None = None,
+                  verification_failed_gate: str | None = None,
+                  queued_backlog: int | None = None) -> str:
     """The state-column cell for one station row -- pure, so the meta test
     (test_fleet_picture_awaiting_operator.py) can pin the naming without
     driving main()'s subprocess sweep. `hstate` is `marshal status`'s own
     derived state for the station ("idle" when marshal reported nothing).
+
+    Factory dispatch uses phase-specific prefixes (BUILDING / VERIFY / CHAIN)
+    instead of a single RUNNING label — the Aug-2026 operator confusion case
+    where four homes all read RUNNING but only one had a live harness.
 
     A `hstate == "awaiting-operator"` station (bmad-loop 0.11: >=1 story
     parked for external human-only actions, nothing else active) is NAMED
@@ -87,18 +187,26 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     "needs re-spin" bucket: the parked story's work is already committed,
     so `bmad-loop confirm` is the next action, not a re-spin."""
     if running:
-        label = story[:38]
-        suffix: list[str] = []
+        if verification_verdict == "refused":
+            gate = verification_failed_gate or "?"
+            short = story[:28]
+            return f"STUCK   {short} (verify refused {gate})"
+        phase_prefix = {
+            "building": "BUILDING",
+            "verifying": "VERIFY  ",
+            "chaining": "CHAIN   ",
+        }.get(dispatch_phase or "", "RUNNING")
+        label = story[:28]
+        if dispatch_phase == "chaining" and ledger_done:
+            return f"{phase_prefix} {label} (merged)"
         if dispatch_phase == "verifying":
-            suffix.append("verifying")
-        elif dispatch_phase == "chaining":
-            if ledger_done:
-                suffix.append("merged, chaining")
-            else:
-                suffix.append("chaining")
-        if suffix:
-            return f"RUNNING  {label} ({', '.join(suffix)})"
-        return f"RUNNING  {label}"
+            return f"{phase_prefix} {label}"
+        if dispatch_phase == "building":
+            suffix = f" [{queued_backlog} queued]" if queued_backlog else ""
+            return f"{phase_prefix} {label}{suffix}"
+        if dispatch_phase == "chaining":
+            return f"{phase_prefix} {label}"
+        return f"{phase_prefix} {label}"
     if hstate == "awaiting-operator":
         return AWAITING_OPERATOR_LABEL
     if hstate == "paused-on-escalation":
@@ -494,6 +602,11 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 "state": r.get("state") or "unknown",
                 "story": r.get("current_story") or "",
                 "dispatch_phase": r.get("dispatch_phase"),
+                "dispatch_completion_verdict": r.get("dispatch_completion_verdict"),
+                "dispatch_verification_verdict": r.get("dispatch_verification_verdict"),
+                "dispatch_verification_failed_gate": r.get(
+                    "dispatch_verification_failed_gate"
+                ),
                 "escalation_reason": r.get("escalation_reason"),
                 "escalation_artifact": r.get("escalation_artifact"),
                 # Story 28.15 (CAP-17), AC4: a station's warn-mode
@@ -510,6 +623,12 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
 
 def main() -> int:
     running, live = running_stations()
+    queue_overrides = load_drain_queue_overrides()
+    building_slugs = {
+        slug
+        for slug, row in live.items()
+        if (row or {}).get("dispatch_phase") == "building"
+    }
     current = {k: v["story"] for k, v in live.items()}
     rows, tot = [], collections.Counter()
     for path in sorted(REPO.glob("_bmad-output/projects/*/planning-artifacts/"
@@ -526,48 +645,103 @@ def main() -> int:
             if m:
                 by_epic[int(m.group(1))].append(value)
 
-        is_running = slug in running
-        proj = counts["done"] + (counts["backlog"] if is_running else 0)
+        live_row = live.get(slug, {}) or {}
+        queue_keys = queue_overrides.get(slug)
+        in_flight = dispatch_active(live_row)
+        cmpl = story_completeness(stories)
+        proj = story_projection(
+            stories, queue_keys=queue_keys, dispatch_in_flight=in_flight
+        )
         ep_now = sum(1 for e in by_epic.values() if all(v == "done" for v in e))
-        ep_proj = sum(1 for e in by_epic.values()
-                      if all(v == "done" or (v == "backlog" and is_running) for v in e))
+        ep_cmpl = epic_completeness(by_epic)
+        ep_proj = epic_projection(by_epic, dispatch_in_flight=in_flight)
+        queued_backlog = (
+            sum(1 for key in queue_keys if stories.get(key) == "backlog")
+            if queue_keys
+            else counts["backlog"]
+        )
 
-        rows.append((slug, len(stories), counts["done"], proj, counts["blocked"],
-                     len(by_epic), ep_now, ep_proj, is_running,
-                     live.get(slug, {}).get("state", "idle"), counts["backlog"],
-                     counts["awaiting-operator"], stories))
-        for k, v in (("tot", len(stories)), ("done", counts["done"]), ("proj", proj),
-                     ("blkd", counts["blocked"]), ("ep", len(by_epic)),
-                     ("epn", ep_now), ("epp", ep_proj)):
+        rows.append((
+            slug, len(stories), counts["done"], cmpl, proj, counts["blocked"],
+            len(by_epic), ep_now, ep_cmpl, ep_proj, slug in running,
+            live_row.get("state", "idle"), counts["backlog"],
+            counts["awaiting-operator"], stories, queued_backlog, in_flight,
+        ))
+        for k, v in (
+            ("tot", len(stories)),
+            ("done", counts["done"]),
+            ("cmpl", cmpl),
+            ("proj", proj),
+            ("blkd", counts["blocked"]),
+            ("ep", len(by_epic)),
+            ("epn", ep_now),
+            ("epc", ep_cmpl),
+            ("epp", ep_proj),
+        ):
             tot[k] += v
 
-    hdr = (f"{'station':<9}{'stories':>8}{'done':>6}{'->proj':>8}{'blkd':>6}"
-           f"{'epics':>7}{'ep now':>8}{'->proj':>8}  {'state'}")
+    hdr = (
+        f"{'station':<9}{'stories':>8}{'done':>6}{'cmpl':>6}{'proj':>6}{'blkd':>6}"
+        f"{'epics':>7}{'ep now':>8}{'ep cmpl':>8}{'ep proj':>8}  {'state'}"
+    )
     print(hdr)
     print("-" * (len(hdr) + 24))
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, _aw, stories) in rows:
+    for (
+        slug, n, done, cmpl, proj, blkd, ep, epn, epc, epp, run, hstate, back,
+        _aw, stories, queued_backlog, _in_flight,
+    ) in rows:
         story = current.get(slug, "")
+        live_row = live.get(slug, {}) or {}
         state = station_state(
             running=run, story=story, hstate=hstate, done=done, total=n,
             backlog=back,
-            dispatch_phase=live.get(slug, {}).get("dispatch_phase"),
+            dispatch_phase=live_row.get("dispatch_phase"),
             ledger_done=ledger_story_done(stories, story),
+            verification_verdict=live_row.get("dispatch_verification_verdict"),
+            verification_failed_gate=live_row.get("dispatch_verification_failed_gate"),
+            queued_backlog=queued_backlog if live_row.get("dispatch_phase") == "building" else None,
         )
-        print(f"{slug:<9}{n:>8}{done:>6}{proj:>8}{blkd:>6}{ep:>7}{epn:>8}{epp:>8}  {state}")
+        print(
+            f"{slug:<9}{n:>8}{done:>6}{cmpl:>6}{proj:>6}{blkd:>6}"
+            f"{ep:>7}{epn:>8}{epc:>8}{epp:>8}  {state}"
+        )
     print("-" * (len(hdr) + 24))
-    print(f"{'PYFORGE':<9}{tot['tot']:>8}{tot['done']:>6}{tot['proj']:>8}"
-          f"{tot['blkd']:>6}{tot['ep']:>7}{tot['epn']:>8}{tot['epp']:>8}"
-          f"  {len(running)}/8 running")
+    print(
+        f"{'PYFORGE':<9}{tot['tot']:>8}{tot['done']:>6}{tot['cmpl']:>6}{tot['proj']:>6}"
+        f"{tot['blkd']:>6}{tot['ep']:>7}{tot['epn']:>8}{tot['epc']:>8}{tot['epp']:>8}"
+        f"  {len(building_slugs)}/8 building"
+    )
 
     pct = lambda a, b: f"{100 * a / b:.0f}%" if b else "-"
-    print(f"\nNOW:        {tot['done']}/{tot['tot']} stories ({pct(tot['done'], tot['tot'])})"
-          f"   ·   {tot['epn']}/{tot['ep']} epics ({pct(tot['epn'], tot['ep'])})")
-    print(f"IN FLIGHT:  {len(running)} station(s) — "
-          + ", ".join(f"{s}:{current.get(s, '?')[:28]}" for s in sorted(running)))
-    print(f"PROJECTED:  {tot['proj']}/{tot['tot']} stories ({pct(tot['proj'], tot['tot'])})"
-          f"   ·   {tot['epp']}/{tot['ep']} epics ({pct(tot['epp'], tot['ep'])})")
-    print(f"LEFT AFTER: {tot['tot'] - tot['proj']} stories, {tot['ep'] - tot['epp']} epics"
-          f"  ({tot['blkd']} blocked)")
+    print(
+        f"\nNOW:          {tot['done']}/{tot['tot']} stories "
+        f"({pct(tot['done'], tot['tot'])})"
+        f"   ·   {tot['epn']}/{tot['ep']} epics ({pct(tot['epn'], tot['ep'])})"
+    )
+    print(
+        f"COMPLETENESS: {tot['cmpl']}/{tot['tot']} stories "
+        f"({pct(tot['cmpl'], tot['tot'])})"
+        f"   ·   {tot['epc']}/{tot['ep']} epics ({pct(tot['epc'], tot['ep'])})"
+    )
+    if building_slugs:
+        print(
+            "BUILDING:     "
+            + ", ".join(
+                f"{s}:{current.get(s, '?')[:20]}" for s in sorted(building_slugs)
+            )
+        )
+    else:
+        print("BUILDING:     none")
+    print(
+        f"PROJECTION:   {tot['proj']}/{tot['tot']} stories "
+        f"({pct(tot['proj'], tot['tot'])})"
+        f"   ·   {tot['epp']}/{tot['ep']} epics ({pct(tot['epp'], tot['ep'])})"
+        f"   (running/queued only)"
+    )
+    print(
+        f"LEFT AFTER:   {tot['tot'] - tot['proj']} stories, "
+        f"{tot['ep'] - tot['epp']} epics  ({tot['blkd']} blocked)"
+    )
 
     # --- ATTENTION: what, if anything, is waiting on a human ----------------
     # Deterministic causes only. A pause Claude itself took (an epic boundary,
@@ -575,7 +749,17 @@ def main() -> int:
     # which is why the report always states one or the other explicitly rather
     # than staying silent and letting "no news" mean two different things.
     needs, watch = [], []
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, awaiting, _stories) in rows:
+    for (
+        slug, n, done, _cmpl, _proj, blkd, _ep, _epn, _epc, _epp, run, hstate, back,
+        awaiting, _stories, _qb, _in_flight,
+    ) in rows:
+        live_row = live.get(slug, {}) or {}
+        if live_row.get("dispatch_verification_verdict") == "refused" and run:
+            gate = live_row.get("dispatch_verification_failed_gate") or "?"
+            needs.append(
+                f"{slug}: dispatch verify REFUSED ({gate}) on {current.get(slug, '?')}"
+                f" — inspect dispatch-runs journal / epic_surfaces"
+            )
         if hstate == "paused-on-escalation":
             reason = ((live.get(slug, {}) or {}).get("escalation_reason") or "unstated").split(chr(10))[0][:110]
             needs.append(f"{slug}: PAUSED on escalation ({reason}) -- "
@@ -594,8 +778,11 @@ def main() -> int:
             watch.append(f"{slug}: status unreadable (stale journal) -- cosmetic "
                          f"unless it persists after a spin")
         elif not run and back and done != n:
-            needs.append(f"{slug}: idle with {back} story(ies) not started -- "
-                         f"needs a spin if it should be running")
+            watch.append(
+                f"{slug}: {back} story(ies) backlog — idle (not draining); "
+                f"start with `marshal factory drain --station pyforge-{slug}` "
+                f"when ready"
+            )
         # bmad-loop 0.11 (marshal Story 25.5): stories parked at
         # `awaiting-operator` in the TRACKED ledger -- the durable board
         # record of external human-only actions still owed, which outlives
