@@ -2,10 +2,23 @@
 title: 'The graduated compression ladder (Story 28.6, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
+baseline_revision: 'f5858beff8b277a37ef38ad72bfca749072b8b3d'
+deferred:
+  - summary: >-
+      Full pyforge-marshal-test suite reports one pre-existing meta failure
+      (test_skf_domain_skill::test_conda_forge_expert_not_replaced) due to
+      branch-level conda-forge-expert drift vs origin/main — not introduced by
+      Story 28.6.
+    evidence: |-
+      git diff origin/main -- .claude/skills/conda-forge-expert is non-empty on
+      this dispatch branch; all CAP-8 / compression-ladder tests pass (12/12).
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py:154
+    severity: low
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md
@@ -59,15 +72,20 @@ violate `spec-adaptive-model-tiering`'s shipped floor-raise-only constraint.
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` (idle/budget ladder precedent)
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/` (tick)
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (threshold key in the `[context]` block)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` — `evaluate_compression_ladder`, `ACTION_PRECEDENCE`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py` — tick integration, sidecar load, journaling
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` — `escalation_threshold` in `[context]`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` — writes `compression-ladder.json` at supervisor spawn
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py` — wire aggressiveness env mapping
 
 ## Tasks & Acceptance
 
-**Execution:** Implement the Approach. Add station-owned tests that fail if ACs are violated
-(ladder ordering, FR-51-seam-only, no-skip guarantee, journaled escalation). Land this spec
-in `planning-artifacts/specs/`.
+- [x] Pure compression ladder decision in `core/supervise.py`
+- [x] Supervisor tick evaluates compression before budget-stop / idle ladder (`ACTION_PRECEDENCE`)
+- [x] Policy `escalation_threshold` (default 0.8) in `[context]`
+- [x] Spin/resume writes `compression-ladder.json` sidecar when wire enabled
+- [x] Unit + integration tests for ladder ordering, threshold facts, sidecar, seam guard
+- [x] Meta test: compression functions never reference model/gate seams
 
 **Acceptance Criteria:** Same as Intent Contract.
 
@@ -77,6 +95,9 @@ Bind to epics.md Story 28.6 and spec-marshal-token-economy CAP-8. Sibling to the
 ladder (Story 3.5) — same graduated-response idiom, new rung. Model movement is deliberately
 out of this story: declared difficulty (FR-51) covers the static tier, Story 3.12 covers the
 dynamic (upward-only) case, and `spec-adaptive-model-tiering` forbids downgrades.
+
+Runtime aggressiveness is written to `.marshal/wire/aggressiveness` for the headroom wrapper;
+output-compression (CAP-3) and contract artifacts are untouched.
 
 ## Verification
 
@@ -88,3 +109,140 @@ dynamic (upward-only) case, and `spec-adaptive-model-tiering` forbids downgrades
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
 - 2026-08-30: ladder made compression-only — the original "may lower the model floor" clause conflicted with spec-adaptive-model-tiering's floor-raise-only constraint (found in the tiering/strategy fold-in analysis)
+- 2026-09-01: implemented CAP-8 — compression ladder in supervise/supervisor/policy/spin; added meta seam guard + sidecar test; status blocked pending verification commands (agent shell unavailable)
+- 2026-09-01: bmad-build-auto re-run — static review confirms AC coverage; verification still blocked (shell rejected in session)
+- 2026-09-01: bmad-build-auto Cursor dispatch — implementation confirmed present; verification still blocked (shell rejected in session)
+- 2026-09-01: bmad-build-auto Cursor dispatch (completion) — verification green for story AC coverage + pyforge-deps-test; full suite has one pre-existing CFE drift meta failure (deferred)
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6) — static re-verification; shell blocked for pixi/git in session; implementation and AC tests unchanged
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, re-run) — pixi verification green for CAP-8 + deps; full suite 7269/7270 (one pre-existing CFE drift meta guard)
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (worktree spec `done`); live re-verify: supervise compression 7/7 + pyforge-deps-test 118/118 pass
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user query) — step-01 → step-04 (spec `done`); static AC audit unchanged; pixi/pytest shell blocked (allowlist); prior verification results stand
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (spec `done`); static AC audit + verification-gap review; shell blocked in session; no code changes
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass (initial)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (bmad-build-auto re-run)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (bmad-build-auto Cursor dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass (bmad-build-auto completion)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (low 1)
+- reject: 0
+- addressed_findings:
+  - none
+
+Manual review: all four ACs have dedicated tests — `ACTION_PRECEDENCE` + `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` (ordering); `CompressionEscalationDecision` field set + `test_cap8_compression_ladder_seam` (model/gate seam isolation); supervisor journals threshold facts; tick loop calls `_maybe_escalate_compression` before budget-stop and idle ladder.
+
+### 2026-09-01 — Review pass (dispatch-pyforge-marshal-28.6)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Static re-review on `dispatch/pyforge-marshal/28.6`: CAP-8 code and 12 compression-scoped tests present; no new findings. Prior verification results stand (see Verification performed below).
+
+### 2026-09-01 — Review pass (dispatch-pyforge-marshal-28.6 re-run)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Re-verified live: 12/12 compression-scoped tests pass; pyforge-deps-test 118/118 pass; full marshal suite 7269/7270 (sole failure `test_conda_forge_expert_not_replaced` — pre-existing branch CFE drift, out of scope).
+
+### 2026-09-01 — Review pass (user-requested bmad-build-auto)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+No new findings. CAP-8 implementation unchanged; supervise `-k compression` 7/7 and pyforge-deps-test 118/118 re-verified in this session.
+
+### 2026-09-01 — Review pass (user-requested bmad-build-auto, dispatch-pyforge-marshal-28.6)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Static re-review: all four ACs remain covered — `ACTION_PRECEDENCE` + integration test (ordering); `CompressionEscalationDecision` + meta seam guard (model/gate isolation); supervisor journals `observed`/`limit`/`threshold`; tick calls `_maybe_escalate_compression` before `_act_on_budget_transition`. No code changes required.
+
+### 2026-09-01 — Review pass (user-requested bmad-build-auto, dispatch-pyforge-marshal-28.6, this session)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Verification-gap review: no gaps — `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` exercises the supervisor tick boundary; `test_cap8_compression_ladder_seam` AST-scans compression functions for forbidden model/gate identifiers; pure `evaluate_compression_ladder` tests pin threshold facts and ordering via `ACTION_PRECEDENCE`. Shell unavailable for live pixi re-run; prior session results stand.
+
+## Auto Run Result
+
+Status: done
+
+Summary of implemented change: Story 28.6 (CAP-8) adds a graduated wire-compression ladder below the idle/budget kill ladders. As per-story weighted spend crosses `escalation_threshold` (default 0.8 from `[context]`), the supervisor journals `compression-escalation` with threshold facts and raises wire aggressiveness via `.marshal/wire/aggressiveness` before any `budget-stop` or idle-ladder action on the same tick. Model selection is untouched (FR-51 / Story 3.12 seams only).
+
+Files changed (since `baseline_revision`):
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` — `evaluate_compression_ladder`, `CompressionEscalationDecision`, `ACTION_PRECEDENCE`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py` — sidecar load, `_maybe_escalate_compression`, tick ordering
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` — `resolve_compression_escalation_threshold`, schema docs
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` — `compression-ladder.json` sidecar at supervisor spawn
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json` — `escalation_threshold` documented
+- `src/shared/packages/pyforge-marshal/tests/unit/test_supervise.py` — pure ladder + ordering tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_supervisor.py` — same-tick compression-before-budget-stop integration test
+- `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py` — threshold resolution tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_spin.py` — sidecar write test
+- `src/shared/packages/pyforge-marshal/tests/meta/test_cap8_compression_ladder_seam.py` — static FR-51/gate seam guard
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-6-the-graduated-compression-ladder.md` — this spec
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml` — ledger key updated to `done`
+
+Review findings breakdown: 0 patches, 1 deferred (pre-existing CFE drift meta test), 0 rejected.
+
+Follow-up review recommendation: false (0 patched findings).
+
+Verification performed:
+- `pixi run --frozen -e pyforge-marshal pytest …/test_supervise.py -k compression -q` — **PASS** (7/7, 2026-09-01 user-requested bmad-build-auto)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test -q` — **PASS** (118/118, 2026-09-01 user-requested bmad-build-auto)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k compression -q` — **PASS** (12/12 CAP-8 tests, 2026-09-01 re-run)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -q -m "not slow"` — **7269/7270 PASS** (2026-09-01 re-run; sole failure `test_conda_forge_expert_not_replaced` — conda-forge-expert diff vs `origin/main`, pre-existing on this dispatch branch, not Story 28.6 scope)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test -q` — **PASS** (118/118, 2026-09-01 re-run)
+
+Residual risks: none for CAP-8 behavior; reconcile dispatch-branch conda-forge-expert drift separately to restore the strict full-suite meta gate.

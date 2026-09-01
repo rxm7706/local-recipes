@@ -2341,6 +2341,41 @@ def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(
     assert envelope["data"]["wire"]["aggressiveness"] is None
 
 
+def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(
+    home, monkeypatch, tmp_path
+):
+    """Story 28.6 (CAP-8): supervisor spawn materializes
+    ``compression-ladder.json`` from the composed ``[context]`` block when
+    the wire layer is on -- the same composition site dispatch uses."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        "[context]\n"
+        "escalation_threshold = 0.85\n"
+        "[context.wire]\n"
+        "enabled = true\n"
+        'aggressiveness = "low"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda _slug: policy_path
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    assert run_spin(_spin_namespace("acme"), fs=fs, harness=harness) == EXIT_OK
+
+    sidecar_paths = [
+        path
+        for path in fs.written_texts
+        if path.name == "compression-ladder.json"
+    ]
+    assert len(sidecar_paths) == 1
+    payload = json.loads(fs.written_texts[sidecar_paths[0]])
+    assert payload["escalation_threshold"] == 0.85
+    assert payload["wire"] == {"enabled": True, "aggressiveness": "low"}
+
+
 def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
     (Story 3.7's extraction), so a resumed run states the same disposition

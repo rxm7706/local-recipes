@@ -8,15 +8,18 @@ subprocess anywhere in this file -- ``evaluate_idle`` is pure.
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from pyforge.marshal.core.supervise import (
+    ACTION_PRECEDENCE,
     CeilingStatus,
     EscalationStatus,
     LadderRung,
     Sample,
     evaluate_ceiling,
+    evaluate_compression_ladder,
     evaluate_escalation,
     evaluate_idle,
     evaluate_retry_escalation,
@@ -548,3 +551,73 @@ def test_mixed_deferred_stories_false_when_none_cross_their_own_ceiling():
         _deferred("3.6", attempt=0, review_cycle=1),
     )
     assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is False
+
+
+# --- Story 28.6: graduated compression ladder (CAP-8) -------------------------
+
+
+def test_evaluate_compression_ladder_is_none_below_threshold():
+    assert (
+        evaluate_compression_ladder(
+            39_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium"
+        )
+        is None
+    )
+
+
+def test_evaluate_compression_ladder_escalates_at_threshold():
+    decision = evaluate_compression_ladder(
+        40_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
+    )
+    assert decision is not None
+    assert decision.declared == "low"
+    assert decision.target == "medium"
+    assert decision.threshold == 0.8
+
+
+def test_evaluate_compression_ladder_reaches_high_before_breach():
+    decision = evaluate_compression_ladder(
+        49_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
+    )
+    assert decision is not None
+    assert decision.target == "high"
+
+
+def test_evaluate_compression_ladder_already_high_returns_none():
+    assert (
+        evaluate_compression_ladder(
+            45_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="high"
+        )
+        is None
+    )
+
+
+def test_compression_escalation_precedes_budget_stop_and_idle_ladder():
+    """CAP-8 AC: ladder ordering -- compression before kill ladders."""
+    assert ACTION_PRECEDENCE["compression-escalation"] < ACTION_PRECEDENCE["budget-stop"]
+    assert ACTION_PRECEDENCE["compression-escalation"] < ACTION_PRECEDENCE["idle-nudge"]
+    assert ACTION_PRECEDENCE["compression-escalation"] < ACTION_PRECEDENCE["idle-defer"]
+    assert ACTION_PRECEDENCE["budget-warn"] < ACTION_PRECEDENCE["budget-stop"]
+
+
+def test_evaluate_compression_ladder_journals_threshold_facts():
+    decision = evaluate_compression_ladder(
+        41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="medium"
+    )
+    assert decision is not None
+    assert decision.observed == 41_000_000
+    assert decision.limit == 50_000_000
+    assert decision.threshold == 0.8
+
+
+def test_compression_escalation_decision_names_wire_aggressiveness_only():
+    """CAP-8 AC: escalation raises wire-layer compression only -- the pure
+    decision carries threshold facts and aggressiveness rungs, never a model
+    tier or any gate/review skip signal."""
+    decision = evaluate_compression_ladder(
+        41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
+    )
+    assert decision is not None
+    field_names = {f.name for f in dataclasses.fields(decision)}
+    assert field_names == {"observed", "limit", "threshold", "declared", "target"}
+    assert decision.target in {"low", "medium", "high"}

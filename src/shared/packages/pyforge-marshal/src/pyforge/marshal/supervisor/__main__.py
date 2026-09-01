@@ -330,6 +330,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -353,11 +354,13 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity
 from ..core.supervise import (
+    ACTION_PRECEDENCE,
     CeilingStatus,
     EscalationStatus,
     LadderRung,
     Sample,
     evaluate_ceiling,
+    evaluate_compression_ladder,
     evaluate_escalation,
     evaluate_idle,
     idle_anchor,
@@ -414,6 +417,12 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+
+# Story 28.6 (CAP-8): compression escalation journals before terminal
+# budget-stop / idle-ladder actions on the same tick.
+_COMPRESSION_ESCALATION_KIND = "compression-escalation"
+_COMPRESSION_LADDER_SIDECAR = "compression-ladder.json"
+_COMPRESSION_AGGRESSIVENESS_RELPATH = ".marshal/wire/aggressiveness"
 
 # Story 3.7's own journal kinds (escalation, deferral, and resume, AD-45,
 # FR-15/16/17). Both are single Phase.OBSERVATION entries -- neither is an
@@ -626,6 +635,57 @@ def _resolve_harness_run_id(fold_result, run_id: str) -> str | None:
                 candidate = entry.payload.get("harness_run_id")
                 return candidate if isinstance(candidate, str) and candidate else None
     return None
+
+
+@dataclass(frozen=True)
+class _CompressionLadderConfig:
+    """Story 28.6 sidecar shape -- written by ``cli/spin.py`` at supervisor
+    spawn from the composed ``[context]`` block; read once at attach."""
+
+    escalation_threshold: float
+    wire_enabled: bool
+    declared_aggressiveness: str
+
+
+def _load_compression_ladder_config(
+    fs: FsPort, run_dir: Path
+) -> _CompressionLadderConfig | None:
+    """Read ``compression-ladder.json`` from ``run_dir``. Returns ``None`` when
+    the sidecar is absent or malformed -- the ladder stays off and today's
+    behavior is unchanged."""
+    sidecar = run_dir / _COMPRESSION_LADDER_SIDECAR
+    try:
+        raw = fs.read_text(sidecar)
+    except (FsError, ValueError):
+        return None
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    threshold = payload.get("escalation_threshold")
+    wire = payload.get("wire")
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+        return None
+    threshold_f = float(threshold)
+    if not (threshold_f > 0) or threshold_f > 1.0 or not math.isfinite(threshold_f):
+        return None
+    if not isinstance(wire, Mapping):
+        return None
+    enabled = wire.get("enabled")
+    if not isinstance(enabled, bool) or not enabled:
+        return None
+    declared = wire.get("aggressiveness", "medium")
+    if not isinstance(declared, str) or declared not in {"low", "medium", "high"}:
+        declared = "medium"
+    return _CompressionLadderConfig(
+        escalation_threshold=threshold_f,
+        wire_enabled=enabled,
+        declared_aggressiveness=declared,
+    )
 
 
 def run_supervisor(
@@ -843,6 +903,7 @@ def run_supervisor(
             )
         return 0
 
+    compression_ladder_config = _load_compression_ladder_config(fs, run_dir)
     harness_run_id = _resolve_harness_run_id(fold_result, run_id)
 
     writer_id = f"supervisor-{os.getpid()}"
@@ -946,6 +1007,9 @@ def run_supervisor(
         story_wall_clock_status = CeilingStatus.NONE
         run_tokens_status = CeilingStatus.NONE
         story_tokens_status = CeilingStatus.NONE
+        # Story 28.6: the last wire-layer aggressiveness this sidecar
+        # applied for the current story -- tracks rising edges only.
+        last_applied_aggressiveness: str | None = None
         # Whether the LAST tick's usage sample was stale -- gates
         # `_BUDGET_USAGE_STALE_KIND` to fire once per transition INTO
         # staleness, never every tick (AD-32's own "reported... never reds
@@ -1266,6 +1330,49 @@ def run_supervisor(
         # still journals ONE truthful `watched_alive: False` heartbeat
         # before the final `supervisor-detach`, rather than a silent jump
         # straight from a string of `True` heartbeats to detach.
+
+        def _maybe_escalate_compression(
+            observed: float,
+            limit: float,
+            *,
+            story_key: str | None,
+        ) -> None:
+            """Story 28.6 (CAP-8): raise wire-layer aggressiveness BEFORE
+            terminal budget-stop / idle-ladder actions on this tick.
+            Compression-only -- never touches model selection."""
+            nonlocal last_applied_aggressiveness
+            if compression_ladder_config is None or deferred or not watched_alive:
+                return
+            decision = evaluate_compression_ladder(
+                observed,
+                limit,
+                threshold=compression_ladder_config.escalation_threshold,
+                declared_aggressiveness=compression_ladder_config.declared_aggressiveness,
+            )
+            if decision is None or not decision.escalated:
+                return
+            if decision.target == last_applied_aggressiveness:
+                return
+            payload: dict[str, object] = {
+                "observed": decision.observed,
+                "limit": decision.limit,
+                "threshold": decision.threshold,
+                "declared_aggressiveness": decision.declared,
+                "target_aggressiveness": decision.target,
+                "precedence": ACTION_PRECEDENCE[_COMPRESSION_ESCALATION_KIND],
+            }
+            if story_key is not None:
+                payload["story_key"] = _feed_key_form(story_key)
+            _append(_COMPRESSION_ESCALATION_KIND, payload)
+            last_applied_aggressiveness = decision.target
+            aggressiveness_path = home / _COMPRESSION_AGGRESSIVENESS_RELPATH
+            try:
+                fs.ensure_dir(aggressiveness_path.parent)
+                fs.write_text_atomic(aggressiveness_path, decision.target + "\n")
+            except FsError:
+                # Best-effort operator surface -- a failed write must not
+                # halt supervision (same posture as durability pushes).
+                pass
 
         def _act_on_budget_transition(
             scope: str,
@@ -1726,6 +1833,11 @@ def run_supervisor(
                             usage.story_key is not None
                             and usage.story_weighted_tokens is not None
                         ):
+                            _maybe_escalate_compression(
+                                usage.story_weighted_tokens,
+                                max_tokens_per_story,
+                                story_key=usage.story_key,
+                            )
                             new_story_tokens_status = evaluate_ceiling(
                                 usage.story_weighted_tokens, max_tokens_per_story
                             )

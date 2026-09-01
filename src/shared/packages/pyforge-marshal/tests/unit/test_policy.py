@@ -602,6 +602,29 @@ def test_resolve_context_layers_returns_a_fresh_plain_dict():
     _json.dumps(resolved)  # must not raise
 
 
+def test_context_escalation_threshold_defaults_when_absent():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert policy.resolve_compression_escalation_threshold(effective) == 0.8
+
+
+def test_context_escalation_threshold_reads_declared_value():
+    effective, _ = compose(
+        project_slug="acme",
+        project={"context": {"escalation_threshold": 0.85, "wire": {"enabled": True}}},
+        flags={},
+    )
+    assert policy.resolve_compression_escalation_threshold(effective) == 0.85
+
+
+def test_context_rejects_malformed_escalation_threshold():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"context": {"escalation_threshold": 1.5, "wire": {"enabled": True}}},
+        flags={},
+    )
+    assert effective.context.value == {}
+    assert any(f.code == "MRS-POLICY-002" for f in findings)
+
 # --- scope_violation_mode validation (Story 28.15, CAP-17) --------------------
 
 
