@@ -2,9 +2,10 @@
 title: 'Enterprise JFROG consumption Parquet — artifactory telemetry rollup (Story 23.2, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'NO_VCS'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -341,4 +342,45 @@ verified-against-a-real-instance endpoints.
   `virtual_repos: []` default) — expected: exit 0; `artifactory_consumption_raw` and
   `enterprise_jfrog_consumption` both materialize as empty, correctly-columned frames; zero
   live network calls.
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 1, low 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[medium]` `[patch]` Spec said add `PREFIX_TO_PIPELINE["enterprise"]` but Story 21.5 already owns that prefix for `upstream_discovery`; used longer prefix `enterprise_jfrog_consumption` instead.
+  - `[low]` `[patch]` `test_dag_resolves.py` node-count fixture stale at 4 after Story 23.2; updated to 6 nodes.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Shipped enterprise JFROG consumption telemetry rollup — separate `fetch_consumption_rows` transport round trip, `fetch_artifactory_consumption` + `build_enterprise_jfrog_consumption` nodes, two new catalog entries (`artifactory_consumption_raw`, `enterprise_jfrog_consumption`), full test coverage for I/O matrix rows.
+
+Files changed:
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/aql_adapter.py` — `ConsumptionRow`, `fetch_consumption_rows`
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/__init__.py` — export `ConsumptionRow`
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py` — fetch/build nodes, `_pep503`
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/pipeline.py` — wire 2 new nodes
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — 2 catalog entries
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — prefix map + counts (+2)
+- `src/shared/packages/pyforge-atlas/tests/artifactory/test_aql_adapter.py` — consumption adapter tests
+- `src/shared/packages/pyforge-atlas/tests/pipelines/artifactory_downloads/test_nodes.py` — node + pep503 tests
+- `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — pipeline node count 4→6
+
+Review findings breakdown: 2 patches applied (prefix-map deviation, DAG node-count fixture); 0 deferred; 0 rejected.
+
+Follow-up review recommendation: false (patched score: 3×0 + 1×1 = 1 < 5; no high-severity patches).
+
+Verification performed:
+- `pixi run -e pyforge-atlas kedro-catalog-check` — PASS (68 passed)
+- `pixi run -e pyforge-atlas kedro-test` — PASS (full suite, exit 0)
+- `pixi run -e pyforge-atlas duckdb-singularity` — PASS (6 passed)
+- Targeted `-k "aql_adapter or artifactory_downloads or test_dag_resolves"` — PASS (68 passed)
+
+Residual risks: Real Artifactory `/api/consumption/rollup` endpoint shape is mock-served only; live attended bring-up remains a later story. `enterprise_jfrog_names` still maps to `upstream_discovery` via the generic `enterprise` prefix (21.5 convention); only `enterprise_jfrog_consumption` maps to `artifactory_downloads`.
 

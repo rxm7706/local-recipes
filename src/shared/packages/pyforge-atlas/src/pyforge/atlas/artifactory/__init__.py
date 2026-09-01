@@ -20,6 +20,7 @@ from .aql_adapter import (
     ArtifactoryAqlAdapter,
     ArtifactoryAqlError,
     ArtifactoryConfig,
+    ConsumptionRow,
     DownloadRow,
 )
 from .identity_join import JoinedDownloadRow, join_identity
@@ -30,6 +31,7 @@ __all__ = [
     "ArtifactoryAqlAdapter",
     "ArtifactoryAqlError",
     "ArtifactoryConfig",
+    "ConsumptionRow",
     "DownloadRow",
     "JoinedDownloadRow",
     "join_identity",

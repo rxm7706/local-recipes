@@ -18,6 +18,7 @@ from pyforge.atlas.artifactory import (
     ArtifactoryAqlAdapter,
     ArtifactoryAqlError,
     ArtifactoryConfig,
+    ConsumptionRow,
     DownloadRow,
 )
 
@@ -31,10 +32,12 @@ class MockArtifactory:
         self,
         *,
         topology: dict[str, list[str]],
-        download_rows: dict[str, list[dict]],
+        download_rows: dict[str, list[dict]] | None = None,
+        consumption_rows: dict[str, list[dict]] | None = None,
     ) -> None:
         self.topology = topology
-        self.download_rows = download_rows
+        self.download_rows = download_rows or {}
+        self.consumption_rows = consumption_rows or {}
         self.calls: list[tuple[str, str]] = []
 
     def __call__(self, request: AqlRequest) -> AqlResponse:
@@ -50,6 +53,10 @@ class MockArtifactory:
         if request.method == "POST" and path == "/search/aql":
             virtual_repo = (request.body or {}).get("virtual_repo")
             rows = self.download_rows.get(virtual_repo, [])
+            return AqlResponse(200, {"results": rows})
+        if request.method == "POST" and path == "/consumption/rollup":
+            virtual_repo = (request.body or {}).get("virtual_repo")
+            rows = self.consumption_rows.get(virtual_repo, [])
             return AqlResponse(200, {"results": rows})
         return AqlResponse(400, {"detail": f"unrouted {request.method} {path}"})
 
@@ -198,3 +205,106 @@ def test_non_string_backing_repo_entry_raises_clear_error():
     with pytest.raises(ArtifactoryAqlError) as exc:
         adapter.resolve_backing_repos("libs-virtual")
     assert "no valid 'repositories' list" in str(exc.value)
+
+
+# --- fetch_consumption_rows (Story 23.2) -------------------------------------------------
+
+
+def test_fetch_consumption_rows_happy_path_resolves_topology_and_aggregates_by_name():
+    mock = MockArtifactory(
+        topology={"libs-virtual": ["libs-local", "libs-remote-cache"]},
+        consumption_rows={
+            "libs-virtual": [
+                {
+                    "name": "pkg-a",
+                    "platform_env_count": 10,
+                    "internal_app_count": 2,
+                    "internal_component_count": 1,
+                    "internal_lob_count": 3,
+                },
+                {
+                    "name": "pkg-a",
+                    "platform_env_count": 5,
+                    "internal_app_count": 1,
+                    "internal_component_count": 0,
+                    "internal_lob_count": 1,
+                },
+                {
+                    "name": "pkg-b",
+                    "platform_env_count": 7,
+                    "internal_app_count": 0,
+                    "internal_component_count": 2,
+                    "internal_lob_count": 0,
+                },
+            ]
+        },
+    )
+    adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
+
+    rows = adapter.fetch_consumption_rows("libs-virtual")
+
+    assert rows == [
+        ConsumptionRow(
+            name="pkg-a",
+            platform_env_count=15,
+            internal_app_count=3,
+            internal_component_count=1,
+            internal_lob_count=4,
+        ),
+        ConsumptionRow(
+            name="pkg-b",
+            platform_env_count=7,
+            internal_app_count=0,
+            internal_component_count=2,
+            internal_lob_count=0,
+        ),
+    ]
+    assert [m for m, _ in mock.calls] == ["GET", "POST"]
+
+
+def test_fetch_consumption_rows_missing_optional_fields_default_to_zero():
+    mock = MockArtifactory(
+        topology={"libs-virtual": ["libs-local"]},
+        consumption_rows={"libs-virtual": [{"name": "pkg-a"}]},
+    )
+    adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
+
+    rows = adapter.fetch_consumption_rows("libs-virtual")
+
+    assert rows == [
+        ConsumptionRow(
+            name="pkg-a",
+            platform_env_count=0,
+            internal_app_count=0,
+            internal_component_count=0,
+            internal_lob_count=0,
+        )
+    ]
+
+
+def test_fetch_consumption_rows_malformed_row_raises_clear_error():
+    mock = MockArtifactory(
+        topology={"libs-virtual": ["libs-local"]},
+        consumption_rows={"libs-virtual": [{"platform_env_count": 1}]},  # no 'name'
+    )
+    adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
+
+    with pytest.raises(ArtifactoryAqlError) as exc:
+        adapter.fetch_consumption_rows("libs-virtual")
+    assert "malformed consumption row" in str(exc.value)
+
+
+def test_fetch_consumption_rows_reuses_resolve_backing_repos_not_duplicated_in_adapter():
+    """Topology resolution is one GET per virtual repo per fetch call."""
+    mock = MockArtifactory(
+        topology={"libs-virtual": ["libs-local"]},
+        consumption_rows={"libs-virtual": [{"name": "pkg-a", "platform_env_count": 1}]},
+    )
+    adapter = ArtifactoryAqlAdapter(_cfg(), transport=mock)
+
+    adapter.fetch_consumption_rows("libs-virtual")
+
+    assert mock.calls[0][0] == "GET"
+    assert "/repositories/libs-virtual" in mock.calls[0][1]
+    assert mock.calls[1][0] == "POST"
+    assert mock.calls[1][1].endswith("/api/consumption/rollup")

@@ -1,7 +1,7 @@
 """``artifactory_downloads`` pipeline wiring (Story 15.3, CAP-4, Epic 15; + Story
-21.5, Tier 2 names-only projection).
+21.5, Tier 2 names-only projection; + Story 23.2, enterprise JFROG consumption rollup).
 
-Four nodes, wired by catalog-name string edges (AD-3):
+Six nodes, wired by catalog-name string edges (AD-3):
 - ``fetch_artifactory_downloads``: PURE ``params:artifactory -> DataFrame`` fetch node
   (Story 15.1's ``ArtifactoryAqlAdapter``); ``outputs=`` is the ``artifactory_downloads_raw``
   catalog entry.
@@ -16,6 +16,10 @@ Four nodes, wired by catalog-name string edges (AD-3):
 - ``project_artifactory_names`` (Story 21.5): projects ``artifactory_downloads_joined``
   down to ``pypi_name``/``conda_name``/``is_internal`` ONLY -- ``outputs=`` is the
   ``enterprise_jfrog_names`` catalog entry (names, not telemetry).
+- ``fetch_artifactory_consumption`` (Story 23.2): org telemetry rollup fetch;
+  ``outputs=`` is ``artifactory_consumption_raw``.
+- ``build_enterprise_jfrog_consumption`` (Story 23.2): outer-join downloads +
+  consumption by PEP-503 name; ``outputs=`` is ``enterprise_jfrog_consumption``.
 """
 
 from __future__ import annotations
@@ -23,6 +27,8 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
+    build_enterprise_jfrog_consumption,
+    fetch_artifactory_consumption,
     fetch_artifactory_downloads,
     format_artifactory_purl_export,
     join_artifactory_identity,
@@ -56,6 +62,18 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="artifactory_downloads_joined",
                 outputs="enterprise_jfrog_names",
                 name="project_artifactory_names",
+            ),
+            node(
+                func=fetch_artifactory_consumption,
+                inputs="params:artifactory",
+                outputs="artifactory_consumption_raw",
+                name="fetch_artifactory_consumption",
+            ),
+            node(
+                func=build_enterprise_jfrog_consumption,
+                inputs=["artifactory_downloads_joined", "artifactory_consumption_raw"],
+                outputs="enterprise_jfrog_consumption",
+                name="build_enterprise_jfrog_consumption",
             ),
         ]
     )

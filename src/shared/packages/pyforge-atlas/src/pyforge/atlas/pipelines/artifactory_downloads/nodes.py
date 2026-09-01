@@ -34,6 +34,8 @@ subprocess import.
 
 from __future__ import annotations
 
+import re
+
 import pandas as pd
 
 from ...artifactory import ArtifactoryAqlAdapter, ArtifactoryConfig, DownloadRow, join_identity
@@ -246,3 +248,194 @@ def project_artifactory_names(artifactory_downloads_joined: pd.DataFrame) -> pd.
         .drop_duplicates(subset=["pypi_name", "conda_name"])
         .reset_index(drop=True)
     )
+
+
+# ---------------------------------------------------------------------------
+# fetch_artifactory_consumption + build_enterprise_jfrog_consumption (Story 23.2)
+# ---------------------------------------------------------------------------
+
+_CONSUMPTION_COLS = [
+    "name",
+    "platform_env_count",
+    "internal_app_count",
+    "internal_component_count",
+    "internal_lob_count",
+]
+
+_JFROG_COLS = [
+    "core_python_package_name",
+    "repository_source",
+    "platform_env_count",
+    "internal_app_count",
+    "artifactory_downloads",
+    "artifactory_version_count",
+    "internal_component_count",
+    "internal_lob_count",
+    "packaging_tier",
+    "verification_timestamp_utc",
+]
+
+_REPOSITORY_SOURCE_CDO_ENT_JFROG = "CDO-ENT-JFROG"
+
+
+def _pep503(raw) -> str | None:
+    """PEP-503 normalization mirroring ``priority.py::pep503`` exactly (reimplemented
+    locally -- no cross-tree import). Names shorter than 2 chars normalize to ``None``."""
+    from datetime import datetime
+
+    if raw is None or isinstance(raw, datetime):
+        return None
+    s = str(raw).strip().lower().replace("_", "-").replace(".", "-")
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s if len(s) >= 2 else None
+
+
+def fetch_artifactory_consumption(artifactory_params: dict) -> pd.DataFrame:
+    """PURE ``params:artifactory -> pd.DataFrame`` consumption fetch node (Story 23.2).
+
+    Mirrors :func:`fetch_artifactory_downloads` exactly: empty ``virtual_repos`` short-
+    circuits with ZERO adapter construction; non-list ``virtual_repos`` raises
+    ``ValueError``; optional test-only ``transport`` key."""
+    params = artifactory_params or {}
+    virtual_repos = params.get("virtual_repos") or []
+    if not virtual_repos:
+        return pd.DataFrame(columns=_CONSUMPTION_COLS)
+    if not isinstance(virtual_repos, (list, tuple)):
+        raise ValueError(
+            f"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}"
+        )
+
+    config = ArtifactoryConfig(base_url=params.get("base_url") or "")
+    transport = params.get("transport")
+    adapter = (
+        ArtifactoryAqlAdapter(config, transport=transport)
+        if transport is not None
+        else ArtifactoryAqlAdapter(config)
+    )
+
+    totals: dict[str, tuple[int, int, int, int]] = {}
+    for virtual_repo in virtual_repos:
+        for row in adapter.fetch_consumption_rows(virtual_repo):
+            prev = totals.get(row.name, (0, 0, 0, 0))
+            totals[row.name] = (
+                prev[0] + row.platform_env_count,
+                prev[1] + row.internal_app_count,
+                prev[2] + row.internal_component_count,
+                prev[3] + row.internal_lob_count,
+            )
+
+    return pd.DataFrame(
+        [
+            {
+                "name": name,
+                "platform_env_count": counts[0],
+                "internal_app_count": counts[1],
+                "internal_component_count": counts[2],
+                "internal_lob_count": counts[3],
+            }
+            for name, counts in totals.items()
+        ],
+        columns=_CONSUMPTION_COLS,
+    )
+
+
+def build_enterprise_jfrog_consumption(
+    artifactory_downloads_joined: pd.DataFrame,
+    artifactory_consumption_raw: pd.DataFrame,
+) -> pd.DataFrame:
+    """PURE join node: aggregate downloads by PEP-503 name, outer-merge consumption
+    telemetry, emit ``enterprise_jfrog_consumption`` contract columns. Never raises."""
+    verification_ts = pd.Timestamp.now(tz="UTC")
+
+    if (
+        artifactory_downloads_joined is None
+        or getattr(artifactory_downloads_joined, "empty", True)
+        or not {"pypi_name", "version", "download_count"} <= set(
+            getattr(artifactory_downloads_joined, "columns", [])
+        )
+    ):
+        downloads_by_name: dict[str, dict] = {}
+    else:
+        downloads_by_name = {}
+        for row in artifactory_downloads_joined.itertuples(index=False):
+            if _is_missing(row.pypi_name) or _is_missing(row.version) or _is_missing(row.download_count):
+                continue
+            norm = _pep503(row.pypi_name)
+            if norm is None:
+                continue
+            try:
+                count = int(row.download_count)
+            except (TypeError, ValueError):
+                continue
+            entry = downloads_by_name.setdefault(norm, {"downloads": 0, "versions": set()})
+            entry["downloads"] += count
+            entry["versions"].add(str(row.version))
+
+    if (
+        artifactory_consumption_raw is None
+        or getattr(artifactory_consumption_raw, "empty", True)
+        or not set(_CONSUMPTION_COLS) <= set(getattr(artifactory_consumption_raw, "columns", []))
+    ):
+        consumption_by_name: dict[str, dict] = {}
+    else:
+        consumption_by_name = {}
+        for row in artifactory_consumption_raw.itertuples(index=False):
+            if _is_missing(row.name):
+                continue
+            norm = _pep503(row.name)
+            if norm is None:
+                continue
+            try:
+                platform_env = int(row.platform_env_count) if not _is_missing(row.platform_env_count) else 0
+                internal_app = int(row.internal_app_count) if not _is_missing(row.internal_app_count) else 0
+                internal_component = (
+                    int(row.internal_component_count) if not _is_missing(row.internal_component_count) else 0
+                )
+                internal_lob = int(row.internal_lob_count) if not _is_missing(row.internal_lob_count) else 0
+            except (TypeError, ValueError):
+                continue
+            prev = consumption_by_name.get(norm, {
+                "platform_env_count": 0,
+                "internal_app_count": 0,
+                "internal_component_count": 0,
+                "internal_lob_count": 0,
+            })
+            consumption_by_name[norm] = {
+                "platform_env_count": prev["platform_env_count"] + platform_env,
+                "internal_app_count": prev["internal_app_count"] + internal_app,
+                "internal_component_count": prev["internal_component_count"] + internal_component,
+                "internal_lob_count": prev["internal_lob_count"] + internal_lob,
+            }
+
+    all_names = set(downloads_by_name) | set(consumption_by_name)
+    if not all_names:
+        return pd.DataFrame(columns=_JFROG_COLS)
+
+    records = []
+    for norm in sorted(all_names):
+        dl = downloads_by_name.get(norm, {"downloads": 0, "versions": set()})
+        cons = consumption_by_name.get(
+            norm,
+            {
+                "platform_env_count": 0,
+                "internal_app_count": 0,
+                "internal_component_count": 0,
+                "internal_lob_count": 0,
+            },
+        )
+        records.append(
+            {
+                "core_python_package_name": norm,
+                "repository_source": _REPOSITORY_SOURCE_CDO_ENT_JFROG,
+                "platform_env_count": cons["platform_env_count"],
+                "internal_app_count": cons["internal_app_count"],
+                "artifactory_downloads": dl["downloads"],
+                "artifactory_version_count": len(dl["versions"]),
+                "internal_component_count": cons["internal_component_count"],
+                "internal_lob_count": cons["internal_lob_count"],
+                "packaging_tier": None,
+                "verification_timestamp_utc": verification_ts,
+            }
+        )
+
+    return pd.DataFrame(records, columns=_JFROG_COLS)

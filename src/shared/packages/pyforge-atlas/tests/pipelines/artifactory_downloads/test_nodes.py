@@ -25,9 +25,16 @@ class MockArtifactory:
     present in the committed ``conf/base/parameters.yml``). Routes on method + URL path,
     like ``tests/artifactory/test_aql_adapter.py``'s ``MockArtifactory``."""
 
-    def __init__(self, *, topology: dict[str, list[str]], download_rows: dict[str, list[dict]]) -> None:
+    def __init__(
+        self,
+        *,
+        topology: dict[str, list[str]],
+        download_rows: dict[str, list[dict]] | None = None,
+        consumption_rows: dict[str, list[dict]] | None = None,
+    ) -> None:
         self.topology = topology
-        self.download_rows = download_rows
+        self.download_rows = download_rows or {}
+        self.consumption_rows = consumption_rows or {}
         self.calls: list[tuple[str, str]] = []
 
     def __call__(self, request: AqlRequest) -> AqlResponse:
@@ -42,6 +49,10 @@ class MockArtifactory:
         if request.method == "POST" and path == "/search/aql":
             virtual_repo = (request.body or {}).get("virtual_repo")
             rows = self.download_rows.get(virtual_repo, [])
+            return AqlResponse(200, {"results": rows})
+        if request.method == "POST" and path == "/consumption/rollup":
+            virtual_repo = (request.body or {}).get("virtual_repo")
+            rows = self.consumption_rows.get(virtual_repo, [])
             return AqlResponse(200, {"results": rows})
         return AqlResponse(400, {"detail": f"unrouted {request.method} {path}"})
 
@@ -438,3 +449,145 @@ def test_project_artifactory_names_malformed_input_missing_columns_degrades_to_e
     out = N.project_artifactory_names(pd.DataFrame({"pypi_name": ["x"]}))
     assert out.empty
     assert list(out.columns) == ["pypi_name", "conda_name", "is_internal"]
+
+
+# ---------------------------------------------------------------------------
+# fetch_artifactory_consumption + build_enterprise_jfrog_consumption (Story 23.2)
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_artifactory_consumption_empty_virtual_repos_short_circuits(monkeypatch):
+    monkeypatch.setattr(N, "ArtifactoryConfig", _boom)
+    monkeypatch.setattr(N, "ArtifactoryAqlAdapter", _boom)
+
+    result = N.fetch_artifactory_consumption({"virtual_repos": []})
+
+    assert list(result.columns) == N._CONSUMPTION_COLS
+    assert result.empty
+
+
+def test_fetch_artifactory_consumption_non_list_virtual_repos_raises():
+    with pytest.raises(ValueError, match="must be a list"):
+        N.fetch_artifactory_consumption({"virtual_repos": "repo-a"})
+
+
+def test_fetch_artifactory_consumption_sums_across_virtual_repos():
+    mock = MockArtifactory(
+        topology={"repo-a": ["repo-a-local"], "repo-b": ["repo-b-local"]},
+        consumption_rows={
+            "repo-a": [{"name": "pkg-a", "platform_env_count": 10, "internal_app_count": 1}],
+            "repo-b": [{"name": "pkg-a", "platform_env_count": 5, "internal_app_count": 2}],
+        },
+    )
+
+    result = N.fetch_artifactory_consumption({"virtual_repos": ["repo-a", "repo-b"], "transport": mock})
+
+    assert result.to_dict("records") == [
+        {
+            "name": "pkg-a",
+            "platform_env_count": 15,
+            "internal_app_count": 3,
+            "internal_component_count": 0,
+            "internal_lob_count": 0,
+        }
+    ]
+
+
+def _consumption(rows: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(rows, columns=N._CONSUMPTION_COLS)
+
+
+def test_build_enterprise_jfrog_consumption_happy_path_outer_join():
+    joined = _joined(
+        [
+            {"pypi_name": "Requests", "version": "1.0", "download_count": 10, "conda_name": "requests", "match_source": "x", "is_internal": False},
+            {"pypi_name": "Requests", "version": "2.0", "download_count": 5, "conda_name": "requests", "match_source": "x", "is_internal": False},
+        ]
+    )
+    consumption = _consumption(
+        [{"name": "requests", "platform_env_count": 3, "internal_app_count": 1, "internal_component_count": 2, "internal_lob_count": 4}]
+    )
+
+    result = N.build_enterprise_jfrog_consumption(joined, consumption)
+
+    assert list(result.columns) == N._JFROG_COLS
+    assert len(result) == 1
+    row = result.iloc[0]
+    assert row["core_python_package_name"] == "requests"
+    assert row["repository_source"] == "CDO-ENT-JFROG"
+    assert row["artifactory_downloads"] == 15
+    assert row["artifactory_version_count"] == 2
+    assert row["platform_env_count"] == 3
+    assert row["internal_app_count"] == 1
+    assert row["internal_component_count"] == 2
+    assert row["internal_lob_count"] == 4
+    assert row["packaging_tier"] is None
+    assert row["verification_timestamp_utc"] is not None
+
+
+def test_build_enterprise_jfrog_consumption_downloads_only_defaults_telemetry_to_zero():
+    joined = _joined(
+        [{"pypi_name": "foo", "version": "1.0", "download_count": 7, "conda_name": None, "match_source": None, "is_internal": True}]
+    )
+    result = N.build_enterprise_jfrog_consumption(joined, _consumption([]))
+    row = result.iloc[0]
+    assert row["core_python_package_name"] == "foo"
+    assert row["artifactory_downloads"] == 7
+    assert row["platform_env_count"] == 0
+
+
+def test_build_enterprise_jfrog_consumption_consumption_only_defaults_downloads_to_zero():
+    consumption = _consumption(
+        [{"name": "bar", "platform_env_count": 2, "internal_app_count": 0, "internal_component_count": 0, "internal_lob_count": 1}]
+    )
+    result = N.build_enterprise_jfrog_consumption(_joined([]), consumption)
+    row = result.iloc[0]
+    assert row["core_python_package_name"] == "bar"
+    assert row["artifactory_downloads"] == 0
+    assert row["artifactory_version_count"] == 0
+    assert row["platform_env_count"] == 2
+
+
+def test_build_enterprise_jfrog_consumption_drops_pep503_too_short_names():
+    joined = _joined(
+        [{"pypi_name": "a", "version": "1.0", "download_count": 1, "conda_name": None, "match_source": None, "is_internal": True}]
+    )
+    result = N.build_enterprise_jfrog_consumption(joined, _consumption([]))
+    assert result.empty
+    assert list(result.columns) == N._JFROG_COLS
+
+
+def test_build_enterprise_jfrog_consumption_both_inputs_empty():
+    result = N.build_enterprise_jfrog_consumption(None, None)
+    assert result.empty
+    assert list(result.columns) == N._JFROG_COLS
+
+
+def test_build_enterprise_jfrog_consumption_never_raises_on_malformed():
+    result = N.build_enterprise_jfrog_consumption(pd.DataFrame({"bad": [1]}), pd.DataFrame({"bad": [1]}))
+    assert result.empty
+    assert list(result.columns) == N._JFROG_COLS
+
+
+def test_pep503_parity_with_priority_script():
+    """Local ``_pep503`` must match ``priority.py::pep503`` on shared fixtures."""
+    import re
+    from datetime import datetime
+
+    def reference_pep503(raw):
+        if raw is None or isinstance(raw, datetime):
+            return None
+        s = str(raw).strip().lower().replace("_", "-").replace(".", "-")
+        s = re.sub(r"-+", "-", s).strip("-")
+        return s if len(s) >= 2 else None
+
+    fixtures = [
+        ("Requests", "requests"),
+        ("Foo_Bar.Baz", "foo-bar-baz"),
+        ("already-normal", "already-normal"),
+        ("a", None),
+        ("", None),
+        (None, None),
+    ]
+    for raw, expected in fixtures:
+        assert N._pep503(raw) == reference_pep503(raw) == expected
