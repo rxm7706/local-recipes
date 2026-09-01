@@ -113,6 +113,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-09-01: bmad-build-auto re-run — static review confirms AC coverage; verification still blocked (shell rejected in session)
 - 2026-09-01: bmad-build-auto Cursor dispatch — implementation confirmed present; verification still blocked (shell rejected in session)
 - 2026-09-01: bmad-build-auto Cursor dispatch (completion) — verification green for story AC coverage + pyforge-deps-test; full suite has one pre-existing CFE drift meta failure (deferred)
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6) — static re-verification; shell blocked for pixi/git in session; implementation and AC tests unchanged
 
 ## Review Triage Log
 
@@ -153,6 +154,17 @@ output-compression (CAP-3) and contract artifacts are untouched.
   - none
 
 Manual review: all four ACs have dedicated tests — `ACTION_PRECEDENCE` + `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` (ordering); `CompressionEscalationDecision` field set + `test_cap8_compression_ladder_seam` (model/gate seam isolation); supervisor journals threshold facts; tick loop calls `_maybe_escalate_compression` before budget-stop and idle ladder.
+
+### 2026-09-01 — Review pass (dispatch-pyforge-marshal-28.6)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+Static re-review on `dispatch/pyforge-marshal/28.6`: CAP-8 code and 12 compression-scoped tests present; no new findings. Prior verification results stand (see Verification performed below).
 
 ## Auto Run Result
 
