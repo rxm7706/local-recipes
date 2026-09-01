@@ -39,10 +39,9 @@
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
-# harness_preference (Story 22.8, FR-193 CAP-8): cursor first on this machine
-# while Claude Code is spend-limited (2026-08-31). Overrides repo-defaults
-# layer; claude remains fallback once quota resets.
-harness_preference = ["cursor", "claude", "copilot", "gemini", "devin"]
+# harness_preference (Story 22.8, FR-193 CAP-8): cursor-only while Claude Code
+# is spend-limited (2026-09-01 Epic 28 + atlas drain on composer-2.5-fast).
+harness_preference = ["cursor"]
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
@@ -271,12 +270,12 @@ args = []
 # (heavy -> opus dev) instead of the baseline. Spin is unaffected (unmapped -> no
 # override there); this makes the two paths agree.
 [model_tier_map.heavy]
-dev = "opus"
-review = "opus"
+dev = "composer-2.5-fast"
+review = "composer-2.5"
 
 [model_tier_map.medium]
-dev = "sonnet"
-review = "opus"
+dev = "composer-2.5-fast"
+review = "composer-2.5"
 
 [model_tier_map.easy]
-dev = "haiku"
+dev = "composer-2.5-fast"

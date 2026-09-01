@@ -333,6 +333,17 @@ def test_registered_codes_contains_the_real_codes():
             # and MRS-PREFLIGHT-015).
             "MRS-CTX-001",
             "MRS-CTX-002",
+            # Story 28.7 (index freshness is an advisory finding,
+            # SPEC-marshal-token-economy CAP-10): `marshal check` gains
+            # advisory codegraph/cocoindex staleness findings. Four codes:
+            # 001 codegraph index missing in enabled layer, 002 codegraph
+            # index stale, 003 cocoindex missing, 004 cocoindex stale.
+            # All WARN, never ERROR -- advisory only, per the spec's
+            # constraint that a staleness finding alone never blocks.
+            "MRS-IDXF-001",
+            "MRS-IDXF-002",
+            "MRS-IDXF-003",
+            "MRS-IDXF-004",
         }
     )
 

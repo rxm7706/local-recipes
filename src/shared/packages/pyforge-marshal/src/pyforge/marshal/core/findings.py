@@ -1705,6 +1705,24 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # today's compile-on-hunch behavior with a named reason).
         "MRS-CTX-001",
         "MRS-CTX-002",
+        # Story 28.7 (index freshness is an advisory finding,
+        # SPEC-marshal-token-economy CAP-10): `marshal check` gains advisory
+        # codegraph/cocoindex staleness findings, evaluated against loop-home
+        # worktree state and the declared `[context]` layers. Four codes:
+        # `MRS-IDXF-001` (codegraph index is missing in a home where the layer
+        # is declared enabled), `MRS-IDXF-002` (codegraph index is present but
+        # stale -- its mtime predates HEAD's timestamp), `MRS-IDXF-003`
+        # (cocoindex is missing), and `MRS-IDXF-004` (cocoindex is stale).
+        # All four classify WARN, never ERROR -- advisory only, per the
+        # spec's constraint that a staleness finding alone never blocks a run.
+        # A home with a layer declared OFF raises no staleness finding for
+        # that layer at all (AC 3). A layer declared ON that is not available
+        # (platform gap, not installed) is reported separately by the kit-check
+        # surface (`MRS-PREFLIGHT-015`), not by these codes.
+        "MRS-IDXF-001",
+        "MRS-IDXF-002",
+        "MRS-IDXF-003",
+        "MRS-IDXF-004",
     }
 )
 

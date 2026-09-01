@@ -2,7 +2,8 @@
 title: 'Index freshness is an advisory finding (Story 28.7, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: '951eddb6b7fdbb16fb07b0e5c367b3a491c1ceda'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: easy

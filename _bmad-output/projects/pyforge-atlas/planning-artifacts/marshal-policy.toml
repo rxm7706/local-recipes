@@ -129,3 +129,19 @@ verify_commands = [
   "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
   "scripts/.spec-surface-baseline.json",
 ]
+
+# harness_preference: cursor-only + composer models for the 2026-09-01 atlas
+# drain (Claude Code spend-limited on this machine).
+harness_preference = ["cursor"]
+
+# model_tier_map must be last in this file (TOML table scoping).
+[model_tier_map.heavy]
+dev = "composer-2.5-fast"
+review = "composer-2.5"
+
+[model_tier_map.medium]
+dev = "composer-2.5-fast"
+review = "composer-2.5"
+
+[model_tier_map.easy]
+dev = "composer-2.5-fast"
