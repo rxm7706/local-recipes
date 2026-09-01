@@ -1337,6 +1337,20 @@ class TestDeriveDispatchPhase:
         )
         assert status.derive_dispatch_phase(facts) is None
 
+    def test_failed_with_dead_tail_is_not_verifying(self):
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-13-example",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="failed",
+            dispatch_verification_verdict="refused",
+            dispatch_verification_failed_gate="MRS-GATE-001",
+        )
+        assert status.derive_dispatch_phase(facts) is None
+
     def test_none_without_dispatch_story(self):
         facts = status.FleetHomeFacts(slug="marshal", branch="loop/pyforge-marshal", has_run=False)
         assert status.derive_dispatch_phase(facts) is None

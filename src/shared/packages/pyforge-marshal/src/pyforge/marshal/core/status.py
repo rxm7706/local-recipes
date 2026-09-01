@@ -1027,6 +1027,8 @@ def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
         return None
     if facts.dispatch_completion_verdict == "completed":
         return "chaining" if _dispatch_tail_still_live(facts) else None
+    if facts.dispatch_completion_verdict in ("failed", "stopped_externally"):
+        return "verifying" if _dispatch_tail_still_live(facts) else None
     if landing_journal_indicates_complete(facts.dispatch_landing_verdict):
         return "chaining" if _dispatch_tail_still_live(facts) else None
     if facts.dispatch_engine_alive:
