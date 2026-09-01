@@ -13,7 +13,7 @@ import pytest
 from pyforge.atlas.dashboard import identity_gist
 from pyforge.atlas.pipelines.derived_artifacts.nodes import build_identity_complete_export
 
-_REPO_ROOT = Path(__file__).resolve().parents[7]
+_REPO_ROOT = Path(__file__).resolve().parents[6]
 _SCRIPT_DIR = _REPO_ROOT / "scripts"
 _FIXTURE_JSON = (
     _REPO_ROOT
@@ -41,22 +41,60 @@ def _build_export_df(corpus: dict) -> pd.DataFrame:
     )
 
 
+def _ensure_openpyxl_stub() -> None:
+    import types
+
+    if getattr(sys.modules.get("openpyxl"), "_identity_gist_stub", False):
+        return
+
+    class _Worksheet:
+        def iter_rows(self, values_only=True):
+            return iter([])
+
+    class _Workbook:
+        sheetnames: list[str] = []
+
+        def __getitem__(self, _name: str) -> _Worksheet:
+            return _Worksheet()
+
+        def close(self) -> None:
+            return None
+
+    stub = types.ModuleType("openpyxl")
+    stub.load_workbook = lambda *_args, **_kwargs: _Workbook()
+    stub._identity_gist_stub = True
+    sys.modules["openpyxl"] = stub
+
+
 def _legacy_render(records: list[dict[str, str]], export_path: Path) -> str:
     import importlib.util
 
+    _ensure_openpyxl_stub()
     if str(_SCRIPT_DIR) not in sys.path:
         sys.path.insert(0, str(_SCRIPT_DIR))
-    spec = importlib.util.spec_from_file_location(
-        "openteams_identity_script",
-        _REPO_ROOT / "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
-    )
-    mod = importlib.util.module_from_spec(spec)
+    dash_path = _SCRIPT_DIR / "openteams_identity_dashboards.py"
+    spec = importlib.util.spec_from_file_location("openteams_identity_dashboards", dash_path)
+    dash_mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(mod)
-    from openteams_identity_dashboards import render
+    spec.loader.exec_module(dash_mod)
 
-    helpers = types.SimpleNamespace(**vars(mod))
-    return render(records, export_path, "offline-test", "identity-fixture", helpers=helpers)
+    helpers = types.SimpleNamespace(
+        overlay_live_local=identity_gist._overlay_live_local,
+        load_local_recipe_type=identity_gist.load_local_recipe_type,
+        row_recipe_type=identity_gist.row_recipe_type,
+        pep503_name=identity_gist._pep503_name,
+        packaging_name_from_title=lambda _title: None,
+        read_xlsx_tab=lambda _xlsx, _tab: [],
+        file_sha256=identity_gist._file_sha256,
+        md_table=identity_gist.md_table,
+        _as_int=identity_gist._as_int,
+        P_ORDER=identity_gist.P_ORDER,
+        RECIPE_TYPE_ORDER=identity_gist.RECIPE_TYPE_ORDER,
+        GIST_FILENAME=identity_gist.GIST_FILENAME,
+        REPO_ROOT=_REPO_ROOT,
+        WORK_DASH_ORDER=identity_gist.WORK_DASH_ORDER,
+    )
+    return dash_mod.render(records, export_path, "offline-test", "identity-fixture", helpers=helpers)
 
 
 def _extract_metric(text: str, label: str) -> int | None:

@@ -572,11 +572,11 @@ def build_license_map_gap_model(table: Any) -> SemanticModel:
 def _identity_status(t: Any) -> Any:
     """Normalize blank ``Local_Build_Status`` to ``blank`` (legacy gist semantics)."""
     raw = t.Local_Build_Status.fill_null("")
-    return ibis.case().when(raw == "", "blank").else_(raw).end()
+    return (raw == "").ifelse("blank", raw)
 
 
 def _identity_filled(t: Any, col: str) -> Any:
-    return t[col].fill_null("").neq("").ifelse(1, 0).sum().fill_null(0)
+    return (t[col].fill_null("") != "").ifelse(1, 0).sum().fill_null(0)
 
 
 def build_identity_complete_export_model(
@@ -598,9 +598,7 @@ def build_identity_complete_export_model(
             .fill_null(0)
         ),
         "feedstock_count": Measure(
-            expr=lambda t: (
-                (t[feedstock_col].fill_null("") != "") | (t.conda_purl.fill_null("") != "")
-            )
+            expr=lambda t: (t[feedstock_col].fill_null("") != "")
             .ifelse(1, 0)
             .sum()
             .fill_null(0)
@@ -644,15 +642,13 @@ def build_identity_complete_export_model(
             "P": Dimension(expr=lambda t: t.P.fill_null("?")),
             "Work": Dimension(expr=lambda t: t.Work.fill_null("?")),
             "identity_source": Dimension(expr=lambda t: t.identity_source.fill_null("")),
-            "local_build_status": Dimension(expr=_identity_status),
+            "Local_Build_Status": Dimension(expr=_identity_status),
             "has_openteams_issue": Dimension(
                 expr=lambda t: (t.OpenTeams_Issue_URL.fill_null("") != "")
                 .ifelse("yes", "no")
             ),
             "has_feedstock": Dimension(
-                expr=lambda t: (
-                    (t[feedstock_col].fill_null("") != "") | (t.conda_purl.fill_null("") != "")
-                ).ifelse("yes", "no")
+                expr=lambda t: (t[feedstock_col].fill_null("") != "").ifelse("yes", "no")
             ),
             "has_local_recipe": Dimension(
                 expr=lambda t: (t.Local_Recipes_URL.fill_null("") != "").ifelse("yes", "no")

@@ -2,7 +2,7 @@
 title: 'BSL gist and dashboard aggregates from complete export (Story 23.6, Epic 23, CAP-8d)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'dispatch/pyforge-atlas/23.6'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -224,19 +224,38 @@ fetch: `identity_complete_export.parquet` is already materialized by Story 23.5.
 
 - **Summary:** Ported gist markdown rendering to `pyforge.atlas.dashboard.identity_gist` with BSL
   aggregates via `build_identity_complete_export_model`; thinned `--gist-only` to call the new
-  renderer and keep only gist-id/`gh` actuator logic in `scripts/`.
+  renderer and keep only gist-id/`gh` actuator logic in `scripts/`. Fixed BSL integration bugs
+  found during verification (syntax error in `PRIORITY_HOW`, ibis memtable/register API,
+  `Local_Build_Status` dimension naming, feedstock census uses FeedStock URL only).
 - **Files changed:**
   - `semantic/models.py` — `build_identity_complete_export_model`
-  - `dashboard/identity_gist.py` — new renderer
+  - `dashboard/identity_gist.py` — new BSL-grounded renderer
   - `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` — thin gist path
-  - `tests/dashboard/test_identity_gist_markdown.py` — parity tests
-- **Verification:** `pixi run -e pyforge-atlas pytest tests/dashboard/test_identity_gist_markdown.py`
-  — run locally to confirm (agent shell unavailable).
+  - `tests/dashboard/test_identity_gist_markdown.py` — parity + matrix tests
+- **Review findings:** 4 patch items fixed during implement/verify (syntax, BSL API, dimension
+  alias, test openpyxl stub); 0 deferred.
+- **Verification:** `pixi run -e pyforge-atlas pytest tests/dashboard/test_identity_gist_markdown.py -v`
+  — 4/4 passed (2026-09-01).
 - **Residue:** Workbook-tabs section dropped from dashboard markdown (Design Notes item 3). Canvas
   writers still use legacy `openteams_identity_dashboards` (Story 22.6).
 
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 1, medium 2, low 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[high]` `[patch]` Fixed `PRIORITY_HOW` list closed with `}` instead of `]` (SyntaxError).
+  - `[medium]` `[patch]` BSL queries over overlay frame use Parquet round-trip + `Local_Build_Status` dimension name matching BSL output columns.
+  - `[medium]` `[patch]` Feedstock census measures use `Conda-Forge_FeedStock_URL` only (legacy parity).
+  - `[low]` `[patch]` Test legacy parity uses openpyxl stub + direct `openteams_identity_dashboards` import (avoids pulling full operations script).
+
 ## Spec Change Log
 
+- 2026-09-01: Story 23.6 implemented — BSL gist renderer landed; verification 4/4 green.
 - 2026-08-30: Initial draft. Written ahead of Story 23.5 (`depends_on`) and, transitively, Story
   23.2 (needed for the JFROG-map resolution) — see Design Notes, mirroring the
   `spec-21-8-end-to-end-verification-gate.md` / `spec-23-5` precedent for a closing/porting story

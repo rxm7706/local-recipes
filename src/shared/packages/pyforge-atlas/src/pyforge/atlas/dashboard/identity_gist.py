@@ -10,12 +10,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import tempfile
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import ibis
 import pandas as pd
 
 from pyforge.atlas.semantic import models
@@ -186,7 +186,7 @@ PRIORITY_HOW = [
     "P10: leftover File OpenTeams tracking issue for CDO-ENT-CONDA names, plus already-tracked remainder.",
     "Score (1–100) is use-only (platforms, apps, components, LOBs, downloads, versions). It ranks inside a P; it does not pick the P.",
     "Work is independent of leftover P: Fix vulnerability / Create recipe / File OpenTeams tracking issue [Conda-Forge Packaging] / Already tracked.",
-}
+]
 
 P_ORDER = ("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10")
 RECIPE_TYPE_ORDER = ("noarch-python", "noarch-generic", "compiled", "arch", "none")
@@ -266,27 +266,28 @@ def render_identity_gist_markdown(
     jfrog_path = data_root / "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
     atlas_root = _pyforge_atlas_root(export_path)
 
-    con = ibis.duckdb.connect()
-    con.register("identity_complete_export_overlay", overlay_df)
-    table = con.table("identity_complete_export_overlay")
-    model = models.build_identity_complete_export_model(table, gist_columns=GIST_COLUMNS)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        overlay_path = Path(tmpdir) / "identity_complete_export_overlay.parquet"
+        overlay_df.to_parquet(overlay_path, index=False)
+        table = models.duckdb_table_from_parquet(str(overlay_path))
+        model = models.build_identity_complete_export_model(table, gist_columns=GIST_COLUMNS)
 
-    identity_md = _render_identity_catalog(
-        records,
-        export_path,
-        gist_id=gist_id,
-        model=model,
-    )
-    dashboards_md = _render_dashboards(
-        records,
-        export_path,
-        gist_id=gist_id,
-        model=model,
-        jfrog_path=jfrog_path if jfrog_path.is_file() else None,
-        data_root=data_root,
-        atlas_root=atlas_root,
-        repo_root=root,
-    )
+        identity_md = _render_identity_catalog(
+            records,
+            export_path,
+            gist_id=gist_id,
+            model=model,
+        )
+        dashboards_md = _render_dashboards(
+            records,
+            export_path,
+            gist_id=gist_id,
+            model=model,
+            jfrog_path=jfrog_path if jfrog_path.is_file() else None,
+            data_root=data_root,
+            atlas_root=atlas_root,
+            repo_root=root,
+        )
     return identity_md, dashboards_md
 
 
@@ -754,7 +755,7 @@ def _render_dashboards(
         bucket_n = p_counts.get(p, 0)
         if not bucket_n:
             continue
-        p_model_slice = _query_counts(model, ["P", "has_feedstock", "has_staged_pr", "has_local_recipe", "local_build_status"])
+        p_model_slice = _query_counts(model, ["P", "has_feedstock", "has_staged_pr", "has_local_recipe", "Local_Build_Status"])
         bucket = p_model_slice[p_model_slice["P"] == p]
         fs = sum(int(r["identity_row_count"]) for _, r in bucket[bucket["has_feedstock"] == "yes"].iterrows())
         needs_p = bucket_n - fs
@@ -767,14 +768,14 @@ def _render_dashboards(
         g = sum(
             int(r["identity_row_count"])
             for _, r in bucket.iterrows()
-            if r["local_build_status"] == "success"
+            if r["Local_Build_Status"] == "success"
         )
         sk = sum(
             int(r["identity_row_count"])
             for _, r in bucket.iterrows()
-            if r["local_build_status"] in {"build-clean-test-blocked", "blocked-missing-ortools"}
+            if r["Local_Build_Status"] in {"build-clean-test-blocked", "blocked-missing-ortools"}
         )
-        fl = sum(int(r["identity_row_count"]) for _, r in bucket.iterrows() if r["local_build_status"] == "failed")
+        fl = sum(int(r["identity_row_count"]) for _, r in bucket.iterrows() if r["Local_Build_Status"] == "failed")
         not_native = bucket_n - g - sk - fl
         census_rows.append(
             [
@@ -793,7 +794,7 @@ def _render_dashboards(
 
     cube_df = _query_counts(
         model,
-        ["P", "Work", "has_feedstock", "has_local_recipe", "local_build_status"],
+        ["P", "Work", "has_feedstock", "has_local_recipe", "Local_Build_Status"],
     )
     cube_agg: dict[tuple, list[int]] = {}
     for _, row in cube_df.iterrows():
@@ -808,7 +809,7 @@ def _render_dashboards(
         agg[0] += cnt
         if row["has_local_recipe"] == "yes":
             agg[1] += cnt
-        st = row["local_build_status"]
+        st = row["Local_Build_Status"]
         if st == "success":
             agg[2] += cnt
         elif st in {"build-clean-test-blocked", "blocked-missing-ortools"}:
