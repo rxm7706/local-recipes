@@ -3,9 +3,17 @@ title: 'identity_complete_export.parquet (canonical single export) (Story 23.5, 
 type: 'feature'
 created: '2026-08-30'
 status: 'done'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
-baseline_revision: 'dispatch-worktree'
+baseline_revision: 'pre-23.5-dispatch'
+deferred:
+  - summary: >-
+      End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
+    evidence: |-
+      Spec Verification lists `kedro run --pipelines derived_artifacts` as a manual gate; test_identity_complete_export.py covers the node in isolation only.
+    location: >-
+      src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py
+    severity: low
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -371,22 +379,47 @@ its inputs exist.
   Code Map groundedness, verifiable Tasks & Acceptance, honest Design Notes) passed; `status` set
   to `ready-for-dev`.
 
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 0, low 1)
+- reject: 2
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Implementation summary (Story 23.5, dispatch 2026-09-01):
-- Added `build_identity_complete_export` pure join node in `derived_artifacts/nodes.py` — left-anchored on `identity_packages_primary`, consumes Stories 21.6/23.2/23.3/23.4 Parquet plus `pypi_cross_channel_flags`, `pypi_tier3_channel_flags`, and `inventory_universe` (tab-sourced `in_*` BOOLs).
-- Wired pipeline node + `identity_complete_export` catalog entry at `data/derived/identity_complete_export/identity_complete_export.parquet`.
-- Registered `identity_complete_export` → `derived_artifacts` prefix (longest-prefix beats `identity` → `upstream_discovery` for Story 21.6 outputs).
-- Added `test_identity_complete_export.py` (63-column parity, GIST_COLUMNS subset, five I/O-matrix edge cases) + `tests/fixtures/inventory_identity/complete_export_expected.json`.
-- Documented output path in pyforge-atlas README operator env block.
+Summary: Story 23.5 adds `build_identity_complete_export`, a pure Kedro join node that materializes the canonical 63-column `identity_complete_export.parquet` from upstream Stories 21.6/23.2/23.3/23.4 outputs plus cross-channel flag datasets.
 
-Pipeline placement resolution: `derived_artifacts` (confirmed per sibling Stories 23.3/23.4).
+Files changed:
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_identity_complete_export` + helpers
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — node wiring
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — `identity_complete_export` catalog entry
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — node timeout registration
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — prefix mapping + count bump (125 total)
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py` — parity + I/O-matrix tests
+- `src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json` — frozen fixture corpus
+- `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — DAG membership assertion
+- `src/shared/packages/pyforge-atlas/README.md` — operator env block row
 
-Verification (run locally):
-- `pixi run -e pyforge-atlas kedro-catalog-check`
-- `pixi run -e pyforge-atlas kedro-test -- src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py`
+Pipeline placement resolution: `derived_artifacts` (confirmed per sibling Stories 23.3/23.4). Domain prefix: `identity_complete_export` → `derived_artifacts` (longest-prefix beats `identity` → `upstream_discovery`).
+
+Review findings: 0 patches applied; 1 deferred (low — no e2e kedro-run gate in unit suite); 2 rejected (intentional `enterprise_conda_maintainers` pass-through input; README shorthand path vs catalog nested path per spec).
+
+Follow-up review recommendation: false (0 patched findings).
+
+Verification (agent session could not execute shell — run locally to confirm):
+- `pixi run -e pyforge-atlas kedro-catalog-check` — expected pass
+- `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_identity_complete_export.py -v` — expected 10 passed
+
+Matrix test audit: all six I/O-matrix rows covered — happy path (`test_happy_path_*`), absent enterprise (`test_absent_enterprise_*`), missing priority (`test_missing_priority_row_*`), board-only (`test_board_only_*`), absent Tier 3 (`test_absent_tier3_*`), re-stamped timestamp (`test_happy_path_*` + fixture corpus).
+
+Residual risks: upstream Parquet absence is degraded in-node but not integration-tested via full pipeline run in this story's test suite.
 
 ## Design Notes
 
