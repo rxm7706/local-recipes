@@ -17,6 +17,7 @@ class DispatchSessionVerdict(StrEnum):
     LIVE = "live"
     COMPLETED = "completed"
     FAILED = "failed"
+    STOPPED_EXTERNALLY = "stopped_externally"
 
 
 @dataclass(frozen=True)

@@ -61,6 +61,7 @@ from ..core.dispatch_completion import (
     judge_dispatch_completion,
     zombie_redispatch_evidence,
 )
+from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_verdict
 from ..core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
@@ -311,6 +312,42 @@ def _compose_policy(
     return effective
 
 
+def _surface_worktree_wip_before_dispatch(
+    *,
+    vcs: VcsPort,
+    repo_root: Path,
+    worktree: Path,
+    baseline_head_sha: str,
+) -> Finding | None:
+    """Story 28.13 (CAP-15): report existing WIP before touching the worktree."""
+    try:
+        changed = vcs.changed_files(repo_root, worktree, base=baseline_head_sha)
+    except VcsCommandError:
+        return None
+    if not changed:
+        return None
+    line_count: int | None
+    try:
+        patch = vcs.worktree_unified_patch(worktree, baseline_sha=baseline_head_sha)
+        line_count = count_unified_diff_lines(patch)
+    except VcsCommandError:
+        line_count = None
+    file_count = len(changed)
+    detail = f"{file_count} changed file(s)"
+    if line_count is not None:
+        detail += f", {line_count} diff line(s)"
+    else:
+        detail += " (diff line count unavailable)"
+    return Finding(
+        code="MRS-DISP-036",
+        severity=Severity.WARN,
+        message=(
+            f"worktree {worktree!r} already carries uncommitted changes before "
+            f"this dispatch proceeds: {detail}"
+        ),
+    )
+
+
 def _last_failed_dispatch_session_log(
     fs: FsPort, repo_root: Path, slug: str, story_key: str
 ) -> str | None:
@@ -416,6 +453,7 @@ def gather_dispatch_journal_facts(
     baseline_head_sha: str | None = None
     supervisor_pid: int | None = None
     completion_verdict: str | None = None
+    completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
@@ -449,6 +487,9 @@ def gather_dispatch_journal_facts(
             verdict_val = entry.payload.get("verdict")
             if isinstance(verdict_val, str):
                 completion_verdict = verdict_val
+            stop_val = entry.payload.get("stop_reason")
+            if isinstance(stop_val, str):
+                completion_stop_reason = stop_val
     landing_verdict: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
         if entry.phase == Phase.OUTCOME and entry.payload.get("ok"):
@@ -507,6 +548,7 @@ def gather_dispatch_journal_facts(
         baseline_head_sha=baseline_head_sha,
         supervisor_pid=supervisor_pid,
         completion_verdict=completion_verdict,
+        completion_stop_reason=completion_stop_reason,
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
         verification_scope_advisories=verification_scope_advisories,
@@ -528,10 +570,12 @@ def resolve_dispatch_session_verdict(
     slug: str,
     journal: dispatch_core.DispatchJournalFacts,
     effective_policy: policy.EffectivePolicy,
+    run_dir: Path | None = None,
 ) -> DispatchSessionVerdict | None:
     if journal.completion_verdict in {
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
+        DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
     }:
         return DispatchSessionVerdict(journal.completion_verdict)
     from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
@@ -543,23 +587,6 @@ def resolve_dispatch_session_verdict(
     session_alive = (
         journal.session_pid is not None and process.is_alive(journal.session_pid)
     )
-    # Independent verification (Story 22.3's dispatch_verify.py -- real gate
-    # commands re-run against the worktree, never a self-report) already
-    # judged this dispatch REFUSED. Combined with a confirmed-dead process,
-    # that is strong, non-self-reported evidence the session is gone, not
-    # merely idle -- git.changed_paths staying nonzero forever (once ANY
-    # real edit landed before the crash) must not keep judge_dispatch_
-    # completion's has_git_progress() reading this LIVE, or a crashed
-    # supervisor's last-known-good evidence blocks redispatch indefinitely
-    # (live 2026-08-29: atlas Story 21.1's dispatch supervisor crashed on
-    # compose_dispatch_policy's tomllib bug, and MRS-DISP-011 kept refusing
-    # redispatch on the same 8-changed-paths evidence for hours after).
-    # Deliberately gated on session_alive being False too: a session that
-    # IS still running with a currently-refused gate (mid-development, not
-    # yet green) must stay LIVE -- verification_verdict alone is not proof
-    # of death, only the conjunction with a confirmed-dead process is.
-    if not session_alive and journal.verification_verdict == "refused":
-        return DispatchSessionVerdict.FAILED
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
     try:
@@ -574,8 +601,15 @@ def resolve_dispatch_session_verdict(
         )
     except (VcsCommandError, ValueError):
         return DispatchSessionVerdict.LIVE if session_alive else None
-    return judge_dispatch_completion(
-        DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+    session_log: str | None = None
+    if run_dir is not None:
+        session_log = fs.read_text(run_dir / _LOG_FILENAME)
+    return resolve_terminal_session_verdict(
+        session_alive=session_alive,
+        git=git_facts,
+        verification_verdict=journal.verification_verdict,
+        detach_reason=journal.completion_stop_reason,
+        session_log=session_log,
     )
 
 
@@ -706,6 +740,7 @@ def _live_dispatch_story_keys(
             slug=slug,
             journal=journal,
             effective_policy=effective_policy,
+            run_dir=run_dir,
         )
         if verdict == DispatchSessionVerdict.LIVE:
             live.append(journal.story_key)
@@ -759,6 +794,7 @@ def station_in_flight_conflict(
             slug=slug,
             journal=journal,
             effective_policy=effective_policy,
+            run_dir=run_dir,
         )
         if verdict != DispatchSessionVerdict.LIVE:
             continue
@@ -870,6 +906,7 @@ def cross_station_surface_overlap_advisories(
                 slug=station_slug,
                 journal=journal,
                 effective_policy=station_policy,
+                run_dir=run_dir,
             )
             if verdict != DispatchSessionVerdict.LIVE:
                 continue
@@ -936,6 +973,7 @@ def station_story_blocked_evidence(
             slug=slug,
             journal=journal,
             effective_policy=effective_policy,
+            run_dir=run_dir,
         )
         if verdict == DispatchSessionVerdict.FAILED:
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
@@ -1353,6 +1391,15 @@ def dispatch_once(
         return _done()
     data["baseline_head_sha"] = baseline_head_sha
 
+    wip_finding = _surface_worktree_wip_before_dispatch(
+        vcs=vcs,
+        repo_root=repo_root,
+        worktree=worktree,
+        baseline_head_sha=baseline_head_sha,
+    )
+    if wip_finding is not None:
+        findings.append(wip_finding)
+
     writer_id = _writer_id()
     mint_moment = _now_utc()
     run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
@@ -1665,6 +1712,7 @@ def _ensure_dispatch_supervision(
         slug=slug,
         journal=journal,
         effective_policy=effective_policy,
+        run_dir=run_dir,
     )
     data["session_alive"] = session_alive
     data["supervisor_alive"] = supervisor_alive

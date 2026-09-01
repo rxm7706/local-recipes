@@ -1097,6 +1097,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-033": Verdict.WARN,
     "MRS-DISP-034": Verdict.ERROR,
     "MRS-DISP-035": Verdict.ERROR,
+    "MRS-DISP-036": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

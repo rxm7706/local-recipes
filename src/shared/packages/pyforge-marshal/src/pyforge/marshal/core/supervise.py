@@ -76,8 +76,12 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from ..ports.harness import DeferredStory
+
+if TYPE_CHECKING:
+    from .dispatch_completion import DispatchGitFacts, DispatchSessionVerdict
 
 
 class LadderRung(StrEnum):
@@ -655,3 +659,93 @@ ACTION_PRECEDENCE: Mapping[str, int] = {
     "budget-stop": 50,
     "idle-defer": 60,
 }
+
+
+# =============================================================================
+# Story 28.13 (CAP-15): external operator stop vs genuine failure / marshal
+# ladder stop. Pure classification only — no I/O (same AD-20 discipline).
+# =============================================================================
+
+_MARSHAL_INITIATED_DETACH_REASONS: frozenset[str] = frozenset(
+    {
+        "idle-deferred",
+        "idle-retry-failed",
+        "escalation-paused",
+    }
+)
+
+_MARSHAL_STOP_LOG_MARKERS: tuple[str, ...] = (
+    "idle-defer",
+    "idle-deferred",
+    "idle-stop-and-retry",
+    "budget-stop",
+    "budget ceiling",
+    "escalation-paused",
+)
+
+
+def is_marshal_initiated_stop(
+    *,
+    detach_reason: str | None = None,
+    session_log: str | None = None,
+) -> bool:
+    """True when marshal's own idle/budget/escalation ladder ended the session."""
+    if detach_reason is not None:
+        if detach_reason in _MARSHAL_INITIATED_DETACH_REASONS:
+            return True
+        if detach_reason.startswith("budget-"):
+            return True
+    if session_log:
+        lowered = session_log.lower()
+        if any(marker in lowered for marker in _MARSHAL_STOP_LOG_MARKERS):
+            return True
+    return False
+
+
+def resolve_terminal_session_verdict(
+    *,
+    session_alive: bool,
+    git: DispatchGitFacts,
+    verification_verdict: str | None,
+    detach_reason: str | None = None,
+    session_log: str | None = None,
+) -> DispatchSessionVerdict:
+    """Classify session outcome including operator-initiated external stops."""
+    from .dispatch_completion import (
+        DispatchCompletionInput,
+        DispatchGitFacts,
+        DispatchSessionVerdict,
+        has_git_progress,
+        judge_dispatch_completion,
+    )
+    from .dispatch_verification import DispatchVerificationVerdict
+
+    if session_alive:
+        return judge_dispatch_completion(
+            DispatchCompletionInput(session_alive=True, git=git)
+        )
+    if git.branch_merged or git.story_merged_on_main:
+        return DispatchSessionVerdict.COMPLETED
+    if (
+        verification_verdict == DispatchVerificationVerdict.REFUSED.value
+        and has_git_progress(git)
+    ):
+        return DispatchSessionVerdict.FAILED
+    if has_git_progress(git):
+        if is_marshal_initiated_stop(
+            detach_reason=detach_reason, session_log=session_log
+        ):
+            return DispatchSessionVerdict.LIVE
+        return DispatchSessionVerdict.STOPPED_EXTERNALLY
+    return DispatchSessionVerdict.FAILED
+
+
+def count_unified_diff_lines(patch: str) -> int:
+    """Count added+removed lines in a unified diff (excludes file headers)."""
+    total = 0
+    for line in patch.splitlines():
+        if line.startswith("+++") or line.startswith("---"):
+            continue
+        if line.startswith("+") or line.startswith("-"):
+            total += 1
+    return total

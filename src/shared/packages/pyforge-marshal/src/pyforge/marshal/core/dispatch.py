@@ -84,6 +84,7 @@ class DispatchJournalFacts:
     baseline_head_sha: str | None = None
     supervisor_pid: int | None = None
     completion_verdict: str | None = None
+    completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
     # Story 28.15 (CAP-17): the station's own `warn`-mode scope-violation

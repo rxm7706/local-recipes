@@ -45,7 +45,7 @@ def supervisor_should_exit(
     return (
         story_merged_on_main
         or landing_journal_indicates_complete(landing_verdict)
-        or completion_verdict in {"completed", "failed"}
+        or completion_verdict in {"completed", "failed", "stopped_externally"}
     )
 
 

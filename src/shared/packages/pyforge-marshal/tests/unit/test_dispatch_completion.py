@@ -228,6 +228,14 @@ class FakeVcs:
     def worktree_head_sha(self, _worktree: Path) -> str:
         return self.head_sha
 
+    def changed_files(
+        self, _repo_root: Path, _worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        return ()
+
+    def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
+        return ""
+
 
 class FakeBuildHarness:
     def __init__(self, *, pid: int = 5151) -> None:
@@ -292,7 +300,10 @@ def test_run_dispatch_spawns_completion_supervisor_without_waiting(
     assert "deadbeef0001" in process.spawned[0]
 
 
-def test_live_dispatch_conflict_refuses_zombie_redispatch(tmp_path: Path) -> None:
+def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
+    tmp_path: Path,
+) -> None:
+    """Story 28.13: marshal ladder stops stay LIVE; external SIGTERM stops do not."""
     from pyforge.marshal.cli.dispatch import _compose_policy, gather_dispatch_journal_facts
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 
@@ -301,6 +312,9 @@ def test_live_dispatch_conflict_refuses_zombie_redispatch(tmp_path: Path) -> Non
     fs = FakeFs()
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "run-1")
     run_dir.mkdir(parents=True, exist_ok=True)
+    session_log = run_dir / "session.log"
+    session_log.write_text("budget-stop: idle ceiling reached\n", encoding="utf-8")
+    fs.files[session_log] = session_log.read_text(encoding="utf-8")
     journal_path = run_dir / "journal.jsonl"
     intent = prepare_for_write(
         build_entry(

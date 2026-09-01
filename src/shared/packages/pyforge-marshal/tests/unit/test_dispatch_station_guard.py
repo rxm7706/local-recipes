@@ -201,7 +201,7 @@ def test_serial_mode_still_refuses_unrelated_live_story(tmp_path: Path) -> None:
     conflict = station_in_flight_conflict(
         fs=fs,
         vcs=LiveVcs(tmp_path),
-        process=FakeProcess(alive=False),
+        process=FakeProcess(alive=True),
         repo_root=tmp_path,
         slug=slug,
         story_key="22-5-one-story-in-flight",
@@ -289,7 +289,7 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
     conflict = station_in_flight_conflict(
         fs=fs,
         vcs=LiveVcs(tmp_path),
-        process=FakeProcess(alive=False),
+        process=FakeProcess(alive=True),
         repo_root=tmp_path,
         slug=slug,
         story_key="22-5-one-story-in-flight",

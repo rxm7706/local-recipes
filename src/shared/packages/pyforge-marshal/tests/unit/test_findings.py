@@ -305,6 +305,7 @@ def test_registered_codes_contains_the_real_codes():
             # time (WARN, serial fallback for that story).
             "MRS-DISP-034",
             "MRS-DISP-035",
+            "MRS-DISP-036",
             "MRS-DRAIN-016",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",

@@ -1672,6 +1672,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 28.16 (CAP-2): candidate declares a dependency on an
         # in-flight story -- blocks parallel dispatch until dependency lands.
         "MRS-DISP-035",
+        # Story 28.13 (CAP-15): worktree already has uncommitted WIP before retry.
+        "MRS-DISP-036",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

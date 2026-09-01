@@ -17,12 +17,11 @@ from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
 from ..core import promotion as promotion_core
 from ..core.dispatch_completion import (
-    DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
     has_git_progress,
-    judge_dispatch_completion,
 )
+from ..core.supervise import resolve_terminal_session_verdict
 from ..core.dispatch_preserve import (
     failed_patch_path,
     relative_preserve_ref,
@@ -633,14 +632,18 @@ def run_dispatch_supervisor(
             continue
 
         session_alive = process.is_alive(session_pid)
+        session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
+        v_outcome = _verification_outcome_verdict(folded, run_id)
         if _landing_succeeded(folded, run_id):
             verdict = DispatchSessionVerdict.COMPLETED
         else:
-            verdict = judge_dispatch_completion(
-                DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+            verdict = resolve_terminal_session_verdict(
+                session_alive=session_alive,
+                git=git_facts,
+                verification_verdict=v_outcome,
+                session_log=session_log,
             )
         if verdict == DispatchSessionVerdict.LIVE:
-            v_outcome = _verification_outcome_verdict(folded, run_id)
             if _session_awaits_verification(session_alive, git_facts):
                 if not _verification_already_journaled(folded, run_id):
                     _commit_pre_verify_wip(
@@ -721,10 +724,11 @@ def run_dispatch_supervisor(
                             baseline_head_sha=baseline_head_sha,
                             merge_subject_template=merge_subject_template,
                         )
-                        verdict = judge_dispatch_completion(
-                            DispatchCompletionInput(
-                                session_alive=session_alive, git=git_facts
-                            )
+                        verdict = resolve_terminal_session_verdict(
+                            session_alive=session_alive,
+                            git=git_facts,
+                            verification_verdict=v_outcome,
+                            session_log=session_log,
                         )
                     except (VcsCommandError, ValueError):
                         pass
@@ -797,12 +801,20 @@ def run_dispatch_supervisor(
                     baseline_head_sha=baseline_head_sha,
                     merge_subject_template=merge_subject_template,
                 )
-                verdict = judge_dispatch_completion(
-                    DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+                verdict = resolve_terminal_session_verdict(
+                    session_alive=session_alive,
+                    git=git_facts,
+                    verification_verdict=v_outcome,
+                    session_log=session_log,
                 )
             except (VcsCommandError, ValueError):
                 pass
 
+        stop_reason: str | None = None
+        if verdict is DispatchSessionVerdict.STOPPED_EXTERNALLY:
+            stop_reason = "external-operator-stop"
+        elif verdict is DispatchSessionVerdict.FAILED:
+            stop_reason = "failed"
         intent_entry = build_entry(
             id=JournalEntryId(writer_id, counter),
             ts=_format_entry_ts(_now_utc()),
@@ -811,6 +823,7 @@ def run_dispatch_supervisor(
             phase=Phase.INTENT,
             payload={
                 "verdict": verdict.value,
+                "stop_reason": stop_reason,
                 "session_alive": session_alive,
                 "baseline_head_sha": git_facts.baseline_head_sha,
                 "current_head_sha": git_facts.current_head_sha,
@@ -827,7 +840,7 @@ def run_dispatch_supervisor(
             kind=dispatch_core.KIND_DISPATCH_COMPLETION,
             phase=Phase.OUTCOME,
             intent_id=intent_entry.id,
-            payload={"verdict": verdict.value, "ok": True},
+            payload={"verdict": verdict.value, "stop_reason": stop_reason, "ok": True},
         )
         try:
             _append_entry(fs, run_dir, intent_entry, fsync=True)

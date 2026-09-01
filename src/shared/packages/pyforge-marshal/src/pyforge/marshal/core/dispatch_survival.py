@@ -80,6 +80,7 @@ def derive_supervision_state(
     if journal.completion_verdict in {
         DispatchSessionVerdict.COMPLETED.value,
         DispatchSessionVerdict.FAILED.value,
+        DispatchSessionVerdict.STOPPED_EXTERNALLY.value,
     }:
         verdict = DispatchSessionVerdict(journal.completion_verdict)
         return DispatchSupervisionState(

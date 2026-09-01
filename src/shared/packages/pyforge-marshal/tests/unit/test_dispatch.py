@@ -98,6 +98,14 @@ class FakeVcs:
     def worktree_head_sha(self, _worktree: Path) -> str:
         return "baseline0001"
 
+    def changed_files(
+        self, _repo_root: Path, _worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        return ()
+
+    def worktree_unified_patch(self, _worktree_path: Path, *, baseline_sha: str) -> str:
+        return ""
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True, pid: int = 4242) -> None:
