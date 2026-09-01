@@ -1650,6 +1650,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DRAIN-013",
         "MRS-DRAIN-014",
         "MRS-DRAIN-015",
+        # Story 28.16 (CAP-3): a story refused from a parallel wave batch
+        # (surface overlap, cap, unknown surface, dep-unmet) -- named, never
+        # silent.
+        "MRS-DRAIN-016",
         # Story 28.2 (wire compression at the harness seam,
         # SPEC-marshal-token-economy CAP-2): the declared `[context]`
         # `wire` layer was ENABLED but could not be applied to this launch
@@ -1661,6 +1665,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # viable unwrapped. A DISABLED wire layer raises nothing at all --
         # there is no degradation to report about a layer nobody enabled.
         "MRS-DISP-033",
+        # Story 28.16 (parallel dispatch fan-out, CAP-2): within-station
+        # effective-surface intersection blocks a second dispatch -- distinct
+        # from cross-station MRS-DISP-022 (advisory only).
+        "MRS-DISP-034",
+        # Story 28.16 (CAP-2): candidate declares a dependency on an
+        # in-flight story -- blocks parallel dispatch until dependency lands.
+        "MRS-DISP-035",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

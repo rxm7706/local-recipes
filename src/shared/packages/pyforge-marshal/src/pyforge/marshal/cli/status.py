@@ -713,6 +713,41 @@ def _discover_harness_run_id_by_filesystem(
     return best_name
 
 
+def list_live_dispatch_stories(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    effective_policy,
+) -> tuple[str, ...]:
+    """Every LIVE factory-dispatch story key on ``slug`` (Story 28.16)."""
+    from .dispatch import _live_dispatch_story_keys
+
+    return _live_dispatch_story_keys(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+
+
+def latest_dispatch_wave_id(repo_root: Path, slug: str) -> str | None:
+    """Most recent ``dispatch-wave`` journal id for ``slug``, if any."""
+    from ..core import dispatch as dispatch_core
+
+    waves_dir = dispatch_core.dispatch_runs_dir(repo_root, slug) / "waves"
+    if not waves_dir.is_dir():
+        return None
+    candidates = sorted(p for p in waves_dir.iterdir() if p.is_dir())
+    if not candidates:
+        return None
+    return candidates[-1].name
+
+
 def _merge_dispatch_overlay(
     *,
     fs: FsPort,
@@ -764,6 +799,15 @@ def _merge_dispatch_overlay(
     completion_verdict = (
         verdict.value if verdict is not None else journal.completion_verdict
     )
+    in_flight = list_live_dispatch_stories(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+    wave_id = latest_dispatch_wave_id(repo_root, slug)
     return replace(
         facts,
         dispatch_story=journal.story_key,
@@ -781,6 +825,8 @@ def _merge_dispatch_overlay(
         dispatch_final_revision=journal.final_revision,
         dispatch_preserve_ref=journal.preserve_ref,
         dispatch_landing_verdict=journal.landing_verdict,
+        dispatch_wave_id=wave_id,
+        dispatch_in_flight_stories=in_flight,
     )
 
 

@@ -2,9 +2,10 @@
 title: 'Parallel dispatch fan-out when deps and surfaces are disjoint (Story 28.16, Epic 28)'
 type: 'feature'
 created: '2026-09-01'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'NO_VCS'
 difficulty: medium
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-parallel-dispatch-fanout/SPEC.md
@@ -100,3 +101,45 @@ ordering.
 ## Spec Change Log
 
 - 2026-09-01: drafted via `bmad-spec` from `docs/dreams/marshal-parallel-dispatch-fanout.md` (decomposition: Story 28.16, sibling to 28.12)
+- 2026-09-01: implemented via `bmad-build-auto` — wave scheduler, narrowed in-flight guard (parallel mode only), dispatch-wave journal, status overlay, `--max-in-flight` CLI + supervisor threading
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+**Summary:** Story 28.16 adds opt-in parallel dispatch fan-out for factory drain when
+`max_parallel > 1` (policy or `--max-in-flight`). Serial mode (`max_parallel=1`, default)
+preserves byte-identical blanket `MRS-DISP-021` refusal. Parallel mode narrows
+`station_in_flight_conflict()` to same-key, dep-edge, and surface-overlap only; builds
+wave batches from deps-ready backlog with pairwise-disjoint effective surfaces; journals
+`dispatch-wave`; exposes wave id and all in-flight story keys in status/fleet-picture.
+
+**Files changed:**
+- `core/spec_deps.py` — new shared deps graph + ready-backlog helpers (28.12 hook)
+- `core/dispatch_fleet.py` — `WaveBatch`, `build_wave_batch()`, `ordered_ready_backlog()`
+- `core/dispatch.py` — `KIND_DISPATCH_WAVE`
+- `cli/dispatch.py` — narrowed guard (parallel only), wave dispatch in `execute_fleet_cycle`, wave journal, `--max-in-flight`, supervisor threading
+- `cli/status.py` — multi-story in-flight + wave id overlay
+- `core/status.py` — `dispatch_wave_id`, `dispatch_in_flight_stories` fields
+- `core/findings.py`, `core/verdict.py` — `MRS-DISP-034/035`, `MRS-DRAIN-016`
+- `dispatch_fleet_supervisor/__main__.py` — `--max-in-flight` on supervised ticks
+- `tests/unit/test_spec_deps.py`, `test_wave_scheduler.py` — new regression tests
+- `tests/unit/test_dispatch_station_guard.py`, `test_dispatch_fleet.py`, `test_findings.py` — updated/extended
+
+**Review:** Self-review pass; no subagent layers (shell/VCS unavailable in agent environment).
+
+**Verification:** Commands not executed in agent session (shell blocked). Operator should run:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`
+
+**Residual risks:** End-to-end two-member wave fixture against real harness not added;
+asymmetric wave terminalization relies on existing per-story gate ladder (unchanged by design).

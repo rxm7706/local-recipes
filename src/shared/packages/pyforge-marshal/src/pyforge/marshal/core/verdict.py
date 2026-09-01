@@ -1082,6 +1082,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-013": Verdict.ERROR,
     "MRS-DRAIN-014": Verdict.ERROR,
     "MRS-DRAIN-015": Verdict.ERROR,
+    "MRS-DRAIN-016": Verdict.WARN,
     # Story 28.2 (wire compression at the harness seam,
     # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
     # LAYER that did not engage over a launch that is otherwise entirely
@@ -1094,6 +1095,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # marshal's harness seam has nothing to wrap there) -- the same WARN
     # tier as MRS-SPIN-004/006/007/008/009 and for the same reason.
     "MRS-DISP-033": Verdict.WARN,
+    "MRS-DISP-034": Verdict.ERROR,
+    "MRS-DISP-035": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

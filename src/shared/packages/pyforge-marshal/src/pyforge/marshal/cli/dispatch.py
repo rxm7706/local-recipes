@@ -36,6 +36,7 @@ import os
 import re
 import secrets
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,10 +67,12 @@ from ..core.dispatch_retry import (
     exclude_harness_profiles_after_transient_failure,
     prune_blocked_stories_merged_on_main,
 )
+from ..core import gate
 from ..core import promotion as promotion_core
-from ..core.spec_surface import parse_declared_surface
+from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
+from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..core.identity import normalize, render_feed_key
+from ..core.identity import StoryKey, normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -105,6 +108,7 @@ class DispatchPreflightConflict:
     code: str
     message: str
     in_flight_story_key: str
+    overlap_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -622,6 +626,92 @@ def _live_dispatch_evidence(
     ) or f"story {story_key!r} dispatch session is still live"
 
 
+def _epics_path(repo_root: Path, slug: str) -> Path:
+    return (
+        dispatch_core.canonical_repo_root(repo_root)
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "epics.md"
+    )
+
+
+def _load_station_deps_graph(repo_root: Path, slug: str) -> dict[str, tuple]:
+    path = _epics_path(repo_root, slug)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    return story_deps_from_epics(text)
+
+
+def _effective_surface_for_spec(
+    *,
+    spec_text: str,
+    story_key: StoryKey,
+    slug: str,
+    effective_policy: policy.EffectivePolicy,
+) -> tuple[str, ...] | None:
+    """Effective frozen surface for wave/conflict checks (AD-27).
+
+    Returns ``None`` when the spec's surface declaration is unsupported
+    (multi-line YAML block) -- conservative: never fan out unknown surfaces.
+    """
+    try:
+        spec_surface = parse_declared_surface(spec_text)
+    except SurfaceParseError:
+        return None
+    policy_surface = gate.resolve_policy_surface(
+        effective_policy.epic_surfaces.value, story_key.epic, slug
+    )
+    return gate.compute_effective_surface(policy_surface, spec_surface)
+
+
+def resolve_max_parallel(
+    effective_policy: policy.EffectivePolicy,
+    *,
+    cli_override: int | None = None,
+    policy_flags: dict[str, object] | None = None,
+) -> int:
+    """Factory-dispatch parallel cap (Story 28.16, CAP-4). Default serial (=1)."""
+    if cli_override is not None:
+        return max(1, int(cli_override))
+    flags = dict(policy_flags or {})
+    if "max_parallel" in flags:
+        return max(1, int(flags["max_parallel"]))
+    return max(1, int(effective_policy.seed_view()["max_parallel"].value))
+
+
+def _live_dispatch_story_keys(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    effective_policy: policy.EffectivePolicy,
+) -> tuple[str, ...]:
+    """Every LIVE factory-dispatch story key on ``slug`` (Story 28.16)."""
+    live: list[str] = []
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key is None:
+            continue
+        verdict = resolve_dispatch_session_verdict(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+        )
+        if verdict == DispatchSessionVerdict.LIVE:
+            live.append(journal.story_key)
+    return tuple(live)
+
+
 def station_in_flight_conflict(
     *,
     fs: FsPort,
@@ -632,9 +722,31 @@ def station_in_flight_conflict(
     story_key: str,
     effective_policy: policy.EffectivePolicy,
     harness_reported_failure: bool = False,
+    candidate_spec_text: str | None = None,
+    deps_graph: Mapping[str, tuple] | None = None,
+    parallel_dispatch: bool = False,
 ) -> DispatchPreflightConflict | None:
-    """Refuse when the station already has any live in-flight story (22.5)."""
+    """Refuse when an in-flight story blocks this candidate (22.5 / 28.16).
+
+    Story 28.16 narrows the 22.5 guard when ``parallel_dispatch`` is true:
+    unrelated LIVE stories with disjoint surfaces do NOT refuse. With
+    ``parallel_dispatch`` false (``max_parallel`` unset or ``1``), behavior
+    stays byte-identical to today's serial drain (``MRS-DISP-021`` on any
+    other LIVE story).
+    """
     feed_story = render_feed_key(normalize(story_key))
+    candidate_surface: tuple[str, ...] | None = None
+    if candidate_spec_text is not None:
+        try:
+            candidate_surface = _effective_surface_for_spec(
+                spec_text=candidate_spec_text,
+                story_key=normalize(story_key),
+                slug=slug,
+                effective_policy=effective_policy,
+            )
+        except ValueError:
+            candidate_surface = None
+    graph = dict(deps_graph or {})
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
@@ -668,14 +780,60 @@ def station_in_flight_conflict(
                 message=f"refusing redispatch: {evidence}",
                 in_flight_story_key=in_flight,
             )
-        return DispatchPreflightConflict(
-            code="MRS-DISP-021",
-            message=(
-                f"refusing dispatch: station {slug!r} already has in-flight "
-                f"story {in_flight!r} ({evidence})"
-            ),
-            in_flight_story_key=in_flight,
-        )
+        if not parallel_dispatch:
+            return DispatchPreflightConflict(
+                code="MRS-DISP-021",
+                message=(
+                    f"refusing dispatch: station {slug!r} already has in-flight "
+                    f"story {in_flight!r} ({evidence})"
+                ),
+                in_flight_story_key=in_flight,
+            )
+        if story_transitively_depends_on(feed_story, in_flight, graph):
+            return DispatchPreflightConflict(
+                code="MRS-DISP-035",
+                message=(
+                    f"refusing dispatch: story {feed_story!r} depends on "
+                    f"in-flight story {in_flight!r} ({evidence})"
+                ),
+                in_flight_story_key=in_flight,
+            )
+        if candidate_surface is not None:
+            in_flight_spec = dispatch_core.resolve_story_spec_path(
+                repo_root, slug, in_flight
+            )
+            if in_flight_spec is not None:
+                try:
+                    in_flight_text = in_flight_spec.read_text(encoding="utf-8")
+                except OSError:
+                    in_flight_text = None
+                if in_flight_text is not None:
+                    in_flight_surface = _effective_surface_for_spec(
+                        spec_text=in_flight_text,
+                        story_key=normalize(in_flight),
+                        slug=slug,
+                        effective_policy=effective_policy,
+                    )
+                    overlapping = dispatch_core.find_declared_surface_overlaps(
+                        candidate_surface, in_flight_surface
+                    )
+                    if overlapping:
+                        pair_desc = ", ".join(
+                            f"{left!r} ∩ {right!r}" for left, right in overlapping
+                        )
+                        paths = tuple(
+                            f"{left} ∩ {right}" for left, right in overlapping
+                        )
+                        return DispatchPreflightConflict(
+                            code="MRS-DISP-034",
+                            message=(
+                                f"refusing dispatch: effective surfaces of "
+                                f"{feed_story!r} and in-flight {in_flight!r} "
+                                f"intersect ({pair_desc}); {evidence}"
+                            ),
+                            in_flight_story_key=in_flight,
+                            overlap_paths=paths,
+                        )
     return None
 
 
@@ -921,6 +1079,7 @@ def dispatch_once(
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
     policy_flags: dict[str, object] | None = None,
+    parallel_dispatch: bool = False,
 ) -> DispatchAttempt:
     """Launch exactly one governed story session and report data + findings.
 
@@ -1084,6 +1243,9 @@ def dispatch_once(
         slug=slug,
         story_key=render_feed_key(story_key),
         effective_policy=effective_policy,
+        candidate_spec_text=spec_text,
+        deps_graph=_load_station_deps_graph(repo_root, slug),
+        parallel_dispatch=parallel_dispatch,
     )
     if conflict is not None:
         findings.append(
@@ -1882,6 +2044,17 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
             "editing marshal-policy.toml."
         ),
     )
+    parser.add_argument(
+        "--max-in-flight",
+        type=int,
+        default=None,
+        dest="max_in_flight",
+        help=(
+            "Within-station parallel dispatch cap for this campaign (Story "
+            "28.16) -- overrides project policy max_parallel. Default: "
+            "policy value or 1 (serial, byte-identical to today's drain)."
+        ),
+    )
     parser.set_defaults(handler=run_fleet_drain)
 
 
@@ -2104,6 +2277,52 @@ def _classify_attempt(
     )
 
 
+def _journal_dispatch_wave(
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    wave: dispatch_fleet.WaveBatch,
+    *,
+    surfaces: Mapping[str, tuple[str, ...] | None],
+) -> None:
+    """Record one parallel wave intent (Story 28.16, CAP-3)."""
+    import hashlib
+
+    members_payload = []
+    for story in wave.members:
+        surface = surfaces.get(story) or ()
+        digest = hashlib.sha256(repr(surface).encode()).hexdigest()
+        members_payload.append({"story": story, "surfaces_hash": digest})
+    refused_payload = [
+        {
+            "story": r.story,
+            "reason": r.reason,
+            **({"overlap_with": r.overlap_with} if r.overlap_with else {}),
+            **({"paths": list(r.paths)} if r.paths else {}),
+        }
+        for r in wave.refused
+    ]
+    wave_run = (
+        dispatch_core.dispatch_runs_dir(repo_root, slug) / "waves" / wave.wave_id
+    )
+    fs.ensure_dir(wave_run)
+    intent = build_entry(
+        id=JournalEntryId(f"wave-{wave.wave_id}", 0),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=wave.wave_id,
+        kind=dispatch_core.KIND_DISPATCH_WAVE,
+        phase=Phase.INTENT,
+        payload={
+            "wave_id": wave.wave_id,
+            "station": slug,
+            "max_parallel": wave.max_parallel,
+            "members": members_payload,
+            "refused": refused_payload,
+        },
+    )
+    _append_entry(fs, wave_run, intent, fsync=True)
+
+
 def execute_fleet_cycle(
     *,
     repo_root: Path,
@@ -2118,6 +2337,7 @@ def execute_fleet_cycle(
     station: str | None = None,
     explicit_stories: tuple[str, ...] | None = None,
     policy_flags: dict[str, object] | None = None,
+    max_in_flight: int | None = None,
 ) -> FleetCycleReport:
     """One fleet-drain cycle: plan every station, dispatch the eligible ones.
 
@@ -2295,63 +2515,193 @@ def execute_fleet_cycle(
             )
             continue
 
-        # Per-station isolation: one station's git/fs failure must never
-        # abort the cycle, because the loop is alphabetical and an abort
-        # would silently starve every station after it -- forever, since the
-        # supervisor reproduces the identical crash every tick and no cycle
-        # is journaled at all. `dispatch_once` itself converts most failures
-        # into findings, but not every path it reaches is guarded (a
-        # worktree deleted under a still-live session makes
-        # `_live_dispatch_evidence` re-raise `VcsCommandError`), so the
-        # station is reported refused and the campaign moves on.
-        try:
-            attempt = dispatch_once(
-                slug=slug,
-                story=plan.next_story,
+        parallel_cap = resolve_max_parallel(
+            effective_policy,
+            cli_override=max_in_flight,
+            policy_flags=policy_flags,
+        )
+        stories_to_dispatch: tuple[str, ...] = ()
+        wave_detail: str | None = None
+        if parallel_cap <= 1:
+            if plan.next_story is not None:
+                stories_to_dispatch = (plan.next_story,)
+        else:
+            live_stories = _live_dispatch_story_keys(
                 fs=fs,
                 vcs=vcs,
-                build_harness=build_harness,
                 process=process,
-                policy_flags=policy_flags,
+                repo_root=repo_root,
+                slug=slug,
+                effective_policy=effective_policy,
             )
-        except (VcsCommandError, FsError, ProcessError, OSError, ValueError) as exc:
-            reason = f"dispatch raised {type(exc).__name__}: {exc}"
-            findings.append(
-                Finding(
-                    code="MRS-DRAIN-011",
-                    severity=Severity.ERROR,
-                    message=(
-                        f"station {slug!r}: dispatching {plan.next_story!r} "
-                        f"failed unexpectedly -- {reason}. The station is "
-                        "left in backlog and the rest of the fleet continues."
-                    ),
+            if live_stories:
+                results.append(
+                    dispatch_fleet.StationCycleResult(
+                        slug=slug,
+                        status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
+                        remaining=len(backlog),
+                        story=live_stories[0],
+                        detail=(
+                            f"wave in flight: {', '.join(live_stories)} "
+                            "(waiting for terminal outcomes before next batch)"
+                        ),
+                        skipped=plan.skipped,
+                    )
                 )
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-006",
+                        severity=Severity.WARN,
+                        message=(
+                            f"station {slug!r}: no dispatch this cycle -- "
+                            f"waiting on in-flight wave member(s) "
+                            f"{', '.join(live_stories)!r}"
+                        ),
+                    )
+                )
+                continue
+            deps_graph = _load_station_deps_graph(repo_root, slug)
+            ready = dispatch_fleet.ordered_ready_backlog(
+                backlog, statuses, deps_graph
             )
-            campaign_blocked.setdefault(slug, {})[plan.next_story] = reason
+            eligible = tuple(
+                story
+                for story in ready
+                if story not in blocked and story not in station_skips
+            )
+            surfaces: dict[str, tuple[str, ...] | None] = {}
+            for story in eligible:
+                spec_path = dispatch_core.resolve_story_spec_path(
+                    repo_root, slug, story
+                )
+                if spec_path is None:
+                    surfaces[story] = None
+                    continue
+                try:
+                    spec_text = spec_path.read_text(encoding="utf-8")
+                except OSError:
+                    surfaces[story] = None
+                    continue
+                try:
+                    surfaces[story] = _effective_surface_for_spec(
+                        spec_text=spec_text,
+                        story_key=normalize(story),
+                        slug=slug,
+                        effective_policy=effective_policy,
+                    )
+                except ValueError:
+                    surfaces[story] = None
+            wave_id = mint_run_id(
+                slug, _format_utc_compact(_now_utc()), _random_token()
+            )
+            wave = dispatch_fleet.build_wave_batch(
+                wave_id=wave_id,
+                ready=eligible,
+                cap=parallel_cap,
+                surfaces=surfaces,
+                deps_graph=deps_graph,
+            )
+            stories_to_dispatch = wave.members
+            if wave.members:
+                _journal_dispatch_wave(
+                    fs, repo_root, slug, wave, surfaces=surfaces
+                )
+            for ref in wave.refused:
+                overlap = (
+                    f" (overlap with {ref.overlap_with}: {', '.join(ref.paths)})"
+                    if ref.overlap_with
+                    else ""
+                )
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-016",
+                        severity=Severity.WARN,
+                        message=(
+                            f"station {slug!r}: wave {wave_id} refused "
+                            f"{ref.story!r}: {ref.reason}{overlap}"
+                        ),
+                    )
+                )
+            if wave.members:
+                wave_detail = (
+                    f"wave {wave_id}: {', '.join(wave.members)} "
+                    f"(max_parallel={parallel_cap})"
+                )
+
+        if not stories_to_dispatch:
             results.append(
                 dispatch_fleet.StationCycleResult(
                     slug=slug,
-                    status=dispatch_fleet.StationCycleStatus.REFUSED,
+                    status=dispatch_fleet.StationCycleStatus(plan.outcome.value),
                     remaining=len(backlog),
-                    story=plan.next_story,
-                    detail=reason,
                     skipped=plan.skipped,
                 )
             )
             continue
-        status, detail, attempt_findings = _classify_attempt(slug, plan.next_story, attempt)
-        findings.extend(attempt_findings)
-        if status is dispatch_fleet.StationCycleStatus.REFUSED:
-            campaign_blocked.setdefault(slug, {})[plan.next_story] = (
-                detail or "dispatch refused"
-            )
+
+        dispatched_any = False
+        in_flight_any = False
+        refused_any = False
+        last_detail: str | None = wave_detail
+        primary_story = stories_to_dispatch[0]
+        for story in stories_to_dispatch:
+            try:
+                attempt = dispatch_once(
+                    slug=slug,
+                    story=story,
+                    fs=fs,
+                    vcs=vcs,
+                    build_harness=build_harness,
+                    process=process,
+                    policy_flags=policy_flags,
+                    parallel_dispatch=parallel_cap > 1,
+                )
+            except (VcsCommandError, FsError, ProcessError, OSError, ValueError) as exc:
+                reason = f"dispatch raised {type(exc).__name__}: {exc}"
+                findings.append(
+                    Finding(
+                        code="MRS-DRAIN-011",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"station {slug!r}: dispatching {story!r} "
+                            f"failed unexpectedly -- {reason}. The station is "
+                            "left in backlog and the rest of the fleet continues."
+                        ),
+                    )
+                )
+                campaign_blocked.setdefault(slug, {})[story] = reason
+                refused_any = True
+                last_detail = reason
+                continue
+            status, detail, attempt_findings = _classify_attempt(slug, story, attempt)
+            findings.extend(attempt_findings)
+            if status is dispatch_fleet.StationCycleStatus.REFUSED:
+                campaign_blocked.setdefault(slug, {})[story] = (
+                    detail or "dispatch refused"
+                )
+                refused_any = True
+            elif status is dispatch_fleet.StationCycleStatus.DISPATCHED:
+                dispatched_any = True
+            elif status is dispatch_fleet.StationCycleStatus.IN_FLIGHT:
+                in_flight_any = True
+            if detail:
+                last_detail = detail
+
+        if dispatched_any:
+            cycle_status = dispatch_fleet.StationCycleStatus.DISPATCHED
+        elif in_flight_any:
+            cycle_status = dispatch_fleet.StationCycleStatus.IN_FLIGHT
+        elif refused_any:
+            cycle_status = dispatch_fleet.StationCycleStatus.REFUSED
+        else:
+            cycle_status = dispatch_fleet.StationCycleStatus.IN_FLIGHT
         results.append(
             dispatch_fleet.StationCycleResult(
                 slug=slug,
-                status=status,
+                status=cycle_status,
                 remaining=len(backlog),
-                story=plan.next_story,
-                detail=detail,
+                story=primary_story,
+                detail=last_detail,
                 skipped=plan.skipped,
             )
         )
@@ -2503,6 +2853,7 @@ def _spawn_campaign_supervisor(
     station: str | None = None,
     stories: tuple[str, ...] | None = None,
     harness: str | None = None,
+    max_in_flight: int | None = None,
 ) -> int:
     """Detach the campaign supervisor -- the loop that chains next stories.
 
@@ -2533,6 +2884,7 @@ def _spawn_campaign_supervisor(
             station or "",
             ",".join(stories) if stories else "",
             harness or "",
+            str(max_in_flight) if max_in_flight is not None else "",
         ],
         cwd=repo_root,
         log_path=run_dir / _FLEET_SUPERVISOR_LOG_FILENAME,
@@ -2832,6 +3184,7 @@ def run_fleet_drain(
             station=station,
             explicit_stories=explicit_stories,
             policy_flags=policy_flags or None,
+            max_in_flight=getattr(args, "max_in_flight", None),
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:
@@ -2858,6 +3211,7 @@ def run_fleet_drain(
                 station=station,
                 stories=explicit_stories,
                 harness=getattr(args, "harness", None),
+                max_in_flight=getattr(args, "max_in_flight", None),
             )
             data["supervisor_log"] = str(run_dir / _FLEET_SUPERVISOR_LOG_FILENAME)
         except ProcessError as exc:

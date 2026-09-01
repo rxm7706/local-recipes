@@ -1982,6 +1982,16 @@ def test_dispatch_supervisor_re_invocation_carries_station_and_stories() -> None
     assert "--station" not in plain
     assert "--stories" not in plain
     assert "--harness" not in plain
+    assert "--max-in-flight" not in plain
+
+    parallel_argv = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id="camp-3",
+        max_in_flight=2,
+    )
+    assert "--max-in-flight" in parallel_argv
+    assert parallel_argv[parallel_argv.index("--max-in-flight") + 1] == "2"
 
 
 def test_unknown_station_with_stories_refuses_as_unknown_station_not_unreadable_ledger(

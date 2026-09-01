@@ -129,7 +129,7 @@ development_status:
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
   28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
-  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: backlog
+  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done
   28-2-wire-compression-at-the-harness-seam: done
   28-3-genesis-seeds-the-token-economy-kit: done
   28-4-savings-telemetry-in-journals-and-status: done
