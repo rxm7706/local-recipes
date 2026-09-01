@@ -20,8 +20,10 @@ Publish (edit in place, never create) the pinned secret gist files
 Artifactory map) unless ``--skip-gist``. The gist id is not in git: set
 ``OPENTEAMS_IDENTITY_GIST_ID``,
 ``conf/conda-forge-packaging-inventory-operations.local.env``, or
-``--gist-id``. ``--gist-only`` republishes from the complete export without
-regenerating identity rows.
+``--gist-id``. Set ``INVENTORY_IDENTITY_UI`` to ``both`` (default),
+``canvas``, or ``vizro`` to control Cursor canvas regeneration
+(``vizro`` skips ops/workbook canvas writes only). ``--gist-only`` republishes
+from the complete export without regenerating identity rows.
 
 Passing ``--xlsx`` or ``--tab-out`` exits 2 with a retirement pointer.
 """
@@ -86,6 +88,8 @@ _RETIRED_WORKBOOK_MSG = (
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
 GIST_DASHBOARD_FILENAME = "mgmt-wf-python-modernization-dashboards.md"
 GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
+INVENTORY_IDENTITY_UI_ENV = "INVENTORY_IDENTITY_UI"
+_VALID_IDENTITY_UI_MODES = frozenset({"both", "canvas", "vizro"})
 LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
 GIST_SCHEMA = [
     ("P", "enum", "yes", "Proposed priority `P1`–`P10`."),
@@ -577,6 +581,11 @@ WORK_DASH_ORDER = (
 )
 
 
+def _identity_ui_mode() -> str:
+    mode = os.environ.get(INVENTORY_IDENTITY_UI_ENV, "both").strip().lower()
+    return mode if mode in _VALID_IDENTITY_UI_MODES else "both"
+
+
 def write_gist_markdown(
     path: Path,
     identity_md: str,
@@ -594,6 +603,9 @@ def write_dashboard_markdown(
     workbook_canvas: Path | None = None,
 ) -> None:
     path.write_text(dashboards_md, encoding="utf-8")
+    if _identity_ui_mode() == "vizro":
+        print(f"Skipped ops/workbook canvas write ({INVENTORY_IDENTITY_UI_ENV}=vizro)")
+        return
     script_dir = str(Path(__file__).resolve().parent)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)

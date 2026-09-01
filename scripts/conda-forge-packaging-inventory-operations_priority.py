@@ -91,6 +91,13 @@ _RETIRED_WORKBOOK_MSG = (
     "retired by Story 23.9 — use inventory_priority_assignments.parquet under "
     "PYFORGE_ATLAS_DATA_ROOT (and --ranked-export for Vizro)"
 )
+INVENTORY_IDENTITY_UI_ENV = "INVENTORY_IDENTITY_UI"
+_VALID_IDENTITY_UI_MODES = frozenset({"both", "canvas", "vizro"})
+
+
+def _identity_ui_mode() -> str:
+    mode = os.environ.get(INVENTORY_IDENTITY_UI_ENV, "both").strip().lower()
+    return mode if mode in _VALID_IDENTITY_UI_MODES else "both"
 
 
 def _resolve_data_root() -> Path:
@@ -640,6 +647,10 @@ def main() -> int:
         default=Path(
             "/home/rxm7706/.cursor/projects/home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases/identity-2026-08-20.canvas.tsx"
         ),
+        help=(
+            "Cursor catalog canvas output path. Set "
+            f"{INVENTORY_IDENTITY_UI_ENV}=vizro to skip canvas writes."
+        ),
     )
     parser.add_argument(
         "--canvas-tab-label",
@@ -677,10 +688,12 @@ def main() -> int:
         write_ranked_csv(args.ranked_csv, records)
         print("wrote", args.ranked_csv)
 
-    if args.canvas:
+    if args.canvas and _identity_ui_mode() != "vizro":
         args.canvas.parent.mkdir(parents=True, exist_ok=True)
         write_canvas(args.canvas, records, counts, args.canvas_tab_label)
         print("wrote", args.canvas)
+    elif args.canvas:
+        print(f"Skipped canvas write ({INVENTORY_IDENTITY_UI_ENV}=vizro)")
 
     return 0
 

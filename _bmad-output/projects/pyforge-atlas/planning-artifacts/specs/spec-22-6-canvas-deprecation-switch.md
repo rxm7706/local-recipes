@@ -2,8 +2,9 @@
 title: 'Canvas deprecation switch (both default) (Story 22.6, Epic 22, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
+baseline_revision: 'NO_VCS'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/vizro-canvas-parity.md'
@@ -219,3 +220,25 @@ story ID.
 **Manual checks (if no CLI):**
 - `INVENTORY_IDENTITY_UI=vizro python scripts/conda-forge-packaging-inventory-operations_priority.py --xlsx <fixture.xlsx> --canvas /tmp/should-not-exist.canvas.tsx` --
   confirm the file is NOT created and a skip message appears on stdout.
+
+## Auto Run Result
+
+Status: in-review
+
+Summary: Added `INVENTORY_IDENTITY_UI` env-var gate (`both` | `canvas` | `vizro`, default `both`) to
+`conda-forge-packaging-inventory-operations_priority.py` and
+`conda-forge-packaging-inventory-operations_openteams_identity.py`. In `vizro` mode, canvas writers
+are skipped while gist-markdown and Parquet export paths remain unchanged. Eighteen new/extended unit
+tests in `tests/packaging/test_openteams_handoffs.py` cover mode parsing, vizro skip, and regression
+for default/both/canvas modes.
+
+Verification:
+- `pixi run -e local-recipes pytest tests/packaging/test_openteams_handoffs.py -k "identity_ui_mode or write_dashboard_markdown_skips or write_dashboard_markdown_writes_both or priority_write_canvas"`: 18 passed
+- `pixi run -e pyforge-atlas kedro-catalog-check`: 68 passed
+- `pixi run -e pyforge-atlas kedro-test`: 1719 passed, 1 failed — pre-existing
+  `test_identity_catalog_parity_with_write_canvas` (dashboard catalog row ordering), unrelated to this
+  story's script-only scope
+- `pixi run -e local-recipes test-packaging`: 172 passed, 2 failed — pre-existing
+  `ModuleNotFoundError: pyforge.atlas` in gist integration tests, unrelated to Story 22.6
+
+PR note: non-`recipes/` change requires `maintenance` label at PR open.
