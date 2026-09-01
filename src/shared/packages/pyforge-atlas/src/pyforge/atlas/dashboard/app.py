@@ -291,6 +291,15 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         note="Wired to build_license_map_gap_model, READ-ONLY suggester; renders "
         "empty until the unmapped-license dataset materializes.",
     ),
+    PageDef(
+        "identity-catalog",
+        "Identity Catalog",
+        "identity-catalog",
+        "bsl-shell",
+        note="Wired to build_identity_catalog_model over identity_ranked_export.parquet "
+        "(Story 22.1's quartet bridge export, not a Kedro pipeline output); renders "
+        "empty until priority.py's bridge write has run.",
+    ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
@@ -475,6 +484,9 @@ def build_dashboard(
     cwe_seed_gap_provenance = _provenance.resolve_for_file(root / _data.CWE_SEED_GAP_PARQUET)
     spdx_schema_gap_provenance = _provenance.resolve_for_file(root / _data.SPDX_SCHEMA_GAP_PARQUET)
     license_map_gap_provenance = _provenance.resolve_for_file(root / _data.LICENSE_MAP_GAP_PARQUET)
+    identity_catalog_provenance = _provenance.resolve_for_file(
+        root / _data.IDENTITY_RANKED_EXPORT_PARQUET
+    )
 
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
@@ -632,6 +644,12 @@ def build_dashboard(
             lambda: _data.load_license_map_gap(root / _data.LICENSE_MAP_GAP_PARQUET),
             grounded=False,
             provenance=license_map_gap_provenance,
+        ),
+        _data_page(
+            by_id["identity-catalog"],
+            lambda: _data.load_identity_catalog(root / _data.IDENTITY_RANKED_EXPORT_PARQUET),
+            grounded=False,
+            provenance=identity_catalog_provenance,
         ),
         _factory_page(
             by_id["factory-status"],

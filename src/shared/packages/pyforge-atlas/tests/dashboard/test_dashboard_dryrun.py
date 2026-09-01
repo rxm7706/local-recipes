@@ -457,6 +457,22 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
     "cwe-seed-gap": (dash_data.load_cwe_seed_gap, ["cwe_id", "tier", "suggested_category", "package_impact_count"]),
     "spdx-schema-gap": (dash_data.load_spdx_schema_gap, ["license_id", "tier", "package_usage_count"]),
     "license-map-gap": (dash_data.load_license_map_gap, ["license_raw", "tier", "suggested_spdx", "package_count"]),
+    "identity-catalog": (
+        dash_data.load_identity_catalog,
+        [
+            "P",
+            "Rank",
+            "Score",
+            "Package",
+            "Work",
+            "Core_Python_Package_Name",
+            "Platforms",
+            "Apps",
+            "Downloads",
+            "Versions",
+            "Vuln",
+        ],
+    ),
 }
 
 
@@ -556,6 +572,23 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
         models.build_license_map_gap_model,
         ["license_raw", "tier", "suggested_spdx"],
         ["package_count"],
+    ),
+    "identity-catalog": (
+        models.build_identity_catalog_model,
+        [
+            "P",
+            "Rank",
+            "Score",
+            "Package",
+            "Work",
+            "Core_Python_Package_Name",
+            "Platforms",
+            "Apps",
+            "Downloads",
+            "Versions",
+            "Vuln",
+        ],
+        [],
     ),
 }
 
