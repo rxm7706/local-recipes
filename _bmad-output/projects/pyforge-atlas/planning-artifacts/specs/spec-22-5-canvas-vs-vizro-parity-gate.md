@@ -2,8 +2,9 @@
 title: 'Canvas vs Vizro parity gate (Story 22.5, Epic 22, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
+baseline_revision: '82c9908e135b8c409275902e5acbe26daf86d442'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/vizro-canvas-parity.md'
@@ -225,6 +226,28 @@ open spec question.
 ## Spec Change Log
 
 <!-- Empty -- no review loopback has occurred yet. -->
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `test_identity_parity.py` — a unified offline parity gate that feeds one shared GIST-schema fixture corpus through the three Cursor canvas writers (`write_canvas`, `write_ops_canvas`, `write_workbook_canvas`) and the Vizro identity loaders/pages, asserting exact `(P, Work, Core_Python_Package_Name)` triple equality for catalog, exact `priorityCounts`/`workCounts`/`issues.have`/`issues.miss` for ops, honest data-gap degradation for workbook (no row parity), and empty-corpus discipline on both sides. Refreshed `dashboard-dryrun` task description in `pixi.toml` to mention Story 22.5 coverage.
+
+Verification:
+- `pixi run -e local-recipes dashboard-dryrun -- -k test_identity_parity` — 4 passed
+- `pixi run -e pyforge-atlas kedro-test` — 1711 passed, 24 skipped
+- `pixi run -e pyforge-atlas kedro-catalog-check` — 68 passed
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
 
 ## Design Notes
 
