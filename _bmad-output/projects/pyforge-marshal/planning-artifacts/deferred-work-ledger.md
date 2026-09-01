@@ -3916,3 +3916,13 @@ status: open
   severity: low
   promoted: 2026-09-01 — SCP intake
   status: closed
+
+### DW-FU-28-7: Index freshness is not wired into spin/preflight admission verbs; only `marshal check` surfaces it today.
+
+- source_spec: `planning-artifacts/specs/spec-28-7-index-freshness-is-an-advisory-finding.md`
+  summary: Index freshness is not wired into spin/preflight admission verbs; only `marshal check` surfaces it today.
+  evidence: Problem statement says "at admission time"; spec approach limits to marshal check. No hook in spin.py or preflight path.
+  origin: spec-deferred 36f069ae09e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
