@@ -2,7 +2,8 @@
 title: 'BSL gist and dashboard aggregates from complete export (Story 23.6, Epic 23, CAP-8d)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dispatch/pyforge-atlas/23.6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -218,6 +219,21 @@ fetch: `identity_complete_export.parquet` is already materialized by Story 23.5.
   `pyforge.atlas.dashboard.identity_gist`.
 - Given `identity_complete_export.parquet` absent, when `--gist-only` runs, then it fails loudly
   (non-zero exit, clear message) rather than publishing an empty or garbage gist body.
+
+## Auto Run Result
+
+- **Summary:** Ported gist markdown rendering to `pyforge.atlas.dashboard.identity_gist` with BSL
+  aggregates via `build_identity_complete_export_model`; thinned `--gist-only` to call the new
+  renderer and keep only gist-id/`gh` actuator logic in `scripts/`.
+- **Files changed:**
+  - `semantic/models.py` — `build_identity_complete_export_model`
+  - `dashboard/identity_gist.py` — new renderer
+  - `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` — thin gist path
+  - `tests/dashboard/test_identity_gist_markdown.py` — parity tests
+- **Verification:** `pixi run -e pyforge-atlas pytest tests/dashboard/test_identity_gist_markdown.py`
+  — run locally to confirm (agent shell unavailable).
+- **Residue:** Workbook-tabs section dropped from dashboard markdown (Design Notes item 3). Canvas
+  writers still use legacy `openteams_identity_dashboards` (Story 22.6).
 
 ## Spec Change Log
 
