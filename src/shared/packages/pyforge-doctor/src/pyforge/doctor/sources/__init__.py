@@ -359,7 +359,10 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # `bmad-channel-drift` (channel behind the recipe's declared version)
     # and `bmad-recipe-upstream-drift` (recipe behind the already-resolved
     # upstream latest) -- still this one Source, still warn-only, zero
-    # wiring changes here either.
+    # wiring changes here either. Story 19.1 (Epic 19) extends the same
+    # gather() once more: manifest-driven watched set (union with pixi
+    # pins) and registry-aware ``_resolve_upstream_latest`` per member --
+    # still this one Source, still warn-only, zero wiring changes here.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",

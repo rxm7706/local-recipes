@@ -2232,6 +2232,49 @@ the child sees the request
 **Status:** done — shipped `ba4ae74f73` (2026-08-26), tests in
 `tests/scripts/test_mcp_factory_stdio_translator.py` (6 passed)
 
+## Epic 39: The bmad-suite metapackage (spec-bmad-suite-metapackage)
+
+**Retroactive decomposition.** CAP-1/2/3 landed on main 2026-09-01
+(manifest, metapackage recipe, CFE generator, local build, channel publish);
+chain-completeness had flagged the Spec as undecomposed. CAP-4 (optional
+``feature.bmad-suite-full`` pixi pin) remains backlog.
+
+### Story 39.1: Canonical suite manifest
+
+As a factory operator,
+I want a tracked ``recipes/bmad-suite/suite-members.yaml`` catalog,
+So that doctor, steward pipeline-truth, and the metapackage share one population.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-metapackage CAP-1
+**Status:** done — shipped 2026-09-01 (``e177de648e``)
+
+### Story 39.2: Metapackage recipe
+
+As a factory operator,
+I want a ``noarch: generic`` ``bmad-suite`` metapackage pinning every active member,
+So that one channel install pulls the whole suite.
+
+**Type:** feature • **Effort:** M • **Deps:** S-39.1 • **FR/AD:** CAP-2
+**Status:** done — shipped 2026-09-01
+
+### Story 39.3: Generator and batch build
+
+As a factory operator,
+I want ``generate-bmad-suite`` / ``build-bmad-suite`` to refresh pins from registry class,
+So that metapackage bumps are mechanical after member upstream moves.
+
+**Type:** feature • **Effort:** M • **Deps:** S-39.2 • **FR/AD:** CAP-3
+**Status:** done — shipped 2026-09-01
+
+### Story 39.4: Optional pixi feature bundle (CAP-4)
+
+As a greenfield operator,
+I want ``feature.bmad-suite-full`` to depend on ``bmad-suite`` instead of 13 pins,
+So that pixi.toml stays thin for full-suite installs.
+
+**Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** CAP-4
+**Status:** backlog
+
 ## Currency validation note — 2026-08-26
 
 Chain-currency sweep pass (arch→epics cascade safety, no story or status changes).

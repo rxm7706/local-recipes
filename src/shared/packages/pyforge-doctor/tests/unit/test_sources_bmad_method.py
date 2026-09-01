@@ -32,6 +32,7 @@ from __future__ import annotations
 import email.message
 import http.client
 import json
+import tomllib
 import urllib.error
 from pathlib import Path
 
@@ -720,10 +721,9 @@ def _stub_fetch_by_package(
     versions: dict[str, tuple[int, int, int] | None],
     calls: list[str] | None = None,
 ) -> None:
-    """Per-package fetch stub: returns ``versions.get(package)`` (absent =>
-    ``None``, npm's own fail-open shape) and optionally records each
-    package queried -- proving WHICH fetches were issued, not just their
-    outcomes."""
+    """Per-package fetch stub for CAP-2's npm seam AND Story 19.1's
+    ``_resolve_upstream_latest`` -- both return ``versions.get(package)``
+    (absent -> ``None``) and optionally record each package queried."""
 
     def _fetch(
         *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
@@ -732,7 +732,18 @@ def _stub_fetch_by_package(
             calls.append(package)
         return versions.get(package)
 
+    def _resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
+    ) -> tuple[int, int, int] | None:
+        if calls is not None:
+            calls.append(package)
+        return versions.get(package)
+
     monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _fetch)
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _resolve)
 
 
 class _FakeClock:
@@ -946,7 +957,8 @@ def test_no_pixi_envs_directory_issues_zero_suite_fetches(
 
     findings = bmad_method.gather(tmp_path)
 
-    assert calls == ["bmad-method"]
+    assert set(calls) <= {"bmad-method"}
+    assert calls.count("bmad-method") >= 1
     assert len(findings) == 1
     assert findings[0].check == "bmad-method-version-drift"
 
@@ -966,7 +978,8 @@ def test_no_suite_pins_besides_the_core_yields_no_suite_finding(
 
     findings = bmad_method.gather(tmp_path)
 
-    assert calls == ["bmad-method"]
+    assert set(calls) <= {"bmad-method"}
+    assert calls.count("bmad-method") >= 1
     assert len(findings) == 1
     assert findings[0].check == "bmad-method-version-drift"
 
@@ -984,15 +997,15 @@ def test_unparseable_installed_version_skips_that_package_silently(
 
     findings = bmad_method.gather(tmp_path)
 
-    assert calls == ["bmad-method"]
+    assert set(calls) <= {"bmad-method"}
     assert [f.check for f in findings] == ["bmad-method-version-drift"]
 
 
 def test_suite_deadline_exhausted_mid_loop_skips_the_remaining_packages(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # I/O matrix "deadline exhausted": the first fetch consumes the whole
-    # (Story 15.2-bumped) 10s budget -- findings appear only for the
+    # I/O matrix "deadline exhausted": the first resolve consumes the whole
+    # (Story 19.1-bumped) 15s budget -- findings appear only for the
     # packages actually checked.
     _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
     _write_manifest(tmp_path, _MANIFEST_611)
@@ -1003,16 +1016,20 @@ def test_suite_deadline_exhausted_mid_loop_skips_the_remaining_packages(
     monkeypatch.setattr(bmad_method, "time", clock)
     suite_calls: list[str] = []
 
-    def _slow_fetch(
-        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    def _slow_resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
     ) -> tuple[int, int, int] | None:
-        clock.now += 10.0  # every fetch consumes the whole 10s budget
         if package == "bmad-method":
             return None
+        clock.now += 15.0
         suite_calls.append(package)
         return {"bmad-loop": (0, 11, 0), _TEA: (1, 23, 2)}[package]
 
-    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _slow_fetch)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: None)
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _slow_resolve)
 
     findings = bmad_method.gather(tmp_path)
 
@@ -1036,27 +1053,31 @@ def test_suite_per_fetch_timeout_is_min_of_remaining_budget_and_ceiling(
     monkeypatch.setattr(bmad_method, "time", clock)
     seen: list[tuple[str, float | None]] = []
 
-    def _fetch(
-        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    def _resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
     ) -> tuple[int, int, int] | None:
         if package != "bmad-method":
             seen.append((package, timeout))
-            # Story 15.2 bumped the shared budget 5.0 -> 10.0; 4.0s/fetch
-            # still demonstrates both branches of min(remaining, ceiling):
+            # Story 19.1 bumped the shared budget 10.0 -> 15.0; 6.0s/resolve
+            # demonstrates both branches of min(remaining, ceiling):
             # the first two calls are capped by the 5.0s ceiling (remaining
             # is still above it), the third is capped by the smaller
-            # remaining budget itself.
-            clock.now += 4.0
+            # remaining budget itself (15 - 6 - 6 = 3).
+            clock.now += 6.0
         return None
 
-    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _fetch)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: None)
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _resolve)
 
     bmad_method.gather(tmp_path)
 
     assert seen == [
         ("bmad-builder", 5.0),
         ("bmad-loop", 5.0),
-        (_TEA, 2.0),
+        (_TEA, 3.0),
     ]
 
 
@@ -1573,9 +1594,8 @@ def test_dw_14_1_1_bmad_loop_npm_invisible_resolves_via_github(
     _write_manifest(tmp_path, _MANIFEST_611)
     _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
     _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
-    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
-    monkeypatch.setattr(
-        bmad_method, "_fetch_latest_github_release", lambda **_: (0, 11, 0)
+    _stub_fetch_by_package(
+        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
     )
 
     findings = bmad_method.gather(tmp_path)
@@ -1597,27 +1617,29 @@ def test_dw_14_1_1_bmad_loop_npm_invisible_resolves_via_github(
 # --- integration: when the fallback fires (and does not) -------------------------
 
 
-def test_github_not_queried_when_npm_succeeds(
+def test_github_primary_skips_npm_when_registry_is_github(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Story 19.1: github-canonical packages query GitHub only -- never npm,
+    # even when a stale npm stub would have looked "current".
     _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
     _write_manifest(tmp_path, _MANIFEST_611)
     _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
     _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    calls: list[str] = []
     _stub_fetch_by_package(
-        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
+        monkeypatch,
+        {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)},
+        calls=calls,
     )
-
-    def _unreachable(**_):
-        raise AssertionError("_fetch_latest_github_release must not be called")
-
-    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _unreachable)
 
     findings = bmad_method.gather(tmp_path)
 
     suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
     assert len(suite) == 1
     assert suite[0].status is DoctorStatus.OK
+    assert "bmad-loop" in calls
+    assert calls.count("bmad-loop") == 1
 
 
 def test_github_not_queried_when_no_recipe_yaml_mapping_exists(
@@ -1644,45 +1666,46 @@ def test_github_not_queried_when_no_recipe_yaml_mapping_exists(
     ]
 
 
-def test_github_fallback_skipped_when_shared_budget_already_exhausted(
+def test_github_resolve_skipped_when_shared_budget_already_exhausted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # bmad-loop's own npm fetch (a miss) consumes the whole shared 10s
-    # budget -- the GitHub fallback must not be attempted for that same
-    # package (I/O matrix: "Shared budget exhausted before fallback").
+    # Story 19.1: a slow github-primary resolve consumes the whole shared
+    # 15s budget -- remaining packages are skipped unbudgeted.
     _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
     _write_manifest(tmp_path, _MANIFEST_611)
     _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_conda_meta(tmp_path, "default", _TEA, "1.19.1")
     _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
 
     clock = _FakeClock()
     monkeypatch.setattr(bmad_method, "time", clock)
+    resolve_calls: list[str] = []
 
-    def _npm_fetch(
-        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    def _slow_resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
     ) -> tuple[int, int, int] | None:
+        resolve_calls.append(package)
         if package == "bmad-method":
             return (6, 11, 0)
-        clock.now += 10.0  # consumes the whole 10s budget
-        return None
+        clock.now += 15.0
+        return (0, 11, 0) if package == "bmad-loop" else None
 
-    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm_fetch)
-
-    def _unreachable_owner_repo(*args, **kwargs):
-        raise AssertionError("_github_owner_repo must not be called")
-
-    def _unreachable_fetch(**_):
-        raise AssertionError("_fetch_latest_github_release must not be called")
-
-    monkeypatch.setattr(bmad_method, "_github_owner_repo", _unreachable_owner_repo)
-    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _unreachable_fetch)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version",
+        lambda **_: (6, 11, 0),
+    )
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _slow_resolve)
 
     findings = bmad_method.gather(tmp_path)
 
-    assert [f.check for f in findings] == [
-        "bmad-method-version-drift",
-        "bmad-method-upstream-drift",
-    ]
+    assert resolve_calls == ["bmad-loop", "bmad-method"]
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].status is DoctorStatus.WARN
+    assert suite[0].evidence["package"] == "bmad-loop"
 
 
 def test_packages_checked_rises_when_npm_invisible_package_resolves_via_github(
@@ -1696,9 +1719,9 @@ def test_packages_checked_rises_when_npm_invisible_package_resolves_via_github(
     _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
     _write_conda_meta(tmp_path, "default", _TEA, "1.23.2")
     _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
-    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0), _TEA: (1, 23, 2)})
-    monkeypatch.setattr(
-        bmad_method, "_fetch_latest_github_release", lambda **_: (0, 11, 0)
+    _stub_fetch_by_package(
+        monkeypatch,
+        {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0), _TEA: (1, 23, 2)},
     )
 
     findings = bmad_method.gather(tmp_path)
@@ -2226,8 +2249,11 @@ def test_suite_channel_fetch_draws_from_the_same_shared_budget(
     monkeypatch.setattr(bmad_method, "time", clock)
     npm_calls: list[str] = []
 
-    def _npm_fetch(
-        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    def _resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
     ) -> tuple[int, int, int] | None:
         if package != "bmad-method":
             npm_calls.append(package)
@@ -2238,10 +2264,11 @@ def test_suite_channel_fetch_draws_from_the_same_shared_budget(
     def _slow_channel_fetch(
         *, package: str, timeout: float | None = None
     ) -> tuple[int, int, int] | None:
-        clock.now += 10.0  # exhausts the (bumped) 10.0s shared budget alone
+        clock.now += 15.0  # exhausts the (Story 19.1-bumped) 15.0s shared budget alone
         return (2, 2, 1)
 
-    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm_fetch)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0))
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _resolve)
     monkeypatch.setattr(bmad_method, "_fetch_channel_version", _slow_channel_fetch)
 
     findings = bmad_method.gather(tmp_path)
@@ -2254,3 +2281,153 @@ def test_suite_channel_fetch_draws_from_the_same_shared_budget(
     assert len(suite) == 1
     assert suite[0].status is DoctorStatus.OK
     assert suite[0].evidence == {"packages_checked": 1, "packages_watched": 3}
+
+
+# --- Story 19.1: manifest watched set + registry-aware upstream -----------------
+
+
+_SUITE_MANIFEST_TWO = """
+members:
+  - name: bmad-loop
+  - name: mybmad-dashboard
+  - name: bmad-autopilot
+    deprecated: true
+"""
+
+_RECIPE_GITHUB_BUILDER = """
+context:
+  name: bmad-builder
+  version: "2.2.1"
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-builder
+"""
+
+_RECIPE_GITHUB_DASHBOARD = """
+context:
+  name: mybmad-dashboard
+  version: "1.0.0"
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-method-ui
+"""
+
+
+def _write_suite_manifest(target: Path, text: str) -> Path:
+    path = target / "recipes" / "bmad-suite" / "suite-members.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_manifest_union_includes_mybmad_dashboard_without_pixi_pin(
+    tmp_path: Path,
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_suite_manifest(tmp_path, _SUITE_MANIFEST_TWO)
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    _write_recipe_yaml(tmp_path, "mybmad-dashboard", _RECIPE_GITHUB_DASHBOARD)
+
+    watched = bmad_method._suite_packages(
+        tomllib.loads((tmp_path / "pixi.toml").read_text(encoding="utf-8")),
+        tmp_path,
+    )
+
+    assert "mybmad-dashboard" in watched
+    assert "bmad-loop" in watched
+    assert "bmad-autopilot" not in watched
+
+
+def test_manifest_absent_falls_back_to_pixi_bmad_pins_only() -> None:
+    data = {
+        "feature": {
+            "local-recipes": {
+                "dependencies": {
+                    "bmad-method": ">=6.11.0",
+                    "bmad-loop": ">=0.11.0",
+                    "bmad-method-test-architecture-enterprise": ">=1.23.2",
+                }
+            }
+        }
+    }
+    assert bmad_method._suite_packages(data, None) == (
+        "bmad-loop",
+        "bmad-method-test-architecture-enterprise",
+    )
+
+
+def test_builder_github_primary_ignores_stale_npm_for_recipe_upstream_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(
+        tmp_path,
+        """
+[feature.python.dependencies]
+bmad-method = ">=6.11.0"
+
+[feature.local-recipes.dependencies]
+bmad-builder = ">=2.2.1"
+""",
+    )
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-builder", "2.2.1")
+    _write_recipe_yaml(tmp_path, "bmad-builder", _RECIPE_GITHUB_BUILDER)
+
+    def _resolve(
+        package: str,
+        target: Path,
+        *,
+        timeout: float | None = None,
+    ) -> tuple[int, int, int] | None:
+        return {
+            "bmad-method": (6, 11, 0),
+            "bmad-builder": (2, 2, 2),
+        }.get(package)
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0))
+    monkeypatch.setattr(bmad_method, "_resolve_upstream_latest", _resolve)
+
+    findings = bmad_method.gather(tmp_path)
+
+    recipe = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe) == 1
+    assert recipe[0].evidence["package"] == "bmad-builder"
+    assert recipe[0].evidence["latest_upstream"] == "2.2.2"
+
+
+def test_unknown_registry_takes_max_of_npm_and_github(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(
+        tmp_path,
+        """
+[feature.local-recipes.dependencies]
+bmad-loop = ">=0.11.0"
+""",
+    )
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.10.0")
+
+    npm_calls = 0
+    github_calls = 0
+
+    def _npm(**kwargs):
+        nonlocal npm_calls
+        npm_calls += 1
+        return (0, 10, 0)
+
+    def _github(**kwargs):
+        nonlocal github_calls
+        github_calls += 1
+        return (0, 11, 0)
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _github)
+    monkeypatch.setattr(bmad_method, "_github_owner_repo", lambda *_: "org/repo")
+    monkeypatch.setattr(bmad_method, "_fetch_pypi_latest_version", lambda **_: None)
+
+    latest = bmad_method._resolve_upstream_latest("bmad-loop", tmp_path)
+
+    assert latest == (0, 11, 0)
+    assert npm_calls == 1
+    assert github_calls == 1

@@ -185,7 +185,12 @@ class Source(StrEnum):
     # version: `bmad-channel-drift` (channel behind the recipe's declared
     # version) and `bmad-recipe-upstream-drift` (recipe behind the
     # already-resolved upstream latest) -- still this one Source, still
-    # WARN-only, riding the same surfaces.
+    # WARN-only, riding the same surfaces. Story 19.1 (Epic 19) extends the
+    # suite pass once more: the watched set UNIONS steward's tracked
+    # ``recipes/bmad-suite/suite-members.yaml`` with pixi ``bmad-*`` pins
+    # (``mybmad-dashboard`` included), and upstream resolution follows each
+    # member's ``cfe-upstream-registry`` via ``_resolve_upstream_latest`` --
+    # still this one Source, still warn-only, riding the same surfaces.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
     # Story 13.1 (Epic 13/CAP-1): the closed taxonomy EXTENDED once more --
     # Doctor's verdict on which tracked deferred-work-ledger entries, fleet

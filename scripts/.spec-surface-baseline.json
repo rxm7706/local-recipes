@@ -564,14 +564,14 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/fleet_surface.py": "49d47414ca52970bcfa40ac6f65cffa705f72af7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/hooks.py": "ab9a98dc835c6d374970dca9dc7771fdf04fe25a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/hygiene_definitions.py": "3b8d7b0430cae8076dbfd102e73d5dec43fbb854",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py": "87654dd30aea0bb3da559ae33139a0cdad0ef859",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py": "06e4a115bb9c9f531ab85ddbc675a7b0fffe152e",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/prescribe.py": "9f6d051c3839415749e316701e61bc3b269c1515",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py": "2a94d915ae073bf04b30a8d96e12145a5758230a",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "cf5b83a369ca3716a19e1d990acb31d379b4d007",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "31cb67e9e9feaacf30f0411f3e3113c5c91f2589",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "91cf50d0a92560f57ddcf6e6e1a2e1b06b0289a1",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "f539182c862f8f957ca7c60b634e9a289ac63721",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py": "4748e4957601c29288f6c1d0ab1cba3a86e26645",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py": "2aa283d69d7fa33da15dfd3fe52755610a7caf92",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "d8f6cad8889d14b447859dbdaa078571e20c2cf7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "d6fe5c39121b9947e2a9f76b718d4d4c5624e35c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
@@ -622,7 +622,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_atlas.py": "fb18e8deff0623cf81b8e54e9ecff1f6eff8e9e3",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_atlas_watch_axes.py": "40e884c894399deed3e261cdf4efd13a39b0aa8a",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_backlog_intake.py": "4b2f04a44ec8c79aefdc491f05df0945d3c5cfc2",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py": "5f98d8fc8b47722e2a725be513c1701ea406d0d3",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py": "6e85baf5fcc6969d17f53f32a09961ad266cb96f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py": "c111efcf7c09da65c9ab7b1f6477bac2259fc923",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py": "6390063bcc008cabb198c5b717152318fe483b11",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_check_layout.py": "ed9f4d5fe0c933e39d4dc3ba838d81b311378ad2",
@@ -645,7 +645,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "88a127cbbcb10940bef5ed3aea6a23301858f796"
+  "memlog": "f867a6c8213284b2eb793286c4ba009a655c878d"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -4662,6 +4662,15 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e4078969ba96a3ee78303d0f19b9270609b3aa67"
   },
   "memlog": "2045817258d842e357586e339bd5b6a1504def0c"
+ },
+ "pyforge-steward/spec-bmad-suite-metapackage": {
+  "files": {
+   ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py": "bc047e2f363338b43c8dd5f5a5b573b85061837d",
+   ".claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py": "6f647001221b428c1de0d072fc69db9f49b615fe",
+   "recipes/bmad-suite/recipe.yaml": "a226921e9847e3bff09271d5090c44cfae948570",
+   "recipes/bmad-suite/suite-members.yaml": "a96e11043dc0a431b7872d6271be0b702e9d8ccf"
+  },
+  "memlog": "47cd21ace8176c0233e6ebe228cb5a2fe5f2af76"
  },
  "pyforge-steward/spec-build-league-scorecard": {
   "files": {},

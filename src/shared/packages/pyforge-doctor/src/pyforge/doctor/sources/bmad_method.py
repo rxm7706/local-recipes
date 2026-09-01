@@ -91,6 +91,25 @@ missing recipe.yaml mapping, a non-github registry, or any GitHub HTTP/
 network/JSON failure all fold to ``None`` and the package stays unchecked,
 exactly as before this story.
 
+**Story 19.1 (Epic 19, steward ``spec-bmad-suite-metapackage`` CAP-1):
+manifest-driven watched set + registry-aware upstream.** The suite pass's
+watched set is now the UNION of steward's tracked
+``recipes/bmad-suite/suite-members.yaml`` (active members with a local
+``recipes/<name>/recipe.yaml``, including ``mybmad-dashboard``) and every
+``bmad-*`` pin ``_dependency_tables`` already walks -- deduped, sorted --
+falling back to pixi-only when the manifest is absent (fail-open). Upstream
+resolution is no longer npm-first: ``_resolve_upstream_latest`` reads each
+member's ``extra.cfe-upstream-registry`` and queries the authoritative
+registry (``github`` -> GitHub only, ``npm`` -> npm only, ``pypi`` -> PyPI
+only); when the registry is absent/unknown, every applicable source is tried
+and ``max()`` of the successfully parsed release triples wins -- never a
+stale npm stub alone for GitHub-canonical packages (builder/CIS/dashboard).
+CORE CAP-1/CAP-2's own npm comparison path is unchanged; Story 15.2's
+channel/recipe checks reuse ``_resolve_upstream_latest`` instead of CAP-2's
+npm fetch alone. The suite loop's shared budget bumps to ``15.0`` s
+(Story 14.1/15.2/19.1 precedent); ``fleet_picture.py``'s subprocess bound
+bumps to ``30`` s accordingly.
+
 **Story 15.2 (Epic 15, spec-15-2, relaying ``spec-bmad-suite-channel-
 product`` CAP-5): channel and recipe staleness become ambient findings.**
 CAP-1/CAP-2/CAP-4/Story 15.1 all compare the INSTALLED tool against
@@ -318,12 +337,20 @@ _SUITE_PREFIX = "bmad-"
 #: still-5.0s-sized pool before later packages get even their PRE-EXISTING
 #: (Story 14.1) npm/GitHub upstream check -- doubling the pool gives
 #: meaningfully more headroom without touching how any individual fetch is
-#: bounded. CAP-2's 5s (core npm) + this 10s (suite loop) + the CORE-side
-#: channel fetch's own 5s = 20s is now the DESIGN budget for ``_gather``'s
+#: bounded. CAP-2's 5s (core npm) + this 15s (suite loop) + the CORE-side
+#: channel fetch's own 5s = 25s is now the DESIGN budget for ``_gather``'s
 #: worst-case network cost, not a hard wall-clock guarantee;
-#: ``scripts/fleet_picture.py``'s ``bmad_core_drift_findings`` 25s
-#: subprocess bound carries the margin (Story 14.1/15.2, review finding).
-_SUITE_FETCH_TOTAL_BUDGET_SECONDS = 10.0
+#: ``scripts/fleet_picture.py``'s ``bmad_core_drift_findings`` 30s
+#: subprocess bound carries the margin (Story 14.1/15.2/19.1).
+_SUITE_FETCH_TOTAL_BUDGET_SECONDS = 15.0
+
+#: Steward's canonical suite population (Story 19.1) -- same artifact the
+#: ``bmad-suite`` metapackage recipe and pipeline-truth consume.
+_SUITE_MANIFEST_REL = Path("recipes/bmad-suite/suite-members.yaml")
+
+#: PyPI's own public, unauthenticated per-package JSON endpoint -- mirrors
+#: ``_NPM_LATEST_URL``'s precedent for a bare unauthenticated metadata GET.
+_PYPI_JSON_URL = "https://pypi.org/pypi/{package}/json"
 
 
 def _parse_release_triple(text: str) -> tuple[int, int, int] | None:
@@ -347,17 +374,164 @@ def _parse_release_triple(text: str) -> tuple[int, int, int] | None:
     return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
 
-def _suite_packages(pixi_data: dict) -> tuple[str, ...]:
-    """CAP-4's watched set: every dependency key starting ``_SUITE_PREFIX``
-    across every table ``_dependency_tables`` already walks, excluding
-    ``DEPENDENCY_NAME`` itself (see ``_SUITE_PREFIX``'s own comment).
-    Sorted for deterministic Finding order (Boundaries, Story 14.1)."""
+def _pixi_suite_package_names(pixi_data: dict) -> set[str]:
+    """Every ``bmad-*`` dependency key across ``_dependency_tables``, excluding
+    the core ``DEPENDENCY_NAME`` itself (Story 14.1)."""
     names: set[str] = set()
     for table in _dependency_tables(pixi_data):
         for name in table:
             if name.startswith(_SUITE_PREFIX) and name != DEPENDENCY_NAME:
                 names.add(name)
+    return names
+
+
+def _manifest_suite_members(target: Path) -> tuple[str, ...]:
+    """Active ``suite-members.yaml`` entries that have a local recipe (Story
+    19.1). Deprecated manifest rows and members without
+    ``recipes/<name>/recipe.yaml`` are skipped silently; the core itself is
+    excluded (CAP-1/CAP-2 territory). Returns ``()`` when the manifest is
+    absent or unreadable -- the caller falls back to pixi-only."""
+    path = target / _SUITE_MANIFEST_REL
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        return ()
+    members = data.get("members") if isinstance(data, dict) else None
+    if not isinstance(members, list):
+        return ()
+    names: set[str] = set()
+    for entry in members:
+        if not isinstance(entry, dict) or entry.get("deprecated"):
+            continue
+        name = entry.get("name")
+        if not isinstance(name, str) or not name or name == DEPENDENCY_NAME:
+            continue
+        if (target / "recipes" / name / "recipe.yaml").is_file():
+            names.add(name)
     return tuple(sorted(names))
+
+
+def _suite_packages(pixi_data: dict, target: Path | None = None) -> tuple[str, ...]:
+    """CAP-4/Story 19.1 watched set: UNION of manifest members (when the
+    tracked manifest is present) and every pixi ``bmad-*`` pin
+    ``_pixi_suite_package_names`` derives, deduped and sorted. When
+    ``target`` is ``None`` or the manifest is absent, pixi-only (today's
+    pre-19.1 behavior for isolated unit tests)."""
+    pixi_names = _pixi_suite_package_names(pixi_data)
+    if target is None:
+        return tuple(sorted(pixi_names))
+    manifest_names = _manifest_suite_members(target)
+    if manifest_names:
+        return tuple(sorted(pixi_names | set(manifest_names)))
+    return tuple(sorted(pixi_names))
+
+
+def _upstream_registry(target: Path, package: str) -> str | None:
+    """``extra.cfe-upstream-registry`` from ``recipes/<package>/recipe.yaml``,
+    lowercased, or ``None`` when absent/unreadable (Story 19.1)."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        extra = data["extra"]
+        reg = extra.get("cfe-upstream-registry")
+        if isinstance(reg, str) and reg.strip():
+            return reg.strip().lower()
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        pass
+    return None
+
+
+def _upstream_package_name(target: Path, package: str) -> str:
+    """``extra.cfe-upstream-name`` when present, else ``package`` itself
+    (Story 19.1 -- mirrors steward generator discipline)."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        extra = data["extra"]
+        name = extra.get("cfe-upstream-name")
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        pass
+    return package
+
+
+def _fetch_pypi_latest_version(
+    *, package: str, timeout: float | None = None
+) -> tuple[int, int, int] | None:
+    """Query PyPI's public JSON API for ``package``'s latest release (Story
+    19.1). Lenient-parsed with ``_parse_release_triple``; never raises."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    url = _PYPI_JSON_URL.format(package=urllib.parse.quote(package, safe=""))
+    try:
+        with urllib.request.urlopen(url, timeout=resolved_timeout) as response:
+            body = json.loads(response.read())
+        return _parse_release_triple(str(body["info"]["version"]))
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        http.client.HTTPException,
+        OSError,
+        TimeoutError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ):
+        return None
+
+
+def _resolve_upstream_latest(
+    package: str,
+    target: Path,
+    *,
+    timeout: float | None = None,
+) -> tuple[int, int, int] | None:
+    """Registry-aware upstream latest for ``package`` (Story 19.1). Reads
+    ``recipes/<package>/recipe.yaml``'s ``cfe-upstream-registry`` and queries
+    ONLY the authoritative registry when declared; when absent/unknown, tries
+    npm, GitHub (when mapped), and PyPI and returns ``max()`` of every
+    successfully parsed release triple. Never raises."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    registry = _upstream_registry(target, package)
+    upstream_name = _upstream_package_name(target, package)
+
+    if registry == "github":
+        owner_repo = _github_owner_repo(target, package)
+        if owner_repo is None:
+            return None
+        return _fetch_latest_github_release(
+            owner_repo=owner_repo, timeout=resolved_timeout
+        )
+
+    if registry == "npm":
+        return _fetch_latest_upstream_version(
+            package=upstream_name, timeout=resolved_timeout
+        )
+
+    if registry == "pypi":
+        return _fetch_pypi_latest_version(
+            package=upstream_name, timeout=resolved_timeout
+        )
+
+    candidates: list[tuple[int, int, int]] = []
+    npm_latest = _fetch_latest_upstream_version(
+        package=package, timeout=resolved_timeout
+    )
+    if npm_latest is not None:
+        candidates.append(npm_latest)
+    owner_repo = _github_owner_repo(target, package)
+    if owner_repo is not None:
+        github_latest = _fetch_latest_github_release(
+            owner_repo=owner_repo, timeout=resolved_timeout
+        )
+        if github_latest is not None:
+            candidates.append(github_latest)
+    pypi_latest = _fetch_pypi_latest_version(
+        package=upstream_name, timeout=resolved_timeout
+    )
+    if pypi_latest is not None:
+        candidates.append(pypi_latest)
+    return max(candidates) if candidates else None
 
 
 def _installed_suite_versions(
@@ -758,7 +932,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
     ``except Exception`` below is what makes "CAP-1/CAP-2 outcomes are
     untouched" a structural guarantee, not a hope."""
     try:
-        packages = _suite_packages(pixi_data)
+        packages = _suite_packages(pixi_data, target)
         if not packages:
             return ()
         installed = _installed_suite_versions(target, packages)
@@ -788,23 +962,11 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break  # shared budget exhausted: skip the rest (fail-open)
-            latest = _fetch_latest_upstream_version(
-                package=name,
+            latest = _resolve_upstream_latest(
+                name,
+                target,
                 timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
             )
-            if latest is None:
-                # Story 15.1 (DW-14-1-1): npm missed -- try GitHub next,
-                # still inside the SAME shared budget, and only when this
-                # package has a github mapping and there is still time
-                # left to spend.
-                remaining = deadline - time.monotonic()
-                if remaining > 0:
-                    owner_repo = _github_owner_repo(target, name)
-                    if owner_repo is not None:
-                        latest = _fetch_latest_github_release(
-                            owner_repo=owner_repo,
-                            timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
-                        )
             if latest is None:
                 continue  # per-package fail-open (404, outage, garbage body)
             checked += 1
@@ -954,17 +1116,23 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     suite_findings = _gather_suite_findings(target, pixi_data)
 
     latest_upstream = _fetch_latest_upstream_version()
+    registry_upstream = _resolve_upstream_latest(DEPENDENCY_NAME, target)
     if latest_upstream is None:
-        return (drift_finding, *suite_findings)
+        channel_recipe_findings = ()
+        if registry_upstream is not None:
+            channel_recipe_findings = _channel_and_recipe_drift_findings(
+                target, DEPENDENCY_NAME, registry_upstream,
+            )
+        return (drift_finding, *suite_findings, *channel_recipe_findings)
 
-    # Story 15.2: channel-vs-recipe and recipe-vs-upstream drift for the
-    # CORE package, reusing this already-resolved `latest_upstream` --
-    # never a second independent upstream fetch. Gets its own bounded
-    # `_UPSTREAM_FETCH_TIMEOUT_SECONDS` call (Boundaries) -- unlike the
-    # suite loop, the CORE fetch never shares that loop's pool.
-    channel_recipe_findings = _channel_and_recipe_drift_findings(
-        target, DEPENDENCY_NAME, latest_upstream,
-    )
+    # Story 15.2/19.1: channel-vs-recipe and recipe-vs-upstream drift for the
+    # CORE package, using registry-aware upstream when available -- never a
+    # second independent fetch beyond ``_resolve_upstream_latest`` itself.
+    channel_recipe_findings = ()
+    if registry_upstream is not None:
+        channel_recipe_findings = _channel_and_recipe_drift_findings(
+            target, DEPENDENCY_NAME, registry_upstream,
+        )
 
     latest_text = ".".join(str(part) for part in latest_upstream)
     upstream_evidence = {"installed": installed_text, "latest_upstream": latest_text}

@@ -119,6 +119,10 @@ development_status:
   36-2-estate-cache-vizro-page: done
   37-1-declare-eight-stations-five-tier-complete: done
   38-1-the-translator-wraps-a-factory-tool-over-stdio-and-never-claims-to-be-the-crc-fix: done
+  39-1-canonical-suite-manifest: done
+  39-2-metapackage-recipe: done
+  39-3-generator-and-batch-build: done
+  39-4-optional-pixi-feature-bundle-cap-4: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -210,6 +214,8 @@ development_status:
   epic-37-retrospective: optional
   epic-38: done
   epic-38-retrospective: optional
+  epic-39: in-progress
+  epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

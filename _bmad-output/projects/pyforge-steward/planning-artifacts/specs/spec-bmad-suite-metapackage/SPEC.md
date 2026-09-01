@@ -1,6 +1,6 @@
 ---
 spec: bmad-suite-metapackage
-status: ready
+status: in-progress
 owner-dream: docs/dreams/bmad-suite-metapackage.md
 surface:
   - recipes/bmad-suite/recipe.yaml

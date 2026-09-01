@@ -1523,6 +1523,12 @@ So that GitHub-canonical packages warn when recipe or install lags upstream — 
 **And** `mybmad-dashboard` is in the watched set when manifest-present
 **And** findings stay warn-only, never gating
 
+## Currency validation — 2026-09-01
+
+Story 19.1 landed: manifest-driven watched set + registry-aware
+``_resolve_upstream_latest`` in ``sources/bmad_method.py``; ledger now
+83 stories (Epics 1–19).
+
 ## Currency validation — 2026-08-26
 
 Chain-currency sweep validation pass (arch→epics edge), against the architecture

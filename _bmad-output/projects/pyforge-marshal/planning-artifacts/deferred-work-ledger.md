@@ -3926,3 +3926,14 @@ status: open
   severity: medium
   promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-28-6: Full pyforge-marshal-test suite reports one pre-existing meta failure (test_skf_domain_skill::test_conda_forge_expert_not_replaced) due to branch-level conda-forge-expert drift vs origin/main — not introduced by Story 28.6.
+
+- source_spec: `planning-artifacts/specs/spec-28-6-the-graduated-compression-ladder.md`
+  summary: Full pyforge-marshal-test suite reports one pre-existing meta failure (test_skf_domain_skill::test_conda_forge_expert_not_replaced) due to branch-level conda-forge-expert drift vs origin/main — not introduced by Story 28.6.
+  evidence: git diff origin/main -- .claude/skills/conda-forge-expert is non-empty on this dispatch branch; all CAP-8 / compression-ladder tests pass (12/12).
+  location: src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py:154
+  origin: spec-deferred de5f5f7223ae — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

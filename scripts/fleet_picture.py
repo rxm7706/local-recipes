@@ -259,8 +259,8 @@ def loop_home_staleness(
 
 
 def bmad_core_drift_findings(
-    repo: pathlib.Path = REPO, timeout: int = 25
-    # 25s vs the source's own ~20s worst-case network design budget: since
+    repo: pathlib.Path = REPO, timeout: int = 30
+    # 30s vs the source's own ~25s worst-case network design budget: since
     # Story 14.1 (CAP-4) the gather issues CAP-2's core fetch (bounded at
     # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0`) PLUS a suite fetch loop under
     # its own shared deadline (`_SUITE_FETCH_TOTAL_BUDGET_SECONDS`). Story
@@ -269,13 +269,15 @@ def bmad_core_drift_findings(
     # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0` call -- and doubled the suite
     # loop's own shared deadline from 5.0s to 10.0s to keep it from starving
     # the PRE-EXISTING npm/GitHub upstream check once a third fetch type
-    # draws from the same pool: 5 (CAP-2 npm) + 10 (suite loop) + 5 (CORE
-    # channel) = 20s is the new inner worst case, so this timeout grew from
-    # 15 to 25, preserving the same ~5s margin Story 14.1 originally
-    # established. This timeout must also cover interpreter startup and
-    # package import before any fetch starts, so the margin over the inner
-    # bound is thinner than the pre-14.1 15s-over-5s arithmetic once
-    # suggested, but still positive for the blackholed-network worst case.
+    # draws from the same pool. Story 19.1 bumped the suite pool to 15.0s
+    # for manifest-driven coverage: 5 (CAP-2 npm) + 15 (suite loop) + 5
+    # (CORE channel via registry-aware resolve) = 25s is the new inner worst
+    # case, so this timeout grew from 25 to 30, preserving the same ~5s
+    # margin Story 14.1 originally established. This timeout must also cover
+    # interpreter startup and package import before any fetch starts, so the
+    # margin over the inner bound is thinner than the pre-14.1 15s-over-5s
+    # arithmetic once suggested, but still positive for the blackholed-network
+    # worst case.
 ) -> list[dict]:
     """WARN-status Findings from ``pyforge.doctor``'s bmad-method-version-
     drift source (Story 10.1/10.2's CAP-1/CAP-2 -- installed BMAD-METHOD

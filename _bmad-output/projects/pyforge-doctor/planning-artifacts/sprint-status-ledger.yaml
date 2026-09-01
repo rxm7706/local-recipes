@@ -42,6 +42,7 @@ development_status:
   17-1-extract-gather-prescribe-source-plugins: done
   18-1-skf-skill-and-persona-for-doctor: done
   18-2-first-portal-slice-fleet-pulse: done
+  19-1-the-suite-watched-set-matches-the-channel-catalog-and-upstream-follows-recipe-registry: done
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
@@ -101,6 +102,8 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
+  epic-19: done
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

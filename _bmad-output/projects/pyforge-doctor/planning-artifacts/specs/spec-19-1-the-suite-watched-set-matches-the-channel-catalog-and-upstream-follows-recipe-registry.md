@@ -2,7 +2,7 @@
 title: 'The suite watched set matches the channel catalog and upstream follows recipe registry'
 type: 'feature'
 created: '2026-09-01'
-status: 'ready'
+status: 'shipped'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
