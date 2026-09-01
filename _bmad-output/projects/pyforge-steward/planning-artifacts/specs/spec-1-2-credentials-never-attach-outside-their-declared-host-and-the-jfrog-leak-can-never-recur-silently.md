@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.2: Credentials never attach outside their declared host, and the JFrog leak can never recur silently'
 type: 'feature'
@@ -122,7 +121,7 @@ The drift primitive's "gated" heuristic: within a function body, a top-level `if
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (19 existing Story 1.1 tests + this story's new tests)
 
 ## Auto Run Result
 

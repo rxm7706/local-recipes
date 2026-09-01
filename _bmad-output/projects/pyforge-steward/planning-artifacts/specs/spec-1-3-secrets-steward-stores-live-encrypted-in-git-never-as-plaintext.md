@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.3: Secrets Steward stores live encrypted in Git, never as plaintext'
 type: 'feature'
@@ -134,7 +133,10 @@ Empirically verified `age` CLI shape (real binary, this repo's locked 1.3.1): `a
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi install -e pyforge-steward` -- expected: resolves cleanly; `age`/`age-keygen` land in the env (the exact 1.3.1 build is already fetched/cached from the pre-existing repo-wide `age` dependency, so this should not need network access)
+- `pixi run -e pyforge-steward pyforge-steward-test` -- expected: all tests pass (Stories 1.1/1.2's existing suite + this story's new tests)
+- `pixi run -e pyforge-steward steward keys encrypt --help` -- expected: shows `--recipient`/`--output`
+
 
 ## Auto Run Result
 
