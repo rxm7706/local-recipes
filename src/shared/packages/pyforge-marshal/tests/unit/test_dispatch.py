@@ -620,7 +620,9 @@ def test_run_dispatch_refusal_names_every_candidate_tried(
 
     import json
 
-    args = argparse.Namespace(slug=slug, story=story, format="json")
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    args = argparse.Namespace(slug=slug, story=story, format="json", harness=None)
     monkeypatch.chdir(tmp_path)
     code = run_dispatch(
         args,
@@ -635,7 +637,8 @@ def test_run_dispatch_refusal_names_every_candidate_tried(
     assert len(refusals) == 1
     message = refusals[0]["message"]
     assert "no dispatchable session-harness profile" in message
-    for name in ("claude", "cursor", "copilot", "gemini", "devin"):
+    effective = _compose_policy(slug)
+    for name in effective.harness_preference.value:
         assert name in message
 
 

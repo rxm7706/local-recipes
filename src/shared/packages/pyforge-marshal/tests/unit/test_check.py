@@ -296,3 +296,122 @@ def test_registered_codes_are_all_registered():
 
     for code in ("MRS-CHECK-001", "MRS-CHECK-002", "MRS-CHECK-003", "MRS-CHECK-004"):
         assert code in REGISTERED_CODES
+
+
+def test_index_freshness_structured_findings_surface_as_warn_not_check_002(capsys):
+    """Story 28.7 (CAP-10): named MRS-IDXF-* advisories, not MRS-CHECK-002."""
+    process = _FakeProcess(
+        run_result=ProcessResult(
+            returncode=1,
+            stdout=json.dumps(
+                {
+                    "registry": [],
+                    "results": [
+                        {
+                            **_detector("index_freshness_check", "FINDINGS", "stale index"),
+                            "structured_findings": [
+                                {
+                                    "code": "MRS-IDXF-003",
+                                    "message": "no cocoindex index at .claude/data/pyforge-scribe/cocoindex-index.json",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ),
+            stderr="",
+        )
+    )
+    exit_code = check_cli.run_check(_args(), process=process)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-IDXF-003"]
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+
+
+def test_malformed_structured_findings_falls_back_to_check_002(capsys):
+    """Story 28.7: unparseable structured_findings must not silently pass."""
+    process = _FakeProcess(
+        run_result=ProcessResult(
+            returncode=1,
+            stdout=json.dumps(
+                {
+                    "registry": [],
+                    "results": [
+                        {
+                            **_detector("index_freshness_check", "FINDINGS", "stale index"),
+                            "structured_findings": [{"code": 123, "message": None}],
+                        }
+                    ],
+                }
+            ),
+            stderr="",
+        )
+    )
+    exit_code = check_cli.run_check(_args(), process=process)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-CHECK-002"]
+    assert payload["verdict"] == "error"
+    assert exit_code == 4
+
+
+def test_empty_structured_findings_falls_back_to_check_002(capsys):
+    """Story 28.7: empty structured_findings with FINDINGS status is not silent."""
+    process = _FakeProcess(
+        run_result=ProcessResult(
+            returncode=1,
+            stdout=json.dumps(
+                {
+                    "registry": [],
+                    "results": [
+                        {
+                            **_detector("index_freshness_check", "FINDINGS", "stale index"),
+                            "structured_findings": [],
+                        }
+                    ],
+                }
+            ),
+            stderr="",
+        )
+    )
+    exit_code = check_cli.run_check(_args(), process=process)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-CHECK-002"]
+    assert payload["verdict"] == "error"
+    assert exit_code == 4
+
+
+def test_partial_malformed_structured_findings_emits_valid_only(capsys):
+    """Story 28.7: one valid IDXF entry must not fall through to MRS-CHECK-002."""
+    process = _FakeProcess(
+        run_result=ProcessResult(
+            returncode=1,
+            stdout=json.dumps(
+                {
+                    "registry": [],
+                    "results": [
+                        {
+                            **_detector("index_freshness_check", "FINDINGS", "stale index"),
+                            "structured_findings": [
+                                {"code": 123, "message": None},
+                                {
+                                    "code": "MRS-IDXF-002",
+                                    "message": "the codegraph index predates HEAD",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ),
+            stderr="",
+        )
+    )
+    exit_code = check_cli.run_check(_args(), process=process)
+
+    payload = _payload(capsys)
+    assert [f["code"] for f in payload["findings"]] == ["MRS-IDXF-002"]
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0

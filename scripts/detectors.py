@@ -283,20 +283,67 @@ def _run_doctor_sources(scope: str) -> list[dict]:
     return rows
 
 
+def _structured_findings_from_output(name: str, out: str) -> list[dict]:
+    """Parse machine-readable findings a detector embeds in its stdout.
+
+    Story 28.7 (index freshness): ``index_freshness_check`` emits a final
+    ``{"_findings": [...]}`` JSON line when run with ``--json``. Marshal's
+    ``check`` front door surfaces those as named ``MRS-IDXF-*`` advisories
+    instead of a generic ``MRS-CHECK-002`` wrapper."""
+    if name != "index_freshness_check":
+        return []
+    for line in reversed(out.strip().splitlines()):
+        line = line.strip()
+        if not line.startswith("{") or "_findings" not in line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        raw = payload.get("_findings") if isinstance(payload, dict) else None
+        if not isinstance(raw, list):
+            return []
+        structured: list[dict] = []
+        for entry in raw:
+            if not isinstance(entry, dict):
+                continue
+            code = entry.get("code")
+            message = entry.get("message")
+            if isinstance(code, str) and isinstance(message, str):
+                home = entry.get("home")
+                if isinstance(home, str) and home:
+                    message = f"[{home}] {message}"
+                structured.append({"code": code, "message": message})
+        return structured
+    return []
+
+
 def run_one(det: dict, timeout: int) -> dict:
     started = time.monotonic()
+    argv = [sys.executable, str(ROOT / det["path"])]
+    # Story 28.7: only this detector currently ships structured findings;
+    # pass --json so its `_findings` envelope is parseable. Other detectors
+    # are unchanged (many do not accept unknown flags).
+    if det["name"] == "index_freshness_check":
+        argv.append("--json")
     try:
         proc = subprocess.run(
-            [sys.executable, str(ROOT / det["path"])],
-            cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+            argv, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
         rc, out = proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except subprocess.TimeoutExpired:
         rc, out = 2, f"UNKNOWN: exceeded {timeout}s"
     status = {0: "pass", 1: "FINDINGS"}.get(rc, "unknown")
     tail = [ln for ln in out.strip().splitlines() if ln.strip()]
-    return {**det, "rc": rc, "status": status,
-            "secs": round(time.monotonic() - started, 1),
-            "summary": tail[-1][:200] if tail else "", "output": out}
+    structured_findings = _structured_findings_from_output(det["name"], out)
+    return {
+        **det,
+        "rc": rc,
+        "status": status,
+        "secs": round(time.monotonic() - started, 1),
+        "summary": tail[-1][:200] if tail else "",
+        "output": out,
+        "structured_findings": structured_findings,
+    }
 
 
 def main() -> int:
@@ -345,6 +392,9 @@ def main() -> int:
     if args.json:
         for r in results:
             r.pop("output", None)
+            # Preserve structured_findings for marshal check's front door.
+            if not r.get("structured_findings"):
+                r.pop("structured_findings", None)
         print(json.dumps({"registry": registry_findings, "results": results}, indent=1))
     else:
         print(f"detectors — scope={args.scope}, {len(results)} selected\n")

@@ -164,10 +164,16 @@ def check_home(home: Path) -> list[IndexCheck]:
     policy = load_loop_home_policy(home)
     context = resolve_context_layers(policy)
 
-    # Define the indices to check (layer name -> path, human name)
+    # Canonical index locations — keep aligned with Story 28.3 kit + Scribe seam:
+    # - codegraph: pyforge.marshal.seed.model.kit.CODEGRAPH_INDEX_RELPATH
+    # - cocoindex: pyforge.scribe.extras.cocoindex_flow.default_cocoindex_index_path
     indices = [
-        ("structure-graph", ".codegraph/index", "codegraph"),
-        ("incremental-derived-context", ".cocoindex/index", "cocoindex"),
+        ("structure-graph", ".codegraph/codegraph.db", "codegraph"),
+        (
+            "derived-context",
+            ".claude/data/pyforge-scribe/cocoindex-index.json",
+            "cocoindex",
+        ),
     ]
 
     for layer, rel_path, display_name in indices:

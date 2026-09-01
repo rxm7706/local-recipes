@@ -266,6 +266,31 @@ def run_check(
         name = entry.get("name", "<unknown>")
         status = entry.get("status")
         summary = entry.get("summary", "")
+        structured = entry.get("structured_findings")
+        if isinstance(structured, list) and structured:
+            # Story 28.7 (CAP-10): named advisory findings from the detector
+            # registry -- never a generic MRS-CHECK-002 wrapper when the
+            # detector already named its own MRS-IDXF-* codes. Only skip the
+            # generic FINDINGS branch when at least one entry parsed cleanly;
+            # malformed structured output must not silently pass.
+            emitted = 0
+            for sf in structured:
+                if not isinstance(sf, dict):
+                    continue
+                code = sf.get("code")
+                message = sf.get("message")
+                if not isinstance(code, str) or not isinstance(message, str):
+                    continue
+                findings.append(
+                    Finding(
+                        code=code,
+                        severity=Severity.WARN,
+                        message=f"detector {name!r} -- {message}",
+                    )
+                )
+                emitted += 1
+            if emitted:
+                continue
         if status == "FINDINGS":
             findings.append(
                 Finding(
