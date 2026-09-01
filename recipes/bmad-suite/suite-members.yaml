@@ -1,0 +1,43 @@
+# Canonical bmad-suite population — single source for:
+#   - recipes/bmad-suite/recipe.yaml run requirements (active members only)
+#   - pyforge-doctor bmad_method suite watched set (Story 19.1 — all members w/ recipes)
+#   - steward suite pipeline-truth cross-check
+#
+# Active members match SelfExplainML channel + install-matrix.md (13 products).
+# Deprecated members: local recipes kept in-repo but removed from the channel /
+# metapackage (parked or superseded). They stay listed here for drift/catalog
+# completeness — never written into recipe.yaml run deps.
+#
+# Retired without a local recipe (historical only — do not re-add without recipe):
+#   - bmad-story-automator — upstream retired for bmad-loop; recipe deleted 2026-08-21
+
+members:
+  # --- Active SelfExplainML channel (included in bmad-suite metapackage) ---
+  - name: bmad-method
+    notes: conda-forge canonical; SelfExplainML refresh-parity optional
+  - name: bmad-loop
+  - name: bmad-method-test-architecture-enterprise
+  - name: bmad-builder
+  - name: bmad-creative-intelligence-suite
+  - name: bmad-module-skill-forge
+  - name: bmad-method-wds-expansion
+    notes: published on channel; wiring skip per install-matrix (deprecated upstream)
+  - name: bmad-utility-skills
+  - name: bmad-labs-skills
+  - name: bmad-module-template
+  - name: bmad-manticore
+  - name: bmad-dashboard
+    notes: bmad-ui feature; build-from-source class
+  - name: mybmad-dashboard
+    notes: bmad-ui feature; linux/osx per upstream
+
+  # --- Deprecated / removed from SelfExplainML (manifest only, not metapackage) ---
+  - name: bmad-autopilot
+    deprecated: true
+    notes: community precursor loop; unix-only; parked — superseded by bmad-loop
+  - name: bmad-dashboard-extension
+    deprecated: true
+    notes: elvince VS Code extension fork; parked — superseded by bmad-dashboard (method-ui)
+  - name: bmalph
+    deprecated: true
+    notes: Ralph-loop CLI; parked on channel — superseded by bmad-loop for BMAD orchestration

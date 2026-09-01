@@ -1,0 +1,15 @@
+# Metapackage with platform-conditional run deps (mybmad-dashboard on linux/osx
+# only). noarch_platforms exercises every target subdir at build/test time.
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+conda_forge_output_validation: true
+noarch_platforms:
+  - linux_64
+  - linux_aarch64
+  - osx_64
+  - osx_arm64
+  - win_64
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: hint-all

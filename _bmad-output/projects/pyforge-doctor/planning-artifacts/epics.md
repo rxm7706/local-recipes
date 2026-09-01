@@ -1504,6 +1504,25 @@ So that one operator job works in HTMX on the host.
 **Given** an authenticated doctor-role session **When** the operator opens `/stations/doctor/` **Then** the pulse summary renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 
+## Epic 19: Suite drift matches the channel catalog (registry-aware upstream)
+
+**Spec binding.** Decomposes operator-authorized follow-on to Epic 15 Stories 15.1/15.2 and
+steward `spec-bmad-suite-metapackage` CAP-1 (shared `recipes/bmad-suite/suite-members.yaml`).
+Closes the npm-stale blind spot (builder/CIS/dashboard) and the `mybmad-dashboard` prefix gap.
+
+### Story 19.1: The suite watched set matches the channel catalog and upstream follows recipe registry
+
+As a factory operator,
+I want doctor's ambient bmad-suite drift to watch every SelfExplainML channel product and resolve
+upstream from each recipe's declared registry class,
+So that GitHub-canonical packages warn when recipe or install lags upstream — not only TEA.
+
+**Type:** feature • **Effort:** M • **Deps:** steward `spec-bmad-suite-metapackage` CAP-1 (manifest)
+**Given** the 13-member suite manifest and live upstream **When** `doctor check --bmad-core` runs
+**Then** builder/CIS/TEA recipe-upstream drift WARNs when behind GitHub/npm truth respectively
+**And** `mybmad-dashboard` is in the watched set when manifest-present
+**And** findings stay warn-only, never gating
+
 ## Currency validation — 2026-08-26
 
 Chain-currency sweep validation pass (arch→epics edge), against the architecture

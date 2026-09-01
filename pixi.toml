@@ -1170,6 +1170,14 @@ cmd = "python .claude/scripts/conda-forge-expert/github_updater.py"
 description = "Update a recipe to the latest npm registry version (use --dry-run first)"
 cmd = "python .claude/scripts/conda-forge-expert/npm_updater.py"
 
+[feature.local-recipes.tasks.generate-bmad-suite]
+description = "Regenerate recipes/bmad-suite/recipe.yaml run pins from suite-members.yaml + upstream registries (use --dry-run first)"
+cmd = "python .claude/scripts/conda-forge-expert/bmad_suite_metapackage.py"
+
+[feature.local-recipes.tasks.build-bmad-suite]
+description = "Build every active suite member from suite-members.yaml into the local build_artifacts channel (light skills → core → heavy dashboards), then bmad-suite so metapackage tests can solve. Pass -- --dry-run, --skip-existing, --continue-on-error, or --members-only."
+cmd = "python .claude/scripts/conda-forge-expert/build_bmad_suite.py"
+
 # ── Docker-less local builds (linux-64 / linux-aarch64 / osx-* / win-64) ─────
 # Wraps `rattler-build build` with per-platform flags. Native linux-64 runs
 # full build+test; cross-builds use --no-test (and --allow-symlinks-on-windows

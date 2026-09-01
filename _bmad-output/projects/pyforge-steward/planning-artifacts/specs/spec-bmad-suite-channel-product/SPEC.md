@@ -67,6 +67,11 @@ because it is shadowed.
   warn-only), and the GitHub-releases fallback (doctor DW-14-1-1) unblinds
   the 7 npm-invisible packages. *Success:* a fixture of the 6.3.0 relic fires
   channel-drift; the fallback names bmad-loop's version from GitHub.
+- **CAP-6 — Suite metapackage (2026-09-01).** *Intent:* one conda metapackage
+  (`bmad-suite`) plus canonical manifest install all 13 channel products at
+  upstream-aligned pins; generator refreshes from registry class per member.
+  *Success:* decomposed in `spec-bmad-suite-metapackage`; doctor Epic 19 consumes
+  the same manifest for its watched set.
 
 ## Constraints
 

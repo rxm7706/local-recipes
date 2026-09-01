@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# SelfExplainML suite metapackage — one install pulls every channel product at
+# upstream-aligned floors. Regenerate run pins with:
+#   pixi run -e local-recipes generate-bmad-suite
+# Build all members + metapackage locally:
+#   pixi run -e local-recipes build-bmad-suite
+# Manifest: recipes/bmad-suite/suite-members.yaml
+
+context:
+  name: bmad-suite
+  # CalVer refresh stamp (unpadded) — bumped by generate-bmad-suite when pins change.
+  version: "2026.9.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # Metapackage — no upstream fetch; local LICENSE only (litellm-proxy pattern).
+  - path: .
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  # GENERATED-BEGIN: suite-run-requirements (bmad_suite_metapackage.py — do not edit by hand)
+  run:
+    - bmad-method >=6.11.0
+    - bmad-loop >=0.11.1
+    - bmad-method-test-architecture-enterprise >=1.23.2
+    - bmad-builder >=2.2.1
+    - bmad-creative-intelligence-suite >=0.3.1
+    - bmad-module-skill-forge >=2.1.0
+    - bmad-method-wds-expansion >=0.4.3
+    - bmad-utility-skills >=2.0.0
+    - bmad-labs-skills >=1.0.0.dev0
+    - bmad-module-template >=0.1.0
+    - bmad-manticore >=3.1.0.dev0
+    - bmad-dashboard >=1.2.2.dev0
+    - if: linux or osx
+      then:
+        - mybmad-dashboard >=0.1.0.dev0
+  # GENERATED-END: suite-run-requirements
+
+tests:
+  - script:
+      # Anchor CLIs — one per install class (see install-matrix.md).
+      - bmad-loop --version
+      - bmad-module-skill-forge --help
+      - if: not win
+        then:
+          - bmad --help
+          - bmad-builder-install --help
+          - bmad-tea-install --help
+        else:
+          - bmad.bat --help
+          - bmad-builder-install.bat --help
+          - bmad-tea-install.bat --help
+      - if: linux or osx
+        then:
+          - mybmad --help
+
+about:
+  homepage: https://github.com/rxm7706/local-recipes/tree/main/recipes/bmad-suite
+  license: MIT
+  license_file: LICENSE
+  summary: Metapackage installing the full SelfExplainML bmad-suite at latest upstream-aligned pins
+  description: |
+    Pulls every **active** member of the SelfExplainML bmad-suite channel product
+    (see ``suite-members.yaml``; ``deprecated: true`` entries are catalogued but
+    excluded) in one transaction. Member recipes remain the unit of autotick, build, and publish; refresh this metapackage after member bumps
+    via ``pixi run -e local-recipes generate-bmad-suite``.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+  cfe-conda-name: bmad-suite
+  cfe-upstream-registry: none
+  cfe-upstream-name: local-recipes/recipes/bmad-suite
+  cfe-noarch: generic
+  cfe-source-kind: metapackage
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: not-applicable
+  cfe-on-conda-forge-feedstock: none
