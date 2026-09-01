@@ -276,6 +276,7 @@ from ..adapters.harness_bmadloop import (
 )
 from ..core import harness_profile
 from ..core import policy
+from ..core.tier_routing import resolve_tier_launch
 from ..core.identity import (
     StoryKey,
     normalize,
@@ -654,14 +655,20 @@ def _resolve_model_tiering(
     effective_policy, _policy_findings = policy.compose(
         project_slug=slug, project=project_policy_data, flags={}
     )
-    data["resolved_models"] = (
-        dict(effective_policy.model_tier_map.value.get(governing, {}))
-        if governing is not None
-        else {}
-    )
+    tier_resolution = resolve_tier_launch(effective_policy, governing)
+    data["resolved_models"] = dict(tier_resolution.resolved_models)
+    if tier_resolution.serving_pools:
+        data["serving_pool"] = dict(tier_resolution.serving_pools)
+    if tier_resolution.adapter_name is not None:
+        data["adapter_name"] = tier_resolution.adapter_name
 
     try:
-        rendered = render_policy_toml(effective_policy, difficulty=governing)
+        rendered = render_policy_toml(
+            effective_policy,
+            difficulty=governing,
+            adapter=tier_resolution.adapter_name,
+            tier_resolution=tier_resolution,
+        )
     except ValueError:
         # bmad-loop's own load-time floor on max_dev_attempts/max_review_cycles
         # (see render_policy_toml's own docstring) -- a project-policy defect
@@ -670,7 +677,9 @@ def _resolve_model_tiering(
         # configured adapter from a render that failed.
         return False
     parsed_policy = tomllib.loads(rendered)
-    adapter_name = parsed_policy.get("adapter", {}).get("name")
+    adapter_name = tier_resolution.adapter_name
+    if not isinstance(adapter_name, str) or not adapter_name:
+        adapter_name = parsed_policy.get("adapter", {}).get("name")
     if not isinstance(adapter_name, str) or not adapter_name:
         return False
     data["adapter_name"] = adapter_name
@@ -702,7 +711,13 @@ def _resolve_model_tiering(
     # the launch proceeds on whatever baseline policy is already on disk,
     # never aborts an otherwise-viable launch.
     try:
-        write_policy_toml(effective_policy, home, difficulty=governing)
+        write_policy_toml(
+            effective_policy,
+            home,
+            difficulty=governing,
+            adapter=tier_resolution.adapter_name,
+            tier_resolution=tier_resolution,
+        )
     except HarnessPolicyWriteError as exc:
         findings.append(
             Finding(
@@ -722,7 +737,8 @@ def _resolve_model_tiering(
 def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
     """The Story 6.1 additive outcome-journal fields ``_resolve_model_
     tiering`` may have already echoed into ``data`` -- ``adapter_name``,
-    ``resolved_models``, ``model_tier_batching`` -- copied verbatim into
+    ``resolved_models``, ``model_tier_batching``, ``serving_pool`` (Story
+    28.11) -- copied verbatim into
     BOTH of ``run_spin``'s own outcome-entry payloads (the successful
     launch and the launch-failure branch), never a second resolution: the
     fields are additive-only (AD-25's own correlation-field discipline
@@ -730,7 +746,12 @@ def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
     could not determine an adapter name."""
     return {
         key: data[key]
-        for key in ("adapter_name", "resolved_models", "model_tier_batching")
+        for key in (
+            "adapter_name",
+            "resolved_models",
+            "model_tier_batching",
+            "serving_pool",
+        )
         if key in data
     }
 

@@ -54,7 +54,7 @@
     },
     "model_tier_map": {
       "$ref": "#/$defs/policyField",
-      "description": "STATIC. A mapping of difficulty-class name to {stage: model_name}; stage names are drawn from the closed set {dev, review, triage}."
+      "description": "STATIC. A mapping of difficulty-class name to per-stage entries (Story 28.11, CAP-12 extends FR-51): each stage is either a legacy model-name string (harness from harness_preference), an inline {harness, model, pool?} table naming a (harness profile, model) pair, or an ordered list of inline tables for subscription-pool fallthrough. Stage names are drawn from the closed set {dev, review, triage}."
     },
     "epic_surfaces": {
       "$ref": "#/$defs/policyField",

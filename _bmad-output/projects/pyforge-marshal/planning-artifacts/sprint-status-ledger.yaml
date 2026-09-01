@@ -123,7 +123,7 @@ development_status:
   27-2-first-portal-slice-loop-homes: done
   28-1-the-context-policy-block-rendered-once-for-both-engines: done
   28-10-the-model-cost-catalog-makes-spend-legible-in-dollars: backlog
-  28-11-difficulty-tiers-route-across-providers-and-pools: backlog
+  28-11-difficulty-tiers-route-across-providers-and-pools: done
   28-12-dependency-derived-dispatch-ordering: done
   28-13-sanctioned-retry-after-an-operator-initiated-stop: backlog
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done

@@ -333,6 +333,19 @@ def test_model_tier_map_valid_shape_accepted():
     assert effective.model_tier_map.layer is PolicyLayer.PROJECT
 
 
+def test_model_tier_map_cross_provider_inline_table_accepted():
+    tier_map = {
+        "easy": {
+            "dev": {"harness": "gemini", "model": "gemini-3.7-flash"},
+        }
+    }
+    effective, findings = compose(
+        project_slug="acme", project={"model_tier_map": tier_map}, flags={}
+    )
+    assert findings == ()
+    assert effective.model_tier_map.value["easy"]["dev"]["model"] == "gemini-3.7-flash"
+
+
 def test_model_tier_map_bad_stage_name_falls_back_and_reports():
     effective, findings = compose(
         project_slug="acme",

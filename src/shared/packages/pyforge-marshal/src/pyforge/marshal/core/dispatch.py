@@ -29,6 +29,7 @@ from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+from .tier_routing import TierLaunchResolution, resolve_tier_launch
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..ports.vcs import VcsPort
@@ -165,28 +166,33 @@ def read_declared_difficulty(spec_text: str) -> str | None:
 def resolve_dispatch_model(
     policy: EffectivePolicy, *, difficulty: str | None
 ) -> str | None:
-    tier_map = policy.model_tier_map.value
-    if not isinstance(tier_map, Mapping) or not tier_map:
-        return None
-    chosen = difficulty if difficulty in tier_map else None
-    if chosen is None:
-        for fallback in ("default", "medium", "standard"):
-            if fallback in tier_map:
-                chosen = fallback
-                break
-        if chosen is None:
-            chosen = next(iter(tier_map))
-    stages = tier_map.get(chosen)
-    if not isinstance(stages, Mapping):
-        return None
-    for stage in ("dev", "build", "implement"):
-        model = stages.get(stage)
-        if isinstance(model, str) and model:
-            return model
-    for model in stages.values():
+    resolution = resolve_tier_launch(
+        policy, difficulty, allow_unmapped_fallback=True
+    )
+    dev_model = resolution.resolved_models.get("dev")
+    if isinstance(dev_model, str) and dev_model:
+        return dev_model
+    for model in resolution.resolved_models.values():
         if isinstance(model, str) and model:
             return model
     return None
+
+
+def resolve_tier_harness(
+    policy: EffectivePolicy,
+    *,
+    difficulty: str | None,
+    session_log: str | None = None,
+    excluded_harnesses: frozenset[str] | None = None,
+) -> TierLaunchResolution:
+    """Launch-time tier routing for factory dispatch harness selection."""
+    return resolve_tier_launch(
+        policy,
+        difficulty,
+        session_log=session_log,
+        excluded_harnesses=excluded_harnesses,
+        allow_unmapped_fallback=True,
+    )
 
 
 def build_budget_env(policy: EffectivePolicy) -> dict[str, str]:

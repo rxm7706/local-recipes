@@ -216,6 +216,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 from ..core import policy
 from ..core.egress import to_redacted
 from ..core.harness_profile import bmadloop_adapter_for_preference
+from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.model_cost import (
     TokenCounts,
     adapter_provider,
@@ -434,6 +435,7 @@ def render_policy_toml(
     *,
     difficulty: str | None = None,
     adapter: str | None = None,
+    tier_resolution: object | None = None,
 ) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
     Marshal's 11 mapped keys from ``effective``, apply FR-51 tier-batching,
@@ -559,20 +561,41 @@ def render_policy_toml(
     if adapter is not None:
         doc["adapter"]["name"] = adapter
     else:
-        derived = bmadloop_adapter_for_preference(effective.harness_preference.value)
-        if derived is not None and str(doc["adapter"]["name"]) != derived:
-            doc["adapter"]["name"] = derived
+        resolved_tier = tier_resolution
+        if resolved_tier is None and difficulty is not None:
+            resolved_tier = resolve_tier_launch(effective, difficulty)
+        if isinstance(resolved_tier, TierLaunchResolution) and resolved_tier.adapter_name:
+            doc["adapter"]["name"] = resolved_tier.adapter_name
+        else:
+            derived = bmadloop_adapter_for_preference(effective.harness_preference.value)
+            if derived is not None and str(doc["adapter"]["name"]) != derived:
+                doc["adapter"]["name"] = derived
 
     tier_map = effective.model_tier_map.value
-    if difficulty is not None and difficulty in tier_map:
-        stage_models = tier_map[difficulty]
+    stage_models: dict[str, str] = {}
+    if isinstance(tier_resolution, TierLaunchResolution) and tier_resolution.resolved_models:
+        stage_models = dict(tier_resolution.resolved_models)
+    elif tier_resolution is None and difficulty is not None:
+        launch = resolve_tier_launch(effective, difficulty)
+        if launch.resolved_models:
+            stage_models = dict(launch.resolved_models)
+    elif difficulty is not None and difficulty in tier_map:
+        raw_stages = tier_map[difficulty]
+        if isinstance(raw_stages, Mapping):
+            for stage in _ADAPTER_STAGES:
+                entry = raw_stages.get(stage)
+                if isinstance(entry, str) and entry:
+                    stage_models[stage] = entry
+
+    if stage_models:
         adapter_table = doc["adapter"]
         for stage in _ADAPTER_STAGES:
-            if stage not in stage_models:
+            model = stage_models.get(stage)
+            if model is None:
                 continue
             if stage not in adapter_table:
                 adapter_table[stage] = tomlkit.table()
-            adapter_table[stage]["model"] = stage_models[stage]
+            adapter_table[stage]["model"] = model
 
     # Story 28.1 (CAP-1): only rendered when something was actually
     # declared -- see this function's own docstring for why an absent
@@ -743,6 +766,7 @@ def write_policy_toml(
     *,
     difficulty: str | None = None,
     adapter: str | None = None,
+    tier_resolution: TierLaunchResolution | None = None,
 ) -> Path:
     """The I/O boundary: render via ``render_policy_toml`` and atomically
     write ``<loop_home>/.bmad-loop/policy.toml`` whole via
@@ -765,7 +789,12 @@ def write_policy_toml(
     ``adapter`` (Story 6.5, FR-44) passes straight through to
     ``render_policy_toml``.
     """
-    text = render_policy_toml(effective, difficulty=difficulty, adapter=adapter)
+    text = render_policy_toml(
+        effective,
+        difficulty=difficulty,
+        adapter=adapter,
+        tier_resolution=tier_resolution,
+    )
     path = _atomic_write_policy_text(text, loop_home)
     _write_model_cost_catalog_sidecar(effective, loop_home)
     return path

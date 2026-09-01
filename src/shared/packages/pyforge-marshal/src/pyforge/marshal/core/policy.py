@@ -718,23 +718,61 @@ def _valid_seed_path_extras(value: object) -> tuple[str, ...] | None:
     return base
 
 
-def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
-    """Difficulty and model names must be NON-EMPTY strings for the same
-    reason ``_valid_str_tuple`` rejects the empty string: an empty
-    difficulty class or an empty model name is not a degenerate instance of
-    the concept, it is no instance at all -- an Epic 3/4 consumer resolving
-    a stage against it would inherit the garbage silently."""
+def _valid_stage_entry(raw: object) -> object | None:
+    """One ``model_tier_map`` stage value (Story 28.11, CAP-12).
+
+    Accepts legacy ``str`` model names, inline ``{harness, model, pool?}``
+    tables, or ordered fallthrough lists of inline tables.
+    """
+    if isinstance(raw, str):
+        return raw if raw else None
+    if isinstance(raw, Mapping):
+        allowed = {"harness", "model", "pool"}
+        if not set(raw.keys()) <= allowed:
+            return None
+        model = raw.get("model")
+        harness = raw.get("harness")
+        pool = raw.get("pool")
+        if not isinstance(model, str) or not model:
+            return None
+        if not isinstance(harness, str) or not harness:
+            return None
+        if pool is not None and (not isinstance(pool, str) or not pool):
+            return None
+        entry: dict[str, str] = {"harness": harness, "model": model}
+        if pool is not None:
+            entry["pool"] = pool
+        return entry
+    if isinstance(raw, (list, tuple)):
+        if not raw:
+            return None
+        parsed: list[dict[str, str]] = []
+        for item in raw:
+            candidate = _valid_stage_entry(item)
+            if not isinstance(candidate, Mapping):
+                return None
+            parsed.append(dict(candidate))
+        return parsed
+    return None
+
+
+def _valid_model_tier_map(value: object) -> dict[str, dict[str, object]] | None:
+    """Difficulty and stage entries must be well-formed (Story 28.11 extends
+    stage values beyond bare model strings)."""
     if not isinstance(value, Mapping):
         return None
-    result: dict[str, dict[str, str]] = {}
+    result: dict[str, dict[str, object]] = {}
     for difficulty, stages in value.items():
         if not isinstance(difficulty, str) or difficulty == "" or not isinstance(stages, Mapping):
             return None
-        stage_map: dict[str, str] = {}
-        for stage, model in stages.items():
-            if stage not in _STAGE_NAMES or not isinstance(model, str) or model == "":
+        stage_map: dict[str, object] = {}
+        for stage, entry in stages.items():
+            if stage not in _STAGE_NAMES:
                 return None
-            stage_map[stage] = model
+            validated = _valid_stage_entry(entry)
+            if validated is None:
+                return None
+            stage_map[stage] = validated
         result[difficulty] = stage_map
     return result
 

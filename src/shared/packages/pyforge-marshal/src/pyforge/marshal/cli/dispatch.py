@@ -1166,10 +1166,22 @@ def dispatch_once(
 
     effective_policy = _compose_policy(slug, flags=policy_flags)
     difficulty = dispatch_core.read_declared_difficulty(spec_text)
+    session_log = _last_failed_dispatch_session_log(
+        fs, repo_root, slug, render_feed_key(story_key)
+    )
+    tier_resolution = dispatch_core.resolve_tier_harness(
+        effective_policy,
+        difficulty=difficulty,
+        session_log=session_log,
+    )
     model = dispatch_core.resolve_dispatch_model(effective_policy, difficulty=difficulty)
     budget_env = dispatch_core.build_budget_env(effective_policy)
     data["model"] = model
     data["budget_env"] = dict(budget_env)
+    if tier_resolution.resolved_models:
+        data["resolved_models"] = dict(tier_resolution.resolved_models)
+    if tier_resolution.serving_pools:
+        data["serving_pool"] = dict(tier_resolution.serving_pools)
     # Story 28.1 (SPEC-marshal-token-economy CAP-1): the SAME composition
     # site `adapters/harness_bmadloop.py::render_policy_toml` (bmad-loop
     # spin) resolves its `[context]` block from -- one function, both
@@ -1198,10 +1210,13 @@ def dispatch_once(
     # alone was necessary-but-insufficient (2026-08-27: three real
     # dispatches died on cursor's auth wall with the binary on PATH), so
     # every skipped candidate is a structured finding, never silent.
+    # Story 28.11 (CAP-12): when the tier map names a harness for dev,
+    # that profile leads the walk instead of the flat preference alone.
     preference = tuple(effective_policy.harness_preference.value)
-    session_log = _last_failed_dispatch_session_log(
-        fs, repo_root, slug, render_feed_key(story_key)
-    )
+    if tier_resolution.harness_profile is not None:
+        preference = (tier_resolution.harness_profile,) + tuple(
+            name for name in preference if name != tier_resolution.harness_profile
+        )
     preference = exclude_harness_profiles_after_transient_failure(
         preference, session_log
     )

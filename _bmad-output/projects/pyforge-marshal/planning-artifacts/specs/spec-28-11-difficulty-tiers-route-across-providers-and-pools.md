@@ -2,7 +2,8 @@
 title: 'Difficulty tiers route across providers and pools (Story 28.11, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'implementation-agent'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
@@ -74,10 +75,12 @@ launch failures / declared limits, not scraped).
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (`model_tier_map` vocabulary + validator `_valid_model_tier_map`)
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`_resolve_model_tiering`) + `core/dispatch.py`/`cli/dispatch.py` (`resolve_dispatch_model` — note its `next(iter(tier_map))` unmapped-difficulty fallback; keep spin/dispatch agreement, see marshal-policy.toml's 2026-08-30 medium-entry comment)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py` (FR-51 launch resolution: pool preference, fallthrough, review floor)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (`_valid_stage_entry` + `_valid_model_tier_map` vocabulary)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`_resolve_model_tiering`) + `core/dispatch.py`/`cli/dispatch.py` (`resolve_dispatch_model`, `resolve_tier_harness`)
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py` + `data/harness_profiles/*.toml` (the harness half of the pair)
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`render_policy_toml` tier-batching)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`render_policy_toml` + `tier_resolution` parameter)
+- `src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py` (AC coverage)
 
 ## Tasks & Acceptance
 
@@ -102,6 +105,37 @@ degradation in Story 28.1–28.3), never a mid-run surprise.
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, including this story's own new/updated test coverage.
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (no undeclared dependency surface).
 
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (low)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[low]` `[patch]` Include `serving_pool` in `_tiering_journal_fields` so spin outcome journals match dispatch.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `model_tier_map` so stage entries can declare `(harness, model)` pairs with ordered fallthrough and subscription-pool preference via `core/tier_routing.py`. Spin and factory dispatch both resolve through the FR-51 seam; `render_policy_toml` accepts `tier_resolution`; launch payloads journal `serving_pool` and `resolved_models`.
+
+**Files changed:**
+- `core/tier_routing.py` — new launch routing module (CAP-12)
+- `core/policy.py` — extended stage-entry validation
+- `core/dispatch.py` — `resolve_dispatch_model` / `resolve_tier_harness` delegate to tier routing
+- `cli/spin.py`, `cli/dispatch.py` — launch integration + journaling
+- `adapters/harness_bmadloop.py` — tier-aware policy render
+- `schemas/policy.json` — updated `model_tier_map` description
+- `tests/unit/test_tier_routing.py`, `tests/unit/test_policy.py` — AC tests
+
+**Verification:** Implementation agent reported `pyforge-marshal-test` 7333 passed and `pyforge-deps-test` 118 passed. Re-run locally to confirm in this environment.
+
+**Residual risks:** Transient pool exclusion keys off `harness_preference[0]`, not the tier-resolved harness. Cursor/devin tier entries have no bmad-loop adapter on the spin engine (existing MRS-SPIN-014 behavior).
+
 ## Spec Change Log
 
 - 2026-08-30: drafted from the operator's 2026 model/cost catalog (CAP-12 minted same day; multi-provider + subscription-pool routing over the existing FR-51 seam)
+- 2026-09-01: implemented via bmad-build-auto (Story 28.11)
