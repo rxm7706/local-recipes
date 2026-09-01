@@ -1022,6 +1022,7 @@ def _spawn_supervisor_sidecar(
     findings: list[Finding],
     data: dict[str, object],
     *,
+    fs: FsPort,
     home: Path,
     slug: str,
     run_id: str,
@@ -1222,7 +1223,7 @@ def _spawn_supervisor_sidecar(
             },
         }
         try:
-            LocalFs().write_text_atomic(
+            fs.write_text_atomic(
                 run_dir / "compression-ladder.json",
                 json.dumps(compression_sidecar, sort_keys=True) + "\n",
             )
@@ -1780,6 +1781,7 @@ def run_spin(
         process,
         findings,
         data,
+        fs=fs,
         home=home,
         slug=slug,
         run_id=run_id,
@@ -2375,6 +2377,7 @@ def run_resume(
         process,
         findings,
         data,
+        fs=fs,
         home=home,
         slug=slug,
         run_id=run_id,

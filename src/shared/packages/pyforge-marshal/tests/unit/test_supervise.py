@@ -8,6 +8,7 @@ subprocess anywhere in this file -- ``evaluate_idle`` is pure.
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -607,3 +608,16 @@ def test_evaluate_compression_ladder_journals_threshold_facts():
     assert decision.observed == 41_000_000
     assert decision.limit == 50_000_000
     assert decision.threshold == 0.8
+
+
+def test_compression_escalation_decision_names_wire_aggressiveness_only():
+    """CAP-8 AC: escalation raises wire-layer compression only -- the pure
+    decision carries threshold facts and aggressiveness rungs, never a model
+    tier or any gate/review skip signal."""
+    decision = evaluate_compression_ladder(
+        41_000_000, 50_000_000, threshold=0.8, declared_aggressiveness="low"
+    )
+    assert decision is not None
+    field_names = {f.name for f in dataclasses.fields(decision)}
+    assert field_names == {"observed", "limit", "threshold", "declared", "target"}
+    assert decision.target in {"low", "medium", "high"}
