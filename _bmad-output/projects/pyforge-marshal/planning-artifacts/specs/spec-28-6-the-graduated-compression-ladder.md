@@ -2,11 +2,23 @@
 title: 'The graduated compression ladder (Story 28.6, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: heavy
 baseline_revision: 'f5858beff8b277a37ef38ad72bfca749072b8b3d'
+deferred:
+  - summary: >-
+      Full pyforge-marshal-test suite reports one pre-existing meta failure
+      (test_skf_domain_skill::test_conda_forge_expert_not_replaced) due to
+      branch-level conda-forge-expert drift vs origin/main — not introduced by
+      Story 28.6.
+    evidence: |-
+      git diff origin/main -- .claude/skills/conda-forge-expert is non-empty on
+      this dispatch branch; all CAP-8 / compression-ladder tests pass (12/12).
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py:154
+    severity: low
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md
@@ -100,6 +112,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-09-01: implemented CAP-8 — compression ladder in supervise/supervisor/policy/spin; added meta seam guard + sidecar test; status blocked pending verification commands (agent shell unavailable)
 - 2026-09-01: bmad-build-auto re-run — static review confirms AC coverage; verification still blocked (shell rejected in session)
 - 2026-09-01: bmad-build-auto Cursor dispatch — implementation confirmed present; verification still blocked (shell rejected in session)
+- 2026-09-01: bmad-build-auto Cursor dispatch (completion) — verification green for story AC coverage + pyforge-deps-test; full suite has one pre-existing CFE drift meta failure (deferred)
 
 ## Review Triage Log
 
@@ -130,13 +143,20 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - addressed_findings:
   - none
 
-Manual review (no diff subagents — shell/render_skill blocked): all four ACs have dedicated tests — `ACTION_PRECEDENCE` + `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` (ordering); `CompressionEscalationDecision` field set + `test_cap8_compression_ladder_seam` (model/gate seam isolation); supervisor journals `observed`/`limit`/`threshold`/`declared_aggressiveness`/`target_aggressiveness`; tick loop calls `_maybe_escalate_compression` before `_act_on_budget_transition` for story tokens and before the idle-ladder block.
+### 2026-09-01 — Review pass (bmad-build-auto completion)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (low 1)
+- reject: 0
+- addressed_findings:
+  - none
+
+Manual review: all four ACs have dedicated tests — `ACTION_PRECEDENCE` + `test_compression_escalation_journals_before_story_budget_stop_on_same_tick` (ordering); `CompressionEscalationDecision` field set + `test_cap8_compression_ladder_seam` (model/gate seam isolation); supervisor journals threshold facts; tick loop calls `_maybe_escalate_compression` before budget-stop and idle ladder.
 
 ## Auto Run Result
 
-Status: blocked
-
-Blocking condition: implementation verification could not run — agent session rejected all shell invocations (`render_skill.py`, `pixi run`, `git`, including Smart Mode approval retry); verification commands in § Verification were not executed.
+Status: done
 
 Summary of implemented change: Story 28.6 (CAP-8) adds a graduated wire-compression ladder below the idle/budget kill ladders. As per-story weighted spend crosses `escalation_threshold` (default 0.8 from `[context]`), the supervisor journals `compression-escalation` with threshold facts and raises wire aggressiveness via `.marshal/wire/aggressiveness` before any `budget-stop` or idle-ladder action on the same tick. Model selection is untouched (FR-51 / Story 3.12 seams only).
 
@@ -151,13 +171,17 @@ Files changed (since `baseline_revision`):
 - `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py` — threshold resolution tests
 - `src/shared/packages/pyforge-marshal/tests/unit/test_spin.py` — sidecar write test
 - `src/shared/packages/pyforge-marshal/tests/meta/test_cap8_compression_ladder_seam.py` — static FR-51/gate seam guard
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-6-the-graduated-compression-ladder.md` — this spec (tasks checked, auto-run record)
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml` — ledger key `28-6-the-graduated-compression-ladder: blocked`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-6-the-graduated-compression-ladder.md` — this spec
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml` — ledger key updated to `done`
 
-Review findings breakdown: 0 patches, 0 deferred, 0 rejected (manual static review only).
+Review findings breakdown: 0 patches, 1 deferred (pre-existing CFE drift meta test), 0 rejected.
 
 Follow-up review recommendation: false (0 patched findings).
 
-Verification performed: not run. Unblock by executing § Verification locally; on green, set `status: done`, stamp `baseline_revision` from `git rev-parse HEAD`, and set ledger `28-6-the-graduated-compression-ladder: done`.
+Verification performed:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k compression -q` — **PASS** (12/12 CAP-8 tests)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -q -m "not slow" --ignore=test_skf_domain_skill.py` — **PASS** (7269 tests; excludes one pre-existing branch-hygiene meta guard)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -q -m "not slow"` — **FAIL** (1/7270: `test_conda_forge_expert_not_replaced` — conda-forge-expert diff vs `origin/main`, pre-existing on this dispatch branch, not Story 28.6 scope)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test -q` — **PASS** (118/118)
 
-Residual risks: none identified in static review; runtime confirmation depends on the verification commands above.
+Residual risks: none for CAP-8 behavior; reconcile dispatch-branch conda-forge-expert drift separately to restore the strict full-suite meta gate.
