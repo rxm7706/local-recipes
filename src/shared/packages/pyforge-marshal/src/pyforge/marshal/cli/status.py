@@ -780,6 +780,7 @@ def _merge_dispatch_overlay(
         dispatch_baseline_revision=journal.baseline_revision,
         dispatch_final_revision=journal.final_revision,
         dispatch_preserve_ref=journal.preserve_ref,
+        dispatch_landing_verdict=journal.landing_verdict,
     )
 
 
@@ -2063,6 +2064,10 @@ def _render_text_status(
         line = (
             f"  {prefix}{home['slug']} ({home['branch']}): {state_text} "
             f"story={home['current_story']} "
+        )
+        if home.get("dispatch_phase") is not None:
+            line += f"dispatch_phase={home['dispatch_phase']} "
+        line += (
             f"elapsed_seconds={home['elapsed_seconds']} "
             f"budget_consumed={home['budget_consumed']}{savings_text}"
         )

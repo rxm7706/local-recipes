@@ -79,8 +79,11 @@ from pyforge.core.process import ProcessResult
 from ..ports.harness import DeferredStory, TaskPhaseSnapshot
 from .identity import StoryKey, normalize, render_feed_key
 from .model import Finding, Severity
+from .dispatch_supervisor_state import landing_journal_indicates_complete
 
 _LOOP_BRANCH_PREFIX = "loop/"
+
+DispatchPhase = Literal["building", "verifying", "chaining"]
 
 
 @dataclass(frozen=True)
@@ -996,24 +999,68 @@ class FleetHomeFacts:
     dispatch_baseline_revision: str | None = None
     dispatch_final_revision: str | None = None
     dispatch_preserve_ref: str | None = None
+    dispatch_landing_verdict: str | None = None
+
+
+def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
+    """True while a dispatch supervisor or harness session is still attached."""
+    return facts.dispatch_supervisor_alive or facts.dispatch_engine_alive
+
+
+def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
+    """Factory-dispatch phase for ``marshal status`` / ``fleet-picture``.
+
+    ``building`` — harness session alive.
+    ``verifying`` — session dead; verify/land/completion tail still running.
+    ``chaining`` — story shipped (land journal or completion) while the
+    dispatch supervisor or harness is still winding down / waiting for the
+    campaign to hand off — NOT an indefinite post-merge label once both are
+    dead (the mason/scribe Aug-28/31 stale-tail incident).
+    """
+    if not facts.dispatch_story:
+        return None
+    if facts.dispatch_completion_verdict == "completed":
+        return "chaining" if _dispatch_tail_still_live(facts) else None
+    if landing_journal_indicates_complete(facts.dispatch_landing_verdict):
+        return "chaining" if _dispatch_tail_still_live(facts) else None
+    if facts.dispatch_engine_alive:
+        return "building"
+    return "verifying"
+
+
+def _dispatch_overlay_active(facts: FleetHomeFacts) -> bool:
+    """True while factory dispatch has an observable phase for this home."""
+    return derive_dispatch_phase(facts) is not None
 
 
 def _apply_dispatch_overlay(
     row: dict[str, object], facts: FleetHomeFacts
 ) -> dict[str, object]:
     """Story 22.1/22.2: when a dispatch session is live, surface it in fleet status."""
-    dispatch_live = facts.dispatch_completion_verdict == "live" or (
-        facts.dispatch_engine_alive and facts.dispatch_story
-    )
+    phase = derive_dispatch_phase(facts)
+    if phase is not None:
+        row = {**row, "dispatch_phase": phase}
+    dispatch_live = _dispatch_overlay_active(facts)
     if not (dispatch_live and facts.dispatch_story):
         return row
     if row.get("state") in ("running", "paused-on-escalation", "awaiting-operator"):
-        return row
+        patched = dict(row)
+        patched["current_story"] = facts.dispatch_story
+        if facts.dispatch_elapsed_seconds is not None:
+            patched["elapsed_seconds"] = facts.dispatch_elapsed_seconds
+        return _merge_dispatch_row_fields(patched, facts)
     patched = dict(row)
     patched["state"] = "running"
     patched["current_story"] = facts.dispatch_story
     if facts.dispatch_elapsed_seconds is not None:
         patched["elapsed_seconds"] = facts.dispatch_elapsed_seconds
+    return _merge_dispatch_row_fields(patched, facts)
+
+
+def _merge_dispatch_row_fields(
+    row: dict[str, object], facts: FleetHomeFacts
+) -> dict[str, object]:
+    patched = dict(row)
     if facts.dispatch_run_id is not None:
         patched["dispatch_run_id"] = facts.dispatch_run_id
     if facts.dispatch_completion_verdict is not None:
@@ -1039,6 +1086,9 @@ def _apply_dispatch_overlay(
         patched["dispatch_final_revision"] = facts.dispatch_final_revision
     if facts.dispatch_preserve_ref is not None:
         patched["dispatch_preserve_ref"] = facts.dispatch_preserve_ref
+    phase = derive_dispatch_phase(facts)
+    if phase is not None:
+        patched["dispatch_phase"] = phase
     return patched
 
 
@@ -1126,7 +1176,21 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             ),
             path=facts.slug,
         )
-        return _apply_dispatch_overlay(row, facts), finding
+        row = _apply_dispatch_overlay(row, facts)
+        if row.get("state") == "running" and facts.dispatch_story:
+            finding = None
+        elif (
+            facts.dispatch_completion_verdict == "completed"
+            and not _dispatch_tail_still_live(facts)
+        ):
+            row = {
+                **row,
+                "state": "idle",
+                "current_story": None,
+                "elapsed_seconds": None,
+            }
+            finding = None
+        return row, finding
 
     if not facts.has_run:
         row = {

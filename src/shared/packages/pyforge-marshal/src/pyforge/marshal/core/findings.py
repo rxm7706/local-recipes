@@ -1727,6 +1727,15 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-IDXF-002",
         "MRS-IDXF-003",
         "MRS-IDXF-004",
+        # Story 28.5 (pinned wrapped-vs-unwrapped benchmark,
+        # SPEC-marshal-token-economy CAP-9): `marshal benchmark compare`'s
+        # own four codes -- 001-003 ERROR (invalid slug, leg load/write
+        # failure), 004 WARN (equivalence gate voided the comparison but
+        # the artifact was still materialized for inspection).
+        "MRS-BENCH-001",
+        "MRS-BENCH-002",
+        "MRS-BENCH-003",
+        "MRS-BENCH-004",
     }
 )
 

@@ -269,6 +269,9 @@ def _build_parser() -> argparse.ArgumentParser:
     chain_cli.add_chain_subparser(subparsers)
     planning_cli.add_planning_subparser(subparsers)
     context_cli.add_context_subparser(subparsers)
+    from . import benchmark as benchmark_cli
+
+    benchmark_cli.add_benchmark_subparser(subparsers)
     return parser
 
 

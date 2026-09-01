@@ -14,29 +14,21 @@
 #   22.6 needs 22.5 | 21.9/21.10 need 21.8
 # Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
 # if the operator decides to scope them out -- that is a scope decision, not made here.
-# pyforge-marshal (2026-09-01, Epic 28 remainder): after 28.4 landed (PR #973),
-# eight stories remain. Operator-approved dispatch order (deps satisfied by
-# shipped 28.1–28.4, 28.8, 28.14, 28.15). Story 28.16 (parallel fan-out) runs
-# after 28.12–28.13 — needs 28.12 ready-set hook. See change-history/
+# pyforge-marshal (2026-09-01, Epic 28 remainder): operator scope 2026-09-01 —
+# drain stops after Story 28.6 lands; 28.10–28.16 deferred (serial focus).
+# Prior chain shipped 28.9, 28.5; 28.6 in flight. See change-history/
 # sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md.
 order_overrides:
   pyforge-marshal:
     - 28-9-planning-graph-retrieval-behind-the-scribe-seam
     - 28-5-the-pinned-wrapped-vs-unwrapped-benchmark
     - 28-6-the-graduated-compression-ladder
-    - 28-10-the-model-cost-catalog-makes-spend-legible-in-dollars
-    - 28-11-difficulty-tiers-route-across-providers-and-pools
-    - 28-12-dependency-derived-dispatch-ordering
-    - 28-13-sanctioned-retry-after-an-operator-initiated-stop
-    - 28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint
 
-# Active `--stories` chain (pyforge-marshal, 2026-09-01): copy for
-# `marshal factory dispatch pyforge-marshal --stories <keys>` — same order as
-# order_overrides above; 28.16 appended after 28.12–28.13 (Deps: 28.12).
-# 28-9-planning-graph-retrieval-behind-the-scribe-seam,28-5-the-pinned-wrapped-vs-unwrapped-benchmark,28-6-the-graduated-compression-ladder,28-10-the-model-cost-catalog-makes-spend-legible-in-dollars,28-11-difficulty-tiers-route-across-providers-and-pools,28-12-dependency-derived-dispatch-ordering,28-13-sanctioned-retry-after-an-operator-initiated-stop,28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint
-  pyforge-scribe:
-    - 6-1-the-graphify-ingest-extra-and-its-move-list-verbs
-    - 6-2-the-cocoindex-incremental-ingest-extra
+# Active `--stories` chain (pyforge-marshal, scoped 2026-09-01): stops at 28.6.
+# 28-9-planning-graph-retrieval-behind-the-scribe-seam,28-5-the-pinned-wrapped-vs-unwrapped-benchmark,28-6-the-graduated-compression-ladder
+#
+# pyforge-scribe: Epic 6 (Stories 6.1–6.3) shipped 2026-08-30 — no order_overrides
+# entry; station is complete (ledger 18/18). Re-add only if new backlog appears.
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
     - 21-5-tier-2-sources-about-curated-orgs-artifactory-names
