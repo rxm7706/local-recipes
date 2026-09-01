@@ -241,7 +241,7 @@ def test_identity_catalog_matches_write_canvas_on_shared_fixture(tmp_path, write
         canvas_path.read_text(encoding="utf-8"), priority._CANVAS_PREFIX
     )
 
-    parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_ranked_export")
+    parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     loader_df = dash_data.load_identity_catalog(parquet_path)
 
     assert sorted(_canvas_catalog_triples(canvas_data)) == sorted(_vizro_catalog_triples(loader_df))
@@ -260,7 +260,7 @@ def test_identity_ops_pane_totals_match_write_ops_canvas_on_shared_fixture(
         canvas_path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX
     )
 
-    parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_ranked_export")
+    parquet_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     priority_counts, work_counts, have, miss = _vizro_ops_aggregates(parquet_path)
 
     assert canvas_data["priorityCounts"] == priority_counts
@@ -288,19 +288,19 @@ def test_identity_workbook_both_sides_degrade_honestly_on_same_fixture(
     assert isinstance(canvas_data["jfrogMap"], dict)
     assert isinstance(canvas_data["externalCounts"], list)
 
-    ranked_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_ranked_export")
+    complete_path = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     enterprise_path = tmp_path / "missing-enterprise.parquet"
-    loader_df = dash_data.load_identity_workbook(ranked_path, enterprise_path)
+    loader_df = dash_data.load_identity_workbook(complete_path, enterprise_path)
     assert loader_df.empty
 
-    gap_msg = dash_data.identity_workbook_gap_message(ranked_path, enterprise_path)
+    gap_msg = dash_data.identity_workbook_gap_message(complete_path, enterprise_path)
     assert dash_data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET in gap_msg
 
     assert any(page.id == "identity-workbook" for page in app.PAGE_INVENTORY)
     data_root = tmp_path / "data"
-    ranked_canonical = data_root / dash_data.IDENTITY_RANKED_EXPORT_PARQUET
-    ranked_canonical.parent.mkdir(parents=True, exist_ok=True)
-    _gist_to_ranked_export_df(gist_rows).to_parquet(ranked_canonical)
+    complete_canonical = data_root / dash_data.IDENTITY_COMPLETE_EXPORT_PARQUET
+    complete_canonical.parent.mkdir(parents=True, exist_ok=True)
+    _gist_to_ranked_export_df(gist_rows).to_parquet(complete_canonical)
     dashboard = app.build_dashboard(
         data_root=str(data_root),
         build_stamp="2026-08-30T00:00:00Z",
@@ -342,7 +342,7 @@ def test_empty_corpus_degrades_honestly_on_both_sides(tmp_path, write_parquet, m
     )
     assert workbook_data["neitherRows"] == []
 
-    empty_parquet = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_ranked_export")
+    empty_parquet = write_parquet(_gist_to_ranked_export_df(gist_rows), "identity_complete_export")
     assert dash_data.load_identity_catalog(empty_parquet).empty
     assert dash_data.load_identity_ops_priority(empty_parquet).empty
     assert dash_data.load_identity_ops_issues(empty_parquet).empty

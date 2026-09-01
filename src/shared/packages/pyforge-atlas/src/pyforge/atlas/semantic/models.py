@@ -572,7 +572,7 @@ def build_identity_catalog_model(table: Any) -> SemanticModel:
 
 
 def build_identity_ops_model(table: Any) -> SemanticModel:
-    """`identity-ops` — four-pane aggregates over identity_ranked_export (Story 22.3)."""
+    """`identity-ops` — four-pane aggregates over identity_complete_export (Story 22.3/23.5)."""
     return SemanticModel(
         table=table,
         name="identity_ops",

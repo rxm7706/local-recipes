@@ -82,8 +82,8 @@ LTS_REGISTRY_GAP_PARQUET = "primary/lts_registry_gap/lts_registry_gap.parquet"
 CWE_SEED_GAP_PARQUET = "primary/cwe_seed_gap/cwe_seed_gap.parquet"
 SPDX_SCHEMA_GAP_PARQUET = "primary/spdx_schema_gap/spdx_schema_gap.parquet"
 LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
-IDENTITY_RANKED_EXPORT_PARQUET = (
-    "derived/identity_ranked_export/identity_ranked_export.parquet"
+IDENTITY_COMPLETE_EXPORT_PARQUET = (
+    "derived/identity_complete_export/identity_complete_export.parquet"
 )
 ENTERPRISE_JFROG_CONSUMPTION_PARQUET = (
     "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
@@ -466,7 +466,7 @@ def load_license_map_gap(parquet: str | os.PathLike[str] | None = None) -> pd.Da
 
 
 def load_identity_catalog(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
-    """`identity-catalog` — build_identity_catalog_model over identity_ranked_export."""
+    """`identity-catalog` — build_identity_catalog_model over identity_complete_export."""
     return _bsl_query_or_empty(
         parquet,
         models.build_identity_catalog_model,
@@ -534,19 +534,19 @@ def _ibis_pep503(col: Any) -> Any:
 
 
 def identity_workbook_gap_message(
-    ranked_parquet: str | os.PathLike[str] | None,
+    complete_parquet: str | os.PathLike[str] | None,
     enterprise_parquet: str | os.PathLike[str] | None,
 ) -> str | None:
     """Human-readable gap note naming WHICH backing Parquet is absent (Story 22.4)."""
-    ranked_path = Path(ranked_parquet) if ranked_parquet is not None else None
+    complete_path = Path(complete_parquet) if complete_parquet is not None else None
     enterprise_path = Path(enterprise_parquet) if enterprise_parquet is not None else None
-    ranked_ok = ranked_path is not None and ranked_path.is_file()
+    complete_ok = complete_path is not None and complete_path.is_file()
     enterprise_ok = enterprise_path is not None and enterprise_path.is_file()
-    if ranked_ok and enterprise_ok:
+    if complete_ok and enterprise_ok:
         return None
-    if not ranked_ok and not enterprise_ok:
+    if not complete_ok and not enterprise_ok:
         return (
-            f"Both backing files are missing: `{IDENTITY_RANKED_EXPORT_PARQUET}` and "
+            f"Both backing files are missing: `{IDENTITY_COMPLETE_EXPORT_PARQUET}` and "
             f"`{ENTERPRISE_JFROG_CONSUMPTION_PARQUET}`."
         )
     if not enterprise_ok:
@@ -555,22 +555,22 @@ def identity_workbook_gap_message(
             "(Story 23.2 — page renders empty until this lands)."
         )
     return (
-        f"Ranked identity export missing: `{IDENTITY_RANKED_EXPORT_PARQUET}` (Story 22.1)."
+        f"Complete identity export missing: `{IDENTITY_COMPLETE_EXPORT_PARQUET}` (Story 23.5)."
     )
 
 
 def load_identity_workbook(
-    ranked_parquet: str | os.PathLike[str] | None = None,
+    complete_parquet: str | os.PathLike[str] | None = None,
     enterprise_parquet: str | os.PathLike[str] | None = None,
 ) -> pd.DataFrame:
-    """`identity-workbook` — JFROG consumption ⋈ ranked identity verification buckets."""
+    """`identity-workbook` — JFROG consumption ⋈ complete identity verification buckets."""
     columns = [*_IDENTITY_WORKBOOK_DIMENSIONS, *_IDENTITY_WORKBOOK_MEASURES]
-    ranked_path = str(ranked_parquet) if ranked_parquet is not None else None
+    complete_path = str(complete_parquet) if complete_parquet is not None else None
     enterprise_path = str(enterprise_parquet) if enterprise_parquet is not None else None
     if (
-        ranked_path is None
+        complete_path is None
         or enterprise_path is None
-        or not os.path.exists(ranked_path)
+        or not os.path.exists(complete_path)
         or not os.path.exists(enterprise_path)
     ):
         return pd.DataFrame(columns=columns)
@@ -578,7 +578,7 @@ def load_identity_workbook(
     import ibis
 
     con = ibis.duckdb.connect()
-    ranked = models.duckdb_table_from_parquet(ranked_path, connection=con)
+    complete = models.duckdb_table_from_parquet(complete_path, connection=con)
     enterprise = models.duckdb_table_from_parquet(enterprise_path, connection=con)
 
     if "repository_source" in enterprise.columns:
@@ -587,18 +587,18 @@ def load_identity_workbook(
     join_key = _ibis_pep503
     ent = enterprise.mutate(_join_key=join_key(enterprise.core_python_package_name))
     ent = ent.filter(ent._join_key.length() >= 2).distinct(on=["_join_key"], keep="first")
-    ranked_side = ranked.mutate(_join_key=join_key(ranked.Core_Python_Package_Name)).distinct(
-        on=["_join_key"], keep="last"
-    )
+    complete_side = complete.mutate(
+        _join_key=join_key(complete.Core_Python_Package_Name)
+    ).distinct(on=["_join_key"], keep="last")
     feedstock_col = "Conda-Forge_FeedStock_URL"
-    ranked_pick = ranked_side.select(
+    complete_pick = complete_side.select(
         "_join_key",
         "primary_type",
         "primary_purl",
         "conda_purl",
-        **{feedstock_col: ranked_side[feedstock_col]},
+        **{feedstock_col: complete_side[feedstock_col]},
     )
-    joined = ent.left_join(ranked_pick, "_join_key")
+    joined = ent.left_join(complete_pick, "_join_key")
     try:
         from pyforge.atlas.semantic.query_helpers import bsl_query
 

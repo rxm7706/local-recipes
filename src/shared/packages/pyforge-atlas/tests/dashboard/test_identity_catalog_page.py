@@ -139,7 +139,7 @@ def test_identity_catalog_parity_with_write_canvas(tmp_path, write_parquet):
     canvas_text = canvas_path.read_text(encoding="utf-8")
     decoded = _decode_data_blob(canvas_text, priority._CANVAS_PREFIX)
 
-    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
     loader_df = dash_data.load_identity_catalog(parquet_path)
 
     assert len(loader_df) == len(decoded["rows"])
@@ -159,7 +159,7 @@ def test_identity_catalog_parity_with_write_canvas(tmp_path, write_parquet):
 def test_identity_catalog_page_is_bsl_driven(write_parquet):
     """Loader output equals an independent build_identity_catalog_model query (AD-8)."""
     records, _counts = _hand_built_fixture()
-    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_ranked_export")
+    parquet_path = write_parquet(_records_to_ranked_export_df(records), "identity_complete_export")
 
     got = dash_data.load_identity_catalog(parquet_path)
     table = models.duckdb_table_from_parquet(parquet_path)
