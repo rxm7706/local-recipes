@@ -122,7 +122,7 @@ development_status:
   39-1-canonical-suite-manifest: done
   39-2-metapackage-recipe: done
   39-3-generator-and-batch-build: done
-  39-4-optional-pixi-feature-bundle-cap-4: backlog
+  39-4-optional-pixi-feature-bundle-cap-4: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
