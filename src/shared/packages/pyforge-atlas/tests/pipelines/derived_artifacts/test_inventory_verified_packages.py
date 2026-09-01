@@ -135,7 +135,7 @@ def _run_both(
     ],
 )
 def test_packaging_candidate_status_branches(pkg, pbucket, expected_status):
-    on_pypi = expected_status != "Conda-Forge Only"
+    on_pypi = expected_status not in ("Conda-Forge Only", "Not on PyPI")
     on_cf = expected_status in ("Already Packaged", "Conda-Forge Only")
     out, ref = _run_both(
         [_universe_row(pkg, sources=["tab:GAOSS-Free" if on_pypi and not on_cf else "tab:Conda-Forge"])],
