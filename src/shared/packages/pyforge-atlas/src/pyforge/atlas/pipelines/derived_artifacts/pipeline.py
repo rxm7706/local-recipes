@@ -1,9 +1,10 @@
-"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8; Story 23.3).
+"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8; Story 23.3; Story 23.4).
 
 PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe``
 (workbook-free metrics universe), ``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority``
-(Story 23.3 priority hierarchy). ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline
-edges). Node names FROZEN.
+(Story 23.3 priority hierarchy), ``build_inventory_verified_packages`` +
+``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue).
+``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
 from __future__ import annotations
@@ -12,7 +13,9 @@ from kedro.pipeline import Pipeline, node
 
 from .nodes import (
     assign_inventory_priority,
+    build_inventory_aoss_free_queue,
     build_inventory_universe,
+    build_inventory_verified_packages,
     build_universe_sbom,
     derive_basilisk_vuln_rollup,
 )
@@ -64,6 +67,33 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="inventory_priority_assignments",
                 name="assign_inventory_priority",
+            ),
+            node(
+                func=build_inventory_verified_packages,
+                inputs=[
+                    "inventory_universe",
+                    "core_packages_enumerated",
+                    "pypi_universe",
+                    "pypi_conda_mapping",
+                    "inventory_priority_assignments",
+                    "parameters",
+                ],
+                outputs="inventory_verified_packages",
+                name="build_inventory_verified_packages",
+            ),
+            node(
+                func=build_inventory_aoss_free_queue,
+                inputs=[
+                    "discovery_aoss_free_python_raw",
+                    "core_packages_enumerated",
+                    "pypi_universe",
+                    "pypi_conda_mapping",
+                    "enterprise_jfrog_consumption",
+                    "enterprise_conda_maintainers",
+                    "parameters",
+                ],
+                outputs="inventory_aoss_free_queue",
+                name="build_inventory_aoss_free_queue",
             ),
         ]
     )

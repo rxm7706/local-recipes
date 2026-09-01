@@ -969,6 +969,20 @@ inventory_priority_assignments:
   metadata:
     layer: derived
 
+# Story 23.4 — deliverable A (14-column verified inventory export).
+inventory_verified_packages:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_verified_packages/inventory_verified_packages.parquet
+  metadata:
+    layer: derived
+
+# Story 23.4 — AOSS-Free Mason queue (supplementary; never expands OpenTeams universe).
+inventory_aoss_free_queue:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # upstream_discovery — GitHub-trending discovery ingest (Story 13.1, CAP-1; FR-64)
 # =============================================================================

@@ -2,9 +2,10 @@
 title: 'Deliverable A + Packaging_Candidate_Status derived export (Story 23.4, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
+baseline_revision: pending-local-verify
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -252,3 +253,46 @@ isolation.
 - Manual/CI diff of `metrics.py`'s `packaging_status`/`write_aoss_free_queue` unmodified output
   against the new nodes' output on the same frozen fixture corpus — expected: identical column
   values per row (`done_checkpoint`).
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+Blocking condition: none (verification commands not executed in-agent — shell blocked; run locally)
+
+Summary of implemented change:
+- Added two PURE `derived_artifacts` nodes porting `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
+- Row grain uses `inventory_universe` (Story 23.8) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
+
+Files changed:
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_inventory_verified_packages`, `build_inventory_aoss_free_queue`, verbatim helpers
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — wire two new nodes
+- `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — catalog entries for both outputs
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — Dagster op timeouts
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py` — I/O matrix + done_checkpoint parity
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` — queue parity
+- `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — derived_artifacts 4→6 nodes, combined DAG 56→58
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — EXPECTED_TOTAL 122→124
+
+Review findings breakdown: no automated review subagents (shell/subagent blocked); self-review found no patch items.
+
+Follow-up review recommendation: true (verification not run in-agent)
+
+Verification performed:
+- Not run — agent shell unavailable. User should run:
+  - `pixi run -e pyforge-atlas kedro-catalog-check`
+  - `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_inventory_verified_packages.py tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py`
+
+Residual risks:
+- TENK_TABS row-drop filter from `metrics.py::main()` is intentionally omitted (Story 23.8 universe does not include 10kOpen/10kClosed); accepted delta per spec-23-8 Design Notes.
