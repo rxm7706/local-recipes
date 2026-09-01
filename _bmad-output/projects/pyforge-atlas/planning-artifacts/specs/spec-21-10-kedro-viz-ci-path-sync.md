@@ -175,4 +175,5 @@ static kedro-viz DAG export.
 **Residual risks:**
 - PR must carry `maintenance` label at open/update (`.github/**` change).
 - Pre-existing `kedro-test` failure on branch should be triaged separately if it blocks merge.
-- Commit pending — run `git add` + `git commit` when ready.
+
+**Commit:** `f294288959` on branch `dispatch/pyforge-atlas/21.10` (clean working tree).
