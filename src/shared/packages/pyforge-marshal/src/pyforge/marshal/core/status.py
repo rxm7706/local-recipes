@@ -1002,19 +1002,27 @@ class FleetHomeFacts:
     dispatch_landing_verdict: str | None = None
 
 
+def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
+    """True while a dispatch supervisor or harness session is still attached."""
+    return facts.dispatch_supervisor_alive or facts.dispatch_engine_alive
+
+
 def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
     """Factory-dispatch phase for ``marshal status`` / ``fleet-picture``.
 
     ``building`` — harness session alive.
     ``verifying`` — session dead; verify/land/completion tail still running.
-    ``chaining`` — story shipped (land journal or completion); next dispatch pending.
+    ``chaining`` — story shipped (land journal or completion) while the
+    dispatch supervisor or harness is still winding down / waiting for the
+    campaign to hand off — NOT an indefinite post-merge label once both are
+    dead (the mason/scribe Aug-28/31 stale-tail incident).
     """
     if not facts.dispatch_story:
         return None
     if facts.dispatch_completion_verdict == "completed":
-        return "chaining"
+        return "chaining" if _dispatch_tail_still_live(facts) else None
     if landing_journal_indicates_complete(facts.dispatch_landing_verdict):
-        return "chaining"
+        return "chaining" if _dispatch_tail_still_live(facts) else None
     if facts.dispatch_engine_alive:
         return "building"
     return "verifying"
@@ -1170,6 +1178,17 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         )
         row = _apply_dispatch_overlay(row, facts)
         if row.get("state") == "running" and facts.dispatch_story:
+            finding = None
+        elif (
+            facts.dispatch_completion_verdict == "completed"
+            and not _dispatch_tail_still_live(facts)
+        ):
+            row = {
+                **row,
+                "state": "idle",
+                "current_story": None,
+                "elapsed_seconds": None,
+            }
             finding = None
         return row, finding
 

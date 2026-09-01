@@ -934,6 +934,10 @@ cmd = "python -m pyforge.doctor.sources check-layout"
 description = "PyForge fleet progress REPORT: per-station done / in-progress / projected / blocked, plus an ATTENTION block naming anything that needs a human (escalation, dead run, idle-with-backlog, open PR). Read-only and NEVER gating -- always exits 0, unlike the six detectors. Counts come from each station's TRACKED planning-artifacts/sprint-status-ledger.yaml (the twin of the gitignored Tier-3 feed), never from an ad-hoc regex over commit subjects and never from docs/dashboard/data.js, which lags until a merge to main. Running stations are detected live from `marshal status --format json`, so a finished run flips to `complete` on its own rather than rotting in a hardcoded list."
 cmd = "python scripts/fleet_picture.py"
 
+[feature.local-recipes.tasks.fleet-poll-hourly]
+description = "Background hourly fleet poll at :30 past each hour — git pull/push on main and all pyforge loop homes, then emit AGENT_LOOP_TICK_fleet-poll to wake an agent for fleet-picture. Log: .cursor/fleet-poll.log"
+cmd = "bash scripts/fleet-poll-hourly.sh"
+
 [feature.local-recipes.tasks.unpushed-work-check]
 description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: docs/dreams/fidelity-enforcement.md. The standing signal for between-runs staleness now that the standalone interval-push watcher is retired (Story 4.15/FR-177): S-3.10's tip comparison already covers `loop/*` station branches."
 cmd = "python scripts/unpushed_work_check.py"

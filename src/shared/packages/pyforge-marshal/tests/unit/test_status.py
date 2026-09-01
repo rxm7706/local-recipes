@@ -1238,6 +1238,7 @@ class TestBuildFleetRow:
             has_run=False,
             dispatch_story="28-9-planning-graph-retrieval-behind-the-scribe-seam",
             dispatch_engine_alive=False,
+            dispatch_supervisor_alive=True,
             dispatch_landing_verdict="landed",
             dispatch_elapsed_seconds=900.0,
         )
@@ -1245,6 +1246,37 @@ class TestBuildFleetRow:
         assert finding is None
         assert row["state"] == "running"
         assert row["dispatch_phase"] == "chaining"
+
+    def test_completed_dispatch_with_dead_supervisor_is_not_running(self):
+        facts = status.FleetHomeFacts(
+            slug="scribe",
+            branch="loop/pyforge-scribe",
+            has_run=False,
+            dispatch_story="6.3",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="completed",
+            dispatch_elapsed_seconds=100000.0,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert finding is None
+        assert row["state"] == "idle"
+        assert row.get("dispatch_phase") is None
+
+    def test_terminal_completed_dispatch_clears_unreadable_loop_journal_row(self):
+        facts = status.FleetHomeFacts(
+            slug="scribe",
+            branch="loop/pyforge-scribe",
+            has_run=True,
+            journal_unreadable=True,
+            dispatch_story="6.3",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="completed",
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "idle"
+        assert finding is None
 
 
 class TestDeriveDispatchPhase:
@@ -1276,6 +1308,7 @@ class TestDeriveDispatchPhase:
             has_run=False,
             dispatch_story="28-9-example",
             dispatch_engine_alive=False,
+            dispatch_supervisor_alive=True,
             dispatch_landing_verdict="landed",
         )
         assert status.derive_dispatch_phase(facts) == "chaining"
@@ -1287,9 +1320,22 @@ class TestDeriveDispatchPhase:
             has_run=False,
             dispatch_story="28-9-example",
             dispatch_engine_alive=False,
+            dispatch_supervisor_alive=True,
             dispatch_completion_verdict="completed",
         )
         assert status.derive_dispatch_phase(facts) == "chaining"
+
+    def test_completed_with_dead_tail_is_not_chaining(self):
+        facts = status.FleetHomeFacts(
+            slug="scribe",
+            branch="loop/pyforge-scribe",
+            has_run=False,
+            dispatch_story="6.3",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="completed",
+        )
+        assert status.derive_dispatch_phase(facts) is None
 
     def test_none_without_dispatch_story(self):
         facts = status.FleetHomeFacts(slug="marshal", branch="loop/pyforge-marshal", has_run=False)
