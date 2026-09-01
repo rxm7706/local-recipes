@@ -3311,3 +3311,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-23-5: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
+
+- source_spec: `planning-artifacts/specs/spec-23-5-identity-complete-export-parquet.md`
+  summary: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
+  evidence: Spec Verification lists `kedro run --pipelines derived_artifacts` as a manual gate; test_identity_complete_export.py covers the node in isolation only.
+  location: src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py
+  origin: spec-deferred 968c973f0396 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

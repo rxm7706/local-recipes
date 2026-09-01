@@ -2760,6 +2760,17 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-marshal/spec-marshal-drain-self-resolution": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py": "f91fc009a2b9c0f135cb8b7248acf65caf60a627",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "f1f68074bfe0c4e559e3273e430b9f9dbd202db1",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py": "f804372695452249195dd543ab6df2653353433c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py": "3b9679738dda220d51f453de2ba93cdee473ceb8",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "1873b08cdd7a90040d934264c4925718a9a30517",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "171891a8dd69fd3ee3b4be8148a4aa345ae1da91"
+  },
+  "memlog": "cd3185a6e74e3afb9cc9e63fc7a3758fd7d4d053"
+ },
  "pyforge-marshal/spec-marshal-land-cross-project-story-key-collision": {
   "files": {},
   "memlog": "6dde5436ca218d6c9cdd492d213a47a6c62da443"
