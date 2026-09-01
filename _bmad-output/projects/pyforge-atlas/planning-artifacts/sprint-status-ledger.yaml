@@ -67,7 +67,7 @@ development_status:
   22-4-vizro-identity-workbook-page: backlog
   22-5-canvas-vs-vizro-parity-gate: backlog
   22-6-canvas-deprecation-switch: backlog
-  23-1-tier-3-bulk-os-indexes: backlog
+  23-1-tier-3-bulk-os-indexes: done
   23-2-enterprise-jfrog-consumption-parquet: backlog
   23-3-priority-rules-in-kedro-inventory_priority_assignments: backlog
   23-4-deliverable-a-packaging_candidate_status: backlog
