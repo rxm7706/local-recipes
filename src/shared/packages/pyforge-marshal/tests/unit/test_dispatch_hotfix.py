@@ -267,6 +267,58 @@ def test_reconcile_rate_limits_unchanged_missing_spec_predicate(tmp_path: Path) 
     assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
 
 
+def test_reconcile_rate_limits_verify_refuse_when_only_spec_changes(
+    tmp_path: Path,
+) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-GATE-001: verify failed"
+    verify_cmds = ("pytest -q",)
+    prior = re_preflight.compute_refuse_predicate(
+        repo_root=tmp_path,
+        slug=slug,
+        story="22-7-fleet",
+        gate="MRS-GATE-001",
+        verify_commands=verify_cmds,
+    )
+    (specs / "spec-22-7-fleet.md").write_text("---\ndifficulty: medium\n---\n")
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=verify_cmds,
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
+def test_reconcile_clears_verify_refuse_when_verify_config_changes(
+    tmp_path: Path,
+) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-GATE-001: verify failed"
+    prior = re_preflight.compute_refuse_predicate(
+        repo_root=tmp_path,
+        slug=slug,
+        story="22-7-fleet",
+        gate="MRS-GATE-001",
+        verify_commands=("pytest -q",),
+    )
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=("ruff check .",),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert kept == {}
+    assert results[0].decision is re_preflight.RePreflightDecision.CLEARED
+
+
 def test_verify_rerun_needed_only_when_verify_fingerprint_changes() -> None:
     prior = re_preflight.RefusePredicate(
         gate="MRS-GATE-001",

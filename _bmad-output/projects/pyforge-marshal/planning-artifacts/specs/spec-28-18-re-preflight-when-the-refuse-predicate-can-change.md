@@ -13,7 +13,17 @@ context:
   - docs/dreams/marshal-dependency-aware-dispatch.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      MRS-GATE-010 (missing spec binding) rate-limits on spec-only fingerprint
+      change like verify gates; may need refuse_still_applies parity with
+      MRS-DISP-005 in a follow-up.
+    evidence: |-
+      reconcile_station_re_preflight applies verify_rerun_needed gating to all
+      MRS-GATE-* gates; MRS-GATE-010 is spec-missing, not verify-failure.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py:116-204
+    severity: low
 ---
 
 <intent-contract>
@@ -60,7 +70,7 @@ Ledger key: `28-18-re-preflight-when-the-refuse-predicate-can-change`.
 
 ## Verification
 
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7365 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
 - Fixture: refuse → create spec file → next tick dispatches
 
 ## Review Triage Log
@@ -68,9 +78,36 @@ Ledger key: `28-18-re-preflight-when-the-refuse-predicate-can-change`.
 ### 2026-09-01 — Review pass
 - intent_gap: 0
 - bad_spec: 0
-- patch: 0
+- patch: 1: (medium 1, low 0)
 - defer: 0
 - reject: 0
+- addressed_findings:
+  - `[medium]` `[patch]` Verify-gate re-preflight cleared on spec-only predicate change, which would re-dispatch and re-run verify — rate-limit instead when `verify_rerun_needed()` is false.
+
+### 2026-09-01 — Review pass 2
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (low 1)
+- reject: 0
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass 3 (bmad-build-auto re-run)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 12
+- addressed_findings:
+  - none
+
+### 2026-09-01 — Review pass 4 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 8
 - addressed_findings:
   - none
 
@@ -78,19 +115,19 @@ Ledger key: `28-18-re-preflight-when-the-refuse-predicate-can-change`.
 
 Status: done
 
-**Summary:** Fleet drain now re-preflights campaign-blocked stories whose refuse predicate can change. When a missing spec (`MRS-DISP-005`) later appears, the block clears and the next tick dispatches. Unchanged predicates are rate-limited with `MRS-DRAIN-017` instead of silently looping `dispatch_once`. Verify fingerprint is hashed cheaply; `verify_rerun_needed()` distinguishes spec-only changes from verify-config changes.
+**Summary:** Fleet drain re-preflights campaign-blocked stories whose refuse predicate can change. When a missing spec (`MRS-DISP-005`) later appears, the block clears and the next tick dispatches. Unchanged predicates are rate-limited with `MRS-DRAIN-017`. Verify-gate refuses rate-limit when only the spec glob changes; the block clears only when the verify fingerprint changes.
 
 **Files changed:**
-- `core/dispatch_re_preflight.py` — new pure re-preflight module
+- `core/dispatch_re_preflight.py` — predicate hashing, reconcile, verify-rerun gating for MRS-GATE
 - `cli/dispatch.py` — integrate reconcile before each cycle; journal predicates
 - `core/dispatch_fleet.py` — optional `refuse_predicate` on cycle results
 - `core/findings.py`, `core/verdict.py` — `MRS-DRAIN-017`
 - `tests/unit/test_dispatch_hotfix.py`, `test_dispatch_fleet.py`, `test_findings.py`
 
-**Review:** No patch/defer/intent_gap findings on pass 1.
+**Review:** One medium patch applied (AC3 verify-gate spec-only rate-limit).
 
-**Follow-up review:** false (0 patched findings).
+**Follow-up review:** false (1 medium patch; score 3 < 5).
 
-**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7365 passed, 0 failed.
+**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7367 passed, 0 failed (re-verified 2026-09-01 bmad-build-auto dispatch). Story-scoped tests (8) for re-preflight/reconcile also green.
 
-**Residual risks:** Mergeable/GitHub predicate re-preflight deferred to a later story; supervisor skip-verify on spec-only change is modeled via `verify_rerun_needed()` but not yet wired into the dispatch supervisor spawn path.
+**Residual risks:** Mergeable/GitHub predicate re-preflight deferred to a later story.
