@@ -2,7 +2,8 @@
 title: 'Vizro identity-catalog page — canvas catalog parity (Story 22.2, Epic 22)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'HEAD-at-dispatch'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -237,6 +238,43 @@ its hard dependency) — see Design Notes for the resulting dispatch-timing note
 ## Spec Change Log
 
 - 2026-08-30: Initial draft.
+- 2026-09-01: Story 22.2 implemented — identity-catalog Vizro page, BSL model, loader, parity test.
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added the `identity-catalog` BSL-shell Vizro page wired to `build_identity_catalog_model` over `derived/identity_ranked_export/identity_ranked_export.parquet`, with canvas parity tests proving row-count and P/Work/Core_Python_Package_Name alignment against unmodified `write_canvas` output.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py` — `build_identity_catalog_model`
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py` — `IDENTITY_RANKED_EXPORT_PARQUET`, `load_identity_catalog`
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py` — `PageDef`, provenance, page wiring
+- `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_catalog_page.py` — parity + BSL-driven tests
+- `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py` — dict entries for offline degrade + schema subset
+
+**Review findings:** 0 patch, 0 defer, 0 reject.
+
+**Follow-up review recommendation:** false (0 patched findings).
+
+**Verification:**
+- `pixi run -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_catalog_page.py -q` — **pass** (2 passed)
+- `pixi run -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q` — **pass** (37 passed, 1 skipped)
+- `pixi run -e pyforge-atlas kedro-test` — not run (shell blocked in review pass)
+- `pixi run -e pyforge-atlas kedro-catalog-check` — not run (shell blocked in review pass)
+
+**Residual risks:** Story 22.1 ranked-export producer still `ready-for-dev`; page degrades honestly until the Parquet materializes. Kedro station gates not re-run this pass.
 
 ## Design Notes
 

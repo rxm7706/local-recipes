@@ -82,6 +82,9 @@ LTS_REGISTRY_GAP_PARQUET = "primary/lts_registry_gap/lts_registry_gap.parquet"
 CWE_SEED_GAP_PARQUET = "primary/cwe_seed_gap/cwe_seed_gap.parquet"
 SPDX_SCHEMA_GAP_PARQUET = "primary/spdx_schema_gap/spdx_schema_gap.parquet"
 LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
+IDENTITY_RANKED_EXPORT_PARQUET = (
+    "derived/identity_ranked_export/identity_ranked_export.parquet"
+)
 
 
 def default_data_root() -> Path:
@@ -441,4 +444,25 @@ def load_license_map_gap(parquet: str | os.PathLike[str] | None = None) -> pd.Da
         models.build_license_map_gap_model,
         ["license_raw", "tier", "suggested_spdx"],
         ["package_count"],
+    )
+
+
+def load_identity_catalog(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-catalog` — build_identity_catalog_model over identity_ranked_export."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_catalog_model,
+        [
+            "P",
+            "Rank",
+            "Score",
+            "Package",
+            "Work",
+            "Core_Python_Package_Name",
+            "Platforms",
+            "Apps",
+            "Downloads",
+            "Versions",
+            "Vuln",
+        ],
     )

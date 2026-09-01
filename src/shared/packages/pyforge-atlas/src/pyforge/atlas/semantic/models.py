@@ -547,6 +547,30 @@ def build_spdx_schema_gap_model(table: Any) -> SemanticModel:
     )
 
 
+def build_identity_catalog_model(table: Any) -> SemanticModel:
+    """`identity-catalog` — ranked OpenTeams universe (Story 22.1 bridge export)."""
+    return SemanticModel(
+        table=table,
+        name="identity_catalog",
+        dimensions={
+            "P": Dimension(expr=lambda t: t.P),
+            "Rank": Dimension(expr=lambda t: t.Rank),
+            "Score": Dimension(expr=lambda t: t.Score),
+            "Package": Dimension(expr=lambda t: t.Package),
+            "Work": Dimension(expr=lambda t: t.Work),
+            "Core_Python_Package_Name": Dimension(expr=lambda t: t.Core_Python_Package_Name),
+            "Platforms": Dimension(expr=lambda t: t.Platforms),
+            "Apps": Dimension(expr=lambda t: t.Apps),
+            "Downloads": Dimension(expr=lambda t: t.Downloads),
+            "Versions": Dimension(expr=lambda t: t.Versions),
+            "Vuln": Dimension(expr=lambda t: t.Vuln),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
+        },
+    )
+
+
 def build_license_map_gap_model(table: Any) -> SemanticModel:
     """`license-map-gap` — unmapped `pypi_intelligence.license_raw` strings ranked by
     package impact, with a HINT (non-authoritative) suggested SPDX candidate."""
