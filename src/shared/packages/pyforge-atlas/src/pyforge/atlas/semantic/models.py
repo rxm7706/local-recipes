@@ -571,6 +571,26 @@ def build_identity_catalog_model(table: Any) -> SemanticModel:
     )
 
 
+def build_identity_ops_model(table: Any) -> SemanticModel:
+    """`identity-ops` — four-pane aggregates over identity_ranked_export (Story 22.3)."""
+    return SemanticModel(
+        table=table,
+        name="identity_ops",
+        dimensions={
+            "P": Dimension(expr=lambda t: t.P.fill_null("?")),
+            "Work": Dimension(expr=lambda t: t.Work.fill_null("?")),
+            "has_open_issue": Dimension(expr=metrics.has_open_teams_issue),
+            "Local_Build_Status": Dimension(expr=metrics.identity_local_build_status),
+            "has_feedstock": Dimension(expr=metrics.has_feedstock),
+            "has_staged_pr": Dimension(expr=metrics.has_staged_pr),
+            "has_local_recipe": Dimension(expr=metrics.has_local_recipe),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
+        },
+    )
+
+
 def build_license_map_gap_model(table: Any) -> SemanticModel:
     """`license-map-gap` — unmapped `pypi_intelligence.license_raw` strings ranked by
     package impact, with a HINT (non-authoritative) suggested SPDX candidate."""
