@@ -115,6 +115,7 @@ output-compression (CAP-3) and contract artifacts are untouched.
 - 2026-09-01: bmad-build-auto Cursor dispatch (completion) — verification green for story AC coverage + pyforge-deps-test; full suite has one pre-existing CFE drift meta failure (deferred)
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6) — static re-verification; shell blocked for pixi/git in session; implementation and AC tests unchanged
 - 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, re-run) — pixi verification green for CAP-8 + deps; full suite 7269/7270 (one pre-existing CFE drift meta guard)
+- 2026-09-01: bmad-build-auto Cursor dispatch (dispatch-pyforge-marshal-28.6, user-requested) — step-01 routed to step-04 (worktree spec `done`); live re-verify: supervise compression 7/7 + pyforge-deps-test 118/118 pass
 
 ## Review Triage Log
 
@@ -178,6 +179,17 @@ Static re-review on `dispatch/pyforge-marshal/28.6`: CAP-8 code and 12 compressi
 
 Re-verified live: 12/12 compression-scoped tests pass; pyforge-deps-test 118/118 pass; full marshal suite 7269/7270 (sole failure `test_conda_forge_expert_not_replaced` — pre-existing branch CFE drift, out of scope).
 
+### 2026-09-01 — Review pass (user-requested bmad-build-auto)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+No new findings. CAP-8 implementation unchanged; supervise `-k compression` 7/7 and pyforge-deps-test 118/118 re-verified in this session.
+
 ## Auto Run Result
 
 Status: done
@@ -203,6 +215,8 @@ Review findings breakdown: 0 patches, 1 deferred (pre-existing CFE drift meta te
 Follow-up review recommendation: false (0 patched findings).
 
 Verification performed:
+- `pixi run --frozen -e pyforge-marshal pytest …/test_supervise.py -k compression -q` — **PASS** (7/7, 2026-09-01 user-requested bmad-build-auto)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test -q` — **PASS** (118/118, 2026-09-01 user-requested bmad-build-auto)
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k compression -q` — **PASS** (12/12 CAP-8 tests, 2026-09-01 re-run)
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -q -m "not slow"` — **7269/7270 PASS** (2026-09-01 re-run; sole failure `test_conda_forge_expert_not_replaced` — conda-forge-expert diff vs `origin/main`, pre-existing on this dispatch branch, not Story 28.6 scope)
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test -q` — **PASS** (118/118, 2026-09-01 re-run)
