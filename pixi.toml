@@ -741,6 +741,11 @@ pyforge-testing-kit = { features = ["pyforge-testing-kit"], no-default-feature =
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
 bmad-ui = { features = ["bmad-ui"], no-default-feature = true }
+# Lean proof env for CAP-4's greenfield one-pin suite install
+# (spec-bmad-suite-metapackage): composes ONLY feature.bmad-suite-full --
+# solver smoke without pulling the fat local-recipes graph. Never composed
+# into local-recipes (see the [feature.bmad-suite-full] comment above).
+bmad-suite-full = { features = ["bmad-suite-full"], no-default-feature = true }
 # Lean herald env (Story 1.1, warden/atlas mirror): no-default-feature
 # excludes the fat default [dependencies]; carries only the built
 # pyforge-herald package + pytest. Spec:
@@ -1805,6 +1810,28 @@ cmd = "bmad-dashboard-install"
 [feature.bmad-ui.tasks.mybmad]
 description = "MyBMAD web dashboard launcher: `up` starts (local PostgreSQL + web server on :3002), `stop` stops the DB, `promote-admin --email <you>` grants admin"
 cmd = "mybmad"
+
+# --- bmad-suite-full: opt-in one-pin greenfield suite install (CAP-4) --------
+# spec-bmad-suite-metapackage's CAP-4: depends on the published `bmad-suite`
+# metapackage (SelfExplainML) instead of hand-maintaining the ~11 explicit
+# bmad-* pins carried under [feature.local-recipes.dependencies] above. Opt-in
+# only -- `local-recipes` does NOT compose this feature and keeps every
+# explicit member pin (pipeline-truth / doctor drift granularity); never
+# remove those pins in favor of this feature. `feature.bmad-ui` (dashboards)
+# stays separate and untouched. linux-64 only: bmad-suite's run deps include
+# bmad-module-skill-forge, whose SelfExplainML build is linux-64-only (see the
+# [feature.local-recipes.target.linux-64.dependencies] comment above) -- this
+# feature does not duplicate that platform skip per member (the metapackage
+# recipe is the one place that belongs), it simply scopes the whole feature to
+# the platform the metapackage actually solves on, same precedent as
+# feature.bmad-ui. Docs: install-matrix.md's Greenfield one-pin section.
+[feature.bmad-suite-full]
+platforms = ["linux-64"]
+channels = ["conda-forge", "SelfExplainML"]
+
+[feature.bmad-suite-full.dependencies]
+python = ">=3.14.6,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
+bmad-suite = ">=2026.9.1"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
 
 [feature.local-recipes.pypi-dependencies]
 #crewai = ">=1.14.7"               # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.

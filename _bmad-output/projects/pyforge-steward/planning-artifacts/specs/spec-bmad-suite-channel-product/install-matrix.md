@@ -21,6 +21,36 @@ per class is spot-checked by the upgrade verification gate.
 | bmad-dashboard | SelfExplainML 1.2.2.dev0 (bmad-ui env) | build from source: Node 22+, `corepack prepare pnpm@10.26.2`, `pnpm install && pnpm build` (README) | npm `bmad-dashboard` (1.0.19) is UNRELATED (caionormando) |
 | mybmad-dashboard | SelfExplainML 0.1.0.dev0 (bmad-ui env) | self-host: `cd web && pnpm install`, `scripts/setup.sh`, PostgreSQL + migrations (web/README) | npm-invisible (`my-bmad` 404) |
 
+**Greenfield one-pin (CAP-4).** The row-by-row table above is the per-package
+reference; a fresh install of the *whole* suite does not need it. This repo's
+`pixi.toml` carries an opt-in `feature.bmad-suite-full` that depends on the
+published `bmad-suite` metapackage (SelfExplainML) instead of the ~11+
+individual `bmad-*` pins:
+
+```
+pixi install -e bmad-suite-full
+# or, from a project that only wants the feature added to its own manifest
+# (that project's own pixi.toml must also list the SelfExplainML channel):
+pixi add --feature bmad-suite-full bmad-suite
+```
+
+`bmad-method` stays **conda-forge canonical** (see the table's first row)
+even inside the bundle — it is not a separate pixi pin when installing via
+`feature.bmad-suite-full`; the metapackage's own `bmad-method >=6.11.0` run
+dependency resolves it from conda-forge. `feature.bmad-ui`'s own install
+surfaces (the VS Code extension registration via `bmad-dashboard-install`,
+and the self-hosted MyBMAD web app via `mybmad`) remain a separate opt-in
+feature that this bundle never wires. Note `bmad-suite` pulls **all 13**
+active suite members by design (this metapackage's own success signal), so
+the underlying `bmad-dashboard` / `mybmad-dashboard` conda packages do land
+in the environment either way — this bundle just never sets up their
+VS Code / web launch surfaces on its own.
+
+This is the greenfield path only: this repo's own factory default
+(`local-recipes` environment) keeps every explicit `bmad-*` pin from the
+table above for pipeline-truth / doctor drift granularity and does **not**
+compose `bmad-suite-full`.
+
 **Class → gate spot-check candidates (one per class):** npm CLI → `npx
 bmad-method --version`; own-npx → `npx bmad-module-skill-forge --help`;
 installer-selection → TEA via `bmad-tea-install` (conda parity of the same
