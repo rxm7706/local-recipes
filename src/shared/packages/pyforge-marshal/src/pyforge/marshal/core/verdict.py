@@ -1134,6 +1134,15 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDXF-002": Verdict.WARN,
     "MRS-IDXF-003": Verdict.WARN,
     "MRS-IDXF-004": Verdict.WARN,
+    # Story 28.5 (pinned wrapped-vs-unwrapped benchmark, CAP-9):
+    # `marshal benchmark compare`'s own area. 001-003 are HARD (invalid slug,
+    # leg load failure, artifact write failure). 004 is WARN: the equivalence
+    # gate failed so the comparison is void, but the artifact was still
+    # written for operator inspection — never a second PR-gate verdict.
+    "MRS-BENCH-001": Verdict.ERROR,
+    "MRS-BENCH-002": Verdict.ERROR,
+    "MRS-BENCH-003": Verdict.ERROR,
+    "MRS-BENCH-004": Verdict.WARN,
 }
 
 
