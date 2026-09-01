@@ -4337,6 +4337,19 @@ So that scope violations stay visible without permanently deadlocking an autonom
 **And** `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not journal-only
 **And** the mode is per-station — one station's declared mode never changes another's
 
+### Story 28.16: Parallel dispatch fan-out when deps and surfaces are disjoint
+
+As a marshal operator,
+I want factory drain to launch more than one story per wave on a single station when dependencies are satisfied and effective surfaces are provably disjoint,
+So that unrelated backlog stories are not blocked by a slow or zombie head-of-line story whose WIP cannot collide with them — without weakening per-story LIVE semantics.
+
+**Type:** feature • **Effort:** M • **Deps:** 28.12 • **FR/AD:** spec-marshal-parallel-dispatch-fanout CAP-1..5
+**Given** `dispatch.max_parallel` unset or `1` **When** `factory drain` runs **Then** within-station behavior is byte-identical to today's serial drain
+**And** with `max_parallel>1` and two ready stories whose effective frozen surfaces are pairwise disjoint **When** a wave is computed **Then** both dispatch on separate worktrees in one wave
+**And** story A live by git facts does not refuse unrelated story B unless B depends on A or surfaces intersect
+**And** `dispatch-wave` journal entries and `marshal status`/`fleet-picture` show wave membership and refused candidates with reason
+**And** `judge_dispatch_completion()` per-story LIVE semantics are unchanged
+
 Operational note: `pyforge-marshal`'s `[epic_surfaces]."28"` was widened to a
 station-wide wildcard (`src/shared/packages/pyforge-marshal/**` + common
 bookkeeping paths) as an immediate stopgap on 2026-08-31, unblocking the live
