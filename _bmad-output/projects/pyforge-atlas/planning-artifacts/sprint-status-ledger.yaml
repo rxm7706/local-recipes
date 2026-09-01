@@ -70,7 +70,7 @@ development_status:
   23-1-tier-3-bulk-os-indexes: done
   23-2-enterprise-jfrog-consumption-parquet: done
   23-3-priority-rules-in-kedro-inventory_priority_assignments: done
-  23-4-deliverable-a-packaging_candidate_status: backlog
+  23-4-deliverable-a-packaging_candidate_status: done
   23-5-identity_complete_export-parquet-canonical: backlog
   23-6-bsl-gist-aggregates-cap-8d: backlog
   23-7-zero-deferred-e2e-gate: backlog
