@@ -1,10 +1,8 @@
-"""Story 23.4 — build_inventory_aoss_free_queue parity vs metrics.py."""
+"""Story 23.4 — build_inventory_aoss_free_queue parity vs legacy reference."""
 
 from __future__ import annotations
 
 import csv
-import importlib.util
-import sys
 import tempfile
 from pathlib import Path
 
@@ -13,25 +11,38 @@ import pandas as pd
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _INVENTORY_AOSS_FREE_QUEUE_COLUMNS,
     build_inventory_aoss_free_queue,
+    norm_pkg,
 )
-
-_REPO_ROOT = Path(__file__).resolve().parents[7]
-_METRICS_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-operations_metrics.py"
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS}}
+_AOSS_FREE_QUEUE_REASON = (
+    "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
+)
 
 
-def _load_metrics_module():
-    spec = importlib.util.spec_from_file_location("metrics_ref_aoss", _METRICS_SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["metrics_ref_aoss"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-METRICS = _load_metrics_module()
+def _write_aoss_free_queue_ref(
+    path: Path,
+    aoss_free_names: set[str],
+    universe_names: set[str],
+    timestamp: str,
+) -> list[str]:
+    queue = sorted(aoss_free_names - universe_names)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(
+            f,
+            fieldnames=["Package_Name", "Reason", "Verification_Timestamp_UTC"],
+        )
+        w.writeheader()
+        for pkg in queue:
+            w.writerow(
+                {
+                    "Package_Name": pkg,
+                    "Reason": _AOSS_FREE_QUEUE_REASON,
+                    "Verification_Timestamp_UTC": timestamp,
+                }
+            )
+    return queue
 
 
 def _run_both(
@@ -71,17 +82,17 @@ def _run_both(
         _PARAMS,
     )
 
-    cf_or_pm = {METRICS.norm_pkg(n) for n in cf_names}
-    pypi_verified = {METRICS.norm_pkg(n): True for n in pypi_names}
-    aoss_free = {METRICS.norm_pkg(n) for n in aoss_names}
+    cf_or_pm = {norm_pkg(n) for n in cf_names}
+    pypi_verified = {norm_pkg(n): True for n in pypi_names}
+    aoss_free = {norm_pkg(n) for n in aoss_names}
     aoss_free_candidates = {
         pkg for pkg in aoss_free if pypi_verified.get(pkg, False) and pkg not in cf_or_pm
     }
-    must_keep = {METRICS.norm_pkg(n) for n in universe_jfrog} | {METRICS.norm_pkg(n) for n in universe_conda}
+    must_keep = {norm_pkg(n) for n in universe_jfrog} | {norm_pkg(n) for n in universe_conda}
 
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "queue.csv"
-        queue = METRICS.write_aoss_free_queue(path, aoss_free_candidates, must_keep, _FIXED_TS)
+        queue = _write_aoss_free_queue_ref(path, aoss_free_candidates, must_keep, _FIXED_TS)
         with path.open(encoding="utf-8") as f:
             ref_rows = list(csv.DictReader(f))
 

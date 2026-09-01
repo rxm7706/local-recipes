@@ -1,43 +1,39 @@
 #!/usr/bin/env python3
-"""Assign Proposed_Priority on an identity tab (default identity-2026-08-12).
+"""Thin CLI shim over Atlas ``inventory_priority_assignments`` (Story 23.9).
 
-Hierarchy (board P2–P3 kept when they are not current-version vulns):
-  P1     current-version vulnerability → work Fix vulnerability
-         (plus existing board P1 that are not vulns)
-  P2–P3  existing OpenTeams packaging-issue Priority
-  P4     platform_env_count > 0
-  P5     internal_app_count > 0 (no platform)
-  P6     100+ Artifactory downloads or 100+ Artifactory versions
-  P7     10+ downloads or 10+ versions (and not already P6)
-  P8     leftover Create recipe (JFROG, not on conda-forge)
-  P9     leftover File OpenTeams tracking issue [Conda-Forge Packaging] (JFROG, already on conda-forge)
-  P10    leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA) + Already tracked remainder
+Ranking rules live in Kedro ``assign_inventory_priority`` (Story 23.3). This
+script reads ``inventory_priority_assignments.parquet``, optionally joins
+``enterprise_jfrog_consumption.parquet`` for Artifactory telemetry columns, and
+writes:
 
-Packaging_Work replaces OpenTeams_Batch A/B/C/TRACKED with the work itself.
-Priority_Score is 1..100 from the use formula; work type does not inflate it.
-JFROG packaging_tier is ignored.
+1. ``identity_ranked_export.parquet`` (Story 22.1 / Vizro Epic 22 shape)
+2. Legacy ranked CSV when ``--ranked-csv`` is passed (replaces the retired
+   workbook ranked tab)
+
+Passing ``--xlsx`` or ``--tab`` exits 2 with a retirement pointer.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import json
-import math
 import os
-import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import load_workbook
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PYFORGE_ATLAS_DATA_ROOT_ENV = "PYFORGE_ATLAS_DATA_ROOT"
 PYFORGE_ATLAS_PROJECT_DIR = REPO_ROOT / "src/shared/packages/pyforge-atlas"
-IDENTITY_EXPORT_PARQUET_RELPATH = Path(
-    "derived/identity_export_parquet/identity_export_parquet.parquet"
+PRIORITY_ASSIGNMENTS_RELPATH = Path(
+    "derived/inventory_priority_assignments/inventory_priority_assignments.parquet"
+)
+ENTERPRISE_JFROG_RELPATH = Path(
+    "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
 )
 IDENTITY_RANKED_EXPORT_RELPATH = Path(
     "derived/identity_ranked_export/identity_ranked_export.parquet"
@@ -62,43 +58,6 @@ RANKED_EXPORT_COLUMNS = [
     "internal_lob_count",
     "Verification_Timestamp_UTC",
 ]
-
-PACK = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
-TAB = "identity-2026-08-12"
-BUCKET_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"]
-PRI_N = {b: i for i, b in enumerate(BUCKET_ORDER, start=1)}
-WORK_FIX_VULN = "Fix vulnerability"
-WORK_CREATE = "Create recipe"
-WORK_ISSUE_CF = "File OpenTeams tracking issue [Conda-Forge Packaging]"
-WORK_ISSUE_CF_LEGACY = "File issue (on conda-forge)"
-WORK_ISSUE_MAINT_LEGACY = "File issue (maintained feedstock)"
-WORK_TRACKED = "Already tracked"
-WORK_ORDER = [WORK_FIX_VULN, WORK_CREATE, WORK_ISSUE_CF, WORK_TRACKED]
-WORK_RANK = {w: i for i, w in enumerate(WORK_ORDER)}
-BATCH_TO_WORK = {
-    "A": WORK_CREATE,
-    "B": WORK_ISSUE_CF,
-    "C": WORK_ISSUE_CF,
-    "TRACKED": WORK_TRACKED,
-    WORK_FIX_VULN: WORK_FIX_VULN,
-    WORK_CREATE: WORK_CREATE,
-    WORK_ISSUE_CF: WORK_ISSUE_CF,
-    WORK_ISSUE_CF_LEGACY: WORK_ISSUE_CF,
-    WORK_ISSUE_MAINT_LEGACY: WORK_ISSUE_CF,
-    WORK_TRACKED: WORK_TRACKED,
-}
-PRIORITY_DESC = {
-    "P1": "Current-version vulnerability: the latest release has confirmed advisories (HIGH / affected_latest). Existing OpenTeams board P1 also stays here.",
-    "P2": "Existing OpenTeams board P2. Not overwritten.",
-    "P3": "Existing OpenTeams board P3. Not overwritten.",
-    "P4": "Used in one or more platform environments (platform_env_count > 0).",
-    "P5": "Used by internal applications, but not in a platform environment.",
-    "P6": "Heavy Artifactory use: 100+ downloads or 100+ versions, and not already P1–P5.",
-    "P7": "Moderate Artifactory use: 10+ downloads or 10+ versions, below the P6 floor.",
-    "P8": "Leftover new packaging: consumed from JFROG, not on conda-forge, below the P7 floor (Create recipe).",
-    "P9": "Leftover board coverage: already on conda-forge, missing an OpenTeams issue, below the P7 floor.",
-    "P10": "Lowest leftover: CDO-ENT-CONDA name missing an OpenTeams tracking issue, or already tracked with little Artifactory use.",
-}
 RANK_COLS = [
     "P",
     "Rank",
@@ -120,43 +79,18 @@ DETAIL_COLS = [
     "internal_component_count",
     "internal_lob_count",
 ]
-# Drop previous ranking headers so a rewrite does not duplicate them.
-NEW_COLS = RANK_COLS + DETAIL_COLS + [
-    "Proposed_Priority",
-    "Packaging_Work",
-    "Priority_Rank",
-    "Priority_Score",
-    "JFROG_vuln_status",
-    "platform_env_count",
-    "internal_app_count",
-    "artifactory_downloads",
-    "artifactory_version_count",
+LEGACY_RANKED_CSV_COLUMNS = RANK_COLS + DETAIL_COLS
+BUCKET_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"]
+WORK_ORDER = [
+    "Fix vulnerability",
+    "Create recipe",
+    "File OpenTeams tracking issue [Conda-Forge Packaging]",
+    "Already tracked",
 ]
-
-
-def pep503(raw) -> str | None:
-    if raw is None or isinstance(raw, datetime):
-        return None
-    s = str(raw).strip().lower().replace("_", "-").replace(".", "-")
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s if len(s) >= 2 else None
-
-
-def num(v) -> float:
-    try:
-        return float(v) if v not in (None, "") else 0.0
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def load_tab(wb, name: str):
-    ws = wb[name]
-    it = ws.iter_rows(values_only=True)
-    header = [str(h) if h is not None else "" for h in next(it)]
-    rows = []
-    for raw in it:
-        rows.append({h: (raw[i] if i < len(raw) else None) for i, h in enumerate(header)})
-    return header, rows
+_RETIRED_WORKBOOK_MSG = (
+    "retired by Story 23.9 — use inventory_priority_assignments.parquet under "
+    "PYFORGE_ATLAS_DATA_ROOT (and --ranked-export for Vizro)"
+)
 
 
 def _resolve_data_root() -> Path:
@@ -166,45 +100,107 @@ def _resolve_data_root() -> Path:
     return data_root
 
 
-def default_identity_parquet_path() -> Path:
-    return _resolve_data_root() / IDENTITY_EXPORT_PARQUET_RELPATH
+def default_priority_assignments_path() -> Path:
+    return _resolve_data_root() / PRIORITY_ASSIGNMENTS_RELPATH
+
+
+def default_jfrog_consumption_path() -> Path:
+    return _resolve_data_root() / ENTERPRISE_JFROG_RELPATH
 
 
 def default_ranked_export_path() -> Path:
     return _resolve_data_root() / IDENTITY_RANKED_EXPORT_RELPATH
 
 
-def load_identity_parquet(path: Path) -> tuple[list[str], list[dict]]:
-    """Read Story 21.6's ``identity_export_parquet`` as the identity universe.
+def _blank(value) -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ""
+    return str(value).strip()
 
-    Returns the same ``(header, rows)`` shape as ``load_tab()`` so the ranking
-    loop needs no changes."""
+
+def _num(value) -> float:
+    try:
+        return float(value) if value not in (None, "") else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def load_priority_assignments(path: Path) -> pd.DataFrame:
     if not path.is_file():
         print(
-            f"identity_export_parquet not found at {path} -- run "
+            f"inventory_priority_assignments not found at {path} -- run "
             "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first",
             file=sys.stderr,
         )
         raise SystemExit(1)
-    df = pd.read_parquet(path)
-    header = [str(c) for c in df.columns]
-    rows = [
-        {h: (None if pd.isna(row.get(h)) else row.get(h)) for h in header}
-        for row in df.to_dict(orient="records")
-    ]
-    return header, rows
+    return pd.read_parquet(path)
+
+
+def load_jfrog_consumption(path: Path) -> pd.DataFrame:
+    if not path.is_file():
+        return pd.DataFrame()
+    try:
+        return pd.read_parquet(path)
+    except Exception as exc:
+        print(f"Warning: could not read enterprise_jfrog_consumption at {path}: {exc}", file=sys.stderr)
+        return pd.DataFrame()
+
+
+def _jfrog_lookup(jfrog_df: pd.DataFrame) -> dict[str, dict]:
+    if jfrog_df.empty or "core_python_package_name" not in jfrog_df.columns:
+        return {}
+    return {
+        _blank(row.get("core_python_package_name")).lower(): row
+        for row in jfrog_df.to_dict(orient="records")
+        if _blank(row.get("core_python_package_name"))
+    }
+
+
+def assignments_to_records(assignments: pd.DataFrame, jfrog_by: dict[str, dict]) -> list[dict]:
+    """Build canvas/export record dicts from Kedro priority assignments + JFROG join."""
+    records: list[dict] = []
+    for row in assignments.to_dict(orient="records"):
+        name = _blank(row.get("core_python_package_name"))
+        j = jfrog_by.get(name.lower(), {})
+        plat = int(_num(j.get("platform_env_count")))
+        apps = int(_num(j.get("internal_app_count")))
+        ic = int(_num(j.get("internal_component_count")))
+        lob = int(_num(j.get("internal_lob_count")))
+        dl = int(_num(j.get("artifactory_downloads")))
+        ver = int(_num(j.get("artifactory_version_count")))
+        bucket = _blank(row.get("P"))
+        records.append(
+            {
+                "name": name,
+                "bucket": bucket,
+                "rank": int(_num(row.get("Rank"))),
+                "score100": int(_num(row.get("Score"))),
+                "work": _blank(row.get("Work")),
+                "plat": plat,
+                "apps": apps,
+                "ic": ic,
+                "lob": lob,
+                "dl": dl,
+                "ver": ver,
+                "vuln": _blank(row.get("vuln_status")),
+                "src": _blank(row.get("Priority_Source")),
+                "why": _blank(row.get("Priority_Reason")),
+                "risk": _blank(row.get("risk_level")),
+                "latest": int(_num(row.get("jfrog_latest_vuln_count"))),
+                "priority_desc": _blank(row.get("Priority_Bucket_Description")),
+            }
+        )
+    return records
 
 
 def write_ranked_export(path: Path, records: list[dict]) -> None:
-    """Serialize already-computed ranking rows for Vizro Epic 22 (Story 22.1)."""
+    """Serialize ranking rows for Vizro Epic 22 (Story 22.1)."""
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = []
     for rec in records:
-        ident = rec["ident"]
-        pkg = ident.get("Core_Python_Package_Name") or rec["name"]
         rows.append(
             {
-                "Core_Python_Package_Name": pkg,
+                "Core_Python_Package_Name": rec["name"],
                 "P": rec["bucket"],
                 "Rank": rec["rank"],
                 "Score": rec["score100"],
@@ -213,8 +209,8 @@ def write_ranked_export(path: Path, records: list[dict]) -> None:
                 "Apps": rec["apps"],
                 "Downloads": rec["dl"],
                 "Versions": rec["ver"],
-                "Vuln": rec["vuln"] or "",
-                "Priority_Bucket_Description": PRIORITY_DESC.get(rec["bucket"], ""),
+                "Vuln": rec["vuln"],
+                "Priority_Bucket_Description": rec["priority_desc"],
                 "Priority_Source": rec["src"],
                 "Priority_Reason": rec["why"],
                 "JFROG_risk_level": rec["risk"],
@@ -228,125 +224,34 @@ def write_ranked_export(path: Path, records: list[dict]) -> None:
     pd.DataFrame(rows, columns=RANKED_EXPORT_COLUMNS).to_parquet(path, engine="pyarrow")
 
 
-def use_score(plat: int, apps: int, ic: int, lob: int, downloads: int, versions: int) -> float:
-    """Earlier use score + Artifactory version count. Not scaled to 1–100."""
-    return (
-        100.0 * plat
-        + 10.0 * apps
-        + 3.0 * ic
-        + 2.0 * lob
-        + math.log10(1.0 + downloads)
-        + math.log10(1.0 + versions)
-    )
-
-
-def percentile_1_100(raws: list[float]) -> list[int]:
-    n = len(raws)
-    if n == 1:
-        return [100]
-    order = sorted(range(n), key=lambda i: (raws[i], i))
-    out = [1] * n
-    for rank, i in enumerate(order):
-        out[i] = 1 + int(round(99.0 * rank / (n - 1)))
-    return out
-
-
-def board_maps(ot_rows: list[dict]) -> tuple[dict, dict]:
-    by_url, by_name = {}, {}
-    for r in ot_rows:
-        m = PACK.match(str(r.get("Title") or ""))
-        if not m:
-            continue
-        rec = {
-            "priority": str(r.get("Priority") or "").strip(),
-            "url": str(r.get("URL") or "").strip(),
-        }
-        if rec["url"]:
-            by_url[rec["url"]] = rec
-        n = pep503(m.group(1))
-        if n:
-            by_name[n] = rec
-    return by_url, by_name
-
-
-def board_lock(ident: dict, name: str | None, by_url: dict, by_name: dict) -> str | None:
-    url = str(ident.get("OpenTeams_Issue_URL") or "").strip()
-    rec = by_url.get(url) or by_name.get(name or "")
-    if not rec:
-        return None
-    p = rec["priority"]
-    if p.startswith("P1"):
-        return "P1"
-    if p.startswith("P2"):
-        return "P2"
-    if p.startswith("P3"):
-        return "P3"
-    return None
-
-
-def _filled(raw) -> bool:
-    s = str(raw or "").strip()
-    return bool(s) and s.upper() not in {"N/A", "NA", "NONE", "-"}
-
-
-def is_current_vuln(j: dict | None) -> bool:
-    if not j:
-        return False
-    return str(j.get("risk_level") or "") == "HIGH" or str(j.get("vuln_status") or "") == "affected_latest"
-
-
-def work_label(ident: dict, inv: dict | None, j: dict | None) -> str:
-    """Work Mason actually does. Current-version vuln wins over recipe/issue/tracked."""
-    if is_current_vuln(j):
-        return WORK_FIX_VULN
-    if inv:
-        mapped = BATCH_TO_WORK.get(str(inv.get("OpenTeams_Batch") or "").strip())
-        if mapped and mapped != WORK_FIX_VULN:
-            return mapped
-        cohort = str(inv.get("OpenTeams_Cohort") or "").strip()
-        coverage = str(inv.get("OpenTeams_Coverage") or "").strip()
-        if coverage == "Have_Issue":
-            return WORK_TRACKED
-        if cohort == "JFROG_NEW":
-            return WORK_CREATE
-        if cohort == "JFROG_ON_CF" or cohort == "CONDA_ONLY":
-            return WORK_ISSUE_CF
-    if _filled(ident.get("OpenTeams_Issue_URL")):
-        return WORK_TRACKED
-    if _filled(ident.get("conda_purl")) or _filled(ident.get("Conda-Forge_FeedStock_URL")):
-        return WORK_ISSUE_CF
-    return WORK_CREATE
-
-
-def assign_lane(ident, name, j, by_url, by_name) -> tuple[str | None, str, str]:
-    plat = int(num(j.get("platform_env_count")) if j else 0)
-    apps = int(num(j.get("internal_app_count")) if j else 0)
-    dl = int(num(j.get("artifactory_downloads")) if j else 0)
-    ver = int(num(j.get("artifactory_version_count")) if j else 0)
-    risk = str(j.get("risk_level") or "") if j else ""
-    vuln = str(j.get("vuln_status") or "") if j else ""
-    if risk == "HIGH" or vuln == "affected_latest":
-        return "P1", "current-version-vuln", "latest version has confirmed advisories"
-    locked = board_lock(ident, name, by_url, by_name)
-    if locked:
-        return locked, "openteams-board", "existing board P1-P3, not overwritten"
-    if plat > 0:
-        return "P4", "platform", "platform_env_count > 0"
-    if apps > 0:
-        return "P5", "app", "internal_app_count > 0"
-    if dl >= 100 or ver >= 100:
-        return (
-            "P6",
-            "download-version-floor-100",
-            "100+ Artifactory downloads or 100+ versions",
-        )
-    if dl >= 10 or ver >= 10:
-        return (
-            "P7",
-            "download-version-floor-10",
-            "10+ Artifactory downloads or 10+ versions",
-        )
-    return None, "remainder", "leftover split by packaging work"
+def write_ranked_csv(path: Path, records: list[dict]) -> None:
+    """Legacy ranked tab shape as CSV (RANK_COLS + DETAIL_COLS)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=LEGACY_RANKED_CSV_COLUMNS)
+        writer.writeheader()
+        for rec in records:
+            writer.writerow(
+                {
+                    "P": rec["bucket"],
+                    "Rank": rec["rank"],
+                    "Score": rec["score100"],
+                    "Package": rec["name"],
+                    "Work": rec["work"],
+                    "Platforms": rec["plat"],
+                    "Apps": rec["apps"],
+                    "Downloads": rec["dl"],
+                    "Versions": rec["ver"],
+                    "Vuln": rec["vuln"],
+                    "Priority_Bucket_Description": rec["priority_desc"],
+                    "Priority_Source": rec["src"],
+                    "Priority_Reason": rec["why"],
+                    "JFROG_risk_level": rec["risk"],
+                    "JFROG_latest_vuln_count": rec["latest"],
+                    "internal_component_count": rec["ic"],
+                    "internal_lob_count": rec["lob"],
+                }
+            )
 
 
 def write_canvas(path: Path, records: list[dict], counts: dict[str, int], tab: str) -> None:
@@ -392,12 +297,16 @@ def write_canvas(path: Path, records: list[dict], counts: dict[str, int], tab: s
                 ]
             )
     work_counts = {w: sum(1 for r in records if r["work"] == w) for w in WORK_ORDER}
+    bucket_defs = [
+        [b, next((r["priority_desc"] for r in records if r["bucket"] == b), ""), counts.get(b, 0)]
+        for b in BUCKET_ORDER
+    ]
     data = json.dumps(
         {
             "counts": counts,
             "workCounts": work_counts,
             "workOrder": WORK_ORDER,
-            "bucketDefs": [[b, PRIORITY_DESC[b], counts.get(b, 0)] for b in BUCKET_ORDER],
+            "bucketDefs": bucket_defs,
             "rows": canvas_rows,
             "leaders": leaders,
         },
@@ -481,8 +390,7 @@ export default function IdentityPriorityAll() {
           versions, P7 10+. Leftover: P8 Create recipe, P9 File OpenTeams
           tracking issue [Conda-Forge Packaging] (JFROG on conda-forge), P10
           same tracking issue (CDO-ENT-CONDA) + already-tracked remainder.
-          Score is 1–100 use only. Source: identity tab on
-          docs/Analysis_Dataset-2026-08-12.xlsx.
+          Score is 1–100 use only. Source: inventory_priority_assignments.parquet.
         </Text>
       </Stack>
 
@@ -682,15 +590,33 @@ export default function IdentityPriorityAll() {
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--xlsx", type=Path, default=REPO_ROOT / "docs/Analysis_Dataset-2026-08-12.xlsx")
-    parser.add_argument("--tab", default=TAB, help="Ranked identity tab name for xlsx write-back.")
     parser.add_argument(
-        "--identity-parquet",
+        "--xlsx",
+        type=Path,
+        default=None,
+        help="Retired by Story 23.9 — exits 2 with a pointer to the Atlas export.",
+    )
+    parser.add_argument(
+        "--tab",
+        default=None,
+        help="Retired by Story 23.9 — exits 2 with a pointer to the Atlas export.",
+    )
+    parser.add_argument(
+        "--priority-assignments",
         type=Path,
         default=None,
         help=(
-            "Atlas identity_export_parquet input (Story 21.6). "
-            f"Default: ${{PYFORGE_ATLAS_DATA_ROOT}}/{IDENTITY_EXPORT_PARQUET_RELPATH}"
+            "Atlas inventory_priority_assignments input (Story 23.3). "
+            f"Default: ${{PYFORGE_ATLAS_DATA_ROOT}}/{PRIORITY_ASSIGNMENTS_RELPATH}"
+        ),
+    )
+    parser.add_argument(
+        "--jfrog-parquet",
+        type=Path,
+        default=None,
+        help=(
+            "Optional enterprise_jfrog_consumption join for telemetry columns. "
+            f"Default: ${{PYFORGE_ATLAS_DATA_ROOT}}/{ENTERPRISE_JFROG_RELPATH}"
         ),
     )
     parser.add_argument(
@@ -703,9 +629,10 @@ def main() -> int:
         ),
     )
     parser.add_argument(
-        "--skip-inventory-sync",
-        action="store_true",
-        help="Do not rewrite inventory-2026-08-12 OpenTeams_Batch / Priority_Bucket.",
+        "--ranked-csv",
+        type=Path,
+        default=None,
+        help="Optional legacy ranked CSV (replaces the retired workbook ranked tab).",
     )
     parser.add_argument(
         "--canvas",
@@ -714,226 +641,47 @@ def main() -> int:
             "/home/rxm7706/.cursor/projects/home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases/identity-2026-08-20.canvas.tsx"
         ),
     )
+    parser.add_argument(
+        "--canvas-tab-label",
+        default="identity-2026-08-12",
+        help="Label substituted into the catalog canvas title (display only).",
+    )
     args = parser.parse_args()
-    identity_parquet = args.identity_parquet or default_identity_parquet_path()
+
+    if args.xlsx is not None or args.tab is not None:
+        print(_RETIRED_WORKBOOK_MSG, file=sys.stderr)
+        return 2
+
+    priority_path = args.priority_assignments or default_priority_assignments_path()
+    jfrog_path = args.jfrog_parquet or default_jfrog_consumption_path()
     ranked_export = args.ranked_export or default_ranked_export_path()
 
-    wb = load_workbook(args.xlsx, data_only=True)
-    ident_header, ident_rows = load_identity_parquet(identity_parquet)
-    _, jfrog_rows = load_tab(wb, "CDO-ENT-JFROG")
-    _, ot_rows = load_tab(wb, "OpenTeams")
-    _, inv_rows = load_tab(wb, "inventory-2026-08-12")
-    wb.close()
-
-    jfrog: dict[str, dict] = {}
-    for r in jfrog_rows:
-        k = pep503(r.get("name"))
-        if k:
-            jfrog[k] = r
-    inv_by = {
-        pep503(r.get("Core_Python_Package_Name")): r
-        for r in inv_rows
-        if pep503(r.get("Core_Python_Package_Name"))
-    }
-    by_url, by_name = board_maps(ot_rows)
-
-    records = []
-    for idx, ident in enumerate(ident_rows):
-        name = pep503(ident.get("Core_Python_Package_Name")) or str(
-            ident.get("Core_Python_Package_Name") or ""
-        )
-        j = jfrog.get(pep503(ident.get("Core_Python_Package_Name")) or "")
-        plat = int(num(j.get("platform_env_count")) if j else 0)
-        apps = int(num(j.get("internal_app_count")) if j else 0)
-        ic = int(num(j.get("internal_component_count")) if j else 0)
-        lob = int(num(j.get("internal_lob_count")) if j else 0)
-        dl = int(num(j.get("artifactory_downloads")) if j else 0)
-        ver = int(num(j.get("artifactory_version_count")) if j else 0)
-        risk = str(j.get("risk_level") or "") if j else ""
-        vuln = str(j.get("vuln_status") or "") if j else ""
-        latest = int(num(j.get("basilisk_latest_version_known_vulnerabilities_count")) if j else 0)
-        raw = use_score(plat, apps, ic, lob, dl, ver)
-        inv = inv_by.get(pep503(ident.get("Core_Python_Package_Name")) or "")
-        work = work_label(ident, inv, j)
-        cohort = str((inv or {}).get("OpenTeams_Cohort") or "").strip()
-        bucket, src, why = assign_lane(ident, pep503(ident.get("Core_Python_Package_Name")), j, by_url, by_name)
-        records.append(
-            {
-                "idx": idx,
-                "name": name,
-                "ident": ident,
-                "work": work,
-                "cohort": cohort,
-                "bucket": bucket,
-                "src": src,
-                "why": why,
-                "plat": plat,
-                "apps": apps,
-                "ic": ic,
-                "lob": lob,
-                "dl": dl,
-                "ver": ver,
-                "risk": risk,
-                "vuln": vuln,
-                "latest": latest,
-                "raw": raw,
-            }
-        )
-
-    scores = percentile_1_100([r["raw"] for r in records])
-    for r, s in zip(records, scores):
-        r["score100"] = s
-
-    remainder = [r for r in records if r["bucket"] is None]
-    for r in remainder:
-        if r["work"] == WORK_CREATE:
-            tier, src = "P8", "work-create-recipe"
-            why = "leftover Create recipe: JFROG consumed, not on conda-forge"
-        elif r["work"] == WORK_ISSUE_CF:
-            if r.get("cohort") == "CONDA_ONLY":
-                tier, src = "P10", "work-file-issue-conda-only"
-                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA)"
-            else:
-                tier, src = "P9", "work-file-issue-on-cf"
-                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging]"
-        else:
-            tier, src = "P10", "work-already-tracked-remainder"
-            why = "leftover Already tracked"
-        r["bucket"] = tier
-        r["src"] = src
-        r["why"] = f"{why} (score {r['score100']})"
-
-    def sort_key(r: dict):
-        return (
-            PRI_N[r["bucket"]],
-            WORK_RANK.get(r["work"], 9),
-            -r["score100"],
-            -r["raw"],
-            -r["dl"],
-            -r["ver"],
-            r["name"],
-        )
-
-    records.sort(key=sort_key)
-    for i, r in enumerate(records, start=1):
-        r["rank"] = i
+    assignments = load_priority_assignments(priority_path)
+    jfrog_df = load_jfrog_consumption(jfrog_path)
+    jfrog_by = _jfrog_lookup(jfrog_df)
+    records = assignments_to_records(assignments, jfrog_by)
 
     counts = {b: sum(1 for r in records if r["bucket"] == b) for b in BUCKET_ORDER}
     print("TOTAL", len(records))
     print("bucket", counts)
     print("work", dict(Counter(r["work"] for r in records)))
     print("source", dict(Counter(r["src"] for r in records)))
-    print("score 1-100 min/max", min(r["score100"] for r in records), max(r["score100"] for r in records))
-    print("work x priority")
-    for w in WORK_ORDER:
-        xs = [r for r in records if r["work"] == w]
-        xt = Counter(r["bucket"] for r in xs)
-        print(f"  {w}: n={len(xs)} " + " ".join(f"{b}={xt[b]}" for b in BUCKET_ORDER if xt[b]))
-    for b in BUCKET_ORDER:
-        xs = [r for r in records if r["bucket"] == b]
-        print(f"{b} n={len(xs)}")
-        if xs:
-            print(
-                f"  score {min(r['score100'] for r in xs)}-{max(r['score100'] for r in xs)} "
-                f"dl {min(r['dl'] for r in xs)}-{max(r['dl'] for r in xs)} "
-                f"ver {min(r['ver'] for r in xs)}-{max(r['ver'] for r in xs)} "
-                f"work {dict(Counter(r['work'] for r in xs))}"
-            )
-        for r in xs[:5]:
-            print(
-                f"  #{r['rank']:<5} score={r['score100']:3} {r['name']:<40} "
-                f"{r['work']:<36} dl={r['dl']:7} ver={r['ver']:4}"
-            )
-
-    orig_keep = [c for c in ident_header if c and c not in NEW_COLS]
-    out_header = RANK_COLS + orig_keep + DETAIL_COLS
-    by_idx = {r["idx"]: r for r in records}
-
-    wb2 = load_workbook(args.xlsx)
-    if args.tab in wb2.sheetnames:
-        del wb2[args.tab]
-    ws = wb2.create_sheet(args.tab)
-    ws.append(out_header)
-    for idx, ident in enumerate(ident_rows):
-        rec = by_idx[idx]
-        pkg = ident.get("Core_Python_Package_Name") or rec["name"]
-        row = [
-            rec["bucket"],
-            rec["rank"],
-            rec["score100"],
-            pkg,
-            rec["work"],
-            rec["plat"],
-            rec["apps"],
-            rec["dl"],
-            rec["ver"],
-            rec["vuln"] or "",
-        ]
-        row.extend("" if ident.get(c) is None else ident.get(c) for c in orig_keep)
-        row.extend(
-            [
-                PRIORITY_DESC.get(rec["bucket"], ""),
-                rec["src"],
-                rec["why"],
-                rec["risk"],
-                rec["latest"],
-                rec["ic"],
-                rec["lob"],
-            ]
-        )
-        ws.append(row)
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = ws.dimensions
-
-    if not args.skip_inventory_sync:
-        inv_ws = wb2["inventory-2026-08-12"]
-        inv_header = [c.value for c in next(inv_ws.iter_rows(min_row=1, max_row=1))]
-        batch_i = inv_header.index("OpenTeams_Batch")
-        name_i = inv_header.index("Core_Python_Package_Name")
-        pri_i = inv_header.index("Priority_Bucket") if "Priority_Bucket" in inv_header else None
-        if "Priority_Bucket_Description" in inv_header:
-            desc_col = inv_header.index("Priority_Bucket_Description") + 1
-        else:
-            desc_col = len(inv_header) + 1
-            inv_ws.cell(1, desc_col, "Priority_Bucket_Description")
-        bucket_by_name = {r["name"]: r["bucket"] for r in records}
-        n_relabel = 0
-        n_pri = 0
-        for row in inv_ws.iter_rows(min_row=2):
-            name = pep503(row[name_i].value)
-            j = jfrog.get(name or "")
-            if is_current_vuln(j):
-                new = WORK_FIX_VULN
-            else:
-                old = str(row[batch_i].value or "").strip()
-                new = BATCH_TO_WORK.get(old, old)
-                if new == WORK_FIX_VULN:
-                    new = WORK_TRACKED if _filled(row[batch_i].value) else old
-            if new and new != str(row[batch_i].value or "").strip():
-                row[batch_i].value = new
-                n_relabel += 1
-            bucket = bucket_by_name.get(name or "")
-            if bucket:
-                if pri_i is not None and str(row[pri_i].value or "") != bucket:
-                    row[pri_i].value = bucket
-                    n_pri += 1
-                inv_ws.cell(row[0].row, desc_col, PRIORITY_DESC[bucket])
-        print("relabeled inventory OpenTeams_Batch", n_relabel)
-        print("synced inventory Priority_Bucket", n_pri)
-    else:
-        print("skipped inventory OpenTeams_Batch / Priority_Bucket sync")
-
-    wb2.save(args.xlsx)
-    wb2.close()
-    print("identity header", out_header[:10], "... total", len(out_header))
-
-    if args.canvas:
-        args.canvas.parent.mkdir(parents=True, exist_ok=True)
-        write_canvas(args.canvas, records, counts, args.tab)
-        print("wrote", args.canvas)
+    if records:
+        scores = [r["score100"] for r in records]
+        print("score 1-100 min/max", min(scores), max(scores))
 
     write_ranked_export(ranked_export, records)
     print("wrote", ranked_export)
+
+    if args.ranked_csv:
+        write_ranked_csv(args.ranked_csv, records)
+        print("wrote", args.ranked_csv)
+
+    if args.canvas:
+        args.canvas.parent.mkdir(parents=True, exist_ok=True)
+        write_canvas(args.canvas, records, counts, args.canvas_tab_label)
+        print("wrote", args.canvas)
+
     return 0
 
 

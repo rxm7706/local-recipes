@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from openpyxl import load_workbook
+import pandas as pd
 
 PRIORITY_DESC = {
     "P1": "Current-version vulnerability: the latest release has confirmed advisories (HIGH / affected_latest). Existing OpenTeams board P1 also stays here.",
@@ -57,14 +57,168 @@ EXTERNAL_LIVE = [
     ("about co-maintainers", "255", "README As Co-Maintainer", "n/a"),
 ]
 
+ENTERPRISE_JFROG_RELPATH = Path(
+    "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
+)
+INVENTORY_UNIVERSE_RELPATH = Path("derived/inventory_universe/inventory_universe.parquet")
 
-def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, helpers) -> str:
+CATALOG_SOURCE_FLAGS: tuple[tuple[str, str], ...] = (
+    ("tab:CDO-ENT-JFROG", "in_cdo_ent_jfrog"),
+    ("tab:CDO-ENT-CONDA", "in_cdo_ent_conda"),
+    ("tab:OpenTeams", "in_openteams"),
+    ("tab:Conda-Forge", "in_conda_forge"),
+    ("tab:Basilisk", "in_basilisk"),
+    ("tab:Anaconda-Main", "in_anaconda_main"),
+    ("tab:Anaaconda-Dist", "in_anaconda_dist"),
+    ("tab:GAOSS-Free", "in_aoss_free"),
+    ("tab:GAOSS-Premium", "in_aoss_premium"),
+)
+
+
+def data_root_from_export(export_path: Path) -> Path:
+    """Resolve ``PYFORGE_ATLAS_DATA_ROOT`` from an export Parquet path."""
+    return export_path.parent.parent.parent
+
+
+def jfrog_parquet_path(export_path: Path) -> Path:
+    return data_root_from_export(export_path) / ENTERPRISE_JFROG_RELPATH
+
+
+def inventory_universe_parquet_path(export_path: Path) -> Path:
+    return data_root_from_export(export_path) / INVENTORY_UNIVERSE_RELPATH
+
+
+def _flag_true(row: dict, flag: str) -> bool:
+    val = row.get(flag)
+    if isinstance(val, bool):
+        return val
+    return str(val or "").strip().lower() in {"true", "1", "yes"}
+
+
+def _input_names(row: dict) -> list[str]:
+    raw = row.get("package_input_names") or row.get("Package_Input_Names") or ""
+    if isinstance(raw, (list, tuple)):
+        return [str(v).strip() for v in raw if str(v).strip()]
+    text = str(raw).strip()
+    if not text:
+        return []
+    if text.startswith("[") and text.endswith("]"):
+        try:
+            parsed = json.loads(text.replace("'", '"'))
+            if isinstance(parsed, list):
+                return [str(v).strip() for v in parsed if str(v).strip()]
+        except json.JSONDecodeError:
+            pass
+    if "; " in text:
+        return [part.strip() for part in text.split("; ") if part.strip()]
+    return [text]
+
+
+def read_parquet_records(path: Path) -> list[dict[str, str]]:
+    if not path.is_file():
+        return []
+    try:
+        df = pd.read_parquet(path)
+    except Exception:
+        return []
+    out: list[dict[str, str]] = []
+    for row in df.to_dict(orient="records"):
+        rec: dict[str, str] = {}
+        for key, val in row.items():
+            k = str(key)
+            if val is None or (isinstance(val, float) and pd.isna(val)):
+                rec[k] = ""
+            elif isinstance(val, bool):
+                rec[k] = "true" if val else ""
+            elif isinstance(val, (list, tuple)):
+                rec[k] = "; ".join(str(v) for v in val)
+            else:
+                rec[k] = str(val).strip()
+        out.append(rec)
+    return out
+
+
+def load_jfrog_by(
+    export_path: Path, pep503_name
+) -> tuple[dict[str, dict[str, str]], int]:
+    """Load CDO-ENT-JFROG rows from ``enterprise_jfrog_consumption.parquet``."""
+    path = jfrog_parquet_path(export_path)
+    jfrog_by: dict[str, dict[str, str]] = {}
+    skip = 0
+    if not path.is_file():
+        return jfrog_by, skip
+    try:
+        df = pd.read_parquet(path)
+    except Exception:
+        return jfrog_by, skip
+    if "repository_source" in df.columns:
+        df = df[df["repository_source"] == "CDO-ENT-JFROG"]
+    for row in df.to_dict(orient="records"):
+        raw = str(row.get("core_python_package_name") or row.get("name") or "").strip()
+        k = pep503_name(raw) if raw else ""
+        if not k or len(k) == 1:
+            skip += 1
+            continue
+        jfrog_by.setdefault(
+            k,
+            {
+                "name": raw,
+                "artifactory_downloads": str(row.get("artifactory_downloads") or "0"),
+                "platform_env_count": str(row.get("platform_env_count") or "0"),
+                "internal_component_count": str(row.get("internal_component_count") or "0"),
+                "internal_app_count": str(row.get("internal_app_count") or "0"),
+                "packaging_tier": str(row.get("packaging_tier") or ""),
+            },
+        )
+    return jfrog_by, skip
+
+
+def catalog_source_stats(
+    export_path: Path, packaging_name_from_title
+) -> list[tuple[str, int, int, int, int, int]]:
+    """Per-source row counts from ``inventory_universe.parquet`` (Story 23.8/23.9)."""
+    rows = read_parquet_records(inventory_universe_parquet_path(export_path))
+    if not rows:
+        return []
+    stats: list[tuple[str, int, int, int, int, int]] = []
+    for label, flag in CATALOG_SOURCE_FLAGS:
+        members = [r for r in rows if _flag_true(r, flag)]
+        data_rows = len(members)
+        names = {
+            (r.get("core_python_package_name") or r.get("Core_Python_Package_Name") or "").strip()
+            for r in members
+        }
+        unique_names = len({n for n in names if n})
+        a = b = c = 0
+        if label == "tab:OpenTeams":
+            for row in members:
+                titles = _input_names(row)
+                if not titles:
+                    c += 1
+                    continue
+                for title in titles:
+                    if packaging_name_from_title(title):
+                        a += 1
+                    elif title.strip():
+                        b += 1
+                    else:
+                        c += 1
+        stats.append((label, data_rows, unique_names, a, b, c))
+    return stats
+
+
+def render(
+    records: list[dict[str, str]],
+    export_path: Path,
+    gist_id: str,
+    tab: str,
+    helpers,
+) -> str:
     overlay_live_local = helpers.overlay_live_local
     load_local_recipe_type = helpers.load_local_recipe_type
     row_recipe_type = helpers.row_recipe_type
     pep503_name = helpers.pep503_name
     packaging_name_from_title = helpers.packaging_name_from_title
-    read_xlsx_tab = helpers.read_xlsx_tab
     file_sha256 = helpers.file_sha256
     md_table = helpers.md_table
     as_int = helpers._as_int
@@ -79,7 +233,7 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
     ts = (records[0].get("Verification_Timestamp_UTC") if records else "") or (
         datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
-    sha = file_sha256(xlsx) if xlsx.is_file() else ""
+    sha = file_sha256(export_path) if export_path.is_file() else ""
     n = len(records)
     ident = {
         pep503_name(r.get("Core_Python_Package_Name") or ""): r for r in records
@@ -184,16 +338,7 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
         a = cube_agg[key]
         cube_rows.append([key[0], key[1], key[2], key[3], *[f"{x:,}" for x in a]])
 
-    jfrog_rows = read_xlsx_tab(xlsx, "CDO-ENT-JFROG") if xlsx.is_file() else []
-    jfrog_by: dict[str, dict[str, str]] = {}
-    skip = 0
-    for jr in jfrog_rows:
-        raw = (jr.get("name") or "").strip()
-        k = pep503_name(raw) if raw else ""
-        if not k or len(k) == 1:
-            skip += 1
-            continue
-        jfrog_by.setdefault(k, jr)
+    jfrog_by, skip = load_jfrog_by(export_path, pep503_name)
 
     def is_pypi(row: dict[str, str] | None) -> bool:
         if not row:
@@ -267,46 +412,7 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
             )
     board_gap.sort(key=lambda r: (-as_int(r[1]), r[0].lower()))
 
-    wb = load_workbook(xlsx, read_only=True, data_only=True)
-    sheet_stats = []
-    for sheet in wb.sheetnames:
-        ws = wb[sheet]
-        rows_iter = ws.iter_rows(values_only=True)
-        try:
-            header = [str(h) if h is not None else "" for h in next(rows_iter)]
-        except StopIteration:
-            sheet_stats.append((sheet, 0, 0, 0, 0, 0))
-            continue
-        data_rows = list(rows_iter)
-        names: set[str] = set()
-        a = b = c = 0
-        title_idx = next((i for i, h in enumerate(header) if h.lower() == "title"), None)
-        name_idx = next(
-            (
-                i
-                for i, h in enumerate(header)
-                if h.lower() in {"name", "package_name", "core_python_package_name"}
-            ),
-            None,
-        )
-        for raw in data_rows:
-            if sheet == "OpenTeams" and title_idx is not None:
-                title = "" if raw[title_idx] is None else str(raw[title_idx]).strip()
-                parsed = packaging_name_from_title(title)
-                if parsed:
-                    a += 1
-                    names.add(title)
-                elif title:
-                    b += 1
-                    names.add(title)
-                else:
-                    c += 1
-            elif name_idx is not None:
-                val = "" if raw[name_idx] is None else str(raw[name_idx]).strip()
-                if val:
-                    names.add(pep503_name(val) or val)
-        sheet_stats.append((sheet, len(data_rows), len(names), a, b, c))
-    wb.close()
+    catalog_stats = catalog_source_stats(export_path, packaging_name_from_title)
 
     build_kind_rows = []
     for p in p_order:
@@ -334,9 +440,8 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
         "format: gfm-table",
         f"rows_identity: {n}",
         f"generated: {ts}",
-        "source_workbook: docs/Analysis_Dataset-2026-08-12.xlsx",
-        f"source_tab: {tab}",
-        f"workbook_sha256: {sha}",
+        f"source_export: {export_path}",
+        f"export_sha256: {sha}",
         "generator: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py --gist-only",
         f"gist_id: {gist_id}",
         f"companion: {gist_filename}",
@@ -364,11 +469,11 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
         "Companion to the identity row catalog in this gist. Same snapshot as",
         "the three canvases: searchable catalog, identity ops (Priority / Issues /",
         "Builds / Census), Artifactory + workbook (Map / Staged gap / Board gap /",
-        "Workbook / External).",
+        "Catalog sources / External).",
         "",
-        f"- Identity tab: `{tab}` · **{n:,}** rows · floor P10",
+        f"- Identity export: `{export_path}` · **{n:,}** rows · floor P10",
         f"- Generated: `{ts}`",
-        f"- Workbook sha256: `{sha}`",
+        f"- Export sha256: `{sha}`",
         f"- Gist id (edit in place; not stored in git): `{gist_id}`",
         "",
         "## Priority and work",
@@ -585,30 +690,30 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
         "",
         *md_table(["Package", "Artifactory downloads"], board_gap),
         "",
-        "## Workbook tabs",
+        "## Catalog sources",
         "",
         *md_table(
-            ["Tab", "Data rows", "Unique names", "Packaging titles", "Other titles", "Empty titles"],
+            ["Source", "Data rows", "Unique names", "Packaging titles", "Other titles", "Empty titles"],
             [
                 [
                     s[0],
                     f"{s[1]:,}",
                     f"{s[2]:,}",
-                    f"{s[3]:,}" if s[0] == "OpenTeams" else "—",
-                    f"{s[4]:,}" if s[0] == "OpenTeams" else "—",
-                    f"{s[5]:,}" if s[0] == "OpenTeams" else "—",
+                    f"{s[3]:,}" if s[0] == "tab:OpenTeams" else "—",
+                    f"{s[4]:,}" if s[0] == "tab:OpenTeams" else "—",
+                    f"{s[5]:,}" if s[0] == "tab:OpenTeams" else "—",
                 ]
-                for s in sheet_stats
+                for s in catalog_stats
             ],
         ),
         "",
         "## External source counts",
         "",
         "Live index fetches dated 2026-08-15 (not re-run at gist publish).",
-        "Workbook tabs now match conda-forge and Basilisk live counts.",
+        "Catalog source counts come from ``inventory_universe.parquet`` (Story 23.8).",
         "",
         *md_table(
-            ["Source", "Count", "How counted", "Workbook tab"],
+            ["Source", "Count", "How counted", "Workbook tab (legacy reference)"],
             [list(row) for row in EXTERNAL_LIVE],
         ),
         "",
@@ -765,7 +870,7 @@ _WORKBOOK_CANVAS_SUFFIX = r""" as {
   neitherRows: Array<[string, number, string]>;
   needPr: Array<[string, number]>;
   boardGap: Array<[string, number]>;
-  workbookTabs: Array<[string, number, number]>;
+  catalogSources: Array<[string, number, number]>;
   externalCounts: Array<[string, string, string, string]>;
 };
 
@@ -818,20 +923,20 @@ export default function JfrogWorkbook() {
         rows={DATA.boardGap.map((r) => [r[0], fmt(r[1])])}
       />
 
-      <H2>Workbook tabs</H2>
+      <H2>Catalog sources</H2>
       <Table
         striped
         stickyHeader
-        headers={["Tab", "Data rows", "Unique names"]}
+        headers={["Source", "Data rows", "Unique names"]}
         columnAlign={["left", "right", "right"]}
-        rows={DATA.workbookTabs.map((r) => [r[0], fmt(r[1]), fmt(r[2])])}
+        rows={DATA.catalogSources.map((r) => [r[0], fmt(r[1]), fmt(r[2])])}
       />
 
       <H2>External source counts</H2>
       <Table
         striped
         stickyHeader
-        headers={["Source", "Count", "How counted", "Workbook tab"]}
+        headers={["Source", "Count", "How counted", "Workbook tab (legacy reference)"]}
         columnAlign={["left", "right", "left", "left"]}
         rows={DATA.externalCounts}
       />
@@ -955,20 +1060,20 @@ def write_ops_canvas(
 def write_workbook_canvas(
     path: Path,
     records: list[dict[str, str]],
-    xlsx: Path,
+    export_path: Path,
     tab: str,
     helpers,
 ) -> None:
-    """Artifactory / workbook dashboard canvas: CDO-ENT-JFROG -> PyPI /
-    conda-forge map, staged-recipes gap, board gap, workbook tabs, external
+    """Artifactory / catalog dashboard canvas: CDO-ENT-JFROG -> PyPI /
+    conda-forge map, staged-recipes gap, board gap, catalog sources, external
     source counts -- restructures the same values `render()` computes for its
     markdown mirror into a `cursor/canvas` TSX file. A missing/nonexistent
-    `xlsx` (as in a zero-records test) still produces a valid, schema-shaped
-    file with empty array fields; this canvas renders inside Cursor, not this
-    repo's test suite.
+    export Parquet (as in a zero-records test) still produces a valid,
+    schema-shaped file with empty array fields; this canvas renders inside
+    Cursor, not this repo's test suite.
     """
     pep503_name = helpers.pep503_name
-    read_xlsx_tab = helpers.read_xlsx_tab
+    packaging_name_from_title = helpers.packaging_name_from_title
     as_int = helpers._as_int
 
     ident = {pep503_name(r.get("Core_Python_Package_Name") or ""): r for r in records}
@@ -985,16 +1090,7 @@ def write_workbook_canvas(
             return False
         return bool(row.get("conda_purl") or row.get("Conda-Forge_FeedStock_URL"))
 
-    jfrog_rows = read_xlsx_tab(xlsx, "CDO-ENT-JFROG") if xlsx and xlsx.is_file() else []
-    jfrog_by: dict[str, dict[str, str]] = {}
-    skip = 0
-    for jr in jfrog_rows:
-        raw = (jr.get("name") or "").strip()
-        k = pep503_name(raw) if raw else ""
-        if not k or len(k) == 1:
-            skip += 1
-            continue
-        jfrog_by.setdefault(k, jr)
+    jfrog_by, skip = load_jfrog_by(export_path, pep503_name)
 
     both = pypi_only = cf_only = neither = 0
     neither_rows: list[list] = []
@@ -1041,34 +1137,12 @@ def write_workbook_canvas(
             board_gap.append([jr.get("name") or k, as_int(jr.get("artifactory_downloads") or "0")])
     board_gap.sort(key=lambda r: (-r[1], str(r[0]).lower()))
 
-    sheet_stats: list[list] = []
-    if xlsx and xlsx.is_file():
-        wb = load_workbook(xlsx, read_only=True, data_only=True)
-        for sheet in wb.sheetnames:
-            ws = wb[sheet]
-            rows_iter = ws.iter_rows(values_only=True)
-            try:
-                header = [str(h) if h is not None else "" for h in next(rows_iter)]
-            except StopIteration:
-                sheet_stats.append([sheet, 0, 0])
-                continue
-            data_rows = list(rows_iter)
-            name_idx = next(
-                (
-                    i
-                    for i, h in enumerate(header)
-                    if h.lower() in {"name", "package_name", "core_python_package_name"}
-                ),
-                None,
-            )
-            names: set[str] = set()
-            if name_idx is not None:
-                for raw in data_rows:
-                    val = "" if raw[name_idx] is None else str(raw[name_idx]).strip()
-                    if val:
-                        names.add(pep503_name(val) or val)
-            sheet_stats.append([sheet, len(data_rows), len(names)])
-        wb.close()
+    catalog_sources = [
+        [label, data_rows, unique_names]
+        for label, data_rows, unique_names, _a, _b, _c in catalog_source_stats(
+            export_path, packaging_name_from_title
+        )
+    ]
 
     data = json.dumps(
         {
@@ -1084,7 +1158,7 @@ def write_workbook_canvas(
             "neitherRows": neither_rows,
             "needPr": need_pr,
             "boardGap": board_gap,
-            "workbookTabs": sheet_stats,
+            "catalogSources": catalog_sources,
             "externalCounts": [list(row) for row in EXTERNAL_LIVE],
         },
         separators=(",", ":"),

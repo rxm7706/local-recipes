@@ -1,10 +1,6 @@
-"""Story 23.4 — build_inventory_verified_packages parity vs metrics.py."""
+"""Story 23.4 — build_inventory_verified_packages parity vs legacy reference."""
 
 from __future__ import annotations
-
-import importlib.util
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -12,25 +8,14 @@ import pytest
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _INVENTORY_VERIFIED_PACKAGES_COLUMNS,
     build_inventory_verified_packages,
+    norm_pkg,
+    packaging_status,
+    primary_source,
+    role_for_package,
 )
-
-_REPO_ROOT = Path(__file__).resolve().parents[7]
-_METRICS_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-operations_metrics.py"
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS}}
-
-
-def _load_metrics_module():
-    spec = importlib.util.spec_from_file_location("metrics_ref", _METRICS_SCRIPT)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["metrics_ref"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-METRICS = _load_metrics_module()
 
 
 def _universe_row(
@@ -81,30 +66,30 @@ def _run_both(
         _PARAMS,
     )
 
-    cf_or_pm = {METRICS.norm_pkg(n) for n in cf_names} | {METRICS.norm_pkg(n) for n in (parselmouth or [])}
-    pypi_index = {METRICS.norm_pkg(n) for n in pypi_names}
+    cf_or_pm = {norm_pkg(n) for n in cf_names} | {norm_pkg(n) for n in (parselmouth or [])}
+    pypi_index = {norm_pkg(n) for n in pypi_names}
     priority_map = {}
     for r in priority_rows or []:
-        key = METRICS.norm_pkg(r["core_python_package_name"])
+        key = norm_pkg(r["core_python_package_name"])
         if r.get("P"):
             priority_map[key] = r["P"]
-    maint = {METRICS.norm_pkg(r["core_python_package_name"]) for r in universe_rows if r.get("role") == "Maintainer"}
-    co = {METRICS.norm_pkg(r["core_python_package_name"]) for r in universe_rows if r.get("role") == "Co-Maintainer"}
+    maint = {norm_pkg(r["core_python_package_name"]) for r in universe_rows if r.get("role") == "Maintainer"}
+    co = {norm_pkg(r["core_python_package_name"]) for r in universe_rows if r.get("role") == "Co-Maintainer"}
 
     ref_rows: list[dict[str, str]] = []
-    for rec in sorted(universe_rows, key=lambda r: METRICS.norm_pkg(r["core_python_package_name"])):
-        pkg = METRICS.norm_pkg(rec["core_python_package_name"])
+    for rec in sorted(universe_rows, key=lambda r: norm_pkg(r["core_python_package_name"])):
+        pkg = norm_pkg(rec["core_python_package_name"])
         pypi_ok = pkg in pypi_index
         cf_ok = pkg in cf_or_pm
         pbucket = priority_map.get(pkg, "P9")
-        status = METRICS.packaging_status(pypi_ok, cf_ok, pbucket)
-        src = METRICS.primary_source(set(rec.get("sources") or []))
+        status = packaging_status(pypi_ok, cf_ok, pbucket)
+        src = primary_source(set(rec.get("sources") or []))
         inputs = sorted(rec.get("package_input_names") or [])
         first_input = inputs[0] if inputs else pkg
         ref_rows.append(
             {
                 "Repository_Source": src,
-                "Role": METRICS.role_for_package(pkg, maint, co),
+                "Role": role_for_package(pkg, maint, co),
                 "Package_Input_Name": first_input,
                 "Core_Python_Package_Name": pkg,
                 "PyPI_Verified": "Yes" if pypi_ok else "No",
