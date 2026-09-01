@@ -869,7 +869,7 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: platform-ci-image
 
@@ -878,7 +878,7 @@ jobs:
       # single-environment usage, which activates it onto PATH so later
       # steps invoke `helm`/`kubectl` directly (no `pixi run -e` prefix
       # needed).
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.77.0
           environments: platform-dev
@@ -1119,11 +1119,11 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: platform-ci-image
 
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.77.0
           environments: platform-dev
@@ -1355,7 +1355,7 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: platform-ci-image
 
@@ -1368,7 +1368,7 @@ jobs:
       # script below) and is DELIBERATELY evicted and reinstalled later,
       # under the egress block, as the actual AD-13 proof -- see "Evict the
       # pixi cache" below for why a second install is needed at all.
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.77.0
           environments: platform-dev
@@ -1463,7 +1463,7 @@ jobs:
       # steward iteration and post-merge runs warm the same pixi.lock key.
       - name: Restore ci-airgap-mirror cache
         id: airgap-mirror-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ci-airgap-mirror
           key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
@@ -1483,7 +1483,7 @@ jobs:
             --workers 32
 
       - name: Save ci-airgap-mirror cache
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ci-airgap-mirror
           key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
