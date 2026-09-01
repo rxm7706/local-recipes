@@ -65,7 +65,7 @@ development_status:
   22-2-vizro-identity-catalog-page: done
   22-3-vizro-identity-ops-page: done
   22-4-vizro-identity-workbook-page: done
-  22-5-canvas-vs-vizro-parity-gate: backlog
+  22-5-canvas-vs-vizro-parity-gate: done
   22-6-canvas-deprecation-switch: backlog
   23-1-tier-3-bulk-os-indexes: done
   23-2-enterprise-jfrog-consumption-parquet: done
