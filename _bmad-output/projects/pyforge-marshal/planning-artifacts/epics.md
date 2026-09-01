@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 28  # 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
 storyCount: 181  # 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-08-30"  # Epic 28 (Stories 28.1-28.9) added via the Dream/Spec-chain convention: spec-marshal-token-economy CAP-1..CAP-10; same-day second pass added 28.10/28.11 (CAP-11/CAP-12 model economics) and made 28.6 compression-only.
+updated: "2026-09-01"  # Stories 28.18–28.23 (drain self-resolution, Dream addendum F).
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4150,6 +4150,8 @@ from the operator's model/cost catalog — Stories 28.10/28.11; CAP-14/CAP-15 ad
 2026-08-31 from a live dispatch-ordering/retry incident — Stories 28.12/28.13; CAP-16/
 CAP-17 added 2026-08-31 from the same incident's landing — Stories 28.14/28.15; Dream:
 `docs/dreams/marshal-token-economy.md` + `docs/dreams/marshal-dependency-aware-dispatch.md`).
+Addendum F (2026-09-01) — `spec-marshal-drain-self-resolution` CAP-1..6 / Stories
+28.18–28.23 — is residual self-heal after 28.12–28.17 shipped.
 Marshal owns spend *brakes* (E3 ceilings, idle
 ladder, NFR-14 cache discipline, FR-51 tiering); this epic adds spend *shrinkage* as a
 policy-rendered, Genesis-seeded, supervisor-metered context pipeline over five
@@ -4367,3 +4369,74 @@ station-wide wildcard (`src/shared/packages/pyforge-marshal/**` + common
 bookkeeping paths) as an immediate stopgap on 2026-08-31, unblocking the live
 Epic 28 drain campaign without waiting on this story's own implementation.
 This story ships the real mechanism to replace that stopgap.
+
+### Story 28.18: Re-preflight when the refuse predicate can change
+
+As a marshal operator,
+I want a live `drain_to_zero` campaign to re-evaluate a previously-refused backlog head when the refuse depends on disk or API state,
+So that landing a missing spec (or a mergeable flip) does not require a new campaign or a bare `factory dispatch`.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-1
+**Given** a station refused on `MRS-DISP-005` **When** a unique `spec-<e>-<n>-*.md` appears on the specs path the campaign uses **Then** the next eligible tick dispatches that story without `MRS-DRAIN-005` permanent block
+**And** an unchanged refuse predicate is rate-limited and journaled, not silently looped
+**And** expensive `verify_commands` re-run only when the refuse predicate-hash changes
+**Status:** backlog
+
+### Story 28.19: Missing-spec escalates, never idle-with-backlog
+
+As a marshal operator,
+I want `MRS-DISP-005` to surface as `awaiting-operator` (or fleet-picture ATTENTION) with the expected spec path,
+So that a station with remaining backlog never looks idle.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-2
+**Given** a ledger key whose specs glob matches zero files **When** drain preflight refuses **Then** the station is `awaiting-operator` (or ATTENTION-named), not idle
+**And** the remedy names the expected `planning-artifacts/specs/spec-<e>-<n>-*.md` path
+**And** v1 does not auto-author a stub spec
+**Status:** backlog
+
+### Story 28.20: CAP-4 land heals mechanical and DIRTY PRs
+
+As a marshal operator,
+I want land to union ledger-only conflicts and to advance `main` when git is clean but GitHub is `DIRTY`,
+So that a PR like #985 does not wait on a chat session.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-3
+**Given** a PR whose only conflict is `sprint-status-ledger.yaml` **When** land runs **Then** keys union with `done` beating `backlog`, the branch is pushed, merge is retried
+**And** if `merge-tree` is clean and GitHub `mergeable` is false **Then** marshal advances `main`, retires the PR, resyncs the ledger
+**And** unknown conflict paths escalate named — never wait silently
+**Status:** backlog
+
+### Story 28.21: Push the dispatch branch before verify can strand it
+
+As a marshal operator,
+I want `origin/dispatch/<slug>/<story>` to exist as soon as the session has a commitable result,
+So that a verify refuse cannot leave finished work only in a local worktree.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-4
+**Given** a dispatch worktree with a story commit **When** verify later refuses **Then** `git ls-remote` still shows `dispatch/<slug>/<story>`
+**And** "next steps: open a PR" in a session log is not an acceptable substitute
+**Status:** backlog
+
+### Story 28.22: Verify blast radius is pre-existing-gate, not story-refuse
+
+As a marshal operator,
+I want a `verify_commands` failure outside the story diff and effective surface classified as `pre-existing-gate`,
+So that a pandas collection error in `tests/packaging` cannot refuse a marshal story and 28.17 cannot loop the same unrelated red.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-5
+**Given** a story diff that does not touch the failing packaging test **When** `pyforge-deps-test` collection-fails on pandas **Then** the finding is WARN `pre-existing-gate`, not `MRS-GATE-001` refuse
+**And** `pyforge-marshal-test` still refuses when the marshal package tests fail
+**And** transient redispatch into the same unrelated red command does not fire
+**Status:** backlog
+
+### Story 28.23: Stranded-work signal after terminal verify-fail
+
+As a marshal operator,
+I want dead+`failed` to look idle, and an unpushed dispatch branch or open unmerged PR to be named in ATTENTION,
+So that fleet-picture STUCK is reserved for a live refuse and stranded work is visible.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-6
+**Given** completion `failed` or `stopped_externally` and a dead dispatch tail **When** `marshal status` / fleet-picture run **Then** the home is not `verifying` / STUCK
+**And** an unpushed `dispatch/<slug>/<story>` or open unmerged PR is named in ATTENTION
+**And** the overlay half (`20e88e8b0f`) stays locked by test
+**Status:** backlog

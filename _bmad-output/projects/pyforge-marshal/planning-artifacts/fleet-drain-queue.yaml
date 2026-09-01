@@ -14,21 +14,17 @@
 #   22.6 needs 22.5 | 21.9/21.10 need 21.8
 # Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
 # if the operator decides to scope them out -- that is a scope decision, not made here.
-# pyforge-marshal (2026-09-01, Epic 28 remainder): operator scope 2026-09-01 —
-# drain stops after Story 28.6 lands; 28.10–28.16 deferred (serial focus).
-# Prior chain shipped 28.9, 28.5; 28.6 in flight. See change-history/
-# sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md.
+# pyforge-marshal (2026-09-01, addendum F): drain self-resolution 28.18–28.23.
+# See change-history/sprint-change-proposal-2026-09-01-drain-self-resolution.md.
 order_overrides:
   pyforge-marshal:
-    - 28-9-planning-graph-retrieval-behind-the-scribe-seam
-    - 28-5-the-pinned-wrapped-vs-unwrapped-benchmark
-    - 28-6-the-graduated-compression-ladder
-
-# Active `--stories` chain (pyforge-marshal, scoped 2026-09-01): stops at 28.6.
-# 28-9-planning-graph-retrieval-behind-the-scribe-seam,28-5-the-pinned-wrapped-vs-unwrapped-benchmark,28-6-the-graduated-compression-ladder
-#
-# pyforge-scribe: Epic 6 (Stories 6.1–6.3) shipped 2026-08-30 — no order_overrides
-# entry; station is complete (ledger 18/18). Re-add only if new backlog appears.
+    - 28-18-re-preflight-when-the-refuse-predicate-can-change
+    - 28-19-missing-spec-escalates-never-idle-with-backlog
+    - 28-21-push-the-dispatch-branch-before-verify-can-strand-it
+    - 28-20-cap-4-land-heals-mechanical-and-dirty-prs
+    - 28-22-verify-blast-radius-pre-existing-gate
+    - 28-23-stranded-work-signal-after-terminal-verify-fail
+  # pyforge-scribe: complete (18/18). Re-add only if new backlog appears.
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
     - 21-5-tier-2-sources-about-curated-orgs-artifactory-names

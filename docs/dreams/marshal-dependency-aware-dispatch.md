@@ -236,3 +236,41 @@ tick **redispatch the same story** without `MRS-DRAIN-005` permanent block.
 
 Spec: `spec-marshal-verify-fail-terminalization/SPEC.md` (CAP-1..3). Status:
 `specified` (addendum E satisfied by bmad-spec 2026-09-01).
+
+## Addendum (2026-09-01) — the campaign still cannot heal a named refuse
+
+**Incident:** fleet-wide `drain_to_zero` campaign
+`pyforge-marshal-20260901T123110026Z-bb6c1de1`. Stories 28.12–28.17 existed.
+The supervisor still **stopped** on refuses it already knew how to name, and
+recovery was a chat session.
+
+| Refuse | Why marshal did not self-heal | Human / chat recovery |
+|---|---|---|
+| Steward 39.4 `MRS-DISP-005` | Drain never drafts a spec (22.7); **never re-preflights** a refused head | Draft spec, commit, bare `factory dispatch` |
+| Same campaign after spec landed | `MRS-DRAIN-005` “never auto-retried” treats first look as permanent | Notice idle ≠ drained |
+| PR #985 ledger conflict | CAP-4 land stops on GitHub `CONFLICTING` | Mechanical `done`∪`backlog` union |
+| `gh pr merge` still `DIRTY` | Land has one backend | Local FF `main` |
+| 28.13 done in worktree, no remote | Verify refuse skipped land; branch never pushed | Cherry-pick |
+| `MRS-GATE-001` pandas collection | Repo-global gate; 28.17 would re-hit the same red | `importorskip` |
+| fleet-picture **STUCK** after `failed` | Overlay treated terminal fail as live `verifying` | Status patch `20e88e8b0f` |
+
+**F. Drain self-resolution (Stories 28.18–28.23).** Every named refuse has a
+recovery the **fleet tick / CAP-4 land / supervisor** runs — not a Cursor
+habit. Locked v1 (open questions closed for implementation):
+
+- **Re-preflight** cheap predicates (spec glob, mergeable) every tick; expensive
+  verify only when the refuse predicate-hash changes. “Never auto-retried”
+  applies to genuine story failure after preserve, not “we looked once.”
+- **Missing-spec** is `awaiting-operator` with a one-line path remedy — **no
+  auto-authored stub** in v1. Idle-with-backlog is a finding.
+- **Land** unions ledger-only conflicts (`done` beats `backlog`); if
+  `merge-tree` is clean and GitHub is `DIRTY`, advance `main` (this repo).
+- **Push** `origin/dispatch/<slug>/<story>` as soon as there is a commitable
+  result — before verify can strand it.
+- **Verify blast radius:** failure outside the story diff and effective surface
+  is `pre-existing-gate` (WARN), not `MRS-GATE-001` story-refuse.
+- **STUCK** only while refuse is live; dead tail + `failed` is idle. Stranded
+  work is an **unpushed branch or open PR**, named in ATTENTION.
+
+Spec: `spec-marshal-drain-self-resolution/SPEC.md`. Dream file
+`marshal-drain-self-resolution.md` is an archive pointer only.

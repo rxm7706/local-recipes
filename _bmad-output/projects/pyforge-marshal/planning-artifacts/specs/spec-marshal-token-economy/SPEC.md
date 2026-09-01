@@ -4,7 +4,7 @@ spec: marshal-token-economy
 status: ready
 owner-dream: docs/dreams/marshal-token-economy.md
 covers-dreams:
-  - docs/dreams/marshal-dependency-aware-dispatch.md   # folded in 2026-08-31 as CAP-14..CAP-17; satisfies INV-1 for this Dream
+  - docs/dreams/marshal-dependency-aware-dispatch.md   # folded in 2026-08-31 as CAP-14..CAP-17; addendum F (2026-09-01) lives in spec-marshal-drain-self-resolution; INV-1 still this Dream
 companions:
   - integration-layers.md
   - model-economics.md
