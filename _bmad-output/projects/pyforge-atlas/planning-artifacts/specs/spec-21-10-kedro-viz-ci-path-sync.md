@@ -2,8 +2,10 @@
 title: 'Kedro-Viz CI path sync for catalog and datasets (Story 21.10, Epic 21, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'be3bc828eeb82daed33a62900fb24b987c7498b7'
 review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/operator-surfaces.md'
@@ -87,11 +89,11 @@ unless publish step needs dataset node registration fix").
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `.github/workflows/kedro-viz-publish.yml` — add the 3 `paths:` entries under the
+- [x] `.github/workflows/kedro-viz-publish.yml` — add the 3 `paths:` entries under the
   existing `on.push.paths` list, after the current `pipelines/**` line — widens the CI
   trigger so catalog/globals/dataset-only changes republish the DAG export.
 - [ ] PR housekeeping — apply the `maintenance` label per CLAUDE.md's non-recipe-PR gate
-  (`.github/**` is outside `recipes/`).
+  (`.github/**` is outside `recipes/`). Deferred to PR open/update time.
 
 **Acceptance Criteria:**
 - Given `.github/workflows/kedro-viz-publish.yml` after this change, when inspected, then
@@ -133,3 +135,45 @@ operator confusion actually surfaces.
 - Re-read the edited `paths:` block and confirm it still parses as a valid YAML list under
   `on.push` (no indentation drift) and that the `workflow_dispatch:` trigger directly below it
   is untouched.
+
+## Review Triage Log
+
+### 2026-09-01 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `kedro-viz-publish.yml` `on.push.paths` with the three catalog/dataset
+glob patterns from `operator-surfaces.md` § Story 21.10 so catalog-only merges republish the
+static kedro-viz DAG export.
+
+**Files changed:**
+- `.github/workflows/kedro-viz-publish.yml` — added 3 path triggers after existing `pipelines/**` entry
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-21-10-kedro-viz-ci-path-sync.md` — spec status + run result
+
+**Review findings:** No patch/defer/intent_gap findings in inline review pass (single-file CI config change matching spec verbatim).
+
+**Follow-up review recommendation:** false (0 patched findings)
+
+**Verification:**
+- Manual YAML inspection: `on.push.paths` contains exactly 4 entries, byte-for-byte matching
+  `operator-surfaces.md` § Story 21.10; `workflow_dispatch:` unchanged at L37.
+- Matrix rows satisfied via YAML path-glob inspection per spec (no live merge required).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — PASS (68 passed).
+- `pixi run -e pyforge-atlas kedro-test` — FAIL (1 pre-existing unrelated failure:
+  `test_identity_catalog_parity_with_write_canvas` — beta-pkg vs gamma-pkg ordering; not
+  caused by this CI-only change).
+
+**Residual risks:**
+- PR must carry `maintenance` label at open/update (`.github/**` change).
+- Pre-existing `kedro-test` failure on branch should be triaged separately if it blocks merge.
+
+**Commit:** `f294288959` on branch `dispatch/pyforge-atlas/21.10` (clean working tree).
