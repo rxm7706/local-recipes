@@ -34,9 +34,9 @@ order_overrides:
 # `marshal factory dispatch pyforge-marshal --stories <keys>` — same order as
 # order_overrides above; 28.16 appended after 28.12–28.13 (Deps: 28.12).
 # 28-9-planning-graph-retrieval-behind-the-scribe-seam,28-5-the-pinned-wrapped-vs-unwrapped-benchmark,28-6-the-graduated-compression-ladder,28-10-the-model-cost-catalog-makes-spend-legible-in-dollars,28-11-difficulty-tiers-route-across-providers-and-pools,28-12-dependency-derived-dispatch-ordering,28-13-sanctioned-retry-after-an-operator-initiated-stop,28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint
-  pyforge-scribe:
-    - 6-1-the-graphify-ingest-extra-and-its-move-list-verbs
-    - 6-2-the-cocoindex-incremental-ingest-extra
+#
+# pyforge-scribe: Epic 6 (Stories 6.1–6.3) shipped 2026-08-30 — no order_overrides
+# entry; station is complete (ledger 18/18). Re-add only if new backlog appears.
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
     - 21-5-tier-2-sources-about-curated-orgs-artifactory-names
