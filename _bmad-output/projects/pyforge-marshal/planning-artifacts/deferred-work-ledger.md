@@ -3883,3 +3883,36 @@ status: open
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-DISP-2026-09-01-1: Interim transient-block classification (2026-09-01 hotfix) is not Story 28.13's SIGTERM journal taxonomy.
+
+- source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`
+  summary: `core/dispatch_retry.py::classify_dispatch_block` lets fleet drain retry after quota/auth harness failures and retriable verify gates without `MRS-DRAIN-005` permanent block. Story 28.13 still requires externally-stopped dispatches to be journaled differently from genuine failures, diff surfacing before retry, and `MRS-DISP-011` liveness split — none of which the hotfix implements.
+  evidence: SCP §2 impact table; `spec-28-13` operational note 2026-09-01.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py
+  origin: dispatch-campaign hotfix session 2026-09-01
+  severity: medium
+  promoted: 2026-09-01 — SCP intake
+  status: open
+
+### DW-FU-DISP-2026-09-01-2: Warn-mode verify-time surface widen is interim; Story 28.14 auto-derived `policy_surface` remains authoritative.
+
+- source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`
+  summary: `dispatch_verify.py` widens effective surface with advisory paths under warn mode so verify can pass while preserving MRS-GATE-012 advisories. Story 28.14 (CAP-16) still owns spin/dispatch-time auto-derivation of per-station defaults — the hotfix does not replace `[epic_surfaces]` stopgap removal.
+  evidence: `gate.widen_effective_surface_with_paths`; ledger marks 28.14 `done` for a prior delivery — reconcile at next 28.14 audit if overlap grows.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
+  origin: dispatch-campaign hotfix session 2026-09-01
+  severity: low
+  promoted: 2026-09-01 — SCP intake
+  status: open
+
+### DW-FU-DISP-2026-09-01-3: Spec frontmatter drift — 28-1/28-4/28-8 were `in-review`/`ready-for-dev` while ledger read `done`.
+
+- source_spec: `planning-artifacts/sprint-status-ledger.yaml`
+  summary: Tracked ledger and story-spec `status:` frontmatter disagreed for three shipped Epic 28 stories until 2026-09-01 SCP pass aligned them to `done`.
+  evidence: `grep ^status: planning-artifacts/specs/spec-28-{1,4,8}*` before SCP.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+  origin: dispatch-campaign artifact catch-up 2026-09-01
+  severity: low
+  promoted: 2026-09-01 — SCP intake
+  status: closed

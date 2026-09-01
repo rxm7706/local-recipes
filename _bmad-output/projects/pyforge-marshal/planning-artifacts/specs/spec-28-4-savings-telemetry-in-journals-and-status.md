@@ -2,7 +2,7 @@
 title: 'Savings telemetry in journals and status (Story 28.4, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
@@ -82,3 +82,4 @@ close it.
 ## Spec Change Log
 
 - 2026-08-30: drafted from epics.md Epic 28 for fleet-drain preflight (Dream/Spec chain: docs/dreams/marshal-token-economy.md → spec-marshal-token-economy)
+- 2026-09-01: status → `done` (ledger + PR #973); SCP cross-ref `sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`

@@ -30,6 +30,12 @@ just "how much was spent" but "how much was *saved*, by which layer" — and the
 budget ceilings stop being blunt kill-switches and become calibrated contracts
 a normal story never brushes against.
 
+**Dispatch drain resilience (2026-09-01).** Token economy only pays off if unattended
+drain survives harness billing walls and recoverable verify failures. Interim
+machinery (see `change-history/sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`)
+adds harness profile failover, transient block classification for fleet retry, and
+supervisor stuck-land detection — without weakening CAP-17 warn-mode visibility.
+
 Same stories landed. Same review fidelity. A fraction of the tokens.
 
 ## What is real

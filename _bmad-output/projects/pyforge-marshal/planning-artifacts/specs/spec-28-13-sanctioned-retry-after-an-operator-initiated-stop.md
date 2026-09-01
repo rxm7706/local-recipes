@@ -91,3 +91,14 @@ uncommitted lines — see `docs/dreams/marshal-dependency-aware-dispatch.md`.
 ## Spec Change Log
 
 - 2026-08-31: drafted from marshal-dependency-aware-dispatch fold-in (CAP-15; bmad-correct-course sprint-change-proposal-2026-08-31)
+
+## Operational note (2026-09-01 — interim hotfix, NOT this story shipped)
+
+Epic 28 dispatch campaign hotfixes added **`classify_dispatch_block`** /
+`DispatchBlockKind.TRANSIENT` in `core/dispatch_retry.py` so quota/auth harness
+failures and retriable verify gates do not permanently trigger `MRS-DRAIN-005`.
+That is **not** CAP-15: it does not distinguish SIGTERM-from-outside in the
+journal, surface WIP diffs before retry, or split `MRS-DISP-011` liveness the way
+this spec's ACs require. Treat the hotfix as drain-unblocking interim; this story
+remains `ready-for-dev` until the journal taxonomy lands. SCP:
+`change-history/sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`.

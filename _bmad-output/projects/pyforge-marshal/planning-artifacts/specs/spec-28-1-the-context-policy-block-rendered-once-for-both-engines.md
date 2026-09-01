@@ -2,7 +2,7 @@
 title: 'The context policy block, rendered once for both engines (Story 28.1, Epic 28)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium

@@ -41,6 +41,16 @@ multi-project machinery (`scripts/bmad-switch`, per-project config/artifact
 isolation). Visibility runs through the GitHub Pages program console
 (`docs/dashboard/`), regenerated from tracked ledgers, never hand-trusted.
 
+**Dispatch autonomy hardening (2026-09-01).** A live Epic 28 drain campaign surfaced
+recoverable failure modes that must not require operator archaeology: sidecar'd
+journal payloads breaking auto-land, harness quota/auth permanently blocking fleet
+drain, verified-but-unmerged stories stuck without land retry, and no per-invocation
+`--harness` override. Interim machinery now distinguishes transient harness/verify
+blocks from terminal ones, resolves AD-30 sidecars on the dispatch supervisor read
+path, and reconciles campaign blocked-maps against `origin/main` merge evidence.
+Stories 28.13 (sanctioned SIGTERM retry) and 28.14 (auto-derived surface) remain the
+durable contracts — the hotfixes are explicitly interim where they differ.
+
 ## Six follow-on dreams, consolidated here (2026-08-02)
 
 This Dream previously sat alongside six satellite dreams, each answering one

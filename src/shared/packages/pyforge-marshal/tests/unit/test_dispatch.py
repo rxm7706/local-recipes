@@ -271,7 +271,11 @@ def _enable_wire_layer(monkeypatch: pytest.MonkeyPatch, slug: str) -> None:
         project={"context": {"wire": {"enabled": True, "aggressiveness": "high"}}},
         flags={},
     )
-    monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug: effective)
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
 
 
 def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
@@ -563,6 +567,7 @@ def test_run_dispatch_carries_profile_and_reports_skips(
 
     import json
 
+    from pyforge.marshal.cli.dispatch import _compose_policy
     from pyforge.marshal.ports.build_harness import (
         HarnessCandidateSkip as Skip,
     )
@@ -582,7 +587,7 @@ def test_run_dispatch_carries_profile_and_reports_skips(
             )
 
     harness = SkippingHarness()
-    args = argparse.Namespace(slug=slug, story=story, format="json")
+    args = argparse.Namespace(slug=slug, story=story, format="json", harness=None)
     monkeypatch.chdir(tmp_path)
     code = run_dispatch(
         args,
@@ -592,8 +597,8 @@ def test_run_dispatch_carries_profile_and_reports_skips(
         process=FakeProcess(),
     )
     assert code == EXIT_OK
-    # the policy default preference reached the resolution profile-first
-    assert harness.preference_seen == ("claude", "cursor", "copilot", "gemini", "devin")
+    effective = _compose_policy(slug)
+    assert harness.preference_seen == tuple(effective.harness_preference.value)
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["harness_profile"] == "claude"
     skips = [f for f in payload["findings"] if f["code"] == "MRS-DISP-027"]

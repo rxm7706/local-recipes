@@ -38,6 +38,10 @@ from ..core.dispatch_verification import (
     primary_gate_failure,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
+from ..core.dispatch_supervisor_state import (
+    should_retry_stuck_land,
+    supervisor_should_exit,
+)
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -59,7 +63,9 @@ from ..ports.fs import FsPort
 from ..ports.vcs import VcsPort
 
 _JOURNAL_FILENAME = "journal.jsonl"
+_SESSION_LOG_FILENAME = "session.log"
 _TICK_SECONDS = 60
+_FETCH_EVERY_N_TICKS = 5
 _BASE_REF = "origin/main"
 _MERGE_INTO = "main"
 
@@ -102,6 +108,39 @@ def _fold_dispatch_journal(fs: FsPort, run_dir: Path, text: str):
         read_sidecar=lambda ref: fs.read_text(run_dir / ref),
     )
     return fold(lines, sidecars=sidecars)
+
+
+def _maybe_fetch_origin_main(vcs: VcsPort, repo_root: Path, *, tick: int) -> None:
+    if tick % _FETCH_EVERY_N_TICKS != 0:
+        return
+    try:
+        vcs.fetch(repo_root, "origin", "main")
+    except VcsCommandError:
+        pass
+
+
+def _commit_pre_verify_wip(
+    vcs: VcsPort,
+    *,
+    repo_root: Path,
+    worktree: Path,
+) -> None:
+    try:
+        if not vcs.has_uncommitted_changes(worktree):
+            return
+        changed = vcs.changed_files(repo_root, worktree, base="HEAD")
+        if not changed:
+            return
+        vcs.commit_paths(
+            worktree,
+            tuple(Path(path) for path in changed),
+            "marshal: pre-verify WIP checkpoint",
+        )
+    except VcsCommandError as exc:
+        print(
+            f"dispatch supervisor: pre-verify WIP commit skipped: {exc}",
+            file=sys.stderr,
+        )
 
 
 def _launch_story_started_ts(folded, run_id: str) -> str | None:
@@ -547,7 +586,17 @@ def run_dispatch_supervisor(
         )
         return 1
 
+    try:
+        vcs.fetch(repo_root, "origin", "main")
+    except VcsCommandError:
+        pass
+
+    tick_count = 0
+    stuck_land_ticks = 0
+
     while True:
+        tick_count += 1
+        _maybe_fetch_origin_main(vcs, repo_root, tick=tick_count)
         try:
             git_facts = gather_dispatch_git_facts(
                 vcs,
@@ -573,6 +622,9 @@ def run_dispatch_supervisor(
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
                 if not _verification_already_journaled(folded, run_id):
+                    _commit_pre_verify_wip(
+                        vcs, repo_root=repo_root, worktree=worktree
+                    )
                     counter = _run_and_journal_verification(
                         fs=fs,
                         vcs=vcs,
@@ -590,10 +642,24 @@ def run_dispatch_supervisor(
                     if text is not None:
                         folded = _fold_dispatch_journal(fs, run_dir, text)
                 v_outcome = _verification_outcome_verdict(folded, run_id)
+                landing_journaled = _landing_already_journaled(folded, run_id)
                 if (
                     v_outcome == DispatchVerificationVerdict.VERIFIED.value
                     and not git_facts.story_merged_on_main
-                    and not _landing_already_journaled(folded, run_id)
+                    and not landing_journaled
+                ):
+                    stuck_land_ticks += 1
+                else:
+                    stuck_land_ticks = 0
+                if (
+                    v_outcome == DispatchVerificationVerdict.VERIFIED.value
+                    and not git_facts.story_merged_on_main
+                    and not landing_journaled
+                ) or should_retry_stuck_land(
+                    verification_verdict=v_outcome,
+                    story_merged_on_main=git_facts.story_merged_on_main,
+                    landing_journaled=landing_journaled,
+                    stuck_land_ticks=stuck_land_ticks,
                 ):
                     counter = _run_and_journal_landing(
                         fs=fs,
@@ -613,6 +679,7 @@ def run_dispatch_supervisor(
                     text = fs.read_text(journal_path)
                     if text is not None:
                         folded = _fold_dispatch_journal(fs, run_dir, text)
+                    stuck_land_ticks = 0
                     try:
                         git_facts = gather_dispatch_git_facts(
                             vcs,
@@ -652,10 +719,22 @@ def run_dispatch_supervisor(
             continue
 
         v_outcome = _verification_outcome_verdict(folded, run_id)
+        landing_journaled = _landing_already_journaled(folded, run_id)
         if (
             v_outcome == DispatchVerificationVerdict.VERIFIED.value
             and not git_facts.story_merged_on_main
-            and not _landing_already_journaled(folded, run_id)
+            and not landing_journaled
+        ):
+            stuck_land_ticks += 1
+        if (
+            v_outcome == DispatchVerificationVerdict.VERIFIED.value
+            and not git_facts.story_merged_on_main
+            and not landing_journaled
+        ) or should_retry_stuck_land(
+            verification_verdict=v_outcome,
+            story_merged_on_main=git_facts.story_merged_on_main,
+            landing_journaled=landing_journaled,
+            stuck_land_ticks=stuck_land_ticks,
         ):
             counter = _run_and_journal_landing(
                 fs=fs,
@@ -675,6 +754,7 @@ def run_dispatch_supervisor(
             text = fs.read_text(journal_path)
             if text is not None:
                 folded = _fold_dispatch_journal(fs, run_dir, text)
+            stuck_land_ticks = 0
             try:
                 git_facts = gather_dispatch_git_facts(
                     vcs,
@@ -752,6 +832,11 @@ def run_dispatch_supervisor(
                 worktree=worktree,
                 baseline_head_sha=baseline_head_sha,
             )
+        if supervisor_should_exit(
+            completion_verdict=verdict.value,
+            story_merged_on_main=git_facts.story_merged_on_main,
+        ):
+            return 0
         return 0
 
 

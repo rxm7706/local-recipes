@@ -60,6 +60,13 @@ from ..core.dispatch_completion import (
     judge_dispatch_completion,
     zombie_redispatch_evidence,
 )
+from ..core.dispatch_retry import (
+    DispatchBlockKind,
+    classify_dispatch_block,
+    exclude_harness_profiles_after_transient_failure,
+    prune_blocked_stories_merged_on_main,
+)
+from ..core import promotion as promotion_core
 from ..core.spec_surface import parse_declared_surface
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..core.identity import normalize, render_feed_key
@@ -197,6 +204,15 @@ def add_factory_dispatch_subparser(factory_subparsers: argparse._SubParsersActio
         default="text",
         help="Output format (default: text).",
     )
+    parser.add_argument(
+        "--harness",
+        default=None,
+        help=(
+            "Ordered session-harness preference for this invocation only "
+            "(comma-separated profile names, e.g. cursor,claude). Overrides "
+            "project/repo defaults without editing marshal-policy.toml."
+        ),
+    )
     parser.set_defaults(handler=run_dispatch)
 
 
@@ -255,7 +271,20 @@ def _emit(
     return exit_code_for(envelope.verdict)
 
 
-def _compose_policy(slug: str) -> policy.EffectivePolicy:
+def _policy_flags_from_harness_arg(raw: str | None) -> dict[str, object]:
+    if raw is None or not str(raw).strip():
+        return {}
+    profiles = tuple(
+        part.strip() for part in str(raw).split(",") if part.strip()
+    )
+    if not profiles:
+        return {}
+    return {"harness_preference": profiles}
+
+
+def _compose_policy(
+    slug: str, *, flags: dict[str, object] | None = None
+) -> policy.EffectivePolicy:
     # Story 22.8: the repo-defaults layer (AD-16 layer 2) composes here too
     # -- `harness_preference` is repo-expressed on this machine
     # (`_bmad-output/policy-defaults.toml`). An unreadable file degrades to
@@ -270,9 +299,26 @@ def _compose_policy(slug: str) -> policy.EffectivePolicy:
         except PolicyIOError:
             project_data = {}
     effective, _findings = policy.compose(
-        project_slug=slug, repo_defaults=repo_defaults, project=project_data, flags={}
+        project_slug=slug,
+        repo_defaults=repo_defaults,
+        project=project_data,
+        flags=dict(flags or {}),
     )
     return effective
+
+
+def _last_failed_dispatch_session_log(
+    fs: FsPort, repo_root: Path, slug: str, story_key: str
+) -> str | None:
+    feed_story = render_feed_key(normalize(story_key))
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key != feed_story:
+            continue
+        if journal.completion_verdict != DispatchSessionVerdict.FAILED.value:
+            return None
+        return fs.read_text(run_dir / _LOG_FILENAME)
+    return None
 
 
 @dataclass(frozen=True)
@@ -723,6 +769,29 @@ def station_story_blocked_evidence(
             effective_policy=effective_policy,
         )
         if verdict == DispatchSessionVerdict.FAILED:
+            session_log = fs.read_text(run_dir / _LOG_FILENAME)
+            changed_path_count = 0
+            if journal.worktree_path is not None and journal.baseline_head_sha:
+                try:
+                    git_facts = gather_dispatch_git_facts(
+                        vcs,
+                        repo_root=repo_root,
+                        worktree=Path(journal.worktree_path),
+                        story_key=feed_story,
+                        project_slug=slug,
+                        baseline_head_sha=journal.baseline_head_sha,
+                        merge_subject_template=effective_policy.merge_subject_template.value,
+                    )
+                    changed_path_count = len(git_facts.changed_paths)
+                except (VcsCommandError, ValueError):
+                    changed_path_count = 0
+            block_kind = classify_dispatch_block(
+                session_log=session_log,
+                failed_gate=journal.verification_failed_gate,
+                changed_path_count=changed_path_count,
+            )
+            if block_kind is DispatchBlockKind.TRANSIENT:
+                return None
             gate = journal.verification_failed_gate
             detail = f", failed gate {gate}" if gate else ""
             return (
@@ -809,6 +878,7 @@ def run_dispatch(
             tick_seconds=_FLEET_TICK_SECONDS,
             campaign=None,
             format=getattr(args, "format", "text"),
+            harness=getattr(args, "harness", None),
         )
         return run_fleet_drain(
             drain_args,
@@ -818,6 +888,7 @@ def run_dispatch(
             process=process,
             harness=harness,
         )
+    policy_flags = _policy_flags_from_harness_arg(getattr(args, "harness", None))
     attempt = dispatch_once(
         slug=args.slug,
         story=raw_story,
@@ -825,6 +896,7 @@ def run_dispatch(
         vcs=vcs,
         build_harness=build_harness,
         process=process,
+        policy_flags=policy_flags or None,
     )
     return _emit(args, dict(attempt.data), list(attempt.findings))
 
@@ -837,6 +909,7 @@ def dispatch_once(
     vcs: VcsPort | None = None,
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
+    policy_flags: dict[str, object] | None = None,
 ) -> DispatchAttempt:
     """Launch exactly one governed story session and report data + findings.
 
@@ -921,7 +994,7 @@ def dispatch_once(
         )
         return _done()
 
-    effective_policy = _compose_policy(slug)
+    effective_policy = _compose_policy(slug, flags=policy_flags)
     difficulty = dispatch_core.read_declared_difficulty(spec_text)
     model = dispatch_core.resolve_dispatch_model(effective_policy, difficulty=difficulty)
     budget_env = dispatch_core.build_budget_env(effective_policy)
@@ -956,6 +1029,14 @@ def dispatch_once(
     # dispatches died on cursor's auth wall with the binary on PATH), so
     # every skipped candidate is a structured finding, never silent.
     preference = tuple(effective_policy.harness_preference.value)
+    session_log = _last_failed_dispatch_session_log(
+        fs, repo_root, slug, render_feed_key(story_key)
+    )
+    preference = exclude_harness_profiles_after_transient_failure(
+        preference, session_log
+    )
+    if not preference:
+        preference = tuple(effective_policy.harness_preference.value)
     resolution = build_harness.binary_present(preference, repo_root=repo_root)
     for profile_error in resolution.profile_errors:
         findings.append(
@@ -1780,7 +1861,61 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
         default="text",
         help="Output format (default: text).",
     )
+    parser.add_argument(
+        "--harness",
+        default=None,
+        help=(
+            "Ordered session-harness preference for every dispatch this "
+            "campaign launches (comma-separated profile names, e.g. "
+            "cursor,claude). Overrides project/repo defaults without "
+            "editing marshal-policy.toml."
+        ),
+    )
     parser.set_defaults(handler=run_fleet_drain)
+
+
+def _preflight_explicit_story_specs(
+    repo_root: Path, slug: str, stories: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Stories in ``stories`` with no tracked spec -- fast-fail before mint."""
+    missing: list[str] = []
+    for story in stories:
+        if dispatch_core.resolve_story_spec_path(repo_root, slug, story) is None:
+            missing.append(story)
+    return tuple(missing)
+
+
+def _reconcile_campaign_blocked(
+    *,
+    vcs: VcsPort,
+    repo_root: Path,
+    blocked: dict[str, dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    """Drop blocked entries for stories already merged on origin/main."""
+    if not blocked:
+        return blocked
+    fetch = getattr(vcs, "fetch", None)
+    if fetch is None:
+        return blocked
+    try:
+        fetch(repo_root, "origin", "main")
+        subjects = vcs.commit_subjects(repo_root, _BASE_REF)
+    except (VcsCommandError, AttributeError):
+        return blocked
+    reconciled: dict[str, dict[str, str]] = {}
+    for slug, station_blocked in blocked.items():
+        effective_policy = _compose_policy(slug)
+        merged = promotion_core.merged_story_keys(
+            subjects,
+            effective_policy.merge_subject_template.value,
+            slug,
+        )
+        merged_feed = frozenset(render_feed_key(key) for key in merged)
+        reconciled[slug] = prune_blocked_stories_merged_on_main(
+            station_blocked,
+            merged_story_keys=merged_feed,
+        )
+    return reconciled
 
 
 def _read_fleet_queue_config(
@@ -1971,6 +2106,7 @@ def execute_fleet_cycle(
     harness: HarnessPort,
     station: str | None = None,
     explicit_stories: tuple[str, ...] | None = None,
+    policy_flags: dict[str, object] | None = None,
 ) -> FleetCycleReport:
     """One fleet-drain cycle: plan every station, dispatch the eligible ones.
 
@@ -2073,7 +2209,7 @@ def execute_fleet_cycle(
                 statuses, order_override=overrides.get(slug)
             )
         )
-        effective_policy = _compose_policy(slug)
+        effective_policy = _compose_policy(slug, flags=policy_flags)
         station_skips = configured_skips.get(slug, {})
         blocked = _station_blocked_map(
             fs=fs,
@@ -2165,6 +2301,7 @@ def execute_fleet_cycle(
                 vcs=vcs,
                 build_harness=build_harness,
                 process=process,
+                policy_flags=policy_flags,
             )
         except (VcsCommandError, FsError, ProcessError, OSError, ValueError) as exc:
             reason = f"dispatch raised {type(exc).__name__}: {exc}"
@@ -2354,6 +2491,7 @@ def _spawn_campaign_supervisor(
     tick_seconds: int,
     station: str | None = None,
     stories: tuple[str, ...] | None = None,
+    harness: str | None = None,
 ) -> int:
     """Detach the campaign supervisor -- the loop that chains next stories.
 
@@ -2383,6 +2521,7 @@ def _spawn_campaign_supervisor(
             str(tick_seconds),
             station or "",
             ",".join(stories) if stories else "",
+            harness or "",
         ],
         cwd=repo_root,
         log_path=run_dir / _FLEET_SUPERVISOR_LOG_FILENAME,
@@ -2593,6 +2732,29 @@ def run_fleet_drain(
                     )
                 )
                 return _emit(args, data, findings, command="factory drain")
+            missing_specs = _preflight_explicit_story_specs(
+                repo_root, station, explicit_stories
+            )
+            if missing_specs:
+                findings.append(
+                    Finding(
+                        code="MRS-DISP-004",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"refusing dispatch: --stories names key(s) with "
+                            f"no tracked spec on station {station!r}: "
+                            f"{', '.join(missing_specs)} -- nothing was "
+                            "provisioned"
+                        ),
+                    )
+                )
+                return _emit(args, data, findings, command="factory drain")
+
+    policy_flags = _policy_flags_from_harness_arg(getattr(args, "harness", None))
+    if policy_flags:
+        data["harness_preference_override"] = list(
+            policy_flags.get("harness_preference", ())
+        )
 
     run_id = raw_campaign or mint_run_id(
         dispatch_fleet.FLEET_JOURNAL_SLUG,
@@ -2641,11 +2803,16 @@ def run_fleet_drain(
         return _emit(args, data, findings, command="factory drain")
 
     try:
+        campaign_blocked = _reconcile_campaign_blocked(
+            vcs=vcs,
+            repo_root=repo_root,
+            blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
+        )
         report = execute_fleet_cycle(
             repo_root=repo_root,
             mode=mode,
             leave_remaining=leave_remaining,
-            campaign_blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
+            campaign_blocked=campaign_blocked,
             fs=fs,
             vcs=vcs,
             build_harness=build_harness,
@@ -2653,6 +2820,7 @@ def run_fleet_drain(
             harness=harness,
             station=station,
             explicit_stories=explicit_stories,
+            policy_flags=policy_flags or None,
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:
@@ -2678,6 +2846,7 @@ def run_fleet_drain(
                 tick_seconds=tick_seconds,
                 station=station,
                 stories=explicit_stories,
+                harness=getattr(args, "harness", None),
             )
             data["supervisor_log"] = str(run_dir / _FLEET_SUPERVISOR_LOG_FILENAME)
         except ProcessError as exc:

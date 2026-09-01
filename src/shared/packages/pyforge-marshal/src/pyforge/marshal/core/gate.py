@@ -457,6 +457,25 @@ def compute_effective_surface(
     return tuple(sorted(set(policy_surface) & set(spec_surface)))
 
 
+def widen_effective_surface_with_paths(
+    effective_surface: tuple[str, ...],
+    extra_paths: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Worktree-verify-only widen for warn-mode scope advisories (hotfix
+    2026-09-01): union ``effective_surface`` with concrete changed paths so
+    a second verify pass can proceed without bloated advisory payloads.
+
+    Deliberately NOT used by manual ``marshal gate --scope-check`` -- that
+    path keeps AD-27 intersection-only semantics."""
+    if not extra_paths:
+        return effective_surface
+    widened = set(effective_surface)
+    for path in extra_paths:
+        if path:
+            widened.add(path)
+    return tuple(sorted(widened))
+
+
 def _matches_any(path: str, globs: tuple[str, ...]) -> bool:
     return any(fnmatch.fnmatch(path, glob) for glob in globs)
 

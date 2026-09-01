@@ -215,6 +215,29 @@ def evaluate_dispatch_verification(
             scope_findings = gate.check_scope_with_mode(
                 effective_surface, frozen_paths, changed, mode=scope_violation_mode
             )
+            advisory_paths = tuple(
+                finding.path
+                for finding in scope_findings
+                if finding.code in gate._SCOPE_VIOLATION_ADVISORY_CODES.values()
+                and finding.path
+            )
+            if advisory_paths and scope_violation_mode == "warn":
+                widened_surface = gate.widen_effective_surface_with_paths(
+                    effective_surface, advisory_paths
+                )
+                if widened_surface != effective_surface:
+                    recheck_findings = gate.check_scope_with_mode(
+                        widened_surface,
+                        frozen_paths,
+                        changed,
+                        mode=scope_violation_mode,
+                    )
+                    if not any(
+                        finding.severity is Severity.ERROR for finding in recheck_findings
+                    ):
+                        effective_surface = widened_surface
+                    else:
+                        scope_findings = recheck_findings
             findings.extend(scope_findings)
             data["scope_check"] = {
                 "checked": True,

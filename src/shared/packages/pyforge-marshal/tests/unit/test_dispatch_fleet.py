@@ -1968,10 +1968,20 @@ def test_dispatch_supervisor_re_invocation_carries_station_and_stories() -> None
     assert "--stories" in argv
     assert argv[argv.index("--stories") + 1] == "22-11-a,22-12-b"
 
+    harness_argv = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id="camp-h",
+        harness="cursor,claude",
+    )
+    assert "--harness" in harness_argv
+    assert harness_argv[harness_argv.index("--harness") + 1] == "cursor,claude"
+
     # Omitted when unset -- an ordinary fleet-wide drain's argv is untouched.
     plain = build_cycle_argv(mode="drain_to_zero", leave_remaining=1, run_id="camp-2")
     assert "--station" not in plain
     assert "--stories" not in plain
+    assert "--harness" not in plain
 
 
 def test_unknown_station_with_stories_refuses_as_unknown_station_not_unreadable_ledger(

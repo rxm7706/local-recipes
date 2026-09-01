@@ -143,8 +143,14 @@ Decomposed for traceability (same contract, restated as discrete checks):
   merge-through-finalize completes" step composes over these, never a parallel landing path.
 - `core/status.py::build_fleet_row` (line 1068) / `_apply_dispatch_overlay` (line 995) —
   existing per-station dispatch-overlay status facts (`marshal status` / `fleet-picture`);
-  the fleet mode's per-station backlog/in-flight read should be groundable in the same
+  the fleet   mode's per-station backlog/in-flight read should be groundable in the same
   journal + git/process facts these already assemble, not a second status path.
+
+**2026-09-01 hotfix extensions (SCP `sprint-change-proposal-2026-09-01-dispatch-autonomy-hotfixes.md`):**
+- `core/dispatch_retry.py` — transient vs terminal block for `MRS-DRAIN-005`; campaign
+  blocked-map reconciliation via `prune_blocked_stories_merged_on_main`.
+- `cli/dispatch.py` — `--harness` override; `--stories` spec preflight batch.
+- `dispatch_fleet_supervisor` — forwards `--harness` on supervised ticks.
 
 **Supersedes (the interim runner this story replaces — read to know what to absorb, not
 reimplement):**

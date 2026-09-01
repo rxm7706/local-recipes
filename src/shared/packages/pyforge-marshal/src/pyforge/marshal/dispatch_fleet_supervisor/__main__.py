@@ -54,6 +54,7 @@ def build_cycle_argv(
     run_id: str,
     station: str | None = None,
     stories: str | None = None,
+    harness: str | None = None,
 ) -> list[str]:
     """The documented one-cycle command this supervisor re-runs each tick.
 
@@ -83,6 +84,8 @@ def build_cycle_argv(
         argv += ["--station", station]
     if stories:
         argv += ["--stories", stories]
+    if harness:
+        argv += ["--harness", harness]
     return argv
 
 
@@ -125,6 +128,7 @@ def run_fleet_campaign_supervisor(
     tick_seconds: int,
     station: str | None = None,
     stories: str | None = None,
+    harness: str | None = None,
     process: ProcessPort | None = None,
 ) -> int:
     process = process if process is not None else PosixProcess()
@@ -134,6 +138,7 @@ def run_fleet_campaign_supervisor(
         run_id=run_id,
         station=station,
         stories=stories,
+        harness=harness,
     )
     tick = max(1, tick_seconds)
     cycles = 0
@@ -203,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     # no parsing ambiguity between these two trailing optional positionals.
     parser.add_argument("station", nargs="?", default="")
     parser.add_argument("stories", nargs="?", default="")
+    parser.add_argument("harness", nargs="?", default="")
     args = parser.parse_args(argv)
     return run_fleet_campaign_supervisor(
         repo_root=Path(args.repo_root),
@@ -213,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         tick_seconds=args.tick_seconds,
         station=args.station or None,
         stories=args.stories or None,
+        harness=args.harness or None,
     )
 
 
