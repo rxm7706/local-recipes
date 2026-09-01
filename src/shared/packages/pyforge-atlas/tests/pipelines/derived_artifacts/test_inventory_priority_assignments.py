@@ -24,6 +24,17 @@ _PRIORITY_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-ope
 
 
 def _load_priority_module():
+    import types
+
+    if "openpyxl" not in sys.modules:
+        stub = types.ModuleType("openpyxl")
+
+        def _load_workbook(*_args, **_kwargs):
+            raise RuntimeError("openpyxl stub — parity tests use synthetic rows only")
+
+        stub.load_workbook = _load_workbook
+        sys.modules["openpyxl"] = stub
+
     spec = importlib.util.spec_from_file_location("priority_ref", _PRIORITY_SCRIPT)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
@@ -224,10 +235,18 @@ def corpus():
         _identity_row("app-pkg"),
         _identity_row("heavy-dl"),
         _identity_row("mod-dl"),
-        _identity_row("create-leftover"),
-        _identity_row("issue-on-cf", conda_purl="pkg:conda/issue-on-cf?channel=conda-forge"),
-        _identity_row("issue-conda-only", Conda-Forge_FeedStock_URL="https://github.com/cf/x"),
-        _identity_row("tracked-leftover", OpenTeams_Issue_URL="https://github.com/o/i/9"),
+        _identity_row("create-leftover", OpenTeams_Cohort="JFROG_NEW"),
+        _identity_row("issue-on-cf", conda_purl="pkg:conda/issue-on-cf?channel=conda-forge", OpenTeams_Cohort="JFROG_ON_CF"),
+        _identity_row(
+            "issue-conda-only",
+            OpenTeams_Cohort="CONDA_ONLY",
+            **{"Conda-Forge_FeedStock_URL": "https://github.com/cf/x"},
+        ),
+        _identity_row(
+            "tracked-leftover",
+            OpenTeams_Issue_URL="https://github.com/o/i/9",
+            OpenTeams_Coverage="Have_Issue",
+        ),
     ]
     jfrog = [
         _jfrog_row("vuln-pkg"),
@@ -243,6 +262,9 @@ def corpus():
     ]
     ot = [
         {
+            "Title": "[Conda-Forge Packaging] board-p2",
+            "URL": "https://github.com/o/i/2",
+            "Priority": "P2 High",
             "title": "[Conda-Forge Packaging] board-p2",
             "url": "https://github.com/o/i/2",
             "priority": "P2 High",

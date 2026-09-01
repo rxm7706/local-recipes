@@ -579,6 +579,7 @@ def _cvss_to_risk_level(cvss: float | None) -> str:
     return "NO_DATA"
 
 
+def derive_basilisk_vuln_rollup(
     vulnerability_basilisk_advisories: pd.DataFrame,
     vulnerability_basilisk_details: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -626,6 +627,33 @@ def _cvss_to_risk_level(cvss: float | None) -> str:
     if not rows:
         return pd.DataFrame(columns=list(_BASILISK_ROLLUP_COLUMNS))
     return pd.DataFrame(rows, columns=list(_BASILISK_ROLLUP_COLUMNS)).reset_index(drop=True)
+
+
+def _priority_str_field(raw) -> str:
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return ""
+    return str(raw).strip()
+
+
+def _explicit_inv_from_identity(ident: dict) -> dict | None:
+    inv = {
+        "OpenTeams_Batch": _priority_str_field(ident.get("OpenTeams_Batch")),
+        "OpenTeams_Cohort": _priority_str_field(ident.get("OpenTeams_Cohort")),
+        "OpenTeams_Coverage": _priority_str_field(ident.get("OpenTeams_Coverage")),
+    }
+    return inv if any(inv.values()) else None
+
+
+def _priority_inv_from_identity(
+    ident: dict, in_jfrog: bool, on_cf: bool, in_conda_ent: bool
+) -> dict[str, str]:
+    derived_cohort = _derive_openteams_cohort(in_jfrog, on_cf, in_conda_ent)
+    cohort = _priority_str_field(ident.get("OpenTeams_Cohort")) or derived_cohort
+    return {
+        "OpenTeams_Batch": _priority_str_field(ident.get("OpenTeams_Batch")),
+        "OpenTeams_Cohort": cohort,
+        "OpenTeams_Coverage": _priority_str_field(ident.get("OpenTeams_Coverage")),
+    }
 
 
 def _derive_openteams_cohort(in_jfrog: bool, on_conda_forge: bool, in_conda_ent: bool) -> str:
@@ -726,10 +754,10 @@ def assign_inventory_priority(
         in_jfrog = key in jfrog_by if key else False
         on_cf = _on_conda_forge(ident)
         in_conda_ent = key in conda_ent_names if key else False
-        cohort = _derive_openteams_cohort(in_jfrog, on_cf, in_conda_ent)
-        inv = {"OpenTeams_Cohort": cohort, "OpenTeams_Batch": "", "OpenTeams_Coverage": ""}
+        inv = _priority_inv_from_identity(ident, in_jfrog, on_cf, in_conda_ent)
+        cohort = inv["OpenTeams_Cohort"]
 
-        work = _priority_work_label(ident, inv, j or None)
+        work = _priority_work_label(ident, _explicit_inv_from_identity(ident), j or None)
         bucket, src, why = _priority_assign_lane(ident, key, j or None, by_url, by_name)
         records.append(
             {
