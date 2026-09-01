@@ -26,13 +26,27 @@ def should_retry_stuck_land(
     )
 
 
+def landing_journal_indicates_complete(landing_verdict: str | None) -> bool:
+    """True when dispatch-land journaled a successful CAP-4 outcome.
+
+    After land, ``judge_dispatch_completion`` can stay ``LIVE`` for a long time
+    while local ``main`` lags ``origin/main`` (git-subject scan) even though
+    the run is done — this trusts the land journal instead."""
+    return landing_verdict in {"landed", "already_landed"}
+
+
 def supervisor_should_exit(
     *,
     completion_verdict: str,
     story_merged_on_main: bool,
+    landing_verdict: str | None = None,
 ) -> bool:
     """Terminal states where the detached supervisor may stop heartbeating."""
-    return story_merged_on_main or completion_verdict in {"completed", "failed"}
+    return (
+        story_merged_on_main
+        or landing_journal_indicates_complete(landing_verdict)
+        or completion_verdict in {"completed", "failed"}
+    )
 
 
 def should_terminalize_verify_refusal(

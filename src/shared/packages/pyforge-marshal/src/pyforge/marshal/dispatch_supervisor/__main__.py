@@ -39,6 +39,7 @@ from ..core.dispatch_verification import (
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_supervisor_state import (
+    landing_journal_indicates_complete,
     should_retry_stuck_land,
     should_terminalize_verify_refusal,
     supervisor_should_exit,
@@ -323,6 +324,21 @@ def gather_dispatch_git_facts(
         branch_merged=branch_merged,
         story_merged_on_main=story_merged,
     )
+
+
+def _landing_outcome_verdict(folded, run_id: str) -> str | None:
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
+        if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+            continue
+        if not entry.payload.get("ok"):
+            return None
+        verdict_val = entry.payload.get("verdict")
+        return verdict_val if isinstance(verdict_val, str) else None
+    return None
+
+
+def _landing_succeeded(folded, run_id: str) -> bool:
+    return landing_journal_indicates_complete(_landing_outcome_verdict(folded, run_id))
 
 
 def _verification_already_journaled(folded, run_id: str) -> bool:
@@ -617,9 +633,12 @@ def run_dispatch_supervisor(
             continue
 
         session_alive = process.is_alive(session_pid)
-        verdict = judge_dispatch_completion(
-            DispatchCompletionInput(session_alive=session_alive, git=git_facts)
-        )
+        if _landing_succeeded(folded, run_id):
+            verdict = DispatchSessionVerdict.COMPLETED
+        else:
+            verdict = judge_dispatch_completion(
+                DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+            )
         if verdict == DispatchSessionVerdict.LIVE:
             v_outcome = _verification_outcome_verdict(folded, run_id)
             if _session_awaits_verification(session_alive, git_facts):
@@ -848,6 +867,7 @@ def run_dispatch_supervisor(
         if supervisor_should_exit(
             completion_verdict=verdict.value,
             story_merged_on_main=git_facts.story_merged_on_main,
+            landing_verdict=_landing_outcome_verdict(folded, run_id),
         ):
             return 0
         return 0

@@ -445,6 +445,12 @@ def gather_dispatch_journal_facts(
             verdict_val = entry.payload.get("verdict")
             if isinstance(verdict_val, str):
                 completion_verdict = verdict_val
+    landing_verdict: str | None = None
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
+        if entry.phase == Phase.OUTCOME and entry.payload.get("ok"):
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                landing_verdict = verdict_val
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
         if entry.phase == Phase.OUTCOME:
             vval = entry.payload.get("verdict")
@@ -500,6 +506,7 @@ def gather_dispatch_journal_facts(
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
         verification_scope_advisories=verification_scope_advisories,
+        landing_verdict=landing_verdict,
         story_started_at=story_started_at,
         story_ended_at=story_ended_at,
         baseline_revision=baseline_revision,
@@ -523,6 +530,10 @@ def resolve_dispatch_session_verdict(
         DispatchSessionVerdict.FAILED.value,
     }:
         return DispatchSessionVerdict(journal.completion_verdict)
+    from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
+
+    if landing_journal_indicates_complete(journal.landing_verdict):
+        return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
     session_alive = (

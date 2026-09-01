@@ -85,6 +85,42 @@ def test_zombie_trap_dead_process_with_git_progress_is_live() -> None:
     assert verdict == DispatchSessionVerdict.LIVE
 
 
+def test_resolve_verdict_completed_when_land_journal_succeeded() -> None:
+    """Dead session + git progress must not block chain after CAP-4 land."""
+    from types import SimpleNamespace
+
+    from pyforge.marshal.cli.dispatch import resolve_dispatch_session_verdict
+
+    journal = dispatch_core.DispatchJournalFacts(
+        story_key="28.9",
+        session_pid=999999,
+        model=None,
+        launched_at=None,
+        worktree_path="/tmp/wt",
+        baseline_head_sha="aaa",
+        landing_verdict="landed",
+    )
+
+    class DeadProcess:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
+    effective = SimpleNamespace(
+        merge_subject_template=SimpleNamespace(value="Merge {key} into main")
+    )
+
+    verdict = resolve_dispatch_session_verdict(
+        fs=object(),
+        vcs=object(),
+        process=DeadProcess(),
+        repo_root=Path("/tmp"),
+        slug="pyforge-marshal",
+        journal=journal,
+        effective_policy=effective,
+    )
+    assert verdict == DispatchSessionVerdict.COMPLETED
+
+
 def test_zombie_redispatch_evidence_names_git_progress() -> None:
     git = DispatchGitFacts(
         baseline_head_sha="aaa111",
