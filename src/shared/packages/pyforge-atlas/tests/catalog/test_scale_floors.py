@@ -9,6 +9,9 @@ Offline, fixture-injected floor assertions for the three floors this story owns:
   payload of realistic size through the UNCHANGED ``channeldata_json_to_rows`` parser;
 - Basilisk packages — non-zero when a fixture fetcher returns data (qualitative).
 
+Story 23.1 extends this module with Tier 3 OS-distro bulk-index floors (homebrew,
+nixpkgs, spack, debian, fedora) — sub-threshold FAILS the assertion (never warn-only).
+
 Sub-threshold FAILS the assertion (never a log-only warning). No network anywhere —
 this whole ``tests/catalog/`` suite is offline and non-credentialed by design
 (AD-11/NFR-1); "Bootstrap smoke" in catalog-sources.md's wording is satisfied here.
@@ -25,11 +28,19 @@ import pytest
 
 from pyforge.atlas.datasets import (
     BasiliskPackagesDataset,
+    HomebrewPackagesDataset,
     RefreshRequest,
     TrackedSeedDataset,
     channeldata_json_to_rows,
 )
 from pyforge.atlas.datasets.rate_limit import RateLimitedScheduler
+from pyforge.atlas.datasets.tier3_sources import (
+    parse_debian_packages_control,
+    parse_fedora_packages,
+    parse_homebrew_formulae_json,
+    parse_nixpkgs_packages_json,
+    parse_spack_packages,
+)
 from pyforge.atlas.pipelines.core.nodes import enumerate_anaconda_main_packages
 
 from .conftest import CONF_SOURCE
@@ -37,6 +48,11 @@ from .conftest import CONF_SOURCE
 # The documented order-of-magnitude floors (catalog-sources.md "Scale sanity gates").
 AOSS_FREE_FLOOR = 1_000
 ANACONDA_MAIN_FLOOR = 5_000
+HOMEBREW_FLOOR = 5_000
+NIXPKGS_FLOOR = 50_000
+SPACK_FLOOR = 3_000
+DEBIAN_FLOOR = 20_000
+FEDORA_FLOOR = 15_000
 
 AOSS_FREE_SEED = CONF_SOURCE / "base" / "seeds" / "discovery_aoss_free_python_seed.json"
 ANACONDA_DIST_SEED = CONF_SOURCE / "base" / "seeds" / "discovery_anaconda_dist_2026x_seed.json"
@@ -182,3 +198,54 @@ def test_basilisk_packages_zero_rows_from_healthy_fixture_would_fail(tmp_path):
     assert ds.is_stale() is True
     with pytest.raises(AssertionError):
         assert len(frame) > 0, "Basilisk package catalog is zero"
+
+
+# -- Story 23.1: Tier 3 OS-distro bulk-index scale floors ---------------------
+
+
+def _homebrew_fixture(n: int) -> str:
+    return json.dumps([{"name": f"pkg-{i}"} for i in range(n)])
+
+
+def _nixpkgs_fixture(n: int) -> str:
+    return json.dumps({f"python3Packages.pkg{i}": {} for i in range(n)})
+
+
+def _spack_fixture(n: int) -> str:
+    return json.dumps([f"py-pkg-{i}" for i in range(n)])
+
+
+def _debian_fixture(n: int) -> str:
+    return "\n\n".join(f"Package: python3-pkg-{i}" for i in range(n))
+
+
+def _fedora_fixture(n: int) -> str:
+    return json.dumps({"projects": [{"name": f"python-pkg-{i}"} for i in range(n)]})
+
+
+@pytest.mark.parametrize(
+    ("parser", "fixture_fn", "floor", "label"),
+    [
+        (parse_homebrew_formulae_json, _homebrew_fixture, HOMEBREW_FLOOR, "homebrew"),
+        (parse_nixpkgs_packages_json, _nixpkgs_fixture, NIXPKGS_FLOOR, "nixpkgs"),
+        (parse_spack_packages, _spack_fixture, SPACK_FLOOR, "spack"),
+        (parse_debian_packages_control, _debian_fixture, DEBIAN_FLOOR, "debian"),
+        (parse_fedora_packages, _fedora_fixture, FEDORA_FLOOR, "fedora"),
+    ],
+)
+def test_tier3_fixture_meets_documented_floor(parser, fixture_fn, floor, label):
+    names = parser(fixture_fn(floor))
+    _assert_floor(pd.DataFrame({"name": names}), floor, label)
+
+
+@pytest.mark.parametrize(
+    ("parser", "fixture_fn", "floor", "label"),
+    [
+        (parse_homebrew_formulae_json, _homebrew_fixture, HOMEBREW_FLOOR, "homebrew"),
+        (parse_nixpkgs_packages_json, _nixpkgs_fixture, NIXPKGS_FLOOR, "nixpkgs"),
+    ],
+)
+def test_tier3_fixture_below_floor_fails_not_warns(parser, fixture_fn, floor, label):
+    names = parser(fixture_fn(floor - 1))
+    with pytest.raises(AssertionError, match="below the documented scale-sanity floor"):
+        _assert_floor(pd.DataFrame({"name": names}), floor, label)

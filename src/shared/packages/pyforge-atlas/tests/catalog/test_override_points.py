@@ -27,6 +27,7 @@ from .conftest import (
     REPO_ROOT,
     RESERVED_OVERRIDE_POINTS,
     STORY_21_4_OVERRIDE_POINTS,
+    STORY_23_1_OVERRIDE_POINTS,
     make_config_loader,
 )
 
@@ -38,20 +39,27 @@ from .conftest import (
 _ENV_OR_RE = re.compile(r"^\$\{env_or:([A-Z0-9_]+),([^,{}]+)\}$")
 
 
-def test_override_points_are_19_live_plus_1_reserved_plus_2_story_21_4(globals_raw):
-    """P7: assert the 19+1+2 structure, not a bare 22 — the reserved point
+def test_override_points_are_19_live_plus_1_reserved_plus_2_story_21_4_plus_5_story_23_1(globals_raw):
+    """P7: assert the 19+1+2+5 structure — the reserved point
     (BASILISK_BASE_URL) has NO live helper behind it and must stay visibly
-    reserved; Story 21.4's 2 Tier-1 discovery points (ANACONDA_DIST_BASE_URL /
-    AOSS_PREMIUM_BASE_URL) are pinned by name inside the live set so a new
-    override point that is not added here fails by construction."""
+    reserved; Story 21.4's 2 Tier-1 discovery points and Story 23.1's 5 Tier-3
+    host bases are pinned by name inside the live set."""
     bases = set(globals_raw.get("endpoint_bases") or {})
     assert STORY_21_4_OVERRIDE_POINTS == {"ANACONDA_DIST_BASE_URL", "AOSS_PREMIUM_BASE_URL"}
+    assert STORY_23_1_OVERRIDE_POINTS == {
+        "HOMEBREW_BASE_URL",
+        "NIXPKGS_BASE_URL",
+        "SPACK_RAW_BASE_URL",
+        "DEBIAN_BASE_URL",
+        "FEDORA_SRC_BASE_URL",
+    }
     assert STORY_21_4_OVERRIDE_POINTS <= EXPECTED_LIVE_OVERRIDE_POINTS
-    assert len(EXPECTED_LIVE_OVERRIDE_POINTS - STORY_21_4_OVERRIDE_POINTS) == 19
-    assert len(EXPECTED_LIVE_OVERRIDE_POINTS) == 21
+    assert STORY_23_1_OVERRIDE_POINTS <= EXPECTED_LIVE_OVERRIDE_POINTS
+    assert len(EXPECTED_LIVE_OVERRIDE_POINTS - STORY_21_4_OVERRIDE_POINTS - STORY_23_1_OVERRIDE_POINTS) == 19
+    assert len(EXPECTED_LIVE_OVERRIDE_POINTS) == 26
     assert RESERVED_OVERRIDE_POINTS == {"BASILISK_BASE_URL"}
     assert bases == EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POINTS
-    assert len(bases) == 22  # 19 + 1 + 2, by the set pins above
+    assert len(bases) == 27  # 19 + 2 + 5 + 1 reserved
 
 
 def test_extra_overrides_and_fetcher_urls_are_set_pinned(globals_raw):
@@ -61,8 +69,7 @@ def test_extra_overrides_and_fetcher_urls_are_set_pinned(globals_raw):
 
 
 def test_total_env_override_surface_is_pinned(globals_raw):
-    """P7 accounting (adjusted +1 by P9's data_root, +2 by Story 21.4):
-    22 + 3 + 3 + 5 = 33."""
+    """P7 accounting (Story 23.1): 27 + 4 + 3 + 6 = 40."""
     total = sum(
         len(globals_raw.get(section) or {})
         for section in ("endpoint_bases", "extra_overrides", "fetcher_urls", "paths")

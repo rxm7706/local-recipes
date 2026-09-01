@@ -2,9 +2,10 @@
 title: 'Tier 3 bulk OS indexes — homebrew, nixpkgs, spack, debian, fedora (Story 23.1, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'pending-local-verify'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -361,4 +362,19 @@ real data.
   expected: exit 0; all 6 new entries materialize as empty-but-correctly-columned frames,
   each raw source marked stale (offline / no fetcher wired), matching the existing
   `ExternalRefreshDataset` offline contract.
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation complete (Cursor bmad-build-auto dispatch). Added `datasets/tier3_sources.py`
+(five `ExternalRefreshDataset` subclasses + parse functions), `flag_tier3_channels` + five
+`refresh_discovery_*_store` trigger nodes, catalog/parameters/conftest updates (+6 catalog
+entries, +6 pipeline nodes), scale-floor tests, tier-3 dataset/node tests, and parity harness
+fixture for `flag_tier3_channels`. Five new `endpoint_bases` in `globals.yml` route Tier-3
+URLs through `${globals:...}` (AD-13).
+
+Verification: initial `kedro-catalog-check` failed on hardcoded URLs (fixed); full re-run of
+`kedro-catalog-check`, `kedro-test`, and `duckdb-singularity` pending — shell unavailable in
+the completing agent turn. Run locally before merge.
 

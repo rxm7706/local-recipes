@@ -77,6 +77,13 @@ PREFIX_TO_PIPELINE = {
     "inventory": "derived_artifacts",  # Story 23.8: inventory_universe
     "trending": "upstream_discovery",
     "org_audit": "upstream_discovery",
+    # Story 23.1: Tier 3 OS bulk indexes — SPECIFIC prefixes beat the generic
+    # ``discovery`` -> upstream_discovery fallback (longest-prefix match).
+    "discovery_homebrew": "pypi_intelligence",
+    "discovery_nixpkgs": "pypi_intelligence",
+    "discovery_spack": "pypi_intelligence",
+    "discovery_debian": "pypi_intelligence",
+    "discovery_fedora": "pypi_intelligence",
     "discovery": "upstream_discovery",  # Story 21.4: Tier 1 discovery-shaped sources
     "enterprise": "upstream_discovery",  # Story 21.5: Tier 2 enterprise-universe sources
     "purl_associator": "upstream_discovery",  # Story 21.6: CAP-3 identity join
@@ -93,7 +100,7 @@ PREFIX_TO_PIPELINE = {
 # deferred to F4 per AD-12; recorded in the Dev Agent Record).
 EXPECTED_PIPELINE_COUNTS = {
     "core": 18,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages
-    "pypi_intelligence": 15,
+    "pypi_intelligence": 21,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes)
     "vulnerability": 14,  # B8: + vulnerability_basilisk_detail_raw + vulnerability_basilisk_details (FR-19)
     "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
@@ -104,7 +111,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 112  # Story 20.3: 94 + semantic_packages; Story 21.4: + 6 (5 Tier-1 raw + core_anaconda_main_packages); Story 21.5: + 4 (discovery_about_maintainers_raw, discovery_curated_groups_seed, enterprise_conda_maintainers, enterprise_jfrog_names); Story 21.6: + 6 (purl_associator_mappings_raw, openteams_project_1_board_raw, discovery_staged_recipes_prs_raw, discovery_local_recipes_raw, identity_packages_primary, identity_export_parquet); Story 23.8: + 1 (inventory_universe)
+EXPECTED_TOTAL = 118  # Story 23.1: +6 (5 Tier-3 raw + pypi_tier3_channel_flags)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
@@ -117,6 +124,7 @@ FLIP_LIST = {
     "pypi_current_versions",
     "pypi_downloads_monthly",
     "pypi_cross_channel_flags",
+    "pypi_tier3_channel_flags",
     "pypi_intelligence_enriched",
     "vulnerability_package_rollup",
     "vulnerability_package_version_vulns",
@@ -177,10 +185,24 @@ EXPECTED_LIVE_OVERRIDE_POINTS = {
     # globals.yml's "new sources add exactly one override point" rule.
     "ANACONDA_DIST_BASE_URL",
     "AOSS_PREMIUM_BASE_URL",
+    # Story 23.1 (Tier 3 OS bulk indexes) — five new host bases for the
+    # discovery_<source>_packages_raw external-refresh stores in pypi_intelligence.
+    "HOMEBREW_BASE_URL",
+    "NIXPKGS_BASE_URL",
+    "SPACK_RAW_BASE_URL",
+    "DEBIAN_BASE_URL",
+    "FEDORA_SRC_BASE_URL",
 }
 # The Story 21.4 additions, named so test_override_points can assert the
 # 19 + 2 split inside the "live" set explicitly.
 STORY_21_4_OVERRIDE_POINTS = {"ANACONDA_DIST_BASE_URL", "AOSS_PREMIUM_BASE_URL"}
+STORY_23_1_OVERRIDE_POINTS = {
+    "HOMEBREW_BASE_URL",
+    "NIXPKGS_BASE_URL",
+    "SPACK_RAW_BASE_URL",
+    "DEBIAN_BASE_URL",
+    "FEDORA_SRC_BASE_URL",
+}
 # ...plus the reserved 20th (A2-A2 / FR-19). Story B8 LANDED its nodes, but
 # no legacy resolve_*_urls helper ever backed it (the reserved slot was
 # pre-declared, not ported) — which is exactly why it stays pinned SEPARATELY
@@ -252,11 +274,9 @@ MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
-# endpoint_bases 22 (19 live + 1 reserved + 2 Story 21.4) + extra_overrides 4
-# (Story 21.6: + PURL_ASSOCIATOR_BASE_URL) + fetcher_urls 3 + paths 6 (2
-# env_or-wrapped + 3 data_root-derived, Story 21.1 + 1 Story 21.6
-# local_recipes_dir) = 35. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 35
+# endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
+# extra_overrides 4 + fetcher_urls 3 + paths 6 = 40. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 40
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the

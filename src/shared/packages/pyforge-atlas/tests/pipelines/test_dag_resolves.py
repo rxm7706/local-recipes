@@ -92,12 +92,13 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
-def test_pypi_intelligence_pipeline_has_eleven_nodes():
+def test_pypi_intelligence_pipeline_has_seventeen_nodes():
     # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     # Story 21.2 review fix #6 added refresh_pypi_json_store (the pypi_json_raw
     # external-refresh trigger — same § 3.4 boundary as export_pypi_conda_map).
+    # Story 23.1 added five Tier-3 external-refresh triggers + flag_tier3_channels (+6).
     pypi = pypi_create()
-    assert len(pypi.nodes) == 11
+    assert len(pypi.nodes) == 17
     assert {n.name for n in pypi.nodes} == {
         "refresh_pypi_json_store",
         "map_pypi_conda",
@@ -107,6 +108,12 @@ def test_pypi_intelligence_pipeline_has_eleven_nodes():
         "snapshot_pypi_serials",
         "fetch_pypi_downloads",
         "flag_cross_channel",
+        "refresh_discovery_homebrew_store",
+        "refresh_discovery_nixpkgs_store",
+        "refresh_discovery_spack_store",
+        "refresh_discovery_debian_store",
+        "refresh_discovery_fedora_store",
+        "flag_tier3_channels",
         "enrich_pypi_intelligence",
         "score_pypi_readiness",
         "export_pypi_conda_map",
@@ -185,22 +192,11 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + sbom_create()
         + derived_create()
     )
-    # 8 core + 10 vcs + 11 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 2 derived_artifacts = 48 nodes (B7 added the SBOM intake/match + universe
-    # BOM; B8 added the two Basilisk ingestion nodes, FR-19; B9 added
-    # derive_release_velocity, FR-20; B10 added classify_migration_readiness, FR-21;
-    # F4 added the deptry hygiene node + the four-axis policy gate, FR-16/FR-18;
-    # Story 21.2 added 3 external-refresh trigger nodes to vcs_health (7 -> 10) and
-    # 1 to pypi_intelligence (10 -> 11, review fix #6); Story 21.4 added
-    # enumerate_anaconda_main_packages to core (7 -> 8); Story 23.8 added
-    # build_inventory_universe to derived_artifacts (1 -> 2) -- most of its 9 inputs
-    # (upstream_discovery/artifactory_downloads outputs) are FREE inputs in this
-    # narrower 7-pipeline combination, same pattern derive_release_velocity uses.
-    # The runner orders them from declared inputs/outputs alone (no PHASES list driver,
-    # FR-2/AD-3).
-    assert len(combined.nodes) == 48
+    # 8 core + 10 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 2 derived_artifacts = 54 nodes (Story 23.1: pypi_intelligence 11 -> 17).
+    assert len(combined.nodes) == 54
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 48
+    assert sum(len(g) for g in grouped) == 54
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():

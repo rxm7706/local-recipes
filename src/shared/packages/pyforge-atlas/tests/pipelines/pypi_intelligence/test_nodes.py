@@ -11,9 +11,11 @@ from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
     enumerate_pypi_universe,
     fetch_pypi_downloads,
     flag_cross_channel,
+    flag_tier3_channels,
     map_pypi_conda,
     match_source_urls,
     phase_r_upsert_one,
+    refresh_discovery_homebrew_store,
     refresh_pypi_json_store,
     score_pypi_readiness,
     snapshot_pypi_serials,
@@ -135,6 +137,40 @@ def test_flag_cross_channel_pivots_per_channel_bools():
     assert bool(m.loc["torch", "in_bioconda"]) is False
     assert bool(m.loc["numpy", "in_bioconda"]) is True
     assert bool(m.loc["numpy", "in_robostack"]) is False
+
+
+# -- Tier 3 (OS-distro bulk-index BOOL pivot, Story 23.1) --------------------
+
+def test_flag_tier3_channels_pivots_and_normalizes_pypi_names():
+    homebrew = pd.DataFrame({"name": ["Foo.Bar", "numpy"]})
+    nixpkgs = pd.DataFrame({"name": ["foo_bar"]})
+    empty = pd.DataFrame(columns=["name"])
+    out = flag_tier3_channels(homebrew, nixpkgs, empty, empty, empty)
+    m = out.set_index("pypi_name")
+    assert bool(m.loc["foo-bar", "in_homebrew"]) is True
+    assert bool(m.loc["foo-bar", "in_nixpkgs"]) is True
+    assert bool(m.loc["numpy", "in_homebrew"]) is True
+    assert bool(m.loc["numpy", "in_nixpkgs"]) is False
+
+
+def test_flag_tier3_channels_all_empty_is_columned():
+    empty = pd.DataFrame(columns=["name"])
+    out = flag_tier3_channels(empty, empty, empty, empty, empty)
+    assert out.empty
+    assert list(out.columns) == [
+        "pypi_name",
+        "in_homebrew",
+        "in_nixpkgs",
+        "in_spack",
+        "in_debian",
+        "in_fedora",
+    ]
+
+
+def test_refresh_discovery_homebrew_store_reads_ttl_key():
+    req = refresh_discovery_homebrew_store({"discovery_homebrew_packages_raw": 999})
+    assert req.store == "discovery_homebrew_packages_raw"
+    assert req.cadence_seconds == 999
 
 
 # -- Phase R/S (readiness + template; view discipline) -----------------------
