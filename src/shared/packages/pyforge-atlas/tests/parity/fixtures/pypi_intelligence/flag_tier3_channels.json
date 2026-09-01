@@ -1,0 +1,28 @@
+{
+  "phase": "flag_tier3_channels",
+  "node": "flag_tier3_channels",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "discovery_homebrew_packages_raw": [
+      {"name": "Foo.Bar"}
+    ],
+    "discovery_nixpkgs_packages_raw": [
+      {"name": "foo_bar"}
+    ],
+    "discovery_spack_packages_raw": [],
+    "discovery_debian_packages_raw": [],
+    "discovery_fedora_packages_raw": []
+  },
+  "expected": {
+    "pypi_tier3_channel_flags": [
+      {
+        "pypi_name": "foo-bar",
+        "in_homebrew": true,
+        "in_nixpkgs": true,
+        "in_spack": false,
+        "in_debian": false,
+        "in_fedora": false
+      }
+    ]
+  }
+}

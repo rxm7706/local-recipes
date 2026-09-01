@@ -22,7 +22,7 @@ def test_pypi_node_matches_seed_fixture(fixture):
     run_fixture(fixture)
 
 
-def test_pypi_fixtures_exist_for_all_nine_nodes():
+def test_pypi_fixtures_exist_for_all_ten_nodes():
     stems = {p.stem for p in _PYPI}
     assert stems == {
         "map_pypi_conda",
@@ -32,6 +32,7 @@ def test_pypi_fixtures_exist_for_all_nine_nodes():
         "snapshot_pypi_serials",
         "fetch_pypi_downloads",
         "flag_cross_channel",
+        "flag_tier3_channels",
         "enrich_pypi_intelligence",
         "score_pypi_readiness",
     }

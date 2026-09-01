@@ -273,6 +273,45 @@ pypi_cross_channel_repodata_raw:
   metadata:
     layer: raw
 
+# Story 23.1 — Tier 3 OS-distro bulk indexes (homebrew/nixpkgs/spack/debian/fedora).
+# Five independent ExternalRefreshDataset subclasses in datasets/tier3_sources.py;
+# routed to pypi_intelligence via PREFIX_TO_PIPELINE's discovery_<source> keys.
+# fetch mode: external-refresh (dataset-owned IO; injected fetcher at attended run)
+discovery_homebrew_packages_raw:
+  type: pyforge.atlas.datasets.HomebrewPackagesDataset
+  url: ${globals:endpoint_bases.HOMEBREW_BASE_URL}/api/formula.json
+  filepath: data/stores/discovery_homebrew_packages_raw
+  metadata:
+    layer: raw
+
+discovery_nixpkgs_packages_raw:
+  type: pyforge.atlas.datasets.NixpkgsPackagesDataset
+  url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json
+  filepath: data/stores/discovery_nixpkgs_packages_raw
+  metadata:
+    layer: raw
+
+discovery_spack_packages_raw:
+  type: pyforge.atlas.datasets.SpackPackagesDataset
+  url: ${globals:endpoint_bases.SPACK_RAW_BASE_URL}/spack/spack/develop/var/spack/repos/builtin/package_index.json
+  filepath: data/stores/discovery_spack_packages_raw
+  metadata:
+    layer: raw
+
+discovery_debian_packages_raw:
+  type: pyforge.atlas.datasets.DebianPackagesDataset
+  url: ${globals:endpoint_bases.DEBIAN_BASE_URL}/debian/dists/sid/main/binary-amd64/Packages.gz
+  filepath: data/stores/discovery_debian_packages_raw
+  metadata:
+    layer: raw
+
+discovery_fedora_packages_raw:
+  type: pyforge.atlas.datasets.FedoraPackagesDataset
+  url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/rest/projects/
+  filepath: data/stores/discovery_fedora_packages_raw
+  metadata:
+    layer: raw
+
 # endoflife.date (TTL 7 d; consumed cross-pipeline by seed_gaps per AD-3).
 # `skip_auth` semantics — NO credential is ever attached to this host.
 pypi_endoflife_raw:
@@ -346,6 +385,14 @@ pypi_downloads_monthly:
 pypi_cross_channel_flags:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet
+  metadata:
+    layer: primary
+
+# Story 23.1 — Tier 3 OS-distro cross-channel BOOL pivot output.
+# A3: IncrementalParquetDataset
+pypi_tier3_channel_flags:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/pypi_tier3_channel_flags/pypi_tier3_channel_flags.parquet
   metadata:
     layer: primary
 

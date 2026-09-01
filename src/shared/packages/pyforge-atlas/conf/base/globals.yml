@@ -25,7 +25,8 @@
 #
 # Total env-override surface of this file (P7 accounting, +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
-# endpoint_bases 22 + extra_overrides 4 + fetcher_urls 3 + paths 6 = 35. Pinned
+# endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
+# extra_overrides 4 + fetcher_urls 3 + paths 6 = 40. Pinned
 # by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
@@ -63,6 +64,13 @@ endpoint_bases:
   # fetch, so it declares no override point.
   ANACONDA_DIST_BASE_URL: ${env_or:ANACONDA_DIST_BASE_URL,https://www.anaconda.com}
   AOSS_PREMIUM_BASE_URL: ${env_or:AOSS_PREMIUM_BASE_URL,https://docs.cloud.google.com}
+  # Story 23.1 (Tier 3 OS bulk indexes): host bases for the five discovery_*
+  # external-refresh datasets routed to pypi_intelligence.
+  HOMEBREW_BASE_URL: ${env_or:HOMEBREW_BASE_URL,https://formulae.brew.sh}
+  NIXPKGS_BASE_URL: ${env_or:NIXPKGS_BASE_URL,https://channels.nixos.org}
+  SPACK_RAW_BASE_URL: ${env_or:SPACK_RAW_BASE_URL,https://raw.githubusercontent.com}
+  DEBIAN_BASE_URL: ${env_or:DEBIAN_BASE_URL,https://deb.debian.org}
+  FEDORA_SRC_BASE_URL: ${env_or:FEDORA_SRC_BASE_URL,https://src.fedoraproject.org}
 
 # Additional overrides that ARE current data access but are NOT among the
 # 22 endpoint_bases points (19 legacy-helper-backed + 1 reserved + 2 Story
