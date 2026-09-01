@@ -116,7 +116,7 @@ def compute_refuse_predicate(
 def refuse_still_applies(*, predicate: RefusePredicate, gate: str) -> bool:
     """Whether the cheap predicate still predicts the same refuse."""
     if gate == "MRS-DISP-005":
-        return predicate.spec_fingerprint == "spec:missing"
+        return predicate.spec_fingerprint in ("spec:missing", "spec:unreadable")
     if gate.startswith("MRS-GATE-"):
         # Verify refuses depend on configured commands, not on executing them.
         return True
