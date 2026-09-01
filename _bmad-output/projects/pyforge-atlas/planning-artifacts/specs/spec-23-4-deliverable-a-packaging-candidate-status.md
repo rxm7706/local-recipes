@@ -6,7 +6,7 @@ status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '26d94cf8aa7754981d709f579c072fa0b21ba971'
-implementation_commit: '855ff521f8c700b2588a8e080ad1642a6ba4aca3'
+implementation_commit: '911f35817416fcc11cd622eb07e0a156acaf646d'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -263,6 +263,15 @@ isolation.
 
 ## Review Triage Log
 
+### 2026-09-01 — Review pass (session 5; Cursor dispatch, shell still blocked)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - none
+
 ### 2026-09-01 — Review pass (session 4; user re-dispatch, shell still blocked)
 - intent_gap: 0
 - bad_spec: 0
@@ -304,15 +313,15 @@ isolation.
 
 Status: blocked
 
-Blocking condition: implementation verification not executed (agent shell unavailable in sessions 2–4)
+Blocking condition: implementation verification not executed (agent shell unavailable in sessions 2–5)
 
 Summary of implemented change:
 - Two PURE `derived_artifacts` nodes port `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
 - Row grain uses `inventory_universe` (Story 23.8 course correction) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
 - Session 2 added matrix tests for non-digit priority buckets and CDO-ENT-CONDA-only AOSS exclusion; all nine I/O-matrix scenarios now have dedicated tests plus `done_checkpoint` parity against unmodified `metrics.py`.
-- Sessions 3–4 re-ran bmad-build-auto (`ready-for-dev` → step-03), statically re-verified the landed implementation on branch `dispatch/pyforge-atlas/23.4`, and found no new code gaps.
+- Sessions 3–5 re-ran bmad-build-auto (`ready-for-dev` → step-03), statically re-verified the landed implementation on branch `dispatch/pyforge-atlas/23.4`, and found no new code gaps.
 
-Files changed (branch `dispatch/pyforge-atlas/23.4`, baseline `26d94cf` → implementation commit `855ff521`):
+Files changed (branch `dispatch/pyforge-atlas/23.4`, baseline `26d94cf` → implementation commit `911f358`):
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_inventory_verified_packages`, `build_inventory_aoss_free_queue`, verbatim helpers
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — wire two new nodes
 - `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — catalog entries for both outputs
@@ -322,16 +331,16 @@ Files changed (branch `dispatch/pyforge-atlas/23.4`, baseline `26d94cf` → impl
 - `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — derived_artifacts 4→6 nodes, combined DAG 56→58
 - `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — EXPECTED_TOTAL 122→124
 
-Review findings breakdown: session 2 applied 2 patch items (matrix test gaps); sessions 3–4 static review found no new patches; automated review subagents skipped (shell blocked); verification defer unchanged.
+Review findings breakdown: session 2 applied 2 patch items (matrix test gaps); sessions 3–5 static review found no new patches; automated review subagents skipped (shell blocked); verification defer unchanged.
 
 Follow-up review recommendation: false
 
 Verification performed:
-- **Not run** — every Shell invocation in sessions 2–4 was rejected (including `render_skill.py`, `git`, `pixi run kedro-test`, and `kedro-catalog-check`). Run locally from the worktree:
+- **Not run** — every Shell invocation in sessions 2–5 was rejected (including `render_skill.py`, `git`, `pixi run kedro-test`, and `kedro-catalog-check`). Run locally from the worktree:
   - `pixi run -e pyforge-atlas kedro-catalog-check`
   - `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_inventory_verified_packages.py tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py`
 - After both pass: set this spec's `status` to `done`, commit the spec update, and push the branch.
 
 Residual risks:
 - TENK_TABS row-drop filter from `metrics.py::main()` is intentionally omitted (Story 23.8 universe does not include 10kOpen/10kClosed); accepted delta per spec-23-8 Design Notes.
-- Main-checkout spec at `local-recipes/_bmad-output/.../spec-23-4-...md` still reads `ready-for-dev`; this worktree's `_bmad-output` copy is authoritative for dispatch branch `23.4`.
+- Main-checkout spec at `local-recipes/_bmad-output/.../spec-23-4-...md` may lag this worktree copy until synced/committed on branch `dispatch/pyforge-atlas/23.4`.
