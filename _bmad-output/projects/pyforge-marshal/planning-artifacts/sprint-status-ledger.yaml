@@ -137,7 +137,7 @@ development_status:
   28-6-the-graduated-compression-ladder: backlog
   28-7-index-freshness-is-an-advisory-finding: done
   28-8-derived-context-recomputes-only-on-source-change: done
-  28-9-planning-graph-retrieval-behind-the-scribe-seam: in-review
+  28-9-planning-graph-retrieval-behind-the-scribe-seam: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done

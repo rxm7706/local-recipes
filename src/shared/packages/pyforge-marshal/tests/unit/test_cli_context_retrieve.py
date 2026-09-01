@@ -38,7 +38,8 @@ def _write(path: Path, text: str) -> None:
 
 
 @pytest.fixture
-def repo(tmp_path: Path) -> Path:
+def repo(tmp_path: Path, monkeypatch) -> Path:
+    monkeypatch.setattr(scribe_cli.shutil, "which", lambda _name: "/usr/bin/scribe")
     planning_dir = tmp_path / derived.planning_artifacts_relpath(_SLUG)
     _write(planning_dir / "epics.md", "# Epics\n")
     _write(planning_dir / "PRD.md", "# PRD\n")
@@ -51,8 +52,7 @@ def _declare_layer(repo: Path, *, enabled: bool) -> None:
     )
     _write(
         policy_path,
-        f'project_slug = "{_SLUG}"\n\n'
-        f'[context."planning-graph"]\nenabled = {str(enabled).lower()}\n',
+        "[context.planning-graph]\n" f"enabled = {str(enabled).lower()}\n",
     )
 
 
