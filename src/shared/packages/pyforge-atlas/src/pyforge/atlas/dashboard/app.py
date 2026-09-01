@@ -309,6 +309,15 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "(Story 22.1); four panes (Priority/Issues/Builds/Census); renders empty until "
         "the bridge export exists.",
     ),
+    PageDef(
+        "identity-workbook",
+        "Identity Workbook",
+        "identity-workbook",
+        "bsl-shell",
+        note="Wired to build_identity_workbook_model joining identity_ranked_export.parquet "
+        "(Story 22.1) with enterprise_jfrog_consumption.parquet (Story 23.2, not yet built); "
+        "renders an honest empty shell naming the specific missing file until both exist.",
+    ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
@@ -366,6 +375,70 @@ def _shell_page(page: PageDef, *, provenance: ProvenanceInfo) -> vm.Page:
         id=page.id,
         title=page.title,
         components=[_legibility_card(page, grounded=False, provenance=provenance)],
+    )
+
+
+def _resolve_two_file_provenance(
+    ranked_path: Path,
+    enterprise_path: Path,
+) -> ProvenanceInfo:
+    """AD-17 for two-source pages: unavailable file wins; else older stamp."""
+    ranked = _provenance.resolve_for_file(ranked_path)
+    enterprise = _provenance.resolve_for_file(enterprise_path)
+    if ranked.kind == "unavailable":
+        return ranked
+    if enterprise.kind == "unavailable":
+        return enterprise
+    ranked_stamp = ranked.build_stamp or ""
+    enterprise_stamp = enterprise.build_stamp or ""
+    return ranked if ranked_stamp <= enterprise_stamp else enterprise
+
+
+def _identity_workbook_page(
+    page: PageDef,
+    *,
+    ranked_parquet: Path,
+    enterprise_parquet: Path,
+    provenance: ProvenanceInfo,
+    gap_message: str | None,
+) -> vm.Page:
+    """JFROG map page — match-bucket grid + static external-count reference table."""
+    key = f"data::{page.id}"
+    data_manager[key] = lambda: _data.load_identity_workbook(ranked_parquet, enterprise_parquet)
+    lines = [
+        f"### {page.title}",
+        "",
+        f"Ports the `{page.cli}` read CLI. Data flows through the D1 BSL models (AD-8).",
+    ]
+    if gap_message:
+        lines.append("")
+        lines.append(f"**Data gap:** {gap_message}")
+    elif page.note:
+        lines.append("")
+        lines.append(f"**Data gap:** {page.note}")
+    lines.append("")
+    lines.append(_provenance_line(provenance))
+    external_rows = "\n".join(
+        f"| {src} | {count} | {via} | {legacy} |"
+        for src, count, via, legacy in _data.IDENTITY_WORKBOOK_EXTERNAL_COUNTS
+    )
+    external_card = vm.Card(
+        id=f"{page.id}--external",
+        text=(
+            "### External source counts\n\n"
+            "| Source | Count | Via | Legacy tab |\n"
+            "| --- | ---: | --- | --- |\n"
+            f"{external_rows}"
+        ),
+    )
+    return vm.Page(
+        id=page.id,
+        title=page.title,
+        components=[
+            vm.Card(id=f"{page.id}--about", text="\n".join(lines)),
+            external_card,
+            vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
+        ],
     )
 
 
@@ -521,6 +594,16 @@ def build_dashboard(
     license_map_gap_provenance = _provenance.resolve_for_file(root / _data.LICENSE_MAP_GAP_PARQUET)
     identity_catalog_provenance = _provenance.resolve_for_file(
         root / _data.IDENTITY_RANKED_EXPORT_PARQUET
+    )
+    identity_workbook_ranked = root / _data.IDENTITY_RANKED_EXPORT_PARQUET
+    identity_workbook_enterprise = root / _data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET
+    identity_workbook_provenance = _resolve_two_file_provenance(
+        identity_workbook_ranked,
+        identity_workbook_enterprise,
+    )
+    identity_workbook_gap = _data.identity_workbook_gap_message(
+        identity_workbook_ranked,
+        identity_workbook_enterprise,
     )
 
     by_id = {p.id: p for p in PAGE_INVENTORY}
@@ -690,6 +773,13 @@ def build_dashboard(
             by_id["identity-ops"],
             parquet=root / _data.IDENTITY_RANKED_EXPORT_PARQUET,
             provenance=identity_catalog_provenance,
+        ),
+        _identity_workbook_page(
+            by_id["identity-workbook"],
+            ranked_parquet=identity_workbook_ranked,
+            enterprise_parquet=identity_workbook_enterprise,
+            provenance=identity_workbook_provenance,
+            gap_message=identity_workbook_gap,
         ),
         _factory_page(
             by_id["factory-status"],

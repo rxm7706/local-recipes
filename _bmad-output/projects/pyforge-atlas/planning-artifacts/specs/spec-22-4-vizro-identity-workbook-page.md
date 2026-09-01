@@ -2,7 +2,8 @@
 title: 'Vizro identity-workbook page — JFROG map parity, honest shell v1 (Story 22.4, Epic 22)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'pending-verification'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -241,3 +242,18 @@ dispatch blocker for this story (see `Block If` above).
 **Commands:**
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+
+## Auto Run Result
+
+Status: in-progress (implementation landed; automated verification blocked in dispatch environment — run Verification commands locally to close).
+
+### Summary
+Added the `identity-workbook` Vizro page with two-source BSL join logic (`identity_ranked_export.parquet` ⋈ `enterprise_jfrog_consumption.parquet`), honest empty-shell gap messaging naming the specific missing file, static `EXTERNAL_LIVE` reference card, and parity tests against `write_workbook_canvas`.
+
+### Files changed
+- `semantic/metrics.py` — `identity_is_pypi_verified`, `identity_is_cf_verified`, `verification_match_bucket`
+- `semantic/models.py` — `build_identity_workbook_model`
+- `dashboard/data.py` — `ENTERPRISE_JFROG_CONSUMPTION_PARQUET`, `load_identity_workbook`, `identity_workbook_gap_message`, `IDENTITY_WORKBOOK_EXTERNAL_COUNTS`
+- `dashboard/app.py` — `PageDef`, `_identity_workbook_page`, `_resolve_two_file_provenance`, dashboard wiring
+- `tests/dashboard/test_identity_workbook_page.py` — matrix + parity tests (new)
+- `tests/dashboard/test_dashboard_dryrun.py` — `_NEW_MODEL_SCHEMAS` entry for identity-workbook

@@ -85,6 +85,24 @@ LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
 IDENTITY_RANKED_EXPORT_PARQUET = (
     "derived/identity_ranked_export/identity_ranked_export.parquet"
 )
+ENTERPRISE_JFROG_CONSUMPTION_PARQUET = (
+    "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
+)
+
+# Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
+IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
+    ("Anaconda Dist 2026.x", "639", "HTML 2026.x table", "639 (Anaaconda-Dist)"),
+    ("Anaconda main", "5461", "pkgs/main channeldata.json", "5,458 (Anaconda-Main)"),
+    ("conda-forge", "33875", "conda-forge channeldata.json", "33,875 (Conda-Forge)"),
+    ("Basilisk /v1/packages", "33853", "api.basilisk.prefix.dev", "33,853 (Basilisk)"),
+    ("AOSS free Python", "1466", "docs #python list", "1,474 (GAOSS-Free)"),
+    ("AOSS premium Python", "2114", "Wayback Python <ul>", "2,114 (GAOSS-Premium)"),
+    ("about maintainers", "559", "README As Maintainer", "n/a"),
+    ("about co-maintainers", "255", "README As Co-Maintainer", "n/a"),
+)
+
+_IDENTITY_WORKBOOK_DIMENSIONS = ["match_bucket"]
+_IDENTITY_WORKBOOK_MEASURES = ["package_count", "artifactory_downloads_total"]
 
 
 def default_data_root() -> Path:
@@ -506,3 +524,88 @@ def load_identity_ops_census(parquet: str | os.PathLike[str] | None = None) -> p
         ["has_feedstock", "has_staged_pr", "has_local_recipe"],
         ["package_count"],
     )
+
+
+def _ibis_pep503(col: Any) -> Any:
+    """PEP-503 join key — mirrors ``pep503_name`` in the identity scripts."""
+    s = col.fill_null("").lower()
+    s = s.re_replace(r"[_.]+", "-")
+    return s.re_replace(r"^-+|-+$", "")
+
+
+def identity_workbook_gap_message(
+    ranked_parquet: str | os.PathLike[str] | None,
+    enterprise_parquet: str | os.PathLike[str] | None,
+) -> str | None:
+    """Human-readable gap note naming WHICH backing Parquet is absent (Story 22.4)."""
+    ranked_path = Path(ranked_parquet) if ranked_parquet is not None else None
+    enterprise_path = Path(enterprise_parquet) if enterprise_parquet is not None else None
+    ranked_ok = ranked_path is not None and ranked_path.is_file()
+    enterprise_ok = enterprise_path is not None and enterprise_path.is_file()
+    if ranked_ok and enterprise_ok:
+        return None
+    if not ranked_ok and not enterprise_ok:
+        return (
+            f"Both backing files are missing: `{IDENTITY_RANKED_EXPORT_PARQUET}` and "
+            f"`{ENTERPRISE_JFROG_CONSUMPTION_PARQUET}`."
+        )
+    if not enterprise_ok:
+        return (
+            f"Enterprise JFROG overlay missing: `{ENTERPRISE_JFROG_CONSUMPTION_PARQUET}` "
+            "(Story 23.2 — page renders empty until this lands)."
+        )
+    return (
+        f"Ranked identity export missing: `{IDENTITY_RANKED_EXPORT_PARQUET}` (Story 22.1)."
+    )
+
+
+def load_identity_workbook(
+    ranked_parquet: str | os.PathLike[str] | None = None,
+    enterprise_parquet: str | os.PathLike[str] | None = None,
+) -> pd.DataFrame:
+    """`identity-workbook` — JFROG consumption ⋈ ranked identity verification buckets."""
+    columns = [*_IDENTITY_WORKBOOK_DIMENSIONS, *_IDENTITY_WORKBOOK_MEASURES]
+    ranked_path = str(ranked_parquet) if ranked_parquet is not None else None
+    enterprise_path = str(enterprise_parquet) if enterprise_parquet is not None else None
+    if (
+        ranked_path is None
+        or enterprise_path is None
+        or not os.path.exists(ranked_path)
+        or not os.path.exists(enterprise_path)
+    ):
+        return pd.DataFrame(columns=columns)
+
+    import ibis
+
+    con = ibis.duckdb.connect()
+    ranked = models.duckdb_table_from_parquet(ranked_path, connection=con)
+    enterprise = models.duckdb_table_from_parquet(enterprise_path, connection=con)
+
+    if "repository_source" in enterprise.columns:
+        enterprise = enterprise.filter(enterprise.repository_source == "CDO-ENT-JFROG")
+
+    join_key = _ibis_pep503
+    ent = enterprise.mutate(_join_key=join_key(enterprise.core_python_package_name))
+    ent = ent.filter(ent._join_key.length() >= 2).distinct(on=["_join_key"], keep="first")
+    ranked_side = ranked.mutate(_join_key=join_key(ranked.Core_Python_Package_Name)).distinct(
+        on=["_join_key"], keep="last"
+    )
+    feedstock_col = "Conda-Forge_FeedStock_URL"
+    ranked_pick = ranked_side.select(
+        "_join_key",
+        "primary_type",
+        "primary_purl",
+        "conda_purl",
+        **{feedstock_col: ranked_side[feedstock_col]},
+    )
+    joined = ent.left_join(ranked_pick, "_join_key")
+    try:
+        from pyforge.atlas.semantic.query_helpers import bsl_query
+
+        return bsl_query(
+            models.build_identity_workbook_model(joined),
+            dimensions=_IDENTITY_WORKBOOK_DIMENSIONS,
+            measures=_IDENTITY_WORKBOOK_MEASURES,
+        )
+    except TypeError:
+        return pd.DataFrame(columns=columns)
