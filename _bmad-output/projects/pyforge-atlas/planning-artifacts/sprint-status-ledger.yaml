@@ -63,7 +63,7 @@ development_status:
   21-9-vizro-bootstrap-health-pages-optional-cap-5: backlog
   22-1-ranked-export-bridge-quartet-vizro-feed: done
   22-2-vizro-identity-catalog-page: done
-  22-3-vizro-identity-ops-page: backlog
+  22-3-vizro-identity-ops-page: done
   22-4-vizro-identity-workbook-page: backlog
   22-5-canvas-vs-vizro-parity-gate: backlog
   22-6-canvas-deprecation-switch: backlog
