@@ -186,6 +186,67 @@ _BUDGET_USAGE_KIND = "budget-usage"
 
 _MRS_STATUS_002 = "MRS-STATUS-002"
 
+
+def _format_savings_summary(layer_savings: dict[str, object]) -> str:
+    """Format per-layer savings into a compact summary string for status display.
+    
+    Story 28.4: Formats savings telemetry (CAP-7) into a readable summary.
+    Returns empty string when no savings data is available.
+    """
+    if not layer_savings:
+        return ""
+    
+    parts = []
+    
+    # Layer 0: Output compression savings
+    if "output_compression_saved" in layer_savings:
+        bytes_saved = layer_savings["output_compression_saved"]
+        if isinstance(bytes_saved, (int, float)) and bytes_saved > 0:
+            parts.append(f"output:{_format_bytes(bytes_saved)}")
+    
+    # Layer 1: Wire compression savings  
+    if "wire_compression_saved" in layer_savings:
+        bytes_saved = layer_savings["wire_compression_saved"]
+        if isinstance(bytes_saved, (int, float)) and bytes_saved > 0:
+            parts.append(f"wire:{_format_bytes(bytes_saved)}")
+    
+    # Layer 2: Graph hits vs file reads
+    if "graph_hits" in layer_savings and "file_reads" in layer_savings:
+        hits = layer_savings["graph_hits"]
+        reads = layer_savings["file_reads"]
+        if isinstance(hits, int) and isinstance(reads, int) and hits > 0:
+            total = hits + reads
+            if total > 0:
+                hit_rate = (hits / total) * 100
+                parts.append(f"graph:{hits}/{total}({hit_rate:.0f}%)")
+    
+    # Layer 3: Derived context cache hits
+    if "derived_context_cache_hits" in layer_savings:
+        cache_hits = layer_savings["derived_context_cache_hits"]
+        if isinstance(cache_hits, int) and cache_hits > 0:
+            parts.append(f"context:{cache_hits}hits")
+    
+    # Layer 4: Planning graph tokens saved
+    if "planning_graph_tokens_saved" in layer_savings:
+        tokens_saved = layer_savings["planning_graph_tokens_saved"]
+        if isinstance(tokens_saved, (int, float)) and tokens_saved > 0:
+            parts.append(f"planning:{tokens_saved}tok")
+    
+    return ",".join(parts)
+
+
+def _format_bytes(byte_count: int | float) -> str:
+    """Format byte count into human-readable units (KB, MB, GB)."""
+    if byte_count < 1024:
+        return f"{int(byte_count)}B"
+    elif byte_count < 1024 * 1024:
+        return f"{byte_count / 1024:.1f}KB"
+    elif byte_count < 1024 * 1024 * 1024:
+        return f"{byte_count / (1024 * 1024):.1f}MB"
+    else:
+        return f"{byte_count / (1024 * 1024 * 1024):.1f}GB"
+
+
 # Story 5.2 (per-run detail, FR-37/NFR-12): `--run <run_id>` requires
 # `--project <slug>` alongside it -- a run id alone does not name which
 # project's Tier-3 store to look under (run directories nest per-project).
@@ -400,6 +461,9 @@ class _RunJournalFacts:
     # exact double-fold this dataclass's own docstring already claimed
     # (falsely, in that version) was avoided.
     harness_run_id: str | None = None
+    # Story 28.4: Add per-layer savings telemetry (CAP-7)
+    layer_savings: dict[str, object] = field(default_factory=dict)
+    savings_by_story: dict[str, dict[str, object]] = field(default_factory=dict)
 
 
 def _gather_run_journal_facts(
@@ -413,7 +477,8 @@ def _gather_run_journal_facts(
     launch pid for this run_id reports ``launch_pid=None``, the caller's
     own "journal unreadable" signal."""
     empty = _RunJournalFacts(
-        launch_pid=None, launched_at=None, supervisor_pid=None, budget_consumed=None
+        launch_pid=None, launched_at=None, supervisor_pid=None, budget_consumed=None,
+        layer_savings={}, savings_by_story={}
     )
     try:
         text = fs.read_text(run_dir / _JOURNAL_FILENAME)
@@ -475,6 +540,9 @@ def _gather_run_journal_facts(
 
     budget_consumed: int | float | None = None
     budget_by_story: dict[str, int | float] = {}
+    # Story 28.4: Add savings telemetry extraction (CAP-7)
+    layer_savings: dict[str, object] = {}
+    savings_by_story: dict[str, dict[str, object]] = {}
     usage_entries = [
         entry
         for entry in fold_result.by_kind(_BUDGET_USAGE_KIND)
@@ -486,6 +554,10 @@ def _gather_run_journal_facts(
             candidate_cost, bool
         ):
             budget_consumed = candidate_cost
+        # Extract latest layer savings data
+        latest_entry_savings = usage_entries[-1].payload.get("layer_savings")
+        if isinstance(latest_entry_savings, dict):
+            layer_savings = latest_entry_savings.copy()
     # Story 5.2: the SAME `usage_entries`, grouped by `story_key` instead of
     # collapsed to a single overall latest -- `by_kind`'s own chronological
     # order (fold's `(ts, id)` sort) means iterating in order and
@@ -500,6 +572,11 @@ def _gather_run_journal_facts(
             and not isinstance(cost, bool)
         ):
             budget_by_story[story_key] = cost
+        # Story 28.4: Extract per-story savings data (CAP-7)
+        if isinstance(story_key, str) and story_key:
+            entry_savings = entry.payload.get("layer_savings")
+            if isinstance(entry_savings, dict):
+                savings_by_story[story_key] = entry_savings.copy()
 
     # Story 5.2: `core.journal.fold`'s own `FoldResult.open_intents` for
     # THIS run_id only, rendered to plain JSON-dicts here (never inside
@@ -518,6 +595,8 @@ def _gather_run_journal_facts(
         budget_by_story=budget_by_story,
         open_intents=open_intents,
         harness_run_id=harness_run_id,
+        layer_savings=layer_savings,
+        savings_by_story=savings_by_story,
     )
 
 
@@ -798,6 +877,7 @@ def _gather_home_facts(
         engine_alive=engine_alive,
         elapsed_seconds=elapsed_seconds,
         budget_consumed=journal_facts.budget_consumed,
+        layer_savings=journal_facts.layer_savings,
         paused_reason=snapshot.paused_reason,
         escalated_spec_file=snapshot.escalated_spec_file,
         escalated_task_phase=snapshot.escalated_task_phase,
@@ -1777,6 +1857,7 @@ def _run_detail(
         deferred=snapshot.deferred if snapshot is not None else (),
         gate_verdicts=gate_verdicts,
         budget_by_story=journal_facts.budget_by_story,
+        savings_by_story=journal_facts.savings_by_story,
         open_intents=journal_facts.open_intents,
         # Story 25.5 (CAP-5): `None` when there is no snapshot (run state
         # unreadable) -- never fabricated as `{}`-clean.
@@ -1975,11 +2056,15 @@ def _render_text_status(
             state_text = (
                 f"awaiting-operator ({status_core.AWAITING_OPERATOR_REMEDY})"
             )
+        # Story 28.4: Add savings display alongside budget consumption (CAP-7)
+        savings_summary = _format_savings_summary(home.get('layer_savings', {}))
+        savings_text = f" savings={savings_summary}" if savings_summary else ""
+        
         line = (
             f"  {prefix}{home['slug']} ({home['branch']}): {state_text} "
             f"story={home['current_story']} "
             f"elapsed_seconds={home['elapsed_seconds']} "
-            f"budget_consumed={home['budget_consumed']}"
+            f"budget_consumed={home['budget_consumed']}{savings_text}"
         )
         if escalated:
             line += (
@@ -2117,11 +2202,15 @@ def _render_text_run_detail(
         stories = data.get("stories") or []
         lines.append(f"stories: {len(stories)}")
         for story in stories:
+            # Story 28.4: Add per-story savings display (CAP-7)
+            story_savings_summary = _format_savings_summary(story.get('layer_savings', {}))
+            story_savings_text = f" savings={story_savings_summary}" if story_savings_summary else ""
+            
             line = (
                 f"  {story['story_key']} phase={story['phase']} "
                 f"commit_sha={story['commit_sha']} branch={story['branch']!r} "
                 f"gate_verdict={story['gate_verdict']} "
-                f"budget_consumed={story['budget_consumed']}"
+                f"budget_consumed={story['budget_consumed']}{story_savings_text}"
             )
             # Story 25.5: the recovery pointer, appended only when set --
             # the fleet's standing non-destructive policy, now

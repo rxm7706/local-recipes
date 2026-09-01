@@ -1587,17 +1587,35 @@ def run_supervisor(
                             # weighted total of exactly 0 (a `None` reading,
                             # meaning no valid sample was ever attributed to
                             # this story, collapses to the same null).
-                            _append(
-                                _BUDGET_USAGE_KIND,
-                                {
-                                    "story_key": _feed_key_form(current_story_key),
-                                    "cost_estimate": (
-                                        last_story_weighted_tokens
-                                        if last_story_weighted_tokens
-                                        else None
-                                    ),
-                                },
-                            )
+                            # Story 28.4: Include per-layer savings alongside cost estimate
+                            payload = {
+                                "story_key": _feed_key_form(current_story_key),
+                                "cost_estimate": (
+                                    last_story_weighted_tokens
+                                    if last_story_weighted_tokens
+                                    else None
+                                ),
+                            }
+                            # Add savings data when available (CAP-7)
+                            if usage is not None and usage.layer_savings is not None:
+                                savings = usage.layer_savings
+                                savings_dict = {}
+                                if savings.output_compression_saved is not None:
+                                    savings_dict["output_compression_saved"] = savings.output_compression_saved
+                                if savings.wire_compression_saved is not None:
+                                    savings_dict["wire_compression_saved"] = savings.wire_compression_saved
+                                if savings.graph_hits_vs_file_reads is not None:
+                                    hits, reads = savings.graph_hits_vs_file_reads
+                                    savings_dict["graph_hits"] = hits
+                                    savings_dict["file_reads"] = reads
+                                if savings.derived_context_cache_hits is not None:
+                                    savings_dict["derived_context_cache_hits"] = savings.derived_context_cache_hits
+                                if savings.planning_graph_tokens_saved is not None:
+                                    savings_dict["planning_graph_tokens_saved"] = savings.planning_graph_tokens_saved
+                                # Only add savings field if we have data
+                                if savings_dict:
+                                    payload["layer_savings"] = savings_dict
+                            _append(_BUDGET_USAGE_KIND, payload)
                         current_story_key = new_story_key
                         story_started_monotonic = (
                             monotonic_now if new_story_key is not None else None
@@ -2298,15 +2316,35 @@ def run_supervisor(
         # breach, a failed retry), mirroring the transition-flush's own
         # payload shape exactly.
         if current_story_key is not None:
-            _append(
-                _BUDGET_USAGE_KIND,
-                {
-                    "story_key": _feed_key_form(current_story_key),
-                    "cost_estimate": (
-                        last_story_weighted_tokens if last_story_weighted_tokens else None
-                    ),
-                },
-            )
+            # Story 28.4: Capture final savings data along with cost estimate
+            payload = {
+                "story_key": _feed_key_form(current_story_key),
+                "cost_estimate": (
+                    last_story_weighted_tokens if last_story_weighted_tokens else None
+                ),
+            }
+            # Get final usage snapshot to capture end-of-run savings (CAP-7)
+            if harness_run_id is not None:
+                final_usage = harness.usage_snapshot(home, harness_run_id)
+                if final_usage is not None and final_usage.layer_savings is not None:
+                    savings = final_usage.layer_savings
+                    savings_dict = {}
+                    if savings.output_compression_saved is not None:
+                        savings_dict["output_compression_saved"] = savings.output_compression_saved
+                    if savings.wire_compression_saved is not None:
+                        savings_dict["wire_compression_saved"] = savings.wire_compression_saved
+                    if savings.graph_hits_vs_file_reads is not None:
+                        hits, reads = savings.graph_hits_vs_file_reads
+                        savings_dict["graph_hits"] = hits
+                        savings_dict["file_reads"] = reads
+                    if savings.derived_context_cache_hits is not None:
+                        savings_dict["derived_context_cache_hits"] = savings.derived_context_cache_hits
+                    if savings.planning_graph_tokens_saved is not None:
+                        savings_dict["planning_graph_tokens_saved"] = savings.planning_graph_tokens_saved
+                    # Only add savings field if we have data
+                    if savings_dict:
+                        payload["layer_savings"] = savings_dict
+            _append(_BUDGET_USAGE_KIND, payload)
 
         # --- Story 3.7: escalation detection (AD-45, FR-15) -----------------
         # A RUN-level fact, detected exactly ONCE, only when the tick loop

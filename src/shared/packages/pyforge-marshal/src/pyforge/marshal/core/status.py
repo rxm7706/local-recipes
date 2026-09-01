@@ -881,6 +881,8 @@ class FleetHomeFacts:
     engine_alive: bool | None = None
     elapsed_seconds: float | None = None
     budget_consumed: int | float | None = None
+    # Story 28.4 (CAP-7): Add per-layer savings telemetry alongside budget consumption
+    layer_savings: dict[str, object] = field(default_factory=dict)
     # Story 5.3 (FR-38): `RunStatusSnapshot`'s own already-shipped
     # `paused_reason`/`escalated_spec_file`/`escalated_task_phase` fields,
     # threaded through verbatim -- `_gather_home_facts` already reads
@@ -1329,6 +1331,11 @@ class RunDetailFacts:
     deferred: tuple[DeferredStory, ...] = ()
     gate_verdicts: Mapping[str, str] = field(default_factory=dict)
     budget_by_story: Mapping[str, int | float] = field(default_factory=dict)
+    # Story 28.4 (CAP-7): per-story layer savings keyed by Marshal's own
+    # canonical dot-form story key -- absent when no savings were recorded.
+    savings_by_story: Mapping[str, Mapping[str, object]] = field(
+        default_factory=dict
+    )
     open_intents: tuple[dict[str, object], ...] = ()
     # Story 25.5 (CAP-5): `RunStatusSnapshot.sweeps_refused` verbatim --
     # trigger -> reason slug (the closed `SWEEP_REFUSED_*` vocabulary).
@@ -1377,20 +1384,22 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
     stories: list[dict[str, object]] = []
     for task in facts.tasks:
         rendered_key = _render_story_key_best_effort(task.story_key)
-        stories.append(
-            {
-                "story_key": task.story_key,
-                "phase": task.phase,
-                "commit_sha": task.commit_sha,
-                "branch": task.branch,
-                # Story 25.5 (CAP-5): the recovery pointer wherever an
-                # escalated/deferred story is surfaced -- reported
-                # verbatim for EVERY task (null when none was parked).
-                "preserve_ref": task.preserve_ref,
-                "gate_verdict": facts.gate_verdicts.get(rendered_key),
-                "budget_consumed": facts.budget_by_story.get(rendered_key),
-            }
-        )
+        story_row: dict[str, object] = {
+            "story_key": task.story_key,
+            "phase": task.phase,
+            "commit_sha": task.commit_sha,
+            "branch": task.branch,
+            # Story 25.5 (CAP-5): the recovery pointer wherever an
+            # escalated/deferred story is surfaced -- reported
+            # verbatim for EVERY task (null when none was parked).
+            "preserve_ref": task.preserve_ref,
+            "gate_verdict": facts.gate_verdicts.get(rendered_key),
+            "budget_consumed": facts.budget_by_story.get(rendered_key),
+        }
+        layer_savings = facts.savings_by_story.get(rendered_key)
+        if layer_savings is not None:
+            story_row["layer_savings"] = layer_savings
+        stories.append(story_row)
 
     deferred = [
         {
