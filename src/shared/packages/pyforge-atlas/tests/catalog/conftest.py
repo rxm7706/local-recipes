@@ -89,7 +89,8 @@ PREFIX_TO_PIPELINE = {
     "enterprise_jfrog_consumption": "artifactory_downloads",  # Story 23.2: beats `enterprise` via longest-prefix
     "purl_associator": "upstream_discovery",  # Story 21.6: CAP-3 identity join
     "openteams": "upstream_discovery",  # Story 21.6: CAP-3 identity join
-    "identity": "upstream_discovery",  # Story 21.6: CAP-3 identity join
+    "identity": "upstream_discovery",  # Story 21.6: CAP-3 identity join (identity_packages_primary)
+    "identity_complete_export": "derived_artifacts",  # Story 23.5: beats `identity` via longest-prefix
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
     "semantic": "semantic_packages",
@@ -106,13 +107,13 @@ EXPECTED_PIPELINE_COUNTS = {
     "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
-    "derived_artifacts": 6,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue
+    "derived_artifacts": 7,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export
     "upstream_discovery": 18,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1); Story 21.5: + discovery_about_maintainers_raw + discovery_curated_groups_seed + enterprise_conda_maintainers + enterprise_jfrog_names (Tier 2 — enterprise_jfrog_names buckets HERE via the `enterprise` prefix even though its producer node lives in artifactory_downloads); Story 21.6: + purl_associator_mappings_raw + openteams_project_1_board_raw + discovery_staged_recipes_prs_raw + discovery_local_recipes_raw + identity_packages_primary + identity_export_parquet (CAP-3 identity join, Phase D)
     "artifactory_downloads": 4,  # Story 15.3: artifactory_downloads_raw + artifactory_downloads_joined; Story 23.2: + artifactory_consumption_raw + enterprise_jfrog_consumption
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 124  # Story 23.4: +2 (inventory_verified_packages + inventory_aoss_free_queue)
+EXPECTED_TOTAL = 125  # Story 23.5: +1 (identity_complete_export)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

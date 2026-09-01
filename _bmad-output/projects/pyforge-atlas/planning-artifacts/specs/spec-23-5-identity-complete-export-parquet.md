@@ -2,9 +2,10 @@
 title: 'identity_complete_export.parquet (canonical single export) (Story 23.5, Epic 23)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 'dispatch-worktree'
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/complete-export-contract.md'
@@ -369,6 +370,23 @@ its inputs exist.
   Self-review against a READY-FOR-DEVELOPMENT bar (Intent/Boundaries/I-O-matrix completeness,
   Code Map groundedness, verifiable Tasks & Acceptance, honest Design Notes) passed; `status` set
   to `ready-for-dev`.
+
+## Auto Run Result
+
+Status: done
+
+Implementation summary (Story 23.5, dispatch 2026-09-01):
+- Added `build_identity_complete_export` pure join node in `derived_artifacts/nodes.py` — left-anchored on `identity_packages_primary`, consumes Stories 21.6/23.2/23.3/23.4 Parquet plus `pypi_cross_channel_flags`, `pypi_tier3_channel_flags`, and `inventory_universe` (tab-sourced `in_*` BOOLs).
+- Wired pipeline node + `identity_complete_export` catalog entry at `data/derived/identity_complete_export/identity_complete_export.parquet`.
+- Registered `identity_complete_export` → `derived_artifacts` prefix (longest-prefix beats `identity` → `upstream_discovery` for Story 21.6 outputs).
+- Added `test_identity_complete_export.py` (63-column parity, GIST_COLUMNS subset, five I/O-matrix edge cases) + `tests/fixtures/inventory_identity/complete_export_expected.json`.
+- Documented output path in pyforge-atlas README operator env block.
+
+Pipeline placement resolution: `derived_artifacts` (confirmed per sibling Stories 23.3/23.4).
+
+Verification (run locally):
+- `pixi run -e pyforge-atlas kedro-catalog-check`
+- `pixi run -e pyforge-atlas kedro-test -- src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py`
 
 ## Design Notes
 

@@ -174,13 +174,14 @@ def test_universal_sbom_pipeline_has_four_nodes():
     }
 
 
-def test_derived_artifacts_pipeline_has_six_nodes():
+def test_derived_artifacts_pipeline_has_seven_nodes():
     # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
     # Story 23.8 added build_inventory_universe (the workbook-free metrics universe).
     # Story 23.3 added derive_basilisk_vuln_rollup + assign_inventory_priority.
     # Story 23.4 added build_inventory_verified_packages + build_inventory_aoss_free_queue.
+    # Story 23.5 added build_identity_complete_export.
     derived = derived_create()
-    assert len(derived.nodes) == 6
+    assert len(derived.nodes) == 7
     assert {n.name for n in derived.nodes} == {
         "build_universe_sbom",
         "build_inventory_universe",
@@ -188,6 +189,7 @@ def test_derived_artifacts_pipeline_has_six_nodes():
         "assign_inventory_priority",
         "build_inventory_verified_packages",
         "build_inventory_aoss_free_queue",
+        "build_identity_complete_export",
     }
 
 
@@ -202,10 +204,10 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + derived_create()
     )
     # 8 core + 10 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 6 derived_artifacts = 58 nodes (Story 23.4: derived_artifacts 4 -> 6).
-    assert len(combined.nodes) == 58
+    # + 7 derived_artifacts = 59 nodes (Story 23.5: derived_artifacts 6 -> 7).
+    assert len(combined.nodes) == 59
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 58
+    assert sum(len(g) for g in grouped) == 59
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
