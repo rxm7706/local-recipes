@@ -63,7 +63,16 @@ from ..core.dispatch_completion import (
 from ..core.spec_surface import parse_declared_surface
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..core.identity import normalize, render_feed_key
-from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
+from ..core.journal import (
+    JournalEntryId,
+    Phase,
+    build_entry,
+    fold,
+    mint_run_id,
+    prepare_for_write,
+    resolve_scope_violation_advisories_from_payload,
+    sidecar_texts_for_lines,
+)
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.build_harness import BuildHarnessPort
@@ -343,7 +352,12 @@ def gather_dispatch_journal_facts(
             launched_at=None,
             worktree_path=None,
         )
-    folded = fold(text.splitlines())
+    lines = text.splitlines()
+    sidecars = sidecar_texts_for_lines(
+        lines,
+        read_sidecar=lambda ref: fs.read_text(run_dir / ref),
+    )
+    folded = fold(lines, sidecars=sidecars)
     story_key: str | None = None
     session_pid: int | None = None
     model: str | None = None
@@ -397,11 +411,9 @@ def gather_dispatch_journal_facts(
             # journal-payload read in this function -- a malformed/missing
             # entry degrades to the empty tuple rather than raising, never
             # a fabricated advisory.
-            raw_advisories = entry.payload.get("scope_violation_advisories")
-            if isinstance(raw_advisories, list):
-                verification_scope_advisories = tuple(
-                    item for item in raw_advisories if isinstance(item, dict)
-                )
+            verification_scope_advisories = resolve_scope_violation_advisories_from_payload(
+                entry.payload, sidecars=sidecars
+            )
     story_started_at: str | None = None
     story_ended_at: str | None = None
     baseline_revision: str | None = None

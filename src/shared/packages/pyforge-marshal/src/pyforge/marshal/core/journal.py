@@ -80,7 +80,7 @@ from __future__ import annotations
 import copy
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
@@ -136,6 +136,11 @@ _ENTRY_TIMESTAMP_PATTERN = re.compile(
 )
 
 SIDECAR_THRESHOLD_BYTES = 4096
+
+# Dispatch verification journals (Story 28.15 + hotfix 2026-09-01): heavy
+# scope advisories may offload to a sidecar while verdict/ok stay inline.
+SCOPE_VIOLATION_ADVISORIES_FIELD = "scope_violation_advisories"
+SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF = "scope_violation_advisories_sidecar_ref"
 
 # Story 2.3's two new observation kinds (AD-26/AD-27): "registered" here in
 # the same sense every OTHER kind this module's own docstring names is --
@@ -426,6 +431,136 @@ def _sidecar_path_for(entry_id: JournalEntryId) -> str:
     indistinguishable from one to that best-effort static scan."""
     id_fragment = "-".join((entry_id.writer_id, str(entry_id.counter)))
     return f"blobs/{id_fragment}.json"
+
+
+def _valid_sidecar_ref(ref: object) -> str | None:
+    if not isinstance(ref, str) or not ref.startswith("blobs/"):
+        return None
+    name = ref[len("blobs/") :]
+    if not name or "/" in name or "\\" in name or name in (".", ".."):
+        return None
+    return ref
+
+
+def sidecar_refs_from_lines(lines: Sequence[str]) -> tuple[str, ...]:
+    """Sidecar blob paths referenced by journal ``lines`` -- whole-payload
+    ``{"sidecar_ref": ...}`` placeholders AND field-offload refs such as
+    ``scope_violation_advisories_sidecar_ref`` (dispatch hotfix 2026-09-01).
+
+    Deliberately tolerant: unparsable lines are skipped; ``fold`` quarantines
+    malformed lines, not this helper."""
+    refs: list[str] = []
+    seen: set[str] = set()
+    for line in lines:
+        if (
+            '"sidecar_ref"' not in line
+            and SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF not in line
+        ):
+            continue
+        try:
+            document = json.loads(line)
+        except (ValueError, TypeError, RecursionError):
+            continue
+        if not isinstance(document, Mapping):
+            continue
+        payload = document.get("payload")
+        if not isinstance(payload, Mapping):
+            continue
+        candidates: list[object] = []
+        if len(payload) == 1 and "sidecar_ref" in payload:
+            candidates.append(payload.get("sidecar_ref"))
+        candidates.append(payload.get(SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF))
+        for candidate in candidates:
+            ref = _valid_sidecar_ref(candidate)
+            if ref is not None and ref not in seen:
+                seen.add(ref)
+                refs.append(ref)
+    return tuple(refs)
+
+
+def sidecar_texts_for_lines(
+    lines: Sequence[str],
+    *,
+    read_sidecar: Callable[[str], str | None],
+) -> dict[str, str | None]:
+    """Build the ``sidecars`` mapping for ``fold`` from journal ``lines``."""
+    return {ref: read_sidecar(ref) for ref in sidecar_refs_from_lines(lines)}
+
+
+def resolve_scope_violation_advisories_from_payload(
+    payload: Mapping[str, object],
+    *,
+    sidecars: Mapping[str, str | None] = MappingProxyType({}),
+) -> tuple[dict[str, object], ...]:
+    """Read scope advisories from an inline list or an offloaded sidecar ref."""
+    inline = payload.get(SCOPE_VIOLATION_ADVISORIES_FIELD)
+    if isinstance(inline, list):
+        return tuple(item for item in inline if isinstance(item, dict))
+    ref = payload.get(SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF)
+    if not isinstance(ref, str):
+        return ()
+    blob = sidecars.get(ref)
+    if not isinstance(blob, str):
+        return ()
+    try:
+        parsed = json.loads(blob)
+    except (ValueError, TypeError, RecursionError):
+        return ()
+    if not isinstance(parsed, Mapping):
+        return ()
+    offloaded = parsed.get(SCOPE_VIOLATION_ADVISORIES_FIELD)
+    if isinstance(offloaded, list):
+        return tuple(item for item in offloaded if isinstance(item, dict))
+    return ()
+
+
+def prepare_for_write_offloading_fields(
+    entry: JournalEntry,
+    *,
+    offload_fields: frozenset[str],
+) -> PreparedWrite:
+    """Like ``prepare_for_write``, but moves ``offload_fields`` to a sidecar
+    blob referenced from the inline payload when the full payload would
+    exceed ``SIDECAR_THRESHOLD_BYTES`` -- keeping verdict-driving keys on
+    the journal line (dispatch-supervisor hotfix, 2026-09-01)."""
+    if not isinstance(entry, JournalEntry):
+        raise TypeError(f"entry must be a JournalEntry, got {entry!r}")
+
+    payload_text = json.dumps(entry.payload, sort_keys=True)
+    if len(payload_text.encode("utf-8")) <= SIDECAR_THRESHOLD_BYTES:
+        return prepare_for_write(entry)
+
+    payload = dict(entry.payload)
+    offloaded: dict[str, object] = {}
+    for name in offload_fields:
+        if name in payload:
+            offloaded[name] = payload.pop(name)
+    if not offloaded:
+        return prepare_for_write(entry)
+
+    sidecar_relative_path = _sidecar_path_for(entry.id)
+    inline_payload = dict(payload)
+    inline_payload[SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF] = sidecar_relative_path
+    inline_entry = build_entry(
+        id=entry.id,
+        ts=entry.ts,
+        run_id=entry.run_id,
+        kind=entry.kind,
+        phase=entry.phase,
+        payload=inline_payload,
+        story=entry.story,
+        intent_id=entry.intent_id,
+    )
+    inline_prepared = prepare_for_write(inline_entry)
+    if inline_prepared.sidecar_relative_path is not None:
+        return prepare_for_write(entry)
+
+    sidecar_content = json.dumps(offloaded, sort_keys=True)
+    return PreparedWrite(
+        line=inline_prepared.line,
+        sidecar_relative_path=sidecar_relative_path,
+        sidecar_content=sidecar_content,
+    )
 
 
 def prepare_for_write(entry: JournalEntry) -> PreparedWrite:

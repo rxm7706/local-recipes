@@ -38,7 +38,16 @@ from ..core.dispatch_verification import (
     primary_gate_failure,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
-from ..core.journal import JournalEntryId, Phase, build_entry, fold, prepare_for_write
+from ..core.journal import (
+    JournalEntryId,
+    Phase,
+    SCOPE_VIOLATION_ADVISORIES_FIELD,
+    build_entry,
+    fold,
+    prepare_for_write,
+    prepare_for_write_offloading_fields,
+    sidecar_texts_for_lines,
+)
 from ..core.identity import normalize, resolve_feed
 from ..dispatch_verify import (
     compose_dispatch_policy,
@@ -67,11 +76,32 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
-    prepared = prepare_for_write(entry)
+def _append_entry(
+    fs: FsPort,
+    run_dir: Path,
+    entry,
+    *,
+    fsync: bool,
+    offload_fields: frozenset[str] | None = None,
+) -> None:
+    if offload_fields:
+        prepared = prepare_for_write_offloading_fields(
+            entry, offload_fields=offload_fields
+        )
+    else:
+        prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def _fold_dispatch_journal(fs: FsPort, run_dir: Path, text: str):
+    lines = text.splitlines()
+    sidecars = sidecar_texts_for_lines(
+        lines,
+        read_sidecar=lambda ref: fs.read_text(run_dir / ref),
+    )
+    return fold(lines, sidecars=sidecars)
 
 
 def _launch_story_started_ts(folded, run_id: str) -> str | None:
@@ -404,7 +434,7 @@ def _run_and_journal_verification(
     # never emits in the first place): a plain, JSON-safe list threaded to
     # `marshal status`/`fleet-picture` via `gather_dispatch_journal_facts`.
     scope_advisories = [
-        {"code": finding.code, "message": finding.message, "path": finding.path}
+        {"code": finding.code, "path": finding.path}
         for finding in envelope.findings
         if finding.code in gate_core._SCOPE_VIOLATION_ADVISORY_CODES.values()
     ]
@@ -440,7 +470,13 @@ def _run_and_journal_verification(
     counter += 1
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
-        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        _append_entry(
+            fs,
+            run_dir,
+            outcome_entry,
+            fsync=False,
+            offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD}),
+        )
     except FsError as exc:
         print(
             f"dispatch supervisor: cannot journal verification for {run_id!r}: {exc}",
@@ -475,7 +511,7 @@ def run_dispatch_supervisor(
             file=sys.stderr,
         )
         return 0
-    folded = fold(text.splitlines())
+    folded = _fold_dispatch_journal(fs, run_dir, text)
     launch_entries = folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH)
     if not any(
         entry.run_id == run_id and entry.phase in (Phase.INTENT, Phase.OUTCOME)
@@ -552,7 +588,7 @@ def run_dispatch_supervisor(
                     )
                     text = fs.read_text(journal_path)
                     if text is not None:
-                        folded = fold(text.splitlines())
+                        folded = _fold_dispatch_journal(fs, run_dir, text)
                 v_outcome = _verification_outcome_verdict(folded, run_id)
                 if (
                     v_outcome == DispatchVerificationVerdict.VERIFIED.value
@@ -576,7 +612,7 @@ def run_dispatch_supervisor(
                     )
                     text = fs.read_text(journal_path)
                     if text is not None:
-                        folded = fold(text.splitlines())
+                        folded = _fold_dispatch_journal(fs, run_dir, text)
                     try:
                         git_facts = gather_dispatch_git_facts(
                             vcs,
@@ -638,7 +674,7 @@ def run_dispatch_supervisor(
             )
             text = fs.read_text(journal_path)
             if text is not None:
-                folded = fold(text.splitlines())
+                folded = _fold_dispatch_journal(fs, run_dir, text)
             try:
                 git_facts = gather_dispatch_git_facts(
                     vcs,

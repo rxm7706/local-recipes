@@ -611,8 +611,8 @@ def check_scope_with_mode(
             severity=Severity.WARN,
             message=(
                 f"scope-violation mode is 'warn' for this station -- "
-                f"{finding.message} (would refuse landing under 'hard'; "
-                "landing proceeds)"
+                f"{finding.code} at {finding.path!r} "
+                "(would refuse landing under 'hard'; landing proceeds)"
             ),
             path=finding.path,
         )

@@ -15,7 +15,17 @@ from pyforge.marshal.cli.dispatch import (
     station_in_flight_conflict,
 )
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+from pyforge.marshal.core.journal import (
+    JournalEntryId,
+    Phase,
+    SCOPE_VIOLATION_ADVISORIES_FIELD,
+    build_entry,
+    fold,
+    prepare_for_write,
+    prepare_for_write_offloading_fields,
+    sidecar_texts_for_lines,
+)
+from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
 
@@ -468,3 +478,100 @@ def test_gather_dispatch_journal_facts_round_trips_scope_violation_advisories(
     facts = gather_dispatch_journal_facts(fs, run_dir, "run-scope")
 
     assert facts.verification_scope_advisories == tuple(advisories_payload)
+
+
+def test_verification_outcome_verdict_reads_legacy_sidecarred_payload(
+    tmp_path: Path,
+) -> None:
+    """Regression: dispatch supervisor must fold sidecars before reading verdict."""
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-sidecar", story_key="28.8"
+    )
+    journal_path = run_dir / "journal.jsonl"
+    payload = {
+        "verdict": "verified",
+        "ok": True,
+        "scope_violation_advisories": [
+            {"code": "MRS-GATE-012", "path": f"extra/{index}.py"}
+            for index in range(500)
+        ],
+    }
+    prepared = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-09-01T00:00:00.000Z",
+            run_id="run-sidecar",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 1),
+            payload=payload,
+        )
+    )
+    assert prepared.sidecar_relative_path is not None
+    assert prepared.sidecar_content is not None
+    sidecar_path = run_dir / prepared.sidecar_relative_path
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text(prepared.sidecar_content, encoding="utf-8")
+    fs.files[sidecar_path] = prepared.sidecar_content
+    appended = prepared.line + "\n"
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(appended)
+    fs.files[journal_path] = fs.files[journal_path] + appended
+
+    text = fs.read_text(journal_path)
+    assert text is not None
+    sidecars = sidecar_texts_for_lines(
+        text.splitlines(),
+        read_sidecar=lambda ref: fs.read_text(run_dir / ref),
+    )
+    folded = fold(text.splitlines(), sidecars=sidecars)
+
+    assert _verification_outcome_verdict(folded, "run-sidecar") == "verified"
+
+
+def test_gather_dispatch_journal_facts_reads_offloaded_scope_advisories(
+    tmp_path: Path,
+) -> None:
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-offload", story_key="28.15"
+    )
+    journal_path = run_dir / "journal.jsonl"
+    advisories = [
+        {"code": "MRS-GATE-012", "path": f"src/outside/{index}.py"}
+        for index in range(400)
+    ]
+    prepared = prepare_for_write_offloading_fields(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-09-01T00:00:00.000Z",
+            run_id="run-offload",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 1),
+            payload={
+                "verdict": "verified",
+                "ok": True,
+                SCOPE_VIOLATION_ADVISORIES_FIELD: advisories,
+            },
+        ),
+        offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD}),
+    )
+    assert prepared.sidecar_relative_path is not None
+    assert prepared.sidecar_content is not None
+    sidecar_path = run_dir / prepared.sidecar_relative_path
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text(prepared.sidecar_content, encoding="utf-8")
+    fs.files[sidecar_path] = prepared.sidecar_content
+    appended = prepared.line + "\n"
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(appended)
+    fs.files[journal_path] = fs.files[journal_path] + appended
+
+    facts = gather_dispatch_journal_facts(fs, run_dir, "run-offload")
+
+    assert facts.verification_verdict == "verified"
+    assert len(facts.verification_scope_advisories) == 400

@@ -21,6 +21,7 @@ from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.journal import (
     KIND_FREEZE_DECLARED,
     KIND_FREEZE_REMOVED,
+    SCOPE_VIOLATION_ADVISORIES_FIELD,
     SIDECAR_THRESHOLD_BYTES,
     FoldResult,
     FrozenPath,
@@ -29,9 +30,13 @@ from pyforge.marshal.core.journal import (
     Phase,
     PreparedWrite,
     build_entry,
+    fold,
     intent_reconciles,
     mint_run_id,
     prepare_for_write,
+    prepare_for_write_offloading_fields,
+    resolve_scope_violation_advisories_from_payload,
+    sidecar_texts_for_lines,
 )
 
 _SCHEMA_PATH = (
@@ -895,3 +900,89 @@ def test_intent_reconciles_false_on_non_str_element_in_confirmed_story_keys():
     intent_payload = {"action": "merge_branch", "story_keys": ["4.3"]}
     evidence = {"confirmed_story_keys": [4.3]}
     assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_prepare_for_write_offloading_fields_keeps_verdict_inline() -> None:
+    """Dispatch-supervisor hotfix (2026-09-01): heavy scope advisories must not
+    sidecar the whole verification outcome -- ``verdict``/``ok`` stay on the
+    journal line so ``_verification_outcome_verdict`` can read them."""
+    advisories = [
+        {
+            "code": "MRS-GATE-012",
+            "path": f"src/pkg/module_{index}.py",
+        }
+        for index in range(400)
+    ]
+    entry = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 9),
+        ts="2026-09-01T00:00:00.000Z",
+        run_id="run-verify",
+        kind="dispatch-verification",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("dispatch-supervisor-1", 8),
+        payload={
+            "verdict": "verified",
+            "ok": True,
+            SCOPE_VIOLATION_ADVISORIES_FIELD: advisories,
+        },
+    )
+    prepared = prepare_for_write_offloading_fields(
+        entry, offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD})
+    )
+    assert prepared.sidecar_relative_path is not None
+    assert prepared.sidecar_content is not None
+    inline = json.loads(prepared.line)
+    assert inline["payload"]["verdict"] == "verified"
+    assert inline["payload"]["ok"] is True
+    assert SCOPE_VIOLATION_ADVISORIES_FIELD not in inline["payload"]
+    assert "scope_violation_advisories_sidecar_ref" in inline["payload"]
+    assert len(prepared.line.encode("utf-8")) <= SIDECAR_THRESHOLD_BYTES
+
+
+def test_fold_reads_verdict_from_legacy_whole_payload_sidecar() -> None:
+    """Regression for 28.8/28.15: when the entire outcome payload was sidecar'd,
+    ``fold(..., sidecars=...)`` must restore ``verdict`` for land decisions."""
+    payload = {
+        "verdict": "verified",
+        "ok": True,
+        "scope_violation_advisories": [
+            {"code": "MRS-GATE-012", "path": f"extra/path/{index}.py"}
+            for index in range(500)
+        ],
+    }
+    entry = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 3),
+        ts="2026-09-01T00:00:00.000Z",
+        run_id="run-verify",
+        kind="dispatch-verification",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("dispatch-supervisor-1", 2),
+        payload=payload,
+    )
+    prepared = prepare_for_write(entry)
+    assert prepared.sidecar_relative_path is not None
+    assert prepared.sidecar_content is not None
+    sidecars = {prepared.sidecar_relative_path: prepared.sidecar_content}
+    folded = fold([prepared.line], sidecars=sidecars)
+    outcomes = [
+        e
+        for e in folded.entries
+        if e.kind == "dispatch-verification" and e.phase is Phase.OUTCOME
+    ]
+    assert len(outcomes) == 1
+    assert outcomes[0].payload.get("verdict") == "verified"
+
+
+def test_resolve_scope_violation_advisories_from_offloaded_sidecar_ref() -> None:
+    advisories = [{"code": "MRS-GATE-012", "path": "src/outside.py"}]
+    sidecar_ref = "blobs/dispatch-supervisor-1-3.json"
+    sidecars = {
+        sidecar_ref: json.dumps(
+            {SCOPE_VIOLATION_ADVISORIES_FIELD: advisories}, sort_keys=True
+        )
+    }
+    resolved = resolve_scope_violation_advisories_from_payload(
+        {"scope_violation_advisories_sidecar_ref": sidecar_ref},
+        sidecars=sidecars,
+    )
+    assert resolved == ({"code": "MRS-GATE-012", "path": "src/outside.py"},)
