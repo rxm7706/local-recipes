@@ -30,9 +30,16 @@ ttls:
   pypi_current_versions: 604800                 # 7 d (PHASE_H_TTL_DAYS; serial-gated, column pypi_version_fetched_at)
   pypi_downloads_monthly: 2592000               # 30 d (PHASE_P_TTL_DAYS; monthly partitions; admin-only)
   pypi_cross_channel_flags: 604800              # 7 d (PHASE_Q_TTL_DAYS)
+  pypi_tier3_channel_flags: 604800              # 7 d (Tier 3 OS bulk-index flags; Story 23.1)
   pypi_intelligence_enriched: 604800            # 7 d (PHASE_R_TTL_DAYS)
   pypi_conda_map_store: 604800                  # 7 d (MAPPING_TTL_DAYS mapping cache; Q6 pending — B5) [future_consumer: B5 — external-refresh assets wrap the cache refresh]
   pypi_endoflife_raw: 604800                    # 7 d (spec eol cache; lts_registry_gap ttl_days=7) [future_consumer: B2 — pypi_intelligence port gates the eol fetch]
+  # Story 23.1 — Tier 3 OS-distro bulk-index external-refresh cadences (WEEKLY).
+  discovery_homebrew_packages_raw: 604800       # 7 d [future_consumer: 23.1]
+  discovery_nixpkgs_packages_raw: 604800        # 7 d [future_consumer: 23.1]
+  discovery_spack_packages_raw: 604800          # 7 d [future_consumer: 23.1]
+  discovery_debian_packages_raw: 604800         # 7 d [future_consumer: 23.1]
+  discovery_fedora_packages_raw: 604800         # 7 d [future_consumer: 23.1]
   # -- vulnerability
   # G-4(B2): KEV cadence decision — the A2 Dev Agent Record deferred the KEV
   # fetch-TTL to the vulnerability-pipeline port (this story). CISA publishes

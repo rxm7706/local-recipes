@@ -17,6 +17,7 @@ through the SAME code the pipeline uses.
 
 from __future__ import annotations
 
+import re
 import time
 
 import pandas as pd
@@ -35,6 +36,11 @@ _PHASE_H_SAFETY_RECHECK_SECONDS = 30 * 24 * 3600
 # Story 21.4 (Tier 1): + selfexplainml — the 5th `_CROSS_CHANNEL_SPECS` tuple in
 # datasets/core_sources.py drives a 5th `in_selfexplainml` column here automatically.
 _CROSS_CHANNELS = ("bioconda", "pytorch", "nvidia", "robostack", "selfexplainml")
+
+# Tier 3 OS-distro bulk indexes (Story 23.1) — sibling to Phase Q, NOT an extension
+# of ``_CROSS_CHANNELS`` (conda-channel repodata vs OS bulk indexes).
+_TIER3_CHANNELS = ("homebrew", "nixpkgs", "spack", "debian", "fedora")
+_PEP503_RUN_RE = re.compile(r"[-_.]+")
 
 
 def _is_missing(v) -> bool:
@@ -440,6 +446,50 @@ def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.Data
 
 
 # ---------------------------------------------------------------------------
+# Tier 3 — OS-distro bulk-index channel flags (Story 23.1)
+# ---------------------------------------------------------------------------
+
+def _normalize_pypi_name(name: str) -> str:
+    """PEP 503 name normalization — mirrors artifactory/identity_join.py."""
+    return _PEP503_RUN_RE.sub("-", name).lower()
+
+
+def flag_tier3_channels(
+    discovery_homebrew_packages_raw: pd.DataFrame,
+    discovery_nixpkgs_packages_raw: pd.DataFrame,
+    discovery_spack_packages_raw: pd.DataFrame,
+    discovery_debian_packages_raw: pd.DataFrame,
+    discovery_fedora_packages_raw: pd.DataFrame,
+) -> pd.DataFrame:
+    """Pivot five Tier 3 bulk-index frames into per-source ``in_<source>`` BOOLs.
+
+    Each input carries a ``name`` column (the source's raw reported name, verbatim —
+    no prefix-stripping heuristics in v1). Output is keyed by PEP-503-normalized
+    ``pypi_name`` plus ``in_homebrew`` / ``in_nixpkgs`` / ``in_spack`` /
+    ``in_debian`` / ``in_fedora`` BOOLs (one row per distinct normalized name)."""
+    out_cols = ["pypi_name"] + [f"in_{c}" for c in _TIER3_CHANNELS]
+    sources = (
+        ("homebrew", discovery_homebrew_packages_raw),
+        ("nixpkgs", discovery_nixpkgs_packages_raw),
+        ("spack", discovery_spack_packages_raw),
+        ("debian", discovery_debian_packages_raw),
+        ("fedora", discovery_fedora_packages_raw),
+    )
+    flags: dict[str, dict[str, bool]] = {}
+    for channel, df in sources:
+        if df is None or df.empty or "name" not in getattr(df, "columns", []):
+            continue
+        for name in df["name"]:
+            if _is_missing(name) or not isinstance(name, str):
+                continue
+            key = _normalize_pypi_name(name)
+            row = flags.setdefault(key, {f"in_{c}": False for c in _TIER3_CHANNELS})
+            row[f"in_{channel}"] = True
+    records = [{"pypi_name": key, **vals} for key, vals in flags.items()]
+    return pd.DataFrame(records, columns=out_cols).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
 # Phase R — enrichment (single-write-path helpers shared with add-handoff)
 # ---------------------------------------------------------------------------
 
@@ -715,3 +765,28 @@ def refresh_pypi_json_store(ttls: dict) -> RefreshRequest:
         store="pypi_json_raw",
         cadence_seconds=_ttl_cadence(ttls, "pypi_current_versions"),
     )
+
+
+def _tier3_refresh_request(ttls: dict, store: str) -> RefreshRequest:
+    """Shared trigger helper for the five Tier 3 external-refresh stores (Story 23.1)."""
+    return RefreshRequest(store=store, cadence_seconds=_ttl_cadence(ttls, store))
+
+
+def refresh_discovery_homebrew_store(ttls: dict) -> RefreshRequest:
+    return _tier3_refresh_request(ttls, "discovery_homebrew_packages_raw")
+
+
+def refresh_discovery_nixpkgs_store(ttls: dict) -> RefreshRequest:
+    return _tier3_refresh_request(ttls, "discovery_nixpkgs_packages_raw")
+
+
+def refresh_discovery_spack_store(ttls: dict) -> RefreshRequest:
+    return _tier3_refresh_request(ttls, "discovery_spack_packages_raw")
+
+
+def refresh_discovery_debian_store(ttls: dict) -> RefreshRequest:
+    return _tier3_refresh_request(ttls, "discovery_debian_packages_raw")
+
+
+def refresh_discovery_fedora_store(ttls: dict) -> RefreshRequest:
+    return _tier3_refresh_request(ttls, "discovery_fedora_packages_raw")

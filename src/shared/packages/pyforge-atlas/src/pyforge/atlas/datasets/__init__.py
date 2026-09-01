@@ -114,6 +114,18 @@ from .upstream_discovery import (
     parse_trending_html,
     read_tracked_seed,
 )
+from .tier3_sources import (
+    DebianPackagesDataset,
+    FedoraPackagesDataset,
+    HomebrewPackagesDataset,
+    NixpkgsPackagesDataset,
+    SpackPackagesDataset,
+    parse_debian_packages_control,
+    parse_fedora_packages,
+    parse_homebrew_formulae_json,
+    parse_nixpkgs_packages_json,
+    parse_spack_packages,
+)
 from .vcs_sources import (
     RegistryUpstreamDataset,
     VcsHostSeedDataset,
@@ -209,6 +221,17 @@ __all__ = [
     "parse_pr_files_response",
     "LocalRecipesOverlayDataset",
     "parse_recipe_dir",
+    # Story 23.1 — Tier 3 OS-distro bulk indexes (homebrew/nixpkgs/spack/debian/fedora)
+    "HomebrewPackagesDataset",
+    "NixpkgsPackagesDataset",
+    "SpackPackagesDataset",
+    "DebianPackagesDataset",
+    "FedoraPackagesDataset",
+    "parse_homebrew_formulae_json",
+    "parse_nixpkgs_packages_json",
+    "parse_spack_packages",
+    "parse_debian_packages_control",
+    "parse_fedora_packages",
     # Core raw-source parsers + datasets (B1 ingest gap)
     "FeedstockOutputsArchiveDataset",
     "CondaRepodataDataset",

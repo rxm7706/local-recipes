@@ -139,6 +139,17 @@ NODE_REGISTRY: dict[str, tuple] = {
         ["pypi_cross_channel_repodata_raw"],
         ["pypi_cross_channel_flags"],
     ),
+    "flag_tier3_channels": (
+        pypi_nodes.flag_tier3_channels,
+        [
+            "discovery_homebrew_packages_raw",
+            "discovery_nixpkgs_packages_raw",
+            "discovery_spack_packages_raw",
+            "discovery_debian_packages_raw",
+            "discovery_fedora_packages_raw",
+        ],
+        ["pypi_tier3_channel_flags"],
+    ),
     "enrich_pypi_intelligence": (
         pypi_nodes.enrich_pypi_intelligence,
         ["pypi_json_raw"],

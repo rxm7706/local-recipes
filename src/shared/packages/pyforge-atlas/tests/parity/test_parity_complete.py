@@ -15,7 +15,7 @@ _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 8,  # Story 21.4 +enumerate_anaconda_main_packages (Tier-1 materializer, new-signal — AD-14, not parity-gated)
     "vcs_health": 10,  # B9 +derive_release_velocity (FR-20); B10 +classify_migration_readiness (FR-21) — new-signal, AD-14; Story 21.2 +3 external-refresh trigger nodes (§ 3.4 boundary)
-    "pypi_intelligence": 11,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset); Story 21.2 review fix #6 added refresh_pypi_json_store (same § 3.4 boundary)
+    "pypi_intelligence": 17,  # Story 23.1: +5 Tier-3 refresh triggers + flag_tier3_channels
     "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
 }
 
@@ -34,6 +34,11 @@ _REFRESH_ASSETS = {
     "refresh_vcs_host_stores",
     "refresh_vcs_registry_stores",
     "refresh_pypi_json_store",
+    "refresh_discovery_homebrew_store",
+    "refresh_discovery_nixpkgs_store",
+    "refresh_discovery_spack_store",
+    "refresh_discovery_debian_store",
+    "refresh_discovery_fedora_store",
 }
 
 # Story B8 Basilisk ingestion nodes (FR-19) — ADDITIVE new-signal riders, NEVER
@@ -67,11 +72,11 @@ def test_harness_build_completes_at_b3():
         assert len(per_pipeline[pipeline]) == expected, pipeline
 
     all_nodes = set().union(*per_pipeline.values())
-    # The parity SURFACE is the 26 Wave-B legacy-surface nodes; the 3 B5 refresh assets
-    # (§ 3.4 boundary) and the 2 B8 Basilisk new-signal nodes (AD-14 additive rider) are
-    # NOT parity-diffed.
+    # The parity SURFACE is the 27 Wave-B legacy-surface nodes; the B5 refresh assets
+    # (§ 3.4 boundary), the 5 Story-23.1 Tier-3 refresh triggers, and the 2 B8
+    # Basilisk new-signal nodes (AD-14 additive rider) are NOT parity-diffed.
     parity_surface = all_nodes - _REFRESH_ASSETS - _NEW_SIGNAL_NODES
-    assert len(parity_surface) == 26  # the 26 Wave-B parity-surface nodes
+    assert len(parity_surface) == 27  # + flag_tier3_channels (Story 23.1)
 
     missing = parity_surface - set(NODE_REGISTRY)
     assert not missing, (
