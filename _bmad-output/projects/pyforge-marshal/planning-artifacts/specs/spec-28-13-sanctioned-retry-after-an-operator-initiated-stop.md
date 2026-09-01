@@ -3,7 +3,7 @@ title: 'Sanctioned retry after an operator-initiated stop (Story 28.13, Epic 28)
 type: 'feature'
 created: '2026-08-31'
 status: 'done'
-baseline_revision: 'dispatch-pyforge-marshal-28.13-worktree'
+baseline_revision: 'e29078e0541495a28da36f5e7b35a281affdd212'
 review_loop_iteration: 0
 followup_review_recommended: false
 difficulty: medium
