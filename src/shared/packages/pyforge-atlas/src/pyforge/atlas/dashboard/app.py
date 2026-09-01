@@ -317,6 +317,33 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "(Story 23.5) with enterprise_jfrog_consumption.parquet (Story 23.2); "
         "renders an honest empty shell naming the specific missing file until both exist.",
     ),
+    # -- Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages --
+    PageDef(
+        "bootstrap-index-health",
+        "Bootstrap Index Health",
+        "bootstrap-index-health",
+        "bsl-shell",
+        note="Wired to build_bootstrap_index_health_model over Tier 0/1 catalog index "
+        "manifest Parquet (Stories 21.3/21.4); renders empty until bootstrap "
+        "materializes the index-health summary.",
+    ),
+    PageDef(
+        "identity-export-snapshot",
+        "Identity Export Snapshot",
+        "identity-export-snapshot",
+        "bsl-shell",
+        note="Wired to build_identity_export_snapshot_model over identity_export_parquet "
+        "(Story 21.6); renders empty until the identity join export materializes.",
+    ),
+    PageDef(
+        "live-catalog-coverage",
+        "Live Catalog Coverage",
+        "live-catalog-coverage",
+        "bsl-shell",
+        note="Wired to build_live_catalog_coverage_model — aggregate BOOL coverage aligned "
+        "with verification-matrix.md; renders empty until the coverage summary "
+        "Parquet materializes.",
+    ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
@@ -604,6 +631,15 @@ def build_dashboard(
         identity_workbook_complete,
         identity_workbook_enterprise,
     )
+    bootstrap_index_health_provenance = _provenance.resolve_for_file(
+        root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
+    )
+    identity_export_snapshot_provenance = _provenance.resolve_for_file(
+        root / _data.IDENTITY_EXPORT_PARQUET
+    )
+    live_catalog_coverage_provenance = _provenance.resolve_for_file(
+        root / _data.LIVE_CATALOG_COVERAGE_PARQUET
+    )
 
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
@@ -779,6 +815,30 @@ def build_dashboard(
             enterprise_parquet=identity_workbook_enterprise,
             provenance=identity_workbook_provenance,
             gap_message=identity_workbook_gap,
+        ),
+        _data_page(
+            by_id["bootstrap-index-health"],
+            lambda: _data.load_bootstrap_index_health(
+                root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
+            ),
+            grounded=False,
+            provenance=bootstrap_index_health_provenance,
+        ),
+        _data_page(
+            by_id["identity-export-snapshot"],
+            lambda: _data.load_identity_export_snapshot(
+                root / _data.IDENTITY_EXPORT_PARQUET
+            ),
+            grounded=False,
+            provenance=identity_export_snapshot_provenance,
+        ),
+        _data_page(
+            by_id["live-catalog-coverage"],
+            lambda: _data.load_live_catalog_coverage(
+                root / _data.LIVE_CATALOG_COVERAGE_PARQUET
+            ),
+            grounded=False,
+            provenance=live_catalog_coverage_provenance,
         ),
         _factory_page(
             by_id["factory-status"],

@@ -2,7 +2,8 @@
 title: 'Vizro operator pages for bootstrap verification (Story 21.9, Epic 21, optional follow-on)'
 type: 'feature'
 created: '2026-08-30'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'pending-verification'
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
@@ -143,7 +144,7 @@ shape needed to write correct `Dimension`/`Measure` declarations is fully docume
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src/pyforge/atlas/semantic/models.py` — add `build_bootstrap_index_health_model`,
+- [x] `src/pyforge/atlas/semantic/models.py` — add `build_bootstrap_index_health_model`,
   `build_identity_export_snapshot_model`, `build_live_catalog_coverage_model`. Suggested
   shapes (confirm exact source columns against the real materialized Parquet from 21.3/21.4/21.6
   at implementation time — the SHAPE below is fixed by the source docs, not an open question):
@@ -157,18 +158,18 @@ shape needed to write correct `Dimension`/`Measure` declarations is fully docume
     `Basilisk_Member`, `AOSS_Free`, `AOSS_Premium`, `Anaconda_Main`, `Anaconda_Dist`,
     cross-channel BOOLs, per `verification-matrix.md`'s table); measures `true_count`,
     `total_count`.
-- [ ] `src/pyforge/atlas/dashboard/data.py` — add the 3 Parquet relpath constants + 3
+- [x] `src/pyforge/atlas/dashboard/data.py` — add the 3 Parquet relpath constants + 3
   `load_*` functions, each routed through `_bsl_query_or_empty`.
-- [ ] `src/pyforge/atlas/dashboard/app.py` — append 3 `PageDef` entries (id `bootstrap-index-health`
+- [x] `src/pyforge/atlas/dashboard/app.py` — append 3 `PageDef` entries (id `bootstrap-index-health`
   / `identity-export-snapshot` / `live-catalog-coverage`, `kind="bsl-shell"`, each `note`
   stating which upstream story materializes its backing Parquet), 3 `_provenance.resolve_for_file`
   calls, 3 `_data_page(...)` calls in `build_dashboard()`.
-- [ ] `tests/dashboard/test_dashboard_dryrun.py` — extend `_NEW_PAGE_LOADERS_NO_ARGS` +
+- [x] `tests/dashboard/test_dashboard_dryrun.py` — extend `_NEW_PAGE_LOADERS_NO_ARGS` +
   `_NEW_MODEL_SCHEMAS` with the 3 new entries (declared columns per the model shapes above);
   add one BSL-driven-equality test per new page (mirror
   `test_packages_shell_pages_are_bsl_wired_and_light_up_with_data`, ~L175) using a small
   fixture Parquet per page.
-- [ ] `pixi.toml` — refresh the `dashboard-dryrun`/`dashboard-serve` task descriptions' page
+- [x] `pixi.toml` — refresh the `dashboard-dryrun`/`dashboard-serve` task descriptions' page
   count.
 
 **Acceptance Criteria:**
