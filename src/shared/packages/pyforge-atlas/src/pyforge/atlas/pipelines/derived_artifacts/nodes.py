@@ -1,4 +1,4 @@
-"""``derived_artifacts`` pipeline nodes (Story B7, AC-3; Story 23.8).
+"""``derived_artifacts`` pipeline nodes (Story B7, AC-3; Story 23.8; Story 23.3).
 
 ``build_universe_sbom`` — the full-universe CycloneDX BOM (§ 5.2 item 7): one conda
 component per package (``?channel=conda-forge`` purl, ``cfe:pypi_name`` on mapped rows
@@ -14,12 +14,17 @@ Unions 9 already-cataloged Parquet sources (the ones the story's Intent table ma
 1:1 to the retired workbook's package-bearing sheets) into one row per PEP-503
 ``core_python_package_name``.
 
+``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority`` (Story 23.3) — port
+``scripts/conda-forge-packaging-inventory-operations_priority.py``'s P1–P10 hierarchy
+to Kedro-native Parquet over ``identity_packages_primary`` and enterprise inputs.
+
 PURE nodes: pandas + stdlib only; no inline IO; ``dagster``/``kedro_mcp`` never imported
 (AD-1). Reuses the ported purl primitives from the ``universal_sbom`` nodes.
 """
 
 from __future__ import annotations
 
+import math
 import re
 import time
 from typing import Any
@@ -316,3 +321,501 @@ def build_inventory_universe(
         .sort_values("core_python_package_name")
         .reset_index(drop=True)
     )
+
+
+# ---------------------------------------------------------------------------
+# Story 23.3 — inventory_priority_assignments (priority.py port)
+# ---------------------------------------------------------------------------
+#
+# Verbatim port of ``scripts/conda-forge-packaging-inventory-operations_priority.py``
+# rule hierarchy (spec Boundaries). Duplicated here — not imported from ``scripts/`` —
+# because that script is openpyxl-bound and this node is pandas+stdlib-only (AD-1).
+
+_PACK = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
+_BUCKET_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"]
+_PRI_N = {b: i for i, b in enumerate(_BUCKET_ORDER, start=1)}
+_WORK_FIX_VULN = "Fix vulnerability"
+_WORK_CREATE = "Create recipe"
+_WORK_ISSUE_CF = "File OpenTeams tracking issue [Conda-Forge Packaging]"
+_WORK_ISSUE_CF_LEGACY = "File issue (on conda-forge)"
+_WORK_ISSUE_MAINT_LEGACY = "File issue (maintained feedstock)"
+_WORK_TRACKED = "Already tracked"
+_WORK_ORDER = [_WORK_FIX_VULN, _WORK_CREATE, _WORK_ISSUE_CF, _WORK_TRACKED]
+_WORK_RANK = {w: i for i, w in enumerate(_WORK_ORDER)}
+_BATCH_TO_WORK = {
+    "A": _WORK_CREATE,
+    "B": _WORK_ISSUE_CF,
+    "C": _WORK_ISSUE_CF,
+    "TRACKED": _WORK_TRACKED,
+    _WORK_FIX_VULN: _WORK_FIX_VULN,
+    _WORK_CREATE: _WORK_CREATE,
+    _WORK_ISSUE_CF: _WORK_ISSUE_CF,
+    _WORK_ISSUE_CF_LEGACY: _WORK_ISSUE_CF,
+    _WORK_ISSUE_MAINT_LEGACY: _WORK_ISSUE_CF,
+    _WORK_TRACKED: _WORK_TRACKED,
+}
+_PRIORITY_DESC = {
+    "P1": "Current-version vulnerability: the latest release has confirmed advisories (HIGH / affected_latest). Existing OpenTeams board P1 also stays here.",
+    "P2": "Existing OpenTeams board P2. Not overwritten.",
+    "P3": "Existing OpenTeams board P3. Not overwritten.",
+    "P4": "Used in one or more platform environments (platform_env_count > 0).",
+    "P5": "Used by internal applications, but not in a platform environment.",
+    "P6": "Heavy Artifactory use: 100+ downloads or 100+ versions, and not already P1–P5.",
+    "P7": "Moderate Artifactory use: 10+ downloads or 10+ versions, below the P6 floor.",
+    "P8": "Leftover new packaging: consumed from JFROG, not on conda-forge, below the P7 floor (Create recipe).",
+    "P9": "Leftover board coverage: already on conda-forge, missing an OpenTeams issue, below the P7 floor.",
+    "P10": "Lowest leftover: CDO-ENT-CONDA name missing an OpenTeams tracking issue, or already tracked with little Artifactory use.",
+}
+
+_INVENTORY_PRIORITY_COLUMNS: tuple[str, ...] = (
+    "core_python_package_name",
+    "P",
+    "Rank",
+    "Score",
+    "Work",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "Proposed_Priority",
+    "Packaging_Work",
+    "Priority_Rank",
+    "Priority_Score",
+    "risk_level",
+    "vuln_status",
+    "jfrog_latest_vuln_count",
+)
+
+_BASILISK_ROLLUP_COLUMNS: tuple[str, ...] = (
+    "conda_name",
+    "risk_level",
+    "vuln_status",
+    "jfrog_latest_vuln_count",
+)
+
+
+def _priority_pep503(raw) -> str | None:
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return None
+    s = str(raw).strip().lower().replace("_", "-").replace(".", "-")
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s if len(s) >= 2 else None
+
+
+def _priority_num(v) -> float:
+    try:
+        return float(v) if v not in (None, "") else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _priority_filled(raw) -> bool:
+    s = str(raw or "").strip()
+    return bool(s) and s.upper() not in {"N/A", "NA", "NONE", "-"}
+
+
+def _priority_use_score(plat: int, apps: int, ic: int, lob: int, downloads: int, versions: int) -> float:
+    return (
+        100.0 * plat
+        + 10.0 * apps
+        + 3.0 * ic
+        + 2.0 * lob
+        + math.log10(1.0 + downloads)
+        + math.log10(1.0 + versions)
+    )
+
+
+def _priority_percentile_1_100(raws: list[float]) -> list[int]:
+    n = len(raws)
+    if n == 1:
+        return [100]
+    order = sorted(range(n), key=lambda i: (raws[i], i))
+    out = [1] * n
+    for rank, i in enumerate(order):
+        out[i] = 1 + int(round(99.0 * rank / (n - 1)))
+    return out
+
+
+def _board_priority_from_row(row: Any) -> str:
+    for key in ("priority", "Priority"):
+        val = row.get(key) if isinstance(row, dict) else getattr(row, key, None)
+        if val is not None and str(val).strip():
+            return str(val).strip()
+    milestone = row.get("milestone") if isinstance(row, dict) else getattr(row, "milestone", None)
+    if milestone is not None and str(milestone).strip():
+        m = str(milestone).strip()
+        for prefix in ("P1", "P2", "P3"):
+            if m.startswith(prefix):
+                return prefix
+    return ""
+
+
+def _priority_board_maps(ot_rows: list[dict]) -> tuple[dict, dict]:
+    by_url, by_name = {}, {}
+    for r in ot_rows:
+        title = r.get("title") or r.get("Title") or ""
+        m = _PACK.match(str(title))
+        if not m:
+            continue
+        rec = {
+            "priority": _board_priority_from_row(r),
+            "url": str(r.get("url") or r.get("URL") or "").strip(),
+        }
+        if rec["url"]:
+            by_url[rec["url"]] = rec
+        n = _priority_pep503(m.group(1))
+        if n:
+            by_name[n] = rec
+    return by_url, by_name
+
+
+def _priority_board_lock(ident: dict, name: str | None, by_url: dict, by_name: dict) -> str | None:
+    url = str(ident.get("OpenTeams_Issue_URL") or "").strip()
+    rec = by_url.get(url) or by_name.get(name or "")
+    if not rec:
+        return None
+    p = rec["priority"]
+    if p.startswith("P1"):
+        return "P1"
+    if p.startswith("P2"):
+        return "P2"
+    if p.startswith("P3"):
+        return "P3"
+    return None
+
+
+def _priority_is_current_vuln(j: dict | None) -> bool:
+    if not j:
+        return False
+    return str(j.get("risk_level") or "") == "HIGH" or str(j.get("vuln_status") or "") == "affected_latest"
+
+
+def _priority_work_label(ident: dict, inv: dict | None, j: dict | None) -> str:
+    if _priority_is_current_vuln(j):
+        return _WORK_FIX_VULN
+    if inv:
+        mapped = _BATCH_TO_WORK.get(str(inv.get("OpenTeams_Batch") or "").strip())
+        if mapped and mapped != _WORK_FIX_VULN:
+            return mapped
+        cohort = str(inv.get("OpenTeams_Cohort") or "").strip()
+        coverage = str(inv.get("OpenTeams_Coverage") or "").strip()
+        if coverage == "Have_Issue":
+            return _WORK_TRACKED
+        if cohort == "JFROG_NEW":
+            return _WORK_CREATE
+        if cohort == "JFROG_ON_CF" or cohort == "CONDA_ONLY":
+            return _WORK_ISSUE_CF
+    if _priority_filled(ident.get("OpenTeams_Issue_URL")):
+        return _WORK_TRACKED
+    if _priority_filled(ident.get("conda_purl")) or _priority_filled(ident.get("Conda-Forge_FeedStock_URL")):
+        return _WORK_ISSUE_CF
+    return _WORK_CREATE
+
+
+def _priority_assign_lane(
+    ident: dict, name: str | None, j: dict | None, by_url: dict, by_name: dict
+) -> tuple[str | None, str, str]:
+    plat = int(_priority_num(j.get("platform_env_count")) if j else 0)
+    apps = int(_priority_num(j.get("internal_app_count")) if j else 0)
+    dl = int(_priority_num(j.get("artifactory_downloads")) if j else 0)
+    ver = int(_priority_num(j.get("artifactory_version_count")) if j else 0)
+    risk = str(j.get("risk_level") or "") if j else ""
+    vuln = str(j.get("vuln_status") or "") if j else ""
+    if risk == "HIGH" or vuln == "affected_latest":
+        return "P1", "current-version-vuln", "latest version has confirmed advisories"
+    locked = _priority_board_lock(ident, name, by_url, by_name)
+    if locked:
+        return locked, "openteams-board", "existing board P1-P3, not overwritten"
+    if plat > 0:
+        return "P4", "platform", "platform_env_count > 0"
+    if apps > 0:
+        return "P5", "app", "internal_app_count > 0"
+    if dl >= 100 or ver >= 100:
+        return (
+            "P6",
+            "download-version-floor-100",
+            "100+ Artifactory downloads or 100+ versions",
+        )
+    if dl >= 10 or ver >= 10:
+        return (
+            "P7",
+            "download-version-floor-10",
+            "10+ Artifactory downloads or 10+ versions",
+        )
+    return None, "remainder", "leftover split by packaging work"
+
+
+def _parse_cvss_from_severity(severity: Any) -> float | None:
+    if severity is None or (isinstance(severity, float) and pd.isna(severity)):
+        return None
+    if isinstance(severity, (int, float)):
+        return float(severity)
+    if isinstance(severity, str):
+        try:
+            return float(severity)
+        except ValueError:
+            return None
+    if isinstance(severity, list):
+        scores = [_parse_cvss_from_severity(item) for item in severity]
+        scores = [s for s in scores if s is not None]
+        return max(scores) if scores else None
+    if isinstance(severity, dict):
+        if "score" in severity:
+            return _parse_cvss_from_severity(severity["score"])
+        for key in ("baseScore", "base_score"):
+            if key in severity:
+                return _parse_cvss_from_severity(severity[key])
+    return None
+
+
+def _cvss_to_risk_level(cvss: float | None) -> str:
+    if cvss is None:
+        return "NO_DATA"
+    if cvss >= 7.0:
+        return "HIGH"
+    if cvss >= 4.0:
+        return "MEDIUM"
+    if cvss > 0.0:
+        return "LOW"
+    return "NO_DATA"
+
+
+    vulnerability_basilisk_advisories: pd.DataFrame,
+    vulnerability_basilisk_details: pd.DataFrame,
+) -> pd.DataFrame:
+    """Per-package Basilisk rollup: one row per ``conda_name`` with advisory count,
+    ``vuln_status``, and ``risk_level``. Names with zero advisories are absent."""
+    if (
+        vulnerability_basilisk_advisories is None
+        or getattr(vulnerability_basilisk_advisories, "empty", True)
+        or not {"conda_name", "advisory_id"} <= set(getattr(vulnerability_basilisk_advisories, "columns", []))
+    ):
+        return pd.DataFrame(columns=list(_BASILISK_ROLLUP_COLUMNS))
+
+    adv = vulnerability_basilisk_advisories.copy()
+    adv["conda_name"] = adv["conda_name"].map(lambda x: _priority_pep503(x) or str(x).strip().lower())
+    adv = adv[adv["conda_name"].notna() & (adv["conda_name"] != "")]
+
+    severity_by_id: dict[str, Any] = {}
+    if (
+        vulnerability_basilisk_details is not None
+        and not getattr(vulnerability_basilisk_details, "empty", True)
+        and "advisory_id" in getattr(vulnerability_basilisk_details, "columns", [])
+    ):
+        for row in vulnerability_basilisk_details.itertuples(index=False):
+            aid = str(getattr(row, "advisory_id", "") or "")
+            if aid:
+                severity_by_id[aid] = getattr(row, "severity", None) if hasattr(row, "severity") else None
+
+    rows: list[dict[str, Any]] = []
+    for conda_name, grp in adv.groupby("conda_name", sort=True):
+        advisory_ids = grp["advisory_id"].dropna().astype(str).unique()
+        count = len(advisory_ids)
+        if count == 0:
+            continue
+        cvss_scores = [_parse_cvss_from_severity(severity_by_id.get(aid)) for aid in advisory_ids]
+        cvss_scores = [s for s in cvss_scores if s is not None]
+        max_cvss = max(cvss_scores) if cvss_scores else None
+        rows.append(
+            {
+                "conda_name": conda_name,
+                "risk_level": _cvss_to_risk_level(max_cvss),
+                "vuln_status": "affected_latest",
+                "jfrog_latest_vuln_count": count,
+            }
+        )
+    if not rows:
+        return pd.DataFrame(columns=list(_BASILISK_ROLLUP_COLUMNS))
+    return pd.DataFrame(rows, columns=list(_BASILISK_ROLLUP_COLUMNS)).reset_index(drop=True)
+
+
+def _derive_openteams_cohort(in_jfrog: bool, on_conda_forge: bool, in_conda_ent: bool) -> str:
+    if in_jfrog and not on_conda_forge:
+        return "JFROG_NEW"
+    if in_jfrog and on_conda_forge:
+        return "JFROG_ON_CF"
+    if in_conda_ent and not in_jfrog:
+        return "CONDA_ONLY"
+    return ""
+
+
+def _on_conda_forge(ident: dict) -> bool:
+    return _priority_filled(ident.get("conda_purl")) or _priority_filled(ident.get("Conda-Forge_FeedStock_URL"))
+
+
+def assign_inventory_priority(
+    identity_packages_primary: pd.DataFrame,
+    enterprise_jfrog_consumption: pd.DataFrame,
+    enterprise_conda_maintainers: pd.DataFrame,
+    openteams_project_1_board_raw: pd.DataFrame,
+    vulnerability_basilisk_rollup: pd.DataFrame,
+    parameters: dict[str, Any] | None = None,
+) -> pd.DataFrame:
+    """Port ``priority.py``'s P1–P10 / Rank / Score / Work hierarchy over Kedro Parquet
+    inputs (Story 23.3). Never raises; empty identity yields an empty typed frame."""
+    _ = parameters  # reserved — no TTL/cadence gating for this pure derive node
+
+    if identity_packages_primary is None or getattr(identity_packages_primary, "empty", True):
+        return pd.DataFrame(columns=list(_INVENTORY_PRIORITY_COLUMNS))
+
+    ident_cols = set(getattr(identity_packages_primary, "columns", []))
+    if "Core_Python_Package_Name" not in ident_cols:
+        return pd.DataFrame(columns=list(_INVENTORY_PRIORITY_COLUMNS))
+
+    jfrog_by: dict[str, dict] = {}
+    if (
+        enterprise_jfrog_consumption is not None
+        and not getattr(enterprise_jfrog_consumption, "empty", True)
+        and "core_python_package_name" in getattr(enterprise_jfrog_consumption, "columns", [])
+    ):
+        for row in enterprise_jfrog_consumption.itertuples(index=False):
+            key = _priority_pep503(getattr(row, "core_python_package_name", None))
+            if key:
+                jfrog_by[key] = row._asdict()
+
+    conda_ent_names: set[str] = set()
+    if (
+        enterprise_conda_maintainers is not None
+        and not getattr(enterprise_conda_maintainers, "empty", True)
+        and "core_python_package_name" in getattr(enterprise_conda_maintainers, "columns", [])
+    ):
+        for row in enterprise_conda_maintainers.itertuples(index=False):
+            key = _priority_pep503(getattr(row, "core_python_package_name", None))
+            if key:
+                conda_ent_names.add(key)
+
+    vuln_by: dict[str, dict] = {}
+    if (
+        vulnerability_basilisk_rollup is not None
+        and not getattr(vulnerability_basilisk_rollup, "empty", True)
+        and "conda_name" in getattr(vulnerability_basilisk_rollup, "columns", [])
+    ):
+        for row in vulnerability_basilisk_rollup.itertuples(index=False):
+            key = _priority_pep503(getattr(row, "conda_name", None))
+            if key:
+                vuln_by[key] = row._asdict()
+
+    ot_rows: list[dict] = []
+    if openteams_project_1_board_raw is not None and not getattr(openteams_project_1_board_raw, "empty", True):
+        ot_rows = openteams_project_1_board_raw.to_dict(orient="records")
+    by_url, by_name = _priority_board_maps(ot_rows)
+
+    records: list[dict[str, Any]] = []
+    for ident in identity_packages_primary.to_dict(orient="records"):
+        name = _priority_pep503(ident.get("Core_Python_Package_Name")) or str(
+            ident.get("Core_Python_Package_Name") or ""
+        )
+        key = _priority_pep503(ident.get("Core_Python_Package_Name"))
+        j_raw = jfrog_by.get(key or "")
+        v_raw = vuln_by.get(key or "")
+        j: dict[str, Any] = {}
+        if j_raw:
+            j.update(j_raw)
+        if v_raw:
+            j["risk_level"] = v_raw.get("risk_level", "")
+            j["vuln_status"] = v_raw.get("vuln_status", "")
+            j["jfrog_latest_vuln_count"] = v_raw.get("jfrog_latest_vuln_count", 0)
+
+        plat = int(_priority_num(j.get("platform_env_count")) if j else 0)
+        apps = int(_priority_num(j.get("internal_app_count")) if j else 0)
+        ic = int(_priority_num(j.get("internal_component_count")) if j else 0)
+        lob = int(_priority_num(j.get("internal_lob_count")) if j else 0)
+        dl = int(_priority_num(j.get("artifactory_downloads")) if j else 0)
+        ver = int(_priority_num(j.get("artifactory_version_count")) if j else 0)
+        raw = _priority_use_score(plat, apps, ic, lob, dl, ver)
+
+        in_jfrog = key in jfrog_by if key else False
+        on_cf = _on_conda_forge(ident)
+        in_conda_ent = key in conda_ent_names if key else False
+        cohort = _derive_openteams_cohort(in_jfrog, on_cf, in_conda_ent)
+        inv = {"OpenTeams_Cohort": cohort, "OpenTeams_Batch": "", "OpenTeams_Coverage": ""}
+
+        work = _priority_work_label(ident, inv, j or None)
+        bucket, src, why = _priority_assign_lane(ident, key, j or None, by_url, by_name)
+        records.append(
+            {
+                "core_python_package_name": name,
+                "name": name,
+                "ident": ident,
+                "work": work,
+                "cohort": cohort,
+                "bucket": bucket,
+                "src": src,
+                "why": why,
+                "raw": raw,
+                "risk_level": str(j.get("risk_level") or "") if j else "",
+                "vuln_status": str(j.get("vuln_status") or "") if j else "",
+                "jfrog_latest_vuln_count": int(_priority_num(j.get("jfrog_latest_vuln_count")) if j else 0),
+            }
+        )
+
+    if not records:
+        return pd.DataFrame(columns=list(_INVENTORY_PRIORITY_COLUMNS))
+
+    scores = _priority_percentile_1_100([r["raw"] for r in records])
+    for r, s in zip(records, scores):
+        r["score100"] = s
+
+    remainder = [r for r in records if r["bucket"] is None]
+    for r in remainder:
+        if r["work"] == _WORK_CREATE:
+            tier, src = "P8", "work-create-recipe"
+            why = "leftover Create recipe: JFROG consumed, not on conda-forge"
+        elif r["work"] == _WORK_ISSUE_CF:
+            if r.get("cohort") == "CONDA_ONLY":
+                tier, src = "P10", "work-file-issue-conda-only"
+                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA)"
+            else:
+                tier, src = "P9", "work-file-issue-on-cf"
+                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging]"
+        else:
+            tier, src = "P10", "work-already-tracked-remainder"
+            why = "leftover Already tracked"
+        r["bucket"] = tier
+        r["src"] = src
+        r["why"] = f"{why} (score {r['score100']})"
+
+    def _sort_key(r: dict):
+        return (
+            _PRI_N[r["bucket"]],
+            _WORK_RANK.get(r["work"], 9),
+            -r["score100"],
+            -r["raw"],
+            -int(_priority_num(r.get("dl", 0))),
+            -int(_priority_num(r.get("ver", 0))),
+            r["name"],
+        )
+
+    # attach dl/ver for sort_key (parity with priority.py sort_key)
+    for r in records:
+        key = _priority_pep503(r["ident"].get("Core_Python_Package_Name"))
+        j = jfrog_by.get(key or "")
+        r["dl"] = int(_priority_num(j.get("artifactory_downloads")) if j else 0)
+        r["ver"] = int(_priority_num(j.get("artifactory_version_count")) if j else 0)
+
+    records.sort(key=_sort_key)
+    for i, r in enumerate(records, start=1):
+        r["rank"] = i
+
+    out_rows: list[dict[str, Any]] = []
+    for r in records:
+        bucket = r["bucket"]
+        out_rows.append(
+            {
+                "core_python_package_name": r["core_python_package_name"],
+                "P": bucket,
+                "Rank": r["rank"],
+                "Score": r["score100"],
+                "Work": r["work"],
+                "Priority_Bucket_Description": _PRIORITY_DESC.get(bucket, ""),
+                "Priority_Source": r["src"],
+                "Priority_Reason": r["why"],
+                "Proposed_Priority": bucket,
+                "Packaging_Work": r["work"],
+                "Priority_Rank": r["rank"],
+                "Priority_Score": r["score100"],
+                "risk_level": r["risk_level"],
+                "vuln_status": r["vuln_status"],
+                "jfrog_latest_vuln_count": r["jfrog_latest_vuln_count"],
+            }
+        )
+    return pd.DataFrame(out_rows, columns=list(_INVENTORY_PRIORITY_COLUMNS))

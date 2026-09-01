@@ -1,17 +1,21 @@
-"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8).
+"""``derived_artifacts`` pipeline wiring (Story B7, AC-3; Story 23.8; Story 23.3).
 
-Two PURE nodes. ``build_universe_sbom`` produces the full-universe CycloneDX BOM.
-``build_inventory_universe`` (Story 23.8) unions 9 already-cataloged Parquet sources
-into the workbook-free metrics universe. ``inputs=`` bind to catalog NAMES (AD-3
-cross-pipeline edges: ``core`` / ``pypi_intelligence`` / ``upstream_discovery`` /
-``artifactory_downloads`` outputs). Node names FROZEN.
+PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe``
+(workbook-free metrics universe), ``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority``
+(Story 23.3 priority hierarchy). ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline
+edges). Node names FROZEN.
 """
 
 from __future__ import annotations
 
 from kedro.pipeline import Pipeline, node
 
-from .nodes import build_inventory_universe, build_universe_sbom
+from .nodes import (
+    assign_inventory_priority,
+    build_inventory_universe,
+    build_universe_sbom,
+    derive_basilisk_vuln_rollup,
+)
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -38,6 +42,28 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="inventory_universe",
                 name="build_inventory_universe",
+            ),
+            node(
+                func=derive_basilisk_vuln_rollup,
+                inputs=[
+                    "vulnerability_basilisk_advisories",
+                    "vulnerability_basilisk_details",
+                ],
+                outputs="vulnerability_basilisk_rollup",
+                name="derive_basilisk_vuln_rollup",
+            ),
+            node(
+                func=assign_inventory_priority,
+                inputs=[
+                    "identity_packages_primary",
+                    "enterprise_jfrog_consumption",
+                    "enterprise_conda_maintainers",
+                    "openteams_project_1_board_raw",
+                    "vulnerability_basilisk_rollup",
+                    "parameters",
+                ],
+                outputs="inventory_priority_assignments",
+                name="assign_inventory_priority",
             ),
         ]
     )

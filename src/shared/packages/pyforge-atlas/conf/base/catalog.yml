@@ -955,6 +955,20 @@ inventory_universe:
   metadata:
     layer: derived
 
+# Story 23.3 — per-package Basilisk vuln rollup (risk_level / vuln_status / count).
+vulnerability_basilisk_rollup:
+  type: pandas.ParquetDataset
+  filepath: data/derived/vulnerability_basilisk_rollup/vulnerability_basilisk_rollup.parquet
+  metadata:
+    layer: derived
+
+# Story 23.3 — priority.py P1–P10 / Rank / Score / Work over Kedro Parquet inputs.
+inventory_priority_assignments:
+  type: pandas.ParquetDataset
+  filepath: data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet
+  metadata:
+    layer: derived
+
 # =============================================================================
 # upstream_discovery — GitHub-trending discovery ingest (Story 13.1, CAP-1; FR-64)
 # =============================================================================
