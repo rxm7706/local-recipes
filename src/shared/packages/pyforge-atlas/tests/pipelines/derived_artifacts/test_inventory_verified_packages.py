@@ -148,7 +148,7 @@ def test_packaging_candidate_status_branches(pkg, pbucket, expected_status):
     assert out.to_dict(orient="records") == ref
 
 
-def test_malformed_priority_bucket_defaults_to_p9_low_priority():
+def test_malformed_priority_bucket_empty_defaults_to_p9_low_priority():
     out, ref = _run_both(
         [_universe_row("orphan-pkg", sources=["tab:GAOSS-Free"])],
         cf_names=[],
@@ -157,6 +157,23 @@ def test_malformed_priority_bucket_defaults_to_p9_low_priority():
     )
     row = out.iloc[0]
     assert row["Priority_Bucket"] == "P9"
+    assert row["Packaging_Candidate_Status"] == "Low Priority Candidate"
+    assert out.to_dict(orient="records") == ref
+
+
+@pytest.mark.parametrize(
+    "bad_bucket",
+    ["PX", "bad", "P"],
+)
+def test_malformed_priority_bucket_non_digit_uses_p9_for_status_only(bad_bucket):
+    out, ref = _run_both(
+        [_universe_row("orphan-pkg", sources=["tab:GAOSS-Free"])],
+        cf_names=[],
+        pypi_names=["orphan-pkg"],
+        priority_rows=[{"core_python_package_name": "orphan-pkg", "P": bad_bucket}],
+    )
+    row = out.iloc[0]
+    assert row["Priority_Bucket"] == bad_bucket
     assert row["Packaging_Candidate_Status"] == "Low Priority Candidate"
     assert out.to_dict(orient="records") == ref
 

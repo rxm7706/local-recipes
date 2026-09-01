@@ -104,13 +104,25 @@ def test_aoss_free_eligible_row_appears_with_literal_reason():
     assert out.to_dict(orient="records") == ref
 
 
-def test_aoss_listed_but_in_universe_is_excluded():
+def test_aoss_listed_but_in_jfrog_universe_is_excluded():
     out, ref = _run_both(
         aoss_names=["in-universe-pkg"],
         pypi_names=["in-universe-pkg"],
         cf_names=[],
         universe_jfrog=["in-universe-pkg"],
         universe_conda=[],
+    )
+    assert out.empty
+    assert ref == []
+
+
+def test_aoss_listed_but_in_conda_universe_is_excluded():
+    out, ref = _run_both(
+        aoss_names=["conda-universe-pkg"],
+        pypi_names=["conda-universe-pkg"],
+        cf_names=[],
+        universe_jfrog=[],
+        universe_conda=["conda-universe-pkg"],
     )
     assert out.empty
     assert ref == []

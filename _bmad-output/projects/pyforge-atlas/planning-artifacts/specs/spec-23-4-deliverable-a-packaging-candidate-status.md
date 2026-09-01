@@ -263,6 +263,16 @@ isolation.
 
 ## Review Triage Log
 
+### 2026-09-01 — Review pass (session 2; static + test patches)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 2, low 0)
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 0
+- addressed_findings:
+  - `[medium]` `[patch]` Extended malformed `Priority_Bucket` matrix coverage (`PX`, `bad`, `P` status-only cases) in `test_inventory_verified_packages.py`.
+  - `[medium]` `[patch]` Added CDO-ENT-CONDA-only AOSS universe exclusion test in `test_inventory_aoss_free_queue.py`.
+
 ### 2026-09-01 — Review pass (static; review subagents not launched — shell blocked)
 - intent_gap: 0
 - bad_spec: 0
@@ -281,27 +291,27 @@ Blocking condition: implementation verification not executed (agent shell unavai
 Summary of implemented change:
 - Two PURE `derived_artifacts` nodes port `metrics.py::packaging_status`, deliverable A's 14-column row assembly, and `write_aoss_free_queue` semantics (including `main()`'s AOSS candidate pre-filter).
 - Row grain uses `inventory_universe` (Story 23.8 course correction) with Tier-0 verification sets (`core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`) and Story 23.3's `inventory_priority_assignments.P`.
-- Static matrix audit: all nine I/O-matrix scenarios have dedicated tests; both files include `done_checkpoint` parity against unmodified `metrics.py`.
+- Session 2 added matrix tests for non-digit priority buckets and CDO-ENT-CONDA-only AOSS exclusion; all nine I/O-matrix scenarios now have dedicated tests plus `done_checkpoint` parity against unmodified `metrics.py`.
 
-Files changed (commit `855ff521`, branch `dispatch/pyforge-atlas/23.4`):
+Files changed (commit `855ff521` + uncommitted test patches, branch `dispatch/pyforge-atlas/23.4`):
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py` — `build_inventory_verified_packages`, `build_inventory_aoss_free_queue`, verbatim helpers
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py` — wire two new nodes
 - `src/shared/packages/pyforge-atlas/conf/base/catalog.yml` — catalog entries for both outputs
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py` — Dagster op timeouts
-- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py` — I/O matrix + done_checkpoint parity
-- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` — queue parity
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py` — I/O matrix + done_checkpoint parity (+ session 2 malformed-bucket cases)
+- `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` — queue parity (+ session 2 CDO-ENT-CONDA exclusion)
 - `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` — derived_artifacts 4→6 nodes, combined DAG 56→58
 - `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` — EXPECTED_TOTAL 122→124
 
-Review findings breakdown: automated review layers skipped (shell/subagent blocked); static self-review found no patch items; one defer (verification commands not run in-agent).
+Review findings breakdown: session 2 applied 2 patch items (matrix test gaps); automated review layers still skipped (shell blocked); verification defer unchanged.
 
 Follow-up review recommendation: false
 
 Verification performed:
-- **Not run** — every Shell invocation in this session was rejected. Run locally from the worktree:
+- **Not run** — every Shell invocation in this session was rejected (including `render_skill.py`, `pixi run kedro-test`, and `kedro-catalog-check`). Run locally from the worktree:
   - `pixi run -e pyforge-atlas kedro-catalog-check`
   - `pixi run -e pyforge-atlas kedro-test -- tests/pipelines/derived_artifacts/test_inventory_verified_packages.py tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py`
-- After both pass: set this spec's `status` to `done`, commit the spec update, and push the branch.
+- After both pass: set this spec's `status` to `done`, commit spec + test patches, and push the branch.
 
 Residual risks:
 - TENK_TABS row-drop filter from `metrics.py::main()` is intentionally omitted (Story 23.8 universe does not include 10kOpen/10kClosed); accepted delta per spec-23-8 Design Notes.
