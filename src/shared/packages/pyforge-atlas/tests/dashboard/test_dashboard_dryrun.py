@@ -494,6 +494,23 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
         dash_data.load_identity_ops_census,
         ["has_feedstock", "has_staged_pr", "has_local_recipe", "package_count"],
     ),
+    "bootstrap-index-health": (
+        dash_data.load_bootstrap_index_health,
+        ["catalog_entry", "tier", "regenerated_at", "row_count"],
+    ),
+    "identity-export-snapshot": (
+        dash_data.load_identity_export_snapshot,
+        [
+            "identity_source",
+            "package_count",
+            "primary_purl_coverage_count",
+            "openteams_issue_url_coverage_count",
+        ],
+    ),
+    "live-catalog-coverage": (
+        dash_data.load_live_catalog_coverage,
+        ["field_name", "true_count", "total_count"],
+    ),
 }
 
 
@@ -635,6 +652,25 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
         models.build_identity_workbook_model,
         ["match_bucket"],
         ["package_count", "artifactory_downloads_total"],
+    ),
+    "bootstrap-index-health": (
+        models.build_bootstrap_index_health_model,
+        ["catalog_entry", "tier", "regenerated_at"],
+        ["row_count"],
+    ),
+    "identity-export-snapshot": (
+        models.build_identity_export_snapshot_model,
+        ["identity_source"],
+        [
+            "package_count",
+            "primary_purl_coverage_count",
+            "openteams_issue_url_coverage_count",
+        ],
+    ),
+    "live-catalog-coverage": (
+        models.build_live_catalog_coverage_model,
+        ["field_name"],
+        ["true_count", "total_count"],
     ),
 }
 
@@ -782,3 +818,93 @@ def test_distribution_breakdown_bump_status_degrades_on_malformed_non_null_value
     assert not got.empty
     status = dict(zip(got["conda_name"], got["python_min_bump_status"]))
     assert status == {"a": "unknown", "b": "unknown", "c": "unknown"}
+
+
+def test_bootstrap_index_health_is_bsl_wired_and_light_up_with_data(write_parquet):
+    """Story 21.9 — `bootstrap-index-health` loader equals build_bootstrap_index_health_model."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "catalog_entry": ["core_packages_enumerated", "pypi_universe"],
+                "tier": ["0", "0"],
+                "regenerated_at": ["2026-08-30T12:00:00Z", "2026-08-30T12:00:00Z"],
+                "row_count": pd.array([30000, 500000], dtype="Int64"),
+            }
+        ),
+        "bootstrap_index_health",
+    )
+    got = dash_data.load_bootstrap_index_health(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_bootstrap_index_health_model(table)
+        .query(
+            dimensions=["catalog_entry", "tier", "regenerated_at"],
+            measures=["row_count"],
+        )
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("catalog_entry").reset_index(drop=True),
+        expected.sort_values("catalog_entry").reset_index(drop=True),
+    )
+
+
+def test_identity_export_snapshot_is_bsl_wired_and_light_up_with_data(write_parquet):
+    """Story 21.9 — `identity-export-snapshot` loader equals build_identity_export_snapshot_model."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "Core_Python_Package_Name": ["a", "b", "c"],
+                "identity_source": ["from_assoc", "from_inventory", "from_board_only"],
+                "primary_purl": ["pkg:pypi/a", "", "pkg:pypi/c"],
+                "OpenTeams_Issue_URL": ["https://github.com/o/i/1", "", ""],
+            }
+        ),
+        "identity_export_snapshot",
+    )
+    got = dash_data.load_identity_export_snapshot(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_identity_export_snapshot_model(table)
+        .query(
+            dimensions=["identity_source"],
+            measures=[
+                "package_count",
+                "primary_purl_coverage_count",
+                "openteams_issue_url_coverage_count",
+            ],
+        )
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("identity_source").reset_index(drop=True),
+        expected.sort_values("identity_source").reset_index(drop=True),
+    )
+
+
+def test_live_catalog_coverage_is_bsl_wired_and_light_up_with_data(write_parquet):
+    """Story 21.9 — `live-catalog-coverage` loader equals build_live_catalog_coverage_model."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "field_name": ["PyPI_Verified", "CondaForge_Verified"],
+                "true_count": pd.array([800, 600], dtype="Int64"),
+                "total_count": pd.array([1000, 1000], dtype="Int64"),
+            }
+        ),
+        "live_catalog_coverage",
+    )
+    got = dash_data.load_live_catalog_coverage(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_live_catalog_coverage_model(table)
+        .query(
+            dimensions=["field_name"],
+            measures=["true_count", "total_count"],
+        )
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("field_name").reset_index(drop=True),
+        expected.sort_values("field_name").reset_index(drop=True),
+    )

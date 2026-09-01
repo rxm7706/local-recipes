@@ -88,6 +88,14 @@ IDENTITY_COMPLETE_EXPORT_PARQUET = (
 ENTERPRISE_JFROG_CONSUMPTION_PARQUET = (
     "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
 )
+# Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages
+BOOTSTRAP_INDEX_HEALTH_PARQUET = (
+    "derived/bootstrap_index_health/bootstrap_index_health.parquet"
+)
+IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
+LIVE_CATALOG_COVERAGE_PARQUET = (
+    "derived/live_catalog_coverage/live_catalog_coverage.parquet"
+)
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
@@ -462,6 +470,36 @@ def load_license_map_gap(parquet: str | os.PathLike[str] | None = None) -> pd.Da
         models.build_license_map_gap_model,
         ["license_raw", "tier", "suggested_spdx"],
         ["package_count"],
+    )
+
+
+def load_bootstrap_index_health(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`bootstrap-index-health` — Tier 0/1 catalog index row counts (Story 21.9)."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_bootstrap_index_health_model,
+        ["catalog_entry", "tier", "regenerated_at"],
+        ["row_count"],
+    )
+
+
+def load_identity_export_snapshot(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`identity-export-snapshot` — identity join quality over identity_export_parquet."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_identity_export_snapshot_model,
+        ["identity_source"],
+        ["package_count", "primary_purl_coverage_count", "openteams_issue_url_coverage_count"],
+    )
+
+
+def load_live_catalog_coverage(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`live-catalog-coverage` — verification-matrix BOOL coverage summary (Story 21.9)."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_live_catalog_coverage_model,
+        ["field_name"],
+        ["true_count", "total_count"],
     )
 
 

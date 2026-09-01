@@ -731,3 +731,59 @@ def build_identity_complete_export_model(
         },
         measures=measures,
     )
+
+
+# ---------------------------------------------------------------------------
+# Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages
+# ---------------------------------------------------------------------------
+
+
+def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
+    """`bootstrap-index-health` — Tier 0/1 catalog index row counts (Story 21.9)."""
+    return SemanticModel(
+        table=table,
+        name="bootstrap_index_health",
+        dimensions={
+            "catalog_entry": Dimension(expr=lambda t: t.catalog_entry),
+            "tier": Dimension(expr=lambda t: t.tier),
+            "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
+        },
+        measures={
+            "row_count": Measure(expr=lambda t: t.row_count.sum()),
+        },
+    )
+
+
+def build_identity_export_snapshot_model(table: Any) -> SemanticModel:
+    """`identity-export-snapshot` — identity join quality over identity_export_parquet."""
+    return SemanticModel(
+        table=table,
+        name="identity_export_snapshot",
+        dimensions={
+            "identity_source": Dimension(expr=lambda t: t.identity_source),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.Core_Python_Package_Name.count()),
+            "primary_purl_coverage_count": Measure(
+                expr=lambda t: _identity_filled(t, "primary_purl")
+            ),
+            "openteams_issue_url_coverage_count": Measure(
+                expr=lambda t: _identity_filled(t, "OpenTeams_Issue_URL")
+            ),
+        },
+    )
+
+
+def build_live_catalog_coverage_model(table: Any) -> SemanticModel:
+    """`live-catalog-coverage` — verification-matrix BOOL coverage summary (Story 21.9)."""
+    return SemanticModel(
+        table=table,
+        name="live_catalog_coverage",
+        dimensions={
+            "field_name": Dimension(expr=lambda t: t.field_name),
+        },
+        measures={
+            "true_count": Measure(expr=lambda t: t.true_count.sum()),
+            "total_count": Measure(expr=lambda t: t.total_count.sum()),
+        },
+    )
