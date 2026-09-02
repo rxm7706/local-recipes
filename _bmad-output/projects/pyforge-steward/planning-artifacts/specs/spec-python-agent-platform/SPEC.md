@@ -45,6 +45,10 @@ thing. The operator named it: **python-agent-platform**.
 
 ## Capabilities
 
+**Qualified ids (cite these from Unifying Strategy):** `pap:CAP-1` … `pap:CAP-6`.
+Bare `CAP-n` below is the local heading in this file only. Unifying Strategy’s `CAP-1` is
+`django-pyforge`, not this CAP-1. Pixi env id stays `python-agent-platform`.
+
 - **CAP-1 — The host renders from the accelerator shape.**
   - **intent:** A cookiecutter-django service with FastAPI integration is the platform's one
     control plane: `env()`-split settings, health endpoints wired to K8s liveness/readiness

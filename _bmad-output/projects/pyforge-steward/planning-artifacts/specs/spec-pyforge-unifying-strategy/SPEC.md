@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-08-26"
+updated: "2026-09-01"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -16,10 +16,7 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
   - ../../architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
-covers-dreams:
-  - docs/dreams/fleet-convention-consistency.md   # contract absorbed into Grounding 2026-08-30 (fully-qualified tags, exit-domain relationships, station-prefixed hooks, one status source per fact, MCP = host ASGI); satisfies INV-1 for this Dream — the Dream itself remains Marshal's ten-row evidence table and detector-practice home
-  - docs/dreams/pyforge-target-monorepo.md   # rulings bound by Grounding 2026-08-30 (foundry cutover, phases 0-6); the Dream's own text forbids a second Spec chain — satisfies INV-1
-extends: spec-python-agent-platform
+extends: spec-python-agent-platform  # pap:CAP-1..6 + pap:AD-1..17 (shipped host). Unifying CAP-1..19 are a different set. Pixi env id stays python-agent-platform.
 surface:
   - src/platform/**
   - src/shared/packages/django-pyforge/**
@@ -55,13 +52,36 @@ open_questions: []
 > Residual: none — the last three `open_questions` were answered 2026-08-26 (see § Open
 > Questions). Do not re-dispatch 18–37.
 
-> **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
-> are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
-> side of the line any surface falls. CAP-9 reopened shipped DDL stories; CAP-19
-reopens shipped analytical stores (Atlas RAG writer, Scribe 28.x, agent DSNs)
-by operator ruling 2026-08-26.
+> **This SPEC extends `spec-python-agent-platform`, it does not replace it.** Cite host
+> capabilities as **`pap:CAP-1`..`pap:CAP-6`** and host spine as **`pap:AD-1`..`pap:AD-17`**
+> (same fully-qualified grammar as `marshal:AD-8`). Bare `CAP-1`..`CAP-19` in *this* file are
+> Unifying Strategy only. Do not re-mint `pap:CAP-*`. `convergence.md` is the split.
+> Pixi feature/env id stays `[feature.python-agent-platform]` until a named rename story.
+> CAP-9 reopened shipped DDL stories; CAP-19 reopens shipped analytical stores (Atlas RAG
+> writer, Scribe 28.x, agent DSNs) by operator ruling 2026-08-26.
 
-# pyforge-unifying-strategy — the Canopy mounts the eight stations
+## Inherited host (`pap:CAP-*`) — do not re-mint
+
+Source of record until a merge story copies the full text: `spec-python-agent-platform`.
+
+| Qualified id | Host CAP (parent file) | What it is |
+|---|---|---|
+| `pap:CAP-1` | CAP-1 | Cookiecutter Django host at `src/platform/` |
+| `pap:CAP-2` | CAP-2 | Langflow Pattern A mount + `langflow_schema` |
+| `pap:CAP-3` | CAP-3 | DB-GPT via `pap:AD-17` pattern switch (Pattern B today) |
+| `pap:CAP-4` | CAP-4 | Celery; async never blocks Django |
+| `pap:CAP-5` | CAP-5 | One factory-sourced env; Python `3.12.*` |
+| `pap:CAP-6` | CAP-6 | Air-gap parity is a failing check |
+
+Spine: `pap:AD-1`..`pap:AD-17` = parent ARCHITECTURE-SPINE (same as **parent AD-n**).
+Unifying spine IDs are **canopy AD-n** (prefix only; the product is Foundry Platform).
+Qualify every citation; bare `AD-n` in epics is a review fail.
+
+Single-Spec merge (copy `pap:CAP-*` full text here, retarget Epic 10–12, supersede the
+parent Spec) is **parked** — Dream Grounding. Do not drop `extends:`. Do not rename
+`[feature.python-agent-platform]` in those stories.
+
+# pyforge-unifying-strategy — Foundry Platform mounts the eight stations
 
 ## Why
 
@@ -69,7 +89,7 @@ by operator ruling 2026-08-26.
 each shipped as an excellent command-line tool and stopped there. An operator who wants to see
 compliance findings, package health, fleet status and build queues holds eight terminals and no
 shared identity, no shared vocabulary, and no way for one station to tell another that something
-happened. The Canopy — `src/platform/` — proved the shape works. **The 2026-08-24–25 canopy drain
+happened. Foundry Platform — `src/platform/` — proved the shape works. **The 2026-08-24–25 canopy drain
 landed the extension in code** (chrome, eight portals, host MCP faces, CLI dispatch, events,
 flags, governed-DDL *path*, five-tier check, CAP-18 hooks). Steward **12-7 `/ht/` 200** is
 dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-only

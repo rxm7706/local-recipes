@@ -411,7 +411,7 @@ leverage*; Dream Grounding 2026-08-30: Scribe's three CAP-18 ports are `graph_st
 `compile_surface` / `recall_ranker`, and "behind GraphStore" means ingest writes GraphNodes
 *through* the persist port) as optional `compile_surface` ingest extras on Story 4.1's
 shipped plugin contract. Extras are **off by default** (air-gap). Two consumers are already
-waiting: the foundry-cutover move-list (`docs/dreams/pyforge-target-monorepo.md` phases) and
+waiting: the foundry-cutover move-list (`docs/dreams/pyforge-unifying-strategy.md` § One working tree / phases 0–6) and
 marshal Epic 28's token-economy Layers 3–4 (marshal Stories 28.8/28.9 consume by scribe
 grammar only). **Never, epic-wide:** a second graph/vector store or store-of-record; a
 `cocoindex.serve` MCP product; `@coco.fn` as the lineage religion (OpenLineage rides CAP-8);

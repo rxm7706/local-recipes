@@ -16,21 +16,22 @@ which adjacent items this Spec deliberately does not absorb.
 **This pass is also the chain's scoping instrument.** The Dream was written as though the Canopy
 were greenfield; the audit found the host shipped. Per the operator decisions of 2026-08-24
 (Dream § Realization log), the chain is an **extension binding `spec-python-agent-platform` as
-prior art** — it mints nothing that duplicates CAP-1..6 — and within that boundary decomposition
-is exhaustive.
+prior art** — it mints nothing that duplicates **`pap:CAP-1`..`pap:CAP-6`** (parent file
+headings CAP-1..6) — and within that boundary decomposition
+is exhaustive. Unifying Strategy `CAP-1`..`CAP-19` are a different set.
 
 ## Already covered — do not re-mint
 
 | Dream surface | Covered by | Evidence |
 |---|---|---|
-| The Django host itself, rendered from the accelerator shape | `spec-python-agent-platform` CAP-1; steward Story 10.1 (ledger `done`) | `src/platform/` is live: `manage.py`, `config/settings/base.py`, `platformapp/{users,templates,static,contrib}`. Import rule enforced — no `pyforge.*` under `src/platform/`. |
-| Identity / OIDC SSO | CAP-1 + steward Story 16.5 (`done`) | `django-allauth` with `allauth.socialaccount.providers.openid_connect` in `INSTALLED_APPS`; no second auth framework, no local passwords. |
-| Langflow as a pluggable app on an isolated schema | CAP-2; Story 11.1 (`done`) | `src/platform/langflow_integration/` with `asgi.py` dispatcher; `RunSQL` migration provisions `langflow_schema`; `search_path` carried on the connection string. **See RFC-5 conflict below.** |
-| DB-GPT as a pluggable app on an isolated schema | CAP-3 + AD-6/AD-17 (Pattern B deviation, 2026-08-21); Story 11.2 (`done`) | `src/platform/dbgpt_integration/`; data migration provisions `dbgpt_schema`; Django ORM never crosses in. **See RFC-5 conflict below.** |
-| Async work never blocking Django | CAP-4; Story 11.3 (`done`) | Celery + Redis broker wired in `config/settings/base.py`. |
-| One factory-sourced environment | CAP-5; Story 10.2 (`done`) | `[feature.python-agent-platform]` pixi env pinning `python = "3.12.*"`, env-scoped. |
-| Air-gap parity as a failing check | CAP-6; Story 12.3 (`done`) | Egress-blocked build+deploy is a CI gate, not a warning. |
-| Vanilla Helm chart + OCP overlay, GKE portability, hardened Redis | CAP-1/CAP-6; Stories 12.1, 12.2, 12.6, 12.9 (all `done`) | `src/platform/deploy/charts/platform/`; image passes `restricted-v2` (arbitrary UID, no root). |
+| The Django host itself, rendered from the accelerator shape | `pap:CAP-1`; steward Story 10.1 (ledger `done`) | `src/platform/` is live: `manage.py`, `config/settings/base.py`, `platformapp/{users,templates,static,contrib}`. Import rule enforced — no `pyforge.*` under `src/platform/`. |
+| Identity / OIDC SSO | `pap:CAP-1` + steward Story 16.5 (`done`) | `django-allauth` with `allauth.socialaccount.providers.openid_connect` in `INSTALLED_APPS`; no second auth framework, no local passwords. |
+| Langflow as a pluggable app on an isolated schema | `pap:CAP-2`; Story 11.1 (`done`) | `src/platform/langflow_integration/` with `asgi.py` dispatcher; `RunSQL` migration provisions `langflow_schema`; `search_path` carried on the connection string. **See RFC-5 conflict below.** |
+| DB-GPT as a pluggable app on an isolated schema | `pap:CAP-3` + `pap:AD-6`/`pap:AD-17` (Pattern B deviation, 2026-08-21); Story 11.2 (`done`) | `src/platform/dbgpt_integration/`; data migration provisions `dbgpt_schema`; Django ORM never crosses in. **See RFC-5 conflict below.** |
+| Async work never blocking Django | `pap:CAP-4`; Story 11.3 (`done`) | Celery + Redis broker wired in `config/settings/base.py`. |
+| One factory-sourced environment | `pap:CAP-5`; Story 10.2 (`done`) | `[feature.python-agent-platform]` pixi env pinning `python = "3.12.*"`, env-scoped. **Env id stays; not a Foundry rename.** |
+| Air-gap parity as a failing check | `pap:CAP-6`; Story 12.3 (`done`) | Egress-blocked build+deploy is a CI gate, not a warning. |
+| Vanilla Helm chart + OCP overlay, GKE portability, hardened Redis | `pap:CAP-1`/`pap:CAP-6`; Stories 12.1, 12.2, 12.6, 12.9 (all `done`) | `src/platform/deploy/charts/platform/`; image passes `restricted-v2` (arbitrary UID, no root). |
 | The 15-factor baseline | `spec-platform-fifteen-factors` CAP-1..5; steward Epic 16 (`done`) | Pixi as sole dependency authority, two-stage startup validation, structlog + OTel, policy-as-test-suite. |
 | Health probes for K8s | Story 10.1 + 11.1 (`done`) | `src/platform/config/fastapi_app.py` → `GET /api/health`; `/ht/` via `django-health-check`; probes wired in `deploy/charts/platform/templates/platform-deployment.yaml`. |
 | Station portals | warden 8-1/8-2 then canopy Epic 19 (`done`) | Eight Lane-2 shells under `/stations/<name>/`; warden left `/compliance/` as a permanent redirect. |

@@ -13,7 +13,7 @@ context:
   - docs/dreams/pyforge-unifying-strategy.md
 warnings:
   - Two consumers are waiting on this extra's grammar — the foundry-cutover move-list
-    (docs/dreams/pyforge-target-monorepo.md) and marshal Story 28.9 (planning-corpus
+    (docs/dreams/pyforge-unifying-strategy.md § One working tree) and marshal Story 28.9 (planning-corpus
     retrieval). Declare the grammar in the scribe SKILL.md so consumers bind to it, not to
     internals.
 ---
