@@ -8,9 +8,11 @@ from pyforge.core.process import ProcessResult
 from pyforge.marshal.core import policy, promotion
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
+    ledger_status_precedence,
     may_attempt_dispatch_landing,
     merge_subject_is_marshal_native,
     refuse_unverified_landing,
+    union_sprint_ledger_maps,
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.identity import normalize, render_merge_subject
@@ -21,6 +23,17 @@ from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 def test_refuse_unverified_landing() -> None:
     assert refuse_unverified_landing(DispatchVerificationVerdict.REFUSED) is True
     assert refuse_unverified_landing(DispatchVerificationVerdict.VERIFIED) is False
+
+
+def test_union_sprint_ledger_maps_done_beats_backlog() -> None:
+    merged = union_sprint_ledger_maps(
+        {"a": "done", "b": "backlog"},
+        {"a": "backlog", "c": "done"},
+    )
+    assert merged["a"] == "done"
+    assert merged["b"] == "backlog"
+    assert merged["c"] == "done"
+    assert ledger_status_precedence("backlog", "done") == "done"
 
 
 def test_may_attempt_only_when_verified_and_not_merged() -> None:
@@ -60,6 +73,7 @@ class FakeVcs:
         merged: bool = False,
         branches: set[str] | None = None,
         worktrees: dict[str, Path] | None = None,
+        conflict_paths: tuple[str, ...] | None = None,
     ) -> None:
         self._merged = merged
         self.pushed: list[str] = []
@@ -67,6 +81,13 @@ class FakeVcs:
         # git has each checked out.
         self.branches: set[str] = set(branches or ())
         self.worktrees: dict[str, Path] = dict(worktrees or {})
+        self.conflict_paths = conflict_paths if conflict_paths is not None else ()
+
+    def merge_tree_conflict_paths(self, repo_root: Path, base: str, branch: str):
+        return self.conflict_paths
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        return None
 
     def commit_subjects(self, repo_root: Path, ref: str):
         if self._merged:
@@ -109,6 +130,12 @@ class FakeForge:
     def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject):
         return None
 
+    def pr_merge_state(self, repo, number):
+        return "MERGEABLE"
+
+    def close_pr(self, repo, number):
+        return None
+
 
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
@@ -135,6 +162,160 @@ def test_execute_dispatch_land_refuses_unverified(tmp_path: Path) -> None:
     )
     assert result.verdict == DispatchLandingVerdict.SKIPPED_UNVERIFIED
     assert any(f.code == "MRS-DISP-014" for f in envelope.findings)
+
+
+def test_execute_dispatch_land_refuses_unknown_merge_conflicts(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = FakeVcs(
+        merged=False,
+        conflict_paths=("recipes/foo/recipe.yaml",),
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=BrokenForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp038 = [f for f in envelope.findings if f.code == "MRS-DISP-038"]
+    assert len(disp038) == 1
+    assert "recipes/foo/recipe.yaml" in disp038[0].message
+
+
+def _ledger_yaml(*pairs: tuple[str, str]) -> str:
+    lines = ["development_status:"]
+    for key, status in pairs:
+        lines.append(f"  {key}: {status}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+class HealCapableVcs(FakeVcs):
+    def __init__(
+        self,
+        *,
+        conflict_paths: tuple[str, ...],
+        main_ledger: str,
+        branch_ledger: str,
+    ) -> None:
+        super().__init__(merged=False, conflict_paths=conflict_paths)
+        self.main_ledger = main_ledger
+        self.branch_ledger = branch_ledger
+        self.commits: list[tuple[Path, tuple[Path, ...], str]] = []
+        self._head_sha = "abc123"
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        if path.endswith("sprint-status-ledger.yaml"):
+            if ref == "main":
+                return self.main_ledger
+            return self.branch_ledger
+        return None
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str):
+        self.commits.append((repo_root, paths, message))
+        self._head_sha = "healed222"
+        return self._head_sha
+
+    def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        return self._head_sha
+
+
+class HealRetryForge(BrokenForge):
+    def __init__(self) -> None:
+        self.merge_calls = 0
+
+    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject):
+        self.merge_calls += 1
+        if self.merge_calls == 1:
+            raise ForgeCommandError("pull request is not mergeable")
+
+
+class DirtyHealVcs(FakeVcs):
+    def __init__(self) -> None:
+        super().__init__(merged=False, conflict_paths=())
+        self.merged: list[tuple[str, str, str]] = []
+        self.deleted: list[str] = []
+
+    def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
+        self.merged.append((branch, into, subject))
+        return "localmerge999"
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        self.deleted.append(branch)
+
+
+class DirtyHealForge(BrokenForge):
+    def __init__(self) -> None:
+        super().__init__()
+        self.closed: list[int] = []
+
+    def pr_merge_state(self, repo, number: int) -> str:
+        return "DIRTY"
+
+    def close_pr(self, repo, number: int) -> None:
+        self.closed.append(number)
+
+
+def test_execute_dispatch_land_advances_main_when_merge_tree_clean_and_github_dirty(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = DirtyHealVcs()
+    forge = DirtyHealForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data.get("local_main_advance") is True
+    assert vcs.merged == [("dispatch/pyforge-marshal/28.20", "main", result.subject)]
+    assert "main" in vcs.pushed
+    assert forge.closed == [42]
+
+
+def test_execute_dispatch_land_heals_ledger_only_conflict(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger_rel = (
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/"
+        "sprint-status-ledger.yaml"
+    )
+    vcs = HealCapableVcs(
+        conflict_paths=(ledger_rel,),
+        main_ledger=_ledger_yaml(("28-19-x", "done")),
+        branch_ledger=_ledger_yaml(("28-20-y", "backlog")),
+    )
+    forge = HealRetryForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="28-20-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data.get("ledger_union_heal") is True
+    assert forge.merge_calls == 2
+    assert len(vcs.commits) == 1
+    assert vcs.commits[0][0] == worktree
+    written = (worktree / ledger_rel).read_text(encoding="utf-8")
+    assert "28-19-x: done" in written
+    assert "28-20-y: backlog" in written
 
 
 def test_execute_dispatch_land_skips_when_already_on_main(tmp_path: Path) -> None:

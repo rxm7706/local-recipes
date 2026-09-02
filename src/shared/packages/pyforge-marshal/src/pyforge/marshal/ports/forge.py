@@ -217,3 +217,14 @@ class ForgePort(Protocol):
         ``strategy``/``expected_head_sha`` above -- never a bare
         ``str``/``str | None``."""
         ...
+
+    def pr_merge_state(self, repo: ForgeRef, number: int) -> str:
+        """Story 28.20: GitHub ``mergeStateStatus`` for PR ``number`` on
+        ``repo`` (e.g. ``MERGEABLE``/``CONFLICTING``/``DIRTY``). Raises
+        ``ForgeCommandError`` on any ``gh`` failure."""
+        ...
+
+    def close_pr(self, repo: ForgeRef, number: int) -> None:
+        """Story 28.20: close PR ``number`` on ``repo`` without merging.
+        Raises ``ForgeCommandError`` on any ``gh`` failure."""
+        ...
