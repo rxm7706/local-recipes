@@ -165,5 +165,7 @@ LOGGING["filters"] = {
 # ------------------------------------------------------------------------------
 
 # CAP-3 stage 1: last statement of this leaf (not base.py). Re-checks required
-# env and leaves the hook for later namespace conditions.
+# env, then refuses unverified broker TLS (Story 41.4) — that condition reads
+# the composed CELERY_BROKER_URL off this module, which is why the call passes
+# the module and why it has to be last.
 run_stage_one(sys.modules[__name__])

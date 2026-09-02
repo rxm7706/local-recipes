@@ -57,7 +57,17 @@ Ledger key `41-4-broker-tls-is-verified`. Host never imports `pyforge.*`. Trusts
 
 ## Verification
 
-`src/platform/tests/test_startup_required_settings.py` + a new settings test; `pixi run -e python-agent-platform`.
+`src/platform/tests/test_broker_tls_verified.py` (new) +
+`src/platform/tests/test_startup_required_settings.py`, from `src/platform`:
+
+```
+pixi run --frozen -e platform-ci-test python -m pytest tests/test_startup_required_settings.py tests/test_broker_tls_verified.py -q
+```
+
+The env is `platform-ci-test`, not `python-agent-platform`: `pixi.toml` declares
+it the sole authority for Platform CI's `test` job, and it is the only env
+carrying `pytest-django` — `python-agent-platform` cannot collect this suite at
+all (`unrecognized arguments: --ds=config.settings.test`).
 
 ## Dev Notes
 
@@ -80,15 +90,20 @@ loud instead of silently corrected. That ordering also matters for the Block-If:
 there is no flag that re-enables `CERT_NONE` in production, because the flag
 that exists is ignored there.
 
-**Bundle resolution is truststore-first by path.** redis-py wants
-`ssl_ca_certs` as a *file path*, not a Python trust object, so the `truststore`
-library cannot stand in (it is also absent from the `python-agent-platform`
-env). `ssl.get_default_verify_paths().cafile` is exactly the OS tier the
-enterprise-CA convention targets — `SSL_CERT_FILE` when set to a real file,
-otherwise OpenSSL's compiled-in default — and `COMPONENT_BROKER_CA_BUNDLE` is
-the explicit second tier. A configured path that is not a readable file is
-skipped rather than trusted, so a typo degrades to "no bundle", which is itself
-a deployed refusal. Nothing resolves over the network (pap:CAP-6).
+**Trust resolution is truststore-first by path, and both halves count.**
+redis-py wants paths, not a Python trust object, so the `truststore` library
+cannot stand in (it is also absent from the `python-agent-platform` env).
+`ssl.get_default_verify_paths()` is exactly the OS tier the enterprise-CA
+convention targets — `SSL_CERT_FILE` / `SSL_CERT_DIR` when set to real paths,
+otherwise OpenSSL's compiled-in defaults — and `COMPONENT_BROKER_CA_BUNDLE` is
+the explicit second tier. `capath` is not optional: an
+`update-ca-certificates`-style install populates a hashed directory and many
+hosts ship no concatenated `cert.pem`, so a cafile-only resolver would refuse a
+component whose operator installed the corporate CA correctly. A configured
+path that is missing *or unreadable* is skipped rather than trusted, so a typo
+or a permission mistake degrades to "no trust source", which is itself a
+deployed refusal rather than a first-connect failure. Nothing resolves over the
+network (pap:CAP-6).
 
 **AC2 could not be met without fixing a pre-existing swallow.** `manage.py
 check` answered `System check identified no issues` and exited **0** for a
@@ -108,23 +123,80 @@ later); in a refusing one it restores fail-fast at all four entrypoints.
 `test_required_settings_refusal_also_reaches_the_exit_code` guards the
 `DJANGO_SECRET_KEY` family too, since the fix is shared.
 
+**2026-09-02 — review pass, 11 findings applied.** All eleven were accepted; none
+were rejected. The four that changed behaviour rather than wording:
+
+- **`capath` joined the OS tier** (`resolve_ca_trust()` returns a `CaTrust`
+  carrying `cafile` and/or `capath`, rendered as `ssl_ca_certs` /
+  `ssl_ca_path`). Verified against the installed stack before writing it:
+  redis-py 8.1.0 declares `ssl_ca_path` and feeds it to
+  `SSLContext.load_verify_locations(capath=…)` (`redis/connection.py:2082`,
+  `:2195`); kombu 5.6.2 merges the whole `broker_use_ssl` mapping verbatim
+  (`connparams.update(conninfo.ssl)`, `kombu/transport/redis.py:1209`); celery
+  5.6.3's Redis result backend does the same for `redis_backend_use_ssl`
+  (`celery/backends/redis.py:275`) and never strips unknown keys — its
+  `ssl_param_keys` list only governs URL-query decoding. So the kwarg is emitted,
+  not merely tolerated, and `test_redis_py_accepts_the_kwargs_we_compose`
+  constructs a real `SSLConnection` from the composed mapping to keep it true.
+- **Stage 1 reads the composed `CELERY_BROKER_URL`** off the settings module it
+  is handed, falling back to the environment only when absent. Confirmed the
+  attribute is present at the call site (production.py's `from .base import *`
+  re-exports it; printed live from `sys.modules['config.settings.production']`).
+  `run_stage_one` no longer discards its argument — the `_STAGE_ONE` tuple went
+  with it, since two explicit calls read better than a registry.
+- **The `rediss://` scheme match is case-insensitive.** `REDISS://` is legal URL
+  syntax and urlparse, kombu and celery all normalise it to the `rediss`
+  transport — verified live, and with the old comparison kombu itself logged
+  *"Secure redis scheme specified (rediss) with no ssl options, defaulting to
+  insecure SSL behaviour"*. That was the story's own hole, reachable by
+  capitalisation.
+- **Composition maps through `CERT_REQS_BY_NAME`'s values** instead of
+  hardcoding both outcomes, and stage 1's deployed refusal branches on the
+  verify *mode* rather than the policy name — so a weaker rung added to the
+  table later cannot become deployable by omission
+  (`test_stage_one_refuses_any_policy_weaker_than_required` pins it).
+
+Also: an unrecognised policy is now named on a laptop too (there is no stage 1
+there, so `…=nonee` used to upgrade silently and break the self-signed-Redis
+workflow). It raises from `resolve_cert_reqs()` **only when local**, which
+keeps stage 1's own "unrecognised policy" refusal reachable rather than
+pre-empted at settings import —
+`test_deployed_unrecognised_policy_still_reaches_stage_one` guards exactly that.
+The local naming is scoped to TLS brokers, deliberately asymmetric with stage 1:
+a `redis://localhost` laptop must not be blocked from booting over a value that
+has no effect there.
+
+The source-substring entrypoint test is gone, replaced by parametrised real
+child processes for `manage.py`, `wsgi` and `celery_app` — refusal *and*
+boots-fine control for each. That is the assertion that actually fails if an
+entrypoint drops its `configure_observability()` call. `config.asgi` is excluded
+because it imports `langflow_integration`, which needs the
+`python-agent-platform` env. The base-settings source test went too: three
+child-process probes already assert the composed values in all three profiles.
+Child envs now also neutralise `DJANGO_READ_DOT_ENV_FILE`, `SSL_CERT_DIR` and
+`COMPONENT_PROCESS`, so a developer `.env` cannot re-supply a broker URL or
+`COMPONENT_RUNTIME` and make a control pass for the wrong reason.
+
 **Live verification** (`platform-ci-test` env, from this worktree):
 
-- `tests/test_broker_tls_verified.py` — 22 passed. Three of them are real child
-  processes: a settings probe under `config.settings.production` +
-  `rediss://` reporting `ssl_cert_reqs=2 (CERT_REQUIRED)` with `ssl_ca_certs`
-  at the bundle and `CELERY_REDIS_BACKEND_USE_SSL == CELERY_BROKER_USE_SSL`
-  (AC1); `manage.py check` exiting non-zero naming
-  `COMPONENT_BROKER_SSL_CERT_REQS` (AC2), with a same-env control that exits 0;
-  and `config.settings.local` under `COMPONENT_RUNTIME=local` composing
-  `ssl_cert_reqs=0 (CERT_NONE)` with no bundle (AC3).
-- Whole platform suite: **398 passed**, 40 skipped, 6 failed, 120 errors —
-  byte-identical failure/error set to the pre-change baseline measured by
-  stashing this diff (376 passed there; the delta is exactly these 22 tests).
+- The spec's own verify command, run verbatim:
+  `pixi run --frozen -e platform-ci-test python -m pytest
+  tests/test_startup_required_settings.py tests/test_broker_tls_verified.py -q`
+  → **67 passed**.
+- `tests/test_broker_tls_verified.py` — 44 tests. Real child processes cover:
+  production + `rediss://` reporting `ssl_cert_reqs=2 (CERT_REQUIRED)` with
+  `ssl_ca_certs` at the bundle and `CELERY_REDIS_BACKEND_USE_SSL ==
+  CELERY_BROKER_USE_SSL` (AC1); the same for the `REDIS_URL`-only shape
+  `compose.yml` actually uses; all three entrypoints refusing and all three
+  booting (AC2); and `config.settings.local` composing `ssl_cert_reqs=0
+  (CERT_NONE)` with no trust source (AC3).
+- Whole platform suite: **420 passed**, 40 skipped, 6 failed, 120 errors —
+  failure/error set byte-identical to the pre-change baseline measured by
+  stashing the diff (376 passed there; the delta is exactly these 44 tests).
   The 120 errors are "no PostgreSQL on `/tmp/.s.PGSQL.5432`"; the 6 failures
   are the pre-existing openfeature/dbgpt/cloudevents/restarts/supervisor set.
 - `ruff check` on every touched file: clean (repo-wide `ruff check .` is
-  pre-existing red at 116, none of them in these files).
+  pre-existing red at exactly 116 before and after, none in these files).
 - `tests/meta/test_no_pyforge_import.py` (real `lint-imports`): passed — the new
   `config.broker_tls` module keeps the host↔factory boundary.
 - `mypy` could not run at all: `Error constructing plugin instance of
@@ -135,7 +207,10 @@ later); in a refusing one it restores fail-fast at all four entrypoints.
 **Not done, deliberately.** The Helm chart is untouched: it wires `redis://`,
 and the OS trust-store tier needs no chart key. Wiring
 `COMPONENT_BROKER_CA_BUNDLE` / a `rediss://` broker into `values.yaml` belongs
-with whichever story turns broker TLS on in-cluster.
+with whichever story turns broker TLS on in-cluster. The reachability
+consequence of the contractual "truststore first, explicit bundle second"
+ordering — an explicit `COMPONENT_BROKER_CA_BUNDLE` cannot override a resolving
+OS trust store — is deferred separately, not patched here.
 
 ## Source
 
