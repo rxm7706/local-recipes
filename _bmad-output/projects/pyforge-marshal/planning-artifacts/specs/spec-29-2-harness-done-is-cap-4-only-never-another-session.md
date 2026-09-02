@@ -2,7 +2,7 @@
 title: "Harness done is CAP-4 only — never another session"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "review"
 updated: "2026-09-02"
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -56,9 +56,9 @@ Ledger key: `29-2-harness-done-is-cap-4-only-never-another-session`.
 
 ## Tasks
 
-- [ ] Fleet/supervisor: harness exit `done` → CAP-4 only, never relaunch.
-- [ ] Land fail → `awaiting-operator` / CHAIN with PR or worktree named.
-- [ ] Regression: 41.2 DIRTY + 13.2 no-PR fixtures → 0 harness relaunches.
+- [x] Fleet/supervisor: harness exit `done` → CAP-4 only, never relaunch.
+- [x] Land fail → `awaiting-operator` / CHAIN with PR or worktree named.
+- [x] Regression: 41.2 DIRTY + 13.2 no-PR fixtures → 0 harness relaunches.
 - [ ] Ledger `29-2-harness-done-is-cap-4-only-never-another-session` → `review` then `done` via `sprint-ledger-sync`.
 
 ## Verification

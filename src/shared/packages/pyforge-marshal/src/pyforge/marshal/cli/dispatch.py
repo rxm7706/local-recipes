@@ -69,6 +69,18 @@ from ..core.dispatch_retry import (
     prune_blocked_stories_merged_on_main,
 )
 from ..core import dispatch_re_preflight
+from ..core.dispatch_harness_done import (
+    blocks_harness_relaunch,
+    followup_review_recommended,
+    land_fail_operator_message,
+    parse_spec_status,
+)
+from ..core.dispatch_landing import DispatchLandingVerdict
+from ..core.dispatch_verification import (
+    DispatchVerificationInput,
+    DispatchVerificationVerdict,
+    judge_dispatch_verification,
+)
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_journaled,
     finalize_attempt_failed,
@@ -78,7 +90,9 @@ from ..core import gate
 from ..core import promotion as promotion_core
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
+from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
+from ..dispatch_verify import evaluate_dispatch_verification
 from ..core.identity import StoryKey, normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
@@ -352,6 +366,95 @@ def _surface_worktree_wip_before_dispatch(
             f"this dispatch proceeds: {detail}"
         ),
     )
+
+
+def _spec_text_prefer_worktree(
+    spec_path: Path, repo_root: Path, worktree: Path, main_text: str
+) -> str:
+    """Prefer the worktree copy: main often still says ready-for-dev."""
+    try:
+        relative = spec_path.resolve().relative_to(repo_root.resolve())
+    except ValueError:
+        return main_text
+    worktree_spec = worktree / relative
+    try:
+        if worktree_spec.is_file():
+            return worktree_spec.read_text(encoding="utf-8")
+    except OSError:
+        return main_text
+    return main_text
+
+
+def _verification_verdict_for_cap4(
+    *,
+    slug: str,
+    story_key: StoryKey,
+    worktree: Path,
+    repo_root: Path,
+    effective_policy: policy.EffectivePolicy,
+    spec_text: str,
+    process: ProcessPort,
+    vcs: VcsPort,
+) -> DispatchVerificationVerdict:
+    """Independent verify only — never a harness self-report (CAP-3)."""
+    try:
+        envelope = evaluate_dispatch_verification(
+            project_slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            repo_root=repo_root,
+            effective=effective_policy,
+            spec_text=spec_text,
+            process=process,
+            vcs=vcs,
+        )
+    except (ProcessError, VcsCommandError, OSError, TypeError, AttributeError):
+        return DispatchVerificationVerdict.REFUSED
+    return judge_dispatch_verification(
+        DispatchVerificationInput(findings=tuple(envelope.findings))
+    )
+
+
+def _attempt_harness_done_cap4(
+    *,
+    slug: str,
+    story_key: StoryKey,
+    worktree: Path,
+    repo_root: Path,
+    effective_policy: policy.EffectivePolicy,
+    spec_text: str,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+) -> tuple[DispatchLandingVerdict, str, object]:
+    """Compose with the existing CAP-4 land path — never a second lander."""
+    verification = _verification_verdict_for_cap4(
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=repo_root,
+        effective_policy=effective_policy,
+        spec_text=spec_text,
+        process=process,
+        vcs=vcs,
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug=slug,
+        story_key=render_feed_key(story_key),
+        worktree=worktree,
+        repo_root=repo_root,
+        verification_verdict=verification,
+        effective=effective_policy,
+        fs=fs,
+        vcs=vcs,
+        process=process,
+    )
+    named = envelope.data.get("pr_url")
+    if named is None and result.pr_number is not None:
+        named = f"PR #{result.pr_number}"
+    if named is None:
+        named = str(worktree)
+    return result.verdict, str(named), envelope
 
 
 def _latest_story_run_dir(
@@ -1496,6 +1599,48 @@ def dispatch_once(
             )
             return _done()
         findings.append(wip_finding)
+
+    # Story 29.2: worktree spec status: done (follow-up not recommended)
+    # is session-terminal. CAP-4 only — never another bmad-build-auto
+    # because main's ledger is still backlog.
+    live_spec_text = _spec_text_prefer_worktree(
+        spec_path, repo_root, worktree, spec_text
+    )
+    if blocks_harness_relaunch(
+        parse_spec_status(live_spec_text),
+        followup_review_recommended(live_spec_text),
+    ):
+        data["harness_done_land_only"] = True
+        land_verdict, named_target, _land_envelope = _attempt_harness_done_cap4(
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            repo_root=repo_root,
+            effective_policy=effective_policy,
+            spec_text=live_spec_text,
+            fs=fs,
+            vcs=vcs,
+            process=process,
+        )
+        data["land_verdict"] = land_verdict.value
+        data["land_named_target"] = named_target
+        if land_verdict in {
+            DispatchLandingVerdict.LANDED,
+            DispatchLandingVerdict.ALREADY_LANDED,
+        }:
+            return _done()
+        findings.append(
+            Finding(
+                code="MRS-DISP-040",
+                severity=Severity.ERROR,
+                message=land_fail_operator_message(
+                    story_key=render_feed_key(story_key),
+                    named_target=named_target,
+                    land_verdict=land_verdict.value,
+                ),
+            )
+        )
+        return _done()
 
     writer_id = _writer_id()
     mint_moment = _now_utc()

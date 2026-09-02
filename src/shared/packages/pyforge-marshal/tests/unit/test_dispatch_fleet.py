@@ -2255,3 +2255,83 @@ def test_dependency_ordering_never_crashes_on_small_backlogs(
     assert dependency_ordered_backlog(backlog, deps_by_story=deps) == backlog
     statuses = tuple((key, "backlog") for key in backlog)
     assert station_backlog(statuses, deps_by_story=deps) == backlog
+
+
+def _seed_done_worktree_spec(repo: Path, slug: str, story: str) -> Path:
+    from pyforge.marshal.core.identity import normalize, render_feed_key
+
+    specs = dispatch_core.planning_specs_dir(repo, slug)
+    spec = specs / f"spec-{story}.md"
+    spec.write_text(
+        "---\nstatus: ready-for-dev\ndifficulty: medium\n"
+        f'surface: ["src/{slug}/**"]\n---\n',
+        encoding="utf-8",
+    )
+    feed = render_feed_key(normalize(story))
+    worktree = dispatch_core.dispatch_worktree_path(repo, slug, feed)
+    dest = worktree / spec.relative_to(repo)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(
+        "---\nstatus: done\nfollowup_review_recommended: false\n"
+        "difficulty: medium\n"
+        f'surface: ["src/{slug}/**"]\n---\n',
+        encoding="utf-8",
+    )
+    return worktree
+
+
+def test_harness_done_dirty_pr_does_not_relaunch_on_drain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """41.2-shaped: DIRTY PR + done worktree spec → 0 additional launches."""
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-steward"
+    story = "41-2-query-plane"
+    _seed_fleet(tmp_path, stories={slug: [story]})
+    _seed_done_worktree_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    pr_url = "https://github.com/rxm7706/local-recipes/pull/1017"
+    monkeypatch.setattr(
+        dispatch_cli,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, pr_url, None),
+    )
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((story, "backlog"),)},
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.REFUSED
+    assert any(f.code == "MRS-DISP-040" for f in report.findings)
+    assert any("1017" in f.message for f in report.findings)
+
+
+def test_harness_done_no_pr_does_not_relaunch_on_drain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """13.2-shaped: commits and no PR → 0 launches, worktree named."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-mason"
+    story = "13-2-recipe-refresh"
+    _seed_fleet(tmp_path, stories={slug: [story]})
+    worktree = _seed_done_worktree_spec(tmp_path, slug, story)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={slug: ((story, "backlog"),)},
+        build_harness=harness,
+        station=slug,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)[slug] is StationCycleStatus.REFUSED
+    assert any(f.code == "MRS-DISP-040" for f in report.findings)
+    assert any(str(worktree) in f.message for f in report.findings)
