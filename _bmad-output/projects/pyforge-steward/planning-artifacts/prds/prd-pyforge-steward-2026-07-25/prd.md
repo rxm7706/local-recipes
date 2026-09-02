@@ -1,9 +1,9 @@
 ---
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-08-29"
+updated: "2026-09-02"
 status: final
-currency_review: Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
+currency_review: Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
 ---
 
 # PRD: Steward (`pyforge-steward`)

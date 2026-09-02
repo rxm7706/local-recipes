@@ -1338,3 +1338,15 @@ station-specific alternative, and the doc-drift pattern it found (Marshal's skil
 ~40 commands, Doctor's and Steward's READMEs understate their real duty/story count, Scribe's
 README self-contradicts) is further evidence for the §1 Vision problem this PRD already targets,
 not new scope.
+
+**2026-09-02 correct-course (red-team CRITICALs):** the adversarial review found the CAP-6
+mint root unverified (X-1) and the CAP-11 broker volatile and unbounded (S-1). Steward
+**Epic 40** (40.1 verified mint, 40.2 durable bounded broker) dispatches **before** any
+further story on this chain and before cutover Phase 1. No FR changes; FR-30's consequence
+now also reads "a broker restart loses no queued task". The review's HIGH set is a later
+correct-course. Record: `sprint-change-proposal-2026-09-02-red-team-critical.md`.
+
+**2026-09-02 correct-course (red-team HIGH set):** Epics **41–43** (fourteen stories) bind
+R-3 … R-16; R-17 … R-25 sit in the deferred-work ledger as `DW-RT-2026-09-02-*`. No FR
+changes; SPEC Constraints gained a dated Always/Never block. Order 40 → 41 → 42 → 43, all
+before cutover Phase 1. Record: `sprint-change-proposal-2026-09-02-red-team-high.md`.

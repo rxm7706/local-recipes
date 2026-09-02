@@ -9,7 +9,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/console-parity-inventory.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md
 mode: headless-express
-updated: '2026-08-31'
+updated: '2026-09-02'
 currency_review: "Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-20260824.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -2237,7 +2237,10 @@ the child sees the request
 **Retroactive decomposition.** CAP-1/2/3 landed on main 2026-09-01
 (manifest, metapackage recipe, CFE generator, local build, channel publish);
 chain-completeness had flagged the Spec as undecomposed. CAP-4 (optional
-``feature.bmad-suite-full`` pixi pin) remains backlog.
+``feature.bmad-suite-full`` pixi pin) remains backlog. This epic is also the
+decomposition of `spec-bmad-suite-channel-product` CAP-6 (suite metapackage,
+added to that Spec 2026-09-01), whose own text points here — cited so the
+chain-completeness window for the channel-product Spec sees it.
 
 ### Story 39.1: Canonical suite manifest
 
@@ -2274,6 +2277,214 @@ So that pixi.toml stays thin for full-suite installs.
 
 **Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** CAP-4
 **Status:** backlog
+
+## Epic 40: Red-team CRITICALs — verified mint, durable broker (spec-pyforge-unifying-strategy CAP-6 / CAP-11)
+
+Minted by `sprint-change-proposal-2026-09-02-red-team-critical.md` after the
+2026-09-02 adversarial review (`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`)
+found two shipped CRITICALs. Additive over Epics 12 / 19 / 21 / 24; those
+ledgers stay `done`. Dispatches **before** any further story on this chain
+and before cutover Phase 1. The review's HIGH set (R-4 … R-16) is a later
+correct-course, not this epic.
+
+### Story 40.1: IdP bearer is verified before mint
+
+As a platform operator,
+I want `/assertion/mint/` to verify the presented IdP bearer (signature via the configured JWKS, `iss`, `aud`, `exp`) before signing a station assertion,
+So that nobody can mint a valid assertion for any subject and any roles by base64-encoding a JSON payload.
+
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy AD-7, AD-15 • RFC-3 (revised) • red-team X-1 / R-1
+**Given** the existing fake-`.sig` bearer fixture **When** it is POSTed to `/assertion/mint/` **Then** the response is 401 and nothing is minted
+**And** wrong key / `alg=none` / HS256 / wrong `iss` / wrong `aud` / expired / missing claims are refused
+**And** an unknown `kid` refreshes the JWKS once, never twice in the cache window
+**And** a station absent from the verified group claim is 403
+**And** an unconfigured verifier is 503 in every profile (local verifies against the dev JWKS file, it does not skip)
+**And** production stage-1 refuses without `COMPONENT_OIDC_ISSUER` / `COMPONENT_OIDC_JWKS_URL` / `COMPONENT_OIDC_AUDIENCE`
+**And** an AST policy test forbids any bearer decode outside the verifier
+
+### Story 40.2: redis-broker is durable and bounded
+
+As a platform operator,
+I want `redis-broker` on a PVC with AOF, a required `maxmemory` below a required memory limit, no stored Celery results, and TTL on applied-id keys,
+So that a broker restart loses no queued task, stream entry, pending entry, DLQ entry or idempotency key, and growth back-pressures instead of OOM-killing the pod.
+
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy AD-8, AD-10, AD-12, AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
+**Given** `helm template` **When** rendered **Then** the broker mounts a PVC at `/data` with `--appendonly yes --appendfsync everysec --maxmemory <v> --maxmemory-policy noeviction`, and the cache is unchanged (`emptyDir`, `allkeys-lru`)
+**And** an empty `redis.broker.maxmemory`, an empty broker memory limit, or `maxmemory` ≥ the limit fails the render naming the values path
+**And** `CELERY_TASK_IGNORE_RESULT` is `True` and no `celery-task-meta-*` key exists after a supervised run completes
+**And** `pyforge.events.applied:*` keys carry a TTL and the stream has a declared trim; the DLQ is never auto-trimmed
+**And** a real `redis-server` kill/restart preserves the stream entry, the PEL entry, the DLQ and the applied key — and the test fails with `--appendonly no`
+**And** the two 12.6 `emptyDir` invariants are re-scoped to the cache role
+
+## Epic 41: Data safety (CAP-9 / CAP-10 / CAP-19)
+
+Backups, the plane's process boundary, governed Scribe DDL, verified broker TLS. Red-team R-3, R-11, R-12, R-14.
+Minted by `sprint-change-proposal-2026-09-02-red-team-high.md`; source
+`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`. Additive over shipped epics; none reopened.
+
+### Story 41.1: DR contract and PostgreSQL backup
+
+As a platform operator,
+I want a written DR contract and a scheduled PostgreSQL base backup with WAL archiving plus a restore drill,
+So that a lost volume is a recoverable incident with a known RPO/RTO, not the end of the estate.
+
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, FR-29 • canopy AD-1 (parent), AD-12 • BS-8 • red-team B-2 / S-8 / R-3
+**Given** the story spec `spec-41-1-dr-contract-and-postgresql-backup.md` **When** its acceptance criteria run **Then** they pass
+**And** Given `deploy/DR.md`, when read, then every store (PostgreSQL, redis-broker, redis-cache, media RWX, DB-GPT SQLite PVC, DuckDB cache) has RPO, RTO, mechanism, owner and drill cadence, and the BS-8 reconciliation order is written down.
+
+### Story 41.2: Query-plane process boundary
+
+As a platform operator,
+I want the `.duckdb` file confined to one process on RWO storage with Parquet as the shared artifact,
+So that multi-pod readers cannot corrupt or lock the query plane.
+
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-19, CAP-10, FR-27, FR-47 • canopy AD-22 • BS-5 • red-team S-3 / R-11
+**Given** the story spec `spec-41-2-query-plane-process-boundary.md` **When** its acceptance criteria run **Then** they pass
+**And** Given the estate source, when the policy test runs, then every `duckdb.connect(` outside the single declared writer module passes `read_only=True` or `:memory:`; the writer module is named once in `pyforge.atlas` and the test fails if a second appears.
+
+### Story 41.3: Scribe DDL moves into the changelog
+
+As a platform operator,
+I want Scribe's `CREATE EXTENSION` / schema / table DDL moved into a scribe-owned Liquibase changeset,
+So that the DML-only app role holds in production and the auditor control is not quietly widened.
+
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-9, CAP-14, FR-22, FR-23 • canopy AD-9 • red-team S-4 / B-1 / R-12
+**Given** the story spec `spec-41-3-scribe-ddl-moves-into-the-changelog.md` **When** its acceptance criteria run **Then** they pass
+**And** Given `platform_app`, when Scribe's PostgreSQL driver initialises, then it executes no DDL; a test with a DDL-revoked role passes and the relation-absent case raises a named error.
+
+### Story 41.4: Broker TLS is verified
+
+As a platform operator,
+I want `rediss://` brokers verified against the corporate CA with `CERT_NONE` confined to the laptop,
+So that an encrypted-looking broker link is actually authenticated.
+
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-12 • pap:CAP-6 (air-gap parity) • red-team X-2 / R-14
+**Given** the story spec `spec-41-4-broker-tls-is-verified.md` **When** its acceptance criteria run **Then** they pass
+**And** Given production settings and a `rediss://` broker, when loaded, then `ssl_cert_reqs` is `CERT_REQUIRED` and `ssl_ca_certs` points at the configured bundle.
+
+## Epic 42: Agent and bus containment (CAP-4 / CAP-8 / CAP-11 / CAP-12)
+
+Transport authorization, per-subject limits, real delivery semantics with a deployed consumer, Celery hardening, namespaced roles. Red-team R-7, R-8, R-9, R-10, R-13. Every story here depends on Epic 40.
+Minted by `sprint-change-proposal-2026-09-02-red-team-high.md`; source
+`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`. Additive over shipped epics; none reopened.
+
+### Story 42.1: MCP transport authorization and a streaming proxy
+
+As a platform operator,
+I want the assertion verified on every MCP JSON-RPC method before routing, a streaming proxy, and `mcp-host` reachable only from web pods,
+So that no tool is reachable anonymously and long tool calls do not 502 at five seconds.
+
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy AD-5, AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
+**Given** the story spec `spec-42-1-mcp-transport-authorization.md` **When** its acceptance criteria run **Then** they pass
+**And** Given `POST /stations/atlas/mcp` with no assertion, when any JSON-RPC method is sent, then 401; with a valid assertion for `mcp:warden`, then 403 on the atlas route.
+
+### Story 42.2: Agent rate limits and run bounds
+
+As a platform operator,
+I want per-subject token buckets on the MCP route and `start`, queue and concurrent-run ceilings, and a revoke-by-subject duty,
+So that a looping agent is throttled to 429 instead of taking the platform down.
+
+**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy AD-10, AD-12 • red-team A-6 / B-7 / R-8
+**Given** the story spec `spec-42-2-agent-rate-limits-and-run-bounds.md` **When** its acceptance criteria run **Then** they pass
+**And** Given one `sub` issuing more than the configured rate, when it calls the MCP route, then 429 with `Retry-After` and a structured log; other subjects are unaffected.
+
+### Story 42.3: Bus delivery semantics and a deployed consumer
+
+As a platform operator,
+I want attempt-counted retries with backoff, DLQ for well-formed failing events, a deployed consumer per station, and `traceparent` on the envelope,
+So that Warden → Doctor → Mason actually fires, poison events quarantine, and a chain is traceable end to end.
+
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-8, FR-20 • canopy AD-8 • RFC-4 • red-team A-1 / A-2 / A-4 / A-5 / R-9
+**Given** the story spec `spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md` **When** its acceptance criteria run **Then** they pass
+**And** Given a well-formed event whose handler raises N times, when consumed, then it is moved to the DLQ with the last error and ACKed; the CAP-8 success clause test (poison lands in DLQ instead of retrying forever) exists and fails without the change.
+
+### Story 42.4: Celery hardening and the builds pool
+
+As a platform operator,
+I want `acks_late`, per-station queues, and a dedicated `builds` pool with an hours-scale limit,
+So that a killed worker re-runs its task and a rattler-build is not cut off at five minutes.
+
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy AD-10, AD-12 • red-team S-2 / T-6 / R-10
+**Given** the story spec `spec-42-4-celery-hardening-and-the-builds-pool.md` **When** its acceptance criteria run **Then** they pass
+**And** Given a worker killed mid-task, when a replacement starts, then the task re-runs exactly once (acks_late + reject_on_worker_lost) and the supervisor row reaches a terminal state.
+
+### Story 42.5: Role namespaces and the tenant claim
+
+As a platform operator,
+I want prefixed capability, tenant and admin roles with bare station names refused, and `tenant` on runs and events,
+So that an IdP group that merely shares a station name cannot grant access.
+
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, FR-3, FR-31 • canopy AD-15, AD-20 • red-team X-3 / B-6 / R-13
+**Given** the story spec `spec-42-5-role-namespaces-and-the-tenant-claim.md` **When** its acceptance criteria run **Then** they pass
+**And** Given a group `atlas` (bare), when reachability is computed, then it is refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation.
+
+## Epic 43: Contracts and the document (CAP-6 / CAP-10 / Dream)
+
+A readable Dream, a versioned station API, no self-call, CD by digest, one interpreter story. Red-team R-4, R-5, R-6, R-15, R-16.
+Minted by `sprint-change-proposal-2026-09-02-red-team-high.md`; source
+`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`. Additive over shipped epics; none reopened.
+
+### Story 43.1: Split the Dream into living and archive
+
+As a platform operator,
+I want the historical topology moved to an archive file and a living Dream of at most 400 lines,
+So that an implementer can read the Dream and build the right thing.
+
+**Type:** docs • **Effort:** S • **Deps:** none • **FR/AD:** Dream Grounding • red-team B-10 / R-4
+**Given** the story spec `spec-43-1-split-the-dream.md` **When** its acceptance criteria run **Then** they pass
+**And** Given the living Dream, when counted, then it is ≤ 400 lines and every mermaid in it is a build target.
+
+### Story 43.2: Station API contract and the /api/v1 collision
+
+As a platform operator,
+I want `/stations/<name>/api/v<N>/` routes, OpenAPI per station, `pyforge.core.client`, and a kit contract test,
+So that portals, the CLI and agents share one versioned contract and `/api/v1` no longer lands on Langflow.
+
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** CAP-6, CAP-10, FR-28 • canopy AD-7 • BS-7 • red-team T-2 / B-3 / R-5
+**Given** the story spec `spec-43-2-station-api-contract.md` **When** its acceptance criteria run **Then** they pass
+**And** Given `/api/v1/anything`, when requested, then it is no longer Langflow; `/langflow/api/v1/...` still is, with the same prefix-preserving redirect behaviour.
+
+### Story 43.3: In-process station port, no self-call
+
+As a platform operator,
+I want co-located portals reaching station code in-process and over HTTP only when `STATION_REMOTE=1`,
+So that a portal view never awaits its own gunicorn pool while holding a transaction.
+
+**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, FR-26 • canopy AD-7, AD-10 • red-team T-3 / R-6
+**Given** the story spec `spec-43-3-in-process-station-port-no-self-call.md` **When** its acceptance criteria run **Then** they pass
+**And** Given a portal view in the default profile, when it needs station data, then no HTTP request to the host's own address is made (test asserts zero loopback calls).
+
+### Story 43.4: Golden Path CD by digest
+
+As a platform operator,
+I want images pushed by digest, a chart that refuses `latest`, and a deploy workflow that promotes only a Warden-verdicted digest,
+So that the artifact Warden passed is provably the artifact Steward deploys.
+
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** Grounding Golden Path (Q1) • pap:CAP-6 • red-team B-4 / R-15
+**Given** the story spec `spec-43-4-golden-path-cd-by-digest.md` **When** its acceptance criteria run **Then** they pass
+**And** Given `helm template` with no `image.digest`/pinned tag, when rendered, then it fails naming the values path; `latest` is refused.
+
+### Story 43.5: One interpreter story
+
+As a platform operator,
+I want the interpreter decision recorded as an AD with a measured per-environment matrix in place of the multi-Python claim,
+So that the Dream states what the repo actually does and `mcp-host` has a design (MCP-SDK isolation), not an excuse.
+
+**Type:** docs • **Effort:** S • **Deps:** none • **FR/AD:** pap:CAP-5 • spec-mcp-era-isolation • red-team S-5 / D-1 / R-16 • **decision 2026-09-02: hybrid (a)+(c)**
+**Given** the solver probes of 2026-09-02 (platform feature minus langflow solves clean on 3.14; langflow blocked only by `onnxruntime <1.24`; `dbgpt-app` only by `sqlalchemy <2.0.29`) **When** the AD is written **Then** it names one interpreter `3.14.*` and states that `mcp-host` isolates `mcp` 2.x from langflow's `mcp <2` pin
+**And** the Dream's multi-Python table is replaced by a table generated from `pixi.lock`
+**And** the review report and readiness addendum describe the sidecar as MCP-SDK isolation
+
+### Story 43.6: Platform image moves to Python 3.14
+
+As a platform operator,
+I want `python-agent-platform` and `dbgpt-sidecar` on `python = "3.14.*"` with a re-lock, regenerated `environment.yaml`, and rebuilt images,
+So that laptop and cluster run one interpreter and Atlas/Doctor import inside the platform image.
+
+**Type:** feature • **Effort:** M • **Deps:** mason 13.1, mason 13.2, S-43.5 • **FR/AD:** pap:CAP-5, pap:CAP-6 • red-team S-5 / R-16
+**Given** Mason 13.1 and 13.2 published **When** the pins flip and `pixi lock` runs **Then** both envs resolve on 3.14 and `environment.yaml` is regenerated in the same commit
+**And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
+**And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
 ## Currency validation note — 2026-08-26
 

@@ -34,6 +34,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — RESOLVED AT THE ROOT — better than either fix candidate this entry proposed. The `bmad-ui` environment no longer HAS a local `./build_artifacts` channel: root `pixi.toml:1188` now reads `channels = ["conda-forge", "SelfExplainML"]`, and the comment at `:1177-1187` documents the removal while quoting this entry's exact failure string ("could not find subdir 'noarch' in channel 'file:///…/build_artifacts/linux64/'"). `pixi.lock` now contains ZERO `build_artifacts` references. Since the whole-workspace re-solve no longer touches a machine-local channel, seeding it into the worktree is moot. Third occurrence of the class (atlas A1, two warden stories, this) closed at source rather than worked around.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md, _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-a1-scaffold-the-kedro-pixi-project-via-nebi.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-1-2 — The `/dist/` and `/dist-conda/` lines in the pixi-package `.gitignore` pattern (copied verbatim…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md`
@@ -42,6 +44,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and WIDER — the entry named warden/atlas/herald; four packages carry it today. `pyforge-warden/.gitignore:2-3`, `pyforge-doctor/.gitignore:2-3`, `pyforge-scribe/.gitignore:2-3` and `pyforge-herald/.gitignore:2-3` all still read `/dist/          # pypi: wheel + sdist (python -m build)`. atlas (`:6`) and marshal (`:6-7`) use bare lines and are clean — so atlas is now FIXED but scribe and doctor inherited the defect. Same finding as marshal's DW-1-1-2, reached independently.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-1-3 — None of `pyforge-warden`/`pyforge-atlas`/`pyforge-herald`'s `pyproject.toml` scope `[tool.hatch.…
 
@@ -52,6 +56,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — measured across all three named packages: `grep -c 'targets.sdist'` returns 0 for `pyforge-warden`, `pyforge-atlas` AND `pyforge-herald`'s `pyproject.toml`. No explicit sdist include list was added anywhere.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md, src/pyforge); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-1-4 — `pyforge-warden`/`pyforge-atlas`/`pyforge-herald` each declare `license = { text = "MIT" }` in `…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md`
@@ -60,6 +66,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the sweep is now larger than the three named: `ls src/shared/packages/*/LICENSE*` returns nothing across all EIGHT sibling packages while each `pyproject.toml` still declares MIT. Same defect as marshal's DW-1-1-3 — two projects ledgered it independently, which is itself a signal it needs one owner.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-1-5 — `pyforge-herald`'s version `"0.1.0"` (like warden's/atlas's) is hand-duplicated between the pack…
 
@@ -70,6 +78,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — two independent literals remain: `pyforge-herald/pixi.toml:17` `version = "0.1.0"` and `pyforge-herald/pyproject.toml:7` `version = "0.1.0"`. A version-sync meta-test DOES now exist but does not cover herald: `pyforge-marshal/tests/meta/test_manifest_sync.py` is scoped to Marshal's own manifests (its docstring says 'Marshal's declared deps'), so herald, warden and atlas remain unguarded.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-1-6 — `pyforge-herald`'s root `pixi.toml` feature block pins `python-build = ">=1.5.0"` with no upper…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md`
@@ -78,6 +88,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN at four sites, not one: root `pixi.toml:136`, `:165`, `:200` and `:268` all declare `python-build = ">=1.5.0"` with no upper bound. No CI task caps or checks it.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-1-7 — The verify-gate repair for this story (populating `build_artifacts/linux64` stubs so `pixi run -…
 
@@ -88,6 +100,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — RESOLVED, by the same root-cause fix that closed DW-1-1-1 above — and note the entry's own preferred durable fix (switch herald's gate to `--frozen`) turned out not to be needed. The dangling worktree-absolute channel cannot recur because the channel is gone: `pixi.lock` holds ZERO `build_artifacts` references, and root `pixi.toml:1180-1186` records exactly this failure mode as the reason for removal ('pixi records a channel as an ABSOLUTE path, so pixi.lock carried a machine-specific file:///home/<user>/… that exists on exactly one machine'), naming the two Pages deploys it broke on 2026-07-26.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-1-8 — No meta-test enumerates or validates the set of registered pixi environments/features in root `p…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md`
@@ -96,6 +110,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — PARTIALLY ADDRESSED, held open for the specific gap named. What now exists: `tests/packaging/test_dependency_completeness.py:51-73` declares an `EXPECTED_PACKAGES` floor over all 8 packages plus `_discover()` and a `test_discovery_is_not_vacuous` guard against the glob silently collapsing to zero — real protection that did not exist when this entry was written. What still does NOT exist: any test that reads root `pixi.toml`'s `[environments]`/`[feature.*]` tables. Discovery is by DIRECTORY GLOB (`PACKAGES_DIR.glob("pyforge-*")`), so a package present on disk but never registered as a pixi environment — precisely the wiring this entry asks to validate — still passes every test.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-1 — `McpTransport` opens one `asyncio.run()`-scoped MCP session per tool call (one extra `initialize…
 
@@ -106,6 +122,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and unchanged by design. `mcp_transport.py:578` still calls `asyncio.run(...)` inside the per-call path, and `:550`'s docstring still states 'One ``asyncio.run()``-scoped session per call (see module doc)', with the module-level rationale at `:22`. No persistent session, no `anyio` dependency — the revisit condition (a measured `watch`-loop cost) has not arrived because Story 4.3 does not exist yet.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-2 — bmad-loop worktree paths longer than ~173 characters make EVERY `pixi` source-package operation…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -114,6 +132,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN in the backend, but fix candidate (2) WAS effectively adopted and the trigger is no longer live. The panic itself is untouched: `pixi.lock` still resolves `pixi-build-python-0.8.3` on all three platforms, so the unchecked `usize` subtraction in `tools.rs::output_directory` is unfixed upstream. But the fleet moved to `~/.bmad-loops/`, and measuring this entry's OWN worst-case path against every one of the nine homes gives a maximum of 154 bytes (steward/marshal/genesis) versus the 173 ceiling — 19 bytes of headroom. Candidates (1) slug-capping and (3) the upstream saturating-subtraction fix remain undone, so a longer story slug could still cross it.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-3 — The `DesignTransport` port has no `list_files` or `delete_files` method, but the live `finalize_…
 
@@ -124,6 +144,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the port is still exactly four methods. `transport/base.py` defines `finalize_plan` (`:192`), `copy_files` (`:215`), `write_files` (`:226`) and `read_file` (`:236`), with no `list_files` and no `delete_files`. AD-3's 'exactly 8 tools' has not been amended, so the etag-sourcing path that `finalize_plan` with `scope: "project"` and folder-dest `copy_files` both require is still unreachable through the port.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-4 — `FileRead` drops the server's `untrusted-project-content` provenance marking — the wrapper exist…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -132,6 +154,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the marking is still dropped. `transport/base.py:68` defines `_READ_TAG = "untrusted-project-content"` purely to STRIP it, and the `FileRead` dataclass at `:104` carries `unchanged`/`body`/`first_line`/`last_line`/`total_lines`/`truncated`/`etag` — no `untrusted` flag and no `untrusted_body` rename. Nothing downstream can tell the body is user-authored.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-5 — A conflicted write is returned to the caller as an ordinary success `Mapping`. The live `write_f…
 
@@ -142,6 +166,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — grepping the whole `transport/` package for `conflict` returns nothing, so a structured conflict result is still handed back as an ordinary success `Mapping`. `SeedConflictError`/`PullConflictError`/`ExportConflictError` remain unbuilt (Story 1.4's bridge-core still does not exist), exactly as the entry anticipated.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-6 — `_call_tool_async` — the only code that builds the three auth headers, filters MCP content block…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -150,6 +176,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `_call_tool_async` is still executed only by the live spike. `tests/test_mcp_transport.py` patches it out at `:619`, `:746` and `:783` (`monkeypatch` of `pyforge.herald.transport.mcp_transport._call_tool_async`), so every offline test bypasses the real body; only `tests/test_live_design_spike.py:41` (`pytest.mark.live`) reaches it. Neither fix candidate landed: there is no `_build_headers` helper and no in-process `ClientSession` double.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md, tests/test_live_design_spike.py, tests/test_mcp_transport.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-7 — A server-*answered* JSON-RPC error is reported as `TransportUnreachableError`. The `mcp` SDK rai…
 
@@ -160,6 +188,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `McpError` appears ZERO times in `mcp_transport.py`, so a server-answered JSON-RPC error still falls through to the generic handler and is reported as `TransportUnreachableError`. The mapping to `TransportCallError` the entry proposes was never added.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-8 — HTTP 429 and 5xx have no distinct error class — both land on `TransportUnreachableError`, so a r…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -168,6 +198,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the auth split exists and the retry split does not. `mcp_transport.py:266` still defines `_indicates_auth_failure` (used at `:592`) to separate 401/403, while grepping for `429`, `5xx` or any `RateLimit`-shaped class returns nothing. A rate limit is still indistinguishable from an outage.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-9 — No request timeout is set on either `streamablehttp_client(...)` or `session.call_tool(...)`, so…
 
@@ -178,6 +210,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `timeout` appears ZERO times in `mcp_transport.py`, so neither `streamablehttp_client(...)` nor `session.call_tool(...)` is bounded and the SDK's internal default still governs, inside a pin range that is itself unbounded (see DW-1-2-10).
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-10 — `mcp>=1.28.1` is declared with no upper bound in all three manifests while `_call_tool_async` bi…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -186,6 +220,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN in all three manifests, verified individually: `pyforge-herald/pyproject.toml:16` `dependencies = ["mcp>=1.28.1"]`, `pyforge-herald/pixi.toml:34` `mcp = ">=1.28.1"`, and root `pixi.toml:1479` `mcp = ">=1.28.1"`. No ceiling anywhere, and the offline `ClientSession` double that would make the SDK binding testable still does not exist.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-11 — `McpTransport` resolves the credential once and caches it on the instance for the process lifeti…
 
@@ -196,6 +232,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `mcp_transport.py:308` still does `self._credential = credential` and nothing re-reads the credentials file afterwards. A long-running process keeps sending the token it resolved at first use.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-12 — `AuthError` subclasses `TransportError`, so the natural retry predicate for the parent class (`e…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -205,6 +243,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `errors.py:30` still declares `class AuthError(TransportError)`, sitting under `TransportError` (`:26`) alongside `TransportUnreachableError` (`:38`) and `TransportCallError` (`:47`). No `RetryableTransportError` layer was introduced, so `except TransportError: backoff_and_retry()` would still swallow the one error that must halt the loop.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-13 — `sanitize_payload` collapses two distinct string mapping keys that both name the tokenized previ…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -213,6 +253,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — reproduced by execution, not by reading. Calling `sanitize_payload({'https://a.claudeusercontent.com/x': 1, 'https://b.claudeusercontent.com/y': 2})` returns `{'<redacted: tokenized preview url>': 2}` — a ONE-entry dict from a two-key input, with the first value silently lost to the collapse. Exactly the behaviour the entry recorded, unchanged.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-2-14 — `mcp_transport.py` imports `_as_text` and `_as_optional_text` from `base.py` as underscored priv…
 
@@ -225,6 +267,8 @@ Durability first; curation is owned follow-up work.
 
   resolved: 2026-08-07 — Story 1.3 landed exactly the fix candidate: `base.py`'s `_as_text`/`_as_optional_text` are now public `as_text`/`as_optional_text`, re-exported from `transport/__init__.py` alongside `require_conditional`. `mcp_transport.py`'s import updated to the public names (no behavior change, pure rename); `agent_sdk_transport.py` is the second consumer that settles the seam as public, exactly as the fix candidate anticipated.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-2-15 — `ARCHITECTURE-SPINE.md`'s amended *Etag headers* convention row asserts that `read_file`'s `if_n…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
@@ -233,6 +277,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the documented-only obligation is intact and still unenforced. `architecture-pyforge-herald-2026-07-25/ARCHITECTURE-SPINE.md:146` still asserts that `read_file`'s `if_none_match` is 'optional on a first read … and required whenever a prior etag *is* held', while nothing in the port, the adapter or the tests records or checks that obligation.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-1-9 — Story 1.1's spec was never promoted from the gitignored Tier-3 `implementation-artifacts/` into…
 
@@ -251,6 +297,8 @@ Four entries below carried **no id at all** in Tier-3 (bmad-loop's `- source_spe
 so `deferred_work_check.py` could not even see them — it matches on `DW-*` ids. They were
 Tier-3-only and would have died with the scratch dir. The fifth was the generic `DW-1`.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: _bmad-output/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md, _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-1-1-package-scaffold-for-pyforge-herald.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-4-1 — Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundar
 
 > Promoted 2026-07-31. bmad-loop wrote this as generic `DW-1`; renamed to the
@@ -264,6 +312,8 @@ status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-4-2 — `state.py`'s `write()` does an unlocked read-modify-write of the whole slug-keyed document (read…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
@@ -274,6 +324,8 @@ status: open
   verified: 2026-08-10 — RESOLVED by Story 13.1 (`spec-13-1-the-state-layer-survives-a-second-writer.md`), via the FIRST fix candidate this entry proposed (an advisory file lock), not the single-slug-patch-file alternative. Chosen approach: one shared, stdlib-only, cross-platform advisory file lock (`fcntl.flock` on POSIX, `msvcrt.locking` on Windows — this package targets win-64, so the original POSIX-only sketch was widened) in the new `locking.py`'s `locked(lock_path)` contextmanager, held across the whole read-modify-write span of `state.write()`, `progress.upsert()`, `claims.create()`, and `notices.author_notice()`/`publish_notice()`/`close_notice()`/`archive_rename()`, keyed on a sidecar `<document>.lock` file next to each protected document. SQLite/Postgres migration stays explicitly out of scope, per this story's own Never-list — that is Story 13.3's separate, larger-scoped migration; no fresh evaluation of that option was performed here. `claims.py`'s network-validating functions (`publish`, `revalidate`, `revalidate_all`) run `evidence_mod.validate_link`/`validate_for_publish` UNLOCKED, before acquiring the lock, so the lock never spans a live HTTP request — a first-pass implementation that locked the whole function was caught and reverted before landing (would have blocked every other claims writer for the duration of a network call). All three carry their pre-lock validation results POSITIONALLY — per claim, the pre-validation evidence tuple plus an index-aligned results tuple, applied back inside the lock at index `i` only when `i < len(original)` and `fresh.evidence[i] == original[i]` (the discard-stale rule; every other entry's write still lands) — never in a dict keyed by `Evidence` value. `Evidence` is a frozen, value-equal dataclass and `create` de-duplicates nothing, so a value-keyed map collapses two field-identical entries onto one key and applies a single result to both: WITHIN one claim (a duplicated link whose two checks return `True` then `False` stored `[False, False]` instead of `[True, False]`) and, for `revalidate_all`, ACROSS claims (one claim's outcome overwriting another's). `revalidate_all` additionally keys its per-claim structure by claim id (`dict[str, tuple[original, results]]`) so a lookup only ever searches within that same claim's own results. Both collapse variants were caught as review-loopback findings (passes 2 and 4) and fixed before landing. `publish` additionally re-verifies inside the lock that every evidence entry it is about to write carries this call's own validation, raising `errors.ClaimStateError` and writing nothing when a concurrent writer changed an entry during the unlocked validation window — the discard-stale rule alone would have let a claim persist as `published` over evidence that call never checked, bypassing publish's own broken-link gate; it stays as-is for `revalidate`/`revalidate_all`, whose purpose is to record breakage rather than gate on it. SCOPE OF THIS CLOSURE — read before relying on it: what is resolved is the unlocked read-modify-write *inside* each of those functions, which is exactly the defect this entry's `summary` describes. It does NOT resolve the wider read-network-write span in `deck_pipeline.py` that this entry's `update_2026-08-07` paragraph below describes: `_record_pull_etag`/`push_exports` build their replacement `etags` map from a `state.read` taken BEFORE the network pull/push and then hand the whole slug entry to `state.write`, so two concurrent `herald deck pull` invocations for the same slug can still drop one artifact's etag — `state.write`'s own lock cannot close a critical section that starts in its caller. `seed`'s duplicate-remote-project check (`deck_pipeline.py:199-206` -> `create_project` -> `state.write`) is the same shape. Both are caller-level spans outside Story 13.1's file surface (`state.py`/`progress.py`/`claims.py`/`notices.py`/`locking.py`) and were recorded as their own separate deferred-work entry — in `_bmad-output/implementation-artifacts/deferred-work.md` (this story's review-deferral file), NOT as a `## DW-` entry in this ledger — rather than being silently folded into this one. `state.write`'s own docstring carries the same caveat, so a reader of the code does not have to find this paragraph to learn the caller-level span is still open.
   update_2026-08-07: Epic 2's `herald deck pull` (Stories 2.1-2.4, `deck_pipeline.py`) is the first REAL caller of the "any future concurrent `herald` invocation against the same repo" scenario this entry already anticipated — an operator running two `herald deck pull <slug> --target ...` invocations for the SAME slug (different targets) concurrently now hits exactly this race, confirmed by Epic 2's own Edge Case Hunter review pass. Still deliberately not fixed here: it predates Epic 2, is already tracked, and Epic 2's own scope was the pull/land/re-derive logic, not `state.py`'s concurrency model. Raises this from "latent" to "concretely reachable" — worth prioritizing before Story 4.x's `watch` loop ships, since that will make concurrent state writes routine rather than an edge case.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/deferred-work.md, _bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-4-3 — `state.py`'s `write()` calls `state_path.parent.mkdir(parents=True, exist_ok=True)` unguarded — …
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
@@ -282,6 +334,8 @@ status: open
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-1: Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundary after the damping cap was spent
 origin: review-budget-followup
@@ -292,6 +346,8 @@ status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-5-1 — `registry.read()` raises "malformed" (`expected exactly two body lines, found 5`) against every …
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-registry-module-readme-design-project.md`
@@ -301,6 +357,8 @@ status: open
 
   verified: 2026-08-07 (Story 1.6) — the anticipated resolution path changed. `seed`'s registry-bootstrap-fallback conflict check treats a *malformed* § Design project section as "already linked, cannot verify" and raises `SeedConflictError` naming the parse failure, rather than silently absorbing/migrating it via a `register()` call. This was a deliberate choice: overwriting a section this module cannot prove matches its own canonical shape risks clobbering a real, hand-verified project link if the parse failure masks a different project id than expected. The 13 pre-existing malformed sections (9 pyforge-*) are therefore *still* migration debt, and now block `herald deck seed <slug>` on those exact slugs until resolved by hand (or a future story adds a `--force`/`--migrate-registry` escape hatch) — narrower than "seed naturally migrates them", not wider. Recorded as the current status; the migration itself remains undone.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-1-5-registry-module-readme-design-project.md, presentations/*/README.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-1-6-1 — Write-level conflict detection (the wire shape DW-1-2-5 could not pin) is out of `seed`'s scope
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-6-herald-deck-seed-slug.md`
@@ -309,6 +367,8 @@ status: open
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-1-6-herald-deck-seed-slug.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-2: Follow-up review still recommended for 13-1-the-state-layer-survives-a-second-writer after the damping cap was spent
 origin: review-budget-followup
@@ -322,6 +382,8 @@ status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-3: Follow-up review still recommended for 13-3-db-backed-storage-behind-the-existing-seam-with-migrations after the damping cap was spent
 origin: review-budget-followup
 source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
@@ -331,6 +393,8 @@ status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-1: One corrupt legacy JSON file blocks all three Moments' stores, where before Story 13.3 it blocked only its own
 
@@ -342,6 +406,8 @@ status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-3-2: A read-only `.herald/` directory now fails every herald command, where before Story 13.3 reads still worked
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
@@ -351,6 +417,8 @@ status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-3-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-1: The webhook's HMAC scheme signs only the body, so one captured signed request stays a valid, reusable forgery token forever
 
@@ -381,6 +449,8 @@ entry is narrowed, not fully closed.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 1/2 present (absent: tests/test_webhook.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-4-2: The webhook's claim idempotency guard reads and creates in two separate transactions, so two concurrent deliveries of one event can both create a claim sharing one id
 
 **STILL UNREACHED as of Story 13.6** -- reasoning updated, not closed. The
@@ -401,6 +471,8 @@ is added that can double-send.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-3: A single webhook request can occupy a thread-pool worker for well over a minute, and neither the handler nor the caller bounds it
 
@@ -427,6 +499,8 @@ deployment.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-3` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 0/1 present (absent: tests/test_webhook_host.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-4: `herald success create --shipped-date` accepts any string, and one malformed value then breaks `herald success list --date-range` for every operator afterwards
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md`
@@ -460,6 +534,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-5-1: Evidence revalidation runs unbatched sequential HTTP checks, now reachable unattended via cron instead of only under an operator's eye
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-5-the-scheduler-enforces-what-was-displayed.md`
@@ -487,6 +563,8 @@ deployment.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-5` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-5-the-scheduler-enforces-what-was-displayed.md, docs/automation-troubleshooting.md, docs/cli-runbooks.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-6-1: Steward's `deploy perimeter` cannot target an arbitrary ASGI application, only a hardcoded Django placeholder -- so Herald's webhook has no path to a persistent, Steward-perimeter-hosted deployment
 
@@ -524,6 +602,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-6-2: `webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung handler still occupies
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md`
@@ -557,6 +637,8 @@ deployment.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-14-1-1: A gate returning a non-JSON-serializable field value crashes `herald deck qa` with an unhandled `TypeError` instead of a controlled `HeraldError`
 
@@ -593,6 +675,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-14-1-2: `deck_qa.run()` calls each gate synchronously with no timeout, so a hanging gate blocks the whole `herald deck qa` invocation indefinitely
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md`
@@ -619,6 +703,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-14-2-1: No CI workflow runs `pyforge-herald`'s pytest suite, so the render gate's Chromium dependency is unprovisioned in CI
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md`
@@ -638,6 +724,8 @@ deployment.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: .github/workflows/*.yml, _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-14-3-1: `image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same file
 
@@ -670,6 +758,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-3-image-slot-scan.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-15-1: No GitHub Actions workflow runs the pyforge-herald pytest suite at all.
 
 - source_spec: `planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`
@@ -682,6 +772,8 @@ deployment.
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-15-1-2: _resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts sharing the same name.
 
@@ -697,6 +789,8 @@ deployment.
 ---
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-CANOPY-2026-08-24 — Canopy five-tier integration deferred to steward (Phase 5)
 
@@ -715,6 +809,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -726,6 +822,8 @@ deployment.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-1: No CI workflow runs the `pyforge-herald` pytest suite on Windows, so `locking.py`'s `msvcrt` branch — the platform this new module was explicitly widened beyond POSIX `fcntl` to support — has zero automated coverage.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md`
@@ -733,6 +831,8 @@ deployment.
   evidence: Found by this story's own Blind Hunter review pass (pass 3). `.github/workflows/test-windows.yml`'s only `windows-2022` job builds conda recipes; every workflow that runs Python tests (`detectors.yml`, `test-macos.yml`) targets `ubuntu-latest`/`macos-*`. Out of this story's file surface (`state.py`/`progress.py`/`claims.py`/`notices.py`/`locking.py`/tests) — fixing it means adding a Windows Python-test CI job, a repo-wide workflow change with broader blast radius than this story's scope. Fix candidate: add a `pyforge-herald` pytest job to a `windows-2022` runner (mirroring `test-macos.yml`'s pattern) the next time Windows CI coverage is worked on.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-13-1-2: `deck_pipeline.py`'s caller-level read-network-write spans are still unprotected, so the story's own motivating scenario — two concurrent `herald deck pull <slug>` invocations for the same slug — can still silently drop one artifact's etag, even though `state.write` itself is now locked.
 
@@ -742,6 +842,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-1-3: `notices._write_markdown` is a plain `write_text` (truncate-then-write), not the temp-file + `os.replace` used for the JSON index, so a concurrent READER of `notices/**/*.md` can still observe a partially written file even though writers are now serialized.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md`
@@ -749,6 +851,8 @@ deployment.
   evidence: Found by this story's Blind Hunter review pass (pass 5). Story 13.1's lock makes the index write and the markdown write one critical section, which closes the writer-vs-writer race; it does not make a non-atomic write atomic, so `git add` during `herald deck pull --commit`, CI, or any external reader of the advertised "git-diffable record" can still catch a truncated file. The `notices.py` module docstring was amended in this story to state this limit explicitly rather than leave the unconditional claim standing. Out of scope here (`_write_markdown` predates this story and is not in its Code Map). Fix candidate: route `_write_markdown` through the same temp-file + `os.replace` helper the index write uses.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-13-1-4: `registry.register` performs the same unlocked whole-document read-modify-write that Story 13.1 fixed in the other four modules — it reads a README, splices its `§ Design project` span, and `os.replace`s it — and remains uncovered by the new lock.
 
@@ -758,6 +862,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-1-5: `claims.create` never checks the id it mints against the ids already stored, so a duplicate claim id can be written — and `revalidate_all` (which Story 13.1 taught to refuse duplicates structurally) then rejects the whole file on every subsequent run, while `revalidate`/`publish` silently operate on only the first match. Three functions disagree about what a duplicate id means.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md`
@@ -765,6 +871,8 @@ deployment.
   evidence: Found by this story's Blind Hunter and Edge Case Hunter review passes (pass 6) and reproduced: two `create(..., id_factory=lambda: "same")` calls both succeed, after which `revalidate_all` raises `HeraldError: ... holds duplicate claim ids; refusing to revalidate until they are unique` every time, with hand-editing `claims.json` as the only recovery. Only reachable through an injected `id_factory` (tests) or a hand-edited/merged `claims.json` — `create`'s default is uuid4 — so it is a latent consistency gap, not an active defect. Deliberately not fixed here: Story 13.1's contract is concurrency, and its Never-list forbids widening these functions' public surface; adding a refusal to `create` (or making `revalidate`/`publish` refuse symmetrically) is a new error contract on three public entry points, which belongs to whoever owns claims-storage integrity next. Fix candidate: have `create` check its minted id against the fresh in-lock read and re-mint or refuse, so the invariant `revalidate_all` now enforces is established where ids are created.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-13-1-6: `revalidate`/`revalidate_all`'s "leave the claim untouched" branches are invisible in the return value, so the CLI reports a completed validation — with a valid/broken count computed from evidence this run never checked — for a claim it actually skipped.
 
@@ -774,6 +882,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-1-7: `revalidate_all`'s duplicate-claim-id guard is a verified behavior change against the pre-story baseline — a `claims.json` holding two same-id claims was revalidated correctly before Story 13.1 and is now refused outright — which diverges from the story's own "single writer, no contention: behavior unchanged" acceptance criterion.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md`
@@ -781,6 +891,8 @@ deployment.
   evidence: Found by this story's Blind Hunter review pass (pass 7) and reproduced against both revisions on the same file: baseline `revalidate_all` (a positional loop, `git show 98fbdf37f8:…/claims.py`) returned both claims validated; post-change `_require_unique_ids` raises `HeraldError: … holds duplicate claim ids; refusing to revalidate until they are unique` and writes nothing, blocking every other claim in the file too. The guard itself is right (it was added in pass 5 to stop one claim's HTTP outcome overwriting another's through the new id-keyed results map, and pass 6 extended it to the fresh in-lock read); the open question is whether a duplicate should refuse the batch, or leave only the same-id claims untouched the way a concurrently-created claim already is. Not resolved here because the coherent answer spans `create`/`revalidate`/`publish`/`revalidate_all` together — the same cross-function duplicate-id policy the pass-6 entry above defers for `create` — and any of the alternatives changes a public entry point's contract, which this story's Never-list forbids. Fix candidate: settle the duplicate-id policy once across all four functions, then align `revalidate_all` to it; treat this entry and the `claims.create` entry above as one decision.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-1-the-state-layer-survives-a-second-writer.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-13-2: `herald snapshot` -- a single command consolidating the three currently-separate, mostly-unwired dashboard exporters (`scripts/export_web_snapshot.py`, `scripts/export_notices_snapshot.py`, `web/scripts/sync-progress.mjs`) into one, stamping `generated_at` on each -- should be built as near-term follow-up, not skipped: it would close the shipped v1's real "three hand-cranked snapshot hops" staleness risk (technical research risk #1 of 6). Worth prioritizing over routine low-priority ledger sweeps -- the fix candidate below is small and fully scoped, not exploratory.
 
@@ -790,6 +902,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/implementation-artifacts/spec-13-2-the-serverless-intermediate-decision-recorded.md, scripts/export_notices_snapshot.py, scripts/export_web_snapshot.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-2-2: `deferred-work.md` itself is written via an unlocked read-modify-write across a Tier-3 cross-worktree backlink -- the same lost-update race class Story 13.1 fixed for Herald's own `state`/`progress`/`claims`/`notices` stores, here in the BMAD governance tooling instead. Two concurrent `pyforge-herald` bmad-loop worktrees both appending to this file could silently drop one entry. Pre-existing, not introduced by this story; surfaced incidentally by review pass 3's Edge Case Hunter and re-confirmed still applicable by pass 5's.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-2-the-serverless-intermediate-decision-recorded.md`
@@ -797,6 +911,8 @@ deployment.
   evidence: `deferred-work.md` resolves through this worktree's Tier-3 backlink symlink to a single shared file in the primary `local-recipes` checkout (`readlink -f` confirms), so it is NOT worktree-local the way tracked git files are -- every `bmad-loop` worktree for this project writing to it shares the identical file. Appends here (this story's own two entries included) are a plain read-append-write with no lock, sidecar, or advisory-file guard of any kind -- the exact pattern `locking.py` (Story 13.1) was built to replace for Herald's own stores. Currently latent (no second concurrent `pyforge-herald` worktree active at authoring time), not active. Fix candidate: extend `locking.locked()` (already stdlib-only, cross-platform, `fcntl`/`msvcrt`) to guard the Tier-3 backlink write path generically -- likely a bmad-loop tooling change (the backlink mechanism itself), not something scoped to any one project's `deferred-work.md`, since every project in this fleet's `_bmad-output/projects/*/` shares the identical pattern.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-13-2-the-serverless-intermediate-decision-recorded.md, _bmad-output/projects/*/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-13-4-5: The webhook's HMAC scheme signs only the body, so one captured signed request stays a valid, reusable forgery token forever.
 
@@ -806,6 +922,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-4-6: The webhook's claim idempotency guard reads and creates in two separate transactions, so two concurrent deliveries of one event can both create a claim sharing one id.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md`
@@ -814,6 +932,8 @@ deployment.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-13-4-7: A single webhook request can occupy a thread-pool worker for well over a minute, and neither the handler nor the caller bounds it.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md`
@@ -821,3 +941,6 @@ deployment.
   evidence: `webhook.create_app`'s `app()` runs the matched handler via `asyncio.to_thread`, which keeps a slow call off the event-loop thread but does not bound its duration, and there is no `asyncio.wait_for` around it. The worst case is not the retry backoff (~3s of sleeping) but the storage waits inside it: `db._BUSY_TIMEOUT_MS` is 30000, so each of the 3 attempts can block up to 30s on SQLite's write lock -- roughly 93s of worker occupancy for one request. The default executor is `min(32, cpu + 4)` workers, so a burst arriving while another writer holds the lock (for instance `herald scheduler run`'s cron entry, Story 13.5) can exhaust the pool and stall every queued request. This review pass corrected the module docstring, which had claimed the hop bounded worker occupancy to "~3s", and added the real figure plus a pointer for whoever mounts this; the mitigation itself is deferred because a request timeout and a bounded, named executor are properties of the host wiring, which is Story 13.6's Surface, not this module's -- nothing is mounted or reachable today. Fix candidates: run handlers on a dedicated bounded executor and wrap the call in `asyncio.wait_for`, returning the same non-2xx the alert path already returns so CI's own delivery retry re-fires rather than the request hanging.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+

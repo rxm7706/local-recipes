@@ -1774,3 +1774,25 @@ cutover stay gated on Story 12.8's checkpoint by design. The Spec's status moved
 Same pass: Story 5.4's closing-run spec was confirmed never promoted from Tier-3 — the
 tracked recheck spec (`specs/spec-5-4-free-inheritance-verification-2.md`) now carries the
 dated Resolution record standing in for it (landing evidence: `7a05d20034`, 2026-08-21).
+
+## Epic 13: Two feedstock pins admit Python 3.14 (steward 43.5 hybrid decision)
+
+Minted 2026-09-02 from steward's `sprint-change-proposal-2026-09-02-red-team-high.md`
+§ 7 amendment. The operator chose the hybrid interpreter option: raise the platform to
+one interpreter (`3.14.*`) via feedstock work **and** keep `mcp-host` as MCP-SDK
+isolation. Real solver probes (2026-09-02) found exactly two remaining blockers, both
+upstream pins collapsed by `noarch` recipes. Both are maintainer-edit PRs on feedstocks
+rxm7706 graduated; both run under `conda-forge-expert` (Rule 1) with a Rule 2 retro.
+Steward **43.6** (the image flip) is gated on both. **Approved by the operator 2026-09-02** together with steward Epics 40–43.
+
+### Story 13.1: langflow-base onnxruntime pin admits Python 3.14
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** steward 43.5 • steward `DW-FU-10-4` • CFE G26
+**Given** `langflow-base` pins `onnxruntime >=1.20,<1.24` (no `cp314` below 1.25.1)
+**When** the run-dep becomes `>=1.20` and the wheel METADATA is patched to one range
+**Then** `python=3.14.* + langflow + dbgpt + django` solves, `pip check` passes on 3.12 and 3.14, and `import langflow.main` works on 3.14.
+
+### Story 13.2: dbgpt-client sqlalchemy cap admits Python 3.14
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** steward 43.5 • CFE G26 (DB-GPT case study)
+**Given** `dbgpt-client` pins `sqlalchemy >=2.0.25,<2.0.29` (no `cp314` in range)
+**When** the cap becomes `<2.1` with the METADATA patch
+**Then** `python=3.14.* + dbgpt + dbgpt-serve + dbgpt-app + django` solves and the sidecar REST round-trip passes on 3.14.

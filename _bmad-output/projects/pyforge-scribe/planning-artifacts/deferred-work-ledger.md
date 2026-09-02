@@ -35,6 +35,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-1-2-2
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md`
@@ -43,6 +45,8 @@ sibling ledgers and the detector both use.
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-1-2-3
 
@@ -53,6 +57,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-1-2-4
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md`
@@ -61,6 +67,8 @@ sibling ledgers and the detector both use.
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-1-2-5
 
@@ -71,6 +79,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 4/5 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-1-2-6
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md`
@@ -79,6 +89,8 @@ sibling ledgers and the detector both use.
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-automatically.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-2-1-3
 
@@ -89,6 +101,8 @@ sibling ledgers and the detector both use.
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-3-2: A transcript node's citation/id is derived only from the source file's basename (not a path relative to transcript_root), so two different transcript files sharing a basename under different subdirectories would collide into the same node id.
 
@@ -103,6 +117,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-3-2-2: The transcript surface is the only compile surface with no cost bound, and this story puts it on the unattended nightly path: every `scribe graph compile` now reads every *.jsonl under the transcript root whole into memory and runs an O(candidates x curated-sentences) difflib comparison, with no file cap, byte cap, timeout, or mtime-incremental pass.
 
 - source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
@@ -115,6 +131,8 @@ sibling ledgers and the detector both use.
   status: done 2026-08-27 — Story 3.3. `scan_transcripts()` now enforces a file-count cap (256) and total-byte budget (1 GiB) allocated newest-first, a 30s per-file timeout (partial results kept, warned), and an mtime+size-keyed scan cache beside the graph store (`transcript-scan-cache.json`) that resolves the spec's open scan-economics question as incremental-by-mtime with a full-fidelity fallback. Dedup stays post-cache so curated-overlap semantics are unchanged. Live re-measure at close: 25 files / 651MB scanned in 2.2s cold, 0.3s cached.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-3-2-3: The `pyforge-scribe/spec-pyforge-scribe` spec-surface baseline is stale for 12 files, and the spec's .memlog.md carries no provenance entry for Story 3.1 or 3.2, so the governed-surface reconcile for Epic 3 has never been done.
 
@@ -129,6 +147,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-3-2-4: `recall.answer()` ranks candidates by token overlap and tie-breaks on node id ascending, never consulting `valid_from`, so between two equally-overlapping nodes the alphabetically-earlier id wins -- which for date-ordered session filenames is usually the OLDER, since-reversed statement.
 
 - source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
@@ -142,6 +162,8 @@ sibling ledgers and the detector both use.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-CANOPY-2026-08-24
 
 - source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
@@ -151,6 +173,8 @@ sibling ledgers and the detector both use.
   vehicle: `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 28
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 2/3 present (absent: .claude/data/pyforge-scribe/graph.json); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
@@ -162,3 +186,6 @@ sibling ledgers and the detector both use.
   close_when: steward S-32.1 done; scribe S-4.1 done (GraphStore on shared contract; FlatFileGraphStore default plugin); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+

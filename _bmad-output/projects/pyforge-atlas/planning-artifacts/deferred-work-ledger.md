@@ -77,6 +77,9 @@ Non-blocking (integrity clean); owed before the next local-recipes doc-sync PR.
   status: done 2026-07-30
 
   verified: 2026-07-30 — RESOLVED — `bmad-drift-check` no longer reports the `surface-changed` finding this entry was raised for. A live run today ends 'OK: all tracked BMAD artifacts are in sync with the live factory MINOR', with only two INFO `pin-behind` notes (implementation-readiness-report and validation-report-PRD pinned v8.79.0 < live v8.81.0 — a different, non-blocking class). The doc re-sync and baseline re-stamp this entry owed were absorbed by later sync passes.
+
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B1-1 — parity-diff harness under-checks (HIGH, B4 must resolve before it trusts parity)
 
 Independent B1 follow-up review (2026-07-17) found two harness weaknesses that manufacture false confidence:
@@ -87,6 +90,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: open
 
   verified: 2026-07-30 — PARTIALLY RESOLVED — part (b) is DONE, part (a) is untouched, so the entry stays open on (a). (b) FIXED: `tests/parity/harness.py:220-223` now carries the tightened diff and names this entry — 'B4 (DW-B1-1 part b): the TIGHTENED diff — column-SET equality both […] that let a spurious column or an int64->float64 regression pass silently'. (a) NOT fixed: every fixture still carries `"provenance": "shape-only-seed-B2-needs-B4-recapture"` (checked across `tests/parity/fixtures/pypi_intelligence/` and `vulnerability/`). So the harness now checks properly, but it still checks against hand-authored seeds — a green `parity-diff` is still NOT legacy parity, exactly as the entry warned.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 0/2 present (absent: tests/parity/fixtures/pypi_intelligence/, tests/parity/harness.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B1-2 — RateLimitedScheduler not yet wired to the fetch path (MEDIUM, B2/live-fetch)
 
 `_RequestParameterizedAPIDataset.load()` calls `self._inner.load()` but never `self.scheduler.acquire()` — the token bucket is real but enforced on nothing in B1 (fan-out is documented-deferred). Wire `acquire()` into the live request path when B2/live fetch lands. Also document the scheduler's fake-clock coupling (a frozen clock + no-op sleep makes acquire() infinite-spin) so a future fixture doesn't hang.
@@ -94,6 +100,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: done 2026-07-30
 
   verified: 2026-07-30 — RESOLVED — the token bucket is now enforced on the real path. `datasets/request_datasets.py:109` and `:120` both call `self.scheduler.acquire()`, and `:54` records the fix in the past tense ('but ``load()`` never called ``self.scheduler.acquire()``'). The scheduler is constructed at `:91` with a real default (`RateLimitedScheduler(rps=rps)`), and `datasets/rate_limit.py:246` is the acquire implementation. The entry's core complaint — 'the token bucket is real but enforced on nothing' — no longer holds.
+
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B1-3 — enumerate_conda_packages tie-break + B.5 inactive placeholder rows (LOW/MEDIUM, B4 parity)
 
 (a) enumerate_conda_packages uses non-stable sort before groupby-last → arbitrary winner on duplicate-timestamp builds (latent parity risk vs legacy's defined tie-break). (b) Legacy phase_b5 also inserts inactive placeholder rows (relationship='conda_only', latest_status='inactive') for feedstock-outputs entries absent from repodata; the port's attribute_feedstocks omits them — changes downstream v_actionable population. Both are B4 parity-reconcile items.
@@ -101,6 +110,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN by its gate rather than by its code. Both halves are explicitly B4 parity-reconcile items, and B4's credentialed run has not happened (see DW-B4-1 / DW-B4-5, both still open, and `parity/evidence.py:51` `human_sign_off: str | None = None`). SCOPE LIMIT, stated rather than glossed: I could not locate an `enumerate_conda_packages` sort/groupby site to check the tie-break directly in `pipelines/core/nodes.py`, so the (a) half is verified as un-reconciled, not as un-fixed. The reconciliation itself provably has not run.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B2-1 — DAG-level persistence of operator notes edited on the SCORED output (MEDIUM, persistence boundary)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -110,6 +122,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the seam is unchanged. `pipelines/pypi_intelligence/nodes.py:547` still signs `prior_scored: pd.DataFrame | None = None` (the single-package helper path), and `:562` guards on `prior_scored is not None`. No full-DAG notes-merging persistence boundary was wired, so an operator note edited directly on the persisted `pypi_intelligence_scored` output still does not survive.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B2-2 — coerce_cvss_score not on the B2 node data path until B5 wires the vdb boundary (LOW, B5)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -119,6 +134,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `coerce_cvss_score` exists and is exported (`datasets/vdb_boundary.py`, re-exported at `datasets/__init__.py:56` and listed in `__all__` at `:82`) but has ZERO occurrences anywhere under `pipelines/`, so it is still not on the B2 node data path. B5's vdb dataset boundary never wired it.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B2-3 — vuln_kev_affecting_current in the report-only rollup is package-wide, not version-scoped (LOW, report-only)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -128,6 +146,9 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `pipelines/vulnerability/nodes.py:200` still describes the rollup as 'in the KEV set (KEV-affecting, matching Phase G's ``vuln_kev_affecting_current``)', with the same package-wide framing at `:12`. No version scoping was added, and the legacy CFA:3854 comparison it needs is gated on the unrun credentialed parity run.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B2-4 — Phase P cost-gate class not yet wired into the catalog (B3/B4 pre-flight, MEDIUM)
 
 Independent B2 follow-up review (2026-07-17): `BigQueryDownloadsDataset` (the two-layer
@@ -145,6 +166,9 @@ surface) or B4 (parity).
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the catalog routing is unchanged. `conf/base/catalog.yml:198-201` still resolves `pypi_bigquery_downloads_raw` to `type: api.APIDataset` against `${globals:extra_overrides.BIGQUERY_BASE_URL}/projects` with `credentials: bigquery_adc`. `BigQueryDownloadsDataset` — the two-layer cost gate — is still not the catalog target, so a credentialed Phase-P run would still fetch with no cost gate.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B2-5 — pypi_intelligence pipeline not end-to-end runnable unattended (by design, note-only)
 
 `pypi_json_raw` → `PyPIJsonRequestDataset.load()` raises (directs to load_many, the
@@ -156,6 +180,9 @@ No action needed — recorded so nobody expects an unattended full run to work y
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and still correct as a note-only entry. The attended per-request fan-out is unchanged, and the sibling deferrals it mirrors (DW-B5-2 refresher injection, DW-B7-2 resolver injection, DW-B8-1 fetcher injection) are all still open too, so no unattended end-to-end `pypi_intelligence` run is possible. No action was ever required.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-1 — the credentialed full parity run (ATTENDED, AD-19) — DEFERRED to the wave-boundary event
 
 B4 built the credentialed-parity comparator (`tests/parity/parity_runner.py`), but the actual
@@ -169,6 +196,9 @@ resulting `ParityEvidenceRecord`s per `PARITY_EVIDENCE_TEMPLATE.md`. Owner: B4 a
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. `parity/evidence.py:51` still declares `human_sign_off: str | None = None` and `:64` still gates `may_retire_legacy` on `bool(self.human_sign_off)`, so no credentialed evidence was ever recorded. The comparator (`tests/parity/parity_runner.py`) exists and is ready; the run against a real operator `cf_atlas.db` has not occurred.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 0/1 present (absent: tests/parity/parity_runner.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-2 — human sign-off + marking legacy retirement (FR-4) — DEFERRED (human act)
 
 `may_retire_legacy` returns `allowed=False` in-loop (correct — no credentialed, signed
@@ -179,6 +209,9 @@ separate attended action gated on `allowed=True`. Do NOT mark retirement until t
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. `parity/evidence.py:64` still returns `bool(self.human_sign_off)` and `human_sign_off` still defaults to `None` at `:51` — nobody has signed, so `may_retire_legacy` still returns `allowed=False` and legacy is correctly not marked retired. Its precondition (DW-B4-1) is itself unmet.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-3 — fixture recapture from a real legacy run (DW-B1-1 part a) — tool SHIPPED, recapture DEFERRED
 
 `tests/parity/capture_fixtures.py` is the recapture tool. At the event, back a
@@ -189,6 +222,9 @@ then the seeds stay flagged `shape-only-seed-...` and a green `parity-diff` is N
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the recapture never ran. The tool (`tests/parity/capture_fixtures.py`) is present, but every fixture still carries the pre-recapture stamp `"provenance": "shape-only-seed-B2-needs-B4-recapture"` rather than the `credentialed-legacy-capture-<date>` stamp the entry specifies. Same evidence as DW-B1-1(a).
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; cited paths 0/1 present (absent: tests/parity/capture_fixtures.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-4 — DW-B2-4 BigQuery-routing pre-flight before any credentialed Phase-P run — DEFERRED (carries DW-B2-4)
 
 Route `pypi_bigquery_downloads_raw` → `BigQueryDownloadsDataset` (the two-layer cost gate)
@@ -199,6 +235,9 @@ gate that only bites a credentialed run B4 never performs in-container. Carries 
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — carries DW-B2-4 unchanged. `conf/base/catalog.yml:198-199` still routes `pypi_bigquery_downloads_raw` to `api.APIDataset`, not `BigQueryDownloadsDataset`. The pre-flight the entry mandates before any credentialed Phase-P run has not been done (and no such run has happened — see DW-B4-1).
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-5 — parity-reconcile items surfaced at the credentialed run (carries DW-B1-3 / DW-B2-3) — DEFERRED
 
 At the credentialed run, the drift report must reconcile the known legacy-vs-port deltas:
@@ -210,6 +249,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the reconcile is gated on a run that has not happened. Both carried items are still open on their own entries (DW-B1-3, DW-B2-3), and `parity/evidence.py:51` shows no credentialed evidence was recorded. Nothing here is reconcilable without real data, exactly as recorded.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): no source_spec; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B4-6 — credentialed-mode read-path hardening (attended event) — DEFERRED
 
 - source_spec: `b4-verify-dataset-parity-against-the-legacy-orchestrator.md`
@@ -219,6 +261,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the credentialed read path is still unhardened. No per-view try/except emitting an errored `ParityEvidenceRecord` was added, and the entry's own precondition (DW-B4-1, finalizing the per-view Kedro composition against the real schema) has not occurred.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B5-1 — re-point name_resolver.py / recipe-generator.py at Phase C + verify the live authoring read (Q6) — DEFERRED (read-only .claude/**)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -228,6 +273,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and structurally blocked as recorded. The re-point targets live under `.claude/skills/conda-forge-expert/scripts/**`, which the migration treats as HARD read-only, so the flat-file compatibility shim necessarily stays until someone works outside that boundary. Nothing in the atlas package changed this.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: .claude/skills/conda-forge-expert/scripts/**); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B5-2 — C1 wires the Dagster Schedules AND the concrete refresher/fetcher INJECTION (+ store-format fidelity) — DEFERRED (attended/C1)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -237,6 +285,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on both halves. The refresher is still un-injected (the catalog constructs the store datasets with `filepath`/`bucket_url` only — no refresher kwarg), and the Dagster schedules are still not brought up: `orchestration/definitions.py:301` sets `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, so nothing auto-starts. Both halves wait on the same C1 attended event as DW-C1-1.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B5-3 — DW-A2-P4 JFrog dynamic per-host credential attachment for enterprise-mirrored refresh stores — DEFERRED (no live surface)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -246,6 +297,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and still with no live surface to attach to — which is the entry's own stated revisit condition, not a defect. None of the three shipped stores routes to an Artifactory host, so the dynamic per-host JFrog attachment has nothing to bind. Revisit remains correctly deferred to an enterprise-mirrored refresh store landing. (Note: this is the carried-forward body of the `DW-A2-P4` alias — see § Provenance.)
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/catalog/test_credential_scoping.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B5-4 — wire the AD-13 staleness marker into the G/G' consumer read-path (degrade to indeterminate) — DEFERRED (consumer-side, B2 nodes)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -255,6 +309,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the consumer is still blind. Grepping the whole `pipelines/` tree for `is_stale` or `staleness()` returns ZERO hits, so `summarize_vdb_vulns` / `per_version_vulns` still cannot distinguish an air-gapped empty store from a genuinely vuln-free one. AD-13's degrade-to-indeterminate contract remains unimplemented on the consumer side.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/datasets/test_refresh_assets.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B6-1 — spdx-schema-gap atlas-usage ranking needs `conda_license` (not yet produced by core) — DEFERRED
 
 - source_spec: `b6-port-the-seed-gaps-pipeline.md`
@@ -264,6 +321,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, with one measurement changed since authoring. The entry's evidence said '`grep -rn conda_license src/` returns 0 hits'; it now returns 6 — but all six are in `pipelines/seed_gaps/nodes.py`, the CONSUMER that reads the column gracefully. It is still not PRODUCED: `core_packages_enumerated` carries no `conda_license`, so the add-to-schema and non-standard tiers stay empty in-loop.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B6-2 — cwe-seed-gap `_other_impact` headline needs the per-package CWE-rollup dataset — DEFERRED
 
 - source_spec: `b6-port-the-seed-gaps-pipeline.md`
@@ -273,6 +333,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — no per-package CWE-categories rollup dataset landed. The migrated `vulnerability_cwe_categories` remains the catalog table (`cwe_id`/`cwe_name`/`category`), not the per-package blob the `_other_impact` headline needs. The proposal rows — the load-bearing output — are unaffected.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B7-1 — the UPDATE-FEEDSTOCK bucket needs an upstream-of-record column (not yet on core_packages_enumerated) — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -282,6 +345,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `upstream_version` has no producer. It does not appear in `pipelines/core/nodes.py`, so `core_packages_enumerated` still carries only `conda_name`/`latest_version`/`subdirs` and the UPDATE-FEEDSTOCK bucket still cannot fire from live data. Sibling of DW-B6-1, same root cause: a B1-scope column never ported.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B7-2 — the real transitive resolver (pip --dry-run / py-rattler solve) is injected, not shipped in-package — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -291,6 +357,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the resolver is still injection-only. The concrete resolver would need `subprocess` or py-rattler, and the A2 no-inline-IO AST scan still bans that import package-wide, so the offline `unresolved` marker remains the shipped path. Lands with the C1 orchestration wiring, which is itself still deferred (DW-C1-1).
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/catalog/test_no_inline_io.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B7-3 — universe-BOM standalone pypi-only completeness (not a scope hole; a widening) — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -300,6 +369,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN as a widening, not a hole — the entry's own framing. The matcher correctness half was RESOLVED in B7 (ADD membership reads the full `pypi_universe`); what remains is the artifact shape: `build_universe_sbom` still emits conda components plus `cfe:pypi_name` on mapped rows, with no standalone `pkg:pypi/<name>` universe members.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B8-1 — the concrete live Basilisk fetcher (querybatch / detail GET) is injected, not shipped in-package — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -309,6 +381,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — same injected-seam shape as DW-B5-2 and DW-B7-2, and blocked by the same rule: a concrete Basilisk client needs an HTTP import that the A2 no-inline-IO scan bans from the package. The offline stale path plus the stub-driven chunking/rate-limit proofs are what ship; the concrete fetcher waits on C1 or an attended run.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: tests/catalog/test_no_inline_io.py, tests/datasets/test_basilisk.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B8-2 — the no-currency-conflation view's behind-upstream join is fixture-supplied — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -318,6 +393,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the join is still fixture-supplied, because its upstream data still does not exist. This is the same missing column as DW-B7-1 (`upstream_version` absent from `core_packages_enumerated`), so the behind-upstream re-point cannot happen until the B-wave upstream-of-record data lands.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-B8-3 — the full 21,163-package Basilisk population run is credentialed/attended — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -327,6 +405,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No credentialed Basilisk population run has occurred — the population source would be `core_packages_enumerated`, and the fan-out is dataset-owned via `query_population`, called only by the attended/Dagster path (DW-B8-1), which is itself still deferred. In-loop the batch is still fixture-driven.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-C1-1 — the live Dagster schedule bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event
 
 - source_spec: `c1-integrate-kedro-dagster-for-scheduling-execution.md`
@@ -336,6 +417,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. Nothing was turned RUNNING: `orchestration/definitions.py:301` still declares `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, and `:299` still carries the inline note that turning them running 'against a live feed is the attended' event, citing this very entry (DW-C1-1). `:576` repeats 'Ships STOPPED'. The offline dryrun gate is intact and was not weakened.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: tests/catalog/test_no_inline_io.py, tests/orchestration/test_definitions_dryrun.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-C1-2 — per-op runtime ENFORCEMENT + profile-config run-wiring are bring-up concerns (structural-only in C1)
 
 - source_spec: `c1-integrate-kedro-dagster-for-scheduling-execution.md`
@@ -348,6 +432,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on the half that matters. `resolve_profile_config` is defined at `orchestration/definitions.py:371` and referenced in the module docstring at `:16`, but it is still attached to no job as `RunConfig`/`default_config` — a real run still does not consume it. Per-op timeout ENFORCEMENT likewise still depends on the daemon that DW-C1-1 has not brought up.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-D2-1 — the full 28-page Vizro inventory is CIS-two-spine deferred
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
@@ -384,6 +471,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     fixed — see `spec-20-4-the-cis-two-spine-specs-exist.md` frontmatter `deferred`, second item.
 
   status: closed
+
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 4/4 present; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas; behind-upstream / whodepends stay open under DW-D2-1)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
@@ -409,6 +499,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     that gap is DW-D2-1's CIS two-spine scope (Story 20.4/20.5), not this one.
 
   status: closed
+
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-D2-3 — DEV-AUTO visual verification of the rendered UI (headless container cannot)
 
@@ -467,6 +559,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/3 present (absent: tests/dashboard/test_dashboard_e2e.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-D3-1 — the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
@@ -476,6 +570,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No backend was configured and no live call was wired: `nl/query.py:28-29` still defines both deferral statuses — `STATUS_UNCONFIGURED = "backend-not-configured"` and `STATUS_DEFERRED = "backend-configured-live-call-deferred"` — and `:91-93` still documents both paths returning receipts rather than charts. The dryrun gate was not weakened.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/nl/test_query_vizro_ai_dryrun.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-D3-2 — the dashboard NL query field (the D2 Vizro dashboard's NL entry point) — DEFERRED (carries DW-D3-1 + the CIS spine)
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
@@ -485,6 +582,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — and doubly blocked, as recorded. Its two preconditions are both still open on their own entries: the live Vizro-AI backend (DW-D3-1, still returning deferral receipts) and the CIS spine gating dashboard page design (DW-D2-1, specs never produced). The dashboard still ships without an NL field.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-E1-1 — the live cross-process A2A wire (a running fasta2a server / broker) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story E1, FR-11)
@@ -494,6 +594,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No cross-process A2A wire exists — no fasta2a server, no broker, no bound socket. The in-process `hand_off` → `AuthoringInbox` transport remains the shipped path, which is the honest offline half the entry describes. Because the envelope is already a real a2a-sdk `Message`, this stays a substrate swap rather than a schema change.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/a2a_surface/test_a2a_payloads.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-E2-1 — the live OTel collector + OpenLineage backend wiring (env-driven) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story E2, FR-12)
@@ -503,6 +606,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No live collector or backend was wired. The emitters remain injectable with no-op defaults, and no env-driven `TracerProvider`/OpenLineage client construction was added to `settings.py` or a factory. The offline fixture gate is intact and no fake endpoint was introduced.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/observability/test_observability_fixtures.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-E2-2 — Dagster-plane observability inheritance verification + span-key footgun (bring-up)
 
 - source_spec: `e2-integrate-openlineage-opentelemetry.md`
@@ -512,6 +618,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — and residual (1) of DW-AD23-2 shows why it cannot yet be checked. `observability.py:308-311` still declares `run_result` on `AtlasObservabilityHooks.after_pipeline_run`, which is exactly the signature kedro-dagster omits — so the Dagster after-op still raises there, and the Dagster-plane nesting assertion this entry owes remains unmakeable until both that and the DW-C1-1 daemon bring-up land. The `_nodes`-keyed-by-`node.name` footgun is likewise still unreachable, hence untouched.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-E2-3 — AtlasNodeMetricsRunFacet provenance stamp (cosmetic)
 
 - source_spec: `e2-integrate-openlineage-opentelemetry.md`
@@ -521,6 +630,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — measured: zero `producer=` arguments appear in the `AtlasNodeMetricsRunFacet` construction in `observability.py`, so its `_producer` still defaults to the OpenLineage library URI rather than the project PRODUCER. Cosmetic, as recorded — the metric values are unaffected.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-F1-1 — the cold-start / warm-incremental benchmark (ATTENDED, SM-3) — DEFERRED
 
 - source_spec: `f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim.md`
@@ -542,6 +654,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The benchmark never ran, and its own precondition is unmet: B4 retirement (DW-B4-2) is still blocked on an unsigned `human_sign_off` (`parity/evidence.py:51`). The always-on offline half — the DuckDB-singularity grep gate — is intact.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/singularity); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-F2-1 — the Great Expectations boundary adapter (version-capped at cf 1.18.2) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story F2, FR-10, AD-9)
@@ -551,6 +666,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the cap is still correctly held. `validation.py:220-226` still documents that 'The in-env GX is 1.19.0' against the AD-9 1.18.2 cap and that 'this stub is replaced by a 1.18.2-feature-only adapter' only in a pinned environment. No `great_expectations` import was added to the shipped path — the ban held.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/validation/test_validation_hook.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-F2-2 — wire a real A2A alert_sink into the shipped validation hook (gated on F4's first contract)
 
 - source_spec: `f2-data-validation-hook-inline-pandera-contracts.md`
@@ -572,6 +690,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and still MOOT for exactly the stated reason. `settings.py:57` still constructs `DataValidationHooks()` with NO `alert_sink`, and `validation.py:74` still declares `DEFAULT_CONTRACTS: dict[str, pa.DataFrameSchema] = {}` — empty, so no violation can fire and no alert can be dropped yet. The gating condition the entry names (F4 registering the first real contract) has not occurred.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-F3-1 — a real learned embedding model (upgrade from the deterministic default)
 
 - source_spec: `f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`
@@ -591,6 +712,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `rag/embedding.py` still ships `HashingEmbedder` as the default (described at `:57` as 'Pure + deterministic'), and `rag/__init__.py:4-5` still records that 'The default embedder is deterministic + offline'. No learned model was wired; the `Embedder` Protocol seam is ready and unused.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-F3-2 — live `vss` extension provisioning (the one-time network INSTALL)
 
 - source_spec: `f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`
@@ -608,6 +732,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the split is intact: `rag/store.py::load_vss_offline` still does an offline LOAD or raises `VssNotProvisionedError`, and `provision_vss` remains the only INSTALL, never called by the consumer path (`rag/__init__.py:5` documents `vss` being LOADed from the local cache). The clean-environment provisioning step remains attended.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-G1-1 — full Vizro-AI dashboard RENDERED inside Pyodide (the heavy read-surface half)
 
 - source_spec: `g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`
@@ -630,6 +757,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `wasm/index.html:70` still fetches a single flat Parquet (`fetch("./core_feedstock_health.parquet")`) and renders the query result, with no Pyodide runtime and no Vizro component tree anywhere in the artifact. The query surface the render would sit on is proven; the render itself was never attempted.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/wasm/test_wasm_smoke.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-G1-2 — heavy WASM build assets are gitignored; CI must run `wasm-build` before `wasm-smoke`
 
 - source_spec: `g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`
@@ -651,6 +781,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and currently live: `wasm/build/` does NOT exist in this checkout (`ls wasm/build` → No such file or directory), so `wasm-smoke` would take exactly the documented not-built skip path right now. No automatic `wasm-build` CI pre-step was wired, so the two-step build→verify flow is still the only way to run the gate.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/wasm/test_wasm_smoke.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-G2-1 — the LIVE GitHub Pages publish is the ATTENDED boundary event (not automated)
 
 - source_spec: `g2-emit-parquet-artifacts-to-a-static-web-host.md`
@@ -674,6 +807,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No publish code exists to have run: grepping `publish/emitter.py` for `gh-pages`, `github.io` or `push` returns nothing, so the emitter is still host-agnostic by construction and no credential/host/push path was added. The live publish remains one of the five attended boundary events.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: src/pyforge/atlas/publish/emitter.py, tests/publish/test_emit_range.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-G2-2 — migrate the G1 wasm/ runtime to consume the emitter's manifest (single-owner completion)
 
 - source_spec: `g2-emit-parquet-artifacts-to-a-static-web-host.md`
@@ -694,6 +830,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the two layouts are still independent. `wasm/index.html:70` still hardcodes `fetch("./core_feedstock_health.parquet")` and contains no reference to `manifest.json` or `chunk_url`, so G1 has not migrated onto the emitter's single-owner published layout. As recorded, this is best done with the DW-G2-1 bring-up.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-G3 — the live Dagster sensor DAEMON bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story G3, § 5.9, FR-6)
@@ -726,6 +865,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The sensors still ship STOPPED — `orchestration/definitions.py:301` `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, applied at `:492` and `:583`, with `:576` stating 'Ships STOPPED' outright. No daemon was brought up; the definitions and their eval logic remain verified offline only.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: tests/catalog/test_no_inline_io.py, tests/orchestration/test_definitions_dryrun.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-H1 — the MinIO/PostgreSQL SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H1, § 7.4, FR-22(a))
@@ -754,6 +896,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. Verified from the code's own statement of fact: `factory/storage.py:6` still reads '**Only the MinIO *Python SDK* is in-env today; the MinIO *server* is NOT provisioned**'. No server provisioning or bring-up has occurred. Also carried as PRD § 6.4 DC-3.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/factory/test_personas.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-H2 — the live `agno`-Agent / LLM synthesis + F3-vss production retriever bring-up (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H2, § 7.3, FR-22(b))
@@ -780,6 +925,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No agno/LLM synthesis bring-up happened — `factory/__init__.py:11` still describes the agno crews as future work ('adds the agno crews'), and the F3 `vss` production retriever depends on DW-F3-2's attended provisioning, still open. Carried as PRD § 6.4 DC-5/DC-6.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/factory/test_crews.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-H3 — the live La Suite/Wagtail SERVER + credential + httpx opener bring-up (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H3, § 7.1, FR-22(c))
@@ -829,6 +977,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     still not executed: `status` stays `open`; DW-H3 closes only when the real bring-up runs and
     passes.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/5 present (absent: tests/catalog/test_no_inline_io.py, tests/factory/test_lasuite.py, tests/factory/test_lasuite_live_rehearsal.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-H4 — the live factory-crew daemon bring-up (sensor RUNNING + weekly lint + live wiki store) (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H4, § 7.2, FR-22(d)/FR-6)
@@ -858,6 +1008,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The factory-crew daemon was never brought up. Its sensor half ships STOPPED with the rest (`definitions.py:301`/`:583`), and its two data dependencies — the live wiki store (DW-H1) and the agno synthesis (DW-H2) — are both still open. Carried as PRD § 6.4 DC-1.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/orchestration/test_definitions_dryrun.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-I4-1 — 10.5 finalized on a spent review budget, not on convergence (LOW) — DEFERRED
 
 - source_spec: `spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md` (Epic 10 / Story I4, AUD-ATLAS-043/044)
@@ -899,6 +1052,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     context-free) stands as written and is not re-litigated here.
 
 ---
+
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/5 present (absent: src/pyforge/atlas/provenance.py, tests/dashboard/test_dashboard_dryrun.py, tests/mcp/test_kedro_mcp_absent.py…); ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-AD23-1 — Run admission was asserted but never implemented (HIGH) — CLOSED
 
@@ -944,6 +1099,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     that the ordering comes from the hook markers, NOT from tuple position.
 
 ---
+
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: src/pyforge/atlas/admission.py, tests/test_admission.py); ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-AD23-2 — Run-admission release residuals: Dagster-plane process-locality, `in_process` coupling, and the hook-ordering strand window (MEDIUM) — DEFERRED
 
@@ -1011,6 +1168,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — all four residuals verified individually, and residual (1) is live today. (1) `observability.py:308-311` still declares `run_result: dict[str, Any]` on `AtlasObservabilityHooks.after_pipeline_run`, the exact parameter kedro-dagster omits, so the Dagster after-op still raises `HookCallError` there. (2) `conf/base/dagster.yml:18-19` still declares the `in_process` executor, and `:8` carries the inline warning '`in_process` IS LOAD-BEARING FOR RUN ADMISSION (Story 10.6, AD-23; DW-AD23-2)' — the coupling is documented at the point of change, as the resolution asked. (3) and (4) follow from the same unchanged structure. The load-bearing mitigation is intact: `admission.py` carries 9 `tryfirst` markers, which the entry records as what buys the ordering — not tuple position.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/observability/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-I5-1 — 10.6 also finalized on a spent review budget (LOW) — DEFERRED
 
 - source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Epic 10 / Story I5, AUD-ATLAS-046 / DW-AD23-1)
@@ -1051,6 +1210,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     `DW-FU-6-3`/`DW-FU-5-1`. The placement is also the one the review demanded (a repo-wide
     home, not a project layer): marshal's station layers restate it ZERO times. Part (a) stands
     as recorded — closed by mutation testing, with the not-context-free caveat on record.
+
+  verified: 2026-09-02 — review — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to review; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-AD23-3 — the lock store's DEFAULT location is the hazardous one (MEDIUM) — CLOSED
 
@@ -1659,6 +1820,7 @@ evidence rather than specs. Listed here with paths; read them in place.
 
 Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` contextual skill) under the implementation-artifacts dir.
 
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 9/11 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml, tests/test_admission.py); ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-FU-13-3 — 13.3 finalized on a spent follow-up-review budget (LOW) — DEFERRED
 
@@ -1684,6 +1846,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-14-2-1: get_widget() and get_view() both raise a bare, unwrapped KeyError with a confusing repr-quoted message on lookup failure
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md`
   summary: `views/widgets.py::get_widget` raises a bare `KeyError(f"unknown widget type {name!r}; known widget types: ...")`, which `KeyError.__str__` re-wraps in an extra layer of quotes on display, and which propagates uncaught with no domain-specific exception type even though the same module tree already has one precedent for that (`cli_bridge.py`'s `CfAtlasDbUnavailableError`).
@@ -1692,6 +1856,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-14-3-1: tests/dashboard/test_dashboard_e2e.py's Playwright navigation races the Dash dev server's startup, reliably failing with net::ERR_CONNECTION_REFUSED
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
@@ -1702,6 +1868,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md, tests/dashboard/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-14-3-2: Bokeh 3.9.2's `patch_curdoc()` context manager has no exception safety — a callback that raises corrupts `curdoc()` for the rest of the pytest process
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
   summary: `bokeh/io/doc.py::patch_curdoc` pushes a `weakref.ref(doc)` onto the module-global `_PATCHED_CURDOCS` list, `yield`s with no `try/finally`, then pops — so any callback invoked while curdoc is patched that raises leaves the stale weakref on the stack permanently; once that `Document` is later garbage-collected, every subsequent `curdoc()` call in the SAME process raises `RuntimeError: Patched curdoc has been previously destroyed`, corrupting unrelated later tests.
@@ -1710,6 +1878,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md, tests/views/test_render.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-A1-6: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lo
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
@@ -1722,6 +1892,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-A1-7: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas 
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
   summary: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas loop story's worktree (first: A3) would reproduce the documented missing-artifacts-dir crash until the seed adds `_bmad-output/projects/pyforge-atlas/implementation-artifacts`.
@@ -1732,6 +1904,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-A1-8: `[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyf
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
@@ -1744,6 +1918,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-A1-9: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
   summary: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `bootstrap_project()` injects the source tree; if a frozen run ever serves a stale built package for a changed source tree, the gate could go green on old code. Verify pixi-build path-dep rebuild semantics under `--frozen` when the lean env first materializes (A3).
@@ -1754,6 +1930,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/test_import_smoke.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-A2-1: Dynamic per-host JFrog credential attachment does NOT exist — credential references are static per-entry catalog config,
 - source_spec: `a2-define-the-data-catalog-for-all-sources-outputs.md` (review-pass P4, 2026-07-17)
@@ -1766,6 +1944,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/catalog/test_credential_scoping.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-A3-1: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a fut
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P10, 2026-07-17)
   summary: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a future producer ever wrote ms-epoch timestamps, `stale_mask` (`fetched_at < now - ttl_seconds`, both in seconds) would silently treat every ms row as far-future-fresh. Deferred as SPECULATIVE — no ms producer exists today; the B1 node contract owns the `fetched_at` unit (Spine timestamp convention = epoch SECONDS). Revisit iff a node is authored that could emit ms.
@@ -1776,6 +1956,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-A3-2: `IncrementalParquetDataset` reaches into the composed dataset's PRIVATE internals — `self._inner._describe()` and `self
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P11, 2026-07-17)
@@ -1788,6 +1970,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-A3-3: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `ag
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass, TTL-parity, 2026-07-17)
   summary: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `age >= ttl` (stale at EXACTLY ttl); the new `stale_mask` uses `fetched_at < now - ttl_seconds`, i.e. a row stamped exactly `now - ttl` is FRESH (the current unit test pins boundary=fresh). Whether the off-by-one-tick difference matters is a B1 verification item — B1 (first phase-port that writes these datasets) should confirm the intended edge against legacy parity evidence and adjust the comparison (`<=` vs `<`) if parity requires it.
@@ -1798,6 +1982,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-4-1: A future pandera `Column(str)` contract registered in `DEFAULT_CONTRACTS` (`validation.py`) will spuriously halt on a le
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
@@ -1810,6 +1996,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-4-2: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
   summary: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package — any OTHER package sharing the same Python process (e.g. a future shared Dagster/MCP deployment importing multiple `pyforge-*` packages together) inherits the pin the moment `pyforge.atlas` is imported first, with no opt-out; conversely, if some OTHER package's own DataFrame construction runs before `pyforge.atlas` is ever imported in that process, it is NOT covered by the pin.
@@ -1820,6 +2008,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-4-3: `ci_red`'s business logic is duplicated as raw SQL outside the declared-once `semantic/metrics.py` definition — `wasm/in
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
@@ -1832,6 +2022,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md, tests/publish/test_emit_range.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-5-1: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a 
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a lazily-registered `data_manager` loader re-invoked per render — in a long-running server, the Card's stated provenance can drift out of sync with the (independently, live-reloaded) grid data it describes.
@@ -1842,6 +2034,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-5-2: `provenance.py`'s `resolve_for_catalog_dataset` reaches into kedro's underscore-prefixed `_describe()` (`"filepath"`, `"
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1854,6 +2048,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-5-3: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which fo
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which for a Kedro-versioned dataset (`versioned: true`) is the un-versioned base path, not the actually-loaded version's file — the reported mtime could describe the wrong file. No current `catalog.yml` entry sets `versioned: true` on a `pandas.ParquetDataset`, so this is latent.
@@ -1864,6 +2060,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-5-4: The dashboard's `_provenance_line` never renders `ProvenanceInfo.build_stamp_newest`, so a future dashboard page wired t
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1876,6 +2074,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-5-5: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSON
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSONDataset` + 1 `yaml.YAMLDataset`) expose a `filepath` + `protocol` pair in `_describe()` that is byte-identical in shape to what the existing `ParquetDataset` branch already consumes, so genuine file-mtime provenance is available for them and is reported as `unavailable` instead.
@@ -1886,6 +2086,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-5-6: Three catalog entries (`AnacondaDownloadsDataset`, `GitHubRequestDataset`, `PyPIJsonRequestDataset`) perform a real live
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1898,6 +2100,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md, src/pyforge/atlas/datasets/request_datasets.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-5-7: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mech
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mechanisms — the dashboard via `dashboard/data.py`'s hand-maintained relpath constants anchored on `default_data_root()` (which walks up to `.git`), the MCP surface via the catalog's bare relative `filepath:` (resolved against the process CWD) — so the two surfaces can stamp different files, or one can report a real mtime while the other reports "backing file not found".
@@ -1908,6 +2112,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-5-8: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-mag
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1920,6 +2126,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-6-1: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `c
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
   summary: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `cls.__new__`, so a future `__init__` field silently vanishes from the Dagster-plane clone and surfaces as an `AttributeError` at run time rather than at build time.
@@ -1930,6 +2138,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-6-2: Run admission is writer-writer exclusion only, and the concurrency it deliberately PERMITS is reader-writer unsafe: `pan
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
@@ -1942,6 +2152,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-6-3: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_da
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
   summary: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_dagster()` build time" — and the installed kedro-dagster does not. The lazy-`TracerProvider` design at `observability.py:188-195` exists specifically to make the instance deepcopy-able for that build, so its stated justification is unfounded (the design is harmless, but it is carried as a measured constraint when it is not one).
@@ -1952,6 +2164,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-1-1: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-sco
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
@@ -1964,6 +2178,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-12-1-2: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer director
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
   summary: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer directory table) have no tracked follow-up forcing a human to actually decide whether to file them against `kedro-org/kedro-skills` — they exist only as prose inside the report and could go unnoticed once nobody is actively reading it.
@@ -1974,6 +2190,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-1-3: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
@@ -1986,6 +2204,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-12-2-1: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, 
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, matching the upstream epic-level Spec's literal wording) won't catch a real DAG-shape change made via `pipeline_registry.py`, `settings.py`, or `conf/base/catalog.yml`/`parameters.yml` — none of which live under `pipelines/`, so a change to any of them lands on `main` without triggering a republish.
@@ -1996,6 +2216,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/3 present (absent: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-2: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is eve
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -2008,6 +2230,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-12-2-3: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quic
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quick succession, the second (queued, `cancel-in-progress: false`) run's `actions/checkout` pins the SHA from its own (now-stale) trigger, so its later `git push` could be rejected as non-fast-forward against a `main` the first run already advanced.
@@ -2018,6 +2242,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-4: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underl
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -2030,6 +2256,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-12-2-5: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare 
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare `except UnicodeDecodeError: continue`) in BOTH the strip pass and the verifying re-scan — a future kedro-viz version that embeds the checkout-anchored path inside a non-UTF-8 file (e.g. a binary source-map or compiled asset) would be invisible to this script's "zero anchor occurrences remain" guarantee.
@@ -2040,6 +2268,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-12-2-6: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a f
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -2052,6 +2282,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-12-2-7: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories, even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
@@ -2062,6 +2294,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-1: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at 
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -2074,6 +2308,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-1-2: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot — no historical retention. If Story 13.2's tier classification ever wants a multi-day trend signal (streak length, day-over-day delta), that signal has already been discarded at the raw layer by CAP-1 as built.
@@ -2084,6 +2320,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-3: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's s
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -2096,6 +2334,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-1-4: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any su
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any such column to `float64` the moment one `None` appears in a batch, so the persisted Parquet schema for these count columns can flip between `int64` and `float64` day to day depending on whether every row happened to parse cleanly that run — a downstream consumer (Story 13.2's classifier) reading this column across multiple days could hit an unexpected dtype.
@@ -2106,6 +2346,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-5: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a r
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -2118,6 +2360,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-1-6: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerabi
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerability/nodes.py::_coerce_cadence`, both accept a config-authored `0` or negative cadence without validation — a `ttls.trending_candidates: 0` typo in `parameters.yml` would make every `save()` call treat a refresh as always-due, defeating the daily-cadence contract, silently.
@@ -2128,6 +2372,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-7: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -2140,6 +2386,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-1-8: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k s
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k stars" (if GitHub's markup ever renders one on the trending page, as it does elsewhere in its UI) would parse as `1` instead of `1200`, silently truncating rather than failing.
@@ -2150,6 +2398,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-1-9: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -2162,6 +2412,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-2-1: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inli
 - source_spec: `spec-13-2-tier-classification.md`
   summary: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inlines the same normalize-and-lookup logic against a pre-built index for performance; a future refactor that naively swapped the inline logic for a per-row call to `_resolve_pypi_name` would silently reintroduce an O(rows × universe) index rebuild on every call, since `_resolve_pypi_name` rebuilds the full `pypi_universe` index from scratch each invocation.
@@ -2172,6 +2424,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-2: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_
 - source_spec: `spec-13-2-tier-classification.md`
@@ -2184,6 +2438,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-2-3: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — 
 - source_spec: `spec-13-2-tier-classification.md`
   summary: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — a NULL/unmapped `license_spdx`, and a valid OSI license expressed in a form the 24-entry exact-match allowlist cannot represent (PEP 639 expressions like `MIT OR Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, or OSI IDs outside the curated set such as `Python-2.0`, `Artistic-2.0`, `EUPL-1.2`). Genuinely OSI-licensed candidates are therefore dropped with a factually wrong reason and never escalated to a human.
@@ -2194,6 +2450,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-4: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides
 - source_spec: `spec-13-2-tier-classification.md`
@@ -2206,6 +2464,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-2-5: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages 
 - source_spec: `spec-13-2-tier-classification.md`
   summary: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages — exactly CAP-2's input population — so in production the tier-1/tier-2 branches will rarely fire and most resolved rows will degrade to `unclassified-needs-human`. Nothing records the unmatched names as an enrichment backlog, so the gap never closes on its own.
@@ -2216,6 +2476,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/pipelines/upstream_discovery/test_nodes.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-2-6: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` p
 - source_spec: `spec-13-2-tier-classification.md`
@@ -2229,6 +2491,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/datasets/test_upstream_discovery.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-3-1: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NO
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NOT guarded against a session-bootstrap-time failure (e.g. a missing/incomplete `conf/local/credentials.yml` — `KeyError` from `CatalogConfigResolver` eagerly resolving every catalog entry's credentials at bootstrap) — only the subsequent `load_with_provenance` call is guarded, against `DatasetError`. A bootstrap failure crashes uncaught: the CLI's broadened `except Exception` (added this same story, patch) turns it into a clean stderr message + exit 1 instead of a raw traceback, but the MCP tool still propagates it raw, and neither degrades to the documented `count: 0` "missing dataset" shape.
@@ -2239,6 +2503,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-2: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schem
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2252,6 +2518,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-3-3: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it 
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it only on the `row-fetched-at` code path and `trending_candidates_classified` is a plain `ParquetDataset` (which resolves to `file-mtime`) — so the AD-17 staleness envelope this surface advertises is half-populated by construction, not by circumstance.
@@ -2262,6 +2530,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-4: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassi
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2275,6 +2545,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-3-5: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) in
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) inherits kedro's rich logging handler, which sits on the ROOT logger and writes to STDOUT — the same channel FastMCP's default stdio transport uses for JSON-RPC, so a stdio-launched server would interleave kedro log lines into the protocol stream.
@@ -2285,6 +2557,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-3-6: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="re
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2297,6 +2571,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-4-1: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (
 - source_spec: `spec-13-4-fixed-source-audit-track.md`
   summary: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (a pure Rust/Go CLI, or a C++ library with no Python bindings) can never reach the Tier-2 outcome `tier-taxonomy.md`'s own definition allows for ("Rust/Go CLI, native/compiled" is listed as Tier-2-eligible with no PyPI-published precondition, unlike Tier-1's explicit "PyPI-published AND" requirement) — it permanently classifies as `no-pypi-artifact`/`unclassified-needs-human` instead.
@@ -2307,6 +2583,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-4-2: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted 
 - source_spec: `spec-13-4-fixed-source-audit-track.md`
@@ -2319,6 +2597,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-5-1: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failu
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md`
   summary: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failure classes — `__main__.py` (Story 13.3, untouched by this diff) maps EVERY failure (a bad filter, `BrokenPipeError`, any other exception) to exit 1 with no distinct "unexpected error" code and no explicit 130 for `KeyboardInterrupt`, while `handoff_main.py` (this story) introduces the NFR-6 0/1/2/130 scheme and specifically maps `BrokenPipeError` to 2 where `__main__.py` maps the identical condition to 1.
@@ -2329,6 +2609,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-13-5-2: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete 
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
@@ -2341,6 +2623,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-5-3: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.j
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
   summary: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.json` — two concurrent invocations for different `--spec` targets (plausible under this repo's own documented parallel-BMAD-agent pattern) can race, and the second writer's read (based on the pre-first-writer file) silently drops the first writer's just-stamped entry.
@@ -2351,6 +2635,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-10-5-9: Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance after the damping cap was spent
   origin: review-budget-followup
@@ -2363,6 +2649,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-10-6-4: Follow-up review still recommended for 10-6-make-run-admission-real-or-stop-claiming-it after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
@@ -2374,6 +2662,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-13-3-7: Follow-up review still recommended for 13-3-trending-candidates-operator-surface after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2384,6 +2674,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-17-1: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
 
@@ -2398,6 +2690,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-17-2: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2410,6 +2704,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-17-2-2: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
 
@@ -2424,6 +2720,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-17-2-3: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2436,6 +2734,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-17-2-4: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
 
@@ -2452,6 +2752,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-17-2-5: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2466,6 +2768,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed_by: Story 23.9 — function deleted and replaced; the staged-recipes gap logic now lives only in the export-driven `load_jfrog_by` + identity join path shared with `render()` (`scripts/openteams_identity_dashboards.py`).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-17-2-6: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
 
@@ -2482,6 +2786,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-17-2-7: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2494,6 +2800,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-CANOPY-2026-08-24 — Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` answered no (2026-08-25)
 
@@ -2527,6 +2835,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-08-25 — `lane1-serves-dw-h3` answered **no**; DW-H3 still open; canopy MCP/board/DuckDB
     obligations unchanged.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 3/3 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -2537,6 +2847,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   close_when: steward S-32.1 done; atlas S-18.1 done (Kedro hooks mapped to shared contract; no pipeline PR-gate); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-19-2: Host chrome does not load an HTMX runtime, so hx-* poll attributes are markup-only.
 
@@ -2549,6 +2861,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-1: Stack-up PlaneBoot.library is a lock token whose query methods raise raw duckdb closed-connection errors once the connection yields to the HTTP face; consider a typed yielded-state guard, and/or the server-on-:memory: + exec-API ATTACH-read-only design (with autoinstall/autoload_known_extensions=false) as a route to two concurrently usable faces.
 
 - source_spec: `planning-artifacts/specs/spec-20-1-one-boot-script-raises-both-plane-faces.md`
@@ -2559,6 +2873,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-2: epics.md still shows Story 20.2 (and 20.1) as "Status: backlog" even though the spec/ledger have progressed past that.
 
@@ -2571,6 +2887,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-2-2: The parity fixture only exercises INTEGER/VARCHAR/DOUBLE columns, not the data types most prone to silently diverging across the HTTP face's JSON wire format (NULL, DATE/TIMESTAMP, DECIMAL, BLOB).
 
 - source_spec: `planning-artifacts/specs/spec-20-2-face-parity-is-part-of-done.md`
@@ -2581,6 +2899,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-2-3: A TOCTOU race exists between `_port_is_free(DEFAULT_PORT)` and `boot_query_plane`'s actual bind of that same hard-coded port.
 
@@ -2593,6 +2913,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-3: dashboard/app.py's PAGE_INVENTORY notes, dashboard/__init__.py's module docstring, and a provenance comment at app.py:243 still describe the packages-backed pages as "renders empty until the composed store lands (DW-D2)", now stale relative to DW-D2-2's closure by this story.
 
 - source_spec: `planning-artifacts/specs/spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`
@@ -2603,6 +2925,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-3-2: README.md's "Status" line ("8 Kedro pipelines live") already omitted the pre-existing artifactory_downloads and query_plane_cache pipelines before this story; this story adds a 9th/10th pipeline (semantic_packages) without correcting that inventory.
 
@@ -2615,6 +2939,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-3-3: test_nodes.py's duplicate-key test (test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_population) only exercises duplicate keys in core_packages_enumerated/core_latest_status, not in core_downloads, core_feedstock_attribution, or vcs_archived_feedstocks.
 
 - source_spec: `planning-artifacts/specs/spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`
@@ -2625,6 +2951,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-4: epics.md still shows Story 20.4 (and 20.5) as "Status: backlog" even though the spec/ledger have progressed past that -- the same known epics.md-staleness pattern recorded by Stories 20.2/20.3's own specs.
 
@@ -2637,6 +2965,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-4-2: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow
 
 - source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
@@ -2647,6 +2977,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-4-3: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic
 
@@ -2659,6 +2991,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 3/3 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-4-4: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c
 
 - source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
@@ -2669,6 +3003,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-5: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor
 
@@ -2681,6 +3017,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-5-2: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new
 
 - source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
@@ -2691,6 +3029,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-5-3: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen
 
@@ -2703,6 +3043,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-5-4: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da
 
 - source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
@@ -2713,6 +3055,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-5-5: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM
 
@@ -2725,6 +3069,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-20-5-6: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g
 
 - source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
@@ -2735,6 +3081,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-20-5-7: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would
 
@@ -2747,6 +3095,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-15-1: Epic 15's spec-artifactory-download-intelligence SPEC.md declares a `surface:` glob that matches zero real tracked files, leaving the whole epic invisible to the repo's spec-surface drift/coverage gate.
 
 - source_spec: `spec-15-1-injectable-aql-adapter.md`
@@ -2754,6 +3104,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   evidence: SPEC.md's frontmatter declares `surface: - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/` — a bare directory path with a trailing slash and no `*`/`**`. `scripts/spec_surface_check.py::glob_to_re` (verified directly, lines 56-72) only expands wildcards on literal `*`/`**` characters; every other character is `re.escape`d and the whole pattern is anchored `^...$`. A pattern with no wildcard therefore compiles to a regex that can only match the exact literal string `".../pipelines/"` itself — never a real file path (`git ls-files` never lists a bare directory), so this spec's surface currently governs nothing, unlike every sibling spec checked for comparison (`spec-wagtail-corporate-brain`, `spec-pyforge-atlas`), which use either exact file paths or a trailing `/**`. Compounding this: even a corrected glob would need to account for this story's deliberate choice to place Story 15.1's code at `pyforge/atlas/artifactory/` (a new top-level sibling package, not under `pipelines/`) — a documented, load-bearing decision (see this story's own spec Boundaries & Constraints: placing it under `pipelines/<name>/` would have broken Kedro's `find_pipelines(raise_errors=True)`), so a future fix to this SPEC.md's surface should reflect the code's real location, not just widen the existing glob. Neither the glob-anchoring behavior in `spec_surface_check.py` nor SPEC.md's `surface:` field was touched by this story's diff — both pre-exist it. Flagged by the Blind Hunter reviewing this story's diff (2026-08-15); the `glob_to_re` behavior was independently confirmed by reading the script directly rather than trusting the reviewer's claim.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-15-3: `tests/catalog/conftest.py::PREFIX_TO_PIPELINE` attributes the `derived_purl_exports` catalog entry to the `derived_artifacts` pipeline by naming-prefix convention, but this story's `format_artifactory_purl_export` is that entry's first-ever real producer node, and it lives in the unrelated `artifactory_downloads` pipeline — nothing enforces that the prefix-derived "owning pipeline" bucket matches the real Kedro DAG wiring, so this can silently diverge further with each future story that adds another partition producer to the same shared catalog entry.
 
@@ -2763,6 +3115,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-16-1: `spec-wagtail-corporate-brain/SPEC.md`'s `open_questions` (frontmatter comment + prose) and the `deferred-work-ledger.md` DW-H3 entry both now cite `spec-16-1-instance-deploy-definition.md` by relative path, but that file exists only in this run's gitignored `implementation-artifacts/` (Tier-3 scratch) — until it is promoted into the tracked `planning-artifacts/specs/` subdir and committed per this repo's own "story specs are durable" convention, both citations resolve to a file that does not exist in any fresh clone or other worktree.
 
 - source_spec: `spec-16-1-instance-deploy-definition.md`
@@ -2770,6 +3124,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   evidence: Flagged independently by both the Blind Hunter and the Edge Case Hunter reviewing this story's diff (2026-08-15); the Edge Case Hunter additionally cited `docs/dashboard/generate.py`'s own docstring precedent and CLAUDE.md's documented incident history (13/31 pyforge-warden specs and 30/32 pyforge-atlas specs lost this exact way before the "story specs are durable" convention existed) as evidence this is a real, recurring failure mode, not a one-off. Not fixable within this story: CLAUDE.md's own convention states promotion happens "after the story merges" — i.e. after this bmad-loop run's branch lands, which is outside this workflow's scope. Whoever lands Story 16.1 must promote `spec-16-1-instance-deploy-definition.md` into `planning-artifacts/specs/spec-16-1-instance-deploy-definition.md` and commit it in the same PR (or immediately after merge) so these two cross-references resolve.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: docs/dashboard/generate.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-16-2: The injected opener seam cannot convey response headers, so header-dependent failures are undiagnosable by any caller.
 
@@ -2779,6 +3135,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-16-2-2: Two independent mock Wagtails now encode the same four-route contract with no shared source, so they can drift apart silently.
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md`
@@ -2786,6 +3144,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   evidence: `tests/factory/test_lasuite.py`'s in-memory `MockWagtail` and `tests/factory/test_lasuite_live_rehearsal.py`'s loopback stub both implement the same four routes (create/get/list/patch under Bearer auth), independently. They already match differently — `MockWagtail` routes on `request.url.split("/api/v1")[-1]`, the stub prefix-matches full paths — so a future route change in `factory/lasuite.py` can leave one green and the other red, or leave both green against subtly different contracts. This is real duplication rather than churn (the earlier review pass rejected only the narrower suggestion to restyle the stub's matching to look like the mock's, which changes no behavior). Story 16.2 could not consolidate them: its intent contract makes `tests/factory/test_lasuite.py` read-only at zero diff, so extracting a shared route table is structurally out of reach there and needs its own story.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md, tests/factory/test_lasuite.py, tests/factory/test_lasuite_live_rehearsal.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-2: pyforge-atlas-bootstrap pixi task fails on seed_gaps: seed_root resolves relative to the Kedro member dir (src/shared/packages/pyforge-atlas) instead of REPO_ROOT, so cwe_categories_seed.json is not found.
 
@@ -2817,6 +3177,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   status: closed
 
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-2-2: 11 of 13 new catalog entries (GitHub, GitLab, Codeberg, 8 registries) have their refresh- trigger nodes wired into the DAG correctly, but call their fetch methods with an empty identifier batch by design -- no real data flows until a conda_name -> upstream-identity mapping is wired in.
 
 - source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
@@ -2827,6 +3189,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-2-3: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
 
@@ -2839,6 +3203,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-2-4: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
 
 - source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
@@ -2849,6 +3215,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-2-5: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
 
@@ -2861,6 +3229,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-2-6: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
 
 - source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
@@ -2871,6 +3241,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-2-7: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
 
@@ -2883,6 +3255,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-2-8: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
 
 - source_spec: `planning-artifacts/specs/spec-21-2-remove-cf-atlas-db-seeds-from-production-datasets.md`
@@ -2893,6 +3267,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
 
@@ -2905,6 +3281,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-3-2: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
 
 - source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
@@ -2915,6 +3293,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3-3: --strict-fetch has no effect on the three --live-catalog-acquired sets (they bypass try_source entirely); --live-catalog-only is the intentional analog for this path, but the interaction is undocumented.
 
@@ -2927,6 +3307,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-3-4: load_live_catalog()'s except Exception blocks store only str(exc), no traceback -- a genuine bug (e.g. a future Kedro column rename) would look identical in the printed warning to an expected degrade (missing file / sub-floor count).
 
 - source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
@@ -2937,6 +3319,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3-5: --help/replay wording says "missing, unreadable, or below its scale floor" applies uniformly to "the three required datasets," but pypi_conda_mapping has no floor -- could mislead debugging of a --live-catalog-only failure on that dataset.
 
@@ -2949,6 +3333,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-3-6: --live-catalog's --help text names internal Python variables (cf_packages/pypi_index/parselmouth_pypi) rather than the user-facing concepts (conda-forge names / PyPI names / Parselmouth mapping) used elsewhere in the CLI's own output columns.
 
 - source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
@@ -2959,6 +3345,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3-7: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit
 
@@ -2971,6 +3359,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-3-8: load_live_catalog()'s scale-floor check counts distinct raw pre-normalization values (non_null.nunique()), while the set actually returned and consumed downstream is deduplicated post-norm_pkg() -- a column with many raw variants collapsing to the same normalized name could theoretically pass the floor with a materially smaller final set. Low real-world likelihood: conda-forge/PyPI catalog names are already close to normalized in the source Parquet.
 
 - source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
@@ -2981,6 +3371,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3-9: The `subdirs = [s.strip() for s in args.repodata_subdirs.split(",") ...]` line was relocated (not behaviorally changed) by this story's diff and appears unused elsewhere in the file -- pre-existing dead/unused code unrelated to this story's purpose, surfaced incidentally by touching nearby lines.
 
@@ -2993,6 +3385,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-3-10: Nothing validates or warns when --live-catalog is set without --cf-channeldata, even though replay.md documents --cf-channeldata as still required (it independently drives has_src/the 10k-tab-drop filter). A user following only --help, not the replay doc, gets no signal that --cf-channeldata's default (`/tmp/ext-src/cf-channeldata.json`, almost certainly absent) silently changes which 10k-tab rows are kept.
 
 - source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
@@ -3003,6 +3397,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-3-11: load_live_catalog()'s pd.read_parquet call has no timeout guard, unlike every HTTP-based acquisition path elsewhere in this file (which all take an explicit timeout argument) -- a read against a slow/unresponsive network-mounted PYFORGE_ATLAS_DATA_ROOT would hang indefinitely.
 
@@ -3015,6 +3411,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-4: An offline `kedro run --pipelines core,…` cannot complete with no network because `CondaChanneldataDataset.load()` (reused UNCHANGED per the contract) lets the composed APIDataset's transport error propagate — the pre-existing Tier-0 live contract that also governs `core_channeldata_raw`; Story 21.3's axis, not fixable here without touching a Tier-0 class the Never bullet fences off.
 
 - source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
@@ -3025,6 +3423,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-4-2: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
 
@@ -3037,6 +3437,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/pipelines/test_refresh_single_writer.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-4-3: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
 
 - source_spec: `planning-artifacts/specs/spec-21-4-tier-1-catalog-sources.md`
@@ -3047,6 +3449,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-4-4: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
 
@@ -3059,6 +3463,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-5: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
 
 - source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
@@ -3069,6 +3475,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-5-2: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc
 
@@ -3081,6 +3489,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-5-3: spec-21-5's own Verification section claims "kedro run --pipelines upstream_discovery,artifactory_downloads on a fresh data root" exits 0, but join_enterprise_conda_maintainers's new dependency on core_feedstock_attribution (produced by the separate `core` pipeline, not included in that --pipelines list) makes a genuinely fresh data root raise a DatasetError (file not found) before the node ever runs.
 
 - source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
@@ -3091,6 +3501,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-7: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
 
@@ -3103,6 +3515,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-7-2: read_identity_export_records() has no try/except around pd.read_parquet, so a corrupt or unreadable Parquet crashes uncaught instead of producing a hard, named error.
 
 - source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
@@ -3113,6 +3527,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-7-3: RANKING_MERGE_COLUMNS (this script) and the Atlas-side gist-export column list are two independently hand-maintained copies of the same GIST_SCHEMA contract, with no test enforcing they stay aligned.
 
@@ -3125,6 +3541,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-7-4: No test exercises the real, Atlas-pipeline-produced identity_export_parquet -- every test builds its own hand-authored, already-conforming fixture.
 
 - source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
@@ -3135,6 +3553,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-7-5: merge_ranking_columns merges ~12 secondary ranking/JFROG columns with a bare membership check and no warning if one is absent from the ranked tab.
 
@@ -3147,6 +3567,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-7-6: A Parquet column holding a list/array value crashes pd.isna() in read_identity_export_records with an ambiguous-truth-value ValueError.
 
 - source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
@@ -3157,6 +3579,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-7-7: Two ranked-tab rows normalizing to the same pep503 name silently discard the earlier row in merge_ranking_columns, with no warning (unlike the miss case).
 
@@ -3169,6 +3593,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-7-8: PYFORGE_ATLAS_DATA_ROOT="" (empty string) is falsy and silently resolves to the default path instead of being treated as an explicit-but-invalid override.
 
 - source_spec: `planning-artifacts/specs/spec-21-7-quartet-thin-out-and-gist-wrapper.md`
@@ -3179,6 +3605,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-8: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
 
@@ -3191,6 +3619,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-8-2: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
 
 - source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
@@ -3201,6 +3631,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: src/shared/packages/pyforge-atlas/data/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-8-3: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
 
@@ -3213,6 +3645,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-8-4: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
 
 - source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
@@ -3223,6 +3657,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-8-5: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
 
@@ -3235,6 +3671,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-8-6: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
 
 - source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
@@ -3245,6 +3683,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-8-7: `deferred-work-ledger.md`'s own "Why this file exists"/Provenance narrative prose (near the top, "All 52 real deferrals...") is now several generations stale after this story's ledger-wide catch-up run (`## DW-` heading count unchanged at 60, but `### DW-` sub-entry count jumped from 104 to 133 in one pass) -- the frontmatter `entries:` line was corrected (review pass 1 patch) but the prose describing a much smaller, "52 real deferrals" ledger was not reconciled to the current size.
 
@@ -3257,6 +3697,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-8-8: No GitHub Actions workflow runs `kedro-catalog-check` or `kedro-test` for `pyforge-atlas` on PRs, so this story's own `seed_root` regression fix (DW-FU-21-2) has no CI safety net -- a future PR that reintroduces the bug would show fully green CI, since nothing in `.github/workflows/` touches the affected code path.
 
 - source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
@@ -3267,6 +3709,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/2 present (absent: .github/workflows/pyforge-atlas.yml); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-6: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
 
@@ -3279,6 +3723,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-6-2: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
 
 - source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
@@ -3289,6 +3735,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-21-6-3: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
 
@@ -3301,6 +3749,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-21-6-4: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
 
 - source_spec: `planning-artifacts/specs/spec-21-6-upstream-discovery-identity-join-and-export-parquet.md`
@@ -3312,6 +3762,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-23-5: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
 
 - source_spec: `planning-artifacts/specs/spec-23-5-identity-complete-export-parquet.md`
@@ -3322,3 +3774,6 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-09-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
