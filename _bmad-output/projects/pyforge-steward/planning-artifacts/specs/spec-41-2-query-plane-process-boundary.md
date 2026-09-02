@@ -341,11 +341,20 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 - addressed_findings:
   - none
 
+### 2026-09-02 — Review pass 27 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 59
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Story 41.2 dispatched via bmad-build-auto (`BMAD_ACTIVE_PROJECT=pyforge-steward`, physical spec path). Review pass 26 confirmed prior implementation on branch `dispatch/pyforge-steward/41.2` at HEAD `ba316373457273a96bafcb9746c3821208d61245` — no new patches. Query-plane process boundary (BS-5 / S-3) enforced via estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
+Summary: Story 41.2 dispatched via bmad-build-auto (`BMAD_ACTIVE_PROJECT=pyforge-steward`, physical spec path). Review pass 27 confirmed prior implementation on branch `dispatch/pyforge-steward/41.2` at HEAD `9ac32bdbee7c3faa98b58d305fd12648c0290ab7` — no new patches. Query-plane process boundary (BS-5 / S-3) enforced via estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
 
 Files changed (since baseline):
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
@@ -357,7 +366,7 @@ Files changed (since baseline):
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md` — duckdb row
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings (pass 26): 0 patches, 0 new deferrals, 57 rejected (duplicates of frontmatter `deferred` or prior passes: resilience-invariants doc drift, ibis/alias/from-import AST gaps, platform-ci helm skip, kedro-test/pyforge-scribe-test CI wiring, vacuous plane PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, connect_reader seam, subPath/directory mount bypass, open_graph_store write-default, positive writer-mount fixture, estate scan scope, _writer_modules_in_atlas heuristic, DUCKDB_WRITER_MODULE path vs module binding, non-literal read_only variable, missing-web KeyError, dual 25.2/41.2 gates, query_plane_boot duckdb-server). Intent-alignment: diff implements enforcement-first R2+R3+R5; runtime Mode C Parquet delivery (R1) out of scope per Boundaries. Follow-up review: false (0 patches; score 0).
+Review findings (pass 27): 0 patches, 0 new deferrals, 59 rejected (duplicates of frontmatter `deferred` or prior passes: resilience-invariants doc drift, ibis/alias/from-import AST gaps, platform-ci helm skip, kedro-test vs pyforge-scribe-test connect_writer monkeypatch wiring, vacuous plane PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, subPath/directory mount bypass, open_graph_store write-default, positive writer-mount fixture, estate scan scope/SyntaxError, missing-web KeyError, dual 25.2/41.2 gates, verification oracle completeness, shipped_ref/epic-41 ledger meta). Intent-alignment: diff implements enforcement-first R2+R3+R5; runtime Mode C Parquet delivery (R1) out of scope per Boundaries. Follow-up review: false (0 patches; score 0).
 
 Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 4 passed; `pixi run -e pyforge-atlas kedro-test -k scribe_plane` → 2 passed; `pixi run -e platform-dev -- python -m pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
