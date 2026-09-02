@@ -133,6 +133,7 @@ development_status:
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: backlog
   28-22-verify-blast-radius-pre-existing-gate: backlog
   28-23-stranded-work-signal-after-terminal-verify-fail: backlog
+  28-24-supervisor-finalizes-when-harness-cannot-run-shell: backlog
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
   28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
   28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done

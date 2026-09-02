@@ -4440,3 +4440,15 @@ So that fleet-picture STUCK is reserved for a live refuse and stranded work is v
 **And** an unpushed `dispatch/<slug>/<story>` or open unmerged PR is named in ATTENTION
 **And** the overlay half (`20e88e8b0f`) stays locked by test
 **Status:** backlog
+
+### Story 28.24: Supervisor finalizes when the harness cannot run shell
+
+As a marshal operator,
+I want the dispatch supervisor to commit, push, and verify when the Cursor session cannot run shell,
+So that a “done + dirty leftover” story does not wait for chat (28.18 / PR #1000).
+
+**Type:** feature • **Effort:** S • **Deps:** 28.21 • **FR/AD:** spec-marshal-drain-self-resolution CAP-7
+**Given** a dispatch worktree with a commitable dirty tree and a session that reported done or “shell unavailable” **When** the supervisor tick runs **Then** marshal commits the leftover, pushes `origin/dispatch/<slug>/<story>`, and runs `verify_commands`
+**And** drain does not redispatch the same story solely because of `MRS-DISP-036` without that finalize attempt
+**And** if supervisor shell also fails, the station is `awaiting-operator` naming the worktree path
+**Status:** backlog

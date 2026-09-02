@@ -101,6 +101,17 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
   *Success:* Dead+failed → not STUCK; unpushed 28.13-shaped ref → ATTENTION.
   *Story:* 28.23
 
+- **CAP-7 — Supervisor finalizes when the harness cannot run shell.**
+  A session that claims done (or leaves a commitable dirty worktree) but
+  cannot invoke `git` / `pixi` is not a story refuse. The dispatch
+  supervisor commits the leftover, pushes (CAP-4 / 28.21), and runs
+  `verify_commands`. Redispatch over `MRS-DISP-036` dirt without that
+  attempt is forbidden. If supervisor shell fails, `awaiting-operator`
+  names the worktree — not idle, not another Cursor session.
+  *Success:* Replay 28.18 pass-41 dirty tree + “shell unavailable” →
+  commit + `origin/dispatch/…` without chat; #1000-shaped land.
+  *Story:* 28.24
+
 ## Constraints
 
 - AD-49 / `MRS-GATE-007` hard scope unchanged.
@@ -125,11 +136,13 @@ Parent Dream addendum F. Composes FR-193 + CAP-4 land + 28.13 / 28.17.
 | CAP-4 | 28.21 | `28-21-push-the-dispatch-branch-before-verify-can-strand-it` |
 | CAP-5 | 28.22 | `28-22-verify-blast-radius-pre-existing-gate` |
 | CAP-6 | 28.23 | `28-23-stranded-work-signal-after-terminal-verify-fail` |
+| CAP-7 | 28.24 | `28-24-supervisor-finalizes-when-harness-cannot-run-shell` |
 
 ## Success signal
 
 A `drain_to_zero` hitting the 2026-09-01 refuse set reaches
 ledger-complete **without** a chat session issuing bare dispatch,
-`gh pr merge`, or cherry-pick. Escalations are named
-`awaiting-operator` with a preserve/ref — never idle-with-backlog,
-never STUCK-on-dead-tail.
+`gh pr merge`, cherry-pick, or a chat commit after “shell unavailable.”
+Escalations are named `awaiting-operator` with a preserve/ref — never
+idle-with-backlog, never STUCK-on-dead-tail, never dirt-redispatch
+without a supervisor finalize attempt.

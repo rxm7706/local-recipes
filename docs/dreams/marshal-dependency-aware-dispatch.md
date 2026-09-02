@@ -253,8 +253,9 @@ recovery was a chat session.
 | 28.13 done in worktree, no remote | Verify refuse skipped land; branch never pushed | Cherry-pick |
 | `MRS-GATE-001` pandas collection | Repo-global gate; 28.17 would re-hit the same red | `importorskip` |
 | fleet-picture **STUCK** after `failed` | Overlay treated terminal fail as live `verifying` | Status patch `20e88e8b0f` |
+| 28.18 session “shell unavailable” | Agent claimed done; `pixi`/`git` rejected in-session; dirty leftover; no push | Chat commit + `gh pr merge` #1000 |
 
-**F. Drain self-resolution (Stories 28.18–28.23).** Every named refuse has a
+**F. Drain self-resolution (Stories 28.18–28.24).** Every named refuse has a
 recovery the **fleet tick / CAP-4 land / supervisor** runs — not a Cursor
 habit. Locked v1 (open questions closed for implementation):
 
@@ -271,6 +272,11 @@ habit. Locked v1 (open questions closed for implementation):
   is `pre-existing-gate` (WARN), not `MRS-GATE-001` story-refuse.
 - **STUCK** only while refuse is live; dead tail + `failed` is idle. Stranded
   work is an **unpushed branch or open PR**, named in ATTENTION.
+- **Harness finalization:** if the session reports done (or leaves a commitable
+  dirty tree) but cannot run shell (`pixi` / `git commit` / `git push`), the
+  **supervisor** retries those steps. It does not redispatch over dirt forever
+  (`MRS-DISP-036`). If supervisor shell also fails, escalate `awaiting-operator`
+  with the worktree path — never wait for chat.
 
 Spec: `spec-marshal-drain-self-resolution/SPEC.md`. Dream file
 `marshal-drain-self-resolution.md` is an archive pointer only.

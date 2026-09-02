@@ -14,7 +14,7 @@
 #   22.6 needs 22.5 | 21.9/21.10 need 21.8
 # Optional stories (22.2-22.6, 21.9, 21.10) sit last; cut them with a skip_policies entry
 # if the operator decides to scope them out -- that is a scope decision, not made here.
-# pyforge-marshal (2026-09-01, addendum F): drain self-resolution 28.18–28.23.
+# pyforge-marshal (2026-09-01, addendum F): drain self-resolution 28.18–28.24.
 # See change-history/sprint-change-proposal-2026-09-01-drain-self-resolution.md.
 order_overrides:
   pyforge-marshal:
@@ -24,6 +24,7 @@ order_overrides:
     - 28-20-cap-4-land-heals-mechanical-and-dirty-prs
     - 28-22-verify-blast-radius-pre-existing-gate
     - 28-23-stranded-work-signal-after-terminal-verify-fail
+    - 28-24-supervisor-finalizes-when-harness-cannot-run-shell
   # pyforge-scribe: complete (18/18). Re-add only if new backlog appears.
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss
