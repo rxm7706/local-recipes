@@ -1532,6 +1532,11 @@ def run_status(
             matched = unpushed_by_ref.get(facts.branch)
             if matched is not None:
                 facts = replace(facts, unpushed_work=matched)
+        stranded = status_core.derive_dispatch_stranded_work(
+            facts, unpushed_by_ref=unpushed_by_ref
+        )
+        if stranded is not None:
+            facts = replace(facts, dispatch_stranded_work=stranded)
 
         # Story 4.14 (FR-176): the failed-story patch safety net -- a
         # session-timeout-killed story's preserved diff, glob'd off this

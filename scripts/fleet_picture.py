@@ -93,6 +93,112 @@ def dispatch_active(live_row: dict) -> bool:
     return live_row.get("state") == "running" and bool(live_row.get("story"))
 
 
+def dispatch_terminal_dead_tail(live_row: dict) -> bool:
+    """True when dispatch ended in terminal failure with no live overlay phase."""
+    story = live_row.get("story") or live_row.get("current_story")
+    if not story:
+        return False
+    if live_row.get("dispatch_completion_verdict") not in (
+        "failed",
+        "stopped_externally",
+    ):
+        return False
+    return live_row.get("dispatch_phase") is None
+
+
+def _station_project_slug(bare_slug: str) -> str:
+    return bare_slug if bare_slug.startswith("pyforge-") else f"pyforge-{bare_slug}"
+
+
+def _dispatch_branch_candidates(bare_slug: str, story_key: str) -> tuple[str, ...]:
+    """Expected dispatch branch names for ATTENTION matching (Story 28.23)."""
+    from pyforge.marshal.core.dispatch import (
+        dispatch_worktree_branch,
+        legacy_dispatch_worktree_branch,
+    )
+
+    station = _station_project_slug(bare_slug)
+    return (
+        dispatch_worktree_branch(station, story_key),
+        legacy_dispatch_worktree_branch(story_key),
+    )
+
+
+def _dispatch_stranded_work_needs_lines(
+    *,
+    slug: str,
+    story: str,
+    live_row: dict,
+    open_prs_by_head: dict[str, dict[str, object]],
+) -> list[str]:
+    """ATTENTION ``needs`` lines for stranded dispatch work after verify-fail."""
+    if not dispatch_terminal_dead_tail(live_row):
+        return []
+
+    lines: list[str] = []
+    stranded = live_row.get("dispatch_stranded_work")
+    if isinstance(stranded, dict) and stranded.get("kind") == "unpushed-branch":
+        ref = stranded.get("ref") or "?"
+        files = stranded.get("files")
+        remedy = stranded.get("remedy") or f"git push origin {ref}"
+        lines.append(
+            f"{slug}: stranded dispatch work for {story} — unpushed branch "
+            f"{ref!r} ({files} file(s) not on origin) — {remedy}"
+        )
+        return lines
+
+    for branch in _dispatch_branch_candidates(slug, story):
+        pr = open_prs_by_head.get(branch)
+        if pr is None:
+            continue
+        number = pr.get("number") or "?"
+        title = str(pr.get("title") or "").split(chr(10))[0][:110]
+        lines.append(
+            f"{slug}: stranded dispatch work for {story} — open unmerged PR "
+            f"#{number} on {branch!r} ({title}) — merge or close after recovery"
+        )
+        return lines
+    return lines
+
+
+def _open_prs_by_head_ref(
+    repo: pathlib.Path = REPO, timeout: int = 120
+) -> dict[str, dict[str, object]]:
+    """Open PRs keyed by head branch name (Story 28.23 ATTENTION helper)."""
+    try:
+        result = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                "rxm7706/local-recipes",
+                "--state",
+                "open",
+                "--json",
+                "number,title,headRefName",
+            ],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=True,
+        )
+        payload = json.loads(result.stdout or "[]")
+        if not isinstance(payload, list):
+            return {}
+        by_head: dict[str, dict[str, object]] = {}
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            head = entry.get("headRefName")
+            if isinstance(head, str) and head:
+                by_head[head] = entry
+        return by_head
+    except Exception:
+        return {}
+
+
 def story_completeness(stories: dict[str, str]) -> int:
     """``done + backlog`` — full station reach if all backlog eventually ships."""
     counts = collections.Counter(stories.values())
@@ -620,6 +726,7 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
+                "dispatch_stranded_work": r.get("dispatch_stranded_work"),
             }
             if r.get("state") == "running":
                 running.add(slug)
@@ -757,11 +864,21 @@ def main() -> int:
     # which is why the report always states one or the other explicitly rather
     # than staying silent and letting "no news" mean two different things.
     needs, watch = [], []
+    open_prs_by_head = _open_prs_by_head_ref()
     for (
         slug, n, done, _cmpl, _proj, blkd, _ep, _epn, _epc, _epp, run, hstate, back,
         awaiting, _stories, _qb, _in_flight,
     ) in rows:
         live_row = live.get(slug, {}) or {}
+        story = current.get(slug, live_row.get("story") or "")
+        needs.extend(
+            _dispatch_stranded_work_needs_lines(
+                slug=slug,
+                story=story,
+                live_row=live_row,
+                open_prs_by_head=open_prs_by_head,
+            )
+        )
         if live_row.get("dispatch_verification_verdict") == "refused" and run:
             gate = live_row.get("dispatch_verification_failed_gate") or "?"
             needs.append(
