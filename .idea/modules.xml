@@ -995,7 +995,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph.iml" filepath="$PROJECT_DIR$/.idea/langgraph.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" filepath="$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-api.iml" filepath="$PROJECT_DIR$/.idea/langgraph-api.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-checkpoint.iml" filepath="$PROJECT_DIR$/.idea/langgraph-checkpoint.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-continuous-test.iml" filepath="$PROJECT_DIR$/.idea/langgraph-continuous-test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-prebuilt.iml" filepath="$PROJECT_DIR$/.idea/langgraph-prebuilt.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-sdk.iml" filepath="$PROJECT_DIR$/.idea/langgraph-sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langsmith.iml" filepath="$PROJECT_DIR$/.idea/langsmith.iml" />
