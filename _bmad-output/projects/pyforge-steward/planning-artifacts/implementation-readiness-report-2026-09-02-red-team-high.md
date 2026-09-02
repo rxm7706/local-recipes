@@ -47,7 +47,9 @@ hybrid (a)+(c); 43.6 added, gated on Mason 13.1 / 13.2.)**
 1. Epic 40 (40.1 then 40.2) — from the first correct-course.
 2. Epic 41: 41.1, 41.2, 41.3, 41.4 in parallel.
 3. Epic 42: 42.1, 42.2, 42.3, 42.4, 42.5 in parallel after 40 is `done`.
-4. Epic 43: 43.1, 43.2, 43.4, 43.5 in parallel; 43.3 after 43.2; 43.6 after Mason 13.1 / 13.2 (dispatch those in `pyforge-mason` any time, in parallel with Epic 41).
+4. Epic 43: 43.1, 43.2, 43.4, 43.5 in parallel; 43.3 after 43.2; 43.6 is held at ledger `blocked` until Mason 13-1 and 13-2 are `done` (Marshal `Deps:` edges are station-local, so the cross-project gate is the ledger state) — dispatch Mason 13 any time, in parallel with Epic 41, then flip `43-6` to `backlog`.
+
+**Marshal readiness (2026-09-02, verified with Marshal's own parsers):** `[epic_surfaces]` for steward 40–43 and mason 13 declare every path the story specs touch (not the package-only template); every `Deps:` field parses; `marshal factory drain --mode drain_to_zero --station pyforge-steward` (and `--station pyforge-mason`) reads the tracked ledger in the order above. Steward's `verify_commands` runs only the steward package suite; each story spec carries its own platform-level verification, which the dev session runs.
 
 `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical paths only. Cutover Phase 1
 waits for all four epics.
