@@ -28,9 +28,13 @@ source:
     - patches/0001-strip-integration-deps.patch
     - patches/0002-lean-umbrella-deps.patch
     - patches/0003-strip-ibm-db-dep.patch
+    # Loosens src/backend/base/pyproject.toml: 0001 strips both marker-split
+    # onnxruntime deps; this re-adds a single >=1.20 line to match the loosened
+    # run: dep below (G26: pip_check reads the WHEEL's dist-info METADATA).
+    - patches/0005-loosen-onnxruntime-pin.patch
 
 build:
-  number: 0
+  number: 1
 
 outputs:
   - package:
@@ -372,7 +376,11 @@ outputs:
         - scipy >=1.15.2,<2.0.0
         - jaraco.context >=6.1.0
         - wheel >=0.46.2,<1.0.0
-        - onnxruntime >=1.20,<1.24
+        # Loosened from >=1.20,<1.24 (upstream splits by python_version: <3.14
+        # vs >=3.14, but noarch: python collapses to the low branch and silently
+        # drops cp314 — conda-forge's first cp314 build is 1.25.1, above the
+        # old <1.24 ceiling). Same G26 pattern as langflow-suite story 13.1.
+        - onnxruntime >=1.20  # TODO: tighten once upstream drops the py<3.14 cap
         - dynaconf >=3.2.13,<4.0.0
         - pyasn1 >=0.6.3,<0.7.0
         - langgraph-checkpoint >4.0.0,<5.0.0
@@ -394,10 +402,26 @@ outputs:
           pip_check: true
           python_version:
             - ${{ python_min }}.*
+      - python:
+          imports:
+            - langflow
+          pip_check: true
+          python_version:
+            - 3.14.*
       - package_contents:
           site_packages:
             - langflow/frontend/index.html
             - langflow/frontend/assets/*.js
+      - script:
+          # Runtime-verifies the loosened onnxruntime pin (>=1.20): on py3.14 the
+          # solver must pick >=1.25.1 (the first cp314 build on conda-forge); also
+          # proves markitdown → magika → onnxruntime import chain works.
+          - python -c "import sys; import langflow.main; import onnxruntime as ort; import markitdown; import magika; ver = ort.__version__; parts = [int(x) for x in ver.split('.')[:3]]; parts += [0] * (3 - len(parts)); assert not (sys.version_info >= (3, 14) and tuple(parts) < (1, 25, 1)), f'py3.14 needs onnxruntime >=1.25.1, got {ver}'; print('onnxruntime version:', ver); print('langflow.main + markitdown/magika import OK')"
+        requirements:
+          run:
+            - python 3.14.*
+            - markitdown >=0.1.4
+            - magika >=0.6.1,!=0.6.3,<0.7.0
     about:
       license_file:
         - LICENSE

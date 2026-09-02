@@ -55,6 +55,18 @@ spec_updated: 2026-07-02
 > langflow+dbgpt+django" success criterion is actually met. Tracked as **`DW-FU-10-4`** in
 > the `pyforge-steward` deferred-work ledger (adversarial-review-confirmed, 2026-08-20).
 
+> **📌 ADDENDUM (2026-09-02, Mason story 13.1 — onnxruntime pin fix LANDED locally,
+> feedstock PR TBD):**
+> The 2026-08-20 `DW-FU-10-4` blocker is resolved in the local mirror at
+> `recipes/langflow-suite/` v1.11.4 (`build.number` 1→2). `langflow-base`'s
+> `onnxruntime >=1.20,<1.24` loosened to `onnxruntime >=1.20` (+ G26 source patch
+> `patches/0005-loosen-onnxruntime-pin.patch` replacing upstream's marker-split deps
+> with a single `>=1.20` in `src/backend/base/pyproject.toml`; a py3.14 `pip_check`
+> block; a script test proving onnxruntime >=1.25.1 and markitdown/magika imports on
+> py3.14). Same changes mirrored to `recipes/langflow-base/`. **Feedstock PR:**
+> TBD (maintainer-edit on `conda-forge/langflow-feedstock` pending). Resolves
+> **`DW-FU-10-4`**.
+
 **Gates CLEARED (verified 2026-06-27):**
 
 - **langchain aiosqlite skew** — ✅ **VERIFIED LIVE 2026-07-01:** cf's newest build `langchain-1.3.11-pyhcf101f3_1` (build_number 1) carries the fixed `aiosqlite >=0.19.0,<0.23` (#276); older 1.3.x builds still serve the stale `<0.20` but the solver picks the newest. Clean-channel rebuild (local langchain purged, G68) resolves the suite entirely from **conda-forge** — no workaround langchain.

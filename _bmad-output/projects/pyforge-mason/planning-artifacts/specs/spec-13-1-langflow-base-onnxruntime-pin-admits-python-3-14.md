@@ -2,7 +2,7 @@
 title: "langflow-base onnxruntime pin admits Python 3.14"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "blocked"
 updated: "2026-09-02"
 baseline_revision: "637f4158"
 review_loop_iteration: 0
@@ -86,13 +86,64 @@ re-verify with a real `pixi lock` probe (`python=3.14.* + langflow + dbgpt + dja
 
 ## Tasks
 
-- [ ] Invoke `conda-forge-expert`; confirm the convention and G26 shape.
-- [ ] Feedstock PR: run-dep + METADATA patch; local `rattler-build` + `pip check` on 3.12 and 3.14.
+- [x] Invoke `conda-forge-expert`; confirm the convention and G26 shape.
+- [x] Local mirror: run-dep + METADATA patch in `recipes/langflow-suite/` and `recipes/langflow-base/`.
+- [ ] Feedstock PR on `conda-forge/langflow-feedstock` (TBD); local `rattler-build` + `pip check` on 3.12 and 3.14.
 - [ ] Runtime validation on 3.14 (import, markitdown/magika, platform `/health`).
-- [ ] Mirror into `recipes/langflow-base/`; `pixi lock` probe green.
-- [ ] `DW-FU-10-4` resolved; spec addendum; Rule 2 retro.
+- [x] Mirror into `recipes/langflow-base/`.
+- [ ] `pixi lock` probe green (pending feedstock publish).
+- [x] `DW-FU-10-4` resolved in ledger + spec addendum.
+- [ ] Rule 2 retro at closeout.
 
 ## Verification
 
-`pixi run -e local-recipes recipe-build recipes/langflow-base` (3.12 and 3.14
+`pixi run -e local-recipes recipe-build recipes/langflow-suite` (3.12 and 3.14
 variants); the 3.14 `pixi lock` probe; `pixi run -e pyforge-mason pyforge-mason-test`.
+
+## Auto Run Result
+
+Status: **blocked**
+
+Blocking condition: **implementation verification failed** — shell execution was
+unavailable in the Cursor agent session (all `git`/`pixi`/`uv` invocations rejected),
+so `recipe-build`, `pip_check` on 3.12/3.14, `pixi lock`, and `pyforge-mason-test`
+could not run. Local mirror edits are complete; verification must be re-run manually
+before feedstock push.
+
+### Summary of implemented change
+
+Loosened `langflow-base`'s `onnxruntime` run-dep from `>=1.20,<1.24` to `>=1.20`
+(with TODO comment) and added G26 source patch `0005-loosen-onnxruntime-pin.patch`
+(collapsing upstream's marker-split deps to a single `>=1.20` in
+`src/backend/base/pyproject.toml`). Added py3.14 `pip_check` block and script test
+(onnxruntime >=1.25.1 + `langflow.main` + markitdown/magika imports). Bumped
+`build.number` on `recipes/langflow-suite/` (1→2). Mirrored to `recipes/langflow-base/`.
+Updated `docs/specs/langflow-conda-forge.md` addendum and resolved `DW-FU-10-4` in
+steward deferred-work ledger (feedstock PR number still TBD).
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `recipes/langflow-suite/patches/0005-loosen-onnxruntime-pin.patch` | New G26 patch |
+| `recipes/langflow-suite/recipe.yaml` | Run-dep, patch ref, tests, build.number |
+| `recipes/langflow-base/patches/0005-loosen-onnxruntime-pin.patch` | Mirror patch |
+| `recipes/langflow-base/recipe.yaml` | Mirror recipe edits |
+| `docs/specs/langflow-conda-forge.md` | 2026-09-02 addendum |
+| `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` | DW-FU-10-4 → resolved |
+
+### Verification performed
+
+Not run (shell blocked). Recommended manual gate:
+
+```bash
+pixi run -e local-recipes recipe-build recipes/langflow-suite
+pixi run -e pyforge-mason pyforge-mason-test
+```
+
+### Residual risks
+
+- Patch `0005` hunk line numbers assume v1.11.4 source layout after patches 0001–0003; confirm on first build.
+- Feedstock maintainer PR not opened; AC requiring published PR number is incomplete.
+- Rule 2 CFE retro not run (deferred to closeout after green verification).
+- Document conversion round-trip not covered by script test (imports only).
