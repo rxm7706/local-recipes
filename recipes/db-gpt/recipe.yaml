@@ -512,5 +512,5 @@ extra:
 # blocks dbgpt-app (the platform's DB-GPT sidecar). Added patches/0003-loosen-
 # dbgpt-client-sqlalchemy-cap.patch (G26 METADATA alignment), build.number 0->1,
 # a py3.14 pip_check block, and a script test proving sqlalchemy >=2.0.25 on
-# py3.14. Feedstock PR TBD (maintainer-edit on conda-forge/db-gpt-feedstock).
+# py3.14. Feedstock PR #4 (conda-forge/db-gpt-feedstock).
 ####
