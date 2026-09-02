@@ -1682,6 +1682,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-037",
         # Story 28.20 (CAP-3): unknown merge conflict paths — escalate named.
         "MRS-DISP-038",
+        # Story 28.24 (CAP-7): redispatch blocked until supervisor finalize.
+        "MRS-DISP-039",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

@@ -1461,11 +1461,18 @@ def run_status(
         if unpushed_unavailable_finding is not None:
             findings.append(unpushed_unavailable_finding)
 
-    from .dispatch import gather_fleet_missing_spec_escalations
+    from .dispatch import (
+        gather_fleet_finalize_escalations,
+        gather_fleet_missing_spec_escalations,
+    )
 
     missing_spec_escalations = gather_fleet_missing_spec_escalations(
         fs=fs,
         harness=harness,
+        repo_root=git_repo_root,
+    )
+    finalize_escalations = gather_fleet_finalize_escalations(
+        fs=fs,
         repo_root=git_repo_root,
     )
 
@@ -1527,6 +1534,17 @@ def run_status(
                 facts,
                 missing_spec_escalation_story=escalation.story,
                 missing_spec_escalation_glob=escalation.expected_spec_glob,
+            )
+        fin_esc = finalize_escalations.get(slug)
+        if fin_esc is None:
+            fin_esc = finalize_escalations.get(
+                dispatch_fleet.normalize_station_slug(slug)
+            )
+        if fin_esc is not None:
+            facts = replace(
+                facts,
+                finalize_escalation_story=fin_esc.story,
+                finalize_escalation_worktree=fin_esc.worktree_path,
             )
         if unpushed_by_ref:
             matched = unpushed_by_ref.get(facts.branch)

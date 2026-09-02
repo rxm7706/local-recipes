@@ -49,6 +49,9 @@ KIND_DISPATCH_PUSH = "dispatch-push"
 #: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
 #: cap, refused candidates, and per-member terminal outcomes.
 KIND_DISPATCH_WAVE = "dispatch-wave"
+#: Story 28.24 (CAP-7): supervisor commit/push/verify when the harness
+#: cannot run shell.
+KIND_DISPATCH_FINALIZE = "dispatch-finalize"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"

@@ -69,6 +69,11 @@ from ..core.dispatch_retry import (
     prune_blocked_stories_merged_on_main,
 )
 from ..core import dispatch_re_preflight
+from ..core.dispatch_supervisor_finalize import (
+    finalize_attempt_journaled,
+    finalize_attempt_failed,
+    finalize_failure_worktree_path,
+)
 from ..core import gate
 from ..core import promotion as promotion_core
 from ..core.spec_deps import story_deps_from_epics, story_transitively_depends_on
@@ -347,6 +352,81 @@ def _surface_worktree_wip_before_dispatch(
             f"this dispatch proceeds: {detail}"
         ),
     )
+
+
+def _latest_story_run_dir(
+    fs: FsPort, repo_root: Path, slug: str, story_key: str
+) -> Path | None:
+    feed_story = render_feed_key(normalize(story_key))
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key == feed_story:
+            return run_dir
+    return None
+
+
+def _redispatch_blocked_pending_supervisor_finalize(
+    *,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+) -> str | None:
+    """Story 28.24: refuse redispatch over MRS-DISP-036 dirt until finalize."""
+    run_dir = _latest_story_run_dir(fs, repo_root, slug, story_key)
+    if run_dir is None:
+        return None
+    journal_path = run_dir / _JOURNAL_FILENAME
+    text = fs.read_text(journal_path)
+    if text is None:
+        return None
+    folded = fold(text.splitlines())
+    if finalize_attempt_journaled(folded, run_dir.name):
+        return None
+    journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    if journal.worktree_path is not None and Path(journal.worktree_path) != worktree:
+        return None
+    if journal.completion_verdict == DispatchSessionVerdict.COMPLETED.value:
+        return None
+    return (
+        f"worktree {worktree!r} carries uncommitted changes from run "
+        f"{run_dir.name!r}; supervisor finalize (commit/push/verify) has "
+        "not been attempted yet — redispatch blocked (Story 28.24)"
+    )
+
+
+def gather_fleet_finalize_escalations(
+    *,
+    fs: FsPort,
+    repo_root: Path,
+) -> dict[str, dispatch_fleet.FinalizeEscalation]:
+    """Active supervisor-finalize shell failures (Story 28.24, CAP-7)."""
+    escalations: dict[str, dispatch_fleet.FinalizeEscalation] = {}
+    for slug in dispatch_core.list_station_slugs(repo_root):
+        feed_slug = dispatch_fleet.normalize_station_slug(slug)
+        for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+            journal_path = run_dir / _JOURNAL_FILENAME
+            text = fs.read_text(journal_path)
+            if text is None:
+                continue
+            folded = fold(text.splitlines())
+            if not finalize_attempt_failed(folded, run_dir.name):
+                continue
+            journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+            if journal.story_key is None:
+                continue
+            worktree = finalize_failure_worktree_path(folded, run_dir.name)
+            if worktree is None:
+                worktree = journal.worktree_path
+            if worktree is None:
+                continue
+            escalations[feed_slug] = dispatch_fleet.FinalizeEscalation(
+                story=journal.story_key,
+                worktree_path=worktree,
+            )
+            break
+    return escalations
 
 
 def _last_failed_dispatch_session_log(
@@ -1399,6 +1479,22 @@ def dispatch_once(
         baseline_head_sha=baseline_head_sha,
     )
     if wip_finding is not None:
+        block_detail = _redispatch_blocked_pending_supervisor_finalize(
+            fs=fs,
+            repo_root=repo_root,
+            slug=slug,
+            story_key=render_feed_key(story_key),
+            worktree=worktree,
+        )
+        if block_detail is not None:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-039",
+                    severity=Severity.ERROR,
+                    message=block_detail,
+                )
+            )
+            return _done()
         findings.append(wip_finding)
 
     writer_id = _writer_id()
