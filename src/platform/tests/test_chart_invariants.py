@@ -62,8 +62,9 @@ _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
 # Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
 # is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
 _PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase"}
-# Story 41.2: platform reader pods must not mount the writer's ``.duckdb`` file.
-_QUERY_PLANE_READER_COMPONENTS = frozenset({"web", "worker"})
+# Story 41.2: reader pods (web hosts Vizro/BSL) must not mount the writer's
+# ``.duckdb`` file. Celery ``worker`` is the single writer — not a reader.
+_QUERY_PLANE_READER_COMPONENTS = frozenset({"web"})
 _PLANE_FILE_MARKERS = (".duckdb", "atlas.duckdb")
 # PVC labels/names carrying this marker are plane storage claims (writer RWO only).
 _PLANE_PVC_LABEL = "pyforge.io/query-plane"
@@ -682,7 +683,7 @@ def _assert_redis_broker_persistence_is_pvc_with_aof(docs: list[dict[str, Any]])
 def _assert_query_plane_readers_do_not_mount_duckdb_file(
     docs: list[dict[str, Any]],
 ) -> None:
-    """Story 41.2: web/worker reader pods never mount the writer's ``.duckdb`` file."""
+    """Story 41.2: web (Vizro/BSL) reader pods never mount the writer's ``.duckdb`` file."""
     by_component = _pod_specs_by_component(docs)
     for component in sorted(_QUERY_PLANE_READER_COMPONENTS):
         pod_spec = by_component[component]
@@ -1288,7 +1289,7 @@ def test_redis_broker_memory_limit_is_required():
 
 @requires_helm
 def test_duckdb_boundary_platform_readers_do_not_mount_plane_file():
-    """AC (Story 41.2): web/worker pods do not mount ``atlas.duckdb``."""
+    """AC (Story 41.2): web (Vizro/BSL) pod does not mount ``atlas.duckdb``."""
     docs = _render(_CORE_CHART, release="platform")
     _assert_query_plane_readers_do_not_mount_duckdb_file(docs)
 
