@@ -44,6 +44,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — ALREADY RESOLVED, by the fix this entry itself prescribed. `planning-artifacts/marshal-policy.toml` now declares `verify_commands = ["pixi run --frozen -e pyforge-warden pyforge-warden-test"]` — the `--frozen` switch the entry recommended, so the unfrozen re-solve that rewrote `pixi.lock` with worktree-absolute paths can no longer occur on this station's gate.
 
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-1-frozen-contract-verdict-lattice-projection-safety.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-BMAD-LOOP-1 — `scm.isolation = \"worktree\"` + `cleanup.trim_artifacts = true` silently lose any dev/review-se…
 
 - source_spec: `docs/specs/bmad-loop-adoption.md`
@@ -69,6 +71,8 @@ Durability first; curation is owned follow-up work.
 - `DeptryEngine` sets `deps_assessed == inventory.count` on any successful parse, regardless of whether deptry actually analyzed any source; a project deptry can't resolve (non-standard layout, or `[tool.deptry] extend_exclude` covering the only importing file) → deptry emits `[]` → report reads `clean`/fully-covered/exit-0. Same class as 1.2's no-scan gap; **owned by Story 1.7's no-scan guard** (already listed in the 1.3 spec residual risks). A future coverage-floor gate (Story 3.1/FR19) must not pass on zero real analysis.
 
 ## Deferred from: code review of spec-1-4-osv-db-offline-provisioning-spike (2026-07-14, Blind Hunter + Edge Case Hunter, Opus)
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/2 present (absent: _bmad-output/implementation-artifacts); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-1-4-1 — The 1.4 fixture proves offline OSV matching only for the literal pin `pdos-vuln-fixture==1.0.0`;…
 
@@ -100,6 +104,8 @@ Durability first; curation is owned follow-up work.
 
 ## Deferred from: code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md, tests/conformance/test_corpus_egress_counter.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-1 — The report schema has no `runtime_python` field on `ComplianceReport`/the currency section — epi…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -109,6 +115,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — `runtime_python` appears 0 times in both `data/report-schema.json` and `models.py` — the field was never added.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-3-2 — `scripts/refresh_endoflife_feed.py` fetches one HTTP request per registry product slug with no r…
 
@@ -120,6 +128,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — `scripts/refresh_endoflife_feed.py:191` and `:205` both iterate `for slug in deduped_slugs`, issuing one `fetch_product_cycles` per slug — the fan-out is unchanged.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md, scripts/refresh_endoflife_feed.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-3 — `_resolve_from_lines`/`_resolve_from_cycles` (currency.py) compute `lag` by counting entries rel…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -130,6 +140,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — `currency.py:68` still states it outright: '`lag` is an integer count of entries (LTS lines / endoflife.date …)', and `:60` defines `lag > 0` as behind by ANY positive count. Still counting entries, not versions.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-4 — `currency.py`'s `DEFAULT_CURRENCY_POLICY` and `config.py`'s `EffectiveConfig.currency_policy` pr…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -139,6 +151,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — Both tables still exist and can drift: `currency.py:209` `DEFAULT_CURRENCY_POLICY` and `config.py:524` `EffectiveConfig.currency_policy`.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-3-5 — The endoflife.date cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days, tuned for KEV's frequ…
 
@@ -151,6 +165,8 @@ Durability first; curation is owned follow-up work.
   verified: 2026-07-30 — `feeds.py:98` still defines the shared `DEFAULT_FEED_MAX_AGE_DAYS = 7`, and `vuln.py:146` imports that same constant — no endoflife-specific age exists.
 ## Deferred from: follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, independent follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-6 — Both currency resolvers parse and DROP the `lts` boolean (registry `lts_lines` entries and endof…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -161,6 +177,8 @@ Durability first; curation is owned follow-up work.
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN. The `lts` boolean is read nowhere in the package — zero hits for `.get("lts")`, `["lts"]` or `is_lts` across `src/pyforge/warden/*.py`; the only `lts`-shaped names are the gate flag `require_lts` (`cli.py:1069`/`:1088`, `config.py:430`/`:964`) and the registry filename. `CurrencyInfo` (`models.py:317-321`) still carries exactly `verdict`/`latest`/`lag`/`eol_date`/`tier` — no LTS signal — so `--require-lts` still cannot be evaluated from what this producer emits. Note Story 6.5 shipped the FLAG without the data behind it, which is the sharper form of the risk this entry raised.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md, src/pyforge/warden/*.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-7 — `currency:`/`license:` finding ids (`<axis>:<reason>:<name>@<version>`) carry no ecosystem discr…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -170,6 +188,8 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on both axes. `currency.py:717` builds `id=f"currency:{reason}:{subject_segment}@{version_segment}"` and `license.py:764` builds `id=f"license:{reason_segment}:{name_segment}@{version_segment}"` — neither carries an ecosystem discriminator. Meanwhile `license.py:673-679` still dispatches on `component.ecosystem` (CONDA / PYPI / else), keeping the ecosystems distinct upstream of an id grammar that cannot express the distinction. The id-injectivity break is unchanged.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-3-8 — The frozen 6.1 model invariant ("currency eol/over-lag finding requires non-null latest/lag/eol_…
 
@@ -182,6 +202,8 @@ Durability first; curation is owned follow-up work.
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the frozen invariant is verbatim intact at `models.py:438`: 'currency eol/over-lag finding requires non-null latest/lag/eol_date'. No nullable `eol_date` variant and no dateless-EOL marker was added, so endoflife.date's boolean `eol: true` (already-EOL, no date published) still has no expressible shape and still degrades to `currency:unknown`. As the entry predicted, this remains unfixable under the no-schema-widening rule — it needs a deliberate schema amendment, not a story patch.
 ## Deferred from: second follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, bmad-dev-auto review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-3-9 — `ComplianceReport.__post_init__`'s duplicate-finding-id invariant turns ANY producer-side id col…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -191,6 +213,9 @@ Durability first; curation is owned follow-up work.
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, exactly as split. The hard-crash posture is unchanged: `models.py:650-655` still raises `ValueError` — 'finding ids must be unique (waiver matching and by-id consumers depend on it)' — and `assemble_report` (`report.py:208`) still runs outside the engine seam, so it still falls through to the internal-error exit with no report. The currency half stays patched: `currency.py:854-869` dedupes in-producer (`deduped: dict[str, Finding]`, `deduped.setdefault(finding.id, finding)`). The license half is still unguarded — `license.py` has NO finding-id dedup (its only 'deduplicated' at `:592` is SPDX-classifier ids, a different thing) while `:673-679` still dispatches per-ecosystem, so colliding `license:unknown:<pkg>@<ver>` ids across conda+pypi remain reachable.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-6-3: Follow-up review still recommended for 6-3-currency-axis-producer-gate-flags after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-6-3-currency-axis-producer-gate-flags.md`
@@ -201,6 +226,8 @@ status: open
 verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up review never happened. `_bmad-output/projects/pyforge-warden/planning-artifacts/` holds one adversarial review (`adversarial-review-pyforge-warden-spec-2026-07-15.md`, which predates this 2026-07-23 story) and five implementation-readiness reports, none covering `6-3-currency-axis-producer-gate-flags`. Grepping the whole planning-artifacts tree for that story slug matches only `sprint-status-ledger.yaml` and this ledger — no review artifact exists. Standing note: the four 6-3-* entries verified alongside this one are themselves the unreviewed residue.
 
 ## Deferred from: code review of spec-6-5-two-mode-policy-integration (2026-07-24, Blind Hunter + Edge Case Hunter, Opus)
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-5-1 — The bundled `data/lts-registry.yaml` carries a fixed `updated:` date (currently `2026-07-06`) an…
 
@@ -213,6 +240,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — `data/lts-registry.yaml:35` still carries the fixed `updated: 2026-07-06` — 24 days stale as of this check.
 ## Deferred from: follow-up code review of spec-6-5-two-mode-policy-integration (2026-07-24, bmad-dev-auto follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-5-2 — The `warn-as-error` exit projection leaves no trace anywhere in the output — the report persists…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md`
@@ -222,6 +251,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — `report.py:229/:464` thread `warn_as_error` only into `exit_code_for(warn_is_error=…)`. It appears 0 times in `models.py` and 0 times in `data/report-schema.json`, so the projection still leaves no trace in the report body.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-5-3 — Under an active gate with an absent/stale feed, `CurrencyEngine.run` (deliberately mirroring `Os…
 
@@ -234,6 +265,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the ordering the entry describes is visible in one screen. `engines.py:1850-1857` appends `currency_stale_finding(unavailable=currency_data is None)` under the gate, and the coverage block immediately after at `:1863` still sets `deps_assessed=inventory.count` unconditionally — so the same `EngineResult` reports 100% assessed alongside the whole-axis `indeterminate` provenance finding. The 6.4 mirror is intact too (`LicenseEngine` at `:1804` has the identical shape), so this is still the cross-axis coverage-semantics decision the entry called for, not a currency-local fix.
 ## Deferred from: code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, Blind Hunter + Edge Case Hunter)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-7-1 — `OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md`
@@ -243,6 +276,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — `OsvParse.kev_candidates` is unchanged and now has a second consumer — `vuln.py:85` records that Story 6.7 'reuses `OsvParse.kev_candidates` verbatim'; see also `:122` and `:915`.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-7-2 — The EPSS cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days) unchanged — the same shared con…
 
@@ -255,6 +290,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — No EPSS-specific max-age constant exists; the EPSS path still resolves through `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (`feeds.py:98`).
 ## Deferred from: follow-up code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, bmad-dev-auto follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-7-3 — The real FIRST.org EPSS feed (~290k rows, republished daily) was poured into cache conventions s…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md`
@@ -265,6 +302,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN on all three counts. (1) Pretty-printing unchanged: `feeds.py:249`, `:318` and `:406` all still call `json.dump(document, fh, indent=2, sort_keys=True)` — the EPSS copy at `:406` still mirrors KEV's shape verbatim. (2) No memoization: `load_epss_scores` (`feeds.py:334`) still does a whole-file `path.read_text()` then `json.loads(raw)`, and `engines.py:1212` still calls it per-run with no `lru_cache`/`@cache` anywhere in `engines.py` or `feeds.py`. (3) The refresh script still holds all four buffers live: `scripts/refresh_epss_feed.py:80` `raw_gzip = response.read()`, `:82` `gzip.decompress(raw_gzip).decode("utf-8")`, `:92` `raw_csv.splitlines()`. One change since authoring, and it cuts the wrong way: a review added a per-entry finite/`[0,1]` domain filter inside `load_epss_scores`, so every one of the ~290k entries now costs slightly MORE per load, not less.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md, scripts/refresh_epss_feed.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-7-4 — The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md`
@@ -274,6 +313,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: done 2026-07-30
 
   verified: 2026-07-30 — ALREADY RESOLVED. All three atomic-write sites (`feeds.py:257-260`, `:322-325`, `:410-413`) now wrap `os.close(handle)` in `try/except OSError: pass`, with a comment stating the intent — 'tolerate EBADF rather than double-close'. The latent double-close is defused at every site; the entry's 'four copies' is now three, all guarded.
+
+  verified: 2026-09-02 — done — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md); ledger status mapped to done; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-7-5 — The conformance-suite helper trio is now duplicated wholesale across feed-enrichment test files…
 
@@ -286,6 +327,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — CONFIRMED STILL OPEN and MEASURABLY WORSE — the duplication roughly doubled while the prescribed fix was never started. There is still no `tests/conformance/conftest.py` (file does not exist). Counted by hand today vs the entry's own figures: `def run_scan` 3 → **5** files (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`); `def parse_report` 3 → **6** (adds those two plus `test_dogfood.py`); `def load_schema` 4 → **8** (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`, `test_baseline_grandfathering.py`, `test_dogfood.py`). `_osv_scanner_bin` sits in 4 files and `_load_osv_builder` in 2. A schema-path or CLI-invocation change now needs EIGHT synchronized edits, not four.
 ## Deferred from: code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md, tests/conformance/conftest.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-8-1 — `architecture.md`'s "Project Structure" tree (§ around the `waiver.py`/`report.py`/`verdict.py`…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md`
@@ -297,6 +340,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — CONFIRMED STILL OPEN, decisively — the tree is unchanged. `planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/architecture.md:265-300` still lists `waiver.py` with the exact stale comment this entry quoted ('# FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)', no FR39 baseline mention) and carries NO entry for `license.py`, `currency.py`, `feeds.py` or `actuator.py`. The entry's distinction also still holds: those modules DO appear elsewhere in the same file (the 'Module structure' list — license.py ×1, currency.py ×1, feeds.py ×6, actuator.py ×2), just never in the Project Structure tree. Note `:238` declares that tree 'authoritative' where the two disagree, so the stale copy is the one that wins.
 ## Deferred from: follow-up code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/planning-artifacts/architecture.md, _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-8-2 — `--baseline-emit` stamps every proposed entry with `expires_at = now + waiver_default_expiry_day…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md`
@@ -306,6 +351,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — `cli.py:686` still documents the stamp as `expires_at = now + waiver_default_expiry_days`; behaviour unchanged.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-8-3 — An EXPIRED suppression (waiver or baseline) is invisible in the machine-readable contract: `supp…
 
@@ -317,6 +364,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
 
   verified: 2026-07-30 — Neither `models.py` nor `data/report-schema.json` contains any `expired` handling — an expired suppression is still invisible in the machine-readable contract.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-6-8-4 — `report-schema.json`'s top-level `suppressions` description (the `"description"` string on the `…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md`
@@ -326,6 +375,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and both halves of the self-contradiction are still in the file verbatim. `data/report-schema.json:150` still reads 'Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers.' while `:551` already says '(Story 6.1 wires the waiver half; Story 6.8 the baseline half)'. Still a one-string fix awaiting a story permitted to touch the schema file.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md, src/pyforge/warden/data/report-schema.json); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-6-8-5 — `load_waivers` still parses with plain `yaml.safe_load`, which silently keeps the LAST of two du…
 
@@ -338,6 +389,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — `waiver.py:508-520` still parses with plain `yaml.safe_load` and its own docstring reaffirms safe_load-only; no duplicate-key guard was added.
 ## Deferred from: code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, Blind Hunter + Edge Case Hunter)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-1-1 — A hygiene-axis remediation line's manifest+location clause is frequently unavailable because `hy…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -347,6 +400,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `hygiene.py:543` still sets `subject=module` (deptry's raw import name). No import-name→distribution correlation table was added, so the manifest-location clause is still silently omitted for hygiene findings.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-1-2 — `--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--basel…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -354,6 +409,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `main()`'s `if args.doctor: return _run_doctor(args)` branch (cli.py) precedes `return _run_scan(args)` unconditionally; `_run_doctor` never reads any flag other than `args.path`/`args.format`. Raised by the Blind Hunter review pass.
   status: open
   verified: 2026-07-30 — `cli.py:258` still returns `_run_doctor(args)` strictly before the scan path, so every other `scan` flag is still silently no-op'd when `--doctor` is passed.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-1-3 — `report._remediation_line`'s vuln branch recovers the advisory id for display by re-splitting th…
 
@@ -364,6 +421,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, and the pattern has spread. `report.py:619` still recovers the advisory id with `_, advisory_id, _ = finding_id.split(":", 2)` on the already-percent-escaped segment. Three sibling branches now do the same re-split — `:638` (code), `:657` and `:680` (reason) — so a reverse-unescape fix would have four call sites, not one. Still practically unreachable for real GHSA-/CVE-/PYSEC- ids.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-1-4 — `tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims "its ON…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -372,6 +431,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN and now understated by one more fixture than when written. `tests/conftest.py:278` still claims the single '(`PDOS-FIXTURE-0001`, package `pdos-vuln-fixture`)', while `tests/fixtures/osv-db/pypi/` holds FOUR records: `PDOS-FIXTURE-0001.json`, `-0002.json`, `-0003.json` and `PDOS-KEV-FIXTURE-0001.json` — the KEV fixture landed after this entry was authored.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/3 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md, tests/conftest.py, tests/fixtures/osv-db/pypi/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-1-5 — The literal argv `["deptry", "--version"]` / `["osv-scanner", "--version"]` now exists independe…
 
@@ -384,6 +445,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — The literal argv still exists at FOUR sites: `engines.py:725`, `:732`, `:947`, `:1485`.
 ## Deferred from: follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-1-6 — `vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an in…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -391,6 +454,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   evidence: `vuln.py`'s `_extract_fixed_version` returns on the first `isinstance(fixed, str) and fixed` hit across `affected[].ranges[].events[]` in document order; the 5.1 spec's Block If section records "take the FIRST well-formed fixed event found for that advisory … do not build a full semver-range resolver". Both the initial Blind Hunter pass's wording concern ("to resolve" overclaims sufficiency) and this follow-up pass's oldest-branch scenario describe the same selection-rule root cause. Raised by the follow-up Blind Hunter pass.
   status: open
   verified: 2026-07-30 — `vuln.py:744-750` — `_extract_fixed_version`'s own docstring still specifies the FIRST well-formed `fixed` event in document order.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-1-7 — The remediation line's manifest-location clause unions provenance across ALL same-named componen…
 
@@ -403,6 +468,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1268-1282` still builds `manifest_locations` with no version component: `keys = [_canonical_subject_key(component.name)]` (`:1277`), optionally plus the pypi identity (`:1279`), then unions provenance on collision (`:1281-1282`). A version-bearing finding still renders every same-named component's manifests, including those declaring only the non-vulnerable version.
 ## Deferred from: second follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto third review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-1-8 — The `manifest_locations` lookup applies PEP-503 canonicalization (`_canonical_subject_key`) to E…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -412,6 +479,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent fo
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — same code block, the other defect. `cli.py:1277` still applies `_canonical_subject_key(component.name)` unconditionally, with no exact-match-first tier, so conda separator-twins (`importlib-metadata` vs `importlib_metadata` — genuinely distinct conda-forge packages) still collapse to one key and can cross-name each other's manifests.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-5-1: Follow-up review still recommended for 5-1-actionable-diagnostics-safe-by-default-posture after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -423,6 +493,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
 ## Deferred from: code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-2-1 — The new `ThreadPoolExecutor`-based 4-axis engine fan-out in `cli.py`'s `_run_scan` changes SIGIN…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
@@ -431,6 +503,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1345` still uses the context-manager form `with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:`, whose `__exit__` hardcodes `shutdown(wait=True)`. Zero occurrences of `cancel_futures` or an explicit `pool.shutdown(` anywhere in `cli.py`, so the SIGINT-latency behaviour is exactly as described.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-2-2 — `test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text match…
 
@@ -441,6 +515,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN, at two call sites rather than the one implied. `tests/conformance/test_extraction_oracle.py:87` still defines `_EXCLUDED_CONSTRUCT_RE = re.compile(r"compiler\(|stdlib\(|pin_subpackage\(")` and it is still applied as a raw-text `.search(text)` over the whole file at BOTH `:424` and `:480`. No AST-aware exclusion was introduced.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conformance/test_extraction_oracle.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-2-3 — `scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet "Hand-authored" descript…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
@@ -448,6 +524,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: `write_sources_md`'s hand-authored section is a fixed `lines` literal, unlike its own upstream half (`upstream_lines`, derived live from `_UPSTREAM_OUT.iterdir()`); making the two symmetric needs each `_HANDAUTHORED_FIXTURES` entry to carry a human-readable description alongside its content, a moderate refactor of a dev-only maintenance script. Raised by the Blind Hunter of the Story 5.2 review pass.
   status: open
   verified: 2026-07-30 — `scripts/harvest_corpus.py:332` still emits the literal `"## Hand-authored"` heading.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, scripts/harvest_corpus.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-2-4 — `test_perf_overhead.py`'s `REPRESENTATIVE_TARGET` hardcodes a single corpus feedstock path (`rec…
 
@@ -460,6 +538,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   verified: 2026-07-30 — `tests/conformance/test_perf_overhead.py:53` still hardcodes `REPRESENTATIVE_TARGET`, asserted present at `:96`.
 ## Deferred from: follow-up code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto follow-up review pass)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conformance/test_perf_overhead.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-2-5 — No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pix…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
@@ -468,6 +548,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
   verified: 2026-07-30 — No file under `.github/workflows/` references the corpus-oracle or corpus-test task — nothing schedules or gates it.
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-5-2-6 — `.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its f…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
@@ -475,6 +557,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: `currency.py` builds the id from `sys.version_info[:3]`; the test suite is insulated only because `tests/conftest.py` writes its ambient endoflife feed with the dynamically-computed interpreter version, whereas the committed baseline froze the opposite, brittle strategy. A version-agnostic baseline id would need a Story 6.8 match-semantics change (out of 5.2's validation-only scope). Raised independently by both reviewers of the follow-up pass.
   status: open
   verified: 2026-07-30 — `.warden-baseline.yaml:38` still pins the running interpreter's patch version: `currency:unknown:!python-runtime@3.14.6`.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md, tests/conftest.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-5-2-7 — All 19 entries in the committed `.warden-baseline.yaml` expire simultaneously at 2027-07-24T00:0…
 
@@ -487,6 +571,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   verified: 2026-07-30 — Confirmed exactly: all 19 entries carry `expires_at: "2027-07-24T00:00:00+00:00"`, and the file's own note at line 31 records the simultaneity.
 ## Deferred: upstream bug report — pixi-build-python path panic (2026-07-25)
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-CROSS-CUTTING-1 — `pixi-build-python` 0.8.3 panics with an unsigned byte-index underflow (`tools.rs:461`, `end byt…
 
 - source_spec: cross-cutting (harness; Marshal station)
@@ -496,6 +582,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the panicking version is still the one pinned. `pixi.lock` resolves `pixi-build-python-0.8.3` on all three platforms (`:3483` linux-64, `:5205` osx-arm64, `:6302` win-64); no bump past the `tools.rs:461` underflow has landed. As with doctor's DW-1-1-2 the trigger is mitigated by the fleet's move to `~/.bmad-loops/` (157–159 char worktree roots vs the ~173 threshold), but the underlying panic is untouched.
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-FU-7-1: SourceEvidence carries no de-duplication across multiple observations of the same PackageIdentity (e.g. a package seen both direct and transitive within one CycloneDX document, or across adapters).
 
@@ -510,6 +598,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-7-1-2: CycloneDXSourceAdapter.validate() never checks the document's specVersion, so an incompatible/very old CycloneDX schema version would be accepted and processed identically to 1.6.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md`
@@ -523,6 +613,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ### DW-FU-7-2: "Reproducible from provenance alone" (SPEC.md CAP-2 / epics.md AC) does not universally hold: the required_authority_sources policy that actually determines status is never recorded on EligibilityResult or ProvenanceEntry.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-eligibility-union-carries-its-provenance.md`
@@ -535,6 +627,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## DW-CANOPY-2026-08-24 — Portal rename and URL relocation (Canopy FR-9a/9b)
 
@@ -552,6 +646,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
 
+  verified: 2026-09-02 — closed — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to closed; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -562,3 +658,6 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   close_when: steward S-32.1 done; Warden Stories 9.1–9.3 done (PR-gate hook specs; scanners optional plugins; default run green without Checkmarx); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
