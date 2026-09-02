@@ -88,7 +88,13 @@ spec:
             - -c
             - archive_mode=on
             - -c
-            - archive_command=test ! -f {{ .Values.postgres.backup.mountPath }}/wal/%f && cp %p {{ .Values.postgres.backup.mountPath }}/wal/%f
+            # `mkdir -p` first, not the docs' bare `test ! -f … && cp …`:
+            # archiving starts the moment postgres boots, but the backup PVC
+            # is empty until the CronJob's first scheduled run creates wal/.
+            # Without it every archive fails, postgres retries the same
+            # segment forever, and pg_wal grows unbounded on the data PVC
+            # for up to a full schedule interval.
+            - archive_command=mkdir -p {{ .Values.postgres.backup.mountPath }}/wal && test ! -f {{ .Values.postgres.backup.mountPath }}/wal/%f && cp %p {{ .Values.postgres.backup.mountPath }}/wal/%f
           {{- end }}
           livenessProbe:
             exec:
@@ -121,6 +127,19 @@ spec:
             - name: backup
               mountPath: {{ .Values.postgres.backup.mountPath | quote }}
             {{- end }}
+      {{- if .Values.postgres.backup.enabled }}
+      # POD-spec volumes, not StatefulSet.spec. The backup claim is a
+      # pre-existing RWX PVC shared with the backup CronJob, so it is a plain
+      # volume reference and NOT a volumeClaimTemplate (which would mint a
+      # per-pod RWO claim, leaving the CronJob nothing shared to read).
+      # Indented one level too shallow this lands on StatefulSet.spec, where
+      # it is an unknown field: the `backup` volumeMount then resolves to
+      # nothing and the pod is rejected outright.
+      volumes:
+        - name: backup
+          persistentVolumeClaim:
+            claimName: {{ include "platform.postgresBackup.pvcName" . }}
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -133,9 +152,3 @@ spec:
         resources:
           requests:
             storage: {{ .Values.postgres.persistence.size }}
-  {{- if .Values.postgres.backup.enabled }}
-  volumes:
-    - name: backup
-      persistentVolumeClaim:
-        claimName: {{ include "platform.postgresBackup.pvcName" . }}
-  {{- end }}

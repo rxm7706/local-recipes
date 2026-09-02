@@ -2,7 +2,7 @@
 title: "DR contract and PostgreSQL backup"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "done"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 severity: "CRITICAL"
@@ -64,12 +64,51 @@ Ledger key `41-1-dr-contract-and-postgresql-backup`. Host never imports `pyforge
 
 ## Tasks
 
-- [ ] `deploy/DR.md` (contract) + `deploy/restore.md` (runbook)
-- [ ] CronJob template + values (`postgres.backup.*`), archive settings on the StatefulSet
-- [ ] steward `restore --drill` duty + test
-- [ ] chart invariant tests for CronJob presence and contexts
-- [ ] Dream sizing row
-- [ ] Ledger `41-1-dr-contract-and-postgresql-backup` → `review` then `done` via `sprint-ledger-sync`.
+- [x] `deploy/DR.md` (contract) + `deploy/restore.md` (runbook)
+- [x] CronJob template + values (`postgres.backup.*`), archive settings on the StatefulSet
+- [x] steward `restore --drill` duty + test
+- [x] chart invariant tests for CronJob presence and contexts
+- [x] Dream sizing row
+- [x] Ledger `41-1-dr-contract-and-postgresql-backup` → `done`.
+
+## Dev Notes
+
+**2026-09-02 — landed in two parts.** The implementation merged as
+`9a201b96fd` ("Merge 41-1 into main"), but its ledger row was never advanced
+off `backlog`. `marshal factory drain --station pyforge-steward` therefore kept
+selecting 41.1 every tick; each dispatch's supervisor correctly read
+`story_merged_on_main: true` and closed the run ~1.2 s after launch without
+touching the ledger, so the next tick re-dispatched. Nine concurrent
+`bmad-build-auto` sessions accumulated in one worktree before the loop was
+stopped. The row below is what breaks it.
+
+That first merge also shipped three defects, all fixed here:
+
+1. **`volumes:` on `StatefulSet.spec` instead of the pod spec.** `helm template`
+   with default values (`postgres.backup.enabled: true`) rendered
+   `StatefulSet.spec.volumes` — not a `StatefulSetSpec` field — leaving
+   `spec.template.spec.volumes` empty while the postgres container still mounted
+   `backup`. The API server rejects that pod outright, so **the DR story stopped
+   PostgreSQL from starting at all.** The invariant test asserted the
+   `volumeMount` but never a backing volume, so it passed either way.
+2. **`archive_command` with no `mkdir -p`.** Archiving starts at boot; the
+   CronJob does not create `wal/` until its first scheduled run, so every
+   segment failed and `pg_wal` grew unbounded on the data PVC for up to a full
+   schedule interval.
+3. **The chart's first CronJob broke three test helpers.** A CronJob nests its
+   pod template at `spec.jobTemplate.spec.template`; three helpers reached for
+   `spec.template` and raised `KeyError: 'template'`, and a fourth hard-coded
+   `len(pvcs) == 3` against the new backup PVC. Four tests in
+   `test_chart_invariants.py` were red on `main`. AC 3 (OCP overlay
+   `restricted-v2` on the backup CronJob) was crashing rather than checking.
+
+Verification after the fix: `test_chart_invariants.py` 62/62 pass (was 59/62 on
+`main`); `pyforge-steward-test` 998 pass. Six collection errors elsewhere in
+`src/platform/tests` (`test_atlas_mcp_host`, `test_front_door_publish`,
+`test_mcp_host_sidecar`, `test_start_get_survives_disconnect`,
+`test_structlog_otel_correlation`, `policy/test_test_databases_still_migrate`)
+are pre-existing on clean `main`, need a live Django DB fixture, and are
+unrelated to this story.
 
 ## Verification
 

@@ -128,7 +128,7 @@ development_status:
   4-3-asking-am-i-under-budget-never-lies: done
   40-1-idp-bearer-is-verified-before-mint: done
   40-2-redis-broker-is-durable-and-bounded: done
-  41-1-dr-contract-and-postgresql-backup: backlog
+  41-1-dr-contract-and-postgresql-backup: done
   41-2-query-plane-process-boundary: done
   41-3-scribe-ddl-moves-into-the-changelog: backlog
   41-4-broker-tls-is-verified: backlog
