@@ -2,7 +2,7 @@
 title: "A done spec HALTs unless follow-up is true"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "done"
 updated: "2026-09-02"
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -53,15 +53,32 @@ Ledger key: `29-1-done-spec-halts-unless-followup-is-true`.
 
 ## Tasks
 
-- [ ] Step 1: `done` + `followup_review_recommended: false` → HALT `done`.
-- [ ] Step 1: `done` + `true` → one follow-up; force flag false afterward.
-- [ ] Step 4: 0-patch → do not commit a spec-only write-back.
-- [ ] Ledger `29-1-done-spec-halts-unless-followup-is-true` → `review` then `done` via `sprint-ledger-sync`.
+- [x] Step 1: `done` + `followup_review_recommended: false` → HALT `done`.
+- [x] Step 1: `done` + `true` → one follow-up; force flag false afterward.
+- [x] Step 4: 0-patch → do not commit a spec-only write-back.
+- [x] Ledger `29-1-done-spec-halts-unless-followup-is-true` → `done`.
 
 ## Verification
 
 Skill text names the HALT and the 0-patch no-commit rule. Grep the in-repo
-skill: `done` no longer unconditionally EARLY EXITs to step-04.
+skill: `done` + `false` HALTs; it no longer unconditionally EARLY EXITs to
+step-04.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Local `bmad-build-auto` step-01 reads `followup_review_recommended`.
+`done`+`false` HALTs with no edit/commit. `done`+`true` consumes the flag
+then allows one review. Step-04 skips spec-only 0-patch commits and forces
+the flag false after a done-spec follow-up. Vendored `bmad_loop` untouched.
+
+Files changed:
+- `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md`
+- `.claude/skills/bmad-build-auto/step-04-review.md`
+- `.claude/skills/bmad-build-auto/spec-template.md`
+
+Verification: `rg 'follow-up not recommended' .claude/skills/bmad-build-auto/step-01-clarify-and-route.md` matches; no remaining `fresh review pass` string.
 
 ## Source
 

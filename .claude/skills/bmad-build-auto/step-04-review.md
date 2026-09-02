@@ -86,11 +86,14 @@ Write the following details to `{spec_file}` under `## Auto Run Result`:
 
 Set `{spec_file}` frontmatter `followup_review_recommended` from the computation above.
 
+If this review was entered from a `done` spec (the single allowed follow-up in step-01), force `followup_review_recommended: false` at HALT even if the score above would have been `true`.
+
 If version control is unavailable, set `{spec_file}` frontmatter `status: done`, then proceed to HALT.
 
 If version control is available, write `status: done` into `{spec_file}` frontmatter, then:
 
-1. Commit any reviewed-diff files that remain uncommitted, including `{spec_file}` when it is tracked in that working copy. Keep commits already created during this run. Verify every reviewed-diff file appears in the change set after `{baseline_revision}` and none remains uncommitted. Do not push.
-2. Verify the version-controlled working copy is clean. Otherwise HALT with status `blocked` and blocking condition `finalization left repository dirty`.
+1. If this pass applied **0** findings triaged `patch`, do **not** commit a spec-only write-back (Review Triage Log, Auto Run Result, `followup_review_recommended`, `review_loop_iteration`, `status: done`). If those metadata edits are the only uncommitted diff, restore `{spec_file}` so the tree is clean, then HALT `done`. Keep commits already created during this run. Do not push.
+2. Otherwise commit any reviewed-diff files that remain uncommitted, including `{spec_file}` when it is tracked in that working copy. Keep commits already created during this run. Verify every reviewed-diff file appears in the change set after `{baseline_revision}` and none remains uncommitted. Do not push.
+3. Verify the version-controlled working copy is clean. Otherwise HALT with status `blocked` and blocking condition `finalization left repository dirty`.
 
 HALT with status `done`.

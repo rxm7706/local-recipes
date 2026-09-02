@@ -134,7 +134,7 @@ development_status:
   28-22-verify-blast-radius-pre-existing-gate: done
   28-23-stranded-work-signal-after-terminal-verify-fail: done
   28-24-supervisor-finalizes-when-harness-cannot-run-shell: done
-  29-1-done-spec-halts-unless-followup-is-true: backlog
+  29-1-done-spec-halts-unless-followup-is-true: done
   29-2-harness-done-is-cap-4-only-never-another-session: backlog
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
   28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
