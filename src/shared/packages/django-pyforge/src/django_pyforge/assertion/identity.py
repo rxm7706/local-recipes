@@ -63,12 +63,11 @@ def _roles_from_claim(payload: dict[str, object], group_claim: str) -> list[str]
 
 def verify_idp_bearer(token: str) -> tuple[str, list[str]]:
     """Validate an IdP bearer and return verified ``(sub, roles)``."""
+    jwks_url, issuer, audience, algorithms, leeway = _require_verifier_settings()
     parts = token.split(".")
     if len(parts) != _JWT_COMPACT_SEGMENTS:
         msg = "IdP bearer is not a compact JWT"
         raise AssertionRefusedError(msg)
-
-    jwks_url, issuer, audience, algorithms, leeway = _require_verifier_settings()
     group_claim = getattr(settings, "DJANGO_PYFORGE_GROUP_CLAIM", "groups")
     if not isinstance(group_claim, str) or not group_claim:
         msg = "group claim is not configured"

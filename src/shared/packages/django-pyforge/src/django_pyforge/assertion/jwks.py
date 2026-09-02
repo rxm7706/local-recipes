@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -17,7 +16,6 @@ from jwt.exceptions import PyJWTError
 from django_pyforge.assertion.exceptions import AssertionRefusedError
 
 _ALLOWED_SCHEMES = frozenset({"https", "file"})
-_MIN_REFRESH_INTERVAL_SECONDS = 30.0
 _JWT_COMPACT_SEGMENTS = 3
 
 
@@ -32,7 +30,6 @@ class JWKSKeySet:
         self._jwks_url = jwks_url
         self._keys_by_kid: dict[str, Any] = {}
         self._loaded = False
-        self._last_fetch_at: float | None = None
         self._refreshed_after_miss = False
 
     def resolve_key(self, token: str) -> Any:
@@ -57,7 +54,7 @@ class JWKSKeySet:
         key = self._keys_by_kid.get(kid)
         if key is not None:
             return key
-        if not self._refreshed_after_miss and self._may_refresh():
+        if not self._refreshed_after_miss:
             self._refreshed_after_miss = True
             self._load_keys()
             key = self._keys_by_kid.get(kid)
@@ -65,11 +62,6 @@ class JWKSKeySet:
                 return key
         msg = "IdP bearer signing key is unknown"
         raise AssertionRefusedError(msg)
-
-    def _may_refresh(self) -> bool:
-        if self._last_fetch_at is None:
-            return True
-        return (time.monotonic() - self._last_fetch_at) >= _MIN_REFRESH_INTERVAL_SECONDS
 
     def _load_keys(self) -> None:
         document = self._fetch_document()
@@ -89,12 +81,15 @@ class JWKSKeySet:
             raise AssertionRefusedError(msg)
         self._keys_by_kid = keys
         self._loaded = True
-        self._last_fetch_at = time.monotonic()
 
     def _fetch_document(self) -> dict[str, Any]:
         parsed = urlparse(self._jwks_url)
         if parsed.scheme == "file":
-            raw = Path(parsed.path).read_text(encoding="utf-8")  # noqa: F821
+            try:
+                raw = Path(parsed.path).read_text(encoding="utf-8")
+            except OSError as exc:
+                msg = "JWKS fetch failed"
+                raise AssertionRefusedError(msg) from exc
         else:
             raw = self._fetch_https()
         document = json.loads(raw)
