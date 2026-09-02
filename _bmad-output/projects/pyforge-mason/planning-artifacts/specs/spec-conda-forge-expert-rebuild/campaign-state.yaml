@@ -602,7 +602,30 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "565ef7d194b1ccd740951250aa6535b65bdfc7b6"
+    brief_mirrored_through: "f45a9209d1a492fad7afab486155a9900a5314b8"
+                                    # ADVANCED 2026-09-02 from 565ef7d194 by the CFE v8.85.0
+                                    # retro (f45a9209d1). This is the FIRST new CFE Rule-2 retro
+                                    # to land during the campaign, so it is OQ5's first real
+                                    # case -- and the delta was NOT empty, which forced the
+                                    # answer on the facts rather than on preference:
+                                    # conda-forge dropped Python 3.10 on 2026-09-02, and BOTH
+                                    # compiled slices carry `recipe-generator.py` with the same
+                                    # hardcoded `_CONDA_FORGE_PYTHON_FLOOR = "3.10"` (slice 2
+                                    # also carries recipe_optimizer.py's 3.10 fallback). Leaving
+                                    # them would have shipped successors that emit recipes pinned
+                                    # to a Python conda-forge no longer builds.
+                                    # OQ5 answer FOR THIS CASE: **both** -- the legacy skill AND
+                                    # each successor slice that actually contains the touched
+                                    # script. Mirrored the floor-reading change (constant ->
+                                    # `_read_conda_forge_python_floor()` + the five literal
+                                    # comparisons) into both compiled copies ONLY; deliberately
+                                    # NOT a whole-file overwrite, which would have silently also
+                                    # ported v8.84.0's HEAD-advance and erased the equivalence
+                                    # drift Story 12.3 tracks separately. Both copies verified to
+                                    # import and resolve the floor to 3.11.
+                                    # This settles the concrete instance, NOT the general policy:
+                                    # OQ5 stays open for the case where a retro's delta does not
+                                    # intersect a slice, which has still never occurred.
                                     # Story 12.1 (2026-08-27): 4 qualifying CFE Rule-2 retros in
                                     # 806cb63046..HEAD -- two substantive deltas, each landing as
                                     # feat + merge: CFE v8.83.0 = 6ace3fd6/2d276ecb (PR #606,
@@ -752,7 +775,30 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "565ef7d194b1ccd740951250aa6535b65bdfc7b6"
+    brief_mirrored_through: "f45a9209d1a492fad7afab486155a9900a5314b8"
+                                    # ADVANCED 2026-09-02 from 565ef7d194 by the CFE v8.85.0
+                                    # retro (f45a9209d1). This is the FIRST new CFE Rule-2 retro
+                                    # to land during the campaign, so it is OQ5's first real
+                                    # case -- and the delta was NOT empty, which forced the
+                                    # answer on the facts rather than on preference:
+                                    # conda-forge dropped Python 3.10 on 2026-09-02, and BOTH
+                                    # compiled slices carry `recipe-generator.py` with the same
+                                    # hardcoded `_CONDA_FORGE_PYTHON_FLOOR = "3.10"` (slice 2
+                                    # also carries recipe_optimizer.py's 3.10 fallback). Leaving
+                                    # them would have shipped successors that emit recipes pinned
+                                    # to a Python conda-forge no longer builds.
+                                    # OQ5 answer FOR THIS CASE: **both** -- the legacy skill AND
+                                    # each successor slice that actually contains the touched
+                                    # script. Mirrored the floor-reading change (constant ->
+                                    # `_read_conda_forge_python_floor()` + the five literal
+                                    # comparisons) into both compiled copies ONLY; deliberately
+                                    # NOT a whole-file overwrite, which would have silently also
+                                    # ported v8.84.0's HEAD-advance and erased the equivalence
+                                    # drift Story 12.3 tracks separately. Both copies verified to
+                                    # import and resolve the floor to 3.11.
+                                    # This settles the concrete instance, NOT the general policy:
+                                    # OQ5 stays open for the case where a retro's delta does not
+                                    # intersect a slice, which has still never occurred.
                          # Story 12.7 (2026-08-28): re-checked via
                          # `cfe-rebuild-guard-check --json` -- still 4 qualifying retros
                          # scanned, zero findings; no new CFE Rule-2 retro has landed since

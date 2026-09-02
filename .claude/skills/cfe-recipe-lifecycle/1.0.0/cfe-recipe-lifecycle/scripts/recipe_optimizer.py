@@ -222,7 +222,7 @@ _PLACEHOLDER_LICENSE_FILE_VALUES = (
 # stay separate because the optimizer can run in fresh environments where the
 # pixi env's pinning file isn't materialised — both implement the same
 # graceful-fallback behaviour.
-_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.11"
 _PINNING_PYTHON_MIN_RE = re.compile(
     r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
     re.MULTILINE,
