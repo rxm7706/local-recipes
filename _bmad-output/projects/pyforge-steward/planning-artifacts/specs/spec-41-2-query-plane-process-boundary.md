@@ -2,7 +2,7 @@
 title: "Query-plane process boundary"
 type: "fix"
 created: "2026-09-02"
-status: "done"
+status: "in-review"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "28404c71f1b3bda015ba1a51957236589bf09303"
