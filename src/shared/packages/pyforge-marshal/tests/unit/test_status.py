@@ -1370,9 +1370,91 @@ class TestDeriveDispatchPhase:
         )
         assert status.derive_dispatch_phase(facts) is None
 
+    def test_stopped_externally_with_dead_tail_is_not_verifying(self):
+        facts = status.FleetHomeFacts(
+            slug="pyforge-marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="28-23-stranded-work-signal-after-terminal-verify-fail",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="stopped_externally",
+            dispatch_verification_verdict="refused",
+            dispatch_verification_failed_gate="MRS-GATE-001",
+        )
+        assert status.derive_dispatch_phase(facts) is None
+
     def test_none_without_dispatch_story(self):
         facts = status.FleetHomeFacts(slug="marshal", branch="loop/pyforge-marshal", has_run=False)
         assert status.derive_dispatch_phase(facts) is None
+
+
+class TestDeriveDispatchStrandedWork:
+    _STORY = "28-23-stranded-work-signal-after-terminal-verify-fail"
+    _BRANCH = f"dispatch/pyforge-marshal/{_STORY}"
+
+    def _terminal_facts(self, **overrides) -> status.FleetHomeFacts:
+        base = dict(
+            slug="pyforge-marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story=self._STORY,
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_completion_verdict="failed",
+        )
+        base.update(overrides)
+        return status.FleetHomeFacts(**base)
+
+    def test_unpushed_dispatch_branch_is_named(self):
+        facts = self._terminal_facts()
+        unpushed = {
+            self._BRANCH: {
+                "files": 4,
+                "stat": "4 files changed",
+                "remedy": f"git push origin {self._BRANCH}",
+            }
+        }
+        signal = status.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed)
+        assert signal is not None
+        assert signal["kind"] == "unpushed-branch"
+        assert signal["ref"] == self._BRANCH
+        assert signal["story"] == self._STORY
+
+    def test_live_tail_does_not_surface_stranded_work(self):
+        facts = self._terminal_facts(dispatch_supervisor_alive=True)
+        unpushed = {self._BRANCH: {"files": 1, "stat": "1 file changed", "remedy": "push"}}
+        assert status.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed) is None
+
+    def test_completed_dispatch_does_not_surface_stranded_work(self):
+        facts = self._terminal_facts(dispatch_completion_verdict="completed")
+        unpushed = {self._BRANCH: {"files": 1, "stat": "1 file changed", "remedy": "push"}}
+        assert status.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed) is None
+
+    def test_detector_unavailable_is_unknown_not_clean(self):
+        facts = self._terminal_facts()
+        assert status.derive_dispatch_stranded_work(facts, unpushed_by_ref=None) is None
+
+    def test_build_fleet_row_publishes_stranded_work_without_running_overlay(self):
+        unpushed = {
+            self._BRANCH: {
+                "files": 2,
+                "stat": "2 files changed",
+                "remedy": f"git push origin {self._BRANCH}",
+            }
+        }
+        facts = self._terminal_facts(
+            dispatch_stranded_work=status.derive_dispatch_stranded_work(
+                self._terminal_facts(), unpushed_by_ref=unpushed
+            )
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "idle"
+        assert row.get("dispatch_phase") is None
+        assert row.get("dispatch_completion_verdict") == "failed"
+        assert row.get("current_story") == self._STORY
+        assert row.get("dispatch_stranded_work") is not None
+        assert finding is None
 
 
 class TestSortFleetRows:

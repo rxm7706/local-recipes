@@ -4439,7 +4439,7 @@ So that fleet-picture STUCK is reserved for a live refuse and stranded work is v
 **Given** completion `failed` or `stopped_externally` and a dead dispatch tail **When** `marshal status` / fleet-picture run **Then** the home is not `verifying` / STUCK
 **And** an unpushed `dispatch/<slug>/<story>` or open unmerged PR is named in ATTENTION
 **And** the overlay half (`20e88e8b0f`) stays locked by test
-**Status:** backlog
+**Status:** done
 
 ### Story 28.24: Supervisor finalizes when the harness cannot run shell
 

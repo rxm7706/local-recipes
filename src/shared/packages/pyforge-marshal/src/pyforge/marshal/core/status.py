@@ -1011,6 +1011,11 @@ class FleetHomeFacts:
     # operator remedy, never an auto-authored stub.
     missing_spec_escalation_story: str | None = None
     missing_spec_escalation_glob: str | None = None
+    # Story 28.23 (CAP-6): unpushed ``dispatch/<slug>/<story>`` (or legacy
+    # ``marshal/<story>``) after a terminal verify-fail with a dead tail --
+    # the stranded-work signal fleet-picture ATTENTION names alongside the
+    # overlay fix in ``derive_dispatch_phase``.
+    dispatch_stranded_work: dict[str, object] | None = None
 
 
 def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
@@ -1039,6 +1044,56 @@ def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
     if facts.dispatch_engine_alive:
         return "building"
     return "verifying"
+
+
+def _dispatch_terminal_dead_tail(facts: FleetHomeFacts) -> bool:
+    """True when factory dispatch ended in terminal failure with no live tail."""
+    if not facts.dispatch_story:
+        return False
+    if facts.dispatch_completion_verdict not in ("failed", "stopped_externally"):
+        return False
+    return derive_dispatch_phase(facts) is None
+
+
+def derive_dispatch_stranded_work(
+    facts: FleetHomeFacts,
+    *,
+    unpushed_by_ref: dict[str, dict[str, object]] | None,
+) -> dict[str, object] | None:
+    """Unpushed dispatch branch for a terminal dead-tail verify-fail (28.23).
+
+    ``unpushed_by_ref`` is the fleet-wide map from
+    ``scripts/unpushed_work_check.py --json --branches-only`` (``None`` when
+    the detector could not run -- indistinguishable from clean at this layer).
+    Open unmerged PRs are named separately by ``fleet_picture.py``'s ATTENTION
+    block (one ``gh`` query for the whole report).
+    """
+    if not _dispatch_terminal_dead_tail(facts):
+        return None
+    if unpushed_by_ref is None:
+        return None
+    from . import dispatch as dispatch_core
+
+    story_key = facts.dispatch_story
+    if not story_key:
+        return None
+    candidates = (
+        dispatch_core.dispatch_worktree_branch(facts.slug, story_key),
+        dispatch_core.legacy_dispatch_worktree_branch(story_key),
+    )
+    for ref in candidates:
+        finding = unpushed_by_ref.get(ref)
+        if finding is None:
+            continue
+        return {
+            "kind": "unpushed-branch",
+            "ref": ref,
+            "story": story_key,
+            "files": finding.get("files"),
+            "stat": finding.get("stat"),
+            "remedy": finding.get("remedy") or f"git push origin {ref}",
+        }
+    return None
 
 
 def _dispatch_overlay_active(facts: FleetHomeFacts) -> bool:
@@ -1077,8 +1132,16 @@ def _apply_dispatch_overlay(
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         row = {**row, "dispatch_phase": phase}
+    if not facts.dispatch_story:
+        return row
     dispatch_live = _dispatch_overlay_active(facts)
-    if not (dispatch_live and facts.dispatch_story):
+    if not dispatch_live:
+        # Story 28.23 (CAP-6): a terminal dead tail must still publish
+        # completion + stranded-work facts for fleet-picture ATTENTION without
+        # re-labeling the home as running/STUCK.
+        row = _merge_dispatch_row_fields(row, facts)
+        if _dispatch_terminal_dead_tail(facts):
+            row = {**row, "current_story": facts.dispatch_story}
         return row
     if row.get("state") in ("running", "paused-on-escalation", "awaiting-operator"):
         patched = dict(row)
@@ -1127,6 +1190,8 @@ def _merge_dispatch_row_fields(
         patched["dispatch_wave_id"] = facts.dispatch_wave_id
     if facts.dispatch_in_flight_stories:
         patched["dispatch_in_flight_stories"] = list(facts.dispatch_in_flight_stories)
+    if facts.dispatch_stranded_work is not None:
+        patched["dispatch_stranded_work"] = facts.dispatch_stranded_work
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         patched["dispatch_phase"] = phase
