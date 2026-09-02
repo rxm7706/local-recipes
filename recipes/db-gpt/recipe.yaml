@@ -167,6 +167,12 @@ outputs:
             - dbgpt_client
           pip_check: true
           python_version:
+            - 3.12.*
+      - python:
+          imports:
+            - dbgpt_client
+          pip_check: true
+          python_version:
             - 3.14.*
       - script:
           - python -c "import sqlalchemy as sa; ver = sa.__version__; parts = tuple(int(x) for x in ver.split('.')[:3]); assert parts >= (2, 0, 25), f'need sqlalchemy >=2.0.25, got {ver}'; import dbgpt_client; print('dbgpt_client + sqlalchemy', ver, 'OK')"

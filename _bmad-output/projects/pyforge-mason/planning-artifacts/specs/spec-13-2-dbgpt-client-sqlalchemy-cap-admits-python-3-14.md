@@ -118,25 +118,38 @@ mirror into `recipes/db-gpt/`, and re-verify with a `pixi lock` probe
 - addressed_findings:
   - `[low]` `[patch]` Initial G26 patch targeted wrong upstream context (lowercase sqlalchemy + httpx lines absent in v0.8.1); fixed to match `SQLAlchemy>=2.0.25, <2.0.29` line.
 
+### 2026-09-02 — Review pass (bmad-build-auto third dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 3: (high 0, medium 0, low 3)
+- defer: 0
+- reject: 11: (high 0, medium 0, low 11)
+- addressed_findings:
+  - `[low]` `[patch]` Added explicit `python_version: 3.12.*` pip_check block on dbgpt-client (AC2 literal; sidecar consumer runs 3.12).
+  - `[low]` `[patch]` Clarified docs addendum: sqlalchemy fix removes dbgpt-client blocker; dbgpt-app/onnxruntime remains blocked.
+  - `[low]` `[patch]` Updated sprint-status-ledger.yaml 13-2 entry from backlog to done.
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Loosened `dbgpt-client` sqlalchemy to `>=2.0.25,<2.1`; added G26 source patch `0003-loosen-dbgpt-client-sqlalchemy-cap.patch` (corrected upstream context); bumped `build.number` 0→1; added py3.14 `pip_check` + script test on `dbgpt-client`. Opened feedstock PR [#4](https://github.com/conda-forge/db-gpt-feedstock/pull/4). Updated `docs/specs/db-gpt-conda-forge.md` addendum with PR link.
+Summary: Loosened `dbgpt-client` sqlalchemy to `>=2.0.25,<2.1`; added G26 source patch `0003-loosen-dbgpt-client-sqlalchemy-cap.patch` (corrected upstream context); bumped `build.number` 0→1; added py3.12 + py3.14 `pip_check` + script test on `dbgpt-client`. Opened feedstock PR [#4](https://github.com/conda-forge/db-gpt-feedstock/pull/4). Updated `docs/specs/db-gpt-conda-forge.md` addendum with PR link and onnxruntime caveat.
 
 Files changed:
-- `recipes/db-gpt/recipe.yaml` — dbgpt-client run-dep, source patch, build.number, py3.14 tests
+- `recipes/db-gpt/recipe.yaml` — dbgpt-client run-dep, source patch, build.number, py3.12/py3.14 tests
 - `recipes/db-gpt/patches/0003-loosen-dbgpt-client-sqlalchemy-cap.patch` — G26 METADATA alignment
-- `docs/specs/db-gpt-conda-forge.md` — Current State addendum with feedstock PR #4
+- `docs/specs/db-gpt-conda-forge.md` — Current State addendum with feedstock PR #4 + onnxruntime caveat
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml` — 13-2 → done
 
-Review findings: 1 patch applied (wrong patch hunk); 2 deferred (sidecar runtime, full dbgpt-app 3.14 solve/onnxruntime); CFE Rule-2 retro deferred to maintenance PR (mason meta-test constraint).
+Review findings: pass 1 — 1 patch (wrong patch hunk); 2 deferred (sidecar runtime, full dbgpt-app 3.14 solve/onnxruntime); CFE Rule-2 retro deferred to maintenance PR. Pass 3 — 3 low patches (AC2 py3.12 pip_check, docs caveat, sprint ledger). Intent-alignment: Reading B (blocker-removal slice) holds; AC1/AC2/AC5 met; AC3/AC4 remain deferred.
 
-Follow-up review recommendation: false (1 low patch only; score 1).
+Follow-up review recommendation: false (3 low patches; score 3).
 
 Verification performed:
-- `pixi run -e local-recipes recipe-build recipes/db-gpt` — exit 0; all 16 outputs; dbgpt-client pip_check green on py3.11 and py3.14; script test `dbgpt_client + sqlalchemy 2.0.52 OK`
-- 3.14 mamba dry-run: `python=3.14.* dbgpt=0.8.1 dbgpt-serve=0.8.1 dbgpt-client=0.8.1 django` — solves (113 packages); dbgpt-app still blocked on onnxruntime <=1.18.1 for cp314 (out of scope)
+- `pixi run -e local-recipes recipe-build recipes/db-gpt` — exit 0; all outputs green incl. new py3.12 dbgpt-client pip_check
 - `pixi run -e pyforge-mason pyforge-mason-test` — 1578 passed
+- dbgpt-client pip_check green on py3.11 and py3.14; script test `dbgpt_client + sqlalchemy 2.0.52 OK`
+- 3.14 mamba dry-run dbgpt+dbgpt-serve+dbgpt-client+django solves; dbgpt-app blocked on onnxruntime <=1.18.1 for cp314 (out of scope)
 - Feedstock PR: https://github.com/conda-forge/db-gpt-feedstock/pull/4
 
 Residual risks: feedstock CI not yet green; sidecar end-to-end validation waits on Steward 43.6 + onnxruntime cap work; CFE v8.86.0 retro text ready but not committed (mason guard).
