@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.11"
   name: django-todo
   version: "2.6.2"
 

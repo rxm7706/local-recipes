@@ -94,6 +94,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for python-libarchive-c...
-Error: Failed to fetch PyPI metadata for 'python-libarchive-c' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-libarchive-c/json
+#    Error: Failed to fetch PyPI metadata for 'python-libarchive-c' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-libarchive-c/json
 
 ####

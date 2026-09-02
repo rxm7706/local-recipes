@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "26.8.0"
-  python_min: "3.11"
 
 package:
   name: libraft-cu12
@@ -44,7 +43,7 @@ about:
   homepage: https://github.com/rapidsai/raft
   license: Apache-2.0
   license_file: LICENSE
-  summary: RAFT: Reusable Algorithms Functions and other Tools (C++)
+  summary: "RAFT: Reusable Algorithms Functions and other Tools (C++)"
   description: |
     RAFT: Reusable Algorithms Functions and other Tools (C++)
   documentation: https://docs.rapids.ai/api/raft/stable/

@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: netcdf4
   version: 1.7.4
-  python_min: "3.11"
   # recipe-lint failed in v0 if mpi was undefined; keep the same defaulting behavior
   mpi: ${{ mpi or "nompi" }}
   build: 9

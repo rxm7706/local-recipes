@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "26.8.0"
-  python_min: "3.11"
 
 package:
   name: cugraph-cu12

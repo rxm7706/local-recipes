@@ -211,17 +211,52 @@ def determine_build_backend(requires_dist: list[str]) -> str:
     return "setuptools"
 
 
-# conda-forge global Python floor (CFEP-25 + Aug 2025 build-matrix drop of 3.9).
-# Never emit a recipe with python_min below this value, even when the upstream
-# package declares a lower floor in its python_requires.
-_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+# conda-forge global Python floor (CFEP-25). Never emit a recipe with python_min
+# below this value, even when the upstream package declares a lower floor in its
+# python_requires.
+#
+# READ, don't hardcode: the floor MOVES (3.9 dropped Aug 2025, 3.10 dropped
+# 2026-09-02). This module used to hardcode "3.10" here AND in five literal
+# comparisons below, so when the floor moved the generator kept emitting recipes
+# pinned to a Python conda-forge no longer builds. The literal below is now only
+# the offline fallback, mirroring recipe_optimizer.py's SEL-004 reader.
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.11"
+_PINNING_PYTHON_MIN_RE = re.compile(
+    r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
+    re.MULTILINE,
+)
+
+
+def _read_conda_forge_python_floor() -> str:
+    """conda-forge's CURRENT python_min floor, read from the installed pinning.
+
+    Mirrors ``recipe_optimizer._read_conda_forge_python_floor``. Falls back to
+    the literal default when the pixi env's pinning file is absent (fresh
+    checkout / air-gapped) -- never blocks generation.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        pinning = parent / ".pixi/envs/local-recipes/conda_build_config.yaml"
+        if pinning.is_file():
+            try:
+                m = _PINNING_PYTHON_MIN_RE.search(pinning.read_text(encoding="utf-8"))
+            except OSError:
+                break
+            if m:
+                return m.group("value")
+            break
+    return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+
+
+_CONDA_FORGE_PYTHON_FLOOR = _read_conda_forge_python_floor()
 
 
 def _resolve_python_min(python_requires: str) -> str:
     """Parse ``python_requires`` and clamp to the conda-forge floor.
 
-    Returns the higher of the parsed ``>=X.Y`` and ``3.10``. Defaults to
-    ``3.10`` when ``python_requires`` is empty or unparseable.
+    Returns the higher of the parsed ``>=X.Y`` and the live conda-forge
+    floor. Defaults to that floor when ``python_requires`` is empty or
+    unparseable.
     """
     match = re.search(r">=\s*(\d+)\.(\d+)", python_requires or "")
     if not match:
@@ -1020,7 +1055,7 @@ def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
     # so any upstream-declared floor below 3.10 is moot for conda-forge.
     python_min = _resolve_python_min(info.python_requires)
     # CFEP-25 floor: only declare in context when overriding the default 3.10.
-    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
+    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
 
     # Canonical 2026 shape: ``context:`` only carries ``version`` (+ optional
     # ``python_min`` override); ``package.name`` is the literal distribution
@@ -1144,7 +1179,7 @@ def _generate_maturin_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
       matrix already exercises each Python version).
     """
     python_min = _resolve_python_min(info.python_requires)
-    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != "3.10" else ""
+    context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
 
     # Source URL: sdist filename may use underscore-form even when PyPI name uses hyphens.
     # Prefer the actual filename from info.source_url; otherwise synthesise a
@@ -1288,14 +1323,14 @@ def generate_meta_yaml(info: PackageInfo, output_dir: Path) -> Path:
     python_min = _resolve_python_min(info.python_requires)
     # Only declare ``python_min`` jinja var when overriding the 3.10 default.
     set_python_min_line = (
-        f'{{% set python_min = "{python_min}" %}}\n' if python_min != "3.10" else ""
+        f'{{% set python_min = "{python_min}" %}}\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
     )
     # In v0 the python_min jinja variable defaults to 3.10 from conda-forge-pinning
     # via the recipe's CBC; when omitted from the recipe, fall through to using
     # the literal floor in the run requirement so the recipe remains valid even
     # without a CBC override.
-    py_host = "{{ python_min }}" if set_python_min_line else "3.10"
-    py_run = "{{ python_min }}" if set_python_min_line else "3.10"
+    py_host = "{{ python_min }}" if set_python_min_line else _CONDA_FORGE_PYTHON_FLOOR
+    py_run = "{{ python_min }}" if set_python_min_line else _CONDA_FORGE_PYTHON_FLOOR
 
     # ``info.source_url`` carries v1 ``${{ version }}`` syntax; translate
     # to v0 ``{{ version }}`` so the meta.yaml renders correctly under

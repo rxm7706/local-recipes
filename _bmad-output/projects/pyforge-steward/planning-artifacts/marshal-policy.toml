@@ -438,3 +438,51 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+# Epics 40-43 (added 2026-09-02, same pass that added 39): the red-team HIGH set
+# (spec-pyforge-unifying-strategy). Given the SAME station-wide default epics 1-38
+# carry from the 2026-08-31 fleet-uniformity pass -- deliberately NOT widened on a
+# guess about what their stories will touch. Without an entry an epic falls back to
+# `default_epic_surface()` and re-fires MRS-GATE-012 on every legitimate path outside
+# it (exactly what happened to 39.4); with the uniform entry it behaves like every
+# other declared epic on this station. Widen a specific epic when a real advisory
+# names a real path, as was done for 39.
+"40" = [
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+"41" = [
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+"42" = [
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
+"43" = [
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]

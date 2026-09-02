@@ -94,7 +94,7 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for font-ttf-ubuntu...
-Error: Failed to fetch PyPI metadata for 'font-ttf-ubuntu' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-ubuntu/json
+#    Error: Failed to fetch PyPI metadata for 'font-ttf-ubuntu' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-ubuntu/json
 
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # license: rattler-build did not copy a license file; recorded, retrying common names

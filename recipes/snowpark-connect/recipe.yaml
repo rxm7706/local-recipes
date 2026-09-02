@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: snowpark-connect
   version: "1.36.0"
-  python_min: "3.10"
   python_max: "3.13"
 
 package:

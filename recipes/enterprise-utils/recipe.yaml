@@ -44,7 +44,7 @@ about:
   homepage: https://github.com/professionalaf/enterprise-utils.git
   license: Apache-2.0
   license_file: LICENSE
-  summary: @professionalaf/enterprise-utils
+  summary: "@professionalaf/enterprise-utils"
   description: |
     @professionalaf/enterprise-utils
   repository: https://github.com/professionalaf/enterprise-utils.git

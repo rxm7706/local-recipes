@@ -7,7 +7,6 @@ context:
   # Bazel version is specified upstream, file .bazelversion
   # https://github.com/google/tensorstore/blob/master/.bazelversion
   bazel_version: 8.*
-  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}

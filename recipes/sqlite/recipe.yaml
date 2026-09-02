@@ -7,8 +7,8 @@ context:
   year: 2026
   version_split: ${{ version | split(".") }}
   major: ${{ version_split[0] }}
-  minor: {{ version_split[1]|int * 10 }}
-  bugfix: {{ version_split[2]|int * 100 }}
+  minor: ${{ version_split[1]|int * 10 }}
+  bugfix: ${{ version_split[2]|int * 100 }}
   version_coded: (major ~ (("%03d" % minor)|string) ~ (("%03d" % bugfix)|string))
 
 recipe:

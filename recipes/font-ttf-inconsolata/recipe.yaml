@@ -67,5 +67,5 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for font-ttf-inconsolata...
-Error: Failed to fetch PyPI metadata for 'font-ttf-inconsolata' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-inconsolata/json
+#    Error: Failed to fetch PyPI metadata for 'font-ttf-inconsolata' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-inconsolata/json
 ####

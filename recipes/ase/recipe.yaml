@@ -5,7 +5,6 @@ context:
   name: ase
   version: "3.29.0"
   sha256: ef4e2caa38169e3fbbc4164764a060d1877a6692519a4bed82521328eeb0d9aa
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}

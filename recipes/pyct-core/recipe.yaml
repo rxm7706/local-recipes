@@ -91,7 +91,7 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for pyct-core...
-Error: Failed to fetch PyPI metadata for 'pyct-core' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/pyct-core/json
+#    Error: Failed to fetch PyPI metadata for 'pyct-core' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/pyct-core/json
 
 #    # added run deps from import test: ['distutils']
 ####

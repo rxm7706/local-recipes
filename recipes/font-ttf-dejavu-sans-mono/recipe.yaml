@@ -71,5 +71,5 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1:  for font-ttf-dejavu-sans-mono...
-Error: Failed to fetch PyPI metadata for 'font-ttf-dejavu-sans-mono' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-dejavu-sans-mono/json
+#    Error: Failed to fetch PyPI metadata for 'font-ttf-dejavu-sans-mono' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-dejavu-sans-mono/json
 ####

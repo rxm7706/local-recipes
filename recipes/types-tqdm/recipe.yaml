@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   name: types-tqdm
-  python_min: "3.10"
   version: "4.70.0.20260805"
 
 package:

@@ -5,7 +5,6 @@ context:
   version: "1.10.0"
   name: nipype
   sha256: 9671f6ff9d98ecf397edfdb9e56cb84cd54022bc7659bdd0f98f3a4c7924fb6a
-  python_min: "3.9"
 
 package:
   name: ${{ name }}

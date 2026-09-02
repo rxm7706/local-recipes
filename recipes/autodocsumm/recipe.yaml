@@ -5,7 +5,6 @@ context:
   name: autodocsumm
   version: "0.2.15"
   sha256: eaf431e7a5a39e41a215311173c8b95e83859059df1ccf3b79c64bf3d5582b3c
-  python_min: "3.7"
 
 package:
   name: ${{ name|lower }}

@@ -90,6 +90,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for google-colab...
-Error: Failed to fetch PyPI metadata for 'google-colab' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/google-colab/json
+#    Error: Failed to fetch PyPI metadata for 'google-colab' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/google-colab/json
 
 ####

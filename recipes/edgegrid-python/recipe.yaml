@@ -40,7 +40,7 @@ about:
   homepage: https://github.com/akamai/AkamaiOPEN-edgegrid-python
   license: Apache-2.0
   license_file: LICENSE
-  summary: {OPEN} client authentication protocol for python-requests
+  summary: "{OPEN} client authentication protocol for python-requests"
   description: |
     {OPEN} client authentication protocol for python-requests
 

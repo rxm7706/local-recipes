@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: spec-kit
   version: "0.16.4"
-  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}

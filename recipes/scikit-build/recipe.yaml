@@ -4,7 +4,6 @@ schema_version: 1
 context:
   version: "0.19.0"
   sha256: 46e1b2d71343d14e4c07d7e60902e673c78defb9a2c282b70ad80fb8502ade2e
-  python_min: "3.8"
 
 package:
   name: scikit-build

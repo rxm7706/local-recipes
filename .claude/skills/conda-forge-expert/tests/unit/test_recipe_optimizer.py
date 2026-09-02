@@ -150,6 +150,31 @@ class TestABT003PlaceholderAboutFields:
         assert "ABT-003" not in codes
 
 
+def _live_floor() -> str:
+    """conda-forge's CURRENT python_min, read from the installed pinning.
+
+    Mirrors recipe_optimizer._read_conda_forge_python_floor so these tests
+    follow the ecosystem instead of pinning a snapshot that goes stale the
+    next time conda-forge drops a Python.
+    """
+    import re
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    pat = re.compile(
+        r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(\d+\.\d+)['\"]?",
+        re.MULTILINE,
+    )
+    for parent in here.parents:
+        pinning = parent / ".pixi/envs/local-recipes/conda_build_config.yaml"
+        if pinning.is_file():
+            m = pat.search(pinning.read_text(encoding="utf-8"))
+            if m:
+                return m.group(1)
+            break
+    return "3.11"
+
+
 class TestSEL004RedundantPythonMin:
     """v8.13.0 — SEL-004 catches context.python_min at/below the conda-forge floor."""
 
@@ -175,7 +200,15 @@ class TestSEL004RedundantPythonMin:
         return recipe
 
     def test_flags_python_min_at_floor(self, tmp_path, script_runner):
-        recipe = self._build_recipe(tmp_path, python_min_line='python_min: "3.10"')
+        """AT the live floor -> SEL-004 fires as 'matches the default floor'.
+
+        Floor-RELATIVE on purpose: hardcoding a snapshot broke this test when
+        conda-forge dropped 3.10 on 2026-09-02 and the floor moved to 3.11 --
+        the same defect the generator carried. Read the floor the way the code
+        under test reads it.
+        """
+        floor = _live_floor()
+        recipe = self._build_recipe(tmp_path, python_min_line=f'python_min: "{floor}"')
         rc, out, _ = script_runner("recipe_optimizer.py", str(recipe))
         result = json.loads(out)
         sel004 = [s for s in result["suggestions"] if s["code"] == "SEL-004"]
@@ -191,7 +224,11 @@ class TestSEL004RedundantPythonMin:
         assert "below the" in sel004[0]["message"]
 
     def test_no_fire_above_floor(self, tmp_path, script_runner):
-        recipe = self._build_recipe(tmp_path, python_min_line='python_min: "3.11"')
+        """One minor ABOVE the live floor -> SEL-004 stays silent (floor-relative)."""
+        major, minor = (int(p) for p in _live_floor().split("."))
+        recipe = self._build_recipe(
+            tmp_path, python_min_line=f'python_min: "{major}.{minor + 1}"'
+        )
         rc, out, _ = script_runner("recipe_optimizer.py", str(recipe))
         codes = [s["code"] for s in json.loads(out)["suggestions"]]
         assert "SEL-004" not in codes

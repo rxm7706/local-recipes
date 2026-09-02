@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: unsloth
   version: "2026.8.18"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}

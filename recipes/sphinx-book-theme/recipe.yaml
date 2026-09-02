@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.4.0"
-  python_min: "3.11"
   python_check_max: "3.14"
   sphinx_min: "8.2"
 

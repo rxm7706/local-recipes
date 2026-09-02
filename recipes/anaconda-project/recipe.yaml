@@ -105,5 +105,5 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for anaconda-project...
-Error: Failed to fetch PyPI metadata for 'anaconda-project' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/anaconda-project/json
+#    Error: Failed to fetch PyPI metadata for 'anaconda-project' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/anaconda-project/json
 ####

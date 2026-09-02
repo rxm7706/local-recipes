@@ -96,6 +96,15 @@ class TestSkillMdConsistency:
             # the time) — Doctor Story 6.9 (2026-08-09) ported the last of them into
             # `pyforge.doctor.sources` and deleted the `scripts/*_check.py` files.
             "spec_surface_check.py",      # v8.79.1 entry — now sources/chain.py::gather_spec_surface
+            # Retired skill-local tests, cited only in historical Version History
+            # entries. `test_dashboard_renders.py` executed the Guildhall console's
+            # inline script; steward 30.2 deleted the Guildhall generator on
+            # 2026-08-25 and `dashboard-drift` now lists docs/dashboard/check_render.js
+            # in its _RETIRED_CONSOLE_FILES reintroduction gate — so the two gates had
+            # become direct contradictions (this test demanded the file exist; the
+            # detector demands it stay gone). Test retired in v8.84.2; the v8.81.0
+            # entry's mention of it stays as accurate history.
+            "test_dashboard_renders.py",
         }
 
         referenced = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b", content))

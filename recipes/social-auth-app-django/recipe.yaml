@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
   name: social-auth-app-django
   version: "6.0.1"
 

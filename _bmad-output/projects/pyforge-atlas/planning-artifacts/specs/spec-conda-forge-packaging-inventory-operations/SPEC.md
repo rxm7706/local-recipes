@@ -16,6 +16,12 @@ surface:            # 17.1 claims the quartet + data files (per-file, not a glob
   - scripts/tests/fixtures/inventory_universe/catalog/intermediate/pypi_universe/pypi_universe.parquet
   - scripts/tests/fixtures/inventory_universe/catalog/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
   - scripts/tests/fixtures/inventory_universe/catalog/raw/openteams_project_1_board_raw/openteams_project_1_board.parquet
+  # Story 23.9 (atlas), 2026-08-30: asserts zero workbook surface across the quartet
+  # actuators. Landed governed-but-unclaimed, so spec-surface reported it `ungoverned`
+  # (coverage, not drift — a baseline stamp cannot clear that finding). Claimed here
+  # rather than allowlisted: it is this spec's own story's test, sitting beside the
+  # sibling quartet tests already claimed above.
+  - scripts/tests/test_quartet_no_xlsx_surface.py
   - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
   - scripts/conda-forge-packaging-inventory-operations_priority.py
   - scripts/openteams_identity_dashboards.py

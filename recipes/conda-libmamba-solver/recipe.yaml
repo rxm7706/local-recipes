@@ -96,5 +96,5 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: etching info for conda-libmamba-solver...
-Error: Failed to fetch PyPI metadata for 'conda-libmamba-solver' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/conda-libmamba-solver/json
+#    Error: Failed to fetch PyPI metadata for 'conda-libmamba-solver' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/conda-libmamba-solver/json
 ####

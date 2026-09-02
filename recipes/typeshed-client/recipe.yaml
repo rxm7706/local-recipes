@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: typeshed-client
   version: "2.13.0"
-  python_min: "3.9"
 
 package:
   name: ${{ name|lower }}

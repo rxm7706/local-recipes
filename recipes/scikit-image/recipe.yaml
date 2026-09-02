@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "0.26.0"
-  python_min: "3.11"
   cython_min: "3.0.8"
   lazy_loader_min: "0.4"
   meson_python_min: "0.16"

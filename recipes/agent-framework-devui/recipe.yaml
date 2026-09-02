@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.0.0b260528"
-  python_min: "3.10"
 
 package:
   name: agent-framework-devui

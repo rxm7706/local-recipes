@@ -8,7 +8,7 @@ context:
   name: en_core_web_
   version: "3.3.0"
   build_number: 0
-  spacy_version: {{ ".".join(version | split(".")[:2] + ['*']) }}
+  spacy_version: ${{ ".".join(version | split(".")[:2] + ['*']) }}
 
 recipe:
   name: ${{ prefix }}${{ name[:-1] }}

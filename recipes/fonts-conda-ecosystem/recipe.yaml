@@ -61,7 +61,7 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: etching info for fonts-conda-ecosystem...
-Error: Failed to fetch PyPI metadata for 'fonts-conda-ecosystem' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/fonts-conda-ecosystem/json
+#    Error: Failed to fetch PyPI metadata for 'fonts-conda-ecosystem' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/fonts-conda-ecosystem/json
 
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # license: rattler-build did not copy a license file; recorded, retrying common names

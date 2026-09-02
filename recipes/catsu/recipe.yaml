@@ -8,7 +8,6 @@ schema_version: 1
 
 context:
   version: "0.1.8"
-  python_min: "3.11"
 
 package:
   name: catsu

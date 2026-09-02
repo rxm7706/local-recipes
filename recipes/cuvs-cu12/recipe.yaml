@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "26.8.1"
-  python_min: "3.11"
 
 package:
   name: cuvs-cu12
@@ -43,7 +42,7 @@ about:
   homepage: https://github.com/rapidsai/cuvs
   license: Apache-2.0
   license_file: LICENSE
-  summary: cuVS: Vector Search on the GPU
+  summary: "cuVS: Vector Search on the GPU"
   description: |
     cuVS: Vector Search on the GPU
   documentation: https://docs.rapids.ai/api/cuvs/stable/

@@ -4903,3 +4903,13 @@ status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-28-24: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
+
+- source_spec: `planning-artifacts/specs/spec-28-24-supervisor-finalizes-when-harness-cannot-run-shell.md`
+  summary: End-to-end dispatch_once integration test for MRS-DISP-039 not present; unit tests cover the helper directly.
+  evidence: `_redispatch_blocked_pending_supervisor_finalize` is tested in isolation; no test exercises the full dispatch launch path that emits MRS-DISP-039.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_finalize.py
+  origin: spec-deferred 7670c285b6cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

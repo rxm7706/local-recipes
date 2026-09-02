@@ -163,3 +163,25 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+# Epic 13 (added 2026-09-02): "Two feedstock pins admit Python 3.14", minted the same
+# day and scheduled as the next mason dispatch (steward 43.6 is gated on 13.1/13.2).
+# It was the ONLY station epic with pending stories and no [epic_surfaces] entry, so
+# both stories would have fallen back to `default_epic_surface()` and re-fired
+# MRS-GATE-012 -- the same defect that hit steward 39.4. Unlike every other entry here
+# this one also needs `recipes/**`: both stories are conda-forge recipe edits
+# (langflow-base's onnxruntime pin, dbgpt-client's sqlalchemy cap) run under
+# conda-forge-expert per Rule 1, each with a Rule-2 retro that lands in the CFE
+# CHANGELOG. Station default + the recipe/CFE surfaces those two stories actually touch,
+# per the epic body -- not a wildcard.
+"13" = [
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "recipes/**",
+  ".claude/skills/conda-forge-expert/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]
