@@ -335,6 +335,8 @@ def test_registered_codes_contains_the_real_codes():
             # advisory siblings of MRS-GATE-007/008.
             "MRS-GATE-012",
             "MRS-GATE-013",
+            # Story 28.22 (verify blast radius, CAP-5): pre-existing-gate WARN.
+            "MRS-GATE-014",
             # Story 28.8 (derived context recomputes only on source change,
             # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
             # own area. 001 UNEVALUABLE (the derived-context declaration

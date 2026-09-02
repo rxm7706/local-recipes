@@ -39,6 +39,7 @@ _TERMINAL_FAILED_GATES: frozenset[str] = frozenset(
     {
         "MRS-GATE-007",
         "MRS-GATE-008",
+        "MRS-GATE-014",  # Story 28.22: pre-existing-gate WARN — no transient retry
         "MRS-DISP-005",
         "MRS-DISP-030",
     }

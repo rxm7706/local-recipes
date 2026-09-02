@@ -1121,6 +1121,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # visible without refusing landing.
     "MRS-GATE-012": Verdict.WARN,
     "MRS-GATE-013": Verdict.WARN,
+    # Story 28.22 (verify blast radius, spec-marshal-drain-self-resolution
+    # CAP-5): MRS-GATE-014 is the pre-existing-gate advisory sibling of
+    # MRS-GATE-001 -- a verify command failed, but every extracted failing
+    # path sits outside the story diff and effective surface. WARN, never
+    # GATE_FAILED, so independent verification still VERIFIES and drain does
+    # not transient-redispatch into the same unrelated repo-global red.
+    "MRS-GATE-014": Verdict.WARN,
     # Story 28.8 (derived context recomputes only on source change,
     # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
     # reason MRS-POLICY-001 is: marshal could not determine WHAT the

@@ -1719,6 +1719,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # weights depending on the declared mode). Both WARN.
         "MRS-GATE-012",
         "MRS-GATE-013",
+        # Story 28.22 (verify blast radius, spec-marshal-drain-self-resolution
+        # CAP-5): MRS-GATE-014 -- pre-existing-gate WARN sibling of
+        # MRS-GATE-001 when failure paths are outside story diff + surface.
+        "MRS-GATE-014",
         # Story 28.8 (derived context recomputes only on source change,
         # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
         # own two codes -- 001 UNEVALUABLE (the declaration itself could

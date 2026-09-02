@@ -78,6 +78,15 @@ def test_transient_block_on_verify_gate() -> None:
     assert kind is DispatchBlockKind.TRANSIENT
 
 
+def test_terminal_block_on_pre_existing_gate() -> None:
+    kind = classify_dispatch_block(
+        session_log="",
+        failed_gate="MRS-GATE-014",
+        changed_path_count=3,
+    )
+    assert kind is DispatchBlockKind.TERMINAL
+
+
 def test_exclude_harness_after_quota_failure() -> None:
     preference = ("claude", "cursor", "copilot")
     result = exclude_harness_profiles_after_transient_failure(

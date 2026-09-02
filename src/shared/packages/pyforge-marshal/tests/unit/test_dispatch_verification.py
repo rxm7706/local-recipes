@@ -15,10 +15,18 @@ from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
+    PRE_EXISTING_GATE_CODE,
+    extract_failure_paths_from_verify_output,
     gate_verdict_is_clean,
     judge_dispatch_verification,
+    path_in_story_blast_radius,
     primary_gate_failure,
+    reclassify_pre_existing_gate_findings,
     would_land_on_self_report_only,
+)
+from pyforge.marshal.core.dispatch_retry import (
+    DispatchBlockKind,
+    classify_dispatch_block,
 )
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
@@ -448,3 +456,283 @@ def test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_r
         vcs=FakeVcs(changed=("src/shared/packages/acme/module.py",)),
     )
     assert not any(f.code == "MRS-GATE-007" for f in envelope.findings)
+
+
+# --- Story 28.22: verify blast radius / pre-existing-gate (CAP-5) ------------
+
+
+def test_extract_failure_paths_from_pytest_collection_output() -> None:
+    stderr = (
+        "ERROR collecting tests/packaging/test_deps_atlas.py\n"
+        "ImportError while importing test module "
+        "'/tmp/wt/tests/packaging/test_deps_atlas.py'.\n"
+        "ModuleNotFoundError: No module named 'pandas'\n"
+    )
+    paths = extract_failure_paths_from_verify_output("", stderr)
+    assert paths == ("tests/packaging/test_deps_atlas.py",)
+
+
+def test_path_in_story_blast_radius_matches_changed_or_surface() -> None:
+    surface = ("src/shared/packages/pyforge-marshal/**",)
+    changed = (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/foo.py",
+    )
+    assert path_in_story_blast_radius(
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/foo.py",
+        changed_files=changed,
+        effective_surface=surface,
+    )
+    assert path_in_story_blast_radius(
+        "src/shared/packages/pyforge-marshal/tests/unit/test_foo.py",
+        changed_files=(),
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+    assert path_in_story_blast_radius(
+        "tests/unit/test_foo.py",
+        changed_files=(),
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+    assert not path_in_story_blast_radius(
+        "tests/packaging/test_deps_atlas.py",
+        changed_files=changed,
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+
+
+def test_reclassify_pre_existing_gate_downgrades_unrelated_verify_failure() -> None:
+    gate_001 = Finding(
+        code="MRS-GATE-001",
+        severity=Severity.ERROR,
+        message="verify command 'pixi run pyforge-deps-test' exited 1",
+    )
+    reports = (
+        {
+            "command": "pixi run pyforge-deps-test",
+            "stdout": "",
+            "stderr": (
+                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
+                "ModuleNotFoundError: No module named 'pandas'\n"
+            ),
+        },
+    )
+    surface = ("src/shared/packages/pyforge-marshal/**",)
+    changed = (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
+    )
+    findings = reclassify_pre_existing_gate_findings(
+        (gate_001,),
+        command_reports=reports,
+        changed_files=changed,
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+    assert len(findings) == 1
+    assert findings[0].code == PRE_EXISTING_GATE_CODE
+    assert findings[0].severity is Severity.WARN
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_reclassify_keeps_marshal_package_failure_as_gate_001() -> None:
+    gate_001 = Finding(
+        code="MRS-GATE-001",
+        severity=Severity.ERROR,
+        message="verify command 'pixi run pyforge-marshal-test' exited 1",
+    )
+    reports = (
+        {
+            "command": "pixi run pyforge-marshal-test",
+            "stdout": "",
+            "stderr": (
+                "tests/unit/test_dispatch_retry.py:42: AssertionError\n"
+                "FAILED tests/unit/test_dispatch_retry.py::test_example\n"
+            ),
+        },
+    )
+    surface = ("src/shared/packages/pyforge-marshal/**",)
+    changed = (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
+    )
+    findings = reclassify_pre_existing_gate_findings(
+        (gate_001,),
+        command_reports=reports,
+        changed_files=changed,
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+    assert findings == (gate_001,)
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=findings)
+    ) == DispatchVerificationVerdict.REFUSED
+
+
+def test_reclassify_pre_existing_gate_with_empty_changed_files() -> None:
+    """Doc-only / no-diff scope: unrelated verify reds still downgrade."""
+    gate_001 = Finding(
+        code="MRS-GATE-001",
+        severity=Severity.ERROR,
+        message="verify command 'pixi run pyforge-deps-test' exited 1",
+    )
+    reports = (
+        {
+            "command": "pixi run pyforge-deps-test",
+            "stdout": "",
+            "stderr": (
+                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
+                "ModuleNotFoundError: No module named 'pandas'\n"
+            ),
+        },
+    )
+    surface = ("src/shared/packages/pyforge-marshal/**",)
+    findings = reclassify_pre_existing_gate_findings(
+        (gate_001,),
+        command_reports=reports,
+        changed_files=(),
+        effective_surface=surface,
+        project_slug="pyforge-marshal",
+    )
+    assert len(findings) == 1
+    assert findings[0].code == PRE_EXISTING_GATE_CODE
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_reclassify_pre_existing_gate_with_empty_effective_surface() -> None:
+    """AD-27: empty effective_surface must not skip reclassification when changed_files exist."""
+    gate_001 = Finding(
+        code="MRS-GATE-001",
+        severity=Severity.ERROR,
+        message="verify command 'pixi run pyforge-deps-test' exited 1",
+    )
+    reports = (
+        {
+            "command": "pixi run pyforge-deps-test",
+            "stdout": "",
+            "stderr": (
+                "ERROR collecting tests/packaging/test_deps_atlas.py\n"
+                "ModuleNotFoundError: No module named 'pandas'\n"
+            ),
+        },
+    )
+    changed = (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
+    )
+    findings = reclassify_pre_existing_gate_findings(
+        (gate_001,),
+        command_reports=reports,
+        changed_files=changed,
+        effective_surface=(),
+        project_slug="pyforge-marshal",
+    )
+    assert len(findings) == 1
+    assert findings[0].code == PRE_EXISTING_GATE_CODE
+    assert findings[0].severity is Severity.WARN
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_pre_existing_gate_is_terminal_for_dispatch_retry() -> None:
+    kind = classify_dispatch_block(
+        session_log="",
+        failed_gate=PRE_EXISTING_GATE_CODE,
+        changed_path_count=2,
+    )
+    assert kind is DispatchBlockKind.TERMINAL
+
+
+class PackagingFailProcess:
+    def run(self, tokens, *, cwd: Path):
+        command = " ".join(tokens)
+        if "pyforge-deps-test" in command:
+            return ProcessResult(
+                returncode=1,
+                stdout="",
+                stderr=(
+                    "ERROR collecting tests/packaging/test_deps_atlas.py\n"
+                    "ModuleNotFoundError: No module named 'pandas'\n"
+                ),
+            )
+        if "pyforge-marshal-test" in command:
+            return ProcessResult(
+                returncode=1,
+                stdout="",
+                stderr=(
+                    "tests/unit/test_dispatch_retry.py:10: AssertionError\n"
+                ),
+            )
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("28-22-verify-blast-radius-pre-existing-gate")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={
+            "verify_commands": [
+                "pixi run pyforge-deps-test",
+                "true",
+            ]
+        },
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=PackagingFailProcess(),
+        vcs=FakeVcs(
+            changed=(
+                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
+            )
+        ),
+    )
+    codes = [finding.code for finding in envelope.findings]
+    assert "MRS-GATE-001" not in codes
+    assert PRE_EXISTING_GATE_CODE in codes
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    ) == DispatchVerificationVerdict.VERIFIED
+
+
+def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("28-22-verify-blast-radius-pre-existing-gate")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["pixi run pyforge-marshal-test", "true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=PackagingFailProcess(),
+        vcs=FakeVcs(
+            changed=(
+                "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py",
+            )
+        ),
+    )
+    assert any(finding.code == "MRS-GATE-001" for finding in envelope.findings)
+    assert judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    ) == DispatchVerificationVerdict.REFUSED

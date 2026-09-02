@@ -16,6 +16,7 @@ from pyforge.core.process import ProcessError, ProcessPort
 
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
+from .core.dispatch_verification import reclassify_pre_existing_gate_findings
 from .core.identity import StoryKey, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
@@ -117,6 +118,9 @@ def evaluate_dispatch_verification(
 
     commands = effective.verify_commands.value
     command_reports: list[dict[str, object]] = []
+    scope_changed_files: tuple[str, ...] = ()
+    scope_effective_surface: tuple[str, ...] = ()
+    scope_check_completed = False
     if not commands:
         if status_for(compute_verdict(findings)) is Status.OK:
             findings.append(gate.no_commands_configured_finding())
@@ -239,6 +243,9 @@ def evaluate_dispatch_verification(
                     else:
                         scope_findings = recheck_findings
             findings.extend(scope_findings)
+            scope_changed_files = changed
+            scope_effective_surface = effective_surface
+            scope_check_completed = True
             data["scope_check"] = {
                 "checked": True,
                 "story": str(story_key),
@@ -247,6 +254,17 @@ def evaluate_dispatch_verification(
                 "changed_files": list(changed),
                 "violations": len(scope_findings),
             }
+
+    if command_reports and scope_check_completed:
+        findings = list(
+            reclassify_pre_existing_gate_findings(
+                tuple(findings),
+                command_reports=tuple(command_reports),
+                changed_files=scope_changed_files,
+                effective_surface=scope_effective_surface,
+                project_slug=project_slug,
+            )
+        )
 
     if spec_text is not None:
         declared_commands = spec_binding.parse_success_signal(spec_text)

@@ -131,7 +131,7 @@ development_status:
   28-19-missing-spec-escalates-never-idle-with-backlog: done
   28-20-cap-4-land-heals-mechanical-and-dirty-prs: done
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: done
-  28-22-verify-blast-radius-pre-existing-gate: backlog
+  28-22-verify-blast-radius-pre-existing-gate: done
   28-23-stranded-work-signal-after-terminal-verify-fail: backlog
   28-24-supervisor-finalizes-when-harness-cannot-run-shell: backlog
   28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
