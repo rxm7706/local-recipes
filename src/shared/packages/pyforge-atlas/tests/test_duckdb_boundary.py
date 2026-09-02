@@ -58,7 +58,8 @@ def _duckdb_connect_calls(tree: ast.Module) -> list[ast.Call]:
 def _keyword_bool(call: ast.Call, name: str) -> bool | None:
     for kw in call.keywords:
         if kw.arg == name and isinstance(kw.value, ast.Constant):
-            return bool(kw.value.value)
+            if isinstance(kw.value.value, bool):
+                return kw.value.value
     return None
 
 
@@ -139,5 +140,16 @@ def test_duckdb_boundary_estate_connect_policy() -> None:
 def test_duckdb_boundary_guard_detects_bare_file_connect(tmp_path: Path) -> None:
     bad = tmp_path / "bad_module.py"
     bad.write_text("import duckdb\ncon = duckdb.connect('/data/atlas.duckdb')\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match="read_only=True or :memory:"):
+        assert not _violations_for_file(bad)
+
+
+def test_duckdb_boundary_guard_rejects_string_read_only_false(tmp_path: Path) -> None:
+    bad = tmp_path / "bad_string_read_only.py"
+    bad.write_text(
+        "import duckdb\n"
+        "con = duckdb.connect('/data/atlas.duckdb', read_only=\"false\")\n",
+        encoding="utf-8",
+    )
     with pytest.raises(AssertionError, match="read_only=True or :memory:"):
         assert not _violations_for_file(bad)
