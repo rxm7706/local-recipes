@@ -70,6 +70,27 @@ REQUIRED_SETTINGS: Final[tuple[RequiredSetting, ...]] = (
             "platform-ci-test leave it unset (COMPONENT_RUNTIME=local)."
         ),
     ),
+    RequiredSetting(
+        name="COMPONENT_OIDC_ISSUER",
+        remedy=(
+            "Set COMPONENT_OIDC_ISSUER to the IdP issuer URL for this deployment "
+            "(for example: https://idp.example/realms/platform)."
+        ),
+    ),
+    RequiredSetting(
+        name="COMPONENT_OIDC_JWKS_URL",
+        remedy=(
+            "Set COMPONENT_OIDC_JWKS_URL to the IdP JWKS URL for this deployment "
+            "(https://... or a pinned file:// mirror)."
+        ),
+    ),
+    RequiredSetting(
+        name="COMPONENT_OIDC_AUDIENCE",
+        remedy=(
+            "Set COMPONENT_OIDC_AUDIENCE to the expected audience for platform "
+            "tokens (often the OIDC client id)."
+        ),
+    ),
 )
 
 _INVALID_ADMIN_URLS: Final[frozenset[str]] = frozenset(

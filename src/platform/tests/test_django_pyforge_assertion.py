@@ -1,4 +1,4 @@
-"""Story 18.3: two clients, one RS256 service assertion."""
+"""Story 18.3 / 40.1: RS256 service assertions and verified IdP bearers."""
 
 from __future__ import annotations
 
@@ -15,10 +15,13 @@ from pathlib import Path
 
 import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.http import HttpRequest
 from django.http import HttpResponse
 from django.test import RequestFactory
+from django.test import override_settings
 from django.urls import reverse
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.crypto import mint_assertion
@@ -28,12 +31,14 @@ from django_pyforge.assertion.exceptions import ExpiredAssertionError
 from django_pyforge.assertion.exceptions import WrongAudienceError
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
-from django_pyforge.assertion.identity import identity_from_idp_bearer
+from django_pyforge.assertion.identity import verify_idp_bearer
+from django_pyforge.assertion.jwks import reset_jwks_cache
 from django_pyforge.assertion.middleware import AssertionMiddleware
 from django_pyforge.assertion.schema import DELEGATED_BY
 from django_pyforge.assertion.schema import MAX_TTL_SECONDS
 from django_pyforge.assertion.schema import audience_for
 from django_pyforge.assertion.views import mint
+from jwt.algorithms import RSAAlgorithm
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -76,9 +81,55 @@ _BANNED_SECRET = re.compile(
     re.IGNORECASE,
 )
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
+_BANNED_B64 = re.compile(r"\b(urlsafe_b64decode|b64decode)\b")
 _STATION = "warden"
 _SUB = "idp-user-alice"
 _ROLES = ["warden"]
+_TEST_ISSUER = "https://test.invalid/realms/platform"
+_TEST_AUDIENCE = "platform-web"
+
+
+@pytest.fixture
+def idp_test_keys(tmp_path: Path) -> dict[str, object]:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key = private_key.public_key()
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    kid = "test-idp-signing-key"
+    jwk = RSAAlgorithm.to_jwk(public_key, as_dict=True)
+    jwk.update({"kid": kid, "use": "sig", "alg": "RS256"})
+    jwks_path = tmp_path / "jwks.json"
+    jwks_path.write_text(json.dumps({"keys": [jwk]}), encoding="utf-8")
+    return {
+        "kid": kid,
+        "private_pem": private_pem,
+        "jwks_url": jwks_path.as_uri(),
+        "jwks_path": jwks_path,
+    }
+
+
+@pytest.fixture(autouse=True)
+def _idp_verifier_settings(
+    idp_test_keys: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import django
+    from django.conf import settings
+
+    if not settings.configured:
+        django.setup()
+    reset_jwks_cache()
+    monkeypatch.setattr(settings, "OIDC_JWKS_URL", idp_test_keys["jwks_url"], raising=False)
+    monkeypatch.setattr(settings, "OIDC_ISSUER", _TEST_ISSUER, raising=False)
+    monkeypatch.setattr(settings, "OIDC_AUDIENCE", _TEST_AUDIENCE, raising=False)
+    monkeypatch.setattr(settings, "OIDC_ALGORITHMS", ["RS256"], raising=False)
+    monkeypatch.setattr(settings, "OIDC_LEEWAY_SECONDS", 0.0, raising=False)
+    monkeypatch.setattr(settings, "DJANGO_PYFORGE_GROUP_CLAIM", "groups", raising=False)
+    yield
+    reset_jwks_cache()
 
 
 def _load_core_assertion():
@@ -93,19 +144,59 @@ def _load_core_assertion():
     return module
 
 
-def _idp_bearer(sub: str, roles: list[str]) -> str:
+def _idp_bearer(
+    sub: str,
+    roles: list[str],
+    *,
+    private_pem: bytes,
+    kid: str,
+    issuer: str = _TEST_ISSUER,
+    audience: str | list[str] = _TEST_AUDIENCE,
+    iat: int | None = None,
+    exp: int | None = None,
+    extra_claims: dict[str, object] | None = None,
+    token_headers: dict[str, str] | None = None,
+) -> str:
+    now = int(datetime.now(tz=UTC).timestamp())
+    claims: dict[str, object] = {
+        "sub": sub,
+        "groups": roles,
+        "iss": issuer,
+        "aud": audience,
+        "iat": iat if iat is not None else now,
+        "exp": exp if exp is not None else now + 300,
+    }
+    if extra_claims:
+        claims.update(extra_claims)
+    headers = {"kid": kid, "alg": "RS256"}
+    if token_headers:
+        headers.update(token_headers)
+    return jwt.encode(claims, private_pem, algorithm="RS256", headers=headers)
+
+
+def _unsigned_idp_bearer(sub: str, roles: list[str]) -> str:
     def segment(data: dict[str, object]) -> str:
         raw = json.dumps(data, separators=(",", ":")).encode("utf-8")
         return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
-    return f"{segment({'typ': 'JWT'})}.{segment({'sub': sub, 'roles': roles})}.sig"
+    return f"{segment({'typ': 'JWT'})}.{segment({'sub': sub, 'groups': roles})}.sig"
+
+
+def _mint_request(bearer: str, station: str = _STATION) -> HttpResponse:
+    request = RequestFactory().post(
+        "/assertion/mint/",
+        data=json.dumps({"station": station}),
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {bearer}",
+    )
+    return mint(request)
 
 
 def _in_process_transport(url: str, headers: dict[str, str], body: bytes) -> bytes:
     del url
     station = json.loads(body.decode("utf-8"))["station"]
     bearer = headers["Authorization"].removeprefix("Bearer ").strip()
-    sub, roles = identity_from_idp_bearer(bearer)
+    sub, roles = verify_idp_bearer(bearer)
     token = mint_assertion(
         sub=sub,
         roles=roles,
@@ -123,7 +214,9 @@ def _assert_service_claims(claims: dict[str, object], *, station: str) -> None:
     assert int(claims["exp"]) - int(claims["iat"]) <= MAX_TTL_SECONDS
 
 
-def test_portal_and_host_mint_clients_pass_the_same_verifier() -> None:
+def test_portal_and_host_mint_clients_pass_the_same_verifier(
+    idp_test_keys: dict[str, object],
+) -> None:
     expected_aud = audience_for(_STATION)
     portal_token = PortalClient().emit(
         _SUB,
@@ -143,7 +236,15 @@ def test_portal_and_host_mint_clients_pass_the_same_verifier() -> None:
         "https://host.example/assertion/mint/",
         transport=_in_process_transport,
     )
-    minted = client.emit(idp_bearer=_idp_bearer(_SUB, _ROLES), station=_STATION)
+    minted = client.emit(
+        idp_bearer=_idp_bearer(
+            _SUB,
+            _ROLES,
+            private_pem=idp_test_keys["private_pem"],
+            kid=idp_test_keys["kid"],
+        ),
+        station=_STATION,
+    )
     minted_claims = verify_assertion(
         minted,
         audience=expected_aud,
@@ -317,7 +418,9 @@ def test_portal_raw_http_to_a_service_is_review_blocking() -> None:
     assert _raw_http_imports(ast.parse("import http.client\n"))
 
 
-def test_cli_client_authenticates_to_the_host_and_does_not_sign() -> None:
+def test_cli_client_authenticates_to_the_host_and_does_not_sign(
+    idp_test_keys: dict[str, object],
+) -> None:
     crypto = {"jwt", "cryptography"}
 
     def _is_crypto_import(node: ast.AST) -> bool:
@@ -342,7 +445,12 @@ def test_cli_client_authenticates_to_the_host_and_does_not_sign() -> None:
     mint_url = "https://host.example/assertion/mint/"
     core = _load_core_assertion()
     token = core.HostMintClient(mint_url, transport=transport).emit(
-        idp_bearer=_idp_bearer(_SUB, _ROLES),
+        idp_bearer=_idp_bearer(
+            _SUB,
+            _ROLES,
+            private_pem=idp_test_keys["private_pem"],
+            kid=idp_test_keys["kid"],
+        ),
         station=_STATION,
     )
     assert seen["url"] == mint_url
@@ -373,14 +481,17 @@ def test_golden_vector_is_not_the_oidc_persona_mint() -> None:
     assert GOLDEN_PUBLIC_PEM.startswith("-----BEGIN PUBLIC KEY-----")
 
 
-def test_host_mint_view_emits_a_verifiable_assertion() -> None:
-    request = RequestFactory().post(
-        "/assertion/mint/",
-        data=json.dumps({"station": _STATION}),
-        content_type="application/json",
-        HTTP_AUTHORIZATION=f"Bearer {_idp_bearer(_SUB, _ROLES)}",
+def test_host_mint_view_emits_a_verifiable_assertion(
+    idp_test_keys: dict[str, object],
+) -> None:
+    response = _mint_request(
+        _idp_bearer(
+            _SUB,
+            _ROLES,
+            private_pem=idp_test_keys["private_pem"],
+            kid=idp_test_keys["kid"],
+        ),
     )
-    response = mint(request)
     assert response.status_code == HTTPStatus.OK
     token = json.loads(response.content)["assertion"]
     claims = verify_assertion(
@@ -389,6 +500,239 @@ def test_host_mint_view_emits_a_verifiable_assertion() -> None:
         public_pem=GOLDEN_PUBLIC_PEM,
     )
     _assert_service_claims(claims, station=_STATION)
+
+
+def test_unsigned_bearer_is_refused() -> None:
+    response = _mint_request(_unsigned_idp_bearer(_SUB, _ROLES))
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_bearer_signed_with_wrong_key_is_refused(
+    idp_test_keys: dict[str, object],
+) -> None:
+    other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    other_pem = other.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    bearer = _idp_bearer(
+        _SUB,
+        _ROLES,
+        private_pem=other_pem,
+        kid=idp_test_keys["kid"],
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_idp_bearer_alg_none_is_refused(idp_test_keys: dict[str, object]) -> None:
+    now = int(datetime.now(tz=UTC).timestamp())
+    header = base64.urlsafe_b64encode(
+        json.dumps({"alg": "none", "kid": idp_test_keys["kid"]}, separators=(",", ":")).encode(
+            "utf-8",
+        ),
+    ).rstrip(b"=").decode("ascii")
+    payload = base64.urlsafe_b64encode(
+        json.dumps(
+            {
+                "sub": _SUB,
+                "groups": _ROLES,
+                "iss": _TEST_ISSUER,
+                "aud": _TEST_AUDIENCE,
+                "iat": now,
+                "exp": now + 300,
+            },
+            separators=(",", ":"),
+        ).encode("utf-8"),
+    ).rstrip(b"=").decode("ascii")
+    bearer = f"{header}.{payload}."
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_idp_bearer_hs256_is_refused() -> None:
+    bearer = jwt.encode(
+        {
+            "sub": _SUB,
+            "groups": _ROLES,
+            "iss": _TEST_ISSUER,
+            "aud": _TEST_AUDIENCE,
+            "iat": int(datetime.now(tz=UTC).timestamp()),
+            "exp": int(datetime.now(tz=UTC).timestamp()) + 300,
+        },
+        "not-a-laptop-secret-in-source-trees",
+        algorithm="HS256",
+        headers={"kid": "ignored"},
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "issuer",
+    ["https://wrong.invalid/realms/platform"],
+)
+def test_idp_bearer_wrong_issuer_is_refused(
+    idp_test_keys: dict[str, object],
+    issuer: str,
+) -> None:
+    bearer = _idp_bearer(
+        _SUB,
+        _ROLES,
+        private_pem=idp_test_keys["private_pem"],
+        kid=idp_test_keys["kid"],
+        issuer=issuer,
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_idp_bearer_wrong_audience_is_refused(
+    idp_test_keys: dict[str, object],
+) -> None:
+    bearer = _idp_bearer(
+        _SUB,
+        _ROLES,
+        private_pem=idp_test_keys["private_pem"],
+        kid=idp_test_keys["kid"],
+        audience="wrong-audience",
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_idp_bearer_expired_is_refused(idp_test_keys: dict[str, object]) -> None:
+    stale = int((datetime.now(tz=UTC) - timedelta(minutes=10)).timestamp())
+    bearer = _idp_bearer(
+        _SUB,
+        _ROLES,
+        private_pem=idp_test_keys["private_pem"],
+        kid=idp_test_keys["kid"],
+        iat=stale,
+        exp=stale + 60,
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "omit_claim",
+    ["exp", "iat", "sub", "iss", "aud"],
+)
+def test_idp_bearer_missing_required_claim_is_refused(
+    idp_test_keys: dict[str, object],
+    omit_claim: str,
+) -> None:
+    now = int(datetime.now(tz=UTC).timestamp())
+    claims = {
+        "sub": _SUB,
+        "groups": _ROLES,
+        "iss": _TEST_ISSUER,
+        "aud": _TEST_AUDIENCE,
+        "iat": now,
+        "exp": now + 300,
+    }
+    claims.pop(omit_claim)
+    bearer = jwt.encode(
+        claims,
+        idp_test_keys["private_pem"],
+        algorithm="RS256",
+        headers={"kid": idp_test_keys["kid"], "alg": "RS256"},
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
+def test_unknown_kid_refreshes_once(
+    idp_test_keys: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from django_pyforge.assertion import jwks as jwks_mod
+
+    reset_jwks_cache()
+    fetch_count = 0
+    original_fetch = jwks_mod.JWKSKeySet._fetch_document
+
+    def counting_fetch(self: jwks_mod.JWKSKeySet) -> dict[str, object]:
+        nonlocal fetch_count
+        fetch_count += 1
+        return original_fetch(self)
+
+    monkeypatch.setattr(jwks_mod.JWKSKeySet, "_fetch_document", counting_fetch)
+
+    other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    other_pem = other.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    token_one = jwt.encode(
+        {
+            "sub": _SUB,
+            "groups": _ROLES,
+            "iss": _TEST_ISSUER,
+            "aud": _TEST_AUDIENCE,
+            "iat": int(datetime.now(tz=UTC).timestamp()),
+            "exp": int(datetime.now(tz=UTC).timestamp()) + 300,
+        },
+        other_pem,
+        algorithm="RS256",
+        headers={"kid": "unknown-kid-one", "alg": "RS256"},
+    )
+    token_two = jwt.encode(
+        {
+            "sub": _SUB,
+            "groups": _ROLES,
+            "iss": _TEST_ISSUER,
+            "aud": _TEST_AUDIENCE,
+            "iat": int(datetime.now(tz=UTC).timestamp()),
+            "exp": int(datetime.now(tz=UTC).timestamp()) + 300,
+        },
+        other_pem,
+        algorithm="RS256",
+        headers={"kid": "unknown-kid-two", "alg": "RS256"},
+    )
+
+    assert _mint_request(token_one).status_code == HTTPStatus.UNAUTHORIZED
+    assert fetch_count == 2
+    assert _mint_request(token_two).status_code == HTTPStatus.UNAUTHORIZED
+    assert fetch_count == 2
+
+
+def test_station_not_in_roles_returns_403(idp_test_keys: dict[str, object]) -> None:
+    bearer = _idp_bearer(
+        _SUB,
+        ["steward"],
+        private_pem=idp_test_keys["private_pem"],
+        kid=idp_test_keys["kid"],
+    )
+    assert _mint_request(bearer, station="warden").status_code == HTTPStatus.FORBIDDEN
+
+
+def test_flags_station_not_in_roles_returns_403(
+    idp_test_keys: dict[str, object],
+) -> None:
+    bearer = _idp_bearer(
+        _SUB,
+        ["warden"],
+        private_pem=idp_test_keys["private_pem"],
+        kid=idp_test_keys["kid"],
+    )
+    assert _mint_request(bearer, station="flags").status_code == HTTPStatus.FORBIDDEN
+
+
+@override_settings(OIDC_JWKS_URL="")
+def test_unconfigured_verifier_returns_503() -> None:
+    reset_jwks_cache()
+    response = _mint_request(_unsigned_idp_bearer(_SUB, _ROLES))
+    assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+
+
+def test_idp_bearer_is_never_base64_decoded_outside_verifier() -> None:
+    offenders: list[str] = []
+    for path in _iter_source(CHROME_ASSERTION):
+        text = path.read_text(encoding="utf-8")
+        if path.name == "identity.py":
+            if _BANNED_B64.search(text):
+                offenders.append(f"{path}: identity must not base64-decode bearer")
+            continue
+        if _BANNED_B64.search(text):
+            offenders.append(f"{path}: contains bearer base64 decode")
+    assert offenders == []
 
 
 def test_hs256_token_is_refused() -> None:

@@ -51,6 +51,11 @@ CLAIMS_CONTRACT = ClaimsContract(
 )
 OIDC_ISSUER = "https://test.invalid/realms/platform"
 OIDC_AUDIENCE = "platform-web"
+OIDC_ALGORITHMS = ["RS256"]
+OIDC_LEEWAY_SECONDS = 0.0
+# Story 40.1: file:// JWKS is set by assertion tests via fixture; empty here → 503
+# unless tests override. platform-ci-test assertion module supplies a test JWKS.
+OIDC_JWKS_URL = ""
 # Story 18.1 / 19.2: test fixtures, not production station shells.
 INSTALLED_APPS = [
     *INSTALLED_APPS,  # noqa: F405

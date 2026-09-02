@@ -10,3 +10,4 @@ from __future__ import annotations
 import os
 
 os.environ.setdefault("COMPONENT_RUNTIME", "local")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")

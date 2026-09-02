@@ -39,6 +39,12 @@ def required_env(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setenv("DJANGO_ADMIN_URL", "secret-admin/")
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://platform-mcp-host:8090")
+    monkeypatch.setenv("COMPONENT_OIDC_ISSUER", "https://idp.example/realms/platform")
+    monkeypatch.setenv(
+        "COMPONENT_OIDC_JWKS_URL",
+        "https://idp.example/realms/platform/protocol/openid-connect/certs",
+    )
+    monkeypatch.setenv("COMPONENT_OIDC_AUDIENCE", "platform-web")
 
 
 def _refusal_message() -> str:
@@ -137,6 +143,9 @@ def test_required_settings_registry_covers_production_keys() -> None:
         "DJANGO_SECRET_KEY",
         "DJANGO_ADMIN_URL",
         "MCP_HOST_SIDECAR_BASE_URL",
+        "COMPONENT_OIDC_ISSUER",
+        "COMPONENT_OIDC_JWKS_URL",
+        "COMPONENT_OIDC_AUDIENCE",
     }
 
 
