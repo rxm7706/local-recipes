@@ -51,3 +51,15 @@ hybrid (a)+(c); 43.6 added, gated on Mason 13.1 / 13.2.)**
 
 `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical paths only. Cutover Phase 1
 waits for all four epics.
+
+## Housekeeping 2026-09-02 (operator-directed, fleet-wide)
+
+| Item | State | Detail |
+|---|---|---|
+| `chain-completeness` CAP-6 | **closed** | `spec-bmad-suite-channel-product` CAP-6 now cited from Epic 39. Green. |
+| steward layers-audit staleness | **closed** | PRD and architecture spine re-stamped after the 23-1 sharded-path landing; no FR/AD change. Green. |
+| deferred-work verification coverage | **closed** | Every tracked entry in all eight ledgers carries `verified: 2026-09-02` (mechanical re-verification at HEAD `933039db67`: source_spec presence, cited paths present/absent, status→verdict). 100 % in every project. The line says agent judgment was not applied; a semantic re-read is still owed per entry where the claim is semantic — Doctor's `due-for-verification` will surface those again in 30 days. |
+| `deferred-work` Tier-3 twins | **closed** | `scripts/deferred_work_intake.py --fix` ingested 11 marshal spec-frontmatter deferrals (`DW-FU-28-18..28-20`). Green. |
+| `bmad-recipe-upstream-drift` ×3 (`bmad-builder` 2.2.1→2.2.2, `bmad-creative-intelligence-suite` 0.3.1→0.3.2, `bmad-method-test-architecture-enterprise` 1.23.2→1.24.0) | **needs your machine** | Tags `v2.2.2` / `v0.3.2` / `v1.24.0` confirmed via `git ls-remote`; the release tarballs (`github.com/.../archive`, `codeload.github.com`) return 403 through this session's proxy, so no `sha256` can be computed here and a recipe with a guessed checksum would not build. Run the CAP-2 chain per package: `pyforge steward suite advance --package bmad-builder` (then `bmad-creative-intelligence-suite`, `bmad-method-test-architecture-enterprise`); `--dry-run` first. Rule 1 applies (conda-forge-expert). |
+| `bmad-suite-upstream-drift` ×3 (installed behind) | **needs your machine** | Follows from the three advances above: build → publish to SelfExplainML (needs the anaconda token, not present here) → bump the `pixi.toml` floors → `pixi lock` → regenerate `environment.yaml`. `bmad-channel-drift` will fire between recipe bump and publish; that is expected. |
+| MRS-GATE-012 scope-violation advisories (atlas ×1, steward ×2) | **needs your machine** | These are warn-mode advisories read from live-run journals under `~/.bmad-loops` via `marshal status --format json` (key `dispatch_verification_scope_advisories`); no journal exists in this clone. Marshal `DW-FU-DISP-2026-09-01-2` already records the warn-mode widen as interim. Inspect with `pixi run -e local-recipes fleet-picture`, then either widen the station's `policy_surface` (marshal-policy.toml) for the named paths or move the offending files; the advisory clears on the next run. |
