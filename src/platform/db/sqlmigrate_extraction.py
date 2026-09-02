@@ -1,9 +1,11 @@
 """CI gate: every first-party production migration has a Liquibase changeset (FR-23).
 
 Canopy AD-9: ``sqlmigrate`` extraction is the check that a changeset exists
-for every production migration. Changeset ids stay ``distribution:seq``
-(this tree: ``python-agent-platform:N``). Story 27.2 owns the Job contract
-and the :1/:2 changelog files; this module does not rewrite them.
+for every production migration. Changeset ids stay ``distribution:seq``.
+Story 41.3 made the map per-distribution (red-team B-1): each distribution
+owns its own sequence, so ``pyforge-scribe:N`` is numbered independently of
+``python-agent-platform:N``. Story 27.2 owns the Job contract and the :1/:2
+changelog files; this module does not rewrite them.
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ CHANGESET_LINE = re.compile(r"^--changeset\s+(\S+)", re.MULTILINE)
 CHANGESET_ID = re.compile(r"^([a-z0-9][a-z0-9.-]*):([1-9][0-9]*)$")
 BEGIN_COMMIT = re.compile(r"^\s*(BEGIN|COMMIT)\s*;\s*$", re.IGNORECASE)
 SQL_COMMENT = re.compile(r"^\s*--")
+DEFAULT_DISTRIBUTION = "python-agent-platform"
 TEST_ONLY_APPS = frozenset(
     {"probe_portal", "workclass_probe"},
 )
@@ -37,6 +40,27 @@ FIRST_PARTY_MARKERS = (
     "/src/platform/",
     "/src/shared/packages/django-",
 )
+
+
+@dataclass(frozen=True)
+class MigrationMap:
+    """``sqlmigrate-map.yaml``: one changeset sequence per distribution.
+
+    ``default`` is the distribution an unmapped first-party Django migration
+    is numbered into, so the failure message names an id in the tree the
+    migration actually belongs to (Story 41.3 / red-team B-1).
+    """
+
+    default: str
+    distributions: Mapping[str, Mapping[str, int]]
+
+    def lookup(self, migration_key: str) -> tuple[str, int] | None:
+        """``(distribution, seq)`` for a mapped migration, else ``None``."""
+        for distribution, migrations in self.distributions.items():
+            seq = migrations.get(migration_key)
+            if seq is not None:
+                return distribution, seq
+        return None
 
 
 @dataclass(frozen=True)
@@ -89,23 +113,51 @@ def parse_changeset_index(changelog_dir: Path = CHANGELOG_DIR) -> dict[str, str]
     return index
 
 
-def load_map(path: Path = MAP_PATH) -> tuple[str, dict[str, int]]:
+def load_map(path: Path = MAP_PATH) -> MigrationMap:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    distribution = str(data.get("distribution") or "python-agent-platform")
-    raw = data.get("migrations") or {}
-    mapping = {str(key): int(value) for key, value in raw.items()}
-    return distribution, mapping
+    default = str(data.get("default") or DEFAULT_DISTRIBUTION)
+    distributions: dict[str, dict[str, int]] = {}
+    for name, entry in (data.get("distributions") or {}).items():
+        raw = (entry or {}).get("migrations") or {}
+        distributions[str(name)] = {
+            str(key): int(value) for key, value in raw.items()
+        }
+    if default not in distributions:
+        msg = (
+            f"sqlmigrate-map.yaml default distribution {default!r} has no "
+            f"entry under distributions: (got {sorted(distributions)})"
+        )
+        raise ValueError(msg)
+    return MigrationMap(default=default, distributions=distributions)
+
+
+def used_sequences(
+    migration_map: MigrationMap,
+    changeset_index: Mapping[str, str],
+) -> dict[str, set[int]]:
+    """Seqs already spoken for, per distribution: the map plus the changelog."""
+    used: dict[str, set[int]] = {
+        name: set(migrations.values())
+        for name, migrations in migration_map.distributions.items()
+    }
+    for changeset_id in changeset_index:
+        match = CHANGESET_ID.match(changeset_id)
+        if match is not None:
+            used.setdefault(match.group(1), set()).add(int(match.group(2)))
+    return used
 
 
 def expected_changeset_id(
     migration_key: str,
-    mapping: Mapping[str, int],
-    distribution: str,
-    used_seqs: Iterable[int],
+    migration_map: MigrationMap,
+    used_seqs: Mapping[str, Iterable[int]],
 ) -> str:
-    if migration_key in mapping:
-        return f"{distribution}:{mapping[migration_key]}"
-    nxt = max(used_seqs, default=0) + 1
+    entry = migration_map.lookup(migration_key)
+    if entry is not None:
+        distribution, seq = entry
+        return f"{distribution}:{seq}"
+    distribution = migration_map.default
+    nxt = max(used_seqs.get(distribution, ()), default=0) + 1
     return f"{distribution}:{nxt}"
 
 
@@ -143,20 +195,15 @@ def sqlmigrate_sql(app_label: str, name: str) -> str:
 
 def check_extraction(
     migration_keys: Iterable[str],
-    mapping: Mapping[str, int],
-    distribution: str,
+    migration_map: MigrationMap,
     changeset_index: Mapping[str, str],
     extracted_sql: Mapping[str, str],
 ) -> list[Finding]:
-    used = list(mapping.values())
-    for changeset_id in changeset_index:
-        match = CHANGESET_ID.match(changeset_id)
-        if match is not None:
-            used.append(int(match.group(2)))
+    used = used_sequences(migration_map, changeset_index)
     findings: list[Finding] = []
     for key in migration_keys:
-        changeset_id = expected_changeset_id(key, mapping, distribution, used)
-        if key not in mapping:
+        changeset_id = expected_changeset_id(key, migration_map, used)
+        if migration_map.lookup(key) is None:
             findings.append(
                 Finding(key, changeset_id, "no sqlmigrate-map.yaml entry"),
             )
@@ -184,14 +231,14 @@ def format_findings(findings: list[Finding]) -> str:
 
 
 def run_live_check() -> int:
-    distribution, mapping = load_map()
+    migration_map = load_map()
     index = parse_changeset_index()
     keys = production_migration_keys()
     extracted: dict[str, str] = {}
     for key in keys:
         app_label, name = key.split(".", 1)
         extracted[key] = sqlmigrate_sql(app_label, name)
-    findings = check_extraction(keys, mapping, distribution, index, extracted)
+    findings = check_extraction(keys, migration_map, index, extracted)
     if findings:
         sys.stderr.write(format_findings(findings))
         return 1

@@ -1,11 +1,19 @@
-"""Durable PostgreSQL/pgvector GraphStore (Story 28.1) — isolation, concurrency, anti-JSON."""
+"""Durable PostgreSQL/pgvector GraphStore (Story 28.1) — isolation, concurrency, anti-JSON.
+
+Story 41.3 (CAP-9 / red-team S-4) moved this driver's DDL into the governed
+Liquibase changelog: the runtime path is assert-only and works as a DML-only
+role.
+"""
 
 from __future__ import annotations
 
 import ast
+import re
+import secrets
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import pytest
 
@@ -17,7 +25,9 @@ from pyforge.scribe.graph_store import (
     FlatFileGraphStorePlugin,
 )
 from pyforge.scribe.graph_store_pg import (
+    GRAPH_CHANGESET_ID,
     SCRIBE_SCHEMA,
+    GraphSchemaMissing,
     PostgresGraphStore,
     PostgresGraphStorePlugin,
 )
@@ -26,6 +36,12 @@ from pyforge.scribe.models import GraphNode
 
 _SCRIBE_ROOT = Path(__file__).resolve().parents[2]
 _REPO_ROOT = Path(__file__).resolve().parents[6]
+_ADAPTER = _SCRIBE_ROOT / "src" / "pyforge" / "scribe" / "graph_store_pg.py"
+_DDL_STATEMENT = re.compile(
+    r"\b(CREATE|ALTER|DROP|TRUNCATE)\s+"
+    r"(EXTENSION|SCHEMA|TABLE|INDEX|VIEW|SEQUENCE|TYPE|ROLE)\b",
+    re.IGNORECASE,
+)
 
 
 def _node(node_id: str, text: str = "body") -> GraphNode:
@@ -52,13 +68,24 @@ def test_postgres_commit_does_not_write_json_document(tmp_path: Path, pg_dsn: st
 
 
 def test_durable_driver_is_not_flatfile_wrapper() -> None:
-    src = (_SCRIBE_ROOT / "src" / "pyforge" / "scribe" / "graph_store_pg.py").read_text(
-        encoding="utf-8"
-    )
-    assert "CREATE EXTENSION" in src
+    src = _ADAPTER.read_text(encoding="utf-8")
     assert "scribe_schema" in src
     assert "FlatFileGraphStore" not in src
     assert "json.dumps" not in src
+
+
+def test_driver_emits_no_ddl() -> None:
+    """Story 41.3: the DML-only role cannot run DDL, so the driver has none."""
+    src = _ADAPTER.read_text(encoding="utf-8")
+    statements = [
+        line.strip()
+        for line in src.splitlines()
+        if _DDL_STATEMENT.search(line) and not line.lstrip().startswith("#")
+    ]
+    assert statements == [], f"runtime DDL in the scribe driver: {statements}"
+    assert "CREATE EXTENSION" not in src
+    assert "to_regclass" in src, "the driver must assert the relation instead"
+    assert GRAPH_CHANGESET_ID == "pyforge-scribe:2"
 
 
 def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
@@ -93,6 +120,89 @@ def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
             """
         ).fetchall()
         assert forbidden == []
+
+
+def test_absent_relation_raises_a_named_error(tmp_path: Path, pg_dsn: str) -> None:
+    """Story 41.3: fail loudly and name the changeset, never create it."""
+    absent = f"scribe_absent_{secrets.token_hex(4)}"
+    with pytest.raises(GraphSchemaMissing) as error:
+        PostgresGraphStore(pg_dsn, tmp_path / "ignored", schema=absent)
+    message = str(error.value)
+    assert absent in message
+    assert GRAPH_CHANGESET_ID in message
+    assert isinstance(error.value, PluginError)
+
+
+def test_store_works_as_a_ddl_revoked_role(tmp_path: Path, pg_dsn: str) -> None:
+    """CAP-9: a role that provably cannot CREATE still reads and writes rows."""
+    import psycopg
+    from psycopg import sql
+    from psycopg.errors import InsufficientPrivilege
+
+    role = f"scribe_dml_{secrets.token_hex(4)}"
+    password = secrets.token_hex(8)
+    role_ident = sql.Identifier(role)
+    admin = psycopg.connect(pg_dsn)
+    admin.autocommit = True
+    try:
+        admin.execute(
+            sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                role_ident, sql.Literal(password)
+            )
+        )
+        schema_ident = sql.Identifier(SCRIBE_SCHEMA)
+        try:
+            admin.execute(
+                sql.SQL("REVOKE CREATE ON SCHEMA public FROM {}").format(role_ident)
+            )
+            admin.execute(
+                sql.SQL("REVOKE CREATE ON SCHEMA {} FROM {}").format(
+                    schema_ident, role_ident
+                )
+            )
+            admin.execute(
+                sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(
+                    schema_ident, role_ident
+                )
+            )
+            admin.execute(
+                sql.SQL(
+                    "GRANT SELECT, INSERT, UPDATE, DELETE "
+                    "ON ALL TABLES IN SCHEMA {} TO {}"
+                ).format(schema_ident, role_ident)
+            )
+
+            parsed = urlparse(pg_dsn)
+            role_dsn = urlunparse(
+                parsed._replace(
+                    netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"
+                )
+            )
+
+            # Not vacuous: this role really is refused DDL by PostgreSQL.
+            probe = psycopg.connect(role_dsn)
+            try:
+                with pytest.raises(InsufficientPrivilege):
+                    probe.execute(
+                        sql.SQL("CREATE TABLE {}.ddl_probe (id integer)").format(
+                            schema_ident
+                        )
+                    )
+            finally:
+                probe.rollback()
+                probe.close()
+
+            store = PostgresGraphStore(role_dsn, tmp_path / "ignored")
+            store.reset()
+            store.upsert_node(_node("memory:feedback/dml-only"))
+            store.commit()
+            reopened = PostgresGraphStore(role_dsn, tmp_path / "ignored")
+            assert [n.id for n in reopened.iter_nodes()] == ["memory:feedback/dml-only"]
+        finally:
+            admin.execute(sql.SQL("DROP OWNED BY {}").format(role_ident))
+            admin.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(role_ident))
+    finally:
+        admin.close()
 
 
 def test_concurrent_commits_do_not_corrupt_durable_store(tmp_path: Path, pg_dsn: str) -> None:

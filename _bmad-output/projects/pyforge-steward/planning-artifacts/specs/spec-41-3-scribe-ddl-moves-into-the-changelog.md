@@ -2,7 +2,7 @@
 title: "Scribe DDL moves into the changelog"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "in-review"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 severity: "HIGH"
@@ -59,11 +59,70 @@ Ledger key `41-3-scribe-ddl-moves-into-the-changelog`. Host never imports `pyfor
 
 ## Tasks
 
-- [ ] Changeset + map entry
-- [ ] Driver assert-only path + tests
-- [ ] Rollback policy doc
-- [ ] CI `sqlmigrate` gate still green
-- [ ] Ledger `41-3-scribe-ddl-moves-into-the-changelog` → `review` then `done` via `sprint-ledger-sync`.
+- [x] Changeset + map entry
+- [x] Driver assert-only path + tests
+- [x] Rollback policy doc
+- [x] CI `sqlmigrate` gate still green
+- [x] Ledger `41-3-scribe-ddl-moves-into-the-changelog` → `review`; **`done` is the landing step's** (the Tier-3 feed `sprint-ledger-sync` promotes from does not exist in a dispatch worktree, so the tracked twin carries the row directly).
+
+## Dev Notes
+
+**2026-09-02 — implemented.** Three changesets, not one, because Liquibase
+applies preconditions per changeset: folding the guarded `platform_app` grants
+in with the DDL would have skipped the DDL too on a database where the app role
+does not exist. `pyforge-scribe:1` is the extension, `:2` the schema + table,
+`:3` the grants behind the same `onFail:CONTINUE` role-exists precondition
+`python-agent-platform:2` already uses.
+
+`sqlmigrate-map.yaml` grew a `default:` key alongside `distributions:`;
+`load_map` now returns a `MigrationMap` and `expected_changeset_id` numbers the
+next id **within** a distribution, so a station sitting at `:40` no longer
+pushes the platform's next id past `:7`. `pyforge-scribe` registers with an
+empty `migrations: {}` — its schema is hand-authored, not a Django migration —
+which keeps the id space declared in one place.
+
+The rollback policy is forward-looking: `python-agent-platform:1`–`:19` shipped
+before it existed and are grandfathered by a closed literal list in
+`test_liquibase_ddl_governance.py`, so a new changeset cannot join them
+silently. Backfilling rollbacks onto shipped contrib/engine DDL was out of
+bounds (Boundaries).
+
+The scribe test fixture now provisions its database *from the changesets*
+(`tests/unit/conftest.py`), so the DDL has exactly one source and a drifted
+changeset reds the driver suite. Guarded changesets are skipped there, matching
+what Liquibase itself does when `platform_app` is absent.
+
+**Live verification against PostgreSQL 17.11 + pgvector (:5433).**
+
+- Real `liquibase` 5.0.4 `update` of all three changesets: `Run: 1` each, then
+  `vector` extension, `scribe_schema`, and `scribe_schema.graph_nodes` with all
+  ten columns present; `has_schema_privilege('platform_app','scribe_schema',…)`
+  = USAGE **true**, CREATE **false**; table grants exactly
+  SELECT/INSERT/UPDATE/DELETE.
+- `rollback-count --count=1` on each, in reverse: all three succeeded and the
+  extension, schema and table were gone afterwards — the `--rollback` blocks are
+  real, not decorative.
+- Whole scribe suite against a **freshly created** database provisioned only by
+  those changesets: 316 passed, 4 skipped. The driver never creates anything.
+- `test_store_works_as_a_ddl_revoked_role` builds a login role, revokes CREATE
+  on `public` and `scribe_schema`, proves PostgreSQL refuses it a `CREATE TABLE`
+  (so the test is not vacuous), then drives a full upsert → commit → reopen
+  through `PostgresGraphStore` as that role.
+
+**Pre-existing, not touched.** (a) `liquibase update` on the *master* changelog
+fails at `python-agent-platform:18` — `socialaccount_socialapp_sites` adds an FK
+to `django_site`, but `sites.0001` is `:10`, included after `:18`. The include
+order in `db.changelog-master.yaml` does not satisfy that dependency; scribe's
+three changesets are last and unaffected. (b) Any `django_db` test in
+`src/platform` errors at test-DB setup here on
+`ValidationError: slug 'home' is already in use` from
+`front_door.apps::_seed_lane1_homepage` in `post_migrate`, which is why
+`test_live_first_party_tree_is_covered` and
+`test_app_role_create_alter_drop_refused_by_postgresql` could not be run
+locally; the CI step they mirror, `python -m db.sqlmigrate_extraction`, was run
+directly and reports `ok (14 first-party migrations)`. (c) Two
+`test_openfeature_channel_policy` failures (a `cachebox` pin drift) are red on
+`main`.
 
 ## Verification
 
