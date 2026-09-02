@@ -2,7 +2,8 @@
 title: "Broker TLS is verified"
 type: "fix"
 created: "2026-09-02"
-status: "in-review"
+status: "done"
+followup_review_recommended: true
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "7841e5c84e9b348737f2de84cc0f66fcb2a442f2"
@@ -15,7 +16,101 @@ context:
   - "src/platform/config/settings/base.py"
   - "src/platform/config/startup/stage_one.py"
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      An explicit COMPONENT_BROKER_CA_BUNDLE cannot override a resolving OS trust
+      store, so the operator knob is unreachable on any host that ships a default
+      CA file.
+    evidence: |-
+      The intent's "Always" clause mandates "Truststore first; explicit bundle path
+      second", so the ordering is contractual and was deliberately not changed here.
+      The consequence is that tier 2 is reached only when tier 1 resolves nothing:
+      `.pixi/envs/python-agent-platform/ssl/cert.pem` exists, and Containerfile:153
+      copies the env to the same absolute prefix, so the compiled-in default resolves
+      inside the shipped image. An operator installing a private CA at, say,
+      /etc/pki/corp-ca.pem and setting COMPONENT_BROKER_CA_BUNDLE gets the distro
+      bundle in ssl_ca_certs instead, and fails verification at first connect. The
+      escape hatch under the current ordering is SSL_CERT_FILE / SSL_CERT_DIR.
+      Needs a product decision (explicit-wins, or document SSL_CERT_FILE as the knob).
+    location: >-
+      src/platform/config/broker_tls.py — resolve_ca_trust()
+    severity: medium
+  - summary: >-
+      CHANNEL_LAYERS (channels_redis) and REDIS_CACHE_URL (django-redis) share the
+      Redis URL but get none of this TLS posture.
+    evidence: |-
+      src/platform/config/settings/production.py wires channel_layers_for_broker(
+      REDIS_BROKER_URL) and the django-redis cache aliases; both build their own TLS
+      context with no COMPONENT_BROKER_CA_BUNDLE and no CERT_NONE opt-out. The intent
+      scoped this story to "the Celery broker and the result backend", so this is out
+      of scope here, but it means "single declaration site for the broker's TLS
+      posture" is true for Celery only.
+    location: >-
+      src/platform/config/settings/production.py
+    severity: medium
+  - summary: >-
+      The Helm chart still wires plaintext redis://, so no deployed component takes
+      the new code path and nothing refuses unencrypted broker traffic.
+    evidence: |-
+      deploy/charts/platform/templates/_helpers.tpl templates redis:// for
+      REDIS_BROKER_URL, REDIS_CACHE_URL and REDIS_URL, with no TLS key and no
+      COMPONENT_BROKER_CA_BUNDLE; tests/test_chart_invariants.py is unchanged. This
+      story makes TLS honest when it is used; it does not turn it on. Red-team X-2 /
+      directive R-14 is only half-discharged until the chart moves to rediss:// and a
+      deployed plaintext broker is itself refused.
+    location: >-
+      deploy/charts/platform/templates/_helpers.tpl
+    severity: medium
+  - summary: >-
+      mypy cannot run at all, so the new modules got no type check.
+    evidence: |-
+      "Error constructing plugin instance of NewSemanalDjangoPlugin" / INTERNAL ERROR
+      (django-stubs vs mypy 2.3.1). It fails before analysing any file, on a clean
+      tree too. Platform CI runs `mypy platformapp config tests`, so that step is red
+      independently of this story — pre-existing, not caused here.
+    location: >-
+      src/platform (Platform CI mypy step)
+    severity: medium
+  - summary: >-
+      configure_observability() now materializes Django settings even when OTel is
+      disabled, and config/__init__.py imports celery_app at module scope.
+    evidence: |-
+      The story added load_django_settings() to configure_observability() to repair a
+      real swallow (DjangoInstrumentor catching ImproperlyConfigured and calling
+      settings.configure()). The call sits ahead of configure_telemetry's
+      otel_sdk_is_disabled() early return, so fail-fast is now imposed on a broader
+      set of process configurations than the bug required, and importing any config.*
+      module pins the settings singleton to whatever DJANGO_SETTINGS_MODULE is set at
+      that moment. No in-repo regression observed — the full suite's failure/error set
+      is byte-identical to baseline — but the import-time contract is now stricter and
+      undocumented.
+    location: >-
+      src/platform/config/observability/__init__.py
+    severity: medium
+  - summary: >-
+      REDIS_SSL in base settings has no readers anywhere in the tree.
+    evidence: |-
+      The removed CELERY_BROKER_USE_SSL ternary was its only consumer; a repo-wide
+      grep now returns only its own definition. This change kept it alive (rewritten
+      through is_tls_broker) rather than removing a public settings name that ops
+      tooling might read. Decide whether to drop it or record why it stays.
+    location: >-
+      src/platform/config/settings/base.py
+    severity: low
+  - summary: >-
+      scripts/.spec-surface-baseline.json needs a scoped stamp for the changed and
+      new config/** files.
+    evidence: |-
+      The baseline hashes src/platform/config/** per file under the
+      pyforge-mason/spec-django-accelerator-framework entry; settings/base.py,
+      startup/stage_one.py, startup/__init__.py, observability/__init__.py, manage.py
+      and settings/production.py all changed, and config/broker_tls.py is new with no
+      entry at all, so spec-surface-check will report surface-changed. Left to the
+      dedicated fleet reconciliation pass (a scoped stamp from a clean tree, never a
+      bare --write-baseline), matching what stories 41.1, 41.2 and 41.3 did.
+    location: >-
+      scripts/.spec-surface-baseline.json
+    severity: low
 ---
 
 <intent-contract>
@@ -217,3 +312,162 @@ OS trust store — is deferred separately, not patched here.
 Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md` (directive and finding ids in the FR/AD line of
 `epics.md` Story 41.4). Sprint change proposal:
 `sprint-change-proposal-2026-09-02-red-team-high.md`.
+
+## Review Triage Log
+
+### 2026-09-02 — Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 11: (high 0, medium 5, low 6)
+- defer: 7: (high 0, medium 5, low 2)
+- reject: 8: (high 0, medium 1, low 7)
+- addressed_findings:
+  - `[medium]` `[patch]` `resolve_ca_bundle()` ignored the `capath` half of the OS
+    trust store, so a host with a hashed-directory CA install and no concatenated
+    `cert.pem` was refused at boot despite a correctly installed corporate CA.
+    Replaced by `resolve_ca_trust() -> CaTrust(cafile, capath)`, emitting
+    `ssl_ca_path` after verifying redis-py 8.1.0 / kombu 5.6.2 / celery 5.6.3 all
+    carry the kwarg through to `load_verify_locations(capath=…)`.
+  - `[medium]` `[patch]` Stage 1 validated a broker URL re-derived from raw
+    `os.environ`, which disagrees with django-environ's `FileAwareMapping`
+    (`REDIS_BROKER_URL_FILE` secret-mount precedence) and on empty values. It now
+    reads the composed `CELERY_BROKER_URL` off the `settings_module` it was already
+    handed and discarding; env is the fallback only.
+  - `[medium]` `[patch]` `is_tls_broker()` was a case-sensitive `startswith`, so a
+    legal `REDISS://` URL reached the `rediss` transport with zero ssl kwargs —
+    kombu's own "defaulting to insecure SSL behaviour" path. Match is case-blind.
+  - `[medium]` `[patch]` `test_entrypoints_load_settings_before_instrumenting`
+    asserted a literal source substring and would still pass if `wsgi`, `asgi` or
+    `celery_app` dropped its `configure_observability()` call — the exact regression
+    it claimed to guard. Replaced with parametrised real child processes (refusal +
+    boots-fine control) for `manage.py`, `wsgi` and `celery_app`.
+  - `[medium]` `[patch]` Child-process tests were not hermetic: `_child_env()` left
+    `DJANGO_READ_DOT_ENV_FILE` in place, so a developer `.env` could re-supply
+    `COMPONENT_RUNTIME` or a broker URL and make the "passes" control pass for the
+    wrong reason. Added it plus `SSL_CERT_DIR` and `COMPONENT_PROCESS` to one shared
+    `CONTROLLED_ENV_KEYS`.
+  - `[low]` `[patch]` Trust-path checks were existence-only, so an unreadable path
+    was reported as resolved and passed the boot gate. Added `os.access` (`R_OK` for
+    files, `R_OK|X_OK` for the capath directory).
+  - `[low]` `[patch]` `CERT_REQS_BY_NAME`'s values were never read — composition
+    hardcoded both outcomes while stage 1 only membership-tested keys, so a future
+    weaker rung would be accepted and silently downgraded. Both now map through the
+    table, and the deployed refusal branches on the verify mode.
+  - `[low]` `[patch]` An unrecognised `COMPONENT_BROKER_SSL_CERT_REQS` was silent on
+    a laptop (no stage 1 runs there), upgrading `…=nonee` to `CERT_REQUIRED` and
+    breaking the self-signed-Redis workflow with an opaque TLS error. Now named from
+    `resolve_cert_reqs()` when local only, keeping stage 1's deployed refusal
+    reachable.
+  - `[low]` `[patch]` The `REDIS_URL`-only deployment shape that `compose.yml`
+    actually uses had no test — deleting that fallback tier passed the whole suite.
+    Added unit, stage-1-visibility and child-process production cases, and fixed the
+    no-trust message that named only `REDIS_BROKER_URL`.
+  - `[low]` `[patch]` Stale `production.py` call-site comment still described stage 1
+    as leaving "the hook for later namespace conditions".
+  - `[low]` `[patch]` The `## Verification` section named a test file that does not
+    exist and `pixi run -e python-agent-platform`, an env that cannot even collect
+    this suite. Updated to the verbatim `platform-ci-test` command actually used.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+### Summary of implemented change
+
+`CELERY_BROKER_USE_SSL` no longer composes `ssl.CERT_NONE` for every `rediss://`
+broker. The TLS posture moved into `src/platform/config/broker_tls.py`, one
+declaration site feeding both the Celery broker and the result backend (base
+settings already aliases the second to the first). Composition fails closed:
+`CERT_NONE` is emitted only for a process that is explicitly
+`COMPONENT_RUNTIME=local` *and* asked for it via `COMPONENT_BROKER_SSL_CERT_REQS`,
+so a deployed component that asks still composes `CERT_REQUIRED` — the new stage-1
+condition `refuse_unverified_broker_tls()` makes that misconfiguration loud rather
+than silently corrected. CA trust resolves truststore-first (`SSL_CERT_FILE` /
+`SSL_CERT_DIR`, else OpenSSL's defaults), with `COMPONENT_BROKER_CA_BUNDLE` as the
+explicit second tier, both checked for readability. AC2 additionally required
+repairing a pre-existing swallow: OpenTelemetry's `DjangoInstrumentor` caught
+`ImproperlyConfigured` and answered it with `settings.configure()`, so every
+entrypoint demoted stage-1 refusals to a debug log and booted with empty defaults —
+`configure_observability()` now calls `load_django_settings()` first.
+
+### Files changed
+
+- `src/platform/config/broker_tls.py` — new; the single declaration site for the
+  broker's TLS posture (policy names, `resolve_cert_reqs`, `resolve_ca_trust`,
+  `broker_use_ssl`, `is_tls_broker`).
+- `src/platform/config/startup/stage_one.py` — adds `refuse_unverified_broker_tls()`
+  with three named refusals; `run_stage_one` now reads the composed broker URL off
+  the settings module instead of discarding it.
+- `src/platform/config/settings/base.py` — delegates to the helper; `import ssl` and
+  the `CERT_NONE` ternary are gone.
+- `src/platform/config/startup/__init__.py` — re-exports the new condition; corrects
+  the "no celery refusals here" note.
+- `src/platform/config/observability/__init__.py` — `configure_observability()` loads
+  Django settings before instrumenting, restoring fail-fast at every entrypoint.
+- `src/platform/config/settings/production.py` — stale stage-1 call-site comment.
+- `src/platform/manage.py` — entrypoint wiring for the observability ordering.
+- `src/platform/tests/test_broker_tls_verified.py` — new; 44 tests, including real
+  child processes for all three ACs and for each entrypoint.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
+  — `41-4-broker-tls-is-verified: backlog → review`.
+
+### Review findings breakdown
+
+- Patches applied: 11 (5 medium, 6 low) — all accepted by the implementer, none
+  rejected on evidence. Itemised in the Review Triage Log above.
+- Items deferred: 7 (5 medium, 2 low) — recorded in frontmatter `deferred`. The
+  substantive ones: the contractual truststore-first ordering makes
+  `COMPONENT_BROKER_CA_BUNDLE` unreachable on hosts with a default CA file; Channels
+  and the django-redis cache share the URL but not the posture; the Helm chart still
+  wires plaintext `redis://`, so R-14 is only half-discharged; mypy cannot run at all.
+- Items rejected: 8. Chiefly — the recommendation to invert the CA-bundle precedence
+  (the intent's "Always" clause mandates truststore first, so it is not an admissible
+  scope authority for reversal); a claimed `done → review` ledger regression on story
+  41-3 (verified: the branch touched only its own row, `main` moved 41-3 to `done` in
+  commit `9a288066f5` after the branch point, and a real merge preserves it);
+  `manage.py help` now tracebacking under a refusing deployed config (that is the
+  intended CAP-3 fail-fast); the `COMPONENT_RUNTIME=local` lever being settable in a
+  production container (pre-existing, and the intent defines locality that way).
+
+### Follow-up review recommendation
+
+`true`. Patched findings by severity: high 0, medium 5, low 6. Score =
+3 × 5 + 1 × 6 = **21**, which is ≥ 5.
+
+### Verification performed
+
+- Spec's `## Verification` command, run verbatim from `src/platform` after the patch
+  pass: `pixi run --frozen -e platform-ci-test python -m pytest
+  tests/test_startup_required_settings.py tests/test_broker_tls_verified.py -q` →
+  **67 passed**. (Pre-patch it was 45 passed on the same two files.)
+- Full platform suite: 420 passed, 40 skipped, 6 failed, 120 errors — failure and
+  error sets byte-identical to the pre-change baseline measured by stashing the diff.
+  The 120 errors are "no PostgreSQL socket"; the 6 failures are the pre-existing
+  openfeature / dbgpt / cloudevents / restarts / supervisor set.
+- `ruff check` clean on every touched file (repo-wide count unchanged at exactly 116,
+  none in these files); `lint-imports` reports 0 broken, so the host↔factory boundary
+  holds and the new module imports only stdlib plus `config.locality`.
+- Frontmatter re-parsed as YAML after the `deferred` append: one list, 7 well-formed
+  items.
+- No I/O & Edge-Case Matrix in the intent contract, so the matrix test audit did not
+  apply.
+
+### Residual risks
+
+- The three ACs are met at the composed-settings and process-exit surfaces, but no
+  deployed component exercises the new code path yet — the chart wires `redis://`.
+  This story makes TLS honest when used; turning it on in-cluster is separate.
+- `config.asgi` is the one entrypoint without a real child-process boot test; it
+  imports `langflow_integration`, which needs the `python-agent-platform` env.
+- AC3 is satisfied under the reading that `CERT_NONE` stays *reachable* locally
+  (the intent's Approach says "permitted only under `COMPONENT_RUNTIME=local`"), not
+  that it stays the local *default*. A laptop pointed at a self-signed `rediss://`
+  Redis now needs `COMPONENT_BROKER_SSL_CERT_REQS=none`. Nothing in-repo wires such a
+  broker today, so the change is latent.
+- Landing notes: this branch touches nothing under `recipes/`, so the PR needs the
+  `maintenance` label at open; `pixi.toml` is untouched, so no `environment.yaml`
+  regeneration. Merge with `--merge`, not `--squash`, so `main`'s later `41-3: done`
+  ledger value survives. `scripts/.spec-surface-baseline.json` will report
+  `surface-changed` until the fleet reconciliation pass stamps it (deferred above).
