@@ -1678,6 +1678,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-035",
         # Story 28.13 (CAP-15): worktree already has uncommitted WIP before retry.
         "MRS-DISP-036",
+        # Story 28.21 (CAP-4): pre-verify dispatch-branch push failed.
+        "MRS-DISP-037",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
