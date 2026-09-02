@@ -48,20 +48,21 @@ _VANILLA_KINDS = frozenset(
         "Service",
         "Ingress",
         "Job",
+        "CronJob",
         "ServiceAccount",
         "PersistentVolumeClaim",
         "NetworkPolicy",
         "ConfigMap",
     },
 )
-_WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
+_WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job", "CronJob"})
 # The three pods that run the Story 10.3 platform image and must therefore
 # carry the restricted-v2 contract. "migrate" doubles as proof the hook
 # Job renders (`helm template` emits hooks).
 _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
 # Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
 # is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
-_PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase"}
+_PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase", "postgres-backup"}
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
 _REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
@@ -395,7 +396,10 @@ def _pod_specs_by_component(
         if doc.get("kind") not in _WORKLOAD_KINDS:
             continue
         workload_name = (doc.get("metadata") or {}).get("name")
-        template = doc["spec"]["template"]
+        if doc.get("kind") == "CronJob":
+            template = doc["spec"]["jobTemplate"]["spec"]["template"]
+        else:
+            template = doc["spec"]["template"]
         labels = (template.get("metadata") or {}).get("labels") or {}
         component = labels.get("app.kubernetes.io/component")
         assert component is not None, (
@@ -872,6 +876,86 @@ def _assert_liquibase_then_fake_migrate_jobs(docs: list[dict[str, Any]]) -> None
     assert "initContainer" not in str(migrate.get("spec"))
 
 
+def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
+    """Story 41.1: backup CronJob + RWX PVC + postgres archive_mode."""
+    cronjobs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "CronJob"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres-backup"
+    ]
+    assert len(cronjobs) == 1, cronjobs
+    schedule = cronjobs[0]["spec"].get("schedule")
+    assert schedule, "postgres-backup CronJob missing schedule"
+
+    backup_pvcs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres-backup"
+    ]
+    assert len(backup_pvcs) == 1, backup_pvcs
+    assert "ReadWriteMany" in backup_pvcs[0]["spec"]["accessModes"]
+
+    postgres = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "StatefulSet"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres"
+    ]
+    assert len(postgres) == 1, postgres
+    container = postgres[0]["spec"]["template"]["spec"]["containers"][0]
+    args = container.get("args") or []
+    joined = " ".join(str(item) for item in args)
+    assert "archive_mode=on" in joined, args
+    assert "archive_command=" in joined, args
+    backup_mounts = [
+        mount
+        for mount in container.get("volumeMounts") or []
+        if mount.get("name") == "backup"
+    ]
+    assert backup_mounts, "postgres missing backup volumeMount"
+
+
+def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
+    """When backup is disabled, no CronJob/PVC and no archive args on postgres."""
+    cronjobs = [doc for doc in docs if doc.get("kind") == "CronJob"]
+    assert not cronjobs, cronjobs
+    backup_pvcs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres-backup"
+    ]
+    assert not backup_pvcs, backup_pvcs
+    postgres = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "StatefulSet"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "postgres"
+    ]
+    assert len(postgres) == 1, postgres
+    container = postgres[0]["spec"]["template"]["spec"]["containers"][0]
+    args = container.get("args") or []
+    joined = " ".join(str(item) for item in args)
+    assert "archive_mode=on" not in joined, args
+
+
 # ---------------------------------------------------------------------------
 # Real proofs (helm-gated)
 # ---------------------------------------------------------------------------
@@ -1210,6 +1294,43 @@ def test_redis_broker_persistence_is_pvc_with_aof():
     """AC (Story 40.2): redis-broker mounts RWO PVC and enables AOF."""
     docs = _render(_CORE_CHART, release="platform")
     _assert_redis_broker_persistence_is_pvc_with_aof(docs)
+
+
+@requires_helm
+def test_postgres_backup_cronjob_and_archive_mode():
+    """AC (Story 41.1): default render ships backup CronJob + WAL archive."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_postgres_backup_cronjob_present(docs)
+
+
+@requires_helm
+def test_postgres_backup_disabled_omits_cronjob():
+    """AC (Story 41.1): disabling backup removes CronJob and archive args."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "postgres.backup.enabled=false",
+        release="platform",
+    )
+    _assert_postgres_backup_disabled(docs)
+
+
+@requires_helm
+def test_ocp_overlay_postgres_backup_cronjob_restricted_v2():
+    """AC (Story 41.1): OCP overlay keeps restricted-v2 on backup CronJob."""
+    docs = _render(
+        _CORE_CHART,
+        "-f",
+        str(_CORE_OVERRIDES),
+        release="platform",
+    )
+    _assert_postgres_backup_cronjob_present(docs)
+    by_component = _pod_specs_by_component(docs)
+    assert "postgres-backup" in by_component
+    _assert_restricted_v2_pod_spec(
+        by_component["postgres-backup"],
+        where="postgres-backup",
+    )
 
 
 @requires_helm
@@ -2045,3 +2166,51 @@ def test_liquibase_job_check_fails_on_init_container():
     ]
     with pytest.raises(AssertionError, match="initContainer"):
         _assert_liquibase_then_fake_migrate_jobs(docs)
+
+
+def test_postgres_backup_check_fails_when_archive_mode_missing():
+    docs = [
+        {
+            "kind": "CronJob",
+            "metadata": {
+                "name": "platform-postgres-backup",
+                "labels": {"app.kubernetes.io/component": "postgres-backup"},
+            },
+            "spec": {
+                "schedule": "0 2 * * *",
+                "jobTemplate": {"spec": {"template": {"metadata": {"labels": {}}, "spec": {}}}},
+            },
+        },
+        {
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": "platform-postgres-backup",
+                "labels": {"app.kubernetes.io/component": "postgres-backup"},
+            },
+            "spec": {"accessModes": ["ReadWriteMany"]},
+        },
+        {
+            "kind": "StatefulSet",
+            "metadata": {
+                "name": "platform-postgres",
+                "labels": {"app.kubernetes.io/component": "postgres"},
+            },
+            "spec": {
+                "template": {
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "postgres",
+                                "image": "postgres:17",
+                                "args": ["postgres"],
+                                "volumeMounts": [{"name": "backup", "mountPath": "/backup"}],
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+    ]
+    with pytest.raises(AssertionError, match="archive_mode"):
+        _assert_postgres_backup_cronjob_present(docs)
+

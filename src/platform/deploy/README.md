@@ -5,6 +5,8 @@ core chart** (`charts/platform/`) plus a **thin OCP overlay**
 (`overlays/ocp/`) — AD-11's shape. The core chart renders only plain
 Kubernetes kinds; everything OpenShift-specific lives in the overlay.
 Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
+Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
+(Story 41.1).
 
 ## Prerequisites
 

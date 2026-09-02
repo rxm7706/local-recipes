@@ -1,0 +1,70 @@
+{{- if .Values.postgres.backup.enabled }}
+# Story 41.1: scheduled pg_basebackup on the platform image (no second image).
+# WAL segments land on the same RWX PVC via postgres archive_command.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "platform.postgresBackup.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-backup
+spec:
+  schedule: {{ .Values.postgres.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "platform.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "platform.fullname" . }}
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- include "platform.restrictedPodSecurityContext" . | nindent 12 }}
+          containers:
+            - name: backup
+              image: {{ include "platform.imageRef" (dict "image" .Values.image "path" "image") }}
+              imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.image }}
+              securityContext:
+                {{- include "platform.restrictedContainerSecurityContext" . | nindent 16 }}
+              args:
+                - python
+                - db/postgres_backup.py
+                - basebackup
+              env:
+                - name: POSTGRES_HOST
+                  value: {{ include "platform.postgres.fullname" . | quote }}
+                - name: POSTGRES_PORT
+                  value: "5432"
+                - name: POSTGRES_DB
+                  value: {{ .Values.postgres.auth.database | quote }}
+                - name: POSTGRES_USER
+                  value: {{ .Values.postgres.auth.username | quote }}
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "platform.existingSecretName" . | quote }}
+                      key: POSTGRES_PASSWORD
+                - name: BACKUP_ROOT
+                  value: {{ .Values.postgres.backup.mountPath | quote }}
+              volumeMounts:
+                - name: backup
+                  mountPath: {{ .Values.postgres.backup.mountPath | quote }}
+              {{- with .Values.postgres.backup.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ include "platform.postgresBackup.pvcName" . }}
+{{- end }}
