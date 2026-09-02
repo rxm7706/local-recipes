@@ -186,31 +186,32 @@ def reconcile_station_re_preflight(
             kept[story] = detail
             continue
         # Predicate changed but refuse still applies.
-        if gate.startswith("MRS-GATE-") and not verify_rerun_needed(
+        if gate.startswith("MRS-GATE-") and verify_rerun_needed(
             prior=previous, current=current
         ):
-            # Spec glob changed but verify config did not — do not clear the
-            # block solely to re-run verify on the next tick (Story 28.18 AC3).
+            # Verify config changed — clear so the next tick re-dispatches.
             results.append(
                 RePreflightResult(
                     story=story,
                     gate=gate,
-                    decision=RePreflightDecision.RATE_LIMITED,
+                    decision=RePreflightDecision.CLEARED,
                     prior_detail=detail,
                     predicate=current,
                 )
             )
-            kept[story] = detail
             continue
+        # Spec-only change on verify gates (AC3), unreadable spec, or any other
+        # gate where refuse_still_applies — rate-limit, do not re-dispatch.
         results.append(
             RePreflightResult(
                 story=story,
                 gate=gate,
-                decision=RePreflightDecision.CLEARED,
+                decision=RePreflightDecision.RATE_LIMITED,
                 prior_detail=detail,
                 predicate=current,
             )
         )
+        kept[story] = detail
     return kept, tuple(results)
 
 

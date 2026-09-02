@@ -246,6 +246,41 @@ def test_reconcile_clears_missing_spec_block_when_spec_appears(tmp_path: Path) -
     assert results[0].decision is re_preflight.RePreflightDecision.CLEARED
 
 
+def test_reconcile_rate_limits_when_spec_becomes_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Missing→unreadable must not clear MRS-DISP-005 — refuse still applies."""
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-DISP-005: no tracked spec found for story '22.7'"
+    prior = re_preflight.RefusePredicate(
+        gate="MRS-DISP-005",
+        spec_fingerprint="spec:missing",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(()),
+    )
+    spec_path = specs / "spec-22-7-fleet.md"
+    spec_path.write_text("---\ndifficulty: medium\n---\n")
+
+    def _fingerprint(repo_root: Path, slug_arg: str, story: str) -> str:
+        try:
+            spec_path.stat()
+        except OSError:
+            return "spec:unreadable"
+        return "spec:unreadable"
+
+    monkeypatch.setattr(re_preflight, "spec_fingerprint", _fingerprint)
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=(),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
 def test_reconcile_rate_limits_unreadable_spec_predicate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
