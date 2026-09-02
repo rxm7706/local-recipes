@@ -1,0 +1,11 @@
+--- a/packages/dbgpt-client/pyproject.toml
++++ b/packages/dbgpt-client/pyproject.toml
+@@ -13,7 +13,7 @@ dependencies = [
+     "dbgpt_ext",
+     "shortuuid",
+     # 2.0.29 not support duckdb now
+-    "SQLAlchemy>=2.0.25, <2.0.29",
++    "SQLAlchemy>=2.0.25, <2.1",
+     # for cache
+     "msgpack",
+     # for AWEL operator serialization

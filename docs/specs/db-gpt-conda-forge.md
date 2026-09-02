@@ -39,6 +39,19 @@ spec_updated: 2026-07-02
 | Distribution | conda-forge, all 8 outputs `noarch: python`. `lyric-py` ARM **live on all 5 subdirs** (C1 CLEARED 2026-07-01). **⚠ dbgpt-app ARM installability is UNVERIFIED via the PR path** — staged-recipes has no ARM legs (G82) and only chromadb/spacy/onnxruntime were spot-checked on osx-arm64; needs a post-merge feedstock G40 check across the full compiled-dep set × osx-arm64 + linux-aarch64. See § Readiness → C1 |
 | Lifetime     | db-gpt feedstock autotick-maintained **by @pb01ka** post-merge                                                                                                              |
 
+> **📌 ADDENDUM (2026-09-02, Mason story 13.2 — dbgpt-client sqlalchemy cap fix LANDED locally,
+> feedstock PR [#4](https://github.com/conda-forge/db-gpt-feedstock/pull/4)):**
+> `dbgpt-client`'s `sqlalchemy >=2.0.25,<2.0.29` loosened to `sqlalchemy >=2.0.25,<2.1` in the
+> local mirror at `recipes/db-gpt/` v0.8.1 (`build.number` 0→1). G26 source patch
+> `patches/0003-loosen-dbgpt-client-sqlalchemy-cap.patch` replaces upstream's `<2.0.29` cap in
+> `packages/dbgpt-client/pyproject.toml`; a py3.14 `pip_check` block; a script test proving
+> sqlalchemy >=2.0.25 and `dbgpt_client` import on py3.14. Removes the
+> `dbgpt-client` sqlalchemy blocker for the platform's `dbgpt-app` sidecar on Python
+> 3.14 (Steward 43.6); full `dbgpt-app` 3.14 solve and sidecar runtime validation
+> remain blocked on `dbgpt-ext-rag`'s `onnxruntime <=1.18.1` (no cp314 build).
+> **Feedstock PR:** [#4](https://github.com/conda-forge/db-gpt-feedstock/pull/4)
+> (maintainer-edit on `conda-forge/db-gpt-feedstock` pending).
+
 ---
 
 ## Readiness (live: 2026-07-01)

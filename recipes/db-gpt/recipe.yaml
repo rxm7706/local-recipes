@@ -11,9 +11,15 @@ recipe:
 source:
   url: https://github.com/eosphoros-ai/DB-GPT/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 65e25642dfb0f2e3028a50301fda060ca09008d754ea46a8268edc47c131a2ec
+  patches:
+    # Loosens packages/dbgpt-client/pyproject.toml's sqlalchemy>=2.0.25,<2.0.29
+    # cap to <2.1 to match the loosened dbgpt-client run: dep below (G26:
+    # pip_check reads the WHEEL's dist-info METADATA, which still bakes in
+    # upstream's cap unless the source pyproject is patched too).
+    - patches/0003-loosen-dbgpt-client-sqlalchemy-cap.patch
 
 build:
-  number: 0
+  number: 1
 
 outputs:
   - package:
@@ -142,7 +148,7 @@ outputs:
         - ${{ pin_subpackage('dbgpt-ext', lower_bound='x.x.x', upper_bound='x.x.x') }}
         - ${{ pin_subpackage('dbgpt-cli', lower_bound='x.x.x', upper_bound='x.x.x') }}
         - shortuuid
-        - sqlalchemy >=2.0.25,<2.0.29
+        - sqlalchemy >=2.0.25,<2.1  # TODO: tighten if upstream re-caps
         - msgpack-python
         - cloudpickle
         - httpx
@@ -156,6 +162,20 @@ outputs:
           python_version:
             - ${{ python_min }}.*
             - "*"
+      - python:
+          imports:
+            - dbgpt_client
+          pip_check: true
+          python_version:
+            - 3.12.*
+      - python:
+          imports:
+            - dbgpt_client
+          pip_check: true
+          python_version:
+            - 3.14.*
+      - script:
+          - python -c "import sqlalchemy as sa; ver = sa.__version__; parts = tuple(int(x) for x in ver.split('.')[:3]); assert parts >= (2, 0, 25), f'need sqlalchemy >=2.0.25, got {ver}'; import dbgpt_client; print('dbgpt_client + sqlalchemy', ver, 'OK')"
 
   - package:
       name: dbgpt-sandbox
@@ -491,4 +511,12 @@ extra:
 #   recipe-maintainers: pb01ka only — consume, not co-maintain.
 # cfe-submission-pr:
 #   points at pb01ka's PR (not ours) — it is the submission of record for this pkg.
+#
+# story-13.2 (2026-09-02): loosened dbgpt-client's sqlalchemy
+# >=2.0.25,<2.0.29 -> >=2.0.25,<2.1 (spec: spec-13-2-dbgpt-client-sqlalchemy-
+# cap-admits-python-3-14.md) — the old cap has no cp314 sqlalchemy build and
+# blocks dbgpt-app (the platform's DB-GPT sidecar). Added patches/0003-loosen-
+# dbgpt-client-sqlalchemy-cap.patch (G26 METADATA alignment), build.number 0->1,
+# a py3.14 pip_check block, and a script test proving sqlalchemy >=2.0.25 on
+# py3.14. Feedstock PR #4 (conda-forge/db-gpt-feedstock).
 ####

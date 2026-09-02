@@ -36,7 +36,7 @@ development_status:
   12-7-slice-2-compiled-and-equivalence-validated: done
   12-8-the-slice-2-re-scope-checkpoint: done
   13-1-langflow-base-onnxruntime-pin-admits-python-3-14: done
-  13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14: backlog
+  13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
