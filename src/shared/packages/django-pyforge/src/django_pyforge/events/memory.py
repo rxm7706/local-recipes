@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
@@ -52,17 +53,46 @@ class MemoryRedis:
 
     def __init__(self) -> None:
         self._kv: dict[str, str] = {}
+        self._expiry: dict[str, float] = {}
         self._streams: dict[str, list[_Entry]] = {}
         self._groups: dict[str, dict[str, _Group]] = {}
         self._seq = 0
         self._clock = 0
 
-    def set(self, name: str, value: Any, nx: bool = False) -> bool | None:
+    def _purge_expired(self, key: str) -> None:
+        expires = self._expiry.get(key)
+        if expires is not None and expires <= time.time():
+            self._kv.pop(key, None)
+            self._expiry.pop(key, None)
+
+    def set(
+        self,
+        name: str,
+        value: Any,
+        nx: bool = False,
+        ex: int | None = None,
+    ) -> bool | None:
         key = _as_str(name)
+        self._purge_expired(key)
         if nx and key in self._kv:
             return None
         self._kv[key] = _as_str(value)
+        if ex is not None:
+            self._expiry[key] = time.time() + ex
+        else:
+            self._expiry.pop(key, None)
         return True
+
+    def ttl(self, name: str) -> int:
+        key = _as_str(name)
+        self._purge_expired(key)
+        if key not in self._kv:
+            return -2
+        expires = self._expiry.get(key)
+        if expires is None:
+            return -1
+        remaining = int(expires - time.time())
+        return max(remaining, 1)
 
     def delete(self, *names: str) -> int:
         removed = 0
@@ -72,16 +102,35 @@ class MemoryRedis:
         return removed
 
     def get(self, name: str) -> str | None:
-        return self._kv.get(_as_str(name))
+        key = _as_str(name)
+        self._purge_expired(key)
+        return self._kv.get(key)
 
     def exists(self, *names: str) -> int:
-        return sum(1 for name in names if _as_str(name) in self._kv)
+        count = 0
+        for name in names:
+            key = _as_str(name)
+            self._purge_expired(key)
+            if key in self._kv:
+                count += 1
+        return count
 
-    def xadd(self, name: str, fields: dict[str, Any], **_kwargs: Any) -> str:
+    def xadd(
+        self,
+        name: str,
+        fields: dict[str, Any],
+        maxlen: int | None = None,
+        approximate: bool = False,
+        **_kwargs: Any,
+    ) -> str:
+        del approximate  # approximate trim not modeled; maxlen still caps length
         self._seq += 1
         stream_id = f"{self._seq}-0"
         copied = {_as_str(k): _as_str(v) for k, v in fields.items()}
-        self._streams.setdefault(name, []).append(_Entry(stream_id, copied))
+        entries = self._streams.setdefault(name, [])
+        entries.append(_Entry(stream_id, copied))
+        if maxlen is not None and len(entries) > maxlen:
+            del entries[: len(entries) - maxlen]
         return stream_id
 
     def xgroup_create(

@@ -260,7 +260,8 @@ postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
 - DB-GPT sidecar chart work → Story 12.5
 - mcp-host is **required** on this overlay (Epic 35 / CAP-4), not optional
   chart work — do not omit the Deployment or blank the image repository
-- Redis AUTH + NetworkPolicy → Story 12.6
+- Redis AUTH + NetworkPolicy → Story 12.6; broker AOF PVC + bounded
+  maxmemory → Story 40.2 (`redis.broker.persistence`, `/data` mount)
 - Live Tier-3 verification record → Story 12.7
 - GKE/kind CI profiles → Stories 12.2 / 12.3 (unchanged)
 - `--docker-image` / host-socket deploy shortcuts → struck in

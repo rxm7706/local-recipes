@@ -1,9 +1,14 @@
-"""Steward 24.1: CloudEvents 1.0 on redis-broker Streams (canopy AD-8 / AD-10)."""
+"""Steward 24.1 / 40.2: CloudEvents 1.0 on redis-broker Streams."""
 
 from __future__ import annotations
 
 import json
+import shutil
+import signal
+import subprocess
+import time
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -139,6 +144,7 @@ def test_poison_harvest_xautoclaim_to_dlq() -> None:
 
 
 def test_enumerate_dlq_returns_quarantined_and_empty() -> None:
+    _ensure_django()
     broker = MemoryRedis()
     assert list_quarantined(broker) == []
     empty = StringIO()
@@ -212,3 +218,163 @@ def test_jira_optional_envelope_lands_on_stream() -> None:
     tagged = next(item for item in payloads if item["id"] == with_item)
     assert tagged["workitemid"] == "PYF-24-1"
     assert "jira" not in tagged
+
+
+def test_applied_key_carries_ttl() -> None:
+    broker = MemoryRedis()
+    fabric = EventFabric(broker)
+    key = applied_key("event-1")
+    assert fabric._mark_applied(key)  # noqa: SLF001 -- TTL contract
+    assert broker.ttl(key) > 0
+
+
+def _ensure_django() -> None:
+    import django  # noqa: PLC0415
+
+    django.setup()
+
+
+def test_execute_supervised_run_leaves_no_celery_result_key(tmp_path) -> None:
+    pytest.importorskip("pytest_django")
+    _ensure_django()
+    from django.conf import settings  # noqa: PLC0415
+    from django.core.management import call_command as django_call_command  # noqa: PLC0415
+
+    django_call_command("migrate", verbosity=0, interactive=False)
+    redis_server = shutil.which("redis-server")
+    if redis_server is None:
+        pytest.skip("redis-server not on PATH (platform-dev env)")
+
+    data_dir = tmp_path / "redis-data"
+    data_dir.mkdir()
+    port = 16379 + (int(time.time()) % 1000)
+    proc = subprocess.Popen(  # noqa: S603
+        [
+            redis_server,
+            "--port",
+            str(port),
+            "--dir",
+            str(data_dir),
+            "--save",
+            "",
+            "--appendonly",
+            "no",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        time.sleep(0.3)
+        broker_url = f"redis://127.0.0.1:{port}/0"
+        settings.CELERY_BROKER_URL = broker_url
+        settings.CELERY_RESULT_BACKEND = broker_url
+        settings.CELERY_TASK_IGNORE_RESULT = True
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+        settings.CELERY_TASK_EAGER_PROPAGATES = True
+
+        import redis  # noqa: PLC0415
+
+        client = redis.Redis.from_url(broker_url, decode_responses=True)
+
+        def _noop_runner(_payload: dict) -> dict:
+            return {"ok": True}
+
+        import django_pyforge.supervisor as supervisor  # noqa: PLC0415
+        from django_pyforge.tasks import execute_supervised_run  # noqa: PLC0415
+
+        original = supervisor.lookup_runner
+        supervisor.lookup_runner = lambda _station, _tool: _noop_runner
+        try:
+            from django_pyforge.models import RunState  # noqa: PLC0415
+
+            run = RunState.objects.create(
+                station="warden",
+                status=RunState.Status.PENDING,
+            )
+            execute_supervised_run.delay(str(run.pk), "warden", "noop", {})
+        finally:
+            supervisor.lookup_runner = original
+
+        meta_keys = [key for key in client.keys("celery-task-meta-*")]
+        assert meta_keys == []
+    finally:
+        proc.send_signal(signal.SIGTERM)
+        proc.wait(timeout=5)
+
+
+def _start_redis(data_dir: Path, *, appendonly: bool, port: int) -> subprocess.Popen:
+    redis_server = shutil.which("redis-server")
+    assert redis_server is not None
+    args = [
+        redis_server,
+        "--port",
+        str(port),
+        "--dir",
+        str(data_dir),
+        "--save",
+        "",
+    ]
+    if appendonly:
+        args.extend(["--appendonly", "yes", "--appendfsync", "everysec"])
+    else:
+        args.extend(["--appendonly", "no"])
+    proc = subprocess.Popen(  # noqa: S603
+        args,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    time.sleep(0.4)
+    return proc
+
+
+@pytest.mark.parametrize("appendonly", [True, False])
+def test_broker_restart_durability(tmp_path, appendonly: bool) -> None:
+    if shutil.which("redis-server") is None:
+        pytest.skip("redis-server not on PATH (platform-dev env)")
+
+    import redis  # noqa: PLC0415
+
+    data_dir = tmp_path / "broker-aof"
+    data_dir.mkdir()
+    port = 17379 + (int(time.time()) % 1000)
+    url = f"redis://127.0.0.1:{port}/0"
+
+    proc = _start_redis(data_dir, appendonly=appendonly, port=port)
+    try:
+        client = redis.Redis.from_url(url, decode_responses=True)
+        fabric = EventFabric(client)
+        fabric.ensure_group(GROUP)
+        event_id = fabric.publish(_envelope())
+        pending = client.xreadgroup(GROUP, CONSUMER, {STREAM: ">"}, count=1)
+        assert pending
+        key = applied_key(event_id)
+        fabric._mark_applied(key)  # noqa: SLF001 -- durability fixture
+        client.xadd(STREAM, {EVENT_FIELD: "not-json"})
+        client.xadd(DLQ, {EVENT_FIELD: '{"specversion":"1.0","id":"dlq-1"}'})
+        assert client.xpending(STREAM, GROUP)["pending"] >= 1
+        assert client.exists(key)
+        assert client.xlen(DLQ) >= 1
+    finally:
+        time.sleep(1.5)
+        proc.send_signal(signal.SIGTERM)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+
+    proc = _start_redis(data_dir, appendonly=appendonly, port=port)
+    try:
+        client = redis.Redis.from_url(url, decode_responses=True)
+        if not appendonly:
+            assert client.xlen(STREAM) == 0
+            assert client.xlen(DLQ) == 0
+            assert not client.exists(key)
+            return
+        assert client.xlen(STREAM) >= 1
+        assert client.xpending(STREAM, GROUP)["pending"] >= 1
+        assert client.xlen(DLQ) >= 1
+        assert client.exists(key)
+    finally:
+        proc.send_signal(signal.SIGTERM)
+        proc.wait(timeout=5)

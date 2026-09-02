@@ -121,9 +121,17 @@ capability-naming reason where helm/PyYAML are absent.
   pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
   redis container and is wired into platform pods' `REDIS_URL` via
   secretKeyRef + runtime env expansion. A NetworkPolicy restricts ingress
-  on port 6379 to web/worker/migrate pods only. Persistence stays
-  emptyDir (ephemeral by design — Celery re-queues). Clusters without a
-  CNI that enforces NetworkPolicy get AUTH only, not network isolation.
+  on port 6379 to web/worker/migrate pods only. **redis-cache** stays
+  on `emptyDir` (ephemeral, `allkeys-lru`). **redis-broker** is durable
+  and bounded (Story 40.2): AOF on a dedicated RWO PVC at `/data`,
+  `--maxmemory` strictly below the container memory limit, and
+  `noeviction`. Clusters without a CNI that enforces NetworkPolicy get
+  AUTH only, not network isolation.
+- **Dead-letter retention (Story 40.2).** The `pyforge.events.dlq` stream
+  is never auto-trimmed. Operators inspect it with
+  `manage.py list_event_dlq` and purge deliberately, e.g.
+  `redis-cli -a "$REDIS_PASSWORD" XTRIM pyforge.events.dlq MAXLEN 0` on
+  the broker pod, after triage.
 - **The official `postgres`/`redis` images may need image overrides under
   OCP `restricted-v2`.** Both declare a root `USER` and step down at
   runtime; under an SCC-assigned arbitrary UID they generally run, but
@@ -136,7 +144,8 @@ capability-naming reason where helm/PyYAML are absent.
   uses `/bitnami/postgresql`, Red Hat `/var/lib/pgsql/data`) — the PVC
   mounts at `dataMountPath` and `PGDATA` derives from it, so a mismatch
   silently lands the database on the container's ephemeral filesystem
-  instead of the PVC.
+  instead of the PVC. The official **redis:7** image stores AOF/RDB under
+  `/data` — the broker PVC mounts there (`redis.broker.persistence`).
 - **DB-GPT sidecar (Story 12.5).** The chart renders a singleton sidecar
   Deployment (`replicas: 1`, `strategy: Recreate`), a dedicated SQLite PVC
   at `sidecar.metadataMountPath` (default

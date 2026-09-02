@@ -1,6 +1,6 @@
 # Two Redis Deployments, same image class (canopy AD-10 / parent AD-1):
-# redis-cache evicts (allkeys-lru); redis-broker does not (noeviction).
-# emptyDir only -- Redis stays ephemeral (Story 12.6).
+# redis-cache evicts (allkeys-lru) on emptyDir; redis-broker is durable
+# (AOF on PVC) and bounded (noeviction + required maxmemory < limit).
 {{- range $role := tuple "cache" "broker" }}
 ---
 apiVersion: apps/v1
@@ -53,7 +53,20 @@ spec:
             - {{ required "redis.cache.maxmemory is required" $.Values.redis.cache.maxmemory | quote }}
             - --maxmemory-policy
             - {{ required "redis.cache.maxmemoryPolicy is required" $.Values.redis.cache.maxmemoryPolicy | quote }}
-            {{- else }}
+            {{ else }}
+            {{ $maxmemory := required "redis.broker.maxmemory is required" $.Values.redis.broker.maxmemory }}
+            {{ $memLimit := required "redis.broker.resources.limits.memory is required" $.Values.redis.broker.resources.limits.memory }}
+            {{ $maxBytes := include "platform.parseMemoryBytes" $maxmemory | int }}
+            {{ $limitBytes := include "platform.parseMemoryBytes" $memLimit | int }}
+            {{ if ge $maxBytes $limitBytes }}
+            {{ fail (printf "redis.broker.maxmemory (%s) must be strictly less than redis.broker.resources.limits.memory (%s)" $maxmemory $memLimit) }}
+            {{ end }}
+            - --appendonly
+            - "yes"
+            - --appendfsync
+            - {{ required "redis.broker.appendfsync is required" $.Values.redis.broker.appendfsync | quote }}
+            - --maxmemory
+            - {{ $maxmemory | quote }}
             - --maxmemory-policy
             - {{ required "redis.broker.maxmemoryPolicy is required" $.Values.redis.broker.maxmemoryPolicy | quote }}
             {{- end }}
@@ -84,14 +97,26 @@ spec:
                 - ping
             initialDelaySeconds: 5
             periodSeconds: 5
+          {{- if eq $role "cache" }}
           {{- with $.Values.redis.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- else }}
+          {{- with $.Values.redis.broker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- end }}
           volumeMounts:
             - name: data
               mountPath: /data
       volumes:
         - name: data
+          {{- if eq $role "broker" }}
+          persistentVolumeClaim:
+            claimName: {{ include "platform.redisBroker.pvcName" $ }}
+          {{- else }}
           emptyDir: {}
+          {{- end }}
 {{- end }}

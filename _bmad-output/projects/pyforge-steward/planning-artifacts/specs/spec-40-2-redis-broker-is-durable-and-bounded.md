@@ -2,9 +2,11 @@
 title: redis-broker is durable and bounded
 type: fix
 created: '2026-09-02'
-status: ready-for-dev
+status: done
 updated: '2026-09-02'
 baseline_commit: 2e3f108f
+baseline_revision: d6cae4759395dd0293ac0a89fc607f9205950900
+followup_review_recommended: false
 severity: CRITICAL
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -137,33 +139,33 @@ broker and cache. Deleting the DLQ on restart.
 
 ## Tasks
 
-- [ ] `values.yaml`: `redis.broker.persistence.{size,storageClassName}`,
+- [x] `values.yaml`: `redis.broker.persistence.{size,storageClassName}`,
       `redis.broker.maxmemory` (required), `redis.broker.appendfsync`
       (default `everysec`), `redis.broker.resources` (limits.memory required).
-- [ ] `redis-deployment.yaml`: role-conditional volume (PVC for broker,
+- [x] `redis-deployment.yaml`: role-conditional volume (PVC for broker,
       emptyDir for cache), AOF + maxmemory args for broker, `fail` when
       maxmemory ≥ limit (parse `Mi`/`Gi`/`mb`/`gb` in a helper).
-- [ ] New `redis-broker-pvc.yaml` (mirror `sidecar-pvc.yaml`).
-- [ ] `_helpers.tpl`: `platform.redisBroker.pvcName`; a
+- [x] New `redis-broker-pvc.yaml` (mirror `sidecar-pvc.yaml`).
+- [x] `_helpers.tpl`: `platform.redisBroker.pvcName`; a
       `platform.parseMemory` helper for the comparison.
-- [ ] `deploy/README.md` + `overlays/ocp/cluster-bringup.md`: broker PVC,
+- [x] `deploy/README.md` + `overlays/ocp/cluster-bringup.md`: broker PVC,
       AOF, DLQ retention procedure.
-- [ ] `config/settings/base.py`: `CELERY_TASK_IGNORE_RESULT = True`,
+- [x] `config/settings/base.py`: `CELERY_TASK_IGNORE_RESULT = True`,
       `CELERY_RESULT_EXPIRES = 3600`; comment citing AD-12 (RunState is the
       record) and this story.
-- [ ] `django_pyforge/events/fabric.py` + `constants.py`: `applied:` TTL,
+- [x] `django_pyforge/events/fabric.py` + `constants.py`: `applied:` TTL,
       publish-time `maxlen` trim, both env-configurable with documented
       defaults.
-- [ ] `django_pyforge/events/memory.py`: TTL-aware `set(..., ex=)` or mark
+- [x] `django_pyforge/events/memory.py`: TTL-aware `set(..., ex=)` or mark
       the restart test as real-server only.
-- [ ] Tests: re-scope the two emptyDir invariants; add broker PVC/AOF,
+- [x] Tests: re-scope the two emptyDir invariants; add broker PVC/AOF,
       maxmemory-vs-limit refusal, no-result-key, applied-TTL, and the
       `redis-server` kill/restart durability test (`platform-dev` env,
       skip if `redis-server` binary absent — never silently pass).
-- [ ] `resilience-invariants.md` RFC-2 row: append "broker durable + bounded
+- [x] `resilience-invariants.md` RFC-2 row: append "broker durable + bounded
       (Story 40.2)"; `spec-local-ocp-hybrid-environment` CAP-3: note the
       broker supersession; Dream sizing table storage row.
-- [ ] Ledger `40-2-redis-broker-is-durable-and-bounded` → `review` then
+- [x] Ledger `40-2-redis-broker-is-durable-and-bounded` → `review` then
       `done` via `sprint-ledger-sync`.
 
 ## Design notes
@@ -215,3 +217,35 @@ lists any prior quarantine.
 
 - Cache-only from now on
   [`test_chart_invariants.py:1164`](../../../../../../src/platform/tests/test_chart_invariants.py#L1164)
+
+## Review Triage Log
+
+### 2026-09-02 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (low 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[low]` `[patch]` Added `test_redis_broker_memory_limit_is_required` for empty `redis.broker.resources.limits.memory` refusal (AC gap).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Made redis-broker durable (AOF on RWO PVC) and memory-bounded (`--maxmemory` < limit, `noeviction`); left redis-cache on emptyDir. Celery results are globally ignored; EventFabric applied keys carry TTL and the main stream has approximate maxlen trim.
+
+Files changed:
+- `src/platform/deploy/charts/platform/` — broker PVC template, deployment args, values defaults, parseMemory helper
+- `src/platform/config/settings/base.py` — `CELERY_TASK_IGNORE_RESULT`, `CELERY_RESULT_EXPIRES`
+- `django-pyforge/events/` — TTL, stream maxlen, MemoryRedis TTL support
+- `src/platform/tests/` — re-scoped cache emptyDir invariants; broker PVC/AOF/maxmemory tests; restart durability + applied TTL tests
+- `docs/dreams/pyforge-unifying-strategy.md`, deploy README, cluster-bringup — sizing and operator docs
+
+Review findings: 1 low patch applied; no deferrals.
+
+Follow-up review recommendation: false (0 high/medium patched; score 1).
+
+Verification: `pixi run -e platform-dev -- python -m pytest -o addopts= tests/test_chart_invariants.py -k redis tests/test_cloudevents_redis_broker.py` — 21 passed, 1 skipped (celery meta-key test when pytest-django absent under stripped addopts).
+
+Residual risks: broker PVC sizing remains operator responsibility; R-9/R-10 deferred bus/Celery ack semantics unchanged.

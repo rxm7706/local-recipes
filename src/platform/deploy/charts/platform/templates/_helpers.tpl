@@ -78,6 +78,35 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-dbgpt-sqlite" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.redisBroker.pvcName" -}}
+{{- printf "%s-redis-broker" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Parse a memory quantity (Mi/Gi/mb/gb) to an integer byte count for
+template-time comparison. Unrecognized units fail the render naming the
+input value (Story 40.2).
+*/}}
+{{- define "platform.parseMemoryBytes" -}}
+{{- $raw := lower (trim (toString .)) -}}
+{{- $num := regexFind "^[0-9]+" $raw | atoi -}}
+{{- if hasSuffix "gi" $raw -}}
+{{- mul $num 1073741824 -}}
+{{- else if hasSuffix "mi" $raw -}}
+{{- mul $num 1048576 -}}
+{{- else if hasSuffix "gb" $raw -}}
+{{- mul $num 1000000000 -}}
+{{- else if hasSuffix "mb" $raw -}}
+{{- mul $num 1000000 -}}
+{{- else if hasSuffix "g" $raw -}}
+{{- mul $num 1000000000 -}}
+{{- else if hasSuffix "m" $raw -}}
+{{- mul $num 1000000 -}}
+{{- else -}}
+{{- fail (printf "platform.parseMemoryBytes: unrecognized memory unit in %q (use Mi/Gi/mb/gb)" .) -}}
+{{- end -}}
+{{- end }}
+
 {{- define "platform.mcpHost.fullname" -}}
 {{- printf "%s-mcp-host" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
