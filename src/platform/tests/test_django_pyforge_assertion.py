@@ -735,6 +735,25 @@ def test_idp_bearer_is_never_base64_decoded_outside_verifier() -> None:
     assert offenders == []
 
 
+def test_idp_bearer_missing_group_claim_is_refused(
+    idp_test_keys: dict[str, object],
+) -> None:
+    now = int(datetime.now(tz=UTC).timestamp())
+    bearer = jwt.encode(
+        {
+            "sub": _SUB,
+            "iss": _TEST_ISSUER,
+            "aud": _TEST_AUDIENCE,
+            "iat": now,
+            "exp": now + 300,
+        },
+        idp_test_keys["private_pem"],
+        algorithm="RS256",
+        headers={"kid": idp_test_keys["kid"], "alg": "RS256"},
+    )
+    assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
+
+
 def test_hs256_token_is_refused() -> None:
     token = jwt.encode(
         {
