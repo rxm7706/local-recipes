@@ -34,7 +34,13 @@ def _import_duckdb():
 class PlaneGraphStore:
     """Concrete ``GraphStore``: node snapshot + ``FLOAT[N]`` ranking on ``atlas.duckdb``."""
 
-    def __init__(self, plane_path: Path, store_path: Path) -> None:
+    def __init__(
+        self,
+        plane_path: Path,
+        store_path: Path,
+        *,
+        write: bool = True,
+    ) -> None:
         path = Path(plane_path)
         if path.name != ATLAS_DUCKDB_NAME:
             raise PluginError(f"plane store must be {ATLAS_DUCKDB_NAME}, got {path.name!r}")
@@ -43,10 +49,24 @@ class PlaneGraphStore:
         self.plane_path = path
         self.store_path = Path(store_path)
         self._nodes: dict[str, GraphNodeModel] = {}
-        duckdb = _import_duckdb()
-        self._con = duckdb.connect(str(path))
-        self._ensure_tables()
+        self._write = write
+        self._con = self._open_plane(path, write=write)
+        if write:
+            self._ensure_tables()
         self._load()
+
+    def _open_plane(self, path: Path, *, write: bool):
+        if write:
+            try:
+                from pyforge.atlas.duckdb_writer import connect_writer
+            except ImportError as exc:
+                raise PluginError(
+                    "plane graph-store writes require pyforge-atlas "
+                    "(duckdb_writer.connect_writer)"
+                ) from exc
+            return connect_writer(path)
+        duckdb = _import_duckdb()
+        return duckdb.connect(str(path), read_only=True)
 
     def _ensure_tables(self) -> None:
         self._con.execute(
@@ -123,6 +143,9 @@ class PlaneGraphStore:
         return [self._nodes[row[0]] for row in rows if row[0] in self._nodes]
 
     def commit(self) -> None:
+        if not self._write:
+            msg = "plane graph-store commit requires write=True (writer process only)"
+            raise PluginError(msg)
         snapshot = list(self._nodes.values())
         self._con.execute("DELETE FROM scribe_nodes")
         self._con.execute("DELETE FROM scribe_embeddings")
@@ -167,7 +190,12 @@ class PlaneGraphStorePlugin:
                 raise PluginError("plane graph-store requires store_path and plane_path")
             if "chroma" in str(plane_path).lower():
                 raise PluginError("Chroma is not the query plane")
-            context["store"] = PlaneGraphStore(Path(plane_path), Path(store_path))
+            write = context.get("write", True) is True
+            context["store"] = PlaneGraphStore(
+                Path(plane_path),
+                Path(store_path),
+                write=write,
+            )
             nxt = context.get("next")
             if callable(nxt):
                 return nxt(context)

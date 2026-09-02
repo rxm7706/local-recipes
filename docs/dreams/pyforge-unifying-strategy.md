@@ -562,9 +562,12 @@ embeddings the enterprise DB will store without `pgvector` (`REAL[]` or
 equivalent) are cast and indexed on the plane. Agents cannot use the OLTP
 DSN. Mode A is not for DB-GPT exploring production schemas.
 
-**Held.** Not a ninth station. Single writer (FR-27 *intent*; the Spec may
-generalize the `atlas.duckdb` filename to “the plane,” not a second
-writable file). Consumer path `LOAD`s extensions, never `INSTALL`s on boot
+**Held.** Not a ninth station. Single writer on RWO storage (FR-27): one
+process holds the writable ``atlas.duckdb`` handle; Parquet (plus read-only
+Postgres ``ATTACH``) is what every other pod reads — never a shared ``.duckdb``
+file across web, Vizro, or worker replicas (Story 41.2 / BS-5). The Spec may
+generalize the ``atlas.duckdb`` filename to “the plane,” not a second writable
+file. Consumer path `LOAD`s extensions, never `INSTALL`s on boot
 (AD-13). BSL remains the dashboard contract. Pixi authority — Mosaic
 `duckdb-server` is an optional query *face*, already reciped, not a `uv`
 runtime. Kedro + the existing Dagster spine refresh the cache; no Airflow.
@@ -1723,7 +1726,7 @@ graph TD
 | **BS-2 (MCP / SSE Route Timeouts)**             | Ingress routers (HAProxy / Envoy) terminate silent SSE connections after 30s–60s during heavy 5-minute build or AST scans, severing agent workflows.           | **Keep-Alive Heartbeats & Extended Route Timeouts:** FastAPI emits SSE comment pings (`:keepalive\n\n`) every 15s; OpenShift routes declare `haproxy.router.openshift.io/timeout: 30m`.                                 |
 | **BS-3 (Async Token Expiry in Long Sprints)**   | Keycloak JWT access tokens expire after 15m; 2-hour autonomous Marshal sprints or Mason builds fail with 401s when reporting completion.                        | **Scoped Task Token Delegation (RFC 8693):** Celery tasks receive an immutable `delegation_context` (`idp_subject`) and use Keycloak `client_credentials` with Token Exchange to mint scoped internal execution tokens. |
 | **BS-4 (Cascading Synchronous 500s)**           | A crash or restart in`pyforge-warden-service` causes Django HTTPX worker threads to hang, cascading into a 504 outage for the entire Guildhall at `/`.          | **PyBreaker & Stale-While-Revalidate Fallbacks:** Django HTTPX clients implement PyBreaker with 500ms fail-fast thresholds; HTMX views render graceful degraded badges (`"Compute restarting — cached 10m ago"`).      |
-| **BS-5 (DuckDB Concurrent Writer Thrashing)**   | Concurrent Celery ingestion tasks attempting simultaneous writes to`atlas.duckdb` trigger file-lock contention and unhandled exceptions.                        | **Strict Single-Writer Ingestion Worker:** Only a single dedicated ingestion worker writes to DuckDB; all FastAPI services and Vizro dashboards mount DuckDB in **Strict Read-Only Mode** (`read_only=True`).           |
+| **BS-5 (DuckDB Concurrent Writer Thrashing)**   | Concurrent Celery ingestion tasks attempting simultaneous writes to`atlas.duckdb` trigger file-lock contention and unhandled exceptions.                        | **Single writer on RWO; Parquet is the shared artifact:** one ingestion worker process owns the writable ``atlas.duckdb`` on block storage; every other pod reads Parquet cache + read-only Postgres attach — never mounts the ``.duckdb`` file (Story 41.2).           |
 | **BS-6 (Event Schema Drift & Deserialization)** | Upgraded stations emitting v2 events crash legacy consumer stations with Pydantic`ValidationError` deserialization panics.                                      | **Forward-Compatible CloudEvents Envelope:** Standard envelope carries `schema_version: "2.x"` with generic payload dictionaries; schema validation is executed in domain adapters, not at the stream boundary.         |
 | **BS-7 (Pydantic 422 to HTMX Form Mapping)**    | FastAPI HTTP 422 JSON errors (`loc: ["body", "version"]`) fail to map back to Django template form fields, showing generic failure toasts.                      | **`PydanticFormErrorBridge` in `django-pyforge`:** Automatically unpacks HTTP 422 JSON error arrays into standard Django `forms.ValidationError` dictionaries for inline HTMX field highlighting.                       |
 | **BS-8 (Cross-Datastore PITR Recovery Gap)**    | Restoring PostgreSQL from backup while Redis Streams or MinIO contain newer state causes orphaned builds and missing database records.                          | **Idempotent Startup State Reconciliation:** Microservices execute startup reconciliation sweeps (e.g. Mason scans MinIO on boot to re-index database records, treating PostgreSQL as the canonical anchor).            |
