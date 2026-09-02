@@ -1,0 +1,11 @@
+--- a/packages/dbgpt-client/pyproject.toml
++++ b/packages/dbgpt-client/pyproject.toml
+@@ -18,7 +18,7 @@ dependencies = [
+     "shortuuid",
+     "msgpack",
+     "cloudpickle",
+-    "sqlalchemy>=2.0.25,<2.0.29",
++    "sqlalchemy>=2.0.25,<2.1",
+     "httpx",
+     "fastapi>=0.100.0,<0.113.0",
+     "tenacity<=8.3.0",

@@ -2,7 +2,7 @@
 title: "dbgpt-client sqlalchemy cap admits Python 3.14"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "blocked"
 updated: "2026-09-02"
 baseline_revision: "637f4158"
 review_loop_iteration: 0
@@ -18,6 +18,16 @@ warnings:
   - "`docs/specs/db-gpt-conda-forge.md` is TERMINAL for BMAD (consume-not-submit, G58). This story is a feedstock maintainer-edit, not a re-run of that spec."
 deferred:
   - "Upstream: ask DB-GPT to lift `sqlalchemy <2.0.29` (the platform already runs 2.0.52 with dbgpt core and serve)."
+  - summary: >-
+      Feedstock PR on conda-forge/db-gpt-feedstock not opened — verification session blocked.
+    evidence: |-
+      Shell/network unavailable to push maintainer-edit PR or run rattler-build.
+    severity: high
+  - summary: >-
+      Local build, pip check (3.12/3.14), pixi lock probe, sidecar runtime validation pending.
+    evidence: |-
+      Verification commands require pixi/rattler-build; not executed in this run.
+    severity: high
 ---
 
 <intent-contract>
@@ -74,13 +84,24 @@ mirror into `recipes/db-gpt/`, and re-verify with a `pixi lock` probe
 
 ## Tasks
 
-- [ ] Invoke `conda-forge-expert`; confirm G26 patch shape on the client output.
+- [x] Invoke `conda-forge-expert`; confirm G26 patch shape on the client output.
 - [ ] Feedstock PR; local build + `pip check` on 3.12 and 3.14.
 - [ ] Sidecar runtime validation on 3.14.
-- [ ] Mirror into `recipes/db-gpt/`; `pixi lock` probe green.
-- [ ] Spec Current State + Rule 2 retro.
+- [x] Mirror into `recipes/db-gpt/` (pixi lock probe pending verification).
+- [x] Spec Current State + Rule 2 retro.
 
 ## Verification
 
 `pixi run -e local-recipes recipe-build recipes/db-gpt`; the 3.14 probe;
 `pixi run -e pyforge-mason pyforge-mason-test`.
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: implementation verification failed — shell execution unavailable; local build, pip check, pixi lock probe, feedstock PR, and sidecar runtime validation not run.
+
+Summary: Loosened `dbgpt-client` sqlalchemy to `>=2.0.25,<2.1`; added G26 patch `0003-loosen-dbgpt-client-sqlalchemy-cap.patch`; bumped build.number 0→1; py3.14 tests on dbgpt-client; db-gpt spec addendum; CFE v8.86.0 retro (G26 upper-bound caps).
+
+Files changed: `recipes/db-gpt/recipe.yaml`, `recipes/db-gpt/patches/0003-loosen-dbgpt-client-sqlalchemy-cap.patch`, `docs/specs/db-gpt-conda-forge.md`, CFE skill SKILL.md/CHANGELOG/config/MANIFEST.
+
+Verification performed: none (shell blocked). Residual: feedstock PR TBD; confirm patch applies on first recipe-build.
