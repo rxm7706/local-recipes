@@ -64,6 +64,17 @@ cannot infer rollback for formatted SQL, so an unrolled-back changeset makes
   forms explicitly.
 - The rollback must undo what *this* changeset did and nothing else. Guard with
   `IF EXISTS` so rolling back a partially-applied changeset does not itself fail.
+- **A back-fill changeset cannot honour that rule exactly, so say so.** A
+  changeset whose forward statement is conditional (`ADD COLUMN IF NOT
+  EXISTS`) is a no-op on databases an earlier changeset already brought up to
+  shape, while its rollback is unconditional. `pyforge-scribe:4` is the worked
+  example: on a database where `pyforge-scribe:2` created `graph_nodes` with
+  `stale`, `:4` adds nothing, yet `rollback-count 1` on `:4` alone drops the
+  column and leaves a table the runtime role can read but not repair. Where
+  the asymmetry is unavoidable, record it in the changeset's `--comment` with
+  the recovery step — which is forward, `liquibase update`, not a deeper
+  rollback — and roll such a changeset back only as part of a reverse-order
+  rollback that also reaches the changeset that created the shape.
 - Grants roll back as the matching `REVOKE`s, including
   `ALTER DEFAULT PRIVILEGES … REVOKE`.
 - A changeset must be `include:`d in `db.changelog-master.yaml` — an

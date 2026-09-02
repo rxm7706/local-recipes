@@ -43,6 +43,13 @@ ROLLBACK_LINE = re.compile(r"^--rollback\s+(?P<body>\S.*?)\s*$", re.MULTILINE)
 # what the policy exists to forbid outside a documented exception.
 EMPTY_ROLLBACK = re.compile(r"^(empty|not\s+required)\s*;?$", re.IGNORECASE)
 COMMENT_LINE = re.compile(r"^--comment\s+\S", re.MULTILINE)
+# A GRANT whose *privilege list* (everything between GRANT and ON) names
+# CREATE or ALL. Scoped to the privilege list on purpose: `GRANT SELECT, ...
+# ON ALL TABLES` is DML and must stay green, while `GRANT USAGE, CREATE ON
+# SCHEMA ...` -- which a literal "GRANT CREATE" search misses -- must not.
+WIDENING_GRANT = re.compile(
+    r"\bGRANT\s+((?:(?!\bON\b)[A-Z, ])*\b(?:CREATE|ALL)\b(?:(?!\bON\b)[A-Z, ])*)\bON\b"
+)
 RUN_IN_TRANSACTION_FALSE = re.compile(r"runInTransaction:\s*false", re.IGNORECASE)
 SCRIBE_CHANGESETS = (
     "pyforge-scribe:1",
@@ -58,6 +65,21 @@ GRANDFATHERED_WITHOUT_ROLLBACK = frozenset(
 )
 
 
+def _changeset_headers(text: str) -> list[str]:
+    """Every ``--changeset`` id declared in one file body.
+
+    Liquibase allows several changesets per formatted-SQL file; db/README.md
+    says this tree keeps one per file. That is not cosmetic: the rollback,
+    grandfather and distribution gates below key off a single header per
+    file, and ``_has_real_rollback`` scans the whole body -- so a second
+    changeset sharing a file would inherit the first one's rollback and be
+    invisible to the uniqueness check, while
+    ``test_changeset_ids_are_distribution_seq`` (which scans the concatenated
+    changelog) *would* see it. The two halves of the gate must agree.
+    """
+    return [match.group(1) for match in CHANGESET_LINE.finditer(text)]
+
+
 def _changeset_entries() -> list[tuple[Path, str, str]]:
     """``(path, distribution:seq, body)`` for every changeset file.
 
@@ -68,9 +90,14 @@ def _changeset_entries() -> list[tuple[Path, str, str]]:
     entries: list[tuple[Path, str, str]] = []
     for path in sorted(CHANGELOG_DIR.glob("*.sql")):
         text = path.read_text(encoding="utf-8")
-        match = CHANGESET_LINE.search(text)
-        assert match is not None, f"{path.name} has no --changeset header"
-        entries.append((path, match.group(1), text))
+        headers = _changeset_headers(text)
+        assert headers, f"{path.name} has no --changeset header"
+        assert len(headers) == 1, (
+            f"{path.name} declares {len(headers)} changesets ({headers}); this "
+            "tree is one changeset per file (db/README.md) -- the rollback and "
+            "uniqueness gates only see the first header"
+        )
+        entries.append((path, headers[0], text))
     assert entries, "no Liquibase SQL changesets -- this check would pass vacuously"
     return entries
 
@@ -324,11 +351,39 @@ def test_changeset_ids_are_unique_across_files() -> None:
 
 
 def test_no_governed_sql_grants_create_to_the_app_role() -> None:
-    """Block-If: widening platform_app defeats the control CAP-9 buys."""
+    """Block-If: widening platform_app defeats the control CAP-9 buys.
+
+    Matching the literal ``GRANT CREATE`` is not enough -- ``GRANT USAGE,
+    CREATE ON SCHEMA scribe_schema TO platform_app`` is the natural spelling
+    and slips straight past it. Look for CREATE/ALL anywhere in the privilege
+    list of a GRANT, with comments stripped so prose about never granting
+    CREATE does not red the gate.
+    """
     for text in (_changelog_sql(), APP_ROLE_SQL.read_text(encoding="utf-8")):
-        upper = re.sub(r"\s+", " ", text.upper())
-        assert "GRANT CREATE" not in upper
-        assert "GRANT ALL" not in upper
+        statements = "\n".join(
+            line for line in text.splitlines() if not line.lstrip().startswith("--")
+        )
+        upper = re.sub(r"\s+", " ", statements.upper())
+        offenders = WIDENING_GRANT.findall(upper)
+        assert not offenders, f"GRANT widens the app role: {offenders}"
+
+
+def test_widening_grant_gate_catches_the_natural_spellings() -> None:
+    """The Block-If gate's own discrimination, proven on the forms that matter."""
+    for widening in (
+        "GRANT CREATE ON SCHEMA S TO PLATFORM_APP;",
+        "GRANT USAGE, CREATE ON SCHEMA S TO PLATFORM_APP;",
+        "GRANT ALL ON SCHEMA S TO PLATFORM_APP;",
+        "GRANT ALL PRIVILEGES ON SCHEMA S TO PLATFORM_APP;",
+    ):
+        assert WIDENING_GRANT.findall(widening), widening
+    for benign in (
+        "GRANT USAGE ON SCHEMA S TO PLATFORM_APP;",
+        "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA S TO PLATFORM_APP;",
+        "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA S TO PLATFORM_APP;",
+        "GRANT CONNECT ON DATABASE PLATFORM TO PLATFORM_APP;",
+    ):
+        assert not WIDENING_GRANT.findall(benign), benign
 
 
 def test_values_app_username_matches_changelog_grants() -> None:

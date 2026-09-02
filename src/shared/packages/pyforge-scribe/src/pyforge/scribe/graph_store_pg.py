@@ -12,7 +12,7 @@ kind). Story 28.2 fills ``embedding`` on commit and ranks with ``<=>``
 
 DDL governance (Story 41.3, CAP-9 / red-team S-4): this module executes no
 DDL. The pgvector extension, ``scribe_schema`` and ``graph_nodes`` are
-Liquibase changesets ``pyforge-scribe:1``–``:3``, applied by the migration
+Liquibase changesets ``pyforge-scribe:1``–``:4``, applied by the migration
 role. The runtime role holds DML only, so construction *asserts* the
 relation is present and raises :class:`GraphSchemaMissing` when it is not.
 """

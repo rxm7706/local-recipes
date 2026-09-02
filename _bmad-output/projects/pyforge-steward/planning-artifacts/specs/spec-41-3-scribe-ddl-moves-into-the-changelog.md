@@ -16,7 +16,7 @@ context:
   - "src/platform/db/changelog/"
   - "src/platform/db/sqlmigrate-map.yaml"
 warnings: []
-followup_review_recommended: true
+followup_review_recommended: false
 deferred:
   - "Per-station schema ownership enforcement beyond scribe (fleet sweep)."
   - summary: >-
@@ -119,6 +119,93 @@ deferred:
       silent.
     location: >-
       src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py
+    severity: low
+  - summary: >-
+      The chart and compose ship stock `postgres:17`, which has no pgvector,
+      so `pyforge-scribe:1` moves a CREATE EXTENSION failure out of scribe's
+      own process and into the platform's pre-upgrade hook Job.
+    evidence: |-
+      values.yaml pins `repository: postgres` / `tag: "17"` and compose.yml
+      `image: postgres:17`; `grep -rn -i pgvector src/platform/deploy/
+      src/platform/compose/` returns nothing. The Helm Job
+      (`post-install,pre-upgrade`) applies the master changelog, so on a stock
+      image `:1` aborts with `could not open extension control file
+      "vector.control"` and the release fails -- for every estate, including
+      ones that never deploy scribe. Before this story the same statement
+      failed only inside the scribe station. Supplying a pgvector-capable
+      image is a deploy-side decision outside this story's boundaries.
+    location: >-
+      src/platform/deploy/charts/platform/values.yaml:108-113
+    severity: high
+  - summary: >-
+      `_assert_provisioned` names only the relation-absent and no-schema-USAGE
+      cases; column drift and a table-privilege gap still leak raw psycopg
+      errors with no changeset named.
+    evidence: |-
+      `to_regclass` answers existence only. A role with schema USAGE but no
+      table grants passes the assert and then raises a raw
+      `InsufficientPrivilege` from `_load`; a `graph_nodes` missing a column
+      raises a raw `UndefinedColumn`, which
+      `test_legacy_table_without_stale_is_back_filled_by_the_changeset` pins
+      as expected pre-`:4` behaviour. AC-1 only requires the relation-absent
+      case to be named, so this is beyond the contract, but it is the same
+      class of unrecoverable state the review's high finding fixed.
+    location: >-
+      src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py:114
+    severity: medium
+  - summary: >-
+      Master-changelog include order is load-bearing for scribe (`:1` before
+      `:2` before `:3`) but only set membership and duplicates are asserted.
+    evidence: |-
+      `test_every_changeset_file_is_included_in_the_master_changelog`
+      compares sets. Order cannot be inferred from seq either -- the file
+      already includes `python-agent-platform-15` between `:5` and `:6`. A
+      reordered include would put `CREATE TABLE ... embedding vector` before
+      the extension exists and fail at deploy time, with every test green.
+      Distinct from the pre-existing FK-ordering deferral above, which is
+      about python-agent-platform's own order.
+    location: >-
+      src/platform/tests/policy/test_liquibase_ddl_governance.py:252
+    severity: medium
+  - summary: >-
+      `load_map`'s new "default distribution not registered" ValueError is
+      untested and reaches CI as a traceback, and no path migrates a
+      pre-41.3 `sqlmigrate-map.yaml`.
+    evidence: |-
+      `run_live_check` calls `load_map` with no handler, so a malformed or
+      old-format map exits with a stack trace instead of the module's
+      `format_findings` output. `test_sqlmigrate_extraction.py` never asserts
+      the rejection. An old-format map (top-level `distribution:` /
+      `migrations:`) yields `distributions == {}` and trips the guard with no
+      hint that the format changed.
+    location: >-
+      src/platform/db/sqlmigrate_extraction.py:125
+    severity: medium
+  - summary: >-
+      `MigrationMap.lookup` resolves a migration key claimed by two
+      distributions by YAML insertion order, while db/README.md calls the map
+      a register that "cannot silently collide".
+    evidence: |-
+      `lookup` returns the first distribution whose `migrations` contains the
+      key and never reports the duplicate. The anti-collision property the
+      README claims for the map is actually provided by
+      `test_changeset_ids_are_unique_across_files`, which scans
+      `changes/*.sql` -- a different artifact from the one AC-3 names.
+    location: >-
+      src/platform/db/sqlmigrate_extraction.py:57
+    severity: medium
+  - summary: >-
+      Scribe's test suite now hard-depends on the platform tree, so the
+      package can no longer be tested standalone.
+    evidence: |-
+      `tests/unit/conftest.py` resolves `parents[5] / "platform" / "db" /
+      "changelog" / "changes"` and calls `pytest.fail` (not `skip`) when it is
+      absent. The wheel excludes `tests/`, so this bites an sdist or
+      standalone checkout rather than an installed wheel. The reverse edge
+      (host importing `pyforge.*`) is the one the Boundaries forbid; this
+      direction is unaddressed by them.
+    location: >-
+      src/shared/packages/pyforge-scribe/tests/unit/conftest.py:12
     severity: low
 ---
 
@@ -304,6 +391,45 @@ include, downgrading its rollback to `empty`, and adding a second file on
   - `[low]` `[patch]` The fixture applied changesets in lexicographic filename order
     (`-10-` before `-2-`); it sorts on the parsed seq now.
 
+### 2026-09-02 — Review pass (follow-up)
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 5: (high 0, medium 3, low 2)
+- defer: 6: (high 1, medium 4, low 1)
+- reject: 14: (high 0, medium 6, low 8)
+- addressed_findings:
+  - `[medium]` `[patch]` The Block-If gate matched the literal string `GRANT CREATE`, so
+    `GRANT USAGE, CREATE ON SCHEMA scribe_schema TO platform_app` — the natural spelling,
+    and the exact widening the intent-contract forbids — passed clean. Replaced with
+    `WIDENING_GRANT`, which scopes the match to the privilege list between `GRANT` and
+    `ON` (so `GRANT SELECT, … ON ALL TABLES` stays green) and strips comment lines so
+    prose about never granting CREATE cannot red it. Added
+    `test_widening_grant_gate_catches_the_natural_spellings` pinning both directions.
+  - `[medium]` `[patch]` `_changeset_entries()` read only the *first* `--changeset`
+    header per file (`.search`), while `test_changeset_ids_are_distribution_seq` used
+    `finditer` — so a second changeset sharing a file inherited the first one's rollback
+    and was invisible to the uniqueness, grandfather and distribution gates, yet visible
+    to the id-shape gate. The two halves of the gate now agree: `_changeset_headers()`
+    plus an assertion of exactly one header per file, which is what db/README.md already
+    documented.
+  - `[medium]` `[patch]` `pyforge-scribe:4`'s rollback drops `stale` unconditionally, but
+    on any database where `:2` created the table `:4` is a forward no-op — so
+    `rollback-count 1` on `:4` alone removes a column it never added and leaves a shape
+    the runtime role can read but not repair. That contradicts the rollback rule this
+    same diff shipped ("undo what *this* changeset did and nothing else"). The asymmetry
+    is unavoidable for a conditional back-fill, so it is now written down in `:4`'s
+    `--comment` and in db/README.md, with the recovery step — forward, `liquibase
+    update`, not a deeper rollback.
+  - `[low]` `[patch]` The scribe fixture's `_CHANGESET_SEQ` anchored the seq to
+    end-of-line, so a header carrying Liquibase attributes — `--changeset x:5
+    runInTransaction:false`, precisely what db/README.md's exception process mandates —
+    made `_seq` call `pytest.fail` from inside `sorted(key=…)`. Following the documented
+    process would have broken test provisioning.
+  - `[low]` `[patch]` Four cross-references still said scribe owned `:1`–`:3` after the
+    previous pass added `:4`: the driver module docstring, `create_app_role.sql`'s
+    comment, `sqlmigrate-map.yaml`'s comment, and the master changelog's section header.
+
 ## Auto Run Result
 
 Status: done
@@ -369,6 +495,85 @@ accepted path plus a **scoped** `--write-baseline --spec <name>` per spec — a 
 memlog append would downgrade roughly 100 foreign pending FAILs to non-gating
 WARNs — and the PR needs the `maintenance` label, since it touches no `recipes/**`.
 `pixi.toml` is untouched, so `environment.yaml` needs no regeneration.
+
+### 2026-09-02 — Follow-up review pass (the single allowed one)
+
+Entered from `status: done` with `followup_review_recommended: true`, which the
+previous pass set on the strength of its patched `high`. The flag was consumed
+at entry and is forced `false` at HALT; there is no further automatic follow-up.
+
+**Implemented change (this pass).** No production behaviour changed. Three
+governance gates were tightened and two documentation defects fixed: the
+Block-If `GRANT CREATE` gate missed the `GRANT USAGE, CREATE …` spelling, the
+changeset-file reader saw only the first `--changeset` header per file, and
+`pyforge-scribe:4`'s asymmetric rollback contradicted the rollback rule shipped
+beside it.
+
+**Files changed**
+
+- `src/platform/tests/policy/test_liquibase_ddl_governance.py` — `WIDENING_GRANT`
+  privilege-list gate + its discrimination test; `_changeset_headers()` and a
+  one-changeset-per-file assertion.
+- `src/platform/db/changelog/changes/pyforge-scribe-4-graph-nodes-stale-column.sql`
+  — records the asymmetric rollback and its forward recovery.
+- `src/platform/db/README.md` — the back-fill-rollback rule under § Rollback policy.
+- `src/shared/packages/pyforge-scribe/tests/unit/conftest.py` — `_CHANGESET_SEQ`
+  no longer anchors the seq to end-of-line.
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py`,
+  `src/platform/db/create_app_role.sql`, `src/platform/db/sqlmigrate-map.yaml`,
+  `src/platform/db/changelog/db.changelog-master.yaml` — `:1`–`:3` → `:1`–`:4`.
+
+**Review findings breakdown.** 5 patches applied (3 medium, 2 low); 6 deferred
+(1 high, 4 medium, 1 low), appended to frontmatter `deferred`; 14 rejected.
+Rejections were re-derived, not inherited — two of the previous pass's rejection
+premises were re-checked against the tree and confirmed (`create_app_role.sql`'s
+ordering dependency mirrors the shipped `langflow_schema` / `dbgpt_schema`
+lines; `:3`'s precondition matches `python-agent-platform:2`). The
+`CREATE EXTENSION … WITH SCHEMA` finding was rejected on measurement:
+`liquibase_update.py` pins `?currentSchema=public`, so the extension cannot land
+in a non-`public` schema.
+
+**Follow-up review recommended: false.** Patched counts — high 0, medium 3,
+low 2; score `3 × 3 + 1 × 2 = 11`, which would set `true`, but this pass was
+itself the single allowed follow-up from a `done` spec, so the flag is forced
+`false`.
+
+**Verification performed** (this pass, against the same PostgreSQL 17.11 +
+pgvector on `:5433`):
+
+- `pixi run -e pyforge-scribe pyforge-scribe-test -k pg` → **15 passed**, 307
+  deselected — identical to the previous pass, so the `_CHANGESET_SEQ` change
+  did not disturb fixture provisioning.
+- `src/platform` policy suite → **69 passed** (68 before, +1 for the new
+  discrimination test), with only the four pre-existing items already in
+  `deferred` (2 cachebox pin-drift failures, 2 `django_db` setup errors).
+- `python -m db.sqlmigrate_extraction` → `sqlmigrate extraction ok (14
+  first-party migrations)`. Note for whoever runs this next: this shell exports
+  `PYTHONSAFEPATH`, so the CI spelling needs `PYTHONPATH` seeded with `.` plus
+  the `pythonpath` entries from `src/platform/pyproject.toml`, and a reachable
+  `DATABASE_URL`.
+- Mutation-checked both tightened gates. Rewriting `pyforge-scribe:3` to
+  `GRANT USAGE, CREATE ON SCHEMA scribe_schema TO platform_app` reds
+  `test_no_governed_sql_grants_create_to_the_app_role` with
+  `assert not ['USAGE, CREATE ']` — the spelling that passed before this pass.
+  Appending a second `--changeset pyforge-scribe:5` header to `:4`'s file reds
+  the one-header assertion (and every gate routed through
+  `_changeset_entries`), where previously that second changeset would have
+  inherited `:4`'s rollback silently. Tree restored clean after each.
+- The pgvector-image deferral was verified directly, not inferred:
+  `values.yaml` pins `postgres:17`, `compose.yml` the same, and
+  `grep -rn -i pgvector src/platform/deploy/ src/platform/compose/` returns
+  nothing.
+
+**Residual risks (this pass).** The newly deferred `high` is the material one:
+the estate's declared PostgreSQL image has no pgvector, so `pyforge-scribe:1`
+turns a scribe-local failure into a failed platform release. It is masked today
+only because the master changelog already halts earlier at
+`python-agent-platform:18` (the pre-existing FK-ordering deferral) — the two
+should be resolved together, and neither is in this story's boundaries. The
+landing obligations recorded by the previous pass are unchanged and still owed:
+ledger row `review` → `done`, a scoped `--write-baseline --spec <name>` per spec
+with a memlog naming each accepted path, and the `maintenance` label on the PR.
 
 ## Verification
 

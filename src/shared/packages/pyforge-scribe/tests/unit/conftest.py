@@ -19,7 +19,10 @@ _CHANGELOG_DIR = (
     Path(__file__).resolve().parents[5] / "platform" / "db" / "changelog" / "changes"
 )
 _SCRIBE_CHANGESETS = "pyforge-scribe-*.sql"
-_CHANGESET_SEQ = re.compile(r"^--changeset\s+\S+:([1-9][0-9]*)\s*$", re.MULTILINE)
+# The header may carry Liquibase attributes after the id -- db/README.md's
+# `runInTransaction:false` exception process mandates exactly that -- so the
+# seq must not be anchored to end-of-line.
+_CHANGESET_SEQ = re.compile(r"^--changeset\s+\S+?:([1-9][0-9]*)(?:\s|$)", re.MULTILINE)
 _provisioned: set[str] = set()
 
 
