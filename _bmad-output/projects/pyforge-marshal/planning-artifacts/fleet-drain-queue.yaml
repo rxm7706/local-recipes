@@ -25,6 +25,8 @@ order_overrides:
     - 28-22-verify-blast-radius-pre-existing-gate
     - 28-23-stranded-work-signal-after-terminal-verify-fail
     - 28-24-supervisor-finalizes-when-harness-cannot-run-shell
+    - 29-1-done-spec-halts-unless-followup-is-true
+    - 29-2-harness-done-is-cap-4-only-never-another-session
   # pyforge-scribe: complete (18/18). Re-add only if new backlog appears.
   pyforge-atlas:
     - 21-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss

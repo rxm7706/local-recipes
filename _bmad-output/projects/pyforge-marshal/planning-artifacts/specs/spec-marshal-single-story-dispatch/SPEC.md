@@ -2,13 +2,17 @@
 id: SPEC-marshal-single-story-dispatch
 spec: marshal-single-story-dispatch
 status: in-progress
-updated: "2026-08-27"  # decomposition reconciled: CAP-1..6 shipped (Epic 22 Stories 22.1-22.6, all done); CAP-7 decomposed as Story 22.7 (backlog) — see the Decomposition record below. Frontmatter had read `ready` while six of seven capabilities were already shipped. Same day, later: CAP-8 added (profile-driven adapter-plural harness) after the live cursor-auth dispatch failure, decomposed as Story 22.8.
+updated: "2026-09-02"  # CAP-11 added (done-spec must not review-loop). Steward 41.2 / mason 13.2 incidents. Decomposed as Epic 29.
 owner-dream: docs/dreams/marshal-single-story-dispatch.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
+  - .claude/skills/bmad-build-auto/step-04-review.md
 companions:
   - fleet-drain-playbook.md
 sources:
@@ -209,6 +213,20 @@ mode beside `spin`, never a replacement.**
     uses, and refuses before any worktree is provisioned when a named key is unknown or
     already done; both reuse CAP-2's zombie/in-flight preflight, CAP-4's landing machinery,
     and CAP-9's divergence guard unchanged — no second preflight or landing path exists.
+- **CAP-11** *(added 2026-09-02 — steward 41.2 PR #1017 twenty-seven review
+  write-backs while merge was DIRTY; mason 13.2 eighteen write-backs and no PR;
+  ledger on `main` stayed backlog so drain re-launched `bmad-build-auto`)*
+  - **intent:** A story whose spec is `status: done` must not enter another
+    review pass unless `followup_review_recommended` is literally `true`, and
+    even then only once. After the harness exits `done`, marshal's only legal
+    next step is CAP-4 land. A land failure (conflicts, no PR, dirty) parks
+    the story (`awaiting-operator` / CHAIN) naming the PR or worktree — it
+    never starts another harness session. A 0-patch review must not commit.
+  - **success:** Replaying the 41.2 / 13.2 fixtures (spec already `done`,
+    `followup_review_recommended: false`, ledger still `backlog` on `main`)
+    produces zero new review commits and zero new `bmad-build-auto` launches;
+    CAP-4 either lands or escalates. A second `done`+`true` follow-up is
+    allowed at most once, then the flag is forced `false`.
 
 ## Constraints
 
@@ -235,6 +253,12 @@ mode beside `spin`, never a replacement.**
   `--stories` list naming a story already done or absent from the station's tracked
   backlog refuses before any worktree is provisioned, the same zombie-refusal discipline
   fleet-wide `drain` already applies.
+- **Always (CAP-11):** harness halt `done` is terminal for that story's
+  session. Drain may only CAP-4 or escalate. Re-invoking `bmad-build-auto`
+  because the ledger on `main` is still `backlog` is forbidden.
+- **Always (CAP-11):** `done` + `followup_review_recommended: false` is a
+  no-op HALT in the local `.claude/skills/bmad-build-auto/` copy. The
+  vendored `bmad_loop` package is still unmodified.
 
 ## Non-goals
 
@@ -248,7 +272,12 @@ mode beside `spin`, never a replacement.**
   scope.
 - **Not** in-loop concurrent story fan-out — FR-184 stays parked until upstream Phase 5
   ships.
-- **Not** a change to `bmad-dev-auto` or `bmad-quick-dev` themselves.
+- **Not** a change to the vendored `bmad_loop` package, or to
+  `bmad-quick-dev`. The **in-repo** `.claude/skills/bmad-build-auto/` harness
+  contract *is* in scope for CAP-11 (`done` routing + 0-patch no-commit).
+  That amends the 2026-08-21 non-goal that left the skill untouched.
+- **Not** shrinking `limits.max_followup_reviews` (see
+  `docs/dreams/risk-tiered-review-depth.md`).
 
 ## Success signal
 
@@ -310,6 +339,8 @@ shipped; CAP-7 is now decomposed but not implemented.
 | CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | backlog |
 | CAP-8 (profile-driven, adapter-plural session harness; one preference, both engines) | Story 22.8 — `22-8-the-session-harness-is-profile-driven-across-agent-clis` (CAP added 2026-08-27 after the live cursor-auth dispatch failure; decomposed and implemented same day) | done |
 | CAP-9 (`branch_merged` never trusts ancestry alone; requires real divergence past baseline) | Story 22.10 — `22-10-branch-merged-requires-real-divergence-not-just-ancestry` (CAP added 2026-08-28 after three live dispatches each journaled a false `completed` verdict ~2s post-launch, independently confirmed 20 of 26 real dispatch runs affected; decomposed, reviewed (2 layers, 1 medium patch + 2 low defers, 0 rejected), and landed same day; note the gap in Story 22.9, which never got a decomposition-record row here either) | done |
+| CAP-10 (station-scoped drain + `--stories`) | Story 22.11 — `22-11-station-scoped-drain-and-an-explicit-story-sequence` | done |
+| CAP-11 (done-spec must not review-loop) | Epic 29 — Stories 29.1 (`29-1-done-spec-halts-unless-followup-is-true`) and 29.2 (`29-2-harness-done-is-cap-4-only-never-another-session`) | backlog |
 
 Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
 `dispatch-attach` / `dispatch-resume` (PRD § 18.3), `pyforge.marshal.dispatch_supervisor`,

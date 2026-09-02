@@ -113,6 +113,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E23** | Velocity captures hand-driven work | Every done story with real signal shows a timing mark; wall-clock never masquerades as active-compute | 3 | (new 2026-08-21) |
 | **E24** | Liveness is one command | "Is this run alive?" answered by the supported CLI — never by hand-parsing engine.pid | 3 | (new 2026-08-21) |
 | **E25** | Aligned to the installed BMAD era | Artifacts, patterns, and marshal surfaces match 6.11/0.11 — retired IDs purged and guarded, every spec folder tool-updatable, the new policy knobs governed and run states named | 7 | (new 2026-08-22) |
+| **E29** | Done-spec dispatch does not review-loop | A `done` story cannot spawn confirmatory review commits or another harness session; land or escalate | 2 | (new 2026-09-02; CAP-11) |
 | **Total** | | | **162** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
@@ -4452,3 +4453,50 @@ So that a “done + dirty leftover” story does not wait for chat (28.18 / PR #
 **And** drain does not redispatch the same story solely because of `MRS-DISP-036` without that finalize attempt
 **And** if supervisor shell also fails, the station is `awaiting-operator` naming the worktree path
 **Status:** done
+
+## Epic 29: Done-spec dispatch does not review-loop
+
+**Goal:** FR-193 CAP-11 (`spec-marshal-single-story-dispatch`, Dream addendum
+2026-09-02). A harness halt of `done` is the end of the *session*, not the
+start of another review. Drain may only CAP-4 land or escalate. Motivating
+incidents: steward 41.2 (PR #1017, 27 write-backs, DIRTY) and mason 13.2
+(18 write-backs, no PR).
+
+### Story 29.1: A done spec HALTs unless follow-up is true
+
+As a marshal operator,
+I want `bmad-build-auto` to refuse a fresh review when the spec is already
+`done` and `followup_review_recommended` is false,
+So that a re-dispatch cannot write 18–27 confirmatory spec commits.
+
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** FR-193 CAP-11 (harness half)
+**Surface:** `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md`,
+`step-04-review.md` (in-repo skill copy only)
+**Given** a spec with `status: done` and `followup_review_recommended: false`
+**When** `bmad-build-auto` is invoked on that file **Then** it HALTs `done`
+immediately — no step-04 review, no `review_loop_iteration` reset that
+authorizes another pass, no spec commit
+**And** `done` + `followup_review_recommended: true` allows at most one
+follow-up review, then the flag is forced `false`
+**And** a review pass that applies 0 patches does not commit
+**And** the vendored `bmad_loop` package is not modified
+**Status:** backlog
+
+### Story 29.2: Harness `done` is CAP-4 only — never another session
+
+As a marshal operator,
+I want drain to land or escalate after the harness exits `done`,
+So that a conflicted or unopened PR cannot restart `bmad-build-auto` just
+because the ledger on `main` is still `backlog`.
+
+**Type:** fix • **Effort:** M • **Deps:** S-29.1 • **FR/AD:** FR-193 CAP-11 (marshal half)
+**Surface:** `core/dispatch_fleet.py`, `dispatch_supervisor/`
+**Given** a dispatched session whose harness halted `done`
+**When** the fleet supervisor ticks **Then** it does not launch another
+`bmad-build-auto` for that story
+**And** the only legal next step is CAP-4 land (open/merge PR, ledger promote)
+**And** CAP-4 fail (conflicts, no PR, dirty) parks the story
+`awaiting-operator` / CHAIN naming the PR or worktree
+**And** a 41.2-shaped DIRTY PR or a 13.2-shaped branch with no PR produces
+zero additional harness launches
+**Status:** backlog

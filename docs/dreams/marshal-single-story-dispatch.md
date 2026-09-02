@@ -149,3 +149,54 @@ CAP-2 / CAP-4 unchanged); not a replacement for fleet-wide `drain`, which stays 
 default for "drain everything."
 
 Lands as a new CAP (CAP-10) in `spec-marshal-single-story-dispatch` when specced.
+
+## Addendum (2026-09-02) — a `done` spec must not review-loop
+
+**Problem:** `drain_to_zero` + `bmad-build-auto` can spend an afternoon writing
+confirmatory review commits after the story is already `status: done`. Each
+commit retriggers Cursor Auto-review. CAP-4 never flips the ledger, so the
+fleet supervisor launches another session. The loop is not a reviewer flood; it
+is the same story re-entered as a “fresh review.”
+
+**Motivating incidents (2026-09-02):**
+
+- Steward **41.2** ([#1017](https://github.com/rxm7706/local-recipes/pull/1017)):
+  implementation done by review pass 4; passes 5–27 were 0-patch spec
+  write-backs. Merge was `DIRTY` vs `main`. Fleet kept re-dispatching.
+- Mason **13.2**: implementation + three real patches landed on the worktree;
+  **18** confirmatory write-backs followed. **No PR** was opened. Ledger on
+  `main` stayed `backlog`. Same loop.
+
+**Two stacked causes:**
+
+1. **Harness.** `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md`
+   routes `status: done` to a fresh step-04 review and resets
+   `review_loop_iteration` to `0`. Step 4 writes
+   `followup_review_recommended: false` and **never reads it** on the next
+   start. The 5-iteration cap applies only to `bad_spec` loopbacks. Step 4
+   commits the spec even when the pass applied 0 patches.
+2. **Marshal.** Fleet drain treats ledger `backlog` on `main` as “dispatch
+   again.” A harness halt of `done` does not make CAP-4 the *only* next step.
+   Land fail (conflicts, no PR) does not park the story — it re-invokes the
+   harness. `limits.max_followup_reviews` in loop `policy.toml` is not on this
+   cursor dispatch path.
+
+**Approach:** one new CAP (CAP-11), two stories — do not fork drain:
+
+1. **Harness contract (local skill only).** `done` +
+   `followup_review_recommended: false` → HALT `done` immediately (no review,
+   no spec commit). `done` + `true` → at most one follow-up, then force the
+   flag false. A 0-patch review pass must not commit. The vendored `bmad_loop`
+   package stays unmodified. This amends the earlier “do not change
+   `bmad-build-auto`” non-goal for the **in-repo skill copy only**.
+2. **Dispatch terminal.** After the harness exits `done`, marshal runs CAP-4
+   only (open/merge PR, ledger promote). It must not start another
+   `bmad-build-auto` for that story. CAP-4 fail (conflicts, no PR, dirty)
+   → CHAIN / `awaiting-operator` naming the PR or worktree. Never re-dispatch
+   the harness until the operator unparks.
+
+**Non-goals:** not a new landing path; not shrinking `max_followup_reviews`
+(`docs/dreams/risk-tiered-review-depth.md`); not
+`marshal-dependency-aware-dispatch` (Deps: / SIGTERM).
+
+Lands as CAP-11 in `spec-marshal-single-story-dispatch`, Epic 29.
