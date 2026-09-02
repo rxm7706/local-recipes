@@ -143,13 +143,22 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
   - `[medium]` `[patch]` Read-only plane open did not assert `connect_writer` is bypassed — monkeypatch test `test_read_only_open_never_calls_connect_writer`.
   - `[low]` `[patch]` Plugin `write` flag used `bool()` coercion — require strict `is True` so `"false"` cannot open writer path; add `test_plugin_write_string_false_is_not_writer`.
 
+### 2026-09-02 — Review pass 5 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 18
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Enforced the query-plane process boundary (BS-5 / S-3): estate-wide `duckdb.connect` policy test, chart invariants blocking `.duckdb` mounts on web (Vizro/BSL) pods and RWX plane PVCs, `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split (`connect_writer` vs `read_only=True`), plugin strict `write` passthrough, and Dream/stack wording restating single writer on RWO with Parquet as the shared artifact. Review pass 4 added read-only open verification (connect_writer never called) and strict boolean write-flag handling.
+Summary: Story 41.2 implementation verified complete on branch `dispatch/pyforge-steward/41.2` (commits since baseline `28404c71f1b3bda015ba1a51957236589bf09303`). Query-plane process boundary enforced: estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE`, Scribe plane store read/write split with strict plugin `write` passthrough, Dream/stack wording. Fresh review pass 5 found no new patches — prior passes already addressed plugin/chart scope issues; remaining gaps match existing deferred items (ibis/alias AST extension, helm CI proofs, positive writer PVC fixture, `resilience-invariants.md` drift).
 
-Files changed:
+Files changed (since baseline):
 - `pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
 - `pyforge/atlas/tests/test_duckdb_boundary.py` — policy + guard tests
 - `pyforge/scribe/graph_store_plane.py` — writer/reader connect split; plugin honors `write` with `is True`
@@ -159,8 +168,8 @@ Files changed:
 - `spec-pyforge-unifying-strategy/stack.md` — duckdb row
 - `sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings: 2 patches applied (1 medium, 1 low), 1 deferred (medium), 22 rejected. Follow-up review: false (1 medium patch → score 3).
+Review findings (pass 5): 0 patches, 0 new deferrals, 18 rejected (duplicates of deferred/out-of-scope items: `open_graph_store` write default, ibis/alias AST, subPath mounts, scribe importorskip skips, helm CI gating). Follow-up review: false.
 
-Verification: `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 3 passed; `pixi run -e pyforge-scribe pyforge-scribe-test -k graph_store_plane` → 2 passed, 4 skipped; `pixi run -e platform-dev pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
+Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 3 passed; `pixi run -e pyforge-scribe pyforge-scribe-test -k graph_store_plane` → 2 passed, 4 skipped; `pixi run -e platform-dev pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
-Residual: No plane PVC exists in the chart yet (correct — Parquet is the cross-pod artifact); when a writer PVC lands on the Celery worker, it must carry `pyforge.io/query-plane: "true"` and RWO access mode. `resilience-invariants.md` BS-5 row still describes the superseded read-only-mount model (deferred). Estate AST gate covers bare `duckdb.connect` only — `ibis.duckdb.connect` extension deferred. Chart live-render proofs require `platform-dev` (helm); platform-ci skips them (deferred).
+Residual: No plane PVC in chart yet (Parquet is cross-pod artifact). When writer PVC lands on Celery worker, require `pyforge.io/query-plane: "true"` + RWO. See frontmatter `deferred` list for follow-on work.
