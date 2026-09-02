@@ -13,8 +13,9 @@ verdict: CONDITIONAL — viable as a modular monolith; NOT production-viable unt
 # Architecture Review Report — PyForge Unifying Strategy
 
 > **Disposition (2026-09-02).** Operator chose option 1. R-1 → steward Story **40.1**, R-2 → Story **40.2**
-> (`sprint-change-proposal-2026-09-02-red-team-critical.md`, Epic 40, `ready-for-dev`). R-3 … R-25 await a
-> second correct-course after Epic 40 lands.
+> (`sprint-change-proposal-2026-09-02-red-team-critical.md`, Epic 40, `ready-for-dev`). R-3 … R-16 → Epics **41–43**
+> (`sprint-change-proposal-2026-09-02-red-team-high.md`, fourteen stories, `ready-for-dev`). R-17 … R-25 →
+> `DW-RT-2026-09-02-1..9` in the steward deferred-work ledger.
 
 **Scope.** Adversarial review of `docs/dreams/pyforge-unifying-strategy.md` (2,092 lines,
 2026-09-01 revision) through six lenses: topology, deployment/state, security, agentic

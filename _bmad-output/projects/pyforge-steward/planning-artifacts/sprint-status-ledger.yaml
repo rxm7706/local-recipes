@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 210
+# stories: 224
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -125,6 +125,20 @@ development_status:
   39-4-optional-pixi-feature-bundle-cap-4: done
   40-1-idp-bearer-is-verified-before-mint: backlog
   40-2-redis-broker-is-durable-and-bounded: backlog
+  41-1-dr-contract-and-postgresql-backup: backlog
+  41-2-query-plane-process-boundary: backlog
+  41-3-scribe-ddl-moves-into-the-changelog: backlog
+  41-4-broker-tls-is-verified: backlog
+  42-1-mcp-transport-authorization: backlog
+  42-2-agent-rate-limits-and-run-bounds: backlog
+  42-3-bus-delivery-semantics-and-a-deployed-consumer: backlog
+  42-4-celery-hardening-and-the-builds-pool: backlog
+  42-5-role-namespaces-and-the-tenant-claim: backlog
+  43-1-split-the-dream: backlog
+  43-2-station-api-contract: backlog
+  43-3-in-process-station-port-no-self-call: backlog
+  43-4-golden-path-cd-by-digest: backlog
+  43-5-one-interpreter-story: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -220,6 +234,12 @@ development_status:
   epic-39-retrospective: optional
   epic-40: backlog
   epic-40-retrospective: optional
+  epic-41: backlog
+  epic-41-retrospective: optional
+  epic-42: backlog
+  epic-42-retrospective: optional
+  epic-43: backlog
+  epic-43-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

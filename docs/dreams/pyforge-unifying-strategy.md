@@ -96,7 +96,9 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   steward **Epic 40** (40.1 verified mint, 40.2 durable bounded broker) via
   `sprint-change-proposal-2026-09-02-red-team-critical.md`. **Dispatch before**
   any further story here and before cutover Phase 1. The review's HIGH set
-  (R-4 … R-16) is a later correct-course, not this bullet.
+  (R-4 … R-16) landed the same day as **Epics 41–43** (`sprint-change-proposal-2026-09-02-red-team-high.md`);
+  R-17 … R-25 are `DW-RT-2026-09-02-1..9` in steward's deferred-work ledger. Order: 40 → 41 → 42 → 43;
+  42.x depend on 40.x; all precede cutover Phase 1.
 - **The query plane is this Dream, not a sibling.** Bound as **CAP-19** /
   Epic 34 on `spec-pyforge-unifying-strategy` (`sprint-change-proposal-2026-08-26-query-plane.md`).
   Do not mint `pyforge-htap` or `spec-htap-query-plane`.
@@ -2110,3 +2112,13 @@ Faces are `python-<layer>-platform`. Implementations are `python-<role>-engine`.
   broker role, and stamped `implementation-readiness-report-2026-09-02-red-team-critical.md`
   **READY — proceed**. HIGH set routes through a second correct-course after
   Epic 40 lands.
+- **2026-09-02 (later)** — Second `bmad-correct-course` for the review's HIGH set:
+  **Epic 41** data safety (41.1 DR + backup, 41.2 plane process boundary, 41.3 Scribe
+  DDL in the changelog, 41.4 verified broker TLS), **Epic 42** agent and bus containment
+  (42.1 MCP transport auth + streaming proxy, 42.2 rate limits + run bounds, 42.3 bus
+  delivery semantics + deployed consumer, 42.4 Celery hardening + builds pool, 42.5 role
+  namespaces + tenant claim), **Epic 43** contracts and the document (43.1 split the Dream,
+  43.2 station API contract, 43.3 in-process port, 43.4 CD by digest, 43.5 one
+  interpreter story). Fourteen tracked story specs `ready-for-dev`; SPEC Constraints gained a
+  dated block; R-17 … R-25 are deferred-work entries with steward as owner. Readiness:
+  `implementation-readiness-report-2026-09-02-red-team-high.md`.

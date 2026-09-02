@@ -462,6 +462,37 @@ they are why this is not merely a UI project.
   scraping local paths has reintroduced exactly the coupling that made the retired console's live
   surfaces undeployable.
 
+### Correct-course 2026-09-02 — red-team HIGH set (Epics 41–43)
+
+Bound from `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+via `sprint-change-proposal-2026-09-02-red-team-high.md`. Constraints are appended, not rewritten.
+
+- **Always:** a DR contract (RPO/RTO per store, drill cadence, reconciliation order) exists
+  before any store is called canonical; PostgreSQL has a base backup + WAL archive (41.1).
+- **Always:** the `.duckdb` file is one process on RWO; Parquet is the shared artifact; every
+  non-writer connection is `read_only=True` (41.2). **Never:** the plane file on RWX.
+- **Always:** station DDL lives in the changelog under a per-distribution id; runtime paths are
+  assert-only (41.3). **Never:** `CREATE EXTENSION` from a station at runtime.
+- **Always:** `rediss://` verifies the chain; `CERT_NONE` only under `COMPONENT_RUNTIME=local` (41.4).
+- **Always:** the MCP transport verifies the assertion before routing, on every method, on both
+  the in-process and sidecar paths; the proxy streams; only `web` reaches `mcp-host` (42.1).
+  **Never:** an IdP bearer forwarded to the sidecar.
+- **Always:** per-subject rate limits on MCP and `start`, a per-station queue ceiling, a
+  concurrent-RUNNING ceiling and `RunState` retention (42.2). **Never:** an unbounded `start`.
+- **Always:** a well-formed failing event reaches the DLQ after N attempts with backoff; at least
+  one consumer Deployment exists per subscribing station; `traceparent` rides the envelope (42.3).
+- **Always:** `acks_late` + `reject_on_worker_lost`, per-station queues, a `builds` pool with an
+  hours-scale limit and its own Deployment (42.4). **Never:** a build on the 300 s queue.
+- **Always:** prefixed roles (`pyforge:station:*`, `pyforge:tenant:*`, `pyforge:admin`); bare
+  station names refused; `tenant` on `RunState` and the envelope (42.5).
+- **Always:** the living Dream is ≤ 400 lines and every diagram in it is a build target (43.1).
+- **Always:** station routes are `/stations/<name>/api/v<N>/`; `/api/v1` is not Langflow's;
+  `pyforge.core.client` is the one client with a contract test (43.2).
+- **Always:** co-located portals reach station code in-process; HTTP only under
+  `STATION_REMOTE=1` (43.3). **Never:** a portal view awaiting its own gunicorn pool.
+- **Always:** deploys pin an image digest with a recorded Warden verdict (43.4). **Never:** `latest`.
+- **Always:** the interpreter topology is one recorded AD with a measured per-env matrix (43.5).
+
 ## Non-goals
 
 - **Not** a `services/` FastAPI farm or nine public `:800x` processes. CAP-4 mounts on the host

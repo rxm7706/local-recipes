@@ -2043,3 +2043,70 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   evidence: station-unresolved, same cross-check basis as the two entries immediately above (filed against `pyforge-steward`). Raised by this story's own second (post-repair) adversarial review pass and confirmed by reading `.github/workflows/platform-ci.yml`: both `docker run`/`podman run` invocations list the same four `-e` flags with byte-identical values. Not a live bug today -- both copies currently agree -- but this exact duplication-without-a-single-source-of-truth shape already produced two real, already-fixed bugs in this story's own Review Triage Log pass 2 (the new migrate step initially omitted `DJANGO_ADMIN_URL`, crashing on `ImproperlyConfigured`, and separately dropped the `--user 12345:0` flag), so nothing currently prevents a third recurrence the next time either step is edited alone. Not patched inline during this pass: GitHub Actions has no YAML anchor/alias support (this same file's own pre-existing comment on its duplicated `paths:` filters, see `DW-FU-10-3-10`, already documents that limitation for a different duplicated block in this file), so the fix is a job-level `env:` block referencing `${{ matrix.engine }}`-interpolated values -- mechanically straightforward but unverified against a real GitHub Actions run in this sandbox (no CI runner available here), so deferred rather than shipped unverified per this project's own verify-before-landing-infra-changes convention.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
+
+## Red-team review 2026-09-02 — MEDIUM / LOW directives (owner: steward; not stories yet)
+
+Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`. Promoted to stories only when a consumer exists or a HIGH story needs them; the Epic 40–43 stories cite them in `deferred:` where they bind.
+
+### DW-RT-2026-09-02-1
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-17** — Lock topology: `factory/` island lock and per-package `pixi.toml` scheduled ahead of any further eight-wide station wave; `environment.yaml` regeneration automated in CI. (red-team D-2)
+  evidence: Review § 4 (R-17); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-2
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-18** — Sizing rewrite: per-pod rows for web (memory-bound; `--preload`; Langflow RSS measured), worker (CPU-bound; separate builds pool), mcp-host, DB-GPT sidecar, Liquibase Job (JVM), Vizro; requests/limits in values; HPA on web and worker; PodDisruptionBudgets; LLM inference stated as external. (red-team S-7, T-7)
+  evidence: Review § 4 (R-18); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-3
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-19** — Network baseline: default-deny NetworkPolicy in the namespace with explicit allows; `automountServiceAccountToken: false`. (red-team X-4, X-6)
+  evidence: Review § 4 (R-19); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-4
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-20** — Secrets profile: age key custody and rotation, an `ExternalSecret` example for the Vault/ESO profile, a rotation runbook for `DJANGO_SECRET_KEY`, `REDIS_PASSWORD`, the DB roles and the assertion PEM (dual-key verify during rotation). (red-team X-7)
+  evidence: Review § 4 (R-20); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-5
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-21** — Observability contract: SLOs for `/ht/`, MCP p99, queue age, event lag; alert rules; a metrics write path for Doctor's flag kill-switch. (red-team A-7, B-5)
+  evidence: Review § 4 (R-21); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-6
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-22** — Live browser streaming: implement `/ws/events/` as a Channels consumer over redis-broker Streams with per-`sub` filtering, or delete the pillar from the Dream. (red-team T-8)
+  evidence: Review § 4 (R-22); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-7
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-23** — Dream doc fixes: `readOnlyRootFilesystem`, Windows / free-threading claims aligned to the shipped Containerfile and `pixi.toml` platforms. (red-team X-6, D-5)
+  evidence: Review § 4 (R-23); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-8
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-24** — Pin the Keycloak version once (`26.4.0`) across Dream, compose and research. (red-team S-6)
+  evidence: Review § 4 (R-24); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
+
+### DW-RT-2026-09-02-9
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
+  summary: **R-25** — Rewrite the "zero domain models" constraint as "no station-domain models on `django-<station>`". (red-team T-9)
+  evidence: Review § 4 (R-25); finding ids in parentheses map to § 2 rows with file:line citations.
+  status: open
