@@ -305,11 +305,20 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 - addressed_findings:
   - none
 
+### 2026-09-02 — Review pass 23 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 51
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Story 41.2 dispatched via bmad-build-auto (`BMAD_ACTIVE_PROJECT=pyforge-steward`, physical spec path). Review pass 22 confirmed prior implementation on branch `dispatch/pyforge-steward/41.2` at HEAD `05cd3b106928950b0bbc5b974eaf99e43f110d7f` — no new patches. Query-plane process boundary (BS-5 / S-3) enforced via estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
+Summary: Story 41.2 dispatched via bmad-build-auto (`BMAD_ACTIVE_PROJECT=pyforge-steward`, physical spec path). Review pass 23 confirmed prior implementation on branch `dispatch/pyforge-steward/41.2` at HEAD `b043deb68d27a2266342edae3c7614dab37f3d8a` — no new patches. Query-plane process boundary (BS-5 / S-3) enforced via estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
 
 Files changed (since baseline):
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
@@ -321,7 +330,7 @@ Files changed (since baseline):
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md` — duckdb row
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings (pass 22): 0 patches, 0 new deferrals, 49 rejected (duplicates of frontmatter `deferred` or prior passes: resilience-invariants doc drift, ibis/alias/from-import AST gaps, platform-ci/GHA helm and kedro-test CI wiring, scribe-test env skip for boundary tests, subPath/directory/ephemeral/dbgpt mount bypass, vacuous plane PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, connect_reader seam, plugin write-default-True production wiring, read-only upsert/reset/ uninitialized-plane edges, open_graph_store write flag, estate scan scope/SyntaxError/Name-constant read_only, missing-web KeyError, positive writer-mount fixture, test_scribe_plane_recall write=True, Code Map/epics.md/verification-section completeness, DUCKDB_WRITER_MODULE export, baseline_commit vs baseline_revision, triage-log bulk). Intent-alignment: diff implements enforcement-first Reading R5 (R2+R3+R4); runtime Mode C delivery (Reading R1) out of scope per Boundaries. Follow-up review: false (0 patches; score 0).
+Review findings (pass 23): 0 patches, 0 new deferrals, 51 rejected (duplicates of frontmatter `deferred` or prior passes: resilience-invariants/doc/deploy README drift, ibis/alias/from-import/config-kwarg AST gaps, platform-ci helm skip, connect_writer lock-leak on connect failure (pre-existing seam), open_graph_store write-default-True wiring, connect_reader unused in scribe, estate scan scope/SyntaxError/variable-path compliance, subPath/directory/dbgpt/mcp-host mount bypass, vacuous plane PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, read-only upsert/reset edges, test_scribe_plane_recall write=True, positive writer-mount fixture, DUCKDB_WRITER_MODULE export, Dream diagram Multi-Reader label, query_plane_boot duckdb-server doc, unified CI task for full verification set). Intent-alignment: diff implements enforcement-first Reading R5 (R2+R3+R4); runtime Mode C delivery (Reading R1) out of scope per Boundaries. Follow-up review: false (0 patches; score 0).
 
 Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 4 passed; `pixi run -e pyforge-atlas kedro-test -k scribe_plane` → 2 passed; `pixi run -e platform-dev -- python -m pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
