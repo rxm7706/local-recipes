@@ -52,6 +52,7 @@ DUTIES: tuple[str, ...] = (
     "setup",
     "initrepo",
     "validate-fast",
+    "restore",
 )
 
 _HELP = {
@@ -103,6 +104,10 @@ _HELP = {
         "fast green gate — prereqs, environment.yaml sync, steward CLI smoke "
         "(Story 17.2)"
     ),
+    "restore": (
+        "PostgreSQL restore drill — scratch DB + manifest count assertions "
+        "(Story 41.1; operator full restore is deploy/restore.md)"
+    ),
 }
 
 
@@ -148,6 +153,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_upgrade_subparsers(duty_parser)
         elif name == "suite":
             _add_suite_subparsers(duty_parser)
+        elif name == "restore":
+            _add_restore_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -255,6 +262,21 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         "--inventory",
         default=None,
         help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
+    )
+
+
+def _add_restore_subparsers(restore_parser: argparse.ArgumentParser) -> None:
+    """Story 41.1: ``restore --drill`` count verification against a backup."""
+    restore_parser.add_argument(
+        "--drill",
+        action="store_true",
+        help="restore into a scratch database and assert manifest row counts",
+    )
+    restore_parser.add_argument(
+        "--backup-path",
+        required=True,
+        metavar="PATH",
+        help="directory holding manifest.json (e.g. .../backup/base/latest)",
     )
 
 
@@ -885,6 +907,10 @@ def resolve_duty(name: str) -> Duty:
         from .bootstrap import ValidateFastDuty
 
         return ValidateFastDuty()
+    if name == "restore":
+        from .restore import RestoreDuty
+
+        return RestoreDuty()
     return NullDuty(name)
 
 

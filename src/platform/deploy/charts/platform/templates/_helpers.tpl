@@ -70,6 +70,14 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-liquibase" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.postgresBackup.fullname" -}}
+{{- printf "%s-postgres-backup" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "platform.postgresBackup.pvcName" -}}
+{{- printf "%s-postgres-backup" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "platform.dbgpt.fullname" -}}
 {{- printf "%s-dbgpt" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}

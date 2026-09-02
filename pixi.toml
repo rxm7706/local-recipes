@@ -185,6 +185,7 @@ dbgpt-serve = ">=0.8.2"           # agentic engine 3/3 (db-gpt feedstock)
 django = ">=5.2.17,<6"            # the host web framework the engines mount into (Epic 11)
 fastapi = ">=0.141.1"             # Story 10.1's ASGI/FastAPI-integration seam; also arrives transitively via langflow-base's fastapi >=0.135.0,<1.0.0 -- explicit pin documents intent
 django-health-check = ">=4.5.1"   # Story 10.1's K8s liveness/readiness requirement (CAP-1); needs django>=5.2, matching this env's floor -- a DIFFERENT install from Story 10.1's pip-pinned django-health-check==3.24.0
+postgresql = ">=17.11,<18"        # pg_basebackup/pg_dump for Story 41.1 backup CronJob (client + server binaries)
 psycopg2 = ">=2.9.10"             # Django sync driver; 2.9.10 added PostgreSQL 17 errorcodes (NEWS). Server is postgresql >=17 in platform-dev.
 redis-py = ">=8.1.0"              # Redis client driver -- imports as `redis` (name gotcha); DO NOT relax this floor
 # Story 11.1: `langflow.main.create_app()` hard-imports these four at module load
