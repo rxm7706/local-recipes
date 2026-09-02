@@ -37,12 +37,14 @@ from ..core.dispatch_verification import (
     primary_gate_failure,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
+from ..core.dispatch_push import may_push_dispatch_branch_before_verify
 from ..core.dispatch_supervisor_state import (
     landing_journal_indicates_complete,
     should_retry_stuck_land,
     should_terminalize_verify_refusal,
     supervisor_should_exit,
 )
+from ..core.model import Finding, Severity
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -347,6 +349,13 @@ def _verification_already_journaled(folded, run_id: str) -> bool:
     )
 
 
+def _dispatch_push_already_journaled(folded, run_id: str) -> bool:
+    return any(
+        entry.run_id == run_id and entry.phase == Phase.OUTCOME
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PUSH)
+    )
+
+
 def _landing_already_journaled(folded, run_id: str) -> bool:
     return any(
         entry.run_id == run_id and entry.phase == Phase.OUTCOME
@@ -444,6 +453,97 @@ def _session_awaits_verification(
         and not git.branch_merged
         and not git.story_merged_on_main
     )
+
+
+def _run_and_journal_dispatch_push(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+) -> int:
+    """Push the dispatch branch before verify (Story 28.21, CAP-4)."""
+    git_repo_root = dispatch_core.canonical_repo_root(repo_root)
+    try:
+        branch_resolution = dispatch_core.resolve_dispatch_branch(
+            vcs,
+            git_repo_root,
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+        )
+    except VcsCommandError as exc:
+        print(
+            f"dispatch supervisor: cannot resolve branch before push for "
+            f"{run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+        return counter
+
+    if not may_push_dispatch_branch_before_verify(
+        git_facts,
+        branch_refusal=branch_resolution.refusal,
+    ):
+        return counter
+
+    head_branch = branch_resolution.effective_branch
+    outcome = "pushed"
+    failed_message: str | None = None
+    try:
+        vcs.push(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        outcome = "push-failed"
+        failed_message = str(exc)
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_PUSH,
+        phase=Phase.INTENT,
+        payload={"branch": head_branch, "story_key": story_key},
+    )
+    counter += 1
+    outcome_payload: dict[str, object] = {
+        "branch": head_branch,
+        "outcome": outcome,
+        "ok": outcome == "pushed",
+    }
+    if failed_message is not None:
+        outcome_payload["failed_message"] = failed_message
+        outcome_payload["finding"] = Finding(
+            code="MRS-DISP-037",
+            severity=Severity.WARN,
+            message=(
+                f"pre-verify dispatch push failed for branch {head_branch!r}: "
+                f"{failed_message}"
+            ),
+        ).to_json_dict()
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_PUSH,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload=outcome_payload,
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal dispatch push for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
 
 
 def _run_and_journal_verification(
@@ -649,6 +749,35 @@ def run_dispatch_supervisor(
                     _commit_pre_verify_wip(
                         vcs, repo_root=repo_root, worktree=worktree
                     )
+                    try:
+                        git_facts = gather_dispatch_git_facts(
+                            vcs,
+                            repo_root=repo_root,
+                            worktree=worktree,
+                            story_key=story_key,
+                            project_slug=slug,
+                            baseline_head_sha=baseline_head_sha,
+                            merge_subject_template=merge_subject_template,
+                        )
+                    except (VcsCommandError, ValueError):
+                        pass
+                    if not _dispatch_push_already_journaled(folded, run_id):
+                        counter = _run_and_journal_dispatch_push(
+                            fs=fs,
+                            vcs=vcs,
+                            run_dir=run_dir,
+                            run_id=run_id,
+                            writer_id=writer_id,
+                            counter=counter,
+                            repo_root=repo_root,
+                            slug=slug,
+                            story_key=story_key,
+                            worktree=worktree,
+                            git_facts=git_facts,
+                        )
+                        text = fs.read_text(journal_path)
+                        if text is not None:
+                            folded = _fold_dispatch_journal(fs, run_dir, text)
                     counter = _run_and_journal_verification(
                         fs=fs,
                         vcs=vcs,

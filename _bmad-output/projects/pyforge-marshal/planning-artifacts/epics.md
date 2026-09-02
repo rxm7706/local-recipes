@@ -4415,7 +4415,7 @@ So that a verify refuse cannot leave finished work only in a local worktree.
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-marshal-drain-self-resolution CAP-4
 **Given** a dispatch worktree with a story commit **When** verify later refuses **Then** `git ls-remote` still shows `dispatch/<slug>/<story>`
 **And** "next steps: open a PR" in a session log is not an acceptable substitute
-**Status:** backlog
+**Status:** done
 
 ### Story 28.22: Verify blast radius is pre-existing-gate, not story-refuse
 
