@@ -5,10 +5,16 @@ client imports stay in this module (parent AD-5). ``psycopg`` is imported
 lazily so declaring the CAP-18 entry point does not require the extra until
 ``around`` constructs a store.
 
-Schema isolation: relations live in ``scribe_schema`` only. ``CREATE
-EXTENSION vector`` uses the same PostgreSQL instance (parent AD-1 — not a
-fourth kind). Story 28.2 fills ``embedding`` on commit and ranks with
-``<=>`` (cosine distance).
+Schema isolation: relations live in ``scribe_schema`` only, on the same
+PostgreSQL instance as the rest of the estate (parent AD-1 — not a fourth
+kind). Story 28.2 fills ``embedding`` on commit and ranks with ``<=>``
+(cosine distance).
+
+DDL governance (Story 41.3, CAP-9 / red-team S-4): this module executes no
+DDL. The pgvector extension, ``scribe_schema`` and ``graph_nodes`` are
+Liquibase changesets ``pyforge-scribe:1``–``:3``, applied by the migration
+role. The runtime role holds DML only, so construction *asserts* the
+relation is present and raises :class:`GraphSchemaMissing` when it is not.
 """
 
 from __future__ import annotations
@@ -25,8 +31,20 @@ from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC, PG_GRAPHSTORE_OWNER
 from pyforge.scribe.models import GraphNode
 
 SCRIBE_SCHEMA = "scribe_schema"
+GRAPH_TABLE = "graph_nodes"
+GRAPH_CHANGESET_ID = "pyforge-scribe:2"
+GRANTS_CHANGESET_ID = "pyforge-scribe:3"
 _GRAPH_LOCK_KEY = 0x53435242  # "SCRB"
 _DSN_ENV = "SCRIBE_GRAPH_DSN"
+
+
+class GraphSchemaMissing(PluginError):
+    """Scribe's governed relations are absent — Liquibase has not run.
+
+    The named failure Story 41.3 requires: the runtime role cannot create
+    them (CAP-9), so the only honest response is to say which changeset is
+    missing rather than to widen the role.
+    """
 
 
 def _import_psycopg():
@@ -78,7 +96,7 @@ class PostgresGraphStore:
         self.dsn = _normalize_dsn(dsn)
         self.schema = schema
         self._nodes: dict[str, GraphNode] = {}
-        self._ensure_schema()
+        self._assert_provisioned()
         self._load()
 
     def _connect(self):
@@ -91,44 +109,41 @@ class PostgresGraphStore:
 
     def _table(self):
         _psycopg, sql = _import_psycopg()
-        return sql.SQL("{}.{}").format(self._ident(self.schema), sql.Identifier("graph_nodes"))
+        return sql.SQL("{}.{}").format(self._ident(self.schema), sql.Identifier(GRAPH_TABLE))
 
-    def _ensure_schema(self) -> None:
-        _psycopg, sql = _import_psycopg()
-        with self._connect() as conn:
-            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-            conn.execute(
-                sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(self._ident(self.schema))
+    def _assert_provisioned(self) -> None:
+        """Assert-only: the relation must already exist (Story 41.3).
+
+        ``to_regclass`` returns NULL for a relation that does not exist, so
+        one read answers the question without touching DDL. It does **not**
+        mask a privilege gap: without ``USAGE`` on the schema it raises
+        ``permission denied for schema <name>``. That case has its own
+        remedy, because ``pyforge-scribe:3`` (the grants) is
+        ``onFail:CONTINUE`` — on a database where the app role was created
+        after the first ``liquibase update``, the grants were silently
+        skipped — so name that changeset instead of leaking a raw driver
+        error.
+        """
+        psycopg, _sql = _import_psycopg()
+        qualified = f"{self.schema}.{GRAPH_TABLE}"
+        try:
+            with self._connect() as conn:
+                row = conn.execute("SELECT to_regclass(%s)", (qualified,)).fetchone()
+        except psycopg.errors.InsufficientPrivilege as exc:
+            raise GraphSchemaMissing(
+                f"{qualified} is not readable by this role -- apply Liquibase "
+                f"changeset {GRANTS_CHANGESET_ID} (src/platform/db/changelog) "
+                "as the migration role; it is skipped when the app role does "
+                "not yet exist, and the scribe runtime cannot grant itself "
+                "access (CAP-9)"
+            ) from exc
+        if row is None or row[0] is None:
+            raise GraphSchemaMissing(
+                f"{qualified} is absent -- apply Liquibase changeset "
+                f"{GRAPH_CHANGESET_ID} (src/platform/db/changelog) as the "
+                "migration role; the scribe runtime holds DML only and never "
+                "creates it (CAP-9)"
             )
-            conn.execute(
-                sql.SQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS {} (
-                        id TEXT PRIMARY KEY,
-                        kind TEXT NOT NULL,
-                        title TEXT NOT NULL,
-                        text TEXT NOT NULL,
-                        citation TEXT NOT NULL,
-                        valid_from TIMESTAMPTZ NOT NULL,
-                        valid_until TIMESTAMPTZ,
-                        superseded_by TEXT,
-                        embedding vector,
-                        stale BOOLEAN NOT NULL DEFAULT FALSE
-                    )
-                    """
-                ).format(self._table())
-            )
-            # Story 6.3: a table created by a pre-6.3 version of this module
-            # already exists (the CREATE above is a no-op for it) -- add the
-            # column so `stale` (Story 2.3's `valid_until`/`superseded_by`
-            # precedent) persists across a commit/reload for THIS backend
-            # too, not just the flat-file default.
-            conn.execute(
-                sql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS stale BOOLEAN NOT NULL DEFAULT FALSE").format(
-                    self._table()
-                )
-            )
-            conn.commit()
 
     def _load(self) -> None:
         _psycopg, sql = _import_psycopg()

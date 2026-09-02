@@ -56,3 +56,17 @@ databaseChangeLog:
   - include:
       file: changes/python-agent-platform-14-warden-fabric-0001-initial.sql
       relativeToChangelogFile: true
+  # Story 41.3: scribe owns its own distribution sequence (pyforge-scribe:N).
+  # Extension first, then schema + table, then the guarded app-role grants.
+  - include:
+      file: changes/pyforge-scribe-1-pgvector-extension.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-scribe-2-graph-nodes.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-scribe-3-app-role-grants.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/pyforge-scribe-4-graph-nodes-stale-column.sql
+      relativeToChangelogFile: true
