@@ -128,7 +128,7 @@ development_status:
   28-13-sanctioned-retry-after-an-operator-initiated-stop: done
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-18-re-preflight-when-the-refuse-predicate-can-change: done
-  28-19-missing-spec-escalates-never-idle-with-backlog: backlog
+  28-19-missing-spec-escalates-never-idle-with-backlog: done
   28-20-cap-4-land-heals-mechanical-and-dirty-prs: backlog
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: backlog
   28-22-verify-blast-radius-pre-existing-gate: backlog

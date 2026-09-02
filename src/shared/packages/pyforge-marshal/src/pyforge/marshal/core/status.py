@@ -1006,6 +1006,11 @@ class FleetHomeFacts:
     # Story 28.16 (CAP-3): parallel wave membership visible in fleet status.
     dispatch_wave_id: str | None = None
     dispatch_in_flight_stories: tuple[str, ...] = ()
+    # Story 28.19 (CAP-2): fleet-drain ``MRS-DISP-005`` with remaining backlog
+    # must never read as ``idle`` -- the expected tracked spec glob is the
+    # operator remedy, never an auto-authored stub.
+    missing_spec_escalation_story: str | None = None
+    missing_spec_escalation_glob: str | None = None
 
 
 def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
@@ -1039,6 +1044,30 @@ def derive_dispatch_phase(facts: FleetHomeFacts) -> DispatchPhase | None:
 def _dispatch_overlay_active(facts: FleetHomeFacts) -> bool:
     """True while factory dispatch has an observable phase for this home."""
     return derive_dispatch_phase(facts) is not None
+
+
+def _apply_missing_spec_escalation(
+    row: dict[str, object], facts: FleetHomeFacts
+) -> dict[str, object]:
+    """Story 28.19: missing-spec drain refuse surfaces as ``awaiting-operator``."""
+    story = facts.missing_spec_escalation_story
+    spec_glob = facts.missing_spec_escalation_glob
+    if not story or not spec_glob:
+        return row
+    if _dispatch_overlay_active(facts):
+        return row
+    state = row.get("state")
+    if state not in ("idle", "stopped", "unsupervised", "unknown"):
+        return row
+    remedy = f"missing tracked spec: author {spec_glob}"
+    patched = {
+        **row,
+        "state": "awaiting-operator",
+        "current_story": story,
+        "awaiting_operator_remedy": remedy,
+        "missing_spec_escalation_glob": spec_glob,
+    }
+    return patched
 
 
 def _apply_dispatch_overlay(
@@ -1202,7 +1231,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
                 "elapsed_seconds": None,
             }
             finding = None
-        return row, finding
+        row = _apply_dispatch_overlay(row, facts)
+        return _apply_missing_spec_escalation(row, facts), finding
 
     if not facts.has_run:
         row = {
@@ -1219,7 +1249,9 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
-        return _apply_dispatch_overlay(row, facts), None
+        return _apply_missing_spec_escalation(
+            _apply_dispatch_overlay(row, facts), facts
+        ), None
 
     state = derive_home_state(
         finished=facts.finished,
@@ -1302,7 +1334,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         # failed_patches`'s own docstring above).
         "failed_patches": facts.failed_patches,
     }
-    return _apply_dispatch_overlay(row, facts), None
+    row = _apply_dispatch_overlay(row, facts)
+    return _apply_missing_spec_escalation(row, facts), None
 
 
 def sort_fleet_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:

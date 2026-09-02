@@ -124,6 +124,7 @@ from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
+from ..core import dispatch_fleet
 from ..core import status as status_core
 from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
@@ -1460,6 +1461,14 @@ def run_status(
         if unpushed_unavailable_finding is not None:
             findings.append(unpushed_unavailable_finding)
 
+    from .dispatch import gather_fleet_missing_spec_escalations
+
+    missing_spec_escalations = gather_fleet_missing_spec_escalations(
+        fs=fs,
+        harness=harness,
+        repo_root=git_repo_root,
+    )
+
     # Story 4.14 (FR-176): `main`'s own commit-subject history, read at most
     # ONCE and reused for every home in the sweep -- a `git log`-scale walk
     # is the heavier read `--reconcile-ledger`'s own docs cite as its reason
@@ -1508,6 +1517,17 @@ def run_status(
             slug=slug,
             facts=facts,
         )
+        escalation = missing_spec_escalations.get(slug)
+        if escalation is None:
+            escalation = missing_spec_escalations.get(
+                dispatch_fleet.normalize_station_slug(slug)
+            )
+        if escalation is not None:
+            facts = replace(
+                facts,
+                missing_spec_escalation_story=escalation.story,
+                missing_spec_escalation_glob=escalation.expected_spec_glob,
+            )
         if unpushed_by_ref:
             matched = unpushed_by_ref.get(facts.branch)
             if matched is not None:
@@ -2146,9 +2166,8 @@ def _render_text_status(
         # "unsupervised"/"running".
         state_text = home["state"]
         if state_text == "awaiting-operator":
-            state_text = (
-                f"awaiting-operator ({status_core.AWAITING_OPERATOR_REMEDY})"
-            )
+            remedy = home.get("awaiting_operator_remedy") or status_core.AWAITING_OPERATOR_REMEDY
+            state_text = f"awaiting-operator ({remedy})"
         # Story 28.4: Add savings display alongside budget consumption (CAP-7)
         savings_summary = _format_savings_summary(home.get('layer_savings', {}))
         savings_text = f" savings={savings_summary}" if savings_summary else ""

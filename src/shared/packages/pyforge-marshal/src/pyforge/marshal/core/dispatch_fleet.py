@@ -151,6 +151,14 @@ class StationQueuePlan:
 
 
 @dataclass(frozen=True)
+class MissingSpecEscalation:
+    """One station blocked on ``MRS-DISP-005`` with remaining backlog (28.19)."""
+
+    story: str
+    expected_spec_glob: str
+
+
+@dataclass(frozen=True)
 class StationCycleResult:
     """One station's observed outcome for one cycle (journal payload shape)."""
 
@@ -211,6 +219,17 @@ def fleet_runs_dir(repo_root: Path) -> Path:
 
 def fleet_run_dir(repo_root: Path, run_id: str) -> Path:
     return fleet_runs_dir(repo_root) / run_id
+
+
+def latest_fleet_campaign_run_id(repo_root: Path) -> str | None:
+    """Most recent fleet-drain campaign id, or ``None`` when no campaigns exist."""
+    runs = fleet_runs_dir(repo_root)
+    if not runs.is_dir():
+        return None
+    candidates = sorted(
+        entry.name for entry in runs.iterdir() if entry.is_dir() and entry.name != "campaign"
+    )
+    return candidates[-1] if candidates else None
 
 
 def fleet_cycle_lock_path(repo_root: Path) -> Path:
