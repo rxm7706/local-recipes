@@ -124,7 +124,7 @@ development_status:
   39-3-generator-and-batch-build: done
   39-4-optional-pixi-feature-bundle-cap-4: done
   40-1-idp-bearer-is-verified-before-mint: done
-  40-2-redis-broker-is-durable-and-bounded: backlog
+  40-2-redis-broker-is-durable-and-bounded: done
   41-1-dr-contract-and-postgresql-backup: backlog
   41-2-query-plane-process-boundary: backlog
   41-3-scribe-ddl-moves-into-the-changelog: backlog

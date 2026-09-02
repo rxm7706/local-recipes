@@ -398,6 +398,12 @@ CELERY_BROKER_URL = REDIS_BROKER_URL
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
 CELERY_RESULT_BACKEND = REDIS_BROKER_URL
+# Story 40.2 / canopy AD-12: every call site is fire-and-forget (.delay()
+# with no AsyncResult consumer; RunState in PostgreSQL is the record of
+# fact). Ignore results globally so celery-task-meta-* keys never accumulate
+# on the broker; CELERY_RESULT_EXPIRES covers opt-in ignore_result=False.
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_RESULT_EXPIRES = 3600
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended

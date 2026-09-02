@@ -989,7 +989,8 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 | Storage Class                                 | Usage / Destination                                                               |     Capacity     |      Access Mode      |
 | :-------------------------------------------- | :-------------------------------------------------------------------------------- | :--------------: | :-------------------: |
 | **Block Storage (SSD / NVMe)**                | PostgreSQL Data (`public`, `langflow_schema`, `dbgpt_schema`)                     | 100 GB – 500 GB | `ReadWriteOnce` (RWO) |
-| **Block Storage (SSD)**                       | Redis Append-Only Persistence                                                     |  20 GB – 50 GB  | `ReadWriteOnce` (RWO) |
+| **Block Storage (SSD)**                       | Redis broker AOF (`redis.broker.persistence`)                                     |  20 GB – 50 GB  | `ReadWriteOnce` (RWO) |
+| **Block Storage (SSD, ephemeral)**            | Redis cache (`redis-cache`, emptyDir, evicts under pressure)                      |       n/a       |          n/a          |
 | **Object Storage (S3 / MinIO / Artifactory)** | Wheel mirror caches, conda tarballs, presentation exports, and Scribe graph dumps |  500 GB – 2 TB  |     S3 API / REST     |
 
 ### 3. Networking, Ingress & Routing

@@ -1,0 +1,19 @@
+# redis-broker AOF persistence (Story 40.2). The official redis:7 image
+# stores append-only files under /data -- same mount convention as
+# postgres.dataMountPath documents for image swaps.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "platform.redisBroker.pvcName" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-broker
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ required "redis.broker.persistence.size is required" .Values.redis.broker.persistence.size | quote }}
+  {{- with .Values.redis.broker.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}

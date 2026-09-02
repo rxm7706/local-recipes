@@ -140,8 +140,9 @@ postgres:
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
 
-# Redis (official image, two Deployments, emptyDir -- redis-cache evicts,
-# redis-broker does not; still Redis-the-kind under parent AD-1).
+# Redis (official image, two Deployments -- redis-cache evicts on emptyDir;
+# redis-broker is durable (AOF on PVC) and bounded; still Redis-the-kind
+# under parent AD-1). Story 40.2.
 redis:
   image:
     registry: ""
@@ -154,10 +155,19 @@ redis:
     maxmemory: 64mb
     maxmemoryPolicy: allkeys-lru
   broker:
+    maxmemory: 512mb
     maxmemoryPolicy: noeviction
+    appendfsync: everysec
+    persistence:
+      size: 20Gi
+      # Empty uses the cluster's default StorageClass.
+      storageClassName: ""
+    resources:
+      limits:
+        memory: 768Mi
   # Same rationale as postgres.runAsUser; nulled by the OCP overlay.
   runAsUser: 999
-  # Same empty-default seam rationale as the top-level `resources`.
+  # Cache-only resource seam (broker uses redis.broker.resources).
   resources: {}
 
 # Wagtail media (Story 20.2 / canopy AD-13). ReadWriteMany; Django

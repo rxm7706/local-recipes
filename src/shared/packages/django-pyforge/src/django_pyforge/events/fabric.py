@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
@@ -11,6 +12,8 @@ from django_pyforge.events.constants import APPLIED_PREFIX
 from django_pyforge.events.constants import DLQ
 from django_pyforge.events.constants import EVENT_FIELD
 from django_pyforge.events.constants import EVENT_TYPES
+from django_pyforge.events.constants import EVENT_APPLIED_TTL_SECONDS_DEFAULT
+from django_pyforge.events.constants import EVENT_STREAM_MAXLEN_DEFAULT
 from django_pyforge.events.constants import EXT_GIT_SHA
 from django_pyforge.events.constants import EXT_LOOP_DEPTH
 from django_pyforge.events.constants import EXT_SBOM_PURL
@@ -22,6 +25,23 @@ from django_pyforge.events.constants import STATION_TOKENS
 from django_pyforge.events.constants import STREAM
 
 Handler = Callable[[dict[str, Any]], None]
+
+_APPLIED_TTL_ENV = "DJANGO_PYFORGE_EVENT_APPLIED_TTL_SECONDS"
+_STREAM_MAXLEN_ENV = "DJANGO_PYFORGE_EVENT_STREAM_MAXLEN"
+
+
+def _applied_ttl_seconds() -> int:
+    raw = os.environ.get(_APPLIED_TTL_ENV, "").strip()
+    if raw:
+        return int(raw)
+    return EVENT_APPLIED_TTL_SECONDS_DEFAULT
+
+
+def _event_stream_maxlen() -> int:
+    raw = os.environ.get(_STREAM_MAXLEN_ENV, "").strip()
+    if raw:
+        return int(raw)
+    return EVENT_STREAM_MAXLEN_DEFAULT
 
 
 def _as_id(value: Any) -> str:
@@ -153,7 +173,12 @@ class EventFabric:
             body[EXT_WORK_ITEM_ID] = workitemid
         if "data" in event:
             body["data"] = event["data"]
-        self.broker.xadd(STREAM, {EVENT_FIELD: json.dumps(body)})
+        self.broker.xadd(
+            STREAM,
+            {EVENT_FIELD: json.dumps(body)},
+            maxlen=_event_stream_maxlen(),
+            approximate=True,
+        )
         return str(event_id)
 
     def ensure_group(self, group: str) -> None:
@@ -247,4 +272,6 @@ class EventFabric:
         return 1
 
     def _mark_applied(self, key: str) -> bool:
-        return bool(self.broker.set(key, "1", nx=True))
+        return bool(
+            self.broker.set(key, "1", nx=True, ex=_applied_ttl_seconds()),
+        )

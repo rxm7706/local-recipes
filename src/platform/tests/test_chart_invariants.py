@@ -605,35 +605,73 @@ def _redis_deployments(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-def _assert_redis_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
-    """Story 12.6: Redis stays ephemeral -- Deployment volumes use emptyDir,
-    never a PVC. Story 20.2: both cache and broker Deployments.
-    """
-    redis_deployments = _redis_deployments(docs)
-    components = sorted(
-        (doc.get("metadata") or {}).get("labels", {}).get(
+def _assert_redis_cache_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
+    """Story 12.6 / 40.2: redis-cache stays ephemeral -- emptyDir only."""
+    cache_deployments = [
+        doc
+        for doc in _redis_deployments(docs)
+        if (doc.get("metadata") or {}).get("labels", {}).get(
             "app.kubernetes.io/component",
-            "",
         )
-        for doc in redis_deployments
+        == "redis-cache"
+    ]
+    assert len(cache_deployments) == 1, (
+        f"expected exactly one redis-cache Deployment, got {cache_deployments!r}"
     )
-    assert set(components) == _REDIS_COMPONENTS, (
-        f"expected redis-cache and redis-broker Deployments, got {components}"
-    )
-    for deployment in redis_deployments:
-        volumes = deployment["spec"]["template"]["spec"].get("volumes") or []
-        assert volumes, (
-            f"{deployment['metadata']['name']} has no volumes -- emptyDir "
-            f"check vacuous"
+    volumes = cache_deployments[0]["spec"]["template"]["spec"].get("volumes") or []
+    assert volumes, "redis-cache has no volumes -- emptyDir check vacuous"
+    for volume in volumes:
+        assert "emptyDir" in volume, (
+            f"redis-cache volume {volume.get('name')!r} is not emptyDir: {volume!r}"
         )
-        for volume in volumes:
-            assert "emptyDir" in volume, (
-                f"redis volume {volume.get('name')!r} is not emptyDir: {volume!r}"
-            )
-            assert "persistentVolumeClaim" not in volume, (
-                f"redis volume {volume.get('name')!r} uses a PVC -- persistence "
-                f"must stay ephemeral (Story 12.6)"
-            )
+        assert "persistentVolumeClaim" not in volume, (
+            f"redis-cache volume {volume.get('name')!r} uses a PVC -- cache must "
+            f"stay ephemeral (Story 12.6)"
+        )
+
+
+def _assert_redis_broker_persistence_is_pvc_with_aof(docs: list[dict[str, Any]]) -> None:
+    """Story 40.2: redis-broker mounts a PVC at /data and enables AOF."""
+    broker_deployments = [
+        doc
+        for doc in _redis_deployments(docs)
+        if (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "redis-broker"
+    ]
+    assert len(broker_deployments) == 1, (
+        f"expected exactly one redis-broker Deployment, got {broker_deployments!r}"
+    )
+    deployment = broker_deployments[0]
+    volumes = deployment["spec"]["template"]["spec"].get("volumes") or []
+    data_volumes = [volume for volume in volumes if volume.get("name") == "data"]
+    assert len(data_volumes) == 1, f"redis-broker missing data volume: {volumes!r}"
+    assert "persistentVolumeClaim" in data_volumes[0], (
+        f"redis-broker data volume must be a PVC, got {data_volumes[0]!r}"
+    )
+    command = deployment["spec"]["template"]["spec"]["containers"][0].get("command") or []
+    assert "--appendonly" in command and "yes" in command, (
+        f"redis-broker missing AOF args: {command!r}"
+    )
+    assert "--appendfsync" in command and "everysec" in command, (
+        f"redis-broker missing appendfsync everysec: {command!r}"
+    )
+    assert "--maxmemory" in command, f"redis-broker missing --maxmemory: {command!r}"
+    assert "noeviction" in command, (
+        f"redis-broker must keep noeviction policy: {command!r}"
+    )
+    broker_pvcs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "redis-broker"
+    ]
+    assert len(broker_pvcs) == 1, broker_pvcs
+    assert broker_pvcs[0]["spec"]["accessModes"] == ["ReadWriteOnce"]
+    claim_name = data_volumes[0]["persistentVolumeClaim"]["claimName"]
+    assert broker_pvcs[0]["metadata"]["name"] == claim_name
 
 
 def _assert_redis_uses_password_from_existing_secret(
@@ -920,8 +958,8 @@ def test_sidecar_sqlite_pvc_and_internal_service_render():
     """AC: a dedicated SQLite PVC and internal ClusterIP Service appear."""
     docs = _render(_CORE_CHART)
     pvcs = [doc for doc in docs if doc.get("kind") == "PersistentVolumeClaim"]
-    assert len(pvcs) == 2, (  # noqa: PLR2004
-        f"expected sidecar sqlite PVC + media RWX PVC, got: "
+    assert len(pvcs) == 3, (  # noqa: PLR2004
+        f"expected sidecar sqlite PVC + media RWX PVC + redis-broker PVC, got: "
         f"{[doc['metadata']['name'] for doc in pvcs]}"
     )
     dbgpt_services = [
@@ -1161,10 +1199,48 @@ def test_redis_network_policy_restricts_ingress_to_platform_pods():
 
 
 @requires_helm
-def test_redis_persistence_remains_empty_dir():
-    """AC (Story 12.6): Redis stays ephemeral -- emptyDir only, no PVC."""
+def test_redis_cache_persistence_remains_empty_dir():
+    """AC (Story 12.6 / 40.2): redis-cache stays ephemeral -- emptyDir only."""
     docs = _render(_CORE_CHART)
-    _assert_redis_persistence_is_empty_dir(docs)
+    _assert_redis_cache_persistence_is_empty_dir(docs)
+
+
+@requires_helm
+def test_redis_broker_persistence_is_pvc_with_aof():
+    """AC (Story 40.2): redis-broker mounts RWO PVC and enables AOF."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_redis_broker_persistence_is_pvc_with_aof(docs)
+
+
+@requires_helm
+def test_redis_broker_maxmemory_must_be_below_memory_limit():
+    """AC (Story 40.2): maxmemory >= limit fails helm template naming the path."""
+    with pytest.raises(AssertionError, match="redis.broker.maxmemory"):
+        _render(
+            _CORE_CHART,
+            "--set",
+            "redis.broker.maxmemory=768Mi",
+            "--set",
+            "redis.broker.resources.limits.memory=768Mi",
+        )
+
+
+@requires_helm
+def test_redis_broker_maxmemory_is_required():
+    """AC (Story 40.2): empty redis.broker.maxmemory fails the render."""
+    with pytest.raises(AssertionError, match="redis.broker.maxmemory is required"):
+        _render(_CORE_CHART, "--set", "redis.broker.maxmemory=")
+
+
+@requires_helm
+def test_redis_broker_memory_limit_is_required():
+    """AC (Story 40.2): empty redis.broker.resources.limits.memory fails the render."""
+    with pytest.raises(AssertionError, match="redis.broker.resources.limits.memory is required"):
+        _render(
+            _CORE_CHART,
+            "--set",
+            "redis.broker.resources.limits.memory=",
+        )
 
 
 @requires_helm
@@ -1706,28 +1782,14 @@ def test_redis_network_policy_check_fails_when_sidecar_is_allowed():
         )
 
 
-def test_redis_empty_dir_check_fails_when_a_pvc_volume_is_present():
-    """A redis Deployment with a PVC-backed volume must raise."""
+def test_redis_cache_empty_dir_check_fails_when_a_pvc_volume_is_present():
+    """A redis-cache Deployment with a PVC-backed volume must raise."""
     contaminated_docs = [
         {
             "kind": "Deployment",
             "metadata": {
                 "name": "platform-redis-cache",
                 "labels": {"app.kubernetes.io/component": "redis-cache"},
-            },
-            "spec": {
-                "template": {
-                    "spec": {
-                        "volumes": [{"name": "data", "emptyDir": {}}],
-                    },
-                },
-            },
-        },
-        {
-            "kind": "Deployment",
-            "metadata": {
-                "name": "platform-redis-broker",
-                "labels": {"app.kubernetes.io/component": "redis-broker"},
             },
             "spec": {
                 "template": {
@@ -1745,7 +1807,7 @@ def test_redis_empty_dir_check_fails_when_a_pvc_volume_is_present():
     ]
 
     with pytest.raises(AssertionError, match="emptyDir"):
-        _assert_redis_persistence_is_empty_dir(contaminated_docs)
+        _assert_redis_cache_persistence_is_empty_dir(contaminated_docs)
 
 
 def _synthetic_workload(
