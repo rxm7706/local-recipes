@@ -179,11 +179,20 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 - addressed_findings:
   - none
 
+### 2026-09-02 — Review pass 9 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 26
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Story 41.2 re-dispatched via bmad-build-auto on branch `dispatch/pyforge-steward/41.2` at HEAD `6d82a55866`. Implementation complete since baseline `28404c71f1b3bda015ba1a51957236589bf09303`; review pass 8 (follow-up on `done` spec) confirmed AC coverage with no new patches. Query-plane process boundary: estate AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE`, Scribe plane store read/write split, Dream/stack wording.
+Summary: Story 41.2 dispatched via bmad-build-auto on branch `dispatch/pyforge-steward/41.2` at HEAD `1eaf6f32d0`. Implementation complete since baseline `28404c71f1b3bda015ba1a51957236589bf09303`; review pass 9 (follow-up on `done` spec) confirmed AC coverage with no new patches. Query-plane process boundary: estate AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE`, Scribe plane store read/write split, Dream/stack wording.
 
 Files changed (since baseline):
 - `pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
@@ -195,7 +204,7 @@ Files changed (since baseline):
 - `spec-pyforge-unifying-strategy/stack.md` — duckdb row
 - `sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings (pass 8): 0 patches, 0 new deferrals, 24 rejected (duplicates of frontmatter `deferred` or prior passes: ibis/alias AST, helm platform-ci skip, scribe importorskip skips, subPath/ephemeral mount edges, vacuous PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, resilience-invariants drift, connect_reader seam preference, write=True default, sidecar reader scope, estate scan roots, AST static-limit edge cases). Intent-alignment: diff implements enforcement-first Reading C; runtime Mode C delivery explicitly out of scope. Follow-up review: false (0 patched findings; score 0).
+Review findings (pass 9): 0 patches, 0 new deferrals, 26 rejected (duplicates of frontmatter `deferred` or prior passes: ibis/alias AST, helm platform-ci skip, scribe importorskip skips, subPath/ephemeral mount edges, vacuous PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, resilience-invariants drift, connect_reader seam preference, open_graph_store write default, sidecar reader scope, estate scan roots, AST static-limit edge cases, read_only=1 coercion, missing web KeyError edge, plugin truthy-string write). Intent-alignment: diff implements enforcement-first Reading A+C; runtime Mode C delivery (Reading B) explicitly out of scope. Follow-up review: false (0 patched findings; score 0).
 
 Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 3 passed; `pixi run -e pyforge-scribe pyforge-scribe-test -k graph_store_plane` → 2 passed, 4 skipped; `pixi run -e platform-dev pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
