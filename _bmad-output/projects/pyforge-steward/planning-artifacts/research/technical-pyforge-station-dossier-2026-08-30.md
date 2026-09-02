@@ -1,11 +1,11 @@
 ---
 title: "Technical research — the PyForge station dossier"
-chain: "fleet-convention-consistency"
+chain: "pyforge-unifying-strategy"
 type: "technical"
 created: "2026-08-30"
-updated: "2026-08-30"
+updated: "2026-09-01"
 status: "ready"
-decision: "What does every PyForge station actually do, and where do their conventions agree or diverge — the evidence base for fleet-convention-consistency and a living map for any operator working across more than one station"
+decision: "What does every PyForge station actually do, and where do their conventions agree or diverge — evidence now lives on pyforge-unifying-strategy § Fleet conventions; this dossier is the living map for any operator working across more than one station"
 ---
 
 # Technical research — the PyForge station dossier
@@ -370,10 +370,9 @@ is a versioned prompt run on demand, not a cron job that writes findings unsuper
    new one) and update this file's `updated:` frontmatter field and this section's own "last
    run" line below.
 
-5. **Feed findings back to [[fleet-convention-consistency]]** (absorbed into
-   [[pyforge-unifying-strategy]]) if a refresh surfaces a new convention gap, or clears an
-   existing one — that Dream's "What is real" table should track this file's findings, not
-   diverge from them.
+5. **Feed findings back to [[pyforge-unifying-strategy]] § Fleet conventions**
+   if a refresh surfaces a new convention gap, or clears an existing one — that
+   section's table should track this file's findings, not diverge from them.
 
 **Cost, measured, not estimated.** The 2026-08-30 run's seven station forks (Marshal was
 investigated separately, in an earlier pass the same session, and its token cost wasn't

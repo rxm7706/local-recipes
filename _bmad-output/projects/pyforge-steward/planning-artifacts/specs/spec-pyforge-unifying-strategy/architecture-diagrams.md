@@ -2,24 +2,24 @@
 title: "Architecture diagrams"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-26"
+updated: "2026-09-01"
 ---
 
 # Architecture diagrams
 
 Companion to `SPEC.md` — Spec Law rule 2 keeps diagrams out of the kernel. These render the
-contract: **solid** boxes are shipped (`spec-python-agent-platform` **or** this chain's drain,
+contract: **solid** boxes are shipped (`pap:CAP-1`..`6` **or** this chain's Unifying CAP-1..19 drain,
 2026-08-25; closeout 2026-08-26). **Dashed** leftover is honesty-only (isolated `mfa`
 sqlmigrate fake; optional 12.9 `ocp-portability-smoke` when Actions minutes return).
 **Dashed CAP-19** is the evergreen reopen (query plane) — not a closeout leftover.
 
-## The Canopy as it stands and as it extends
+## Foundry Platform as it stands and as it extends
 
 ```mermaid
 graph TB
     User["Operator / Agent"]
 
-    subgraph Canopy["The Canopy — src/platform/ (SHIPPED)"]
+    subgraph Canopy["Foundry Platform — src/platform/ (SHIPPED)"]
         Host["config/ + platformapp/<br/>Django 5.2 · ASGI seam"]
         Auth["django-allauth<br/>OIDC SSO"]
         FastAPIseam["config/fastapi_app.py<br/>in-host /api/health"]
@@ -28,7 +28,7 @@ graph TB
         CF["warden portal<br/>django-warden — 8 of 8 prefix"]
         L1["Wagtail Lane 1"]
         P7["Eight portals /stations/{name}/"]
-        DP["django-pyforge chrome"]
+        DP["django-pyforge"]
         SVC["MCP on host ASGI"]
         CLI["pyforge CLI"]
         CLIENT["trusted client CAP-6"]

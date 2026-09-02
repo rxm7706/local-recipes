@@ -132,7 +132,7 @@ date; this brief needs no further maintenance unless the v1 record itself is con
 ## Currency reconciliation — 2026-08-31
 
 `research/technical-pyforge-station-dossier-2026-08-30.md` (fleet-wide, all eight stations plus
-`pyforge-core`, chain `fleet-convention-consistency`) fired `research→brief` again. It does not
+`pyforge-core`, chain `pyforge-unifying-strategy` § Fleet conventions) fired `research→brief` again. It does not
 contradict this brief's v1 record or either prior reconciliation above — one doc-drift finding is
 worth recording because it lands on this exact brief's own subject:
 

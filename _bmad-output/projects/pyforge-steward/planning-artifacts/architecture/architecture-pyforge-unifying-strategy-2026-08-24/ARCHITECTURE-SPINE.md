@@ -76,9 +76,9 @@ graph TD
 
 ## Inherited Invariants
 
-Parent: `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`. Original IDs, read-only.
-
-Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a review-blocking finding.
+Parent: `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`. Cite as **`pap:AD-n`**
+(same as **parent AD-n**). Original IDs in that file stay `AD-n`. Unifying ADs in this file
+are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 | Inherited | Binds here |
 |---|---|
@@ -241,7 +241,7 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 
 ## Consistency Conventions
 
-Cite **parent AD-n** (python-agent-platform spine) vs **canopy AD-n** (this file). Bare `AD-n` in an epic or story is a review-blocking finding.
+Cite **`pap:AD-n`** / **parent AD-n** (python-agent-platform spine) vs **canopy AD-n** (this file; prefix only). Bare `AD-n` in an epic or story is a review-blocking finding.
 
 | Concern | Convention |
 |---|---|

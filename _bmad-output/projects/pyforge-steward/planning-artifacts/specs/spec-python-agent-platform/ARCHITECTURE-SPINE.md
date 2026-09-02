@@ -17,9 +17,8 @@ sources:
 # Architecture Spine — python-agent-platform (companion to SPEC.md)
 
 This spine restates the SPEC's invariants as numbered ADs so every dev session across
-Epics 10–12 binds to one stable set. It is **derived, additive, and non-normative beyond the
-SPEC** — on any conflict, `SPEC.md` (and its dated resolutions) wins and this file gets
-corrected. No new decisions are minted here.
+Epics 10–12 binds to one stable set. Cross-Spec citations use **`pap:AD-1`..`pap:AD-17`**
+(Unifying Strategy must not treat these as canopy AD-1..). On any conflict, `SPEC.md` wins.
 
 ## Invariants & Rules
 
