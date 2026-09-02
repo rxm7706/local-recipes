@@ -9,7 +9,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/console-parity-inventory.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md
 mode: headless-express
-updated: '2026-08-31'
+updated: '2026-09-02'
 currency_review: "Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-20260824.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -2274,6 +2274,44 @@ So that pixi.toml stays thin for full-suite installs.
 
 **Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** CAP-4
 **Status:** backlog
+
+## Epic 40: Red-team CRITICALs — verified mint, durable broker (spec-pyforge-unifying-strategy CAP-6 / CAP-11)
+
+Minted by `sprint-change-proposal-2026-09-02-red-team-critical.md` after the
+2026-09-02 adversarial review (`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`)
+found two shipped CRITICALs. Additive over Epics 12 / 19 / 21 / 24; those
+ledgers stay `done`. Dispatches **before** any further story on this chain
+and before cutover Phase 1. The review's HIGH set (R-4 … R-16) is a later
+correct-course, not this epic.
+
+### Story 40.1: IdP bearer is verified before mint
+
+As a platform operator,
+I want `/assertion/mint/` to verify the presented IdP bearer (signature via the configured JWKS, `iss`, `aud`, `exp`) before signing a station assertion,
+So that nobody can mint a valid assertion for any subject and any roles by base64-encoding a JSON payload.
+
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy AD-7, AD-15 • RFC-3 (revised) • red-team X-1 / R-1
+**Given** the existing fake-`.sig` bearer fixture **When** it is POSTed to `/assertion/mint/` **Then** the response is 401 and nothing is minted
+**And** wrong key / `alg=none` / HS256 / wrong `iss` / wrong `aud` / expired / missing claims are refused
+**And** an unknown `kid` refreshes the JWKS once, never twice in the cache window
+**And** a station absent from the verified group claim is 403
+**And** an unconfigured verifier is 503 in every profile (local verifies against the dev JWKS file, it does not skip)
+**And** production stage-1 refuses without `COMPONENT_OIDC_ISSUER` / `COMPONENT_OIDC_JWKS_URL` / `COMPONENT_OIDC_AUDIENCE`
+**And** an AST policy test forbids any bearer decode outside the verifier
+
+### Story 40.2: redis-broker is durable and bounded
+
+As a platform operator,
+I want `redis-broker` on a PVC with AOF, a required `maxmemory` below a required memory limit, no stored Celery results, and TTL on applied-id keys,
+So that a broker restart loses no queued task, stream entry, pending entry, DLQ entry or idempotency key, and growth back-pressures instead of OOM-killing the pod.
+
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy AD-8, AD-10, AD-12, AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
+**Given** `helm template` **When** rendered **Then** the broker mounts a PVC at `/data` with `--appendonly yes --appendfsync everysec --maxmemory <v> --maxmemory-policy noeviction`, and the cache is unchanged (`emptyDir`, `allkeys-lru`)
+**And** an empty `redis.broker.maxmemory`, an empty broker memory limit, or `maxmemory` ≥ the limit fails the render naming the values path
+**And** `CELERY_TASK_IGNORE_RESULT` is `True` and no `celery-task-meta-*` key exists after a supervised run completes
+**And** `pyforge.events.applied:*` keys carry a TTL and the stream has a declared trim; the DLQ is never auto-trimmed
+**And** a real `redis-server` kill/restart preserves the stream entry, the PEL entry, the DLQ and the applied key — and the test fails with `--appendonly no`
+**And** the two 12.6 `emptyDir` invariants are re-scoped to the cache role
 
 ## Currency validation note — 2026-08-26
 

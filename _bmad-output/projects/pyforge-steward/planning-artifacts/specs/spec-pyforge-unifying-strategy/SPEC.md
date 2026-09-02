@@ -164,6 +164,10 @@ they are why this is not merely a UI project.
   - **success:** A service can independently verify which end user a portal call was made on behalf
     of, and no portal constructs a raw HTTP request to a service.
 
+  - *(Correct-course 2026-09-02, red-team X-1 / R-1 → Story 40.1: the host mint MUST
+    verify the presented IdP bearer — signature via the configured JWKS, `iss`, `aud`,
+    `exp` — before signing. Never: a decode-only bearer path, in any profile.)*
+
 - **CAP-7 — Analytics behind the front door.**
   - **intent:** Atlas's analytical boards are reachable through the host with per-tenant row
     isolation enforced at the identity boundary, adopting the estate's existing secure-dashboard
@@ -206,6 +210,11 @@ they are why this is not merely a UI project.
   - **intent:** The task broker and the cache are separate resources with separate eviction
     policies, and the web and worker pools scale independently.
   - **success:** Filling the cache to its eviction limit provably loses no queued task.
+
+  - *(Correct-course 2026-09-02, red-team S-1 / A-3 / R-2 → Story 40.2: the broker is
+    durable (AOF on a PVC) and bounded (`maxmemory` below its memory limit, `noeviction`).
+    A broker restart loses no queued task, stream entry, pending entry, DLQ entry or
+    applied-id key. Never: `noeviction` without `maxmemory`; `emptyDir` for the broker.)*
 
 - **CAP-12 — Access is revocable and secrets are delivered.**
   - **intent:** Portal authorization derives from identity-provider roles rather than

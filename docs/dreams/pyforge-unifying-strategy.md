@@ -88,6 +88,15 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   realization of that slice, not the end of the Dream. Status is `specified`
   while new canopy contracts are in flight. Operator 2026-08-26: the SPEC may
   return to `in-progress`; rebuild of shipped stores is in scope.
+- **Red-team CRITICALs are Epic 40 (2026-09-02).** The adversarial review
+  (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`)
+  found two shipped CRITICALs: `/assertion/mint/` trusts an **unverified** IdP
+  bearer (X-1), and `redis-broker` is `noeviction` with **no `maxmemory`** on
+  `emptyDir` carrying queue + Streams + PEL + DLQ + applied keys (S-1). Bound as
+  steward **Epic 40** (40.1 verified mint, 40.2 durable bounded broker) via
+  `sprint-change-proposal-2026-09-02-red-team-critical.md`. **Dispatch before**
+  any further story here and before cutover Phase 1. The review's HIGH set
+  (R-4 … R-16) is a later correct-course, not this bullet.
 - **The query plane is this Dream, not a sibling.** Bound as **CAP-19** /
   Epic 34 on `spec-pyforge-unifying-strategy` (`sprint-change-proposal-2026-08-26-query-plane.md`).
   Do not mint `pyforge-htap` or `spec-htap-query-plane`.
@@ -2090,3 +2099,14 @@ Faces are `python-<layer>-platform`. Implementations are `python-<role>-engine`.
   and **`pap:AD-1`..`pap:AD-17`**; Unifying `CAP-1`..`19` stay the mount. Pixi env id
   `python-agent-platform` stays. Single-Spec merge parked in Grounding (copy →
   retarget Epic 10–12 → supersede parent Spec; never rename the env in those stories).
+- **2026-09-02** — Red-team architecture review landed
+  (`research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`):
+  six lenses graded against the living topology and the shipped code. Verdict:
+  strategy viable, document not; two CRITICALs in shipped code (X-1 unverified
+  mint root; S-1 volatile unbounded broker), no DR, and a HIGH set of fourteen.
+  Operator chose option 1. `bmad-correct-course` minted **Epic 40** (Stories
+  40.1 / 40.2, `ready-for-dev`, deps none), appended CAP-6 / CAP-11
+  correct-course notes, RFC-2 / RFC-3 notes, superseded sibling CAP-3 for the
+  broker role, and stamped `implementation-readiness-report-2026-09-02-red-team-critical.md`
+  **READY — proceed**. HIGH set routes through a second correct-course after
+  Epic 40 lands.

@@ -56,7 +56,10 @@ shipped architecture or external reality is struck with citations in
   emptyDir stays (Celery re-queues); AUTH via `existingSecret` key +
   NetworkPolicy restricting Redis to platform pods — closing 12.1's named
   unauthenticated-Redis follow-up. *Success:* rendered NetworkPolicy +
-  AUTH-wired `REDIS_URL`; invariant tests cover both.
+  AUTH-wired `REDIS_URL`; invariant tests cover both. *Superseded for the
+  **broker** role 2026-09-02 by steward Story 40.2 (`spec-pyforge-unifying-strategy`
+  CAP-11): the "Celery re-queues" premise does not cover Streams / PEL / DLQ /
+  applied keys. The cache role stays as 12.6 shipped it.*
 - **CAP-4 — Tier-3 attended verification (→ Story 12.7).** *Intent:*
   `helm install` core + overlay on the live cluster proves the four
   unverified items — Route admission, SCC enforcement, PVC binding,
