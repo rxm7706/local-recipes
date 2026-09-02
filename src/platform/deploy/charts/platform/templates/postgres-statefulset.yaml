@@ -80,6 +80,16 @@ spec:
             # not to be the volume root (lost+found breaks initdb).
             - name: PGDATA
               value: {{ printf "%s/pgdata" .Values.postgres.dataMountPath | quote }}
+          {{- if .Values.postgres.backup.enabled }}
+          command:
+            - docker-entrypoint.sh
+          args:
+            - postgres
+            - -c
+            - archive_mode=on
+            - -c
+            - archive_command=test ! -f {{ .Values.postgres.backup.mountPath }}/wal/%f && cp %p {{ .Values.postgres.backup.mountPath }}/wal/%f
+          {{- end }}
           livenessProbe:
             exec:
               command:
@@ -107,6 +117,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: {{ .Values.postgres.dataMountPath }}
+            {{- if .Values.postgres.backup.enabled }}
+            - name: backup
+              mountPath: {{ .Values.postgres.backup.mountPath | quote }}
+            {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -119,3 +133,9 @@ spec:
         resources:
           requests:
             storage: {{ .Values.postgres.persistence.size }}
+  {{- if .Values.postgres.backup.enabled }}
+  volumes:
+    - name: backup
+      persistentVolumeClaim:
+        claimName: {{ include "platform.postgresBackup.pvcName" . }}
+  {{- end }}

@@ -48,3 +48,15 @@ is the in-cluster copy of src/platform/config/flags.json. Install with
   --set-file flags.tree=src/platform/config/flags.json
 The FILE provider polls /etc/pyforge/flags.json in-process — do not add a
 Reloader or flagd sidecar.
+{{- if not .Values.postgres.backup.enabled }}
+
+*** WARNING: postgres.backup.enabled is false — PostgreSQL has NO base backup,
+NO WAL archive, and NO point-in-time recovery. Data loss on PVC failure is
+permanent. See src/platform/deploy/DR.md and restore.md before disabling. ***
+{{- else }}
+
+PostgreSQL backup (Story 41.1): CronJob {{ include "platform.postgresBackup.fullname" . }}
+runs on schedule {{ .Values.postgres.backup.schedule | quote }} using the
+platform image; WAL archives to {{ .Values.postgres.backup.mountPath }}/wal/.
+Monthly drill: pyforge steward restore --drill --backup-path <base/latest>.
+{{- end }}

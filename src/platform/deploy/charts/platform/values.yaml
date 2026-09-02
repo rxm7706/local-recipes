@@ -139,6 +139,17 @@ postgres:
   fsGroup: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
+  # Story 41.1: physical base backup + WAL archive to a separate RWX PVC.
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"
+    mountPath: /var/lib/postgresql/backup
+    persistence:
+      size: 50Gi
+      storageClassName: ""
+      accessModes:
+        - ReadWriteMany
+    resources: {}
 
 # Redis (official image, two Deployments -- redis-cache evicts on emptyDir;
 # redis-broker is durable (AOF on PVC) and bounded; still Redis-the-kind

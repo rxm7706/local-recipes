@@ -982,7 +982,7 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 | **Station compute pods** | **0** | — | — | MCP + FastAPI stay on the host ASGI. Do not size nine FastAPI `:800x` services. |
 | **`python-worker-engine`** (Celery) | 2–8 replicas | 2 vCPU / 4 vCPU | 4 GB / 8 GB | Redis queue depth |
 | **`python-board-engine`** (Vizro / BSL) | 1–2 replicas | 1 vCPU / 2 vCPU | 2 GB / 4 GB | Concurrent viewers |
-| **`python-postgres-kind`** | 1 primary + 1 standby | 4 vCPU / 8 vCPU | 8 GB / 16 GB | Operator optional in prod; CRC used official `postgres:17` |
+| **`python-postgres-kind`** | 1 replica + backup (CronJob + WAL archive) | 4 vCPU / 8 vCPU | 8 GB / 16 GB | Standby/operator (CloudNativePG, Crunchy) is sizing-only — see deploy/DR.md |
 | **`python-redis-kind`** (`redis-broker` + `redis-cache`) | Separate instances | 2 vCPU / 4 vCPU | 4 GB / 8 GB | Broker `noeviction`; cache LRU |
 | **Total recommended (HA)** | — | **32 to 64 vCPUs** | **64 to 128 GB RAM** | Minimum 3 worker nodes |
 
