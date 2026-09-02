@@ -15,3 +15,11 @@ class WrongAudienceError(AssertionRefusedError):
 
 class ExpiredAssertionError(AssertionRefusedError):
     """``exp`` is in the past."""
+
+
+class VerifierNotConfiguredError(Exception):
+    """OIDC verifier settings are missing or unusable."""
+
+
+class StationNotInRolesError(AssertionRefusedError):
+    """Verified bearer lacks the requested station in roles."""
