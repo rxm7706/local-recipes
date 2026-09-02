@@ -33,6 +33,7 @@ from pyforge.scribe.models import GraphNode
 SCRIBE_SCHEMA = "scribe_schema"
 GRAPH_TABLE = "graph_nodes"
 GRAPH_CHANGESET_ID = "pyforge-scribe:2"
+GRANTS_CHANGESET_ID = "pyforge-scribe:3"
 _GRAPH_LOCK_KEY = 0x53435242  # "SCRB"
 _DSN_ENV = "SCRIBE_GRAPH_DSN"
 
@@ -113,13 +114,29 @@ class PostgresGraphStore:
     def _assert_provisioned(self) -> None:
         """Assert-only: the relation must already exist (Story 41.3).
 
-        ``to_regclass`` returns NULL rather than raising when the relation is
-        absent or invisible to this role, so one read answers the question
-        without touching DDL.
+        ``to_regclass`` returns NULL for a relation that does not exist, so
+        one read answers the question without touching DDL. It does **not**
+        mask a privilege gap: without ``USAGE`` on the schema it raises
+        ``permission denied for schema <name>``. That case has its own
+        remedy, because ``pyforge-scribe:3`` (the grants) is
+        ``onFail:CONTINUE`` — on a database where the app role was created
+        after the first ``liquibase update``, the grants were silently
+        skipped — so name that changeset instead of leaking a raw driver
+        error.
         """
+        psycopg, _sql = _import_psycopg()
         qualified = f"{self.schema}.{GRAPH_TABLE}"
-        with self._connect() as conn:
-            row = conn.execute("SELECT to_regclass(%s)", (qualified,)).fetchone()
+        try:
+            with self._connect() as conn:
+                row = conn.execute("SELECT to_regclass(%s)", (qualified,)).fetchone()
+        except psycopg.errors.InsufficientPrivilege as exc:
+            raise GraphSchemaMissing(
+                f"{qualified} is not readable by this role -- apply Liquibase "
+                f"changeset {GRANTS_CHANGESET_ID} (src/platform/db/changelog) "
+                "as the migration role; it is skipped when the app role does "
+                "not yet exist, and the scribe runtime cannot grant itself "
+                "access (CAP-9)"
+            ) from exc
         if row is None or row[0] is None:
             raise GraphSchemaMissing(
                 f"{qualified} is absent -- apply Liquibase changeset "

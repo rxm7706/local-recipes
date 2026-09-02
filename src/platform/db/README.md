@@ -56,10 +56,19 @@ cannot infer rollback for formatted SQL, so an unrolled-back changeset makes
   lines — one per statement, in reverse order of the forward statements. This is
   the formatted-SQL spelling of a YAML changeset's `rollback:` block; the policy
   is the same in either syntax.
+- **`--rollback empty` and `--rollback not required` are rejected.** Liquibase
+  accepts both, but they declare that there *is* no way back — the case this
+  policy exists to forbid. A changeset that genuinely cannot be reversed takes
+  the `runInTransaction=false` exception below, which is reviewed; it does not
+  get there by satisfying the parser. The policy test discriminates the two
+  forms explicitly.
 - The rollback must undo what *this* changeset did and nothing else. Guard with
   `IF EXISTS` so rolling back a partially-applied changeset does not itself fail.
 - Grants roll back as the matching `REVOKE`s, including
   `ALTER DEFAULT PRIVILEGES … REVOKE`.
+- A changeset must be `include:`d in `db.changelog-master.yaml` — an
+  un-included file is inert and ships nothing. The policy test asserts every
+  `changes/*.sql` appears there exactly once.
 
 ```sql
 --liquibase formatted sql
@@ -112,7 +121,17 @@ the changeset — it does not create it, and the fix is never a `GRANT`.
 `pyforge.scribe.graph_store_pg` is the worked example (Story 41.3, red-team
 S-4): `pyforge-scribe:1` creates the pgvector extension (superuser / trusted
 extension — a runtime role cannot), `:2` creates `scribe_schema.graph_nodes`,
-`:3` grants DML to `platform_app` behind a role-exists precondition.
+`:3` grants DML to `platform_app` behind a role-exists precondition, and `:4`
+back-fills the `stale` column onto a table created by a pre-6.3 driver — `:2`'s
+`CREATE TABLE IF NOT EXISTS` is a no-op against such a table, and the runtime
+role can no longer add the column itself.
+
+Two failure modes the driver names rather than leaking: the relation absent
+(`pyforge-scribe:2` has not run) and the schema unreadable. The second is the
+subtle one — `:3` is `onFail:CONTINUE`, so on a database where the app role was
+created *after* the first `liquibase update` the grants were skipped silently,
+and the driver points at `pyforge-scribe:3` instead of surfacing a raw
+`permission denied`.
 
 Django is exempt from *authoring* only: migrations remain the authoring surface,
 extracted with `sqlmigrate` into changesets, and the deploy runs

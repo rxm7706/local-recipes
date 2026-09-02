@@ -5,6 +5,7 @@ created: "2026-09-02"
 status: "in-review"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
+baseline_revision: "a4316334fec7b7ad0aaee536c4c89b811e4eb15c"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
@@ -123,6 +124,46 @@ locally; the CI step they mirror, `python -m db.sqlmigrate_extraction`, was run
 directly and reports `ok (14 first-party migrations)`. (c) Two
 `test_openfeature_channel_policy` failures (a `cachebox` pin drift) are red on
 `main`.
+
+**2026-09-02 — review pass, six findings applied.**
+
+1. *(HIGH)* Deleting `_ensure_schema` also deleted the `stale` back-fill, and
+   nothing replaced it: `:2`'s `CREATE TABLE IF NOT EXISTS` is a no-op against a
+   pre-6.3 nine-column table, `to_regclass` resolves it so the assert passes,
+   and `_load` then died on a raw `UndefinedColumn` with no changeset named —
+   unrecoverable, since the runtime role can no longer alter the table.
+   `pyforge-scribe:4` carries the back-fill with a `DROP COLUMN` rollback.
+   Verified end to end: a legacy nine-column table built by hand, then real
+   `liquibase update` → 10 columns with `stale NOT NULL DEFAULT false`;
+   `rollback-count` removes it again.
+2. *(MEDIUM)* The `_assert_provisioned` docstring claimed `to_regclass` returns
+   NULL for a relation "invisible to this role". It does not — without schema
+   `USAGE` it raises `permission denied for schema …`. That is the likeliest
+   production failure, because `:3` is `onFail:CONTINUE` and is skipped
+   silently on a database where the app role was created after the first
+   `liquibase update`. Docstring corrected; the driver now catches
+   `InsufficientPrivilege` and raises `GraphSchemaMissing` naming
+   **`pyforge-scribe:3`** (the grants), not `:2`.
+3. *(MEDIUM)* The duplicate-seq assertion was unreachable — `_changeset_files()`
+   keyed a dict on the changeset id and overwrote on collision, so the loop
+   iterated already-unique keys and a colliding file also escaped the rollback
+   gate. `_changeset_entries()` now returns `(path, id, body)` and a dedicated
+   test names both colliding files.
+4. *(MEDIUM)* The rollback gate accepted `--rollback empty` and
+   `--rollback not required` — Liquibase's own "there is no way back"
+   declarations, exactly what the policy forbids. Both are rejected now unless
+   the changeset is a documented `runInTransaction:false` exception, and
+   `db/README.md` says so.
+5. *(MEDIUM)* Nothing asserted a changeset file is `include:`d in the master
+   changelog — a forgotten include for `:1` or `:3` would have shipped silently
+   (no pgvector, or no grants), and the scribe fixture hid it by globbing
+   `changes/*.sql` directly. Every file must now appear exactly once.
+6. *(LOW)* The fixture applied changesets in lexicographic filename order
+   (`-10-` before `-2-`); it sorts on the parsed seq now.
+
+Each of the three new platform gates was mutation-checked: dropping the `:4`
+include, downgrading its rollback to `empty`, and adding a second file on
+`pyforge-scribe:4` each red the intended test and only that test.
 
 ## Verification
 

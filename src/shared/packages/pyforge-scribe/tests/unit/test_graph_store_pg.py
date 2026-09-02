@@ -11,6 +11,7 @@ import ast
 import re
 import secrets
 import threading
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
@@ -25,6 +26,7 @@ from pyforge.scribe.graph_store import (
     FlatFileGraphStorePlugin,
 )
 from pyforge.scribe.graph_store_pg import (
+    GRANTS_CHANGESET_ID,
     GRAPH_CHANGESET_ID,
     SCRIBE_SCHEMA,
     GraphSchemaMissing,
@@ -86,6 +88,7 @@ def test_driver_emits_no_ddl() -> None:
     assert "CREATE EXTENSION" not in src
     assert "to_regclass" in src, "the driver must assert the relation instead"
     assert GRAPH_CHANGESET_ID == "pyforge-scribe:2"
+    assert GRANTS_CHANGESET_ID == "pyforge-scribe:3"
 
 
 def test_nodes_live_only_in_scribe_schema(tmp_path: Path, pg_dsn: str) -> None:
@@ -131,6 +134,93 @@ def test_absent_relation_raises_a_named_error(tmp_path: Path, pg_dsn: str) -> No
     assert absent in message
     assert GRAPH_CHANGESET_ID in message
     assert isinstance(error.value, PluginError)
+
+
+def test_legacy_table_without_stale_is_back_filled_by_the_changeset(
+    tmp_path: Path, pg_dsn: str, apply_changesets: Callable[[str], None]
+) -> None:
+    """`pyforge-scribe:4`: a pre-6.3 table has no `stale`, and `:2` is a no-op on it."""
+    import psycopg
+    from psycopg import sql
+
+    table = sql.SQL("{}.{}").format(
+        sql.Identifier(SCRIBE_SCHEMA), sql.Identifier("graph_nodes")
+    )
+    admin = psycopg.connect(pg_dsn)
+    admin.autocommit = True
+    try:
+        admin.execute(
+            sql.SQL("ALTER TABLE {} DROP COLUMN IF EXISTS stale").format(table)
+        )
+        # Not vacuous: without :4 the driver cannot recover -- it holds DML
+        # only, and `CREATE TABLE IF NOT EXISTS` does not add a column.
+        with pytest.raises(psycopg.errors.UndefinedColumn):
+            PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+
+        apply_changesets(pg_dsn)
+
+        columns = [
+            row[0]
+            for row in admin.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = %s AND table_name = 'graph_nodes'",
+                (SCRIBE_SCHEMA,),
+            ).fetchall()
+        ]
+        assert "stale" in columns
+        store = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+        store.reset()
+        store.upsert_node(_node("memory:feedback/back-filled"))
+        store.commit()
+        reopened = PostgresGraphStore(pg_dsn, tmp_path / "ignored")
+        assert [n.stale for n in reopened.iter_nodes()] == [False]
+    finally:
+        admin.execute(
+            sql.SQL(
+                "ALTER TABLE {} ADD COLUMN IF NOT EXISTS stale "
+                "BOOLEAN NOT NULL DEFAULT FALSE"
+            ).format(table)
+        )
+        admin.close()
+
+
+def test_unreadable_schema_names_the_grants_changeset(
+    tmp_path: Path, pg_dsn: str
+) -> None:
+    """Finding 2: `to_regclass` RAISES on a privilege gap; `:3` is onFail:CONTINUE."""
+    import psycopg
+    from psycopg import sql
+
+    role = f"scribe_nograntx_{secrets.token_hex(4)}"
+    password = secrets.token_hex(8)
+    role_ident = sql.Identifier(role)
+    admin = psycopg.connect(pg_dsn)
+    admin.autocommit = True
+    try:
+        admin.execute(
+            sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                role_ident, sql.Literal(password)
+            )
+        )
+        try:
+            # No USAGE on scribe_schema: exactly the state a database is left in
+            # when platform_app is created after the first `liquibase update`.
+            parsed = urlparse(pg_dsn)
+            role_dsn = urlunparse(
+                parsed._replace(
+                    netloc=f"{role}:{password}@{parsed.hostname}:{parsed.port or 5432}"
+                )
+            )
+            with pytest.raises(GraphSchemaMissing) as error:
+                PostgresGraphStore(role_dsn, tmp_path / "ignored")
+            message = str(error.value)
+            assert GRANTS_CHANGESET_ID in message
+            assert GRAPH_CHANGESET_ID not in message
+        finally:
+            admin.execute(sql.SQL("DROP OWNED BY {}").format(role_ident))
+            admin.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(role_ident))
+    finally:
+        admin.close()
 
 
 def test_store_works_as_a_ddl_revoked_role(tmp_path: Path, pg_dsn: str) -> None:

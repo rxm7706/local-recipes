@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -18,45 +19,63 @@ _CHANGELOG_DIR = (
     Path(__file__).resolve().parents[5] / "platform" / "db" / "changelog" / "changes"
 )
 _SCRIBE_CHANGESETS = "pyforge-scribe-*.sql"
+_CHANGESET_SEQ = re.compile(r"^--changeset\s+\S+:([1-9][0-9]*)\s*$", re.MULTILINE)
 _provisioned: set[str] = set()
 
 
-def _changeset_statements() -> list[str]:
-    """Forward SQL of scribe's changesets, in changeset order.
+def _seq(path: Path) -> int:
+    """The changeset's own seq — filename order is lexicographic (`10` < `2`)."""
+    match = _CHANGESET_SEQ.search(path.read_text(encoding="utf-8"))
+    if match is None:
+        pytest.fail(f"{path.name} has no `--changeset <distribution>:<seq>` header")
+    return int(match.group(1))
+
+
+def _statements_in(path: Path) -> list[str]:
+    """Forward SQL of one formatted-SQL changeset (``--rollback`` is a comment)."""
+    body = "\n".join(
+        line
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if not line.lstrip().startswith("--")
+    )
+    return [statement.strip() for statement in body.split(";") if statement.strip()]
+
+
+def scribe_changeset_paths() -> list[Path]:
+    """Scribe's changeset files in changeset order, guarded ones excluded.
 
     Guarded changesets (``--preconditions``) are the operator's app-role
     grants: ``platform_app`` does not exist in a test database, and Liquibase
     itself skips them there (``onFail:CONTINUE``).
     """
-    paths = sorted(_CHANGELOG_DIR.glob(_SCRIBE_CHANGESETS))
+    paths = sorted(_CHANGELOG_DIR.glob(_SCRIBE_CHANGESETS), key=_seq)
     if not paths:
         pytest.fail(
             f"scribe's Liquibase changesets are missing from {_CHANGELOG_DIR}; "
             "the durable GraphStore has no other source of DDL (Story 41.3)"
         )
-    statements: list[str] = []
-    for path in paths:
-        text = path.read_text(encoding="utf-8")
-        if "--preconditions" in text:
-            continue
-        body = "\n".join(
-            line for line in text.splitlines() if not line.lstrip().startswith("--")
-        )
-        statements.extend(
-            statement.strip() for statement in body.split(";") if statement.strip()
-        )
-    return statements
+    return [
+        path
+        for path in paths
+        if "--preconditions" not in path.read_text(encoding="utf-8")
+    ]
+
+
+def apply_scribe_changesets(dsn: str) -> None:
+    """Apply scribe's changesets to ``dsn`` — idempotent, like Liquibase."""
+    import psycopg
+
+    with psycopg.connect(dsn) as conn:
+        for path in scribe_changeset_paths():
+            for statement in _statements_in(path):
+                conn.execute(statement)
+        conn.commit()
 
 
 def _provision(dsn: str) -> None:
     if dsn in _provisioned:
         return
-    import psycopg
-
-    with psycopg.connect(dsn) as conn:
-        for statement in _changeset_statements():
-            conn.execute(statement)
-        conn.commit()
+    apply_scribe_changesets(dsn)
     _provisioned.add(dsn)
 
 
@@ -83,6 +102,12 @@ def require_pg_dsn() -> str:
 @pytest.fixture
 def pg_dsn() -> str:
     return require_pg_dsn()
+
+
+@pytest.fixture
+def apply_changesets() -> Callable[[str], None]:
+    """Re-apply the governed changesets — for tests that mutate the shape."""
+    return apply_scribe_changesets
 
 
 StoreFactory = Callable[[], GraphStore]
