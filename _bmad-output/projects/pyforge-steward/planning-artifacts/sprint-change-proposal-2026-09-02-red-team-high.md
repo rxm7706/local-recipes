@@ -116,3 +116,27 @@ may start.
 - PRD § 14
 - `implementation-readiness-report-2026-09-02-red-team-high.md`
 - Review report disposition
+
+## 7. Amendment 2026-09-02 — 43.5 decided: hybrid (a)+(c); Story 43.6 and Mason Epic 13 added
+
+**Evidence (real `pixi lock` probes, linux-64, conda-forge + SelfExplainML):**
+
+| Probe | Result |
+|---|---|
+| `python-agent-platform` feature minus langflow (52 pins) on `3.14.*` | solves clean |
+| `+ langflow >=1.11.4` | blocked only by `onnxruntime >=1.20,<1.24` (no `cp314` < 1.25.1); `bcrypt ==4.0.1` only on the older `_0` build (steward 10.4 already loosened it; lock holds 4.3.0) |
+| `+ dbgpt-app` | blocked only by `dbgpt-client` → `sqlalchemy >=2.0.25,<2.0.29` (no `cp314`; lock holds 2.0.52) |
+| upstream `langflow-base` 1.12.0 | `requires_python <3.15,>=3.10`; onnxruntime split by `python_version` marker — a `noarch` collapse, not a real cap |
+
+**Ruling.** (a) raise via feedstock work **and** (c) keep `mcp-host` — because
+`langflow-base` pins `mcp >=1.28,<2.0` while host faces need `mcp` 2.x. The sidecar
+isolates the MCP SDK major, not the interpreter; the review's S-5 / R-16 wording is
+corrected. (b) dropped.
+
+**Applied.** `spec-43-5` rewritten (decision + AD + matrix; docs only, deps none);
+new `spec-43-6-platform-image-moves-to-python-3-14` (deps mason 13.1, 13.2, 43.5);
+Mason **Epic 13** (13.1 langflow-base onnxruntime, 13.2 dbgpt-client sqlalchemy) minted
+at `_bmad-output/projects/pyforge-mason/` under Rule 1; steward `DW-FU-10-4` bound to
+Mason 13.1; SPEC 43.5 line, Dream "Python floor" bullet, review S-5 / R-16, readiness
+addendum updated; ledgers: steward `43-6` backlog (225 stories), mason `13-1`, `13-2`,
+`epic-13` backlog.

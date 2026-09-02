@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 224
+# stories: 225
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -139,6 +139,7 @@ development_status:
   43-3-in-process-station-port-no-self-call: backlog
   43-4-golden-path-cd-by-digest: backlog
   43-5-one-interpreter-story: backlog
+  43-6-platform-image-moves-to-python-3-14: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done

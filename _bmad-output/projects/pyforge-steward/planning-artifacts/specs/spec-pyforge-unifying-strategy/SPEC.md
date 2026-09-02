@@ -492,6 +492,9 @@ via `sprint-change-proposal-2026-09-02-red-team-high.md`. Constraints are append
   `STATION_REMOTE=1` (43.3). **Never:** a portal view awaiting its own gunicorn pool.
 - **Always:** deploys pin an image digest with a recorded Warden verdict (43.4). **Never:** `latest`.
 - **Always:** the interpreter topology is one recorded AD with a measured per-env matrix (43.5).
+  **Decision 2026-09-02 (hybrid a+c):** one interpreter `3.14.*` for every env once Mason 13.1 / 13.2
+  loosen `onnxruntime <1.24` and `sqlalchemy <2.0.29` (43.6 flips the pins); `mcp-host` stays as
+  MCP-SDK isolation (langflow pins `mcp <2`). **Never:** describe `mcp-host` as an interpreter shim.
 
 ## Non-goals
 

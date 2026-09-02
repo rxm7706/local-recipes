@@ -2020,6 +2020,8 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
   status: open
 
+  bound: 2026-09-02 — Mason Story 13.1 (`spec-13-1-langflow-base-onnxruntime-pin-admits-python-3-14.md`) owns the loosening; steward 43.6 consumes it. Re-verified the same day with a real `pixi lock` probe: onnxruntime is the sole remaining langflow blocker.
+
 ### DW-FU-11-1: Nothing this story added sets `LANGFLOW_AUTO_LOGIN=False` (or any equivalent hardening) for the mounted app, so Langflow's own dev-mode default stays live: `GET /api/v1/auto_login` mints a real bearer token for the bootstrap superuser with no credential at all.
 
 - source_spec: `/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-1-langflow-joins-as-a-pluggable-app.md`

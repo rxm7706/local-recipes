@@ -240,7 +240,10 @@ Dream** (§ One working tree, § Living names). Do not cite a Cursor
   (see The Host, above), that identity layer replaces the stub check —
   it is not carried forward as a second, weaker gate beside it. Track as a
   pre-production gap on Herald's own row, not a style note.
-- **Python floor.** No silent raise. Atlas/Doctor `>=3.14` is declared;
+- **Python floor.** **Decided 2026-09-02 (hybrid):** one interpreter `3.14.*` for every env
+  once Mason 13.1 (`langflow-base` `onnxruntime <1.24`) and 13.2 (`dbgpt-client`
+  `sqlalchemy <2.0.29`) land; steward 43.6 flips the pins. `mcp-host` stays — it isolates
+  `mcp` 2.x from langflow's `mcp <2` pin, not the interpreter. Until 43.6: no silent raise. Atlas/Doctor `>=3.14` is declared;
   other stations `>=3.12` until a named policy says otherwise.
 
 **Operating model is estate-wide (2026-08-24, Q1).**
@@ -2122,3 +2125,9 @@ Faces are `python-<layer>-platform`. Implementations are `python-<role>-engine`.
   interpreter story). Fourteen tracked story specs `ready-for-dev`; SPEC Constraints gained a
   dated block; R-17 … R-25 are deferred-work entries with steward as owner. Readiness:
   `implementation-readiness-report-2026-09-02-red-team-high.md`.
+- **2026-09-02 (interpreter)** — 43.5 decided **hybrid (a)+(c)** on solver evidence: the
+  platform feature minus langflow solves clean on 3.14; langflow is blocked only by
+  `onnxruntime <1.24`, `dbgpt-app` only by `sqlalchemy <2.0.29`. Mason **Epic 13** (13.1,
+  13.2) owns the two feedstock loosenings under Rule 1; steward **43.6** flips the pins;
+  `mcp-host` stays as MCP-SDK isolation (langflow pins `mcp <2`). Review S-5 / R-16 wording
+  corrected. `DW-FU-10-4` bound to Mason 13.1.

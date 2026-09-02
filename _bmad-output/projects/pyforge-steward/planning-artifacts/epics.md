@@ -2464,12 +2464,24 @@ So that the artifact Warden passed is provably the artifact Steward deploys.
 ### Story 43.5: One interpreter story
 
 As a platform operator,
-I want one recorded interpreter topology and a measured per-environment matrix in place of the multi-Python claim,
-So that the Dream states what the repo actually does and the sidecar has a design, not an excuse.
+I want the interpreter decision recorded as an AD with a measured per-environment matrix in place of the multi-Python claim,
+So that the Dream states what the repo actually does and `mcp-host` has a design (MCP-SDK isolation), not an excuse.
 
-**Type:** docs • **Effort:** S • **Deps:** none • **FR/AD:** pap:CAP-5 • spec-mcp-era-isolation • Dream § Multi-Python • red-team S-5 / D-1 / R-16
-**Given** the story spec `spec-43-5-one-interpreter-story.md` **When** its acceptance criteria run **Then** they pass
-**And** Given the Dream, when read, then the "Multi-Python Resolution" table is gone and a measured per-environment matrix (env, python, record count, platforms) generated from `pixi.lock` stands in its place.
+**Type:** docs • **Effort:** S • **Deps:** none • **FR/AD:** pap:CAP-5 • spec-mcp-era-isolation • red-team S-5 / D-1 / R-16 • **decision 2026-09-02: hybrid (a)+(c)**
+**Given** the solver probes of 2026-09-02 (platform feature minus langflow solves clean on 3.14; langflow blocked only by `onnxruntime <1.24`; `dbgpt-app` only by `sqlalchemy <2.0.29`) **When** the AD is written **Then** it names one interpreter `3.14.*` and states that `mcp-host` isolates `mcp` 2.x from langflow's `mcp <2` pin
+**And** the Dream's multi-Python table is replaced by a table generated from `pixi.lock`
+**And** the review report and readiness addendum describe the sidecar as MCP-SDK isolation
+
+### Story 43.6: Platform image moves to Python 3.14
+
+As a platform operator,
+I want `python-agent-platform` and `dbgpt-sidecar` on `python = "3.14.*"` with a re-lock, regenerated `environment.yaml`, and rebuilt images,
+So that laptop and cluster run one interpreter and Atlas/Doctor import inside the platform image.
+
+**Type:** feature • **Effort:** M • **Deps:** mason 13.1, mason 13.2, S-43.5 • **FR/AD:** pap:CAP-5, pap:CAP-6 • red-team S-5 / R-16
+**Given** Mason 13.1 and 13.2 published **When** the pins flip and `pixi lock` runs **Then** both envs resolve on 3.14 and `environment.yaml` is regenerated in the same commit
+**And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
+**And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
 ## Currency validation note — 2026-08-26
 

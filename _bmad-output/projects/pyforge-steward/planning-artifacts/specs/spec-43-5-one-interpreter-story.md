@@ -4,68 +4,107 @@ type: "docs"
 created: "2026-09-02"
 status: "ready-for-dev"
 updated: "2026-09-02"
-baseline_commit: "58ee07a0"
+baseline_commit: "637f4158"
 severity: "HIGH"
+decision: "hybrid (a)+(c) — operator 2026-09-02"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md"
-  - "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md"
+  - "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md"
+  - "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-era-isolation/SPEC.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-13-1-langflow-base-onnxruntime-pin-admits-python-3-14.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14.md"
   - "pixi.toml"
   - "docs/dreams/pyforge-unifying-strategy.md"
-  - "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py"
-warnings: []
-deferred: []
+  - "recipes/langflow-base/recipe.yaml"
+  - "recipes/db-gpt/recipe.yaml"
+warnings:
+  - "The review's S-5 row and R-16 text said the mcp-host sidecar exists because of the interpreter split. That was imprecise: langflow-base pins `mcp >=1.28,<2.0` and the host faces need `mcp` 2.x, so the sidecar isolates the MCP SDK major, not the interpreter. Corrected in the report the same day."
+deferred:
+  - "Retiring mcp-host (spec-mcp-era-isolation slice 3) — possible only when langflow accepts mcp 2.x upstream."
+  - "The actual image flip to 3.14 — Story 43.6, gated on Mason 13.1 / 13.2."
 ---
 
 <intent-contract>
 
 ## Intent
 
-**Problem:** The platform image runs Python 3.12 (langflow/dbgpt); Atlas and Doctor
-declare `>=3.14`; the `mcp-host` sidecar exists because of that gap. The
-Dream's "3.12/3.13/3.14 100 % SUCCESS, byte-for-byte" table is not what the
-repo does and cannot be true across ABIs. Red-team **S-5**, **D-1**, directive
-**R-16**.
+**Problem:** The platform image runs Python 3.12 (`python-agent-platform`, forced by
+langflow and dbgpt pins) while Atlas and Doctor declare `>=3.14`. The Dream's
+"3.12 / 3.13 / 3.14 100 % SUCCESS, byte-for-byte" table is not what the repo does
+and cannot be true across ABIs. Red-team **S-5**, **D-1**, directive **R-16**.
 
-**Approach:** Decide and write it down: either (a) raise langflow/dbgpt to 3.14 (feedstock
-work, owned by Mason), (b) lower Atlas/Doctor floors to 3.12, or (c) formalize
-the two-interpreter topology (host 3.12 + `mcp-host` 3.14) as the design with
-the sidecar sized and policed. This story records the decision as a Dream
-Grounding bullet + AD, replaces the multi-Python table with the measured
-per-env solve matrix, and opens the follow-on story for the chosen option.
+**Decision (operator, 2026-09-02): hybrid (a) + (c).** Measured with the real
+solver the same day:
+
+| Probe (linux-64, conda-forge + SelfExplainML) | Result |
+|---|---|
+| `python-agent-platform` feature minus langflow (52 pins incl. dbgpt, dbgpt-serve, django, wagtail, chromadb, liquibase, openfeature, dlt, psycopg) on `3.14.*` | **solves clean** |
+| `+ langflow >=1.11.4` | two blockers only: `onnxruntime >=1.20,<1.24` (no `cp314`; `cp314` exists from 1.25.1) and `bcrypt ==4.0.1` on the older `_0` build (the `_1` rebuild already loosened it — the lock holds 4.3.0, steward 10.4) |
+| `+ dbgpt-app` (sidecar only) | one blocker: `dbgpt-client` → `sqlalchemy >=2.0.25,<2.0.29` (no `cp314` in that range; the lock already runs 2.0.52) |
+
+So (a) is one pin in `conda-forge/langflow-feedstock` and one in
+`conda-forge/db-gpt-feedstock`, both maintainer-edit PRs owned by Mason under
+`conda-forge-expert` (repo Rule 1). And (c) still holds for a different reason:
+`langflow-base` pins `mcp <2.0` while host MCP faces need `mcp` 2.x, so `mcp-host`
+stays as the **MCP-SDK-major isolation**, not an interpreter workaround. (b) is
+dropped: lowering Atlas/Doctor would move the wrong side.
+
+**Approach (this story is the record; 43.6 is the flip):** add one AD to the
+architecture spine naming the interpreter topology (one interpreter, `3.14.*`,
+across laptop and image) and restating why `mcp-host` exists; replace the Dream's
+multi-Python table with a generated per-environment matrix from `pixi.lock`;
+correct the sidecar wording in the review report and readiness addendum;
+register the two Mason stories as the gate for 43.6.
 
 ## Acceptance Criteria
 
-- Given the Dream, when read, then the "Multi-Python Resolution" table is gone and a measured per-environment matrix (env, python, record count, platforms) generated from `pixi.lock` stands in its place.
-- Given the architecture spine, when read, then one AD names the interpreter topology and its consequence for MCP faces.
-- Given the decision, when recorded, then a follow-on story exists in the owning project (mason for (a), atlas+doctor for (b), steward for (c)).
+- Given the architecture spine, when read, then a new AD (next free number) states:
+  one interpreter `3.14.*` for every pixi env including `python-agent-platform` and
+  `dbgpt-sidecar` once Mason 13.1 / 13.2 land; `mcp-host` isolates `mcp` 2.x from
+  langflow's `mcp <2` pin and is retired only when that pin lifts upstream.
+- Given the Dream § Multi-Python Resolution, when read, then the "100 % SUCCESS /
+  byte-for-byte" table is gone and a table generated by `scripts/pixi_env_matrix.py`
+  (env, python, conda record count, platforms — read from `pixi.lock`) stands in its
+  place, with a `bmad-drift` warn when the table is older than the lock.
+- Given the review report S-5 and R-16 and the readiness addendum, when read, then
+  the sidecar is described as MCP-SDK isolation, not interpreter isolation.
+- Given `docs/dreams/pyforge-unifying-strategy.md` Grounding "Python floor", when
+  read, then it records the hybrid decision and points at Mason 13.1 / 13.2 and
+  steward 43.6.
+- Given `scripts/pixi_env_matrix.py`, when run, then it has a unit test and needs
+  only stdlib + PyYAML.
 
 ## Boundaries & Constraints
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `43-5-one-interpreter-story`. Host never imports `pyforge.*`. No silent floor raise (Grounding "Python floor"). Fleet policy before code.
+Ledger key `43-5-one-interpreter-story`. Host never imports `pyforge.*`. No package
+floor changes in this story (Grounding "no silent raise").
 
-**Block If:** Implementation would change any package's python floor in this story.
+**Block If:** Implementation would change any python pin in `pixi.toml`, edit a
+recipe, or touch `mcp-host` — those are 43.6 and Mason 13.x.
 
-**Never:** A "byte-for-byte" claim across Python minors.
+**Never:** A "byte-for-byte across Python minors" claim. Describing `mcp-host` as an
+interpreter shim.
 
 </intent-contract>
 
 ## Tasks
 
-- [ ] Matrix generator (script) + Dream table
-- [ ] AD in the spine
-- [ ] Decision + follow-on story
+- [ ] AD in `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`.
+- [ ] `scripts/pixi_env_matrix.py` + test; Dream table replaced.
+- [ ] Review report S-5 / R-16 + readiness wording (done 2026-09-02 with this amendment; verify).
+- [ ] Dream Grounding "Python floor" bullet (done 2026-09-02; verify).
 - [ ] Ledger `43-5-one-interpreter-story` → `review` then `done` via `sprint-ledger-sync`.
 
 ## Verification
 
-`bmad-drift` + `dreams-hygiene` clean; generator has a test.
+`pixi run -e pyforge-doctor python -m pyforge.doctor.sources bmad-drift` and
+`dream-chain --dreams` clean; matrix script test green.
 
 ## Source
 
-Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md` (directive and finding ids in the FR/AD line of
-`epics.md` Story 43.5). Sprint change proposal:
-`sprint-change-proposal-2026-09-02-red-team-high.md`.
+Solver probes recorded in `sprint-change-proposal-2026-09-02-red-team-high.md` § 7
+(amendment). Mason stories: `pyforge-mason` Epic 13.
