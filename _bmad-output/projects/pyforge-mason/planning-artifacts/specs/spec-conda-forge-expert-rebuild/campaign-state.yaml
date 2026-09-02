@@ -602,7 +602,16 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "f45a9209d1a492fad7afab486155a9900a5314b8"
+    brief_mirrored_through: "9ec3606b79467d3612d0e97026e297735d1fee35"
+                                    # RE-POINTED to the MERGE commit (PR #1009). Structural, not new
+                                    # content: `git diff f45a9209d1 9ec3606b79 -- <CFE surface>` is
+                                    # EMPTY. The guard walks merge commits too, so a merge whose
+                                    # combined diff touches the CFE surface + CHANGELOG.md becomes
+                                    # the "newest qualifying retro" the moment it lands -- which
+                                    # means EVERY CFE retro PR leaves clause (b) red on main until
+                                    # this pointer is advanced to the merge SHA. Advancing it is the
+                                    # whole remedy when the surface diff is empty; re-mirror content
+                                    # only when that diff is NOT empty.
                                     # ADVANCED 2026-09-02 from 565ef7d194 by the CFE v8.85.0
                                     # retro (f45a9209d1). This is the FIRST new CFE Rule-2 retro
                                     # to land during the campaign, so it is OQ5's first real
@@ -775,7 +784,16 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "f45a9209d1a492fad7afab486155a9900a5314b8"
+    brief_mirrored_through: "9ec3606b79467d3612d0e97026e297735d1fee35"
+                                    # RE-POINTED to the MERGE commit (PR #1009). Structural, not new
+                                    # content: `git diff f45a9209d1 9ec3606b79 -- <CFE surface>` is
+                                    # EMPTY. The guard walks merge commits too, so a merge whose
+                                    # combined diff touches the CFE surface + CHANGELOG.md becomes
+                                    # the "newest qualifying retro" the moment it lands -- which
+                                    # means EVERY CFE retro PR leaves clause (b) red on main until
+                                    # this pointer is advanced to the merge SHA. Advancing it is the
+                                    # whole remedy when the surface diff is empty; re-mirror content
+                                    # only when that diff is NOT empty.
                                     # ADVANCED 2026-09-02 from 565ef7d194 by the CFE v8.85.0
                                     # retro (f45a9209d1). This is the FIRST new CFE Rule-2 retro
                                     # to land during the campaign, so it is OQ5's first real
