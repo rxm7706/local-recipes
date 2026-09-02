@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
+from pyforge.marshal.core import dispatch as dispatch_core
+from pyforge.marshal.core import dispatch_re_preflight as re_preflight
 from pyforge.marshal.core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
@@ -190,3 +196,217 @@ def test_no_terminalize_without_git_progress() -> None:
         verification_verdict="refused",
         git=_git_facts(baseline="same", current="same"),
     )
+
+
+def test_spec_fingerprint_missing_when_no_spec(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    (tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs").mkdir(
+        parents=True
+    )
+    assert (
+        re_preflight.spec_fingerprint(tmp_path, slug, "22-7-fleet")
+        == "spec:missing"
+    )
+
+
+def test_spec_fingerprint_changes_when_spec_lands(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    before = re_preflight.spec_fingerprint(tmp_path, slug, "22-7-fleet")
+    (specs / "spec-22-7-fleet.md").write_text("---\ndifficulty: medium\n---\n")
+    after = re_preflight.spec_fingerprint(tmp_path, slug, "22-7-fleet")
+    assert before == "spec:missing"
+    assert after.startswith("spec:spec-22-7-fleet.md:")
+
+
+def test_reconcile_clears_missing_spec_block_when_spec_appears(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = (
+        "MRS-DISP-005: no tracked spec found for story '22.7' "
+        f"under {specs!r}"
+    )
+    prior = re_preflight.RefusePredicate(
+        gate="MRS-DISP-005",
+        spec_fingerprint="spec:missing",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(()),
+    )
+    (specs / "spec-22-7-fleet.md").write_text("---\ndifficulty: medium\n---\n")
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=(),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert kept == {}
+    assert len(results) == 1
+    assert results[0].decision is re_preflight.RePreflightDecision.CLEARED
+
+
+def test_reconcile_rate_limits_when_spec_becomes_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Missing→unreadable must not clear MRS-DISP-005 — refuse still applies."""
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-DISP-005: no tracked spec found for story '22.7'"
+    prior = re_preflight.RefusePredicate(
+        gate="MRS-DISP-005",
+        spec_fingerprint="spec:missing",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(()),
+    )
+    spec_path = specs / "spec-22-7-fleet.md"
+    spec_path.write_text("---\ndifficulty: medium\n---\n")
+
+    def _fingerprint(repo_root: Path, slug_arg: str, story: str) -> str:
+        try:
+            spec_path.stat()
+        except OSError:
+            return "spec:unreadable"
+        return "spec:unreadable"
+
+    monkeypatch.setattr(re_preflight, "spec_fingerprint", _fingerprint)
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=(),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
+def test_reconcile_rate_limits_unreadable_spec_predicate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slug = "pyforge-marshal"
+    dispatch_core.planning_specs_dir(tmp_path, slug).mkdir(parents=True)
+    detail = "MRS-DISP-005: no tracked spec found for story '22.7'"
+    prior = re_preflight.RefusePredicate(
+        gate="MRS-DISP-005",
+        spec_fingerprint="spec:unreadable",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(()),
+    )
+    monkeypatch.setattr(
+        re_preflight,
+        "spec_fingerprint",
+        lambda *args, **kwargs: "spec:unreadable",
+    )
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=(),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
+def test_refuse_still_applies_treats_unreadable_like_missing() -> None:
+    predicate = re_preflight.RefusePredicate(
+        gate="MRS-DISP-005",
+        spec_fingerprint="spec:unreadable",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(()),
+    )
+    assert re_preflight.refuse_still_applies(predicate=predicate, gate="MRS-DISP-005")
+
+
+def test_reconcile_rate_limits_unchanged_missing_spec_predicate(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-DISP-005: no tracked spec found for story '22.7'"
+    prior = re_preflight.compute_refuse_predicate(
+        repo_root=tmp_path,
+        slug=slug,
+        story="22-7-fleet",
+        gate="MRS-DISP-005",
+        verify_commands=(),
+    )
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=(),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
+def test_reconcile_rate_limits_verify_refuse_when_only_spec_changes(
+    tmp_path: Path,
+) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-GATE-001: verify failed"
+    verify_cmds = ("pytest -q",)
+    prior = re_preflight.compute_refuse_predicate(
+        repo_root=tmp_path,
+        slug=slug,
+        story="22-7-fleet",
+        gate="MRS-GATE-001",
+        verify_commands=verify_cmds,
+    )
+    (specs / "spec-22-7-fleet.md").write_text("---\ndifficulty: medium\n---\n")
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=verify_cmds,
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert "22-7-fleet" in kept
+    assert results[0].decision is re_preflight.RePreflightDecision.RATE_LIMITED
+
+
+def test_reconcile_clears_verify_refuse_when_verify_config_changes(
+    tmp_path: Path,
+) -> None:
+    slug = "pyforge-marshal"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    detail = "MRS-GATE-001: verify failed"
+    prior = re_preflight.compute_refuse_predicate(
+        repo_root=tmp_path,
+        slug=slug,
+        story="22-7-fleet",
+        gate="MRS-GATE-001",
+        verify_commands=("pytest -q",),
+    )
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=slug,
+        blocked={"22-7-fleet": detail},
+        verify_commands=("ruff check .",),
+        prior_predicates={"22-7-fleet": prior},
+    )
+    assert kept == {}
+    assert results[0].decision is re_preflight.RePreflightDecision.CLEARED
+
+
+def test_verify_rerun_needed_only_when_verify_fingerprint_changes() -> None:
+    prior = re_preflight.RefusePredicate(
+        gate="MRS-GATE-001",
+        spec_fingerprint="spec:missing",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(("pytest -q",)),
+    )
+    same_verify = re_preflight.RefusePredicate(
+        gate="MRS-GATE-001",
+        spec_fingerprint="spec:spec-22-7-fleet.md:1:10",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(("pytest -q",)),
+    )
+    changed_verify = re_preflight.RefusePredicate(
+        gate="MRS-GATE-001",
+        spec_fingerprint="spec:spec-22-7-fleet.md:1:10",
+        verify_fingerprint=re_preflight.verify_commands_fingerprint(("ruff check .",)),
+    )
+    assert not re_preflight.verify_rerun_needed(prior=prior, current=same_verify)
+    assert re_preflight.verify_rerun_needed(prior=prior, current=changed_verify)
