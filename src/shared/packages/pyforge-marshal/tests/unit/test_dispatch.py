@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.cli.dispatch import run_dispatch
+from pyforge.marshal.cli.dispatch import dispatch_once, run_dispatch
+from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
@@ -1245,3 +1246,137 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     # Nothing was provisioned: no worktree add, no session launch.
     assert vcs.added == []
     assert build_harness.calls == []
+
+
+_DONE_SPEC = (
+    "---\nstatus: done\nfollowup_review_recommended: false\n"
+    "difficulty: medium\n---\n# spec\n"
+)
+_READY_SPEC = "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n"
+
+
+def _write_worktree_spec(repo: Path, slug: str, story: str, text: str) -> Path:
+    from pyforge.marshal.core.identity import normalize, render_feed_key
+
+    specs = dispatch_core.planning_specs_dir(repo, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    spec = specs / f"spec-{story}.md"
+    spec.write_text(_READY_SPEC, encoding="utf-8")
+    feed = render_feed_key(normalize(story))
+    worktree = dispatch_core.dispatch_worktree_path(repo, slug, feed)
+    dest = worktree / spec.relative_to(repo)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(text, encoding="utf-8")
+    return worktree
+
+
+def test_done_spec_does_not_launch_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 29.2: worktree spec done + follow-up false → 0 harness launches."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "13-2-recipe-refresh"
+    worktree = _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("session_pid") is None
+    codes = [f.code for f in attempt.findings]
+    assert "MRS-DISP-040" in codes
+    assert any("awaiting-operator" in f.message for f in attempt.findings)
+    assert any(str(worktree) in f.message for f in attempt.findings)
+
+
+def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """41.2-shaped: DIRTY PR → MRS-DISP-040 names the PR, launch count 0."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-steward"
+    story = "41-2-query-plane"
+    _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
+    pr_url = "https://github.com/rxm7706/local-recipes/pull/1017"
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, pr_url, None),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-040"]
+    assert "1017" in finding.message
+    assert "CHAIN" in finding.message
+
+
+def test_harness_done_lands_via_cap4_without_second_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When CAP-4 can land, no second session and no MRS-DISP-040."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "29-2-cap4-only"
+    _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", None),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data["land_verdict"] == "landed"
+    assert all(f.code != "MRS-DISP-040" for f in attempt.findings)
+
+
+def test_followup_true_still_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "29-1-followup"
+    followup = (
+        "---\nstatus: done\nfollowup_review_recommended: true\n"
+        "difficulty: medium\n---\n# spec\n"
+    )
+    _write_worktree_spec(tmp_path, slug, story, followup)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls

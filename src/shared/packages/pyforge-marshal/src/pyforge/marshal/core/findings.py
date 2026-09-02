@@ -1684,6 +1684,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-038",
         # Story 28.24 (CAP-7): redispatch blocked until supervisor finalize.
         "MRS-DISP-039",
+        # Story 29.2 (CAP-11 marshal half): harness-done story is CAP-4 only;
+        # land failed or is not yet eligible — park, never another session.
+        "MRS-DISP-040",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
