@@ -2,7 +2,7 @@
 title: "Scribe DDL moves into the changelog"
 type: "fix"
 created: "2026-09-02"
-status: "in-review"
+status: "done"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "a4316334fec7b7ad0aaee536c4c89b811e4eb15c"
@@ -16,8 +16,110 @@ context:
   - "src/platform/db/changelog/"
   - "src/platform/db/sqlmigrate-map.yaml"
 warnings: []
+followup_review_recommended: true
 deferred:
   - "Per-station schema ownership enforcement beyond scribe (fleet sweep)."
+  - summary: >-
+      db.changelog-master.yaml's include order does not satisfy its own FK
+      dependencies: python-agent-platform:18 adds a socialaccount FK to
+      django_site, which :10 (sites.0001) creates later.
+    evidence: |-
+      Real `liquibase update` on the master changelog stops at `Run: 10` with
+      `ERROR: relation "django_site" does not exist`. Reproduced identically
+      against the baseline master changelog (`git show a4316334fe:...`), so it
+      predates this story; scribe's changesets are appended last and are
+      unaffected. No test executes the master changelog in include order.
+    location: >-
+      src/platform/db/changelog/db.changelog-master.yaml
+    severity: high
+  - summary: >-
+      No CI workflow runs the scribe suite, so this story's behavioural proofs
+      (DDL-revoked role, named error, changeset-provisioned database) gate
+      nothing.
+    evidence: |-
+      Nothing under .github/workflows/ invokes `pyforge-scribe-test`, and
+      `src/shared/packages/pyforge-scribe/**` is absent from platform-ci.yml's
+      `paths:` filter. This PR runs platform CI only because it touches
+      src/platform/**; a later edit to graph_store_pg.py alone triggers no
+      workflow. Pre-existing — the scribe suite was never wired in.
+    location: >-
+      .github/workflows/platform-ci.yml
+    severity: high
+  - summary: >-
+      platform_app's real grant set is never executed by any test; the
+      DML-revoked-role test hand-writes equivalent grants instead.
+    evidence: |-
+      No test applies create_app_role.sql or pyforge-scribe:3 and then
+      connects. test_store_works_as_a_ddl_revoked_role synthesises its own
+      role and types the grants into the test body, so the shipped SQL could
+      drift from it and stay green. Flipping :3's precondition to
+      `expectedResult:0` would skip the grants on exactly the databases where
+      platform_app exists, and every test still passes.
+    location: >-
+      src/platform/db/changelog/changes/pyforge-scribe-3-app-role-grants.sql
+    severity: medium
+  - summary: >-
+      Red-team B-1 is only half-addressed — numbering is per-distribution, but
+      scribe's changesets still ship inside the single master changelog, so a
+      scribe schema change still rides the platform release.
+    evidence: |-
+      There is no per-distribution sub-changelog, includeAll, or
+      contexts:/labels: on the new changesets, and every estate gets scribe's
+      DDL whether or not scribe is deployed. Unmapped django-<station>
+      migrations also still fall through to `default:
+      python-agent-platform`, so the release coupling B-1 names persists by
+      default until each station registers.
+    location: >-
+      src/platform/db/changelog/db.changelog-master.yaml
+    severity: medium
+  - summary: >-
+      graph_nodes.embedding is declared without a dimension, so no ivfflat or
+      hnsw index is possible and query_similar sequentially scans the table.
+    evidence: |-
+      `embedding vector` in pyforge-scribe:2, and no index changeset exists.
+      This is parity with the pre-41.3 driver, not a regression, but bringing
+      the DDL under governance is the natural moment to fix it — and it leaves
+      the new README's CREATE INDEX CONCURRENTLY exception process with no
+      user.
+    location: >-
+      src/platform/db/changelog/changes/pyforge-scribe-2-graph-nodes.sql
+    severity: medium
+  - summary: >-
+      Every django_db test in src/platform errors at test-database setup on
+      `ValidationError: slug 'home' is already in use`.
+    evidence: |-
+      Raised from front_door.apps::_seed_lane1_homepage in post_migrate.
+      Reproduced on tests/test_health_endpoint.py, which this story never
+      touches, and it persists with --create-db, so it is not a --reuse-db
+      artifact. It blocks test_app_role_create_alter_drop_refused_by_postgresql
+      and test_live_first_party_tree_is_covered locally; the CI step they
+      mirror was run directly instead.
+    location: >-
+      src/platform/platformapp/front_door/lane1_seed.py:41
+    severity: medium
+  - summary: >-
+      Two test_openfeature_channel_policy tests are red on main from a
+      cachebox pin drift.
+    evidence: |-
+      `cachebox must be pinned '>=5.1,<6' so conda-forge 6.x is not selected
+      (got '>=5.2.3')`. The test reads pixi.toml, which this story does not
+      modify.
+    location: >-
+      src/platform/tests/policy/test_openfeature_channel_policy.py:137
+    severity: medium
+  - summary: >-
+      GraphSchemaMissing is not re-exported from pyforge.scribe, and no scribe
+      doc records that the durable graph store now requires Liquibase to have
+      run.
+    evidence: |-
+      PostgresGraphStore.__init__ now raises on an unprovisioned database — a
+      behaviour change for every existing consumer — but only
+      src/platform/db/README.md says so. The scribe package README,
+      docs/cli-runbooks.md and .claude/skills/pyforge-scribe/SKILL.md are
+      silent.
+    location: >-
+      src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py
+    severity: low
 ---
 
 <intent-contract>
@@ -164,6 +266,109 @@ directly and reports `ok (14 first-party migrations)`. (c) Two
 Each of the three new platform gates was mutation-checked: dropping the `:4`
 include, downgrading its rollback to `empty`, and adding a second file on
 `pyforge-scribe:4` each red the intended test and only that test.
+
+## Review Triage Log
+
+### 2026-09-02 — Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 6: (high 1, medium 4, low 1)
+- defer: 8: (high 2, medium 5, low 1)
+- reject: 9: (high 0, medium 5, low 4)
+- addressed_findings:
+  - `[high]` `[patch]` The deleted `stale` back-fill had no replacement — a pre-6.3
+    nine-column `graph_nodes` passed `to_regclass` and then died in `_load` on a raw
+    `UndefinedColumn`, unrecoverably, since the runtime role can no longer ALTER it.
+    Added changeset `pyforge-scribe:4` (`ADD COLUMN IF NOT EXISTS stale` +
+    `DROP COLUMN` rollback), included it in the master changelog, and pinned it with a
+    test that builds the legacy shape, proves the failure, then proves the repair.
+  - `[medium]` `[patch]` `_assert_provisioned`'s docstring claimed `to_regclass`
+    returns NULL for a relation "invisible to this role"; measured, it raises
+    `permission denied for schema`. Docstring corrected and the driver now maps
+    `InsufficientPrivilege` to `GraphSchemaMissing` naming `pyforge-scribe:3` — the
+    grants changeset, which `onFail:CONTINUE` skips whenever the app role was created
+    after the first `liquibase update`.
+  - `[medium]` `[patch]` The duplicate-seq assertion was unreachable: `_changeset_files()`
+    keyed a dict on the changeset id and overwrote on collision, so a colliding file
+    also escaped the rollback gate. Replaced with `_changeset_entries()` and a test
+    that names both colliding paths.
+  - `[medium]` `[patch]` The rollback gate accepted `--rollback empty` and
+    `--rollback not required` — Liquibase's own "no way back" declarations, precisely
+    what the new policy forbids. Both now rejected outside a documented
+    `runInTransaction:false` exception, and `db/README.md` records the rule.
+  - `[medium]` `[patch]` Nothing asserted a changeset file is `include:`d in the master
+    changelog, and the scribe fixture hid the gap by globbing `changes/*.sql` directly —
+    a forgotten include for `:1` or `:3` would have shipped with no pgvector or no
+    grants. Every file must now appear exactly once.
+  - `[low]` `[patch]` The fixture applied changesets in lexicographic filename order
+    (`-10-` before `-2-`); it sorts on the parsed seq now.
+
+## Auto Run Result
+
+Status: done
+Blocking condition: none
+
+**Implemented change.** Scribe's three runtime DDL statements moved out of
+`PostgresGraphStore` into Liquibase changesets under scribe's own distribution
+sequence, the runtime path became assert-only, `sqlmigrate-map.yaml` became a
+per-distribution map, and the rollback policy was written down. The review pass
+added `pyforge-scribe:4` and hardened three governance gates.
+
+**Files changed**
+
+- `src/platform/db/changelog/changes/pyforge-scribe-1-pgvector-extension.sql` — new: `CREATE EXTENSION vector`, with rollback.
+- `src/platform/db/changelog/changes/pyforge-scribe-2-graph-nodes.sql` — new: `scribe_schema` + the 10-column `graph_nodes`, with rollback.
+- `src/platform/db/changelog/changes/pyforge-scribe-3-app-role-grants.sql` — new: DML-only grants behind an `onFail:CONTINUE` role-exists precondition.
+- `src/platform/db/changelog/changes/pyforge-scribe-4-graph-nodes-stale-column.sql` — new (review): back-fills `stale` onto a pre-6.3 table.
+- `src/platform/db/changelog/db.changelog-master.yaml` — includes the four scribe changesets.
+- `src/platform/db/create_app_role.sql` — `scribe_schema` USAGE + DML for `platform_app`; never CREATE.
+- `src/platform/db/sqlmigrate-map.yaml` — `default:` + `distributions:`; registers `pyforge-scribe`.
+- `src/platform/db/sqlmigrate_extraction.py` — `MigrationMap`; next-seq numbering is per distribution.
+- `src/platform/db/README.md` — new: id scheme, rollback policy, `runInTransaction=false` exception process.
+- `src/platform/tests/policy/test_liquibase_ddl_governance.py` — rollback-policy, grandfather-rot, `GRANT CREATE`, include-coverage and duplicate-id gates.
+- `src/platform/tests/policy/test_sqlmigrate_extraction.py` — per-distribution map coverage.
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — `_ensure_schema` → `_assert_provisioned`; new `GraphSchemaMissing`.
+- `src/shared/packages/pyforge-scribe/tests/unit/conftest.py` — provisions the test DB from the changesets, in seq order.
+- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` — no-DDL, named-error, DDL-revoked-role, legacy-table and privilege-gap tests.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — story row → `review`.
+
+**Review findings breakdown.** 6 patches applied (1 high, 4 medium, 1 low);
+8 items deferred (2 high, 5 medium, 1 low) — recorded in frontmatter `deferred`;
+9 rejected, chiefly speculative future needs (sequence grants for a table whose
+key is `TEXT`), or restatements of shipped convention the Boundaries protect
+(`create_app_role.sql`'s ordering dependency, which mirrors the existing
+`langflow_schema` / `dbgpt_schema` lines; `:3`'s precondition matching
+`python-agent-platform:2`).
+
+**Follow-up review recommended: true.** Patched counts — high 1, medium 4, low 1.
+A patched `high` sets the flag on its own; the score is `3 × 4 + 1 × 1 = 13`.
+
+**Verification performed** (all re-run after the patches, by the parent session,
+against PostgreSQL 17.11 + pgvector on `:5433`):
+
+- `pixi run -e pyforge-scribe pyforge-scribe-test -k pg` → **15 passed**, 307 deselected. Every AC-bearing test ran (none skipped), including `test_store_works_as_a_ddl_revoked_role`, which first proves PostgreSQL refuses that role a `CREATE TABLE`, so it is not vacuous.
+- `pixi run -e platform-ci-test python -m pytest tests/policy -q` → **68 passed**, plus only the four pre-existing items in `deferred` (2 cachebox, 2 `django_db` setup).
+- `python -m db.sqlmigrate_extraction` → `ok (14 first-party migrations)`.
+- Real `liquibase` 5.0.4 `update` of `:1`/`:2` on a throwaway database → `Run: 1` each; `vector`, `scribe_schema` and all ten `graph_nodes` columns present. `:3` reported `Run: 0` while `platform_app` was absent, then `Run: 1` once it existed, yielding `USAGE = true`, `CREATE = false`, table grants exactly SELECT/INSERT/UPDATE/DELETE.
+- `rollback-count --count=1` on `:2` then `:1` → both succeeded; extension and schema gone afterwards.
+- The high finding was reproduced before the fix (`psycopg.errors.UndefinedColumn: column "stale" does not exist` on a hand-built nine-column table) and re-verified after: real `liquibase update` of `:4` yields `stale_col=1` and the store opens on the repaired table.
+- `to_regclass` ACL behaviour measured directly: a role without schema USAGE gets `ERROR: permission denied for schema`, settling the docstring correction.
+- Independent mutation check: deleting the `:4` include reds
+  `test_every_changeset_file_is_included_in_the_master_changelog` and nothing else; tree restored clean.
+- Every probe database and role was dropped; the container is as it was found.
+
+**Residual risks.** The two `high` deferrals are the material ones: `liquibase update`
+on the master changelog cannot currently reach scribe's changesets at all, because
+it fails earlier at `python-agent-platform:18` (verified identical at baseline), and
+no CI workflow runs the scribe suite, so this story's behavioural proofs are
+developer-local. Landing still owes three things the dispatch worktree cannot do:
+the ledger row must move `review` → `done` (a `backlog`/non-terminal row makes the
+drain respawn the story), the spec-surface baseline needs a memlog naming each
+accepted path plus a **scoped** `--write-baseline --spec <name>` per spec — a bare
+memlog append would downgrade roughly 100 foreign pending FAILs to non-gating
+WARNs — and the PR needs the `maintenance` label, since it touches no `recipes/**`.
+`pixi.toml` is untouched, so `environment.yaml` needs no regeneration.
 
 ## Verification
 
