@@ -402,10 +402,7 @@ def _pod_specs_by_component(
         if doc.get("kind") not in _WORKLOAD_KINDS:
             continue
         workload_name = (doc.get("metadata") or {}).get("name")
-        if doc.get("kind") == "CronJob":
-            template = doc["spec"]["jobTemplate"]["spec"]["template"]
-        else:
-            template = doc["spec"]["template"]
+        template = _pod_template(doc)
         labels = (template.get("metadata") or {}).get("labels") or {}
         component = labels.get("app.kubernetes.io/component")
         assert component is not None, (
@@ -430,6 +427,26 @@ def _collect_env_by_name(
         for entry in container.get("env") or []:
             env_by_name[entry["name"]] = entry
     return env_by_name
+
+
+def _pod_template(doc: dict[str, Any]) -> dict[str, Any]:
+    """The pod template of any `_WORKLOAD_KINDS` doc.
+
+    A CronJob nests its template one level deeper than every other workload
+    (`spec.jobTemplate.spec.template`, not `spec.template`). Story 41.1 added
+    the chart's first CronJob, and helpers that reached for `spec.template`
+    directly began raising `KeyError: 'template'` on it -- a crash, not a
+    verdict, so the CronJob went effectively unchecked by every invariant
+    that walks workloads. Resolve the shape in ONE place so a future kind
+    cannot re-open that hole per-caller.
+    """
+    if doc.get("kind") == "CronJob":
+        return doc["spec"]["jobTemplate"]["spec"]["template"]
+    return doc["spec"]["template"]
+
+
+def _workload_pod_spec(doc: dict[str, Any]) -> dict[str, Any]:
+    return _pod_template(doc)["spec"]
 
 
 def _iter_pod_containers(pod_spec: dict[str, Any]) -> list[dict[str, Any]]:
@@ -534,7 +551,7 @@ def _assert_no_vault_csi_or_secrets_sidecar(docs: list[dict[str, Any]]) -> None:
                 )
         if kind not in _WORKLOAD_KINDS:
             continue
-        pod_spec = doc["spec"]["template"]["spec"]
+        pod_spec = _workload_pod_spec(doc)
         for volume in pod_spec.get("volumes") or []:
             csi = volume.get("csi") or {}
             driver = str(csi.get("driver") or "")
@@ -592,7 +609,7 @@ def _collect_workload_images(docs: list[dict[str, Any]]) -> set[str]:
     for doc in docs:
         if doc.get("kind") not in _WORKLOAD_KINDS:
             continue
-        pod_spec = doc["spec"]["template"]["spec"]
+        pod_spec = _workload_pod_spec(doc)
         containers = list(pod_spec.get("containers") or []) + list(
             pod_spec.get("initContainers") or [],
         )
@@ -957,7 +974,8 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
         == "postgres"
     ]
     assert len(postgres) == 1, postgres
-    container = postgres[0]["spec"]["template"]["spec"]["containers"][0]
+    pod_spec = postgres[0]["spec"]["template"]["spec"]
+    container = pod_spec["containers"][0]
     args = container.get("args") or []
     joined = " ".join(str(item) for item in args)
     assert "archive_mode=on" in joined, args
@@ -968,6 +986,43 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
         if mount.get("name") == "backup"
     ]
     assert backup_mounts, "postgres missing backup volumeMount"
+
+    # A mount only resolves against a volume declared in the POD spec. The
+    # `volumes:` block indented one level too shallow lands on
+    # StatefulSet.spec, an unknown field there: the archive target is then
+    # unbacked and the API server rejects the pod outright. Asserting the
+    # mount alone (as this helper first did) passes either way, which is how
+    # that shipped -- so assert the volume, and assert the absence of the
+    # misplaced key that silently swallows it.
+    assert "volumes" not in postgres[0]["spec"], (
+        "`volumes` on StatefulSet.spec is not a StatefulSetSpec field -- it "
+        "belongs on spec.template.spec (the pod): "
+        f"{postgres[0]['spec']['volumes']}"
+    )
+    volumes = pod_spec.get("volumes") or []
+    backup_volume = next(
+        (vol for vol in volumes if vol.get("name") == "backup"), None
+    )
+    assert backup_volume is not None, (
+        "postgres pod declares no `backup` volume to back its `backup` "
+        f"volumeMount (pod-spec volumes: {volumes})"
+    )
+    assert (
+        backup_volume["persistentVolumeClaim"]["claimName"]
+        == backup_pvcs[0]["metadata"]["name"]
+    ), backup_volume
+
+    # AC: the archive lands on the BACKUP volume, not some other path.
+    mount_path = backup_mounts[0]["mountPath"]
+    assert f"{mount_path}/wal/" in joined, (
+        f"archive_command does not target the backup mount {mount_path}: {args}"
+    )
+    # Archiving begins at boot; the CronJob does not create wal/ until its
+    # first scheduled run, so archive_command must create it itself or every
+    # segment fails and pg_wal grows unbounded on the data PVC.
+    assert f"mkdir -p {mount_path}/wal" in joined, (
+        f"archive_command must create {mount_path}/wal before copying: {args}"
+    )
 
 
 def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
@@ -1086,8 +1141,10 @@ def test_sidecar_sqlite_pvc_and_internal_service_render():
     """AC: a dedicated SQLite PVC and internal ClusterIP Service appear."""
     docs = _render(_CORE_CHART)
     pvcs = [doc for doc in docs if doc.get("kind") == "PersistentVolumeClaim"]
-    assert len(pvcs) == 3, (  # noqa: PLR2004
-        f"expected sidecar sqlite PVC + media RWX PVC + redis-broker PVC, got: "
+    # Story 41.1 added the postgres-backup RWX claim as the fourth.
+    assert len(pvcs) == 4, (  # noqa: PLR2004
+        f"expected sidecar sqlite PVC + media RWX PVC + redis-broker PVC + "
+        f"postgres-backup RWX PVC, got: "
         f"{[doc['metadata']['name'] for doc in pvcs]}"
     )
     dbgpt_services = [
