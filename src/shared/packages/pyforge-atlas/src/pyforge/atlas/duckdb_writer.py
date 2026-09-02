@@ -16,6 +16,8 @@ import filelock
 from pyforge.core.errors import PyforgeError
 
 ATLAS_DUCKDB_NAME = "atlas.duckdb"
+# Story 41.2: the one declared writer module for file-backed ``atlas.duckdb``.
+DUCKDB_WRITER_MODULE = "pyforge.atlas.duckdb_writer"
 
 
 class SecondWriterRefused(PyforgeError, RuntimeError):

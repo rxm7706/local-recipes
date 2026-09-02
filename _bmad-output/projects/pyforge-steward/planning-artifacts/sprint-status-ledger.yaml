@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 225
+# stories: 239
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -123,10 +123,13 @@ development_status:
   39-2-metapackage-recipe: done
   39-3-generator-and-batch-build: done
   39-4-optional-pixi-feature-bundle-cap-4: done
+  4-1-a-ceiling-can-be-declared-machine-readably: done
+  4-2-the-declared-ceiling-is-one-command-away: done
+  4-3-asking-am-i-under-budget-never-lies: done
   40-1-idp-bearer-is-verified-before-mint: done
   40-2-redis-broker-is-durable-and-bounded: done
   41-1-dr-contract-and-postgresql-backup: backlog
-  41-2-query-plane-process-boundary: backlog
+  41-2-query-plane-process-boundary: done
   41-3-scribe-ddl-moves-into-the-changelog: backlog
   41-4-broker-tls-is-verified: backlog
   42-1-mcp-transport-authorization: backlog
@@ -140,9 +143,6 @@ development_status:
   43-4-golden-path-cd-by-digest: backlog
   43-5-one-interpreter-story: backlog
   43-6-platform-image-moves-to-python-3-14: blocked
-  4-1-a-ceiling-can-be-declared-machine-readably: done
-  4-2-the-declared-ceiling-is-one-command-away: done
-  4-3-asking-am-i-under-budget-never-lies: done
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
@@ -233,6 +233,8 @@ development_status:
   epic-38-retrospective: optional
   epic-39: in-progress
   epic-39-retrospective: optional
+  epic-4: done
+  epic-4-retrospective: optional
   epic-40: backlog
   epic-40-retrospective: optional
   epic-41: backlog
@@ -241,8 +243,6 @@ development_status:
   epic-42-retrospective: optional
   epic-43: backlog
   epic-43-retrospective: optional
-  epic-4: done
-  epic-4-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

@@ -62,6 +62,11 @@ _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
 # Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
 # is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
 _PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase"}
+# Story 41.2: platform reader pods must not mount the writer's ``.duckdb`` file.
+_QUERY_PLANE_READER_COMPONENTS = frozenset({"web", "worker"})
+_PLANE_FILE_MARKERS = (".duckdb", "atlas.duckdb")
+# PVC labels/names carrying this marker are plane storage claims (writer RWO only).
+_PLANE_PVC_LABEL = "pyforge.io/query-plane"
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
 _REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
@@ -674,6 +679,44 @@ def _assert_redis_broker_persistence_is_pvc_with_aof(docs: list[dict[str, Any]])
     assert broker_pvcs[0]["metadata"]["name"] == claim_name
 
 
+def _assert_query_plane_readers_do_not_mount_duckdb_file(
+    docs: list[dict[str, Any]],
+) -> None:
+    """Story 41.2: web/worker reader pods never mount the writer's ``.duckdb`` file."""
+    by_component = _pod_specs_by_component(docs)
+    for component in sorted(_QUERY_PLANE_READER_COMPONENTS):
+        pod_spec = by_component[component]
+        for container in _iter_pod_containers(pod_spec):
+            mounts = container.get("volumeMounts") or []
+            for mount in mounts:
+                mount_path = str(mount.get("mountPath") or "")
+                lowered = mount_path.lower()
+                assert not any(marker in lowered for marker in _PLANE_FILE_MARKERS), (
+                    f"{component} mounts query-plane file {mount_path!r} — "
+                    f"readers must use Parquet + Postgres attach only (Story 41.2)"
+                )
+
+
+def _assert_query_plane_pvcs_are_read_write_once(docs: list[dict[str, Any]]) -> None:
+    """Story 41.2: any plane PVC is RWO — ReadWriteMany is a finding."""
+    plane_pvcs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and (
+            (doc.get("metadata") or {}).get("labels", {}).get(_PLANE_PVC_LABEL) == "true"
+            or "query-plane" in str(doc.get("metadata", {}).get("name", "")).lower()
+            or "atlas.duckdb" in str(doc.get("metadata", {}).get("name", "")).lower()
+        )
+    ]
+    for pvc in plane_pvcs:
+        access_modes = (pvc.get("spec") or {}).get("accessModes") or []
+        assert access_modes == ["ReadWriteOnce"], (
+            f"query-plane PVC {pvc['metadata']['name']!r} must be ReadWriteOnce, "
+            f"got {access_modes!r} (Story 41.2 / BS-5)"
+        )
+
+
 def _assert_redis_uses_password_from_existing_secret(
     docs: list[dict[str, Any]],
     *,
@@ -1241,6 +1284,77 @@ def test_redis_broker_memory_limit_is_required():
             "--set",
             "redis.broker.resources.limits.memory=",
         )
+
+
+@requires_helm
+def test_duckdb_boundary_platform_readers_do_not_mount_plane_file():
+    """AC (Story 41.2): web/worker pods do not mount ``atlas.duckdb``."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_query_plane_readers_do_not_mount_duckdb_file(docs)
+
+
+@requires_helm
+def test_duckdb_boundary_plane_pvc_must_be_read_write_once():
+    """AC (Story 41.2): a plane PVC rendered RWX fails the invariant."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_query_plane_pvcs_are_read_write_once(docs)
+
+
+def test_duckdb_boundary_plane_pvc_rwx_is_rejected():
+    """Guard (Story 41.2): ReadWriteMany on a plane PVC must raise."""
+    violating = [
+        {
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": "platform-query-plane",
+                "labels": {_PLANE_PVC_LABEL: "true"},
+            },
+            "spec": {"accessModes": ["ReadWriteMany"]},
+        },
+    ]
+    with pytest.raises(AssertionError, match="ReadWriteOnce"):
+        _assert_query_plane_pvcs_are_read_write_once(violating)
+
+
+def test_duckdb_boundary_reader_mount_is_rejected():
+    """Guard (Story 41.2): a web pod mounting ``atlas.duckdb`` must raise."""
+    violating = [
+        {
+            "kind": "Deployment",
+            "metadata": {"name": "platform-web"},
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {"app.kubernetes.io/component": "web"},
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "web",
+                                "volumeMounts": [
+                                    {"name": "plane", "mountPath": "/data/atlas.duckdb"},
+                                ],
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        {
+            "kind": "Deployment",
+            "metadata": {"name": "platform-worker"},
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {"app.kubernetes.io/component": "worker"},
+                    },
+                    "spec": {"containers": [{"name": "worker"}]},
+                },
+            },
+        },
+    ]
+    with pytest.raises(AssertionError, match="query-plane file"):
+        _assert_query_plane_readers_do_not_mount_duckdb_file(violating)
 
 
 @requires_helm

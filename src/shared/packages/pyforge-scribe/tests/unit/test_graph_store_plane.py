@@ -51,6 +51,7 @@ def test_recall_callers_do_not_isinstance_the_driver() -> None:
 
 def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
     pytest.importorskip("duckdb")
+    pytest.importorskip("pyforge.atlas.duckdb_writer")
     plane_path = tmp_path / ATLAS_DUCKDB_NAME
     node = GraphNode(
         id="memory:feedback/x",
@@ -70,7 +71,7 @@ def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
     finally:
         store.close()
 
-    reopened = PlaneGraphStore(plane_path, tmp_path / "graph.json")
+    reopened = PlaneGraphStore(plane_path, tmp_path / "graph.json", write=False)
     try:
         nodes = list(reopened.iter_nodes())
         assert [n.id for n in nodes] == ["memory:feedback/x"]
