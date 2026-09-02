@@ -66,7 +66,7 @@ Ledger key `43-6-platform-image-moves-to-python-3-14`. Regenerate
 `environment.yaml`. Consume Mason's feedstock builds; never vendor or patch a
 recipe here.
 
-**Block If:** Mason 13.1 or 13.2 is not `done`; implementation would pin a
+**Block If:** Mason `13-1` or `13-2` is not `done` (the ledger holds this story at `blocked` for that reason — flip to `backlog` only when both are); implementation would pin a
 pre-release, add a channel, or loosen a pin locally to make the solve pass.
 
 **Never:** A second lockfile for the platform. Deleting `mcp-host`.

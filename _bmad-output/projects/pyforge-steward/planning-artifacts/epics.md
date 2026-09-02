@@ -2481,7 +2481,8 @@ As a platform operator,
 I want `python-agent-platform` and `dbgpt-sidecar` on `python = "3.14.*"` with a re-lock, regenerated `environment.yaml`, and rebuilt images,
 So that laptop and cluster run one interpreter and Atlas/Doctor import inside the platform image.
 
-**Type:** feature • **Effort:** M • **Deps:** mason 13.1, mason 13.2, S-43.5 • **FR/AD:** pap:CAP-5, pap:CAP-6 • red-team S-5 / R-16
+**Type:** feature • **Effort:** M • **Deps:** S-43.5 • **FR/AD:** pap:CAP-5, pap:CAP-6 • red-team S-5 / R-16
+**Cross-project gate (not a Deps edge — Marshal's parser ignores station prefixes):** Mason Epic 13, both stories (`13-1-langflow-base-onnxruntime-pin-admits-python-3-14`, `13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14`). The ledger holds `43-6` at `blocked` until both are `done`; the operator flips it to `backlog` then.
 **Given** Mason 13.1 and 13.2 published **When** the pins flip and `pixi lock` runs **Then** both envs resolve on 3.14 and `environment.yaml` is regenerated in the same commit
 **And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
 **And** `platform-ci` is green on both engines; `mcp-host` is unchanged
