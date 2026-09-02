@@ -341,3 +341,46 @@ class GhForge:
                 f"{f'--subject {subject.value!r} ' if subject is not None else ''}failed: "
                 f"{result.stderr.strip()}"
             )
+
+    def pr_merge_state(self, repo: ForgeRef, number: int) -> str:
+        repo_value = repo.value
+        result = _run(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(number),
+                "--repo",
+                repo_value,
+                "--json",
+                "mergeStateStatus",
+            ],
+            timeout_s=_GH_READ_TIMEOUT_S,
+        )
+        if result.returncode != 0:
+            raise ForgeCommandError(
+                f"gh pr view {number} --repo {repo_value} --json mergeStateStatus "
+                f"failed: {result.stderr.strip()}"
+            )
+        context = f"gh pr view {number} --repo {repo_value}"
+        data = _parse_json(result.stdout, context=context)
+        if not isinstance(data, Mapping):
+            raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
+        status = data.get("mergeStateStatus")
+        if not isinstance(status, str) or not status:
+            raise ForgeCommandError(
+                f"{context}: gh returned a PR entry missing mergeStateStatus: {data!r}"
+            )
+        return status
+
+    def close_pr(self, repo: ForgeRef, number: int) -> None:
+        repo_value = repo.value
+        result = _run(
+            ["gh", "pr", "close", str(number), "--repo", repo_value],
+            timeout_s=_GH_WRITE_TIMEOUT_S,
+        )
+        if result.returncode != 0:
+            raise ForgeCommandError(
+                f"gh pr close {number} --repo {repo_value} failed: "
+                f"{result.stderr.strip()}"
+            )

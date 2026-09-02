@@ -434,3 +434,17 @@ class VcsPort(Protocol):
         git failure -- the caller reports the home as unreadable rather
         than inventing a count."""
         ...
+
+    def merge_tree_conflict_paths(
+        self, repo_root: Path, base: str, branch: str
+    ) -> tuple[str, ...]:
+        """Story 28.20: ``git merge-tree`` conflict paths between ``base``
+        and ``branch``, read-only. Returns an empty tuple when the merge
+        tree is clean. Raises ``VcsCommandError`` on git failure."""
+        ...
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        """Story 28.20: ``git show ref:path``, read-only. Returns ``None``
+        when the path is absent at ``ref``. Raises ``VcsCommandError`` on
+        other git failures."""
+        ...

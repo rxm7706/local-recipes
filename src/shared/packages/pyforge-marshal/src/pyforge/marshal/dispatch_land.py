@@ -19,6 +19,7 @@ from .adapters.fs_local import FsError, LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
+from .dispatch_land_heal import try_heal_dispatch_land_merge
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
@@ -351,20 +352,61 @@ def execute_dispatch_land(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError as exc:
-        findings.append(
-            Finding(
-                code="MRS-DISP-020",
-                severity=Severity.ERROR,
-                message=f"merge of PR #{pr.number} failed: {exc}",
+        heal = try_heal_dispatch_land_merge(
+            project_slug=project_slug,
+            git_repo_root=git_repo_root,
+            worktree=worktree,
+            base=_MERGE_BASE,
+            head_branch=head_branch,
+            head_sha=head_sha,
+            subject=subject,
+            merge_strategy=merge_strategy,
+            delete_branch=delete_branch,
+            repo_ref=repo_ref,
+            pr=pr,
+            fs=fs,
+            vcs=vcs,
+            forge=forge,
+        )
+        if heal.escalated_paths:
+            paths = ", ".join(heal.escalated_paths)
+            findings.append(
+                Finding(
+                    code="MRS-DISP-038",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"merge of PR #{pr.number} has unknown conflict path(s) "
+                        f"({paths}) — refusing to merge or heal mechanically "
+                        "(CAP-4/Story 28.20)"
+                    ),
+                )
             )
-        )
-        envelope = build_envelope(
-            command="dispatch land",
-            verdict=compute_verdict(tuple(findings)),
-            data=data,
-            findings=tuple(findings),
-        )
-        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        if not heal.healed:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-020",
+                    severity=Severity.ERROR,
+                    message=f"merge of PR #{pr.number} failed: {exc}",
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+        if heal.landed_via_local_merge:
+            data["local_main_advance"] = True
+        if heal.retried_forge_merge:
+            data["ledger_union_heal"] = True
 
     data["merged"] = True
 

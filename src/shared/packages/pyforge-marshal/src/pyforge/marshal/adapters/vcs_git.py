@@ -1113,6 +1113,46 @@ class GitVcs:
                 f"{worktree_path}"
             ) from exc
 
+    def merge_tree_conflict_paths(
+        self, repo_root: Path, base: str, branch: str
+    ) -> tuple[str, ...]:
+        """Story 28.20: parse ``git merge-tree`` for conflict paths."""
+        merge_base = self.merge_base(repo_root, base, branch)
+        result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-tree",
+                merge_base,
+                base,
+                branch,
+            ],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if result.returncode != 0 and "CONFLICT" not in result.stdout:
+            raise VcsCommandError(
+                f"git merge-tree {merge_base} {base} {branch} failed: "
+                f"{result.stderr.strip() or result.stdout.strip()}"
+            )
+        paths: set[str] = set()
+        marker = "Merge conflict in "
+        for line in result.stdout.splitlines():
+            if marker in line:
+                paths.add(line.split(marker, 1)[1].strip())
+        return tuple(sorted(paths))
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        """Story 28.20: ``git show ref:path`` read-only."""
+        result = _run(["git", "-C", str(repo_root), "show", f"{ref}:{path}"])
+        if result.returncode != 0:
+            if "exists on disk, but not in" in result.stderr or "does not exist" in result.stderr:
+                return None
+            raise VcsCommandError(
+                f"git show {ref}:{path} failed: {result.stderr.strip()}"
+            )
+        return result.stdout
+
 
 def stage_index_paths(
     repo_root: Path,
