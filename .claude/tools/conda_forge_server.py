@@ -432,7 +432,7 @@ def _add_missing_repository(recipe_path: Path, package_name: str) -> bool:
 # idempotent and follows the existing v8.12.x pattern: bool return + dedicated
 # entry in the `post_processing:` MCP response.
 
-_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.11"
 _PINNING_PYTHON_MIN_RE = re.compile(
     r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
     re.MULTILINE,

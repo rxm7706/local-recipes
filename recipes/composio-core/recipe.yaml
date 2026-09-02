@@ -56,7 +56,7 @@ about:
   homepage: https://github.com/composiohq/composio
   license: Apache-2.0
   license_file: LICENSE
-  summary: [DEPRECATED] Core package to act as a bridge between composio platform and other services. Please use 'composio' instead.
+  summary: "[DEPRECATED] Core package to act as a bridge between composio platform and other services. Please use 'composio' instead."
   description: |
     [DEPRECATED] Core package to act as a bridge between composio platform and other services. Please use 'composio' instead.
 

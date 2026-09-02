@@ -46,7 +46,7 @@ about:
   homepage: https://datahub.com/
   license: Apache-2.0
   license_file: LICENSE
-  summary: [DEPRECATED] Library to predict info types for DataHub
+  summary: "[DEPRECATED] Library to predict info types for DataHub"
   description: |
     [DEPRECATED] Library to predict info types for DataHub
   repository: https://github.com/acryldata/datahub-classify

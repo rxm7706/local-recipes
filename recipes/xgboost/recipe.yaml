@@ -6,7 +6,7 @@ context:
   build_number: 0
   python_min: "3.12"
   posix: "'m2-' if win else ''"
-  string_prefix: {{ "cuda" ~ (cuda_compiler_version | replace('.', '')) if (cuda_compiler_version or "None") != "None" else "cpu" }}
+  string_prefix: ${{ "cuda" ~ (cuda_compiler_version | replace('.', '')) if (cuda_compiler_version or "None") != "None" else "cpu" }}
 
 recipe:
   name: xgboost-split
@@ -326,6 +326,9 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for libxgboost...
-Error: Failed to fetch PyPI metadata for 'libxgboost' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/libxgboost/json
+#    Error: Failed to fetch PyPI metadata for 'libxgboost' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/libxgboost/json
+#    (expected: libxgboost is a conda-only C++ output of the xgboost split recipe,
+#     so a PyPI lookup by conda name legitimately 404s. G92: this line landed
+#     UNCOMMENTED inside the CFE comment block, making the recipe unparseable.)
 
 ####

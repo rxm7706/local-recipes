@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
   name: kedro-pack
   version: "0.18.12.1"
   module_name: kedro_pack

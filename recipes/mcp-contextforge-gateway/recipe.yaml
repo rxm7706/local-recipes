@@ -8,7 +8,6 @@ schema_version: 1
 
 context:
   version: "1.0.7"
-  python_min: "3.11"
 
 package:
   name: mcp-contextforge-gateway

@@ -40,7 +40,7 @@ build:
 
 outputs:
     # metapackage that holds everything together
-    package:
+  - package:
       name: sentencepiece
     build:
     requirements:

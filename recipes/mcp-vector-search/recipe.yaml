@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "4.1.14"
-  python_min: "3.11"
 
 package:
   name: mcp-vector-search

@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: groovy
   version: "0.1.2"
-  python_min: "3.10"
 
 package:
   # Add -python suffix to not collide with the (more) popular programming language.

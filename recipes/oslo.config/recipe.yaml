@@ -6,7 +6,6 @@ context:
   version: "10.7.0"
   bundle: tar.gz
   hash: 4f0fd4ca7ecfe511fbc0e012d3c63fce57009f360199e9e9cc2329ed55ec911e
-  python_min: "3.11"
 
 package:
   name: ${{ name }}

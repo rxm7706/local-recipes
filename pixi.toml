@@ -1519,11 +1519,11 @@ nebi-cli = ">=0.14"               # Local-first workspace management for Pixi
 bmad-method = ">=6.11.0"       # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
 # tmux lives in the linux-64/osx-arm64 target tables (no win-64 build; bmad-loop is Linux/macOS — Windows via WSL)
 # BMAD-METHOD: Agentic AI‑SDLC: AI Driven Agile Development
-bmad-builder = ">=2.2.1"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
-bmad-creative-intelligence-suite = ">=0.3.1"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+bmad-builder = ">=2.2.2"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
+bmad-creative-intelligence-suite = ">=0.3.2"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
 bmad-loop = ">=0.11.1"            # deterministic ralph-loop orchestrator (+TUI); 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.23.2"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-method-test-architecture-enterprise = ">=1.24.0"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-method-wds-expansion = ">=0.4.3"  # Whiteport Design Studio # PR #33126 # https://github.com/bmad-code-org/bmad-method-wds-expansion
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills

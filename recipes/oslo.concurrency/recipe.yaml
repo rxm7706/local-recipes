@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: oslo.concurrency
   version: "7.6.1"
-  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}

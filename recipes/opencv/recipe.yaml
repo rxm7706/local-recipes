@@ -251,7 +251,7 @@ outputs:
     # the cv2 python bindings, which go to the python_version_independent
     # py-opencv output. A noarch/abi3 package may not contain the opencv_*
     # binaries, which is why the split is required.
-    package:
+  - package:
       name: libopencv
     files:
       include:
@@ -304,7 +304,7 @@ outputs:
     # single python_min build. python_version_independent makes the one build
     # installable on every later python; python-abi3 supplies the
     # `cpython >={{ python_min }}` lower bound (and excludes free-threading).
-    package:
+  - package:
       name: py-opencv
     files:
       # Match the build python's site-packages with a glob ("lib/python*")

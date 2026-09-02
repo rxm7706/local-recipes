@@ -57,7 +57,7 @@ about:
   homepage: https://github.com/google/dopamine
   license: Apache-2.0
   license_file: LICENSE
-  summary: Dopamine: A framework for flexible Reinforcement Learning research
+  summary: "Dopamine: A framework for flexible Reinforcement Learning research"
   description: |
     Dopamine: A framework for flexible Reinforcement Learning research
   repository: https://github.com/google/dopamine

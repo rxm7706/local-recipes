@@ -11,7 +11,7 @@ context:
   build_ext: '"cuda" if cuda_enabled else "cpu"'
   proc_build_number: 0
   llvm_version: 21
-  so_version: {{ (version.split(".")[0] | int * 100 + version.split(".")[1] | int) ~ "." ~ version.split(".")[2] ~ ".0" }}
+  so_version: ${{ (version.split(".")[0] | int * 100 + version.split(".")[1] | int) ~ "." ~ version.split(".")[2] ~ ".0" }}
 
 recipe:
   name: apache-arrow

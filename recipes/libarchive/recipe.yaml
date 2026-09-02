@@ -104,7 +104,6 @@ outputs:
       string: ${{ license_family }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
       skip: true
       script:
-        - {}
         file: ${{ 'build_minimal.bat' if win else 'build_minimal.sh' if unix else '' }}
     requirements:
       build:

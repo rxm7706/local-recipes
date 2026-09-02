@@ -38,7 +38,7 @@ about:
   homepage: https://github.com/viisar/brew
   license: MIT
   license_file: LICENSE
-  summary: BREW: Python Multiple Classifier System API
+  summary: "BREW: Python Multiple Classifier System API"
   description: |
     BREW: Python Multiple Classifier System API
 

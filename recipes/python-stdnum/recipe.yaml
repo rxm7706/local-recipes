@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: python-stdnum
   version: "2.2"
-  python_min: "3.8"
 
 package:
   name: ${{ name|lower }}

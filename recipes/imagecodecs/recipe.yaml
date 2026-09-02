@@ -90,7 +90,6 @@ tests:
         - imagecodecs
         - imagecodecs._imagecodecs
       pip_check: false
-    script:
 
 about:
   license: BSD-3-Clause
@@ -131,20 +130,3 @@ extra:
     - hmaarrfk
     - sdvillal
     - traversaro
-
-<conda_recipe_manager.types.SentinelType object at 0x788b99355be0>: # Test feor existance of a subset of the codecs so I can feel like the test works. Add more as needed
-  - echo "Testing for {{ codec }}"
-  - python -c "import imagecodecs; assert imagecodecs.{{ codec }}.available"
-
-
-<conda_recipe_manager.types.SentinelType object at 0x788b99355be0>:  # Running the full test suite adds about 17 MB of files...
-  # if true -- fall through and run the full test suite
-  - cd tests
-  # 20210717 hmaarrfk: This test seems to be flaky in the upstream
-  # test procedure
-  # https://github.com/conda-forge/imagecodecs-feedstock/pull/32#issuecomment-863041029
-  - python test_imagecodecs.py -k "not test_image_roundtrips[jpeg2k-uint16-rgb-out-bytearray-None]"
-  source_files:
-    - tests
-  requires:
-    - pytest

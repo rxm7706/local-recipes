@@ -91,5 +91,5 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: nfo for font-ttf-source-code-pro...
-Error: Failed to fetch PyPI metadata for 'font-ttf-source-code-pro' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-source-code-pro/json
+#    Error: Failed to fetch PyPI metadata for 'font-ttf-source-code-pro' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-source-code-pro/json
 ####

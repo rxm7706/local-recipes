@@ -53,6 +53,24 @@ verify_commands = [
   "pixi run -e pyforge-atlas kedro-catalog-check",
 ]
 
+# harness_preference: cursor-only + composer models for the 2026-09-01 atlas
+# drain (Claude Code spend-limited on this machine).
+#
+# MOVED here 2026-09-02, from BELOW the `[epic_surfaces]` header where it was
+# originally written. In TOML every bare key after a table header belongs to
+# THAT TABLE, so it was parsed as `epic_surfaces["harness_preference"]`, with
+# two silent consequences: (1) this preference never took effect at all --
+# `harness_preference` resolved from the repo_defaults layer, the full
+# 5-harness list, not cursor-only; and (2) far worse, `core/policy.py::
+# _valid_epic_surfaces` requires EVERY key to be `.isdigit()` and drops the
+# WHOLE FIELD for the layer on a single bad key, so the entire per-epic
+# allowlist below was discarded and every atlas story silently fell back to
+# `default_epic_surface()`. That is what fired the MRS-GATE-012 advisory on
+# Story 21.10 for `.github/workflows/kedro-viz-publish.yml` -- a path epic 21
+# below has declared all along. Keep every scalar/array policy key ABOVE the
+# first table header.
+harness_preference = ["cursor"]
+
 
 # epic_surfaces (AD-27, MRS-GATE-007/Story 2.3): per-epic writable-surface allowlist,
 # narrowed further by a story spec's own `surface:` field when it declares one. The
@@ -130,9 +148,8 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
 ]
 
-# harness_preference: cursor-only + composer models for the 2026-09-01 atlas
-# drain (Claude Code spend-limited on this machine).
-harness_preference = ["cursor"]
+# (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
+#  the first table header on 2026-09-02; see its comment there for why.)
 
 # model_tier_map must be last in this file (TOML table scoping).
 [model_tier_map.heavy]

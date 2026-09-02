@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: xmlschema
   version: "4.3.2"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}

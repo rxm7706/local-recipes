@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.84.0
+version: 8.85.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -108,8 +108,23 @@ Go compiler macros (use the correct name — `compiler("go")` is deprecated):
 
 **Do not pin compiler versions manually.** Use the `compiler()` macro — the global pins (GCC 14 on Linux, Clang 19 on macOS) resolve automatically. `compiler_stack` is deprecated and should be removed from any existing `conda-forge.yml`.
 
-### Python Version Floor: `3.10`
-Python 3.9 was dropped from the conda-forge build matrix in August 2025. The floor is `3.10`. **Never set `python_min` below `3.10`** for new recipes. See [Python Version Policy](#python-version-policy) for full rules.
+### Python Version Floor: `3.11`
+Python 3.10 was dropped from the conda-forge build matrix on **2026-09-02** (`conda-forge-pinning 2026.09.02.08.53.43`); 3.9 went in August 2025. The floor is `3.11`. **Never set `python_min` below `3.11`** for new recipes. See [Python Version Policy](#python-version-policy) for full rules.
+
+**Never hardcode the floor — read it.** It has now moved twice. The authority is
+conda-forge-pinning's own `conda_build_config.yaml`, and the local copy of it is
+`.pixi/envs/local-recipes/conda_build_config.yaml`:
+
+```bash
+grep -A 4 '^python_min:' .pixi/envs/local-recipes/conda_build_config.yaml
+```
+
+Upstream source of record:
+<https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/main/recipe/conda_build_config.yaml>.
+The repo-root `conda_build_config.yaml` is a verbatim local-testing copy of that file — re-sync
+it (never hand-edit) when it drifts. `tests/meta/test_no_redundant_python_min.py` reads the floor
+dynamically from the installed pinning, so it follows the ecosystem on its own; a hardcoded floor
+in prose or in a recipe does not.
 
 ### PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern
 Recipe `source.url:` for PyPI artifacts **must** route through `https://pypi.org/packages/...`, never `https://files.pythonhosted.org/packages/<hash>/...`. The hashed `files.pythonhosted.org` URL is what PyPI's JSON API returns and what `grayskull` historically emitted, but it bypasses standard JFrog Artifactory PyPI Remote Repository proxies in air-gapped corporate environments.
@@ -1052,7 +1067,7 @@ Run this checklist from `shipping-and-launch` before calling `submit_pr`:
 - [ ] Import test passes for the primary module(s)
 
 **Standards**
-- [ ] `python_min >= "3.10"` for `noarch: python` recipes
+- [ ] `python_min >= "3.11"` for `noarch: python` recipes (or, canonically, absent from `context:` — Rule 6)
 - [ ] `stdlib` included for all compiled recipes
 - [ ] `license_file` field present when required
 - [ ] Maintainer (`rxm7706`) listed in `recipe.maintainers`
@@ -1113,13 +1128,16 @@ Five points learned the hard way from feedstock v0→v1 migrations. Full expansi
 
 ## Python Version Policy
 
-### Current conda-forge Floor: `3.10`
-Python 3.9 was dropped from the conda-forge build matrix in **August 2025**. The current build matrix is `3.10, 3.11, 3.12, 3.13, 3.14`.
+### Current conda-forge Floor: `3.11`
+Python 3.10 was dropped from the conda-forge build matrix on **2026-09-02**; 3.9 went in August 2025. The current build matrix is `3.11, 3.12, 3.13, 3.14` (win-arm64 / linux-riscv64 are 3.14-only). Verify against the installed pinning rather than trusting this line — see § Python Version Floor for the one-line check.
 
 ### New `noarch: python` Recipe (recipe.yaml v1) — CFEP-25 Triad
+Note the canonical form declares **no** `python_min` in `context:` at all (Rule 6) —
+conda-forge-pinning supplies it. The line below is shown only to name the override point:
+
 ```yaml
 context:
-  python_min: "3.10"        # increase only if upstream python_requires demands it
+  python_min: "3.12"        # ONLY when upstream python_requires demands above the floor
 requirements:
   host:
     - python ${{ python_min }}.*
@@ -1134,7 +1152,7 @@ tests:
 
 ### New `noarch: python` Recipe (meta.yaml v0)
 ```yaml
-{% set python_min = "3.10" %}
+{% set python_min = "3.11" %}
 requirements:
   host:
     - python {{ python_min }}
@@ -1146,12 +1164,12 @@ test:
 ```
 
 ### Rules
-1. **Floor is `3.10`** — never set `python_min` below `3.10` for new recipes
-2. **Raise only when required** — only set `python_min` above `3.10` when upstream `python_requires` explicitly demands a higher version; always verify before raising
-3. **Compiled packages** — use `python >=3.10` directly; the build matrix handles versioning via the global pin; no `python_min` variable needed
-4. **Existing recipes with `python_min: "3.9"`** — `optimize_recipe` (SEL-002) will flag it; update to `"3.10"` unless the package genuinely cannot run on 3.10
-5. **Never downgrade below `3.10`** — will fail conda-forge CI
-6. **Recipes do NOT need `python_min` in context unless overriding the default** — the May 2026 upstream sync removed `python_min: '3.10'` and `python: 3.12.* *_cpython` from `.ci_support/linux64.yaml` and `linux_aarch64.yaml`, but those defaults still come from **`conda-forge-pinning`** (the canonical source upstream CI has always used). Recipes at the default `3.10` floor can — and should — write `${{ python_min }}` references throughout the CFEP-25 triad **without** declaring `python_min` in `context:`. Only override in `context:` when upstream `python_requires` demands a higher floor.
+1. **Floor is `3.11`** — never set `python_min` below `3.11` for new recipes. The floor MOVES (3.9 → 3.10 → 3.11 as of 2026-09-02); read it from the installed pinning rather than trusting any number written down here.
+2. **Raise only when required** — only set `python_min` above the floor when upstream `python_requires` explicitly demands a higher version; always verify before raising
+3. **Compiled packages** — use `python >=3.11` directly; the build matrix handles versioning via the global pin; no `python_min` variable needed
+4. **Existing recipes at or below the floor** — `optimize_recipe` (SEL-002) flags them, and `tests/meta/test_no_redundant_python_min.py` fails the suite: **delete the `python_min` line from `context:`** (Rule 6), don't rewrite it to the new floor. On 2026-09-02 that swept 438 recipes at once when the floor moved 3.10 → 3.11.
+5. **Never downgrade below the floor** — will fail conda-forge CI
+6. **Recipes do NOT need `python_min` in context unless overriding the default** — the May 2026 upstream sync removed `python_min: '3.10'` and `python: 3.12.* *_cpython` from `.ci_support/linux64.yaml` and `linux_aarch64.yaml`, but those defaults still come from **`conda-forge-pinning`** (the canonical source upstream CI has always used). Recipes at the default floor can — and should — write `${{ python_min }}` references throughout the CFEP-25 triad **without** declaring `python_min` in `context:`. Only override in `context:` when upstream `python_requires` demands a higher floor.
 
    **Local rattler-build implication.** When invoking rattler-build directly (outside conda-forge CI), pass conda-forge-pinning as an additional variant config so `${{ python_min }}` resolves to its default:
 
@@ -1174,7 +1192,7 @@ test:
 schema_version: 1
 context:
   version: "1.0.0"
-  # Omit python_min when the conda-forge floor (3.10) is fine; only declare
+  # Omit python_min when the conda-forge floor (3.11) is fine; only declare
   # when upstream's python_requires demands a higher floor.
 package:
   name: my-package
@@ -1227,7 +1245,7 @@ requirements:
     - python
     - pip
   run:
-    - python >=3.10
+    - python >=3.11
 test:
   imports:
     - {{ name }}
@@ -4113,6 +4131,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.85.0** (Sep 2, 2026) — **conda-forge dropped Python 3.10: the floor is now `3.11`, and the skill stopped hardcoding it (MINOR).** `conda-forge-pinning 2026.09.02.08.53.43` removed 3.10 from `python_min` and the matrix (now `3.11, 3.12, 3.13, 3.14`; win-arm64 / linux-riscv64 stay 3.14-only). The floor had been HARDCODED in `recipe-generator.py` (`_CONDA_FORGE_PYTHON_FLOOR = "3.10"` + five literal comparisons), so the generator would have kept emitting recipes pinned to a Python conda-forge no longer builds; it now reads the installed pinning, with the literal only as an offline fallback (fallbacks in `recipe_optimizer.py` and `conda_forge_server.py` moved to `3.11`). Two SEL-004 unit tests were hardcoded the same way and broke on the move — both are now floor-relative. **Rule: a moving ecosystem constant is read, never written down.** Corpus sweep removed `context.python_min` from **438** recipes at/below the floor (Rule 6 — delete the line, don't bump it; 123 legitimately above the floor kept), and repaired **47 recipes that did not parse at all** across four classes (22 G92 uncommented `Error:` lines, 13 unquotable plain scalars, 4 G20 bare `{{ }}`, 8 structural — incl. `basemap`/`sentencepiece`/`opencv` each missing the `- ` marker on their FIRST output, and `imagecodecs`' leaked `SentinelType` repr from a failed v0→v1 migration). Retired `tests/meta/test_dashboard_renders.py`: it demanded `docs/dashboard/check_render.js` exist while `dashboard-drift` lists that path in its reintroduction gate — two gates in direct contradiction, red since 2026-08-25. **Files**: `SKILL.md`, `scripts/{recipe-generator,recipe_optimizer}.py`, `.claude/tools/conda_forge_server.py`, `tests/unit/test_recipe_optimizer.py`, `tests/meta/*`, 485 `recipes/*/recipe.yaml`, repo-root `conda_build_config.yaml`, `config/skill-config.yaml` (8.84.1 → 8.85.0), `MANIFEST.yaml`, `CHANGELOG.md`.
+- **v8.84.1** (Sep 2, 2026) — **2026-09-02 suite-advance housekeeping Rule-2 retro (PATCH): `bmad_suite_metapackage.py` appended instead of replacing.** Closing retro for the three-package suite bump (bmad-builder 2.2.2 / creative-intelligence-suite 0.3.2 / TEA 1.24.0, all built GREEN and published to SelfExplainML). The instructed `generate-bmad-suite` regen corrupted `recipes/bmad-suite/recipe.yaml` via two untested defects in `_rewrite_recipe`: (1) the BEGIN..END regex captured the marker **and the old body** in group 1 and re-emitted it, so each run APPENDED a second `run:` key under `requirements:` rather than replacing the first — silent, because `yaml.safe_load` resolves a duplicate key last-wins; (2) the version regex's trailing `\s*$` under MULTILINE ate the blank line after `context.version`. Fixed by capturing the BEGIN *line* (`[^\n]*` preserves its "do not edit by hand" note) and switching both `\s*` to `[^\S\n]*`. Added `tests/unit/test_bmad_suite_metapackage_rewrite.py` (6 cases, A/B verified 4-fail→6-pass) — nothing tested this splice before. **Lesson**: a marker-splice generator must consume the old body and re-emit only the marker, and a "did it work?" check on YAML must assert on the emitted TEXT, since `safe_load` hides the duplicate-key failure. No recipe-authoring gotcha; no new section. **Files**: `scripts/bmad_suite_metapackage.py`, `tests/unit/test_bmad_suite_metapackage_rewrite.py` (new), `SKILL.md`, `config/skill-config.yaml` (8.84.0 → 8.84.1), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.84.0** (Aug 23, 2026) — **Steward 15.2 Rule-2 retro (MINOR): github_updater HEAD-advance.** `github_updater.py` gains `--head` / `update_recipe_head` for commit-pinned recipes (bump `context.commit` to default-branch HEAD + recalculate sha256). Powers steward `suite advance` CAP-2 tag|head autotick selection. No new gotchas; G109 still governs version-of-record re-derivation on HEAD bumps.
 - **v8.83.0** (Aug 21, 2026) — **BMAD 6.11.0 suite-refresh retrospective (Rule 2): 2 new gotchas G109/G110 + a recurrence and a flagged question (MINOR).** Closing retro for the bmad-suite recipe refresh that shipped alongside the BMAD-METHOD 6.10.0→6.11.0 core upgrade (six recipes bumped + built green + published to SelfExplainML; `bmad-story-automator` removed as retired upstream). **G109 (new)** — upstream renumbered PAST a dev-snapshot version: bmad-manticore's awaited `2.0.0` tag will never exist (consolidated into unreleased 3.0.0/3.1.0; version of record in `marketplace.json`, no package.json); repackaged `3.1.0.dev0` @ head. **G110 (new)** — an npm bin entry can be published EMPTY one release and real the next: TEA 1.19.1's `tea-test-review` bin was `{}`, real since 1.20.0, so the 1.23.2 bump had to vendor the Node CLI (npm `--omit=dev`, G6 symlink strip, sh + prefix-baked `.bat` shims, `nodejs` per G103) with a `--help` smoke test. **G92 recurrence** — `recipes/bmad-method/recipe.yaml` carried a parse-fatal bare `Error: Failed to fetch…` line inside its CFE comment block (committed corruption from bulk commit `d204da00fd`); prefixed as a comment. **New dep noted** — bmad-loop 0.10+ requires `regex >=2024.11.6` as a core run dep (env-fault classifier's per-call `timeout=`). **Flagged for the next host-gate pass** — `_http.py`'s `_host_of` does not strip a trailing root dot, while consumer canonicalizations (pyforge-steward `keys._canonical_host`) do; a dotted-FQDN URL misses the configured-host set (found adapting steward's conformance suite to v8.82.0's dual gate). Cheatsheet gains the SelfExplainML publish flow (`anaconda -s https://api.anaconda.org upload …` — the bare client blocks non-TTY on a destination prompt). **Files**: `SKILL.md`, `quickref/commands-cheatsheet.md`, `config/skill-config.yaml` (8.82.3 → 8.83.0), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.82.3** (Aug 20, 2026) — **Story 5.5 fourth review pass: the public-host floor, two netrc regressions, and a rationale that was never traced (PATCH).** A third independent follow-up review found five real defects in the previous two passes' own fixes, each reproduced before triage. **(1)** `_public_default_hosts()` derives from `_DEFAULT_*` globals and so could not see `anaconda.org`, `files.pythonhosted.org`, `repo.anaconda.com` or `dev.azure.com` — all hosts this module requests; each was reproduced receiving `JFROG_API_KEY` under a `*_BASE_URL` naming it, the very public-host leak v8.82.1's subtraction exists to close. Added `_PUBLIC_HOST_FLOOR` beneath the derivation, and an empty result is never cached (an empty subtrahend re-opens the gate). **(2)** v8.82.2 moving `netrc_credentials` to `_host_of` broke it in the other direction: `_host_of` lowercases and `netrc.authenticators` does not, so a legal `machine ARTIFACTORY.CORP.COM` fell through to `default` — the same failure that migration was made to fix. **(3)** `netrc_credentials`'s `Path.home()` sits outside the `try` and raises `RuntimeError` in rootless containers; v8.82.0 gating the JFrog branch handed it traffic on every request to an unconfigured host. **(4)** `inventory_channel.py`'s fallback floor held 9 hosts against `_http`'s 18, still wider in the leaking direction for 11 while claiming otherwise; brought to parity with a containment test. **(5)** v8.82.2's credential-kind split sent `CONDA_TOKEN` to every named public host, including `repo.prefix.dev` and `pypi.org`; restricted to the anaconda.org family. **Also:** v8.82.2 justified its `_EXPLICIT_CHANNEL_HOSTS` and `sys.path` fixes with a "long-lived MCP server" failure mode asserted as reproduced — `conda_forge_server.py::_run_script` subprocesses these scripts per tool call, so it is unreachable there; the fixes stay, the claims are corrected, and SKILL.md gains the rule that a fix's justification must name the entry point it was traced through. `pyforge-doctor`'s inverted golden-fixture test now pins its own precondition instead of asserting an absence indistinguishable from having scanned nothing. Unit suite 1386 → 1401 passed, 0 failed.

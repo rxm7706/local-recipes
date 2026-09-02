@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: "acp-sdk"
   python_check_max: "3.14"
-  python_min: '3.11'
   version: 1.0.3
 
 package:

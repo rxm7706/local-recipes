@@ -95,6 +95,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: etching info for python-fastjsonschema...
-Error: Failed to fetch PyPI metadata for 'python-fastjsonschema' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-fastjsonschema/json
+#    Error: Failed to fetch PyPI metadata for 'python-fastjsonschema' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-fastjsonschema/json
 
 ####

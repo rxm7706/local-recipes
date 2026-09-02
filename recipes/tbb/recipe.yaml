@@ -20,9 +20,9 @@ context:
   vpatch: ${{ version.split('.')[2]|int }}
   vbinary: vmajor - 2009
   vtag: ${{ "v" ~ version | replace(".rc", "-rc") }}
-  vinterface: {{ "%d" % (vbinary * 1000 + vminor * 10 + (vpatch if vmajor != 2021 or vminor != 1 else 0)) }}
+  vinterface: ${{ "%d" % (vbinary * 1000 + vminor * 10 + (vpatch if vmajor != 2021 or vminor != 1 else 0)) }}
   tests: test_parallel_for test_tbb_header conformance_version test_flow_graph test_arena_constraints
-  ctest_regex: {{ "^(%s)$" % (tests | replace(' ', '|')) }}
+  ctest_regex: ${{ "^(%s)$" % (tests | replace(' ', '|')) }}
   win_extra: "'\"os.add_dll_directory(os.environ['LIBRARY_BIN']); \" if win else \"\"'"
 
 recipe:

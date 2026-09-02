@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
   name: pydicom
   version: "3.0.2"
   sha256: 76f95d03cba3e978dc19470c0907c6ad8ca68e72311137622e5fe5e8f594d67f

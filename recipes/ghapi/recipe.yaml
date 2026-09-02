@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: ghapi
   version: "2.1.1"
-  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}

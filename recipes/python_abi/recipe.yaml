@@ -81,6 +81,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for python-abi...
-Error: Failed to fetch PyPI metadata for 'python-abi' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-abi/json
+#    Error: Failed to fetch PyPI metadata for 'python-abi' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-abi/json
 
 ####

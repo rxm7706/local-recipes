@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "4.5.6"
-  python_min: "3.10"
 
 recipe:
   name: glances-suite

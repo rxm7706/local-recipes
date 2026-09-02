@@ -43,7 +43,7 @@ about:
   homepage: https://cupy.dev/
   license: MIT
   license_file: LICENSE
-  summary: CuPy: NumPy & SciPy for GPU
+  summary: "CuPy: NumPy & SciPy for GPU"
   description: |
     CuPy: NumPy & SciPy for GPU
   repository: https://github.com/cupy/cupy

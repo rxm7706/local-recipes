@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2.46.3"
-  python_min: "3.11"
 
 package:
   name: locust

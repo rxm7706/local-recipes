@@ -11,7 +11,7 @@ schema_version: 1
 context:
   name: bmad-suite
   # CalVer refresh stamp (unpadded) — bumped by generate-bmad-suite when pins change.
-  version: "2026.9.1"
+  version: "2026.9.2"
 
 package:
   name: ${{ name }}
@@ -30,9 +30,9 @@ requirements:
   run:
     - bmad-method >=6.11.0
     - bmad-loop >=0.11.1
-    - bmad-method-test-architecture-enterprise >=1.23.2
-    - bmad-builder >=2.2.1
-    - bmad-creative-intelligence-suite >=0.3.1
+    - bmad-method-test-architecture-enterprise >=1.24.0
+    - bmad-builder >=2.2.2
+    - bmad-creative-intelligence-suite >=0.3.2
     - bmad-module-skill-forge >=2.1.0
     - bmad-method-wds-expansion >=0.4.3
     - bmad-utility-skills >=2.0.0

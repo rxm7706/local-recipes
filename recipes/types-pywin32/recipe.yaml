@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: types-pywin32
   version: "312.0.0.20260724"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}

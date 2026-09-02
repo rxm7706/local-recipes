@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "3.16.0.dev2026081604"
-  python_min: "3.11"
 
 package:
   name: keras-nightly

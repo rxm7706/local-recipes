@@ -614,11 +614,11 @@ in `CLAUDE.md` and `_bmad-output/`.
   gains `bmad-dev-auto`.
 - **bmad-loop** (>=0.11.1) — deterministic "ralph-loop" orchestrator with TUI; spawns
   coding-agent sessions in tmux (hence tmux below; Linux/macOS only, Windows via WSL).
-- **bmad-builder** (>=2.2.1) — build custom BMAD modules.
+- **bmad-builder** (>=2.2.2) — build custom BMAD modules.
 - **bmad-module-template** (>=0.1.0) — scaffold for new BMAD modules.
-- **bmad-creative-intelligence-suite** (>=0.3.1) — CIS expansion module (creative /
+- **bmad-creative-intelligence-suite** (>=0.3.2) — CIS expansion module (creative /
   ideation workflows).
-- **bmad-method-test-architecture-enterprise** (>=1.23.2) — TEA module: enterprise
+- **bmad-method-test-architecture-enterprise** (>=1.24.0) — TEA module: enterprise
   test-architecture workflows.
 - **bmad-method-wds-expansion** (>=0.4.3) — Whiteport Design Studio (UX/design)
   expansion.

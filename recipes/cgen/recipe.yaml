@@ -5,7 +5,6 @@ context:
   name: cgen
   version: "2025.1"
   sha256: 79f01e010d49c13e58b4ca8f2d4996a6b7178968f5f2d906262733480ae7a2d4
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}

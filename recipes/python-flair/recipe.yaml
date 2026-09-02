@@ -112,6 +112,6 @@ extra:
 #    # (agent rationale parks here, organized by recipe location — never
 #    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
 #    # generate failed rc=1: Fetching info for python-flair...
-Error: Failed to fetch PyPI metadata for 'python-flair' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-flair/json
+#    Error: Failed to fetch PyPI metadata for 'python-flair' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-flair/json
 
 ####

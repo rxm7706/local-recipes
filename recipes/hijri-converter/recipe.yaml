@@ -39,7 +39,7 @@ about:
   homepage: https://pypi.org/project/hijri-converter/
   license: MIT
   license_file: LICENSE
-  summary: [DEPRECATED] Use 'hijridate' package instead
+  summary: "[DEPRECATED] Use 'hijridate' package instead"
   description: |
     [DEPRECATED] Use 'hijridate' package instead
 

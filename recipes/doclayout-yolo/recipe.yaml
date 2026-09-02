@@ -54,7 +54,7 @@ about:
   homepage: https://pypi.org/project/doclayout-yolo/
   license: AGPL-3.0-only
   license_file: LICENSE
-  summary: DocLayout-YOLO: an effecient and robust document layout analysis method.
+  summary: "DocLayout-YOLO: an effecient and robust document layout analysis method."
   description: |
     DocLayout-YOLO: an effecient and robust document layout analysis method.
 

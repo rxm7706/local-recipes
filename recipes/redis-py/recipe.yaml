@@ -82,6 +82,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for redis-py...
-Error: Failed to fetch PyPI metadata for 'redis-py' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/redis-py/json
+#    Error: Failed to fetch PyPI metadata for 'redis-py' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/redis-py/json
 
 ####
