@@ -4499,4 +4499,4 @@ because the ledger on `main` is still `backlog`.
 `awaiting-operator` / CHAIN naming the PR or worktree
 **And** a 41.2-shaped DIRTY PR or a 13.2-shaped branch with no PR produces
 zero additional harness launches
-**Status:** review
+**Status:** done

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 250
+# stories: 255
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -126,20 +126,18 @@ development_status:
   28-11-difficulty-tiers-route-across-providers-and-pools: done
   28-12-dependency-derived-dispatch-ordering: done
   28-13-sanctioned-retry-after-an-operator-initiated-stop: done
+  28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
+  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
+  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done
   28-17-verify-fail-terminalization-and-transient-auto-redispatch: done
   28-18-re-preflight-when-the-refuse-predicate-can-change: done
   28-19-missing-spec-escalates-never-idle-with-backlog: done
+  28-2-wire-compression-at-the-harness-seam: done
   28-20-cap-4-land-heals-mechanical-and-dirty-prs: done
   28-21-push-the-dispatch-branch-before-verify-can-strand-it: done
   28-22-verify-blast-radius-pre-existing-gate: done
   28-23-stranded-work-signal-after-terminal-verify-fail: done
   28-24-supervisor-finalizes-when-harness-cannot-run-shell: done
-  29-1-done-spec-halts-unless-followup-is-true: done
-  29-2-harness-done-is-cap-4-only-never-another-session: review
-  28-14-auto-derived-effective-surface-no-manual-per-story-widening: done
-  28-15-scope-violation-enforcement-mode-policy-declared-default-unchanged: done
-  28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint: done
-  28-2-wire-compression-at-the-harness-seam: done
   28-3-genesis-seeds-the-token-economy-kit: done
   28-4-savings-telemetry-in-journals-and-status: done
   28-5-the-pinned-wrapped-vs-unwrapped-benchmark: done
@@ -147,6 +145,8 @@ development_status:
   28-7-index-freshness-is-an-advisory-finding: done
   28-8-derived-context-recomputes-only-on-source-change: done
   28-9-planning-graph-retrieval-behind-the-scribe-seam: done
+  29-1-done-spec-halts-unless-followup-is-true: done
+  29-2-harness-done-is-cap-4-only-never-another-session: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
