@@ -78,3 +78,23 @@ def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
         assert nodes[0].stale is True
     finally:
         reopened.close()
+
+
+def test_plugin_honors_write_false(tmp_path: Path) -> None:
+    pytest.importorskip("duckdb")
+    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    plane_path = tmp_path / ATLAS_DUCKDB_NAME
+    plugin = PlaneGraphStorePlugin()
+    ctx: dict = {
+        "store_path": tmp_path / "graph.json",
+        "plane_path": plane_path,
+        "write": False,
+    }
+    plugin.call("around", ctx)
+    store = ctx["store"]
+    try:
+        assert store._write is False
+        with pytest.raises(PluginError, match="write=True"):
+            store.commit()
+    finally:
+        store.close()

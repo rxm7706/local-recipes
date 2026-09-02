@@ -19,6 +19,21 @@ context:
 warnings: []
 deferred:
   - "Mosaic `duckdb-server` as an optional query face (query-plane-face OQ)."
+  - summary: >-
+      Reconcile `resilience-invariants.md` BS-5 row to Story 41.2 single-writer-on-RWO / Parquet model (still describes read-only shared mounts).
+    evidence: |-
+      Companion invariant doc not in Story 41.2 AC scope; Dream/stack updated but tier-2 resilience doc drift remains.
+    severity: medium
+  - summary: >-
+      Extend estate DuckDB policy gate to cover file-backed `ibis.duckdb.connect` and aliased `duckdb` imports.
+    evidence: |-
+      AST gate matches bare `duckdb.connect` only; production dashboard/semantic layers use no-arg in-memory ibis today but file-backed regression would pass.
+    severity: medium
+  - summary: >-
+      Add positive Helm fixture when writer plane PVC lands (`pyforge.io/query-plane`, RWO).
+    evidence: |-
+      Chart RWO invariant is vacuous on live render until a plane PVC template exists; spec residual already notes this.
+    severity: low
 ---
 
 <intent-contract>
@@ -95,24 +110,33 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 - addressed_findings:
   - none
 
+### 2026-09-02 — Review pass 2 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 1, low 0)
+- defer: 3: (high 0, medium 2, low 1)
+- reject: 12
+- addressed_findings:
+  - `[medium]` `[patch]` PlaneGraphStorePlugin ignored `write` flag — honor `context["write"]` when constructing PlaneGraphStore; add unit test for read-only plugin path.
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Enforced the query-plane process boundary (BS-5 / S-3): estate-wide `duckdb.connect` policy test, chart invariants blocking `.duckdb` mounts on web/worker and RWX plane PVCs, `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split (`connect_writer` vs `read_only=True`), and Dream/stack wording restating single writer on RWO with Parquet as the shared artifact.
+Summary: Enforced the query-plane process boundary (BS-5 / S-3): estate-wide `duckdb.connect` policy test, chart invariants blocking `.duckdb` mounts on web/worker and RWX plane PVCs, `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split (`connect_writer` vs `read_only=True`), plugin `write` context passthrough, and Dream/stack wording restating single writer on RWO with Parquet as the shared artifact.
 
 Files changed:
 - `pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
 - `pyforge/atlas/tests/test_duckdb_boundary.py` — policy + guard tests
-- `pyforge/scribe/graph_store_plane.py` — writer/reader connect split
-- `pyforge/scribe/tests/unit/test_graph_store_plane.py` — importorskip + read-only reopen
+- `pyforge/scribe/graph_store_plane.py` — writer/reader connect split; plugin honors `write`
+- `pyforge/scribe/tests/unit/test_graph_store_plane.py` — importorskip + read-only reopen + plugin write=False
 - `src/platform/tests/test_chart_invariants.py` — plane mount + PVC RWO invariants
 - `docs/dreams/pyforge-unifying-strategy.md` — query plane + BS-5 rows
 - `spec-pyforge-unifying-strategy/stack.md` — duckdb row
 - `sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings: 0 patches, 0 deferred, 0 rejected. Follow-up review: false.
+Review findings: 1 patch applied (medium), 3 deferred, 12 rejected. Follow-up review: false (1 medium patch → score 3).
 
-Verification: `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 3 passed; `pixi run -e pyforge-atlas kedro-test -k scribe_plane` → 2 passed; `pixi run -e platform-dev pytest src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
+Verification: `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 3 passed; `pixi run -e pyforge-atlas kedro-test -k "duckdb_boundary or scribe_plane"` → 5 passed; `pixi run -e pyforge-scribe pyforge-scribe-test -k graph_store_plane` → 2 passed (2 skipped without duckdb atlas extra); `pixi run -e platform-dev pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
-Residual: No plane PVC exists in the chart yet (correct — Parquet is the cross-pod artifact); when a writer PVC lands, it must carry `pyforge.io/query-plane: "true"` and RWO access mode.
+Residual: No plane PVC exists in the chart yet (correct — Parquet is the cross-pod artifact); when a writer PVC lands, it must carry `pyforge.io/query-plane: "true"` and RWO access mode. `resilience-invariants.md` BS-5 row still describes the superseded read-only-mount model.
