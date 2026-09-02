@@ -154,6 +154,26 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
     return None
 
 
+def expected_story_spec_glob(repo_root: Path, slug: str, story: str) -> str | None:
+    """The tracked spec glob operators must author (Story 28.19, CAP-2).
+
+    Returns a repo-root-relative ``spec-<e>-<n>-*.md`` path under the
+    station's ``planning-artifacts/specs/`` tree, or ``None`` when ``story``
+    does not parse as a story key.
+    """
+    try:
+        key = normalize(story)
+    except ValueError:
+        return None
+    specs = planning_specs_dir(repo_root, slug)
+    rel_root = canonical_repo_root(repo_root)
+    try:
+        rel_specs = specs.relative_to(rel_root)
+    except ValueError:
+        rel_specs = specs
+    return f"{rel_specs.as_posix()}/spec-{render_filename_slug(key)}-*.md"
+
+
 _DIFFICULTY_RE = re.compile(
     r"^difficulty:\s*['\"]?([A-Za-z0-9_-]+)['\"]?\s*$", re.MULTILINE
 )

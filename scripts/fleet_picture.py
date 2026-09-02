@@ -171,7 +171,8 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
                   ledger_done: bool = False,
                   verification_verdict: str | None = None,
                   verification_failed_gate: str | None = None,
-                  queued_backlog: int | None = None) -> str:
+                  queued_backlog: int | None = None,
+                  awaiting_operator_remedy: str | None = None) -> str:
     """The state-column cell for one station row -- pure, so the meta test
     (test_fleet_picture_awaiting_operator.py) can pin the naming without
     driving main()'s subprocess sweep. `hstate` is `marshal status`'s own
@@ -208,6 +209,8 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
             return f"{phase_prefix} {label}"
         return f"{phase_prefix} {label}"
     if hstate == "awaiting-operator":
+        if awaiting_operator_remedy:
+            return f"awaiting-operator ({awaiting_operator_remedy})"
         return AWAITING_OPERATOR_LABEL
     if hstate == "paused-on-escalation":
         return "PAUSED - needs you (escalation)"
@@ -615,6 +618,8 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # scope-violation advisories, visible here too -- never
                 # journal-only.
                 "scope_advisories": r.get("dispatch_verification_scope_advisories") or [],
+                "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
+                "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
             }
             if r.get("state") == "running":
                 running.add(slug)
@@ -702,6 +707,7 @@ def main() -> int:
             verification_verdict=live_row.get("dispatch_verification_verdict"),
             verification_failed_gate=live_row.get("dispatch_verification_failed_gate"),
             queued_backlog=queued_backlog if live_row.get("dispatch_phase") == "building" else None,
+            awaiting_operator_remedy=live_row.get("awaiting_operator_remedy"),
         )
         print(
             f"{slug:<9}{n:>8}{done:>6}{cmpl:>6}{proj:>6}{blkd:>6}"
@@ -779,6 +785,17 @@ def main() -> int:
         elif hstate == "unknown":
             watch.append(f"{slug}: status unreadable (stale journal) -- cosmetic "
                          f"unless it persists after a spin")
+        elif hstate == "awaiting-operator":
+            live_row = live.get(slug, {}) or {}
+            spec_glob = live_row.get("missing_spec_escalation_glob")
+            remedy = live_row.get("awaiting_operator_remedy")
+            if spec_glob:
+                needs.append(
+                    f"{slug}: missing tracked spec for {current.get(slug, '?')} — "
+                    f"author {spec_glob} (MRS-DISP-005 refuse, not idle)"
+                )
+            elif remedy:
+                needs.append(f"{slug}: {remedy}")
         elif not run and back and done != n:
             watch.append(
                 f"{slug}: {back} story(ies) backlog — idle (not draining); "

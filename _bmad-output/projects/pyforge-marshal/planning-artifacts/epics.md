@@ -4392,7 +4392,7 @@ So that a station with remaining backlog never looks idle.
 **Given** a ledger key whose specs glob matches zero files **When** drain preflight refuses **Then** the station is `awaiting-operator` (or ATTENTION-named), not idle
 **And** the remedy names the expected `planning-artifacts/specs/spec-<e>-<n>-*.md` path
 **And** v1 does not auto-author a stub spec
-**Status:** backlog
+**Status:** done
 
 ### Story 28.20: CAP-4 land heals mechanical and DIRTY PRs
 

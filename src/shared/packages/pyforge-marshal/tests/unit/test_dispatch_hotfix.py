@@ -410,3 +410,62 @@ def test_verify_rerun_needed_only_when_verify_fingerprint_changes() -> None:
     )
     assert not re_preflight.verify_rerun_needed(prior=prior, current=same_verify)
     assert re_preflight.verify_rerun_needed(prior=prior, current=changed_verify)
+
+
+def test_expected_story_spec_glob_names_the_tracked_specs_path(tmp_path: Path) -> None:
+    slug = "pyforge-marshal"
+    glob = dispatch_core.expected_story_spec_glob(tmp_path, slug, "22.7")
+    assert glob is not None
+    assert glob.endswith("/planning-artifacts/specs/spec-22-7-*.md")
+
+
+def test_gather_fleet_missing_spec_escalations_reads_latest_campaign(
+    tmp_path: Path,
+) -> None:
+    """Story 28.19: MRS-DISP-005 campaign blocks surface with expected spec glob."""
+    from pyforge.marshal.adapters.fs_local import LocalFs
+    from pyforge.marshal.cli.dispatch import (
+        FleetCycleReport,
+        _journal_fleet_cycle,
+        gather_fleet_missing_spec_escalations,
+    )
+    from pyforge.marshal.core import dispatch_fleet
+    from pyforge.marshal.core.dispatch_fleet import StationCycleStatus
+
+    slug = "pyforge-marshal"
+    (tmp_path / "_bmad-output" / "projects" / slug).mkdir(parents=True)
+    dispatch_core.planning_specs_dir(tmp_path, slug).mkdir(parents=True)
+    run_dir = dispatch_fleet.fleet_run_dir(tmp_path, "camp-28-19")
+    run_dir.mkdir(parents=True)
+    detail = (
+        "MRS-DISP-005: no tracked spec found for story '22.7' "
+        f"under {dispatch_core.planning_specs_dir(tmp_path, slug)!r}"
+    )
+    report = FleetCycleReport(
+        results=(
+            dispatch_fleet.StationCycleResult(
+                slug=slug,
+                status=StationCycleStatus.REFUSED,
+                remaining=1,
+                story="22.7",
+                detail=detail,
+            ),
+        ),
+        findings=(),
+        data={"mode": "drain_to_zero"},
+    )
+    fs = LocalFs()
+    _journal_fleet_cycle(fs, run_dir, "camp-28-19", report, [])
+
+    class _Harness:
+        def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+            return (("22-7-fleet", "backlog"),)
+
+    escalations = gather_fleet_missing_spec_escalations(
+        fs=fs,
+        harness=_Harness(),
+        repo_root=tmp_path,
+    )
+    assert slug in escalations
+    assert escalations[slug].story == "22.7"
+    assert escalations[slug].expected_spec_glob.endswith("spec-22-7-*.md")

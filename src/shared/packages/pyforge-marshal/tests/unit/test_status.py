@@ -977,6 +977,25 @@ class TestBuildFleetRow:
         }
         assert finding is None
 
+    def test_missing_spec_escalation_overrides_idle_with_awaiting_operator(self):
+        """Story 28.19: remaining backlog + MRS-DISP-005 must not read idle."""
+        spec_glob = (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
+        )
+        facts = status.FleetHomeFacts(
+            slug="pyforge-marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            missing_spec_escalation_story="39.4",
+            missing_spec_escalation_glob=spec_glob,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert finding is None
+        assert row["state"] == "awaiting-operator"
+        assert row["current_story"] == "39.4"
+        assert row["missing_spec_escalation_glob"] == spec_glob
+        assert "missing tracked spec" in row["awaiting_operator_remedy"]
+
     def test_journal_unreadable_reports_unknown_and_warns(self):
         facts = status.FleetHomeFacts(
             slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
@@ -5665,6 +5684,29 @@ class TestAwaitingOperatorTextProjections:
         `core.status.AWAITING_OPERATOR_REMEDY`, so the projection can
         never drift from the constant the spec pins."""
         assert status.AWAITING_OPERATOR_REMEDY == "run bmad-loop confirm"
+
+    def test_missing_spec_remedy_projects_the_spec_glob_in_text(self):
+        """Story 28.19: text status names the expected spec glob, not confirm."""
+        spec_glob = (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-39-4-*.md"
+        )
+        remedy = f"missing tracked spec: author {spec_glob}"
+        text = status_cli._render_text_status(
+            {
+                "project": None,
+                "homes": [
+                    _fleet_row(
+                        state="awaiting-operator",
+                        current_story="39.4",
+                        awaiting_operator_remedy=remedy,
+                    )
+                ],
+            },
+            (),
+        )
+        assert f"awaiting-operator ({remedy})" in text
+        assert "spec-39-4-*.md" in text
+        assert "run bmad-loop confirm" not in text
 
     def test_non_parked_states_render_without_a_suffix_or_parked_list(self):
         text = status_cli._render_text_status(

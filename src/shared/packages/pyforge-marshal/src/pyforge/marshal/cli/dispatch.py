@@ -2157,6 +2157,56 @@ def _predicate_from_payload(raw: object) -> dispatch_re_preflight.RefusePredicat
     )
 
 
+def gather_fleet_missing_spec_escalations(
+    *,
+    fs: FsPort,
+    harness: HarnessPort,
+    repo_root: Path,
+) -> dict[str, dispatch_fleet.MissingSpecEscalation]:
+    """Active ``MRS-DISP-005`` campaign blocks that still lack a tracked spec.
+
+    Story 28.19 (CAP-2): operators must never read ``idle`` while remaining
+    backlog is blocked on a missing spec. Reads the latest fleet-drain
+    campaign journal only -- never auto-authors specs.
+    """
+    run_id = dispatch_fleet.latest_fleet_campaign_run_id(repo_root)
+    if run_id is None:
+        return {}
+    run_dir = dispatch_fleet.fleet_run_dir(repo_root, run_id)
+    blocked, _predicates = _campaign_blocked_from_journal(fs, run_dir, run_id)
+    escalations: dict[str, dispatch_fleet.MissingSpecEscalation] = {}
+    for slug, stories in blocked.items():
+        for story, detail in stories.items():
+            gate = dispatch_re_preflight.parse_refuse_gate(detail)
+            if gate != "MRS-DISP-005":
+                continue
+            if dispatch_core.resolve_story_spec_path(repo_root, slug, story) is not None:
+                continue
+            expected = dispatch_core.expected_story_spec_glob(repo_root, slug, story)
+            if expected is None:
+                continue
+            ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
+            try:
+                statuses = harness.ledger_story_statuses(ledger_path)
+            except (HarnessError, OSError, ValueError):
+                continue
+            backlog = dispatch_fleet.station_backlog(statuses)
+            if not backlog:
+                continue
+            try:
+                blocked_key = normalize(story)
+            except ValueError:
+                continue
+            if not any(normalize(raw_key) == blocked_key for raw_key in backlog):
+                continue
+            escalations[slug] = dispatch_fleet.MissingSpecEscalation(
+                story=render_feed_key(blocked_key),
+                expected_spec_glob=expected,
+            )
+            break
+    return escalations
+
+
 def _reconcile_campaign_blocked_for_re_preflight(
     *,
     repo_root: Path,
