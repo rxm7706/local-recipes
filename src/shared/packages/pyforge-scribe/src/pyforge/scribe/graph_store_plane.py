@@ -190,7 +190,7 @@ class PlaneGraphStorePlugin:
                 raise PluginError("plane graph-store requires store_path and plane_path")
             if "chroma" in str(plane_path).lower():
                 raise PluginError("Chroma is not the query plane")
-            write = bool(context.get("write", True))
+            write = context.get("write", True) is True
             context["store"] = PlaneGraphStore(
                 Path(plane_path),
                 Path(store_path),

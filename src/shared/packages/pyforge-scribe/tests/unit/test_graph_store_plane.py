@@ -80,6 +80,34 @@ def test_stale_round_trips_against_live_duckdb(tmp_path: Path) -> None:
         reopened.close()
 
 
+def test_read_only_open_never_calls_connect_writer(tmp_path: Path) -> None:
+    pytest.importorskip("duckdb")
+    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    from pyforge.atlas import duckdb_writer
+
+    plane_path = tmp_path / ATLAS_DUCKDB_NAME
+    writer = PlaneGraphStore(plane_path, tmp_path / "graph.json")
+    try:
+        writer.reset()
+        writer.commit()
+    finally:
+        writer.close()
+
+    def _forbidden_writer(*_args, **_kwargs):
+        raise AssertionError("connect_writer must not run for write=False")
+
+    original = duckdb_writer.connect_writer
+    duckdb_writer.connect_writer = _forbidden_writer
+    try:
+        reopened = PlaneGraphStore(plane_path, tmp_path / "graph.json", write=False)
+        try:
+            assert list(reopened.iter_nodes()) == []
+        finally:
+            reopened.close()
+    finally:
+        duckdb_writer.connect_writer = original
+
+
 def test_plugin_honors_write_false(tmp_path: Path) -> None:
     pytest.importorskip("duckdb")
     pytest.importorskip("pyforge.atlas.duckdb_writer")
@@ -96,5 +124,23 @@ def test_plugin_honors_write_false(tmp_path: Path) -> None:
         assert store._write is False
         with pytest.raises(PluginError, match="write=True"):
             store.commit()
+    finally:
+        store.close()
+
+
+def test_plugin_write_string_false_is_not_writer(tmp_path: Path) -> None:
+    pytest.importorskip("duckdb")
+    pytest.importorskip("pyforge.atlas.duckdb_writer")
+    plane_path = tmp_path / ATLAS_DUCKDB_NAME
+    plugin = PlaneGraphStorePlugin()
+    ctx: dict = {
+        "store_path": tmp_path / "graph.json",
+        "plane_path": plane_path,
+        "write": "false",
+    }
+    plugin.call("around", ctx)
+    store = ctx["store"]
+    try:
+        assert store._write is False
     finally:
         store.close()
