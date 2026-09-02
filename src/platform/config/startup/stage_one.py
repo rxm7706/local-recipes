@@ -1,4 +1,4 @@
-"""Stage 1: required-settings refusals at settings import (CAP-3).
+"""Stage 1: settings-import refusals (CAP-3).
 
 Called in two places from ``config.settings.production``:
 
@@ -7,7 +7,13 @@ Called in two places from ``config.settings.production``:
    that names the setting and its remedy, rather than an opaque django-environ
    mid-import failure.
 2. ``run_stage_one(sys.modules[__name__])`` — last statement of the leaf, after
-   composition, for any namespace checks that belong at import time.
+   composition, so conditions that read composed values see the final state.
+
+Conditions run in ``_STAGE_ONE`` order:
+
+* ``refuse_required_settings`` — deployed env keys that must be supplied.
+* ``refuse_unverified_broker_tls`` — Story 41.4 / CAP-12: a deployed broker is
+  verified TLS or it does not boot.
 
 Every condition is deployed-only (``is_deployed()`` early return).
 
@@ -23,15 +29,20 @@ from typing import Final
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config import broker_tls
+from config.locality import LOCAL
+from config.locality import RUNTIME_ENV_VAR
 from config.locality import is_deployed
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import ModuleType
 
 __all__ = [
     "REQUIRED_SETTINGS",
     "RequiredSetting",
     "refuse_required_settings",
+    "refuse_unverified_broker_tls",
     "run_stage_one",
 ]
 
@@ -144,13 +155,78 @@ def refuse_required_settings() -> None:
             raise ImproperlyConfigured(message)
 
 
+def refuse_unverified_broker_tls() -> None:
+    """Refuse a deployed component whose broker TLS would not be verified.
+
+    Story 41.4 / CAP-12 (red-team X-2 → R-14). Three forbidden states, each
+    named in its message:
+
+    1. an unrecognised ``COMPONENT_BROKER_SSL_CERT_REQS`` value;
+    2. ``COMPONENT_BROKER_SSL_CERT_REQS=none`` while deployed — encrypted but
+       unauthenticated is the exact posture this story removes;
+    3. a ``rediss://`` broker with no CA bundle to verify it against.
+
+    ``config.broker_tls`` already composes ``CERT_REQUIRED`` for every one of
+    these, so the refusal is the operator-facing half of a posture that is
+    already fail-closed, never the only thing standing between production and
+    ``CERT_NONE``.
+
+    Raises:
+        ImproperlyConfigured: Message always names the env key and its remedy.
+    """
+    if not is_deployed():
+        return
+
+    requested = broker_tls.requested_cert_reqs_name()
+    if requested not in broker_tls.CERT_REQS_BY_NAME:
+        recognised = ", ".join(sorted(broker_tls.CERT_REQS_BY_NAME))
+        message = (
+            f"{broker_tls.CERT_REQS_ENV_VAR} is {requested!r}, which is not a "
+            f"recognised broker certificate policy (expected one of: "
+            f"{recognised}). Unset it to take the verified default "
+            f"({broker_tls.VERIFIED!r})."
+        )
+        raise ImproperlyConfigured(message)
+
+    if requested == broker_tls.UNVERIFIED:
+        message = (
+            f"{broker_tls.CERT_REQS_ENV_VAR}={broker_tls.UNVERIFIED} disables "
+            "broker certificate verification in a deployed component: a "
+            f"{broker_tls.TLS_SCHEME} link would be encrypted but not "
+            f"authenticated. Unset it (the default is "
+            f"{broker_tls.VERIFIED!r}), or set {RUNTIME_ENV_VAR}={LOCAL} if "
+            "this is local development against a self-signed Redis."
+        )
+        raise ImproperlyConfigured(message)
+
+    if (
+        broker_tls.is_tls_broker(broker_tls.broker_url_from_env())
+        and broker_tls.resolve_ca_bundle() is None
+    ):
+        message = (
+            f"{broker_tls.BROKER_URL_ENV_VAR} is a {broker_tls.TLS_SCHEME} URL "
+            "but no CA bundle resolved, so the broker's certificate cannot be "
+            "verified. Install the corporate CA into the OS trust store (or "
+            f"set SSL_CERT_FILE), or set {broker_tls.CA_BUNDLE_ENV_VAR} to a "
+            "PEM bundle path that exists in this component."
+        )
+        raise ImproperlyConfigured(message)
+
+
+_STAGE_ONE: Final[tuple[Callable[[], None], ...]] = (
+    refuse_required_settings,
+    refuse_unverified_broker_tls,
+)
+
+
 def run_stage_one(settings_module: ModuleType, /) -> None:
     """Evaluate every stage-1 condition against a settings module being composed.
 
     The ``settings_module`` argument is required for call-site uniformity with
     the django-15-factor-base pattern (conditions that read composed names use
-    ``getattr`` on it). CAP-3 stage 1 currently validates required env keys via
-    ``os.environ``; the module is accepted and reserved for later conditions.
+    ``getattr`` on it). Every CAP-3 stage-1 condition reads ``os.environ`` — the
+    same source ``config.settings.base`` composed from — so the module is
+    accepted and reserved for later namespace-based conditions.
 
     Args:
         settings_module: The leaf settings module (``sys.modules[__name__]``).
@@ -163,4 +239,5 @@ def run_stage_one(settings_module: ModuleType, /) -> None:
 
     # Reserved for namespace-based conditions; silence unused-arg linters.
     _ = settings_module
-    refuse_required_settings()
+    for condition in _STAGE_ONE:
+        condition()

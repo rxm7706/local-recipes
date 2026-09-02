@@ -31,6 +31,9 @@ def main():
     # CAP-2: instrument management commands too.
     from config.observability import configure_observability  # noqa: PLC0415
 
+    # Story 41.4: configure_observability() reads the settings module first, so
+    # a CAP-3 stage-1 refusal is this process's exit status rather than a debug
+    # log (see that function's own note).
     configure_observability()
 
     execute_from_command_line(sys.argv)

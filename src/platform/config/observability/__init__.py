@@ -15,6 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import environ
+from django.conf import settings
 
 from config.observability.logging import add_otel_context
 from config.observability.logging import build_logging_config
@@ -28,6 +29,7 @@ __all__ = [
     "configure_observability",
     "configure_structlog",
     "configure_telemetry",
+    "load_django_settings",
     "read_dot_env",
     "resolve_log_format",
 ]
@@ -60,11 +62,40 @@ def read_dot_env() -> bool:
     return True
 
 
+def load_django_settings() -> None:
+    """Import the settings module before anything can swallow its refusals.
+
+    Story 41.4 / CAP-3. ``DjangoInstrumentor().instrument()`` reads
+    ``settings.MIDDLEWARE`` inside a ``try/except ImproperlyConfigured`` and
+    answers a failure by calling ``settings.configure()`` -- which replaces the
+    real settings module with Django's empty defaults for the rest of the
+    process. A stage-1 refusal raised while importing settings was therefore
+    demoted to a debug log at every entrypoint (`manage.py`, `wsgi`, `asgi`,
+    the Celery app), and the component booted with no apps and no middleware
+    instead of failing fast. Found live: `manage.py check` answered "System
+    check identified no issues" and exited 0 for a deployed component with no
+    `DJANGO_SECRET_KEY`.
+
+    Touching one setting here imports the module first, so the refusal is the
+    process's own exception. In a healthy process this is a no-op -- the
+    instrumentor would have imported the same module microseconds later.
+
+    Raises:
+        ImproperlyConfigured: Propagated from any stage-1 refusal.
+    """
+    _ = settings.INSTALLED_APPS
+
+
 def configure_observability(service_version: str | None = None) -> bool:
     """Configure logging-adjacent environment and telemetry for this process.
+
+    ``.env`` is read first (telemetry reads ``OTEL_*`` from the environment),
+    then the settings module, then telemetry -- see `load_django_settings` for
+    why that middle step is not optional.
 
     Returns:
         True when telemetry was configured by this call, False when skipped.
     """
     read_dot_env()
+    load_django_settings()
     return configure_telemetry(service_version)
