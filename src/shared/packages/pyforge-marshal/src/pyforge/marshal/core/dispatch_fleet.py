@@ -159,6 +159,14 @@ class MissingSpecEscalation:
 
 
 @dataclass(frozen=True)
+class FinalizeEscalation:
+    """Supervisor finalize shell failed — operator must act in the worktree (28.24)."""
+
+    story: str
+    worktree_path: str
+
+
+@dataclass(frozen=True)
 class StationCycleResult:
     """One station's observed outcome for one cycle (journal payload shape)."""
 

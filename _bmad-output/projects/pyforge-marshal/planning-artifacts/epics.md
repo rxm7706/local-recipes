@@ -4451,4 +4451,4 @@ So that a “done + dirty leftover” story does not wait for chat (28.18 / PR #
 **Given** a dispatch worktree with a commitable dirty tree and a session that reported done or “shell unavailable” **When** the supervisor tick runs **Then** marshal commits the leftover, pushes `origin/dispatch/<slug>/<story>`, and runs `verify_commands`
 **And** drain does not redispatch the same story solely because of `MRS-DISP-036` without that finalize attempt
 **And** if supervisor shell also fails, the station is `awaiting-operator` naming the worktree path
-**Status:** backlog
+**Status:** done

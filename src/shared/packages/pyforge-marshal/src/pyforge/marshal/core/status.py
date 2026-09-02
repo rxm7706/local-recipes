@@ -1016,6 +1016,10 @@ class FleetHomeFacts:
     # the stranded-work signal fleet-picture ATTENTION names alongside the
     # overlay fix in ``derive_dispatch_phase``.
     dispatch_stranded_work: dict[str, object] | None = None
+    # Story 28.24 (CAP-7): supervisor finalize shell failed — operator must
+    # commit/push/verify in the named worktree.
+    finalize_escalation_story: str | None = None
+    finalize_escalation_worktree: str | None = None
 
 
 def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
@@ -1123,6 +1127,29 @@ def _apply_missing_spec_escalation(
         "missing_spec_escalation_glob": spec_glob,
     }
     return patched
+
+
+def _apply_finalize_escalation(
+    row: dict[str, object], facts: FleetHomeFacts
+) -> dict[str, object]:
+    """Story 28.24: supervisor shell failure surfaces as ``awaiting-operator``."""
+    story = facts.finalize_escalation_story
+    worktree = facts.finalize_escalation_worktree
+    if not story or not worktree:
+        return row
+    if _dispatch_overlay_active(facts):
+        return row
+    state = row.get("state")
+    if state not in ("idle", "stopped", "unsupervised", "unknown"):
+        return row
+    remedy = f"supervisor finalize failed: commit/push/verify in {worktree}"
+    return {
+        **row,
+        "state": "awaiting-operator",
+        "current_story": story,
+        "awaiting_operator_remedy": remedy,
+        "finalize_escalation_worktree": worktree,
+    }
 
 
 def _apply_dispatch_overlay(
@@ -1297,7 +1324,9 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             }
             finding = None
         row = _apply_dispatch_overlay(row, facts)
-        return _apply_missing_spec_escalation(row, facts), finding
+        return _apply_finalize_escalation(
+            _apply_missing_spec_escalation(row, facts), facts
+        ), finding
 
     if not facts.has_run:
         row = {
@@ -1314,8 +1343,11 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
-        return _apply_missing_spec_escalation(
-            _apply_dispatch_overlay(row, facts), facts
+        return _apply_finalize_escalation(
+            _apply_missing_spec_escalation(
+                _apply_dispatch_overlay(row, facts), facts
+            ),
+            facts,
         ), None
 
     state = derive_home_state(
@@ -1400,7 +1432,9 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "failed_patches": facts.failed_patches,
     }
     row = _apply_dispatch_overlay(row, facts)
-    return _apply_missing_spec_escalation(row, facts), None
+    return _apply_finalize_escalation(
+        _apply_missing_spec_escalation(row, facts), facts
+    ), None
 
 
 def sort_fleet_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:

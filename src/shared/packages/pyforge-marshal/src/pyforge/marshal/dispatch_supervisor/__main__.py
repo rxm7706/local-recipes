@@ -44,6 +44,11 @@ from ..core.dispatch_supervisor_state import (
     should_terminalize_verify_refusal,
     supervisor_should_exit,
 )
+from ..core.dispatch_supervisor_finalize import (
+    classify_finalize_trigger,
+    finalize_attempt_journaled,
+    supervisor_should_finalize_harness_work,
+)
 from ..core.model import Finding, Severity
 from ..core.journal import (
     JournalEntryId,
@@ -370,6 +375,236 @@ def _verification_outcome_verdict(folded, run_id: str) -> str | None:
             if isinstance(verdict_val, str):
                 return verdict_val
     return None
+
+
+def _journal_finalize_attempt(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    story_key: str,
+    worktree: Path,
+    trigger: str,
+    committed: bool,
+    pushed: bool,
+    verified: bool,
+    ok: bool,
+    failed_step: str | None = None,
+    failed_message: str | None = None,
+) -> int:
+    """Journal one supervisor finalize attempt (Story 28.24, CAP-7)."""
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+        phase=Phase.INTENT,
+        payload={
+            "story_key": story_key,
+            "worktree_path": str(worktree),
+            "trigger": trigger,
+        },
+    )
+    counter += 1
+    outcome_payload: dict[str, object] = {
+        "story_key": story_key,
+        "worktree_path": str(worktree),
+        "trigger": trigger,
+        "committed": committed,
+        "pushed": pushed,
+        "verified": verified,
+        "ok": ok,
+    }
+    if failed_step is not None:
+        outcome_payload["failed_step"] = failed_step
+    if failed_message is not None:
+        outcome_payload["failed_message"] = failed_message
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload=outcome_payload,
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal finalize for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
+def _run_supervisor_finalize_sequence(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+    session_log: str | None,
+    merge_subject_template: str,
+    folded,
+) -> tuple[int, bool]:
+    """Commit, push, and verify harness-leftover work (Story 28.24)."""
+    trigger = classify_finalize_trigger(session_log).value
+    committed = False
+    pushed = False
+    verified = False
+    failed_step: str | None = None
+    failed_message: str | None = None
+    try:
+        if vcs.has_uncommitted_changes(worktree):
+            changed = vcs.changed_files(repo_root, worktree, base="HEAD")
+            if changed:
+                vcs.commit_paths(
+                    worktree,
+                    tuple(Path(path) for path in changed),
+                    "marshal: supervisor finalize (Story 28.24)",
+                )
+                committed = True
+    except VcsCommandError as exc:
+        counter = _journal_finalize_attempt(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            trigger=trigger,
+            committed=False,
+            pushed=False,
+            verified=False,
+            ok=False,
+            failed_step="commit",
+            failed_message=str(exc),
+        )
+        return counter, False
+
+    try:
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            repo_root=repo_root,
+            worktree=worktree,
+            story_key=story_key,
+            project_slug=slug,
+            baseline_head_sha=git_facts.baseline_head_sha,
+            merge_subject_template=merge_subject_template,
+        )
+    except (VcsCommandError, ValueError):
+        pass
+
+    if not _dispatch_push_already_journaled(folded, run_id):
+        counter = _run_and_journal_dispatch_push(
+            fs=fs,
+            vcs=vcs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            git_facts=git_facts,
+        )
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+        if text is not None:
+            folded = _fold_dispatch_journal(fs, run_dir, text)
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PUSH):
+            if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+                continue
+            if entry.payload.get("outcome") == "pushed":
+                pushed = True
+            elif entry.payload.get("outcome") == "push-failed":
+                failed_step = "push"
+                raw = entry.payload.get("failed_message")
+                failed_message = raw if isinstance(raw, str) else "push failed"
+            break
+    else:
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PUSH):
+            if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+                continue
+            if entry.payload.get("outcome") == "pushed":
+                pushed = True
+            elif entry.payload.get("outcome") == "push-failed":
+                failed_step = "push"
+                raw = entry.payload.get("failed_message")
+                failed_message = raw if isinstance(raw, str) else "push failed"
+            break
+
+    if failed_step == "push":
+        counter = _journal_finalize_attempt(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            trigger=trigger,
+            committed=committed,
+            pushed=False,
+            verified=False,
+            ok=False,
+            failed_step=failed_step,
+            failed_message=failed_message,
+        )
+        return counter, False
+
+    if not _verification_already_journaled(folded, run_id):
+        counter = _run_and_journal_verification(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+        )
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+        if text is not None:
+            folded = _fold_dispatch_journal(fs, run_dir, text)
+        v_outcome = _verification_outcome_verdict(folded, run_id)
+        verified = v_outcome == DispatchVerificationVerdict.VERIFIED.value
+    else:
+        v_outcome = _verification_outcome_verdict(folded, run_id)
+        verified = v_outcome == DispatchVerificationVerdict.VERIFIED.value
+
+    counter = _journal_finalize_attempt(
+        fs=fs,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        story_key=story_key,
+        worktree=worktree,
+        trigger=trigger,
+        committed=committed or git_facts.current_head_sha != git_facts.baseline_head_sha,
+        pushed=pushed,
+        verified=verified,
+        ok=True,
+    )
+    return counter, True
 
 
 def _run_and_journal_landing(
@@ -743,58 +978,62 @@ def run_dispatch_supervisor(
                 verification_verdict=v_outcome,
                 session_log=session_log,
             )
+        landing_done = _landing_succeeded(folded, run_id)
+        if (
+            supervisor_should_finalize_harness_work(
+                session_alive=session_alive,
+                git=git_facts,
+                session_log=session_log,
+                verification_verdict=v_outcome,
+                landing_complete=landing_done,
+            )
+            and not finalize_attempt_journaled(folded, run_id)
+        ):
+            counter, _finalize_ok = _run_supervisor_finalize_sequence(
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                run_dir=run_dir,
+                run_id=run_id,
+                writer_id=writer_id,
+                counter=counter,
+                repo_root=repo_root,
+                slug=slug,
+                story_key=story_key,
+                worktree=worktree,
+                git_facts=git_facts,
+                session_log=session_log,
+                merge_subject_template=merge_subject_template,
+                folded=folded,
+            )
+            text = fs.read_text(journal_path)
+            if text is not None:
+                folded = _fold_dispatch_journal(fs, run_dir, text)
+            v_outcome = _verification_outcome_verdict(folded, run_id)
+            try:
+                git_facts = gather_dispatch_git_facts(
+                    vcs,
+                    repo_root=repo_root,
+                    worktree=worktree,
+                    story_key=story_key,
+                    project_slug=slug,
+                    baseline_head_sha=baseline_head_sha,
+                    merge_subject_template=merge_subject_template,
+                )
+            except (VcsCommandError, ValueError):
+                pass
+            landing_done = _landing_succeeded(folded, run_id)
+            if landing_done:
+                verdict = DispatchSessionVerdict.COMPLETED
+            else:
+                verdict = resolve_terminal_session_verdict(
+                    session_alive=session_alive,
+                    git=git_facts,
+                    verification_verdict=v_outcome,
+                    session_log=session_log,
+                )
         if verdict == DispatchSessionVerdict.LIVE:
             if _session_awaits_verification(session_alive, git_facts):
-                if not _verification_already_journaled(folded, run_id):
-                    _commit_pre_verify_wip(
-                        vcs, repo_root=repo_root, worktree=worktree
-                    )
-                    try:
-                        git_facts = gather_dispatch_git_facts(
-                            vcs,
-                            repo_root=repo_root,
-                            worktree=worktree,
-                            story_key=story_key,
-                            project_slug=slug,
-                            baseline_head_sha=baseline_head_sha,
-                            merge_subject_template=merge_subject_template,
-                        )
-                    except (VcsCommandError, ValueError):
-                        pass
-                    if not _dispatch_push_already_journaled(folded, run_id):
-                        counter = _run_and_journal_dispatch_push(
-                            fs=fs,
-                            vcs=vcs,
-                            run_dir=run_dir,
-                            run_id=run_id,
-                            writer_id=writer_id,
-                            counter=counter,
-                            repo_root=repo_root,
-                            slug=slug,
-                            story_key=story_key,
-                            worktree=worktree,
-                            git_facts=git_facts,
-                        )
-                        text = fs.read_text(journal_path)
-                        if text is not None:
-                            folded = _fold_dispatch_journal(fs, run_dir, text)
-                    counter = _run_and_journal_verification(
-                        fs=fs,
-                        vcs=vcs,
-                        process=process,
-                        run_dir=run_dir,
-                        run_id=run_id,
-                        writer_id=writer_id,
-                        counter=counter,
-                        repo_root=repo_root,
-                        slug=slug,
-                        story_key=story_key,
-                        worktree=worktree,
-                    )
-                    text = fs.read_text(journal_path)
-                    if text is not None:
-                        folded = _fold_dispatch_journal(fs, run_dir, text)
-                    v_outcome = _verification_outcome_verdict(folded, run_id)
                 if should_terminalize_verify_refusal(
                     session_alive=session_alive,
                     verification_verdict=v_outcome,
