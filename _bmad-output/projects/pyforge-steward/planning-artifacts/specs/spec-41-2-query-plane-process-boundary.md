@@ -233,24 +233,33 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
 - addressed_findings:
   - `[medium]` `[patch]` Estate AST gate treated string `read_only="false"` as compliant via `bool("false")` — require literal bool in `_keyword_bool`; add `test_duckdb_boundary_guard_rejects_string_read_only_false`.
 
+### 2026-09-02 — Review pass 15 (bmad-build-auto dispatch)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 0
+- reject: 36
+- addressed_findings:
+  - none
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Story 41.2 dispatched via bmad-build-auto on branch `dispatch/pyforge-steward/41.2`. Review pass 14 (user dispatch on physical spec path) applied one patch: strict boolean-only `read_only` keyword matching in the estate AST policy gate. Implementation enforces query-plane process boundary (BS-5 / S-3): estate-wide `duckdb.connect` policy test, chart invariants blocking `.duckdb` mounts on web reader pods and RWX plane PVCs, `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
+Summary: Story 41.2 dispatched via bmad-build-auto (`BMAD_ACTIVE_PROJECT=pyforge-steward`, physical spec path). Review pass 15 confirmed prior implementation on branch `dispatch/pyforge-steward/41.2` — no new patches. Query-plane process boundary (BS-5 / S-3) enforced via estate-wide `duckdb.connect` AST policy gate, chart invariants (web reader mount ban + plane PVC RWO), `DUCKDB_WRITER_MODULE` declaration, Scribe plane store read/write split, Dream/stack wording.
 
 Files changed (since baseline):
-- `pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
-- `pyforge/atlas/tests/test_duckdb_boundary.py` — policy + guard tests (incl. string read_only rejection)
-- `pyforge/scribe/graph_store_plane.py` — writer/reader connect split; plugin honors `write` with `is True`
-- `pyforge/scribe/tests/unit/test_graph_store_plane.py` — read-only reopen, connect_writer bypass, plugin write=False/string
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py` — `DUCKDB_WRITER_MODULE`
+- `src/shared/packages/pyforge-atlas/tests/test_duckdb_boundary.py` — policy + guard tests
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plane.py` — writer/reader connect split; plugin honors `write` with `is True`
+- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plane.py` — read-only reopen, connect_writer bypass, plugin write=False/string
 - `src/platform/tests/test_chart_invariants.py` — web-only reader mount ban + plane PVC RWO invariants
 - `docs/dreams/pyforge-unifying-strategy.md` — query plane + BS-5 rows
-- `spec-pyforge-unifying-strategy/stack.md` — duckdb row
-- `sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md` — duckdb row
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — `41-2-query-plane-process-boundary: done`
 
-Review findings (pass 14): 1 patch (medium), 0 new deferrals, 34 rejected (duplicates of frontmatter `deferred` or prior passes: ibis/alias AST, helm platform-ci skip, scribe importorskip skips, subPath/ephemeral mount edges, vacuous PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, resilience-invariants doc drift, connect_reader seam, open_graph_store write-flag wiring, estate scan roots, Code Map path prefix, verification block completeness, epic-41 ledger backlog, review-log volume). Intent-alignment: diff implements enforcement-first Reading A+E; runtime Mode C delivery (Reading B) out of scope per Boundaries. Follow-up review: false (1 medium patch; score 3 < 5).
+Review findings (pass 15): 0 patches, 0 new deferrals, 36 rejected (duplicates of frontmatter `deferred` or prior passes: resilience-invariants doc drift, ibis/alias/import-as AST gaps, platform-ci helm skip, scribe importorskip skips, subPath/ephemeral mount edges, vacuous PVC until template, runtime Parquet/ATTACH vs chart-proxy AC2, connect_reader seam wiring, atlas in-memory connect sweep, plugin write-default-True backward compat, Code Map path prefixes, verification block completeness, epic-41 ledger backlog, review-log volume, baseline metadata docs). Intent-alignment: diff implements enforcement-first Reading A+C+E; runtime Mode C delivery (Reading B) out of scope per Boundaries. Follow-up review: false (0 patches).
 
-Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 4 passed; `pixi run -e pyforge-atlas kedro-test -k scribe_plane` → 2 passed; `pixi run -e pyforge-scribe pyforge-scribe-test -k graph_store_plane` → 2 passed, 4 skipped; `pixi run -e platform-dev pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
+Verification (this dispatch): `pixi run -e pyforge-atlas kedro-test -k duckdb_boundary` → 4 passed; `pixi run -e pyforge-atlas kedro-test -k scribe_plane` → 2 passed; `pixi run -e platform-dev -- python -m pytest -c /dev/null --rootdir=src/platform src/platform/tests/test_chart_invariants.py -k duckdb_boundary` → 4 passed.
 
 Residual: No plane PVC in chart yet (Parquet is cross-pod artifact). When writer PVC lands on Celery worker, require `pyforge.io/query-plane: "true"` + RWO. See frontmatter `deferred` list for follow-on work.
