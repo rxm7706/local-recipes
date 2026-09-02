@@ -4404,7 +4404,7 @@ So that a PR like #985 does not wait on a chat session.
 **Given** a PR whose only conflict is `sprint-status-ledger.yaml` **When** land runs **Then** keys union with `done` beating `backlog`, the branch is pushed, merge is retried
 **And** if `merge-tree` is clean and GitHub `mergeable` is false **Then** marshal advances `main`, retires the PR, resyncs the ledger
 **And** unknown conflict paths escalate named — never wait silently
-**Status:** backlog
+**Status:** done
 
 ### Story 28.21: Push the dispatch branch before verify can strand it
 
