@@ -413,3 +413,28 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+# Epic 39 (added 2026-09-02): the 2026-08-31 fleet-uniformity pass covered epics
+# 1-38 only; 39-43 were minted after it, so every one of them currently falls back
+# to `default_epic_surface()` and re-fires MRS-GATE-012 on any legitimate path
+# outside it. Story 39.4 (optional `[feature.bmad-suite-full]` pixi bundle) hit
+# exactly that with two advisories, BOTH in its stated scope per its own spec:
+#   - tests/packaging/**            the story's own new structural test file
+#   - docs/reference/library-llms-full.md   the catalog `llms-full-check` requires
+#     be updated in the same change (the story recorded a real `undocumented-dep`
+#     finding until it was)
+# Only epic 39 is declared here — 40-43 are left undeclared deliberately rather
+# than widened speculatively; they need the same treatment when their stories'
+# real surfaces are known.
+"39" = [
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "tests/packaging/**",
+  "docs/reference/library-llms-full.md",
+  "recipes/bmad-suite/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+]

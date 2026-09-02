@@ -266,8 +266,13 @@ def _rewrite_recipe(
             *run_lines,
         ]
     )
+    # Capture the BEGIN marker LINE only (`[^\n]*` keeps its trailing
+    # "do not edit by hand" note); the old body is consumed by `.*?` and
+    # dropped. Keeping `.*?` inside the group made `\1` re-emit the stale
+    # block, so each run APPENDED a second `run:` key under `requirements:`
+    # instead of replacing the first.
     pattern = re.compile(
-        rf"({_re_escape(_GENERATED_BEGIN)}.*?){_re_escape(_GENERATED_END)}",
+        rf"({_re_escape(_GENERATED_BEGIN)}[^\n]*)\n.*?{_re_escape(_GENERATED_END)}",
         re.DOTALL,
     )
     if not pattern.search(text):
@@ -277,8 +282,11 @@ def _rewrite_recipe(
         text,
         count=1,
     )
+    # `[^\S\n]` (blank-but-not-newline) rather than `\s`: a bare `\s*$` under
+    # MULTILINE swallows the newline(s) AFTER the match, silently deleting the
+    # blank line that separates `context:` from `package:`.
     ver_pattern = re.compile(
-        r'(^\s*version:\s*")[\d.]+(")\s*$',
+        r'(^[^\S\n]*version:[^\S\n]*")[\d.]+(")[^\S\n]*$',
         re.MULTILINE,
     )
     new_text, n = ver_pattern.subn(rf"\g<1>{version}\g<2>", new_text, count=1)

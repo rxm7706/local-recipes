@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-builder
-  version: "2.2.1"
+  version: "2.2.2"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-builder/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: d62d8a810d909e807e8b49e279f7d585121c05ab8988bdc62f338bb469e2691b
+  sha256: 1e6db6d975e1c5a9712d16a45454c6f076c4e125f95e2a77ea9adc39622910f2
 
 build:
   number: 0
