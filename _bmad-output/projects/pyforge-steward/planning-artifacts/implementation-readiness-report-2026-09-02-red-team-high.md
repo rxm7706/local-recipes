@@ -19,8 +19,8 @@ hybrid (a)+(c); 43.6 added, gated on Mason 13.1 / 13.2.)**
 | 41.1 backup destination defaults to RWX PVC; object store is a profile plugin | `spec-41-1` | RWX exists already for media (AD-13); object store stays optional |
 | 42.4 changes queue names; any Celery caller with a hard-coded queue breaks | `spec-42-4` | Routing table lives in chrome; grep for `queue=` is a task |
 | 43.2 moves Langflow off bare `/api/v1` | `spec-43-2` | `/langflow/api/v1/` already works; the prefix-preserving redirect test exists |
-| The two detectors that fail on `main` (`chain-completeness` CAP-6, steward layers staleness) still fail | detectors | Pre-existing; not a gate for these stories. Worth a doctor ticket: 40.1 cites CAP-6 in its FR/AD line and the detector does not count it |
-| Fourteen drafts carry no operator approval yet | SCP § 2 item 6.3 | Yes/no per epic owed before `bmad-build` |
+| ~~`chain-completeness` CAP-6~~ | detectors | **Fixed 2026-09-02.** It was a real chain gap, not a detector bug: `spec-bmad-suite-channel-product` CAP-6 (added 2026-09-01) pointed at `spec-bmad-suite-metapackage`, but Epic 39 never cited the channel-product slug, so the slug-scoped window saw no CAP-6. Epic 39's blurb now cites it; the check is green. The steward layers-audit staleness checkpoint is handled separately (see the 2026-09-02 note below) |
+| ~~Fourteen drafts carry no operator approval yet~~ | SCP § 2 item 6.3 | **Approved 2026-09-02** (Epics 40–43 + Mason 13). Dev sessions on the web: start with `PYFORGE_SESSION_ENVS="pyforge-doctor python-agent-platform"` (add `platform-dev` for chart/helm stories) so platform tests can run |
 
 ## Trace
 

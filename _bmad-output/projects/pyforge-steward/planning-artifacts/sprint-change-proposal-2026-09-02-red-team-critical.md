@@ -3,7 +3,7 @@ title: Sprint Change Proposal — red-team CRITICALs (verified mint, durable bro
 date: 2026-09-02
 project: pyforge-steward
 chain: spec-pyforge-unifying-strategy
-status: applied — operator direction 2026-09-02 ("go with option 1, draft the R-1 and R-2 stories"); formal yes/no on the drafted stories still owed before dispatch
+status: approved — operator 2026-09-02: "approve steward Epics 40 through 43 and Mason Epic 13"
 trigger: Red-team architecture review (research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md) — X-1 / R-1 and S-1 / R-2
 mode: batch
 scope: minor
@@ -57,7 +57,7 @@ these two land.
 | 4.3 | MVP review | Not viable | Scope is not the problem; correctness is. |
 | 4.4 | Selected path | Done | **Option 1 — Direct Adjustment**, operator-chosen. |
 | 5.x | Proposal components | Done | Sections 3–5 below. |
-| 6.3 | Explicit approval | Action-needed | Operator directed "go with option 1, draft the R-1 and R-2 stories". Drafts applied under that direction; a yes/no on the drafts is owed before `bmad-build` dispatch. |
+| 6.3 | Explicit approval | Done | Operator 2026-09-02: "approve steward Epics 40 through 43 and Mason Epic 13". |
 | 6.4 | Ledger | Done | `40-1-…`, `40-2-…` = `backlog`; `epic-40` = `backlog`; `epic-40-retrospective` = `optional`. Hand-inserted in the tracked twin (Tier-3 feed absent in this clone); `sprint-ledger-sync` is monotonic and will not regress them. |
 
 ## 3. Recommended approach

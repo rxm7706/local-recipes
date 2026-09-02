@@ -1783,7 +1783,7 @@ one interpreter (`3.14.*`) via feedstock work **and** keep `mcp-host` as MCP-SDK
 isolation. Real solver probes (2026-09-02) found exactly two remaining blockers, both
 upstream pins collapsed by `noarch` recipes. Both are maintainer-edit PRs on feedstocks
 rxm7706 graduated; both run under `conda-forge-expert` (Rule 1) with a Rule 2 retro.
-Steward **43.6** (the image flip) is gated on both.
+Steward **43.6** (the image flip) is gated on both. **Approved by the operator 2026-09-02** together with steward Epics 40–43.
 
 ### Story 13.1: langflow-base onnxruntime pin admits Python 3.14
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** steward 43.5 • steward `DW-FU-10-4` • CFE G26

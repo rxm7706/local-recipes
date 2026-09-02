@@ -3,7 +3,7 @@ title: Sprint Change Proposal — red-team HIGH set (Epics 41–43)
 date: 2026-09-02
 project: pyforge-steward
 chain: spec-pyforge-unifying-strategy
-status: applied — operator direction 2026-09-02 ("run step 2"); yes/no on the fourteen drafts owed before dispatch
+status: approved — operator 2026-09-02: "approve steward Epics 40 through 43 and Mason Epic 13"
 trigger: Red-team architecture review (research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md) — directives R-3 … R-16 (HIGH + the DR CRITICAL); R-17 … R-25 to the deferred-work ledger
 mode: batch
 scope: moderate
@@ -44,7 +44,7 @@ HIGH story needs them or a consumer exists.
 | 4.2 | Rollback | Not viable | Nothing to revert. |
 | 4.3 | MVP review | Not viable | Scope is unchanged; production-readiness is. |
 | 4.4 | Path | Done | **Direct Adjustment**, operator-chosen ("run step 2"). |
-| 6.3 | Approval | Action-needed | Drafts applied under direction; explicit yes/no owed per epic before `bmad-build`. |
+| 6.3 | Approval | Done | Operator 2026-09-02: "approve steward Epics 40 through 43 and Mason Epic 13" (covers the § 7 amendment: 43.6 and Mason 13.1 / 13.2). |
 | 6.4 | Ledger | Done | Fourteen story keys `backlog`; `epic-41/42/43` `backlog`; retrospectives `optional`; `# stories: 224`. |
 
 ## 3. Recommended approach

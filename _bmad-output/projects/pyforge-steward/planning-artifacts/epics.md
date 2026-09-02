@@ -2237,7 +2237,10 @@ the child sees the request
 **Retroactive decomposition.** CAP-1/2/3 landed on main 2026-09-01
 (manifest, metapackage recipe, CFE generator, local build, channel publish);
 chain-completeness had flagged the Spec as undecomposed. CAP-4 (optional
-``feature.bmad-suite-full`` pixi pin) remains backlog.
+``feature.bmad-suite-full`` pixi pin) remains backlog. This epic is also the
+decomposition of `spec-bmad-suite-channel-product` CAP-6 (suite metapackage,
+added to that Spec 2026-09-01), whose own text points here — cited so the
+chain-completeness window for the channel-product Spec sees it.
 
 ### Story 39.1: Canonical suite manifest
 

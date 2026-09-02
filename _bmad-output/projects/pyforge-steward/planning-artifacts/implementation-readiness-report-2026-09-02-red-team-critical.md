@@ -24,7 +24,7 @@ they must not do. No AD or FR changes. No packaging gate.
 | `MemoryRedis` has no TTL / restart | `django_pyforge/events/memory.py` | 40.2 requires the durability proof on a real `redis-server`; skip-if-absent must be loud |
 | Roles are bare station names (X-3) | `django_pyforge/roles.py` | 40.1's station-in-roles check works today and survives R-13's prefixes if routed through `roles.py` |
 | Bus retry / Celery ack semantics still weak (A-2, S-2) | review R-9 / R-10 | Explicitly `deferred:` on 40.2 so a green 40.2 is not read as "the bus is resilient" |
-| Operator yes/no on drafts | SCP § 2 item 6.3 | Drafted under direction; approval owed before `bmad-build` |
+| ~~Operator yes/no on drafts~~ | SCP § 2 item 6.3 | **Approved 2026-09-02.** Web dev sessions: `PYFORGE_SESSION_ENVS="pyforge-doctor python-agent-platform"` |
 
 ## Trace
 
