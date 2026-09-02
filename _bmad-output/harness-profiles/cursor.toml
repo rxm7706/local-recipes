@@ -1,0 +1,21 @@
+# Repo overlay of the packaged `cursor` profile (Story 22.8).
+# Adds `--force` (`--yolo`) so Auto-review cannot stall a headless `-p`
+# dispatch on pixi/pytest/git. `--trust` alone only skips the workspace
+# prompt; shell still goes through the classifier.
+name = "cursor"
+binary = "cursor-agent"
+argv = [
+  "-p",
+  "--trust",
+  "--force",
+  "--workspace",
+  "{worktree}",
+  "{model_args}",
+  "{prompt}",
+]
+model_args = ["--model", "{model}"]
+model_passthrough = true
+authcheck_args = ["status"]
+authcheck_ok_pattern = "Logged in as"
+verified = true
+notes = "Overlay 2026-09-02: packaged shape plus --force so drain sessions do not wait on Smart Mode."
