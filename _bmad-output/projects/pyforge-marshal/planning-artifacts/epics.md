@@ -4427,7 +4427,7 @@ So that a pandas collection error in `tests/packaging` cannot refuse a marshal s
 **Given** a story diff that does not touch the failing packaging test **When** `pyforge-deps-test` collection-fails on pandas **Then** the finding is WARN `pre-existing-gate`, not `MRS-GATE-001` refuse
 **And** `pyforge-marshal-test` still refuses when the marshal package tests fail
 **And** transient redispatch into the same unrelated red command does not fire
-**Status:** backlog
+**Status:** done
 
 ### Story 28.23: Stranded-work signal after terminal verify-fail
 
