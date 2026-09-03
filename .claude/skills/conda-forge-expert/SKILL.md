@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.85.0
+version: 8.85.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -1335,25 +1335,27 @@ Use `using-agent-skills` as the meta-skill to select the right combination for a
 
 ### Platform Assignments
 
+*Defaults below are conda-smithy's `DEFAULT_PROVIDERS` / `DEFAULT_PLATFORMS` (`conda_smithy.configure_feedstock`, read 2026-09-03). They apply at rerender time — a feedstock not rerendered since it was created keeps whatever its `.ci_support`/pipelines were rendered with, which for pre-2026 feedstocks means Azure everywhere.*
+
 | Platform | Default CI Provider | Notes |
 |----------|---------------------|-------|
-| Linux x86_64 | **Azure Pipelines** | Default; opt-in to GitHub Actions via conda-smithy 3.57.1+ (March 2026) |
-| Linux aarch64 (ARM) | Azure Pipelines (emulated) | Cirun for native runners on selected feedstocks |
-| Linux ppc64le (Power8+) | Azure Pipelines (emulated) | |
-| macOS x86_64 / arm64 | Azure Pipelines | GitHub Actions not yet available |
-| Windows x86_64 | Azure Pipelines | GitHub Actions not yet available |
-| Windows ARM64 | Azure Pipelines | Python 3.14 cross-builds added 2025 |
+| Linux x86_64 | **GitHub Actions** | Was Azure until 2026; GA opt-in first arrived with conda-smithy 3.57.1 (March 2026), then became the default |
+| Linux aarch64 (ARM) | GitHub Actions (native arm64 runners) | Cross-compile on `linux_64` still available via `build_platform` |
+| Linux ppc64le / s390x | GitHub Actions (emulated) | Travis is the native-runner provider |
+| macOS x86_64 | Azure Pipelines | `macOS-15` (Intel) image |
+| macOS arm64 | Azure Pipelines | Native `macOS-15-arm64` image when `build_platform` is left at the identity default; **not enabled by default** — opt in per feedstock with `provider: {osx_arm64: default}` (G82) |
+| Windows x86_64 | **GitHub Actions** | Was Azure; per current `DEFAULT_PROVIDERS` |
+| Windows ARM64 | GitHub Actions | Python 3.14 cross-builds added 2025 |
 | Rerendering / automerge | **GitHub Actions** | Always — CI config updates and bot services |
 
-**GitHub Actions for Linux builds (opt-in, Mar 8, 2026)**: rerender after upgrading to conda-smithy ≥ 3.57.1 and set the provider in `conda-forge.yml`:
+**`provider:` is the per-leg override** — move a leg to another provider, or enable a non-default platform:
 
 ```yaml
-# conda-forge.yml — opt the Linux native build into GitHub Actions
+# conda-forge.yml
 provider:
-  linux_64: github_actions
+  linux_64: azure          # move the Linux leg back to Azure (e.g. GA concurrency limits)
+  osx_arm64: default       # enable the native Apple-Silicon leg (not on by default)
 ```
-
-Use this only when Azure capacity is constrained or your build needs the larger GA concurrency limits. Windows and macOS builds remain on Azure.
 
 **Build time limit**: 6 hours on Azure Pipelines (and matching limits on GitHub Actions). Builds exceeding this are killed with no artifacts.
 
@@ -3592,7 +3594,7 @@ requirements:
 **Answer: the staged-recipes PR cannot build osx-arm64 — by design** (deep 3-angle research, 2026-06-28: pipeline code + PR-precedent sample + conda-forge docs, all consistent).
 
 **Why — the PR matrix is hardcoded, NOT recipe-driven:**
-- `.azure-pipelines/azure-pipelines-osx.yml` hardcodes a single macOS matrix cell — `osx_64: { CONFIG: osx64 }` — on `vmImage: macOS-15` (an **Intel** Mac Pro; Azure's macOS-ARM image is *paused*). It publishes only `/Users/runner/bld/osx-64/`. linux + win are equally fixed (`linux_64` [+cuda], `win_64`); **no arm64/aarch64 job exists** in any pipeline.
+- `.azure-pipelines/azure-pipelines-osx.yml` hardcodes a single macOS matrix cell — `osx_64: { CONFIG: osx64 }` — on `vmImage: macOS-15` (an **Intel** image — Azure also offers a native `macOS-15-arm64` image, which current conda-smithy renders for feedstock `osx_arm64` legs, but staged-recipes' fixed pipeline never uses it). It publishes only `/Users/runner/bld/osx-64/`. linux + win are equally fixed (`linux_64` [+cuda], `win_64`); **no arm64/aarch64 job exists** in any pipeline.
 - **staged-recipes does NOT `conda-smithy rerender` per recipe.** `.ci_support/build_all.py` reads a recipe's `conda-forge.yml` for **only** `conda_build_tool`; `provider:` / `build_platform:` / `os_version:` are **ignored** for the PR matrix, and the `.ci_support/*.yaml` are static + repo-global. (This is the load-bearing difference from feedstocks, which DO rerender — a `conda-forge.yml` moves the matrix on a *feedstock* but has zero effect on the *staged-recipes-PR* matrix; same fact as the G77/v8.54.1 correction.)
 - No GitHub-Actions build path (the GHA workflows are lint-only).
 - Confirmed by 3 conda-forge core members — carterbox (#29958: *"we don't build for non-x86 in staged-recipes ... only in actual feedstocks"*), xhochy (#26783), jaimergp (#28236). 14/14 sampled PRs (incl. C/C++/Rust) built `osx_64` only; 0 recipes ship a `conda-forge.yml` that produces an arm64 leg.
@@ -3601,11 +3603,11 @@ requirements:
 ```bash
 conda build recipes/<name> -m .ci_support/osx_arm64.yaml -c conda-forge   # or: CONFIG=osx_arm64 python build-locally.py
 ```
-The build is a **cross-compile whose build host must be osx-64** (Apple Silicon native, or Intel-Mac cross). **You cannot build osx-arm64 from a Linux host** — macOS needs the macOS SDK/clang, and conda-build's crossenv can't monkey-patch `sys.platform` on Linux. So there is *no* pre-merge osx-arm64 path from a Linux box.
+The build host must be a **Mac** (native on Apple Silicon, or an Intel Mac cross-compiling). **You cannot build osx-arm64 from a Linux host** — macOS needs the macOS SDK/clang, and conda-build's crossenv can't monkey-patch `sys.platform` on Linux. So there is *no* pre-merge osx-arm64 path from a Linux box.
 
 **Shipping osx-arm64 (post-merge) — it's OPT-IN, not a default.** A new feedstock is created with only linux-64/osx-64/win-64 (conda-smithy default `provider: {osx_arm64: null}`). Enable via either:
 - **Automated migration (recommended)**: add the feedstock to `osx_arm64.txt` in `conda-forge-pinning` (the `armosxaddition` migration) → the bot opens the enabling PR once deps are arm64-ready.
-- **Manual + VALIDATED**: `conda-forge.yml` → `provider: {osx_arm64: azure}` + `@conda-forge-admin, please rerender`. The **`provider` key alone is sufficient** — the rerender generates `.ci_support/osx_arm64_*.yaml` and applies the cross-compile `build_platform: osx_arm64→osx_64` automatically (no explicit `build_platform` needed). Validated on **lyric-py-feedstock #2** (2026-06-28): `provider: {osx_arm64: azure, linux_aarch64: azure}` → rerender → 4/4 py osx_arm64 legs GREEN + 4/4 linux_aarch64 GREEN, PR merged. (`test: native_and_emulated` controls test execution; cross-built artifacts skip tests via `CONDA_BUILD_CROSS_COMPILATION=1` unless a native runner exists. Mind G18 on win: drop `win_64` from any `store_build_artifacts` list.)
+- **Manual + VALIDATED**: `conda-forge.yml` → `provider: {osx_arm64: azure}` + `@conda-forge-admin, please rerender`. `provider` enables the leg; **where it runs is `build_platform`'s call**. conda-smithy's default is the identity mapping, so an `osx_arm64` leg with no `build_platform` override runs **natively** on Azure's `macOS-15-arm64` image (host == target, so the test phase runs — verified in `conda_smithy.configure_feedstock`, 2026-09-03). Add `build_platform: {osx_arm64: osx_64}` only when you *want* the cross-compile on the Intel `macOS-15` image (host != target → `--test skip`). Validated both ways: **lyric-py-feedstock #2** (2026-06-28) took the cross route — its `conda-forge.yml` carries an explicit `build_platform: {osx_arm64: osx_64}` (an earlier version of this note wrongly said smithy applied that mapping automatically) → 4/4 py osx_arm64 legs GREEN + 4/4 linux_aarch64 GREEN, PR merged; **pythran-feedstock** (noarch, rerendered 2026-08-18) took the native route — `provider: {osx_arm64: default}` + `noarch_platforms: [linux_64, osx_arm64, win_64]` → an `osx_arm64_.yaml` leg on `macOS-15-arm64` whose tests run. For a **noarch** feedstock that is the whole recipe for Apple-Silicon test coverage: the artifact is already universal, only the validation leg is missing. (`test: native_and_emulated` controls test execution on emulated legs; cross-built artifacts skip tests via `CONDA_BUILD_CROSS_COMPILATION=1` unless a native runner exists. Mind G18 on win: drop `win_64` from any `store_build_artifacts` list.)
 
 **Pre-configure a new recipe's feedstock for osx-arm64 from day 1**: drop a `conda-forge.yml` with `provider: {osx_arm64: azure}` next to the staged-recipes `recipe.yaml`. It is **ignored for the PR build** but **carried to the feedstock on merge**, so the feedstock's first rerender enables osx-arm64 — no post-merge expansion PR needed (applied to `recipes/tolaria/`, 2026-06-28).
 
@@ -4131,6 +4133,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.85.1** (Sep 3, 2026) — **G82 + CI-provider table correction (PATCH).** Found while answering why `langflow-feedstock` #20 has no macOS-arm leg. G82 claimed Azure's macOS-ARM image was *paused* and that a `provider: {osx_arm64: azure}` rerender applied a cross-compile `build_platform: osx_arm64→osx_64` automatically. Current conda-smithy (`conda_smithy.configure_feedstock`) renders `VMIMAGE: macOS-15-arm64` whenever an `osx_arm64` leg's build platform is left at the identity default, so the leg runs natively and its tests run; the cross route is an explicit `build_platform: {osx_arm64: osx_64}` — which lyric-py-feedstock's own `conda-forge.yml` carries (the June note misattributed it to smithy). Live: `pythran-feedstock` (noarch; `provider: {osx_arm64: default}` + `noarch_platforms: [linux_64, osx_arm64, win_64]`) renders an `osx_arm64_.yaml` leg on `macOS-15-arm64`; `python`/`vtk`/`root` feedstocks sit on the same image. The same source's `DEFAULT_PROVIDERS` is `github_actions` for `linux_64`, `linux_aarch64` (native), `linux_ppc64le`/`s390x` (emulated), `win_64`, `win_arm64` and `azure` for `osx_64`/`osx_arm64` — § Platform Assignments had Azure-by-default with a Linux-GA opt-in and "GitHub Actions not yet available" for Windows/macOS. Rows corrected; `reference/conda-forge-yml-reference.md` § `noarch_platforms` gains the native Apple-Silicon test-leg note (the langflow answer: add `osx_arm64` there + `provider: {osx_arm64: default}`, rerender). No recipe, code, or gotcha-count change. **Files**: `SKILL.md`, `reference/conda-forge-yml-reference.md`, `config/skill-config.yaml` (8.85.0 → 8.85.1), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.85.0** (Sep 2, 2026) — **conda-forge dropped Python 3.10: the floor is now `3.11`, and the skill stopped hardcoding it (MINOR).** `conda-forge-pinning 2026.09.02.08.53.43` removed 3.10 from `python_min` and the matrix (now `3.11, 3.12, 3.13, 3.14`; win-arm64 / linux-riscv64 stay 3.14-only). The floor had been HARDCODED in `recipe-generator.py` (`_CONDA_FORGE_PYTHON_FLOOR = "3.10"` + five literal comparisons), so the generator would have kept emitting recipes pinned to a Python conda-forge no longer builds; it now reads the installed pinning, with the literal only as an offline fallback (fallbacks in `recipe_optimizer.py` and `conda_forge_server.py` moved to `3.11`). Two SEL-004 unit tests were hardcoded the same way and broke on the move — both are now floor-relative. **Rule: a moving ecosystem constant is read, never written down.** Corpus sweep removed `context.python_min` from **438** recipes at/below the floor (Rule 6 — delete the line, don't bump it; 123 legitimately above the floor kept), and repaired **47 recipes that did not parse at all** across four classes (22 G92 uncommented `Error:` lines, 13 unquotable plain scalars, 4 G20 bare `{{ }}`, 8 structural — incl. `basemap`/`sentencepiece`/`opencv` each missing the `- ` marker on their FIRST output, and `imagecodecs`' leaked `SentinelType` repr from a failed v0→v1 migration). Retired `tests/meta/test_dashboard_renders.py`: it demanded `docs/dashboard/check_render.js` exist while `dashboard-drift` lists that path in its reintroduction gate — two gates in direct contradiction, red since 2026-08-25. **Files**: `SKILL.md`, `scripts/{recipe-generator,recipe_optimizer}.py`, `.claude/tools/conda_forge_server.py`, `tests/unit/test_recipe_optimizer.py`, `tests/meta/*`, 485 `recipes/*/recipe.yaml`, repo-root `conda_build_config.yaml`, `config/skill-config.yaml` (8.84.1 → 8.85.0), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.84.1** (Sep 2, 2026) — **2026-09-02 suite-advance housekeeping Rule-2 retro (PATCH): `bmad_suite_metapackage.py` appended instead of replacing.** Closing retro for the three-package suite bump (bmad-builder 2.2.2 / creative-intelligence-suite 0.3.2 / TEA 1.24.0, all built GREEN and published to SelfExplainML). The instructed `generate-bmad-suite` regen corrupted `recipes/bmad-suite/recipe.yaml` via two untested defects in `_rewrite_recipe`: (1) the BEGIN..END regex captured the marker **and the old body** in group 1 and re-emitted it, so each run APPENDED a second `run:` key under `requirements:` rather than replacing the first — silent, because `yaml.safe_load` resolves a duplicate key last-wins; (2) the version regex's trailing `\s*$` under MULTILINE ate the blank line after `context.version`. Fixed by capturing the BEGIN *line* (`[^\n]*` preserves its "do not edit by hand" note) and switching both `\s*` to `[^\S\n]*`. Added `tests/unit/test_bmad_suite_metapackage_rewrite.py` (6 cases, A/B verified 4-fail→6-pass) — nothing tested this splice before. **Lesson**: a marker-splice generator must consume the old body and re-emit only the marker, and a "did it work?" check on YAML must assert on the emitted TEXT, since `safe_load` hides the duplicate-key failure. No recipe-authoring gotcha; no new section. **Files**: `scripts/bmad_suite_metapackage.py`, `tests/unit/test_bmad_suite_metapackage_rewrite.py` (new), `SKILL.md`, `config/skill-config.yaml` (8.84.0 → 8.84.1), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.84.0** (Aug 23, 2026) — **Steward 15.2 Rule-2 retro (MINOR): github_updater HEAD-advance.** `github_updater.py` gains `--head` / `update_recipe_head` for commit-pinned recipes (bump `context.commit` to default-branch HEAD + recalculate sha256). Powers steward `suite advance` CAP-2 tag|head autotick selection. No new gotchas; G109 still governs version-of-record re-derivation on HEAD bumps.

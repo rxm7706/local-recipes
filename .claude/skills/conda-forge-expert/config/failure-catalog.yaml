@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "e8abd10e6a5826ae5453c5024e058acc8ddd290098a2f9f3b55b95609ef16087"
+source_sha256: "814c7718c11fb9a43a49ea458b2539a01a02c1af92a8911225cb57b235d9549d"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -645,9 +645,9 @@ rows:
       - ".azure-pipelines/azure-pipelines-osx.yml"
       - "osx_64: { CONFIG: osx64 }"
       - "vmImage: macOS-15"
+      - "macOS-15-arm64"
+      - "osx_arm64"
       - "/Users/runner/bld/osx-64/"
-      - "linux_64"
-      - "win_64"
     enforced_by: null
   - id: G83
     title: "A staged-recipes per-recipe `conda-forge.yml` is almost entirely INERT during the PR build — `build_all.py` reads ONLY `conda_build_tool`; every other key just SEEDS the post-merge feedstock"
