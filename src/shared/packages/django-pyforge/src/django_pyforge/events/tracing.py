@@ -14,10 +14,13 @@ carried by a plain :class:`contextvars.ContextVar` that always works.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from typing import TYPE_CHECKING
 from typing import Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 TRACEPARENT_HEADER = "traceparent"
 # version-traceid-spanid-flags, lowercase hex; an all-zero trace or span id

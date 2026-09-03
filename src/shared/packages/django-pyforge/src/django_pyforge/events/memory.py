@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterable
 from dataclasses import dataclass
 from dataclasses import field
+from typing import TYPE_CHECKING
 from typing import Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class StreamResponseError(Exception):
@@ -258,7 +261,7 @@ class MemoryRedis:
             if consumername is not None and pending.consumer != consumername:
                 continue
             idle = now - pending.delivered_at
-            if idle < 0:
+            if idle < 0:  # noqa: PLR1730 -- `max` is shadowed by the redis-py arg name
                 idle = 0
             out.append(
                 {
@@ -282,7 +285,8 @@ class MemoryRedis:
         **_kwargs: Any,
     ) -> list[tuple[str, dict[str, str]]]:
         group = self._require_group(name, groupname)
-        ids = [message_ids] if isinstance(message_ids, (str, bytes)) else list(message_ids)
+        single = isinstance(message_ids, (str, bytes))
+        ids = [message_ids] if single else list(message_ids)
         now = self._now_ms()
         claimed: list[tuple[str, dict[str, str]]] = []
         for stream_id in ids:

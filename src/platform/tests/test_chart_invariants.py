@@ -56,10 +56,21 @@ _VANILLA_KINDS = frozenset(
     },
 )
 _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job", "CronJob"})
-# The three pods that run the Story 10.3 platform image and must therefore
-# carry the restricted-v2 contract. "migrate" doubles as proof the hook
-# Job renders (`helm template` emits hooks).
-_PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
+# Story 42.3 / canopy AD-8: one `consume_events` Deployment per station in
+# values `events.consumers`; each is a platform-image pod that reaches
+# redis-broker. These are the chart's DEFAULT consumers (values.yaml) --
+# the consume-events proof below derives the list from values instead.
+_DEFAULT_EVENT_CONSUMERS = ("doctor", "mason")
+_CONSUME_EVENTS_PREFIX = "consume-events-"
+_CONSUME_EVENTS_ARGS = ("python", "manage.py", "consume_events", "--station")
+_CONSUME_EVENTS_COMPONENTS = frozenset(
+    f"{_CONSUME_EVENTS_PREFIX}{station}" for station in _DEFAULT_EVENT_CONSUMERS
+)
+# The pods that run the Story 10.3 platform image and must therefore carry
+# the restricted-v2 contract, and reach Redis (NetworkPolicy / REDIS_* env).
+# "migrate" doubles as proof the hook Job renders (`helm template` emits
+# hooks).
+_PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"}) | _CONSUME_EVENTS_COMPONENTS
 # Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
 # is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
 _PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase", "postgres-backup"}
@@ -2723,3 +2734,164 @@ def test_postgres_backup_check_fails_when_archive_mode_missing():
     with pytest.raises(AssertionError, match="archive_mode"):
         _assert_postgres_backup_cronjob_present(docs)
 
+
+
+# ---------------------------------------------------------------------------
+# Story 42.3 / canopy AD-8 -- one consume_events Deployment per subscribing
+# station, on the platform image, with the same contexts as worker
+# ---------------------------------------------------------------------------
+
+
+def _consume_events_pod_specs(docs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Station -> pod spec for every ``consume-events-<station>`` Deployment.
+    Only Deployments count: a consumer shipped as a Job or CronJob would be
+    a one-shot, not a listener (A-1)."""
+    out: dict[str, dict[str, Any]] = {}
+    for doc in docs:
+        if doc.get("kind") != "Deployment":
+            continue
+        template = _pod_template(doc)
+        labels = (template.get("metadata") or {}).get("labels") or {}
+        component = labels.get("app.kubernetes.io/component") or ""
+        if not component.startswith(_CONSUME_EVENTS_PREFIX):
+            continue
+        station = component[len(_CONSUME_EVENTS_PREFIX) :]
+        assert station not in out, f"duplicate consume-events Deployment for {station!r}"
+        out[station] = template["spec"]
+    return out
+
+
+def _assert_consume_events_deployments_mirror_worker(
+    docs: list[dict[str, Any]],
+    stations: list[str],
+) -> None:
+    """AC: a `consume-events` Deployment exists for each station in
+    `events.consumers` -- no more, no fewer -- on the platform image, running
+    `manage.py consume_events --station <name>`, with the worker's env,
+    security contexts, service account and volumes."""
+    by_component = _pod_specs_by_component(docs)
+    assert "worker" in by_component, "worker Deployment missing from render"
+    worker = by_component["worker"]
+    worker_container = worker["containers"][0]
+    rendered = _consume_events_pod_specs(docs)
+    assert set(rendered) == set(stations), (
+        f"consume-events Deployments {sorted(rendered)} do not match "
+        f"events.consumers {sorted(stations)}"
+    )
+    for station, spec in sorted(rendered.items()):
+        where = f"{_CONSUME_EVENTS_PREFIX}{station}"
+        containers = spec.get("containers") or []
+        assert len(containers) == 1, f"{where}: expected one container, got {len(containers)}"
+        container = containers[0]
+        assert container.get("args") == [*_CONSUME_EVENTS_ARGS, station], (
+            f"{where}: args must run consume_events for {station!r}, got {container.get('args')!r}"
+        )
+        assert container.get("image") == worker_container.get("image"), (
+            f"{where}: image {container.get('image')!r} != worker {worker_container.get('image')!r}"
+        )
+        assert container.get("env") == worker_container.get("env"), (
+            f"{where}: env differs from worker"
+        )
+        assert container.get("securityContext") == worker_container.get("securityContext"), (
+            f"{where}: container securityContext differs from worker"
+        )
+        assert container.get("volumeMounts") == worker_container.get("volumeMounts"), (
+            f"{where}: volumeMounts differ from worker"
+        )
+        assert spec.get("securityContext") == worker.get("securityContext"), (
+            f"{where}: pod securityContext differs from worker"
+        )
+        assert spec.get("serviceAccountName") == worker.get("serviceAccountName"), (
+            f"{where}: serviceAccountName differs from worker"
+        )
+        assert spec.get("volumes") == worker.get("volumes"), f"{where}: volumes differ from worker"
+        assert int(spec.get("terminationGracePeriodSeconds") or 0) > 0, (
+            f"{where}: needs a terminationGracePeriodSeconds drain budget"
+        )
+
+
+def _synthetic_platform_deployment(
+    component: str,
+    args: list[str],
+    env: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    env = env if env is not None else [{"name": "REDIS_URL", "value": "redis://broker"}]
+    return {
+        "kind": "Deployment",
+        "metadata": {"name": f"test-{component}"},
+        "spec": {
+            "template": {
+                "metadata": {"labels": {"app.kubernetes.io/component": component}},
+                "spec": {
+                    "serviceAccountName": "test-release-platform",
+                    "securityContext": {"runAsNonRoot": True},
+                    "terminationGracePeriodSeconds": 310,
+                    "containers": [
+                        {
+                            "name": component,
+                            "image": "platform:latest",
+                            "args": args,
+                            "env": env,
+                            "securityContext": {"allowPrivilegeEscalation": False},
+                            "volumeMounts": [{"name": "flags", "mountPath": "/etc/pyforge"}],
+                        },
+                    ],
+                    "volumes": [{"name": "flags", "configMap": {"name": "flags"}}],
+                },
+            },
+        },
+    }
+
+
+@requires_helm
+def test_consume_events_deployment_per_configured_station():
+    """AC (Story 42.3): `helm template` renders a consume-events Deployment
+    for each station in `events.consumers`, on the platform image, with the
+    same contexts as worker. The station list is DERIVED from values.yaml."""
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    stations = list(values["events"]["consumers"])
+    assert stations, "values.yaml must ship at least one event consumer (A-1)"
+    assert set(stations) == set(_DEFAULT_EVENT_CONSUMERS), (
+        "update _DEFAULT_EVENT_CONSUMERS when values.yaml's events.consumers changes"
+    )
+    docs = _render(_CORE_CHART)
+    _assert_consume_events_deployments_mirror_worker(docs, stations)
+
+
+@requires_helm
+def test_consume_events_follows_values_and_refuses_non_station():
+    """Overriding `events.consumers` changes exactly which Deployments render;
+    a name that is not a station token fails the render (consumer group =
+    station token, AD-8)."""
+    docs = _render(_CORE_CHART, "--set", "events.consumers={warden}")
+    _assert_consume_events_deployments_mirror_worker(docs, ["warden"])
+    with pytest.raises(AssertionError, match="not a station token"):
+        _render(_CORE_CHART, "--set", "events.consumers={nope}")
+
+
+def test_consume_events_guard_rejects_drift_from_worker():
+    """Guard-removed companion (ungated): synthetic docs prove the helper
+    raises when a consumer is missing, extra, runs the wrong args, or drifts
+    from the worker's env."""
+    worker = _synthetic_platform_deployment("worker", ["celery", "-A", "config", "worker"])
+    good_args = [*_CONSUME_EVENTS_ARGS, "doctor"]
+    doctor = _synthetic_platform_deployment("consume-events-doctor", good_args)
+    _assert_consume_events_deployments_mirror_worker([worker, doctor], ["doctor"])
+
+    with pytest.raises(AssertionError, match="do not match"):
+        _assert_consume_events_deployments_mirror_worker([worker, doctor], ["doctor", "mason"])
+    with pytest.raises(AssertionError, match="do not match"):
+        _assert_consume_events_deployments_mirror_worker([worker, doctor], [])
+    wrong_args = _synthetic_platform_deployment("consume-events-doctor", ["celery", "worker"])
+    with pytest.raises(AssertionError, match="args must run consume_events"):
+        _assert_consume_events_deployments_mirror_worker([worker, wrong_args], ["doctor"])
+    drifted_env = _synthetic_platform_deployment(
+        "consume-events-doctor",
+        good_args,
+        env=[{"name": "REDIS_URL", "value": "redis://elsewhere"}],
+    )
+    with pytest.raises(AssertionError, match="env differs"):
+        _assert_consume_events_deployments_mirror_worker([worker, drifted_env], ["doctor"])
+    with pytest.raises(AssertionError, match="worker Deployment missing"):
+        _assert_consume_events_deployments_mirror_worker([doctor], ["doctor"])

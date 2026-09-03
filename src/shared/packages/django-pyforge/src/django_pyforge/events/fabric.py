@@ -71,6 +71,8 @@ _BACKOFF_MAX_MS_ENV = "DJANGO_PYFORGE_EVENT_BACKOFF_MAX_MS"
 _HANDLER_TIMEOUT_MS_ENV = "DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS"
 
 _BATCH = 100
+# redis-py's XPENDING row as a tuple: (id, consumer, idle_ms, delivery_count).
+_PENDING_TUPLE_LEN = 4
 
 
 def _env_int(name: str, default: int) -> int:
@@ -207,7 +209,8 @@ def _require_station(group: str) -> None:
 
 
 def _pending_row(row: Any) -> tuple[str, str, int, int] | None:
-    """``(stream_id, consumer, idle_ms, delivery_count)`` from an XPENDING row."""
+    """``(stream_id, consumer, idle_ms, delivery_count)`` from an XPENDING
+    row, in either of redis-py's shapes (dict, or positional tuple)."""
     if isinstance(row, dict):
         return (
             _as_id(row.get("message_id")),
@@ -215,7 +218,7 @@ def _pending_row(row: Any) -> tuple[str, str, int, int] | None:
             int(row.get("time_since_delivered") or 0),
             int(row.get("times_delivered") or 0),
         )
-    if isinstance(row, (list, tuple)) and len(row) >= 4:
+    if isinstance(row, (list, tuple)) and len(row) >= _PENDING_TUPLE_LEN:
         return (_as_id(row[0]), str(row[1]), int(row[2]), int(row[3]))
     return None
 
@@ -242,7 +245,10 @@ class EventFabric:
             raise LoopDepthExceededError(depth=depth, event_type=str(event_type))
         traceparent = event.get(EXT_TRACEPARENT)
         if traceparent is not None and not parse_traceparent(traceparent):
-            msg = f"{EXT_TRACEPARENT} must be a W3C Trace Context header, got {traceparent!r}"
+            msg = (
+                f"{EXT_TRACEPARENT} must be a W3C Trace Context header, "
+                f"got {traceparent!r}"
+            )
             raise TraceparentFormatError(msg)
         if traceparent is None:
             # The publisher's own trace (the request, or the consumer that
@@ -305,34 +311,53 @@ class EventFabric:
         min_idle_time: int | None = None,
     ) -> int:
         """XAUTOCLAIM entries idle >= ``min_idle_time`` (default: the handler
-        timeout); quarantine the unparseable and the exhausted; keep the rest
-        pending under ``consumer`` for its retry pass. Returns entries moved
-        to the DLQ.
+        timeout); quarantine the unparseable and the exhausted; keep the
+        rest pending under ``consumer`` for its retry pass. Returns entries
+        moved to the DLQ.
         """
         _require_station(group)
-        threshold = handler_timeout_ms() if min_idle_time is None else int(min_idle_time)
-        result = self.broker.xautoclaim(STREAM, group, consumer, threshold, "0-0", count=_BATCH)
+        threshold = int(min_idle_time) if min_idle_time is not None else handler_timeout_ms()
+        result = self.broker.xautoclaim(
+            STREAM,
+            group,
+            consumer,
+            threshold,
+            "0-0",
+            count=_BATCH,
+        )
         messages = result[1] if result else []
         if not messages:
             return 0
-        counts = {
-            row[0]: row[3]
-            for row in (_pending_row(item) for item in self._pending_rows(group, consumer))
-            if row is not None
-        }
+        counts: dict[str, int] = {}
+        for item in self._pending_rows(group, consumer):
+            row = _pending_row(item)
+            if row is not None:
+                counts[row[0]] = row[3]
         ceiling = max_attempts()
         moved = 0
         for stream_id, fields in messages:
             sid = _as_id(stream_id)
+            attempts = counts.get(sid, 0)
             if parse_cloudevent(fields) is None:
-                self._quarantine(group, sid, fields, reason=DLQ_REASON_UNPARSEABLE, attempts=counts.get(sid, 0))
+                self._quarantine(
+                    group,
+                    sid,
+                    fields,
+                    reason=DLQ_REASON_UNPARSEABLE,
+                    attempts=attempts,
+                )
                 moved += 1
                 continue
             # The claim itself is a delivery, so an abandoned delivery counts
             # as a spent attempt — the same rule the retry pass applies.
-            attempts = counts.get(sid, 0)
             if attempts >= ceiling:
-                self._quarantine(group, sid, fields, reason=DLQ_REASON_EXHAUSTED, attempts=attempts)
+                self._quarantine(
+                    group,
+                    sid,
+                    fields,
+                    reason=DLQ_REASON_EXHAUSTED,
+                    attempts=attempts,
+                )
                 moved += 1
         return moved
 
@@ -342,7 +367,8 @@ class EventFabric:
         kwargs: dict[str, Any] = {}
         if consumer is not None:
             kwargs["consumername"] = consumer
-        return self.broker.xpending_range(STREAM, group, "-", "+", _BATCH, **kwargs) or []
+        rows = self.broker.xpending_range(STREAM, group, "-", "+", _BATCH, **kwargs)
+        return rows or []
 
     def _retry_pending(self, group: str, consumer: str, handler: Handler) -> int:
         handled = 0
@@ -357,17 +383,29 @@ class EventFabric:
                 # back (the process died mid-handler). The recorded error,
                 # if any, is what the DLQ entry carries.
                 fields = self._fields_of(stream_id)
-                if fields is not None:
-                    self._quarantine(group, stream_id, fields, reason=DLQ_REASON_EXHAUSTED, attempts=attempts)
-                else:
+                if fields is None:
                     self.broker.xack(STREAM, group, stream_id)
+                    continue
+                self._quarantine(
+                    group,
+                    stream_id,
+                    fields,
+                    reason=DLQ_REASON_EXHAUSTED,
+                    attempts=attempts,
+                )
                 continue
             delay = backoff_ms(attempts)
             if idle < delay:
                 continue
-            claimed = self.broker.xclaim(STREAM, group, consumer, delay, [stream_id]) or []
-            for claimed_id, fields in claimed:
-                handled += self._apply(group, _as_id(claimed_id), fields, handler, attempt=attempts + 1)
+            claimed = self.broker.xclaim(STREAM, group, consumer, delay, [stream_id])
+            for claimed_id, fields in claimed or []:
+                handled += self._apply(
+                    group,
+                    _as_id(claimed_id),
+                    fields,
+                    handler,
+                    attempt=attempts + 1,
+                )
         return handled
 
     def _fields_of(self, stream_id: str) -> dict[str, Any] | None:
@@ -378,11 +416,12 @@ class EventFabric:
         return None
 
     def _drain(self, group: str, consumer: str, handler: Handler) -> int:
-        rows = self.broker.xreadgroup(group, consumer, {STREAM: ">"}, count=_BATCH) or []
+        rows = self.broker.xreadgroup(group, consumer, {STREAM: ">"}, count=_BATCH)
         handled = 0
-        for _stream, messages in rows:
+        for _stream, messages in rows or []:
             for stream_id, fields in messages:
-                handled += self._apply(group, _as_id(stream_id), fields, handler, attempt=1)
+                sid = _as_id(stream_id)
+                handled += self._apply(group, sid, fields, handler, attempt=1)
         return handled
 
     def _apply(
@@ -396,7 +435,13 @@ class EventFabric:
     ) -> int:
         event = parse_cloudevent(fields)
         if event is None:
-            self._quarantine(group, stream_id, fields, reason=DLQ_REASON_UNPARSEABLE, attempts=attempt)
+            self._quarantine(
+                group,
+                stream_id,
+                fields,
+                reason=DLQ_REASON_UNPARSEABLE,
+                attempts=attempt,
+            )
             return 0
         key = applied_key(str(event["id"]))
         if not self._mark_applied(key):
@@ -405,12 +450,19 @@ class EventFabric:
         try:
             with bound_trace(event.get(EXT_TRACEPARENT)):
                 handler(event)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- any handler failure is a retry
             self.broker.delete(key)
             error = f"{type(exc).__name__}: {exc}"
             self.broker.set(last_error_key(stream_id), error, ex=_applied_ttl_seconds())
             if attempt >= max_attempts():
-                self._quarantine(group, stream_id, fields, reason=DLQ_REASON_EXHAUSTED, attempts=attempt, error=error)
+                self._quarantine(
+                    group,
+                    stream_id,
+                    fields,
+                    reason=DLQ_REASON_EXHAUSTED,
+                    attempts=attempt,
+                    error=error,
+                )
                 return 0
             logger.warning(
                 "event handler failed; retry in %d ms",
@@ -465,7 +517,13 @@ class EventFabric:
         logger.error(
             "event quarantined on %s",
             DLQ,
-            extra={"stream_id": stream_id, "group": group, "reason": reason, "attempts": attempts, "error": error},
+            extra={
+                "stream_id": stream_id,
+                "group": group,
+                "reason": reason,
+                "attempts": attempts,
+                "error": error,
+            },
         )
 
     def _mark_applied(self, key: str) -> bool:

@@ -46,7 +46,8 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 ```
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
-readiness), Celery worker Deployment, migrate hook Job
+readiness), Celery worker Deployment, one `consume-events-<station>`
+Deployment per station in `events.consumers` (Story 42.3), migrate hook Job
 (`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
 StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccounts, and an
 Ingress on `ingress.host` (default `platform.internal`).
@@ -123,12 +124,23 @@ capability-naming reason where helm/PyYAML are absent.
   pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
   redis container and is wired into platform pods' `REDIS_URL` via
   secretKeyRef + runtime env expansion. A NetworkPolicy restricts ingress
-  on port 6379 to web/worker/migrate pods only. **redis-cache** stays
+  on port 6379 to web/worker/migrate and `consume-events-*` pods only. **redis-cache** stays
   on `emptyDir` (ephemeral, `allkeys-lru`). **redis-broker** is durable
   and bounded (Story 40.2): AOF on a dedicated RWO PVC at `/data`,
   `--maxmemory` strictly below the container memory limit, and
   `noeviction`. Clusters without a CNI that enforces NetworkPolicy get
   AUTH only, not network isolation.
+- **Event delivery (Story 42.3).** `events.consumers` renders one
+  `consume-events-<station>` Deployment per station
+  (`manage.py consume_events --station <name>`; consumer group = station).
+  A handler failure leaves the entry pending and retries after
+  1s/2s/4s/8s (`DJANGO_PYFORGE_EVENT_BACKOFF_BASE_MS` / `_MAX_MS`); after
+  `DJANGO_PYFORGE_EVENT_MAX_ATTEMPTS` (5) the event is written to the DLQ
+  with `reason`, `error`, `attempts`, `group`, `stream_id` and only then
+  ACKed. `harvest_poison` reclaims entries another consumer abandoned only
+  once idle ≥ `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS` (300s). The
+  envelope carries `traceparent`; `enqueue_supervised_run` forwards it as a
+  Celery header.
 - **Dead-letter retention (Story 40.2).** The `pyforge.events.dlq` stream
   is never auto-trimmed. Operators inspect it with
   `manage.py list_event_dlq` and purge deliberately, e.g.

@@ -90,6 +90,24 @@ worker:
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
 
+# Event consumers (Story 42.3 / canopy AD-8). One Deployment per station
+# listed here, running `manage.py consume_events --station <name>` on the
+# platform image with the worker's env, security contexts and volumes.
+# Consumer group = station token (the template refuses anything else).
+# Delete a station from the list to stop consuming for it; the fabric's
+# retry/backoff/DLQ knobs are DJANGO_PYFORGE_EVENT_* env (see
+# django_pyforge/events/constants.py).
+events:
+  consumers:
+    - doctor
+    - mason
+  replicaCount: 1
+  # Drain budget for one in-flight handler: the handler timeout defaults to
+  # CELERY_TASK_TIME_LIMIT (300s) -- same arithmetic as the worker above.
+  terminationGracePeriodSeconds: 310
+  # Same empty-default seam rationale as the top-level `resources`.
+  resources: {}
+
 # Migrate hook Job (`manage.py migrate --fake --noinput`, hook-weight 0).
 # Liquibase (below) applies DDL first; this Job still runs so post_migrate
 # fills content types / permissions / sites (FR-24). backoffLimit absorbs

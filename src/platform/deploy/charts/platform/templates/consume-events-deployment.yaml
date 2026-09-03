@@ -1,0 +1,70 @@
+{{/*
+Story 42.3 (canopy AD-8, red-team A-1 / R-9): one event-consumer Deployment
+per subscribing station, `manage.py consume_events --station <name>`. Same
+image, env, security contexts and volumes as the Celery worker -- only the
+args differ. Consumer group = station token, so the station name is checked
+against the eight tokens at render time rather than failing inside the pod.
+No probes -- the consumer has no HTTP surface.
+*/}}
+{{- $stations := list "atlas" "doctor" "herald" "marshal" "mason" "scribe" "steward" "warden" }}
+{{- range $station := .Values.events.consumers }}
+{{- if not (has $station $stations) }}
+{{- fail (printf "events.consumers: %q is not a station token (one of: %s)" $station (join ", " $stations)) }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.consumeEvents.fullname" (dict "root" $ "station" $station) }}
+  labels:
+    {{- include "platform.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: consume-events-{{ $station }}
+spec:
+  replicas: {{ $.Values.events.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: consume-events-{{ $station }}
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: consume-events-{{ $station }}
+    spec:
+      serviceAccountName: {{ include "platform.fullname" $ }}
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Drain budget for the in-flight handler -- values-documented against
+      # DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS (defaults to the Celery hard
+      # limit). SIGTERM ends the loop after the current pass.
+      terminationGracePeriodSeconds: {{ $.Values.events.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" $ | nindent 8 }}
+      containers:
+        - name: consume-events
+          image: {{ include "platform.imageRef" (dict "image" $.Values.image "path" "image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" $.Values.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" $ | nindent 12 }}
+          # args (not command): the image ENTRYPOINT (/app/entrypoint.sh,
+          # which sources the pixi shell-hook) must keep running, with
+          # this as its "$@".
+          args: ["python", "manage.py", "consume_events", "--station", {{ $station | quote }}]
+          env:
+            {{- include "platform.djangoEnv" $ | nindent 12 }}
+          volumeMounts:
+            - name: wagtail-media
+              mountPath: {{ $.Values.media.mountPath | quote }}
+            {{- include "platform.flagsVolumeMount" $ | nindent 12 }}
+          {{- with $.Values.events.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: wagtail-media
+          persistentVolumeClaim:
+            claimName: {{ include "platform.media.pvcName" $ }}
+        {{- include "platform.flagsVolume" $ | nindent 8 }}
+{{- end }}

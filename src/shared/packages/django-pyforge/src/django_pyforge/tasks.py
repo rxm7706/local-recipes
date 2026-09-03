@@ -41,14 +41,22 @@ except ImportError:  # pragma: no cover -- structlog integration is optional
 
 if bind_extra_task_metadata is not None:
 
-    def _bind_task_traceparent(sender: Any = None, task: Any = None, **_kwargs: Any) -> None:
+    def _bind_task_traceparent(
+        sender: Any = None,
+        task: Any = None,
+        **_kwargs: Any,
+    ) -> None:
         """django-structlog has just cleared + rebuilt the task's contextvars;
         put the trace the message was published with back on them."""
         traceparent = traceparent_from_task_request(getattr(task, "request", None))
         if traceparent:
             bind_structlog_trace(traceparent)
 
-    bind_extra_task_metadata.connect(_bind_task_traceparent, weak=False, dispatch_uid="django_pyforge.trace")
+    bind_extra_task_metadata.connect(
+        _bind_task_traceparent,
+        weak=False,
+        dispatch_uid="django_pyforge.trace",
+    )
 
 
 @shared_task
