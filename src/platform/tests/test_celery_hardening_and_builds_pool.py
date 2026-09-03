@@ -186,12 +186,19 @@ def test_delivery_is_at_least_once_by_configuration() -> None:
     assert conf.task_acks_late is True
     assert conf.task_reject_on_worker_lost is True
     assert conf.worker_prefetch_multiplier == 1
-    for name in ("CELERY_TASK_ACKS_LATE", "CELERY_TASK_REJECT_ON_WORKER_LOST"):
+    for name in (
+        "CELERY_TASK_ACKS_LATE",
+        "CELERY_TASK_REJECT_ON_WORKER_LOST",
+        "CELERY_WORKER_PREFETCH_MULTIPLIER",
+    ):
         value = _settings_assignment(name)
         assert isinstance(value, ast.Constant), (
             f"{name} must be a literal, got {ast.dump(value)}"
         )
-        assert value.value is True, f"{name} must be the literal True, got {value.value!r}"
+        expected = 1 if name == "CELERY_WORKER_PREFETCH_MULTIPLIER" else True
+        assert value.value == expected, (
+            f"{name} must be the literal {expected!r}, got {value.value!r}"
+        )
 
 
 @pytest.mark.parametrize(
