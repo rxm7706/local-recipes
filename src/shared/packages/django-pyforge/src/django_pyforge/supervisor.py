@@ -563,7 +563,10 @@ def live_task_ids(inspector: Any | None = None) -> frozenset[str]:
             for item in tasks or []:
                 if not isinstance(item, dict):
                     continue
-                request = item.get("request") if isinstance(item.get("request"), dict) else item
+                # `scheduled` nests the request under "request"; the others
+                # are the request itself.
+                nested = item.get("request")
+                request = nested if isinstance(nested, dict) else item
                 task_id = request.get("id")
                 if isinstance(task_id, str) and task_id:
                     held.add(task_id)
@@ -618,7 +621,7 @@ def sweep_lost_runs(
     try:
         held = live_task_ids(inspector)
     except InspectUnavailableError as exc:
-        logger.error(
+        logger.exception(
             "supervisor.sweep_inspect_unavailable",
             extra={
                 "event": "supervisor.sweep_inspect_unavailable",

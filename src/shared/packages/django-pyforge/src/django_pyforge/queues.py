@@ -180,7 +180,7 @@ def station_time_limit(station: str) -> int:
     if it was a diagnose, because the alternative is failing a live build.
     """
     queues = {queue_for(station, "")}
-    queues.update(
-        queue for (route_station, _tool), queue in TOOL_ROUTES.items() if route_station == station
-    )
+    for (route_station, _tool), queue in TOOL_ROUTES.items():
+        if route_station == station:
+            queues.add(queue)
     return max(time_limit_for_queue(queue) for queue in queues)

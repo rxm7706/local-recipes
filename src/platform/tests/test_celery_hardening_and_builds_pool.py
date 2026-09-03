@@ -22,10 +22,10 @@ from __future__ import annotations
 
 import ast
 import json
-from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 
 import pytest
@@ -54,6 +54,9 @@ from django_pyforge.supervisor import register_runner
 from django_pyforge.supervisor import sweep_lost_runs
 from django_pyforge.tasks import execute_supervised_run
 from django_pyforge.tasks import redelivered
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 BASE_SETTINGS_PATH = PLATFORM_ROOT / "config" / "settings" / "base.py"
@@ -185,9 +188,10 @@ def test_delivery_is_at_least_once_by_configuration() -> None:
     assert conf.worker_prefetch_multiplier == 1
     for name in ("CELERY_TASK_ACKS_LATE", "CELERY_TASK_REJECT_ON_WORKER_LOST"):
         value = _settings_assignment(name)
-        assert isinstance(value, ast.Constant) and value.value is True, (
-            f"{name} must be the literal True, got {ast.dump(value)}"
+        assert isinstance(value, ast.Constant), (
+            f"{name} must be a literal, got {ast.dump(value)}"
         )
+        assert value.value is True, f"{name} must be the literal True, got {value.value!r}"
 
 
 @pytest.mark.parametrize(
@@ -199,7 +203,7 @@ def test_delivery_is_at_least_once_by_configuration() -> None:
         ({"redelivered": True}, True),
     ],
 )
-def test_redelivered_reads_the_transport_flag(info: Any, expected: bool) -> None:
+def test_redelivered_reads_the_transport_flag(*, info: Any, expected: bool) -> None:
     class _Request:
         delivery_info = info
 
@@ -297,7 +301,8 @@ def test_begin_attempt_refuses_terminal_and_missing_rows_and_bumps_heartbeat() -
     before = stale.heartbeat_at
     assert begin_attempt(str(stale.id)) is True
     stale.refresh_from_db()
-    assert before is not None and stale.heartbeat_at is not None
+    assert before is not None
+    assert stale.heartbeat_at is not None
     assert stale.heartbeat_at > before
     assert stale.result is None, "a first attempt leaves result untouched"
 
@@ -325,7 +330,11 @@ def _routed_queue(name: str, args: tuple[Any, ...] = ()) -> str:
         ("not-a-station", "anything", DEFAULT_QUEUE),
     ],
 )
-def test_supervised_runs_route_by_station_and_tool(station: str, tool: str, queue: str) -> None:
+def test_supervised_runs_route_by_station_and_tool(
+    station: str,
+    tool: str,
+    queue: str,
+) -> None:
     """AC 3: a Mason build lands on ``builds``; a Doctor remedy on
     ``priority``; everything else on its station's queue."""
     assert _routed_queue(SUPERVISED_RUN_TASK, ("run-id", station, tool, {})) == queue
@@ -339,9 +348,11 @@ def test_housekeeping_and_named_tasks_route_by_name() -> None:
     # No opinion -> Celery's default queue, which is ours, not "celery".
     assert _routed_queue("platformapp.front_door.run_django_task") == DEFAULT_QUEUE
     assert current_app.conf.task_default_queue == DEFAULT_QUEUE
-    assert queues.route_task("platformapp.front_door.run_django_task", (), {}, {}) is None
+    unnamed = "platformapp.front_door.run_django_task"
+    assert queues.route_task(unnamed, (), {}, {}) is None
     # A supervised run whose args are unreadable still lands somewhere sane.
-    assert queues.route_task(SUPERVISED_RUN_TASK, (), {}, {}) == {"queue": DEFAULT_QUEUE}
+    unreadable = queues.route_task(SUPERVISED_RUN_TASK, (), {}, {})
+    assert unreadable == {"queue": DEFAULT_QUEUE}
 
 
 def test_the_topology_is_one_table() -> None:
@@ -387,8 +398,9 @@ def test_values_worker_queues_mirror_the_chrome() -> None:
     values = yaml.safe_load(CORE_CHART_VALUES.read_text(encoding="utf-8"))
     assert list(values["worker"]["queues"]) == list(WORKER_QUEUES)
     builds = values["worker"]["builds"]
-    assert int(builds["taskTimeLimitSeconds"]) == queues.DEFAULT_BUILDS_TASK_TIME_LIMIT_SECONDS
-    assert int(builds["taskTimeLimitSeconds"]) >= ONE_HOUR_SECONDS
+    limit = int(builds["taskTimeLimitSeconds"])
+    assert limit == queues.DEFAULT_BUILDS_TASK_TIME_LIMIT_SECONDS
+    assert limit >= ONE_HOUR_SECONDS
     assert 0 < int(builds["softTimeLimitSeconds"]) < int(builds["taskTimeLimitSeconds"])
     base_default = _settings_assignment("_DEFAULT_BUILDS_TASK_TIME_LIMIT")
     assert eval(compile(ast.Expression(base_default), "<settings>", "eval")) == (  # noqa: S307 -- literal product from our own source
@@ -487,8 +499,9 @@ def test_sweep_does_nothing_when_the_workers_cannot_be_asked(caplog) -> None:
     """Silence from an unreachable broker is not proof a task is dead."""
     stale = _live_run(last_seen_ago=timedelta(hours=1))
 
+    down = _Inspector(raises=ConnectionError("broker down"))
     with caplog.at_level("ERROR"):
-        report = sweep_lost_runs(inspector=_Inspector(raises=ConnectionError("broker down")))
+        report = sweep_lost_runs(inspector=down)
 
     stale.refresh_from_db()
     assert stale.status == RunState.Status.RUNNING
@@ -496,7 +509,8 @@ def test_sweep_does_nothing_when_the_workers_cannot_be_asked(caplog) -> None:
     assert report["stale"] == 1
     assert report["inspected"] is False
     assert "broker down" in report["error"]
-    assert any("supervisor.sweep_inspect_unavailable" in r.message for r in caplog.records)
+    messages = [record.message for record in caplog.records]
+    assert any("supervisor.sweep_inspect_unavailable" in m for m in messages), messages
 
 
 @pytest.mark.django_db

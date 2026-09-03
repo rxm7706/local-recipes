@@ -16,7 +16,7 @@ from django_pyforge.supervisor import sweep_lost_runs
 
 
 class Command(BaseCommand):
-    help = "Mark live run_state rows whose task no worker holds as FAILED (worker_lost)."
+    help = "Mark live run_state rows whose task no worker holds FAILED (worker_lost)."
 
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument(

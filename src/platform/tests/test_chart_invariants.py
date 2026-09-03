@@ -2950,7 +2950,10 @@ def test_consume_events_guard_rejects_drift_from_worker():
 # ---------------------------------------------------------------------------
 
 
-def _deployment_by_component(docs: list[dict[str, Any]], component: str) -> dict[str, Any]:
+def _deployment_by_component(
+    docs: list[dict[str, Any]],
+    component: str,
+) -> dict[str, Any]:
     """The one Deployment whose pod template carries ``component``. A pool
     shipped as a Job/CronJob would be a one-shot, not a consumer."""
     found = [
@@ -2962,7 +2965,9 @@ def _deployment_by_component(docs: list[dict[str, Any]], component: str) -> dict
         )
         == component
     ]
-    assert len(found) == 1, f"expected exactly one {component!r} Deployment, got {len(found)}"
+    assert len(found) == 1, (
+        f"expected exactly one {component!r} Deployment, got {len(found)}"
+    )
     return found[0]
 
 
@@ -2975,13 +2980,20 @@ def _assert_pod_mirrors_worker(
     Celery worker -- only the args may differ. Returns the one container."""
     worker_container = worker["containers"][0]
     containers = spec.get("containers") or []
-    assert len(containers) == 1, f"{where}: expected one container, got {len(containers)}"
-    container = containers[0]
-    assert container.get("image") == worker_container.get("image"), (
-        f"{where}: image {container.get('image')!r} != worker {worker_container.get('image')!r}"
+    assert len(containers) == 1, (
+        f"{where}: expected one container, got {len(containers)}"
     )
-    assert container.get("env") == worker_container.get("env"), f"{where}: env differs from worker"
-    assert container.get("securityContext") == worker_container.get("securityContext"), (
+    container = containers[0]
+    image, worker_image = container.get("image"), worker_container.get("image")
+    assert image == worker_image, f"{where}: image {image!r} != worker {worker_image!r}"
+    assert container.get("env") == worker_container.get("env"), (
+        f"{where}: env differs from worker"
+    )
+    context, worker_context = (
+        container.get("securityContext"),
+        worker_container.get("securityContext"),
+    )
+    assert context == worker_context, (
         f"{where}: container securityContext differs from worker"
     )
     assert container.get("volumeMounts") == worker_container.get("volumeMounts"), (
@@ -2993,7 +3005,9 @@ def _assert_pod_mirrors_worker(
     assert spec.get("serviceAccountName") == worker.get("serviceAccountName"), (
         f"{where}: serviceAccountName differs from worker"
     )
-    assert spec.get("volumes") == worker.get("volumes"), f"{where}: volumes differ from worker"
+    assert spec.get("volumes") == worker.get("volumes"), (
+        f"{where}: volumes differ from worker"
+    )
     return container
 
 
@@ -3025,10 +3039,15 @@ def _assert_builds_pool(
         f"worker args {worker_args!r} do not consume worker.queues {worker_queues!r}"
     )
     consumed = set(",".join(worker_args[-1:]).split(","))
-    assert "builds" not in consumed, "the general worker must not consume builds (300s limit)"
-    assert "default" in consumed and "priority" in consumed, consumed
+    assert "builds" not in consumed, (
+        "the general worker must not consume builds (300s limit)"
+    )
+    assert "default" in consumed, consumed
+    assert "priority" in consumed, consumed
 
-    assert _WORKER_BUILDS_COMPONENT in by_component, "worker-builds Deployment missing from render"
+    assert _WORKER_BUILDS_COMPONENT in by_component, (
+        "worker-builds Deployment missing from render"
+    )
     spec = by_component[_WORKER_BUILDS_COMPONENT]
     container = _assert_pod_mirrors_worker(spec, worker, where=_WORKER_BUILDS_COMPONENT)
     expected_args = [
@@ -3048,10 +3067,12 @@ def _assert_builds_pool(
     assert 0 < soft_limit < limit, (soft_limit, limit)
     grace = int(spec.get("terminationGracePeriodSeconds") or 0)
     assert grace == limit + slack, (
-        f"worker-builds terminationGracePeriodSeconds {grace} != limit {limit} + slack {slack}"
+        f"worker-builds terminationGracePeriodSeconds {grace} != "
+        f"limit {limit} + slack {slack}"
     )
     for component in ("worker", _WORKER_BUILDS_COMPONENT):
-        exported = _env_value(by_component[component]["containers"][0], _BUILDS_LIMIT_ENV)
+        container = by_component[component]["containers"][0]
+        exported = _env_value(container, _BUILDS_LIMIT_ENV)
         assert exported == str(limit), (
             f"{component}: {_BUILDS_LIMIT_ENV} is {exported!r}, expected {limit!r}"
         )
@@ -3153,11 +3174,18 @@ def _synthetic_builds_pool(
         {"name": "REDIS_URL", "value": "redis://broker"},
         {"name": _BUILDS_LIMIT_ENV, "value": "14400"},
     ]
+    default_args = [
+        *_CELERY_WORKER_ARGS,
+        "-Q",
+        "builds",
+        "--time-limit",
+        "14400",
+        "--soft-time-limit",
+        "14100",
+    ]
     doc = _synthetic_platform_deployment(
         _WORKER_BUILDS_COMPONENT,
-        args
-        if args is not None
-        else [*_CELERY_WORKER_ARGS, "-Q", "builds", "--time-limit", "14400", "--soft-time-limit", "14100"],
+        args if args is not None else default_args,
         env=env if env is not None else default_env,
     )
     doc["spec"]["template"]["spec"]["terminationGracePeriodSeconds"] = grace
@@ -3188,7 +3216,7 @@ def test_builds_pool_guard_rejects_drift():
         worker_queues=queues,
     )
 
-    with pytest.raises(AssertionError, match="do not consume worker.queues"):
+    with pytest.raises(AssertionError, match=r"do not consume worker\.queues"):
         _assert_builds_pool(
             [worker, good],
             limit=14400,
@@ -3198,7 +3226,10 @@ def test_builds_pool_guard_rejects_drift():
         )
     with pytest.raises(AssertionError, match="hours-scale limit"):
         _assert_builds_pool(
-            [worker, _synthetic_builds_pool(args=[*_CELERY_WORKER_ARGS, "-Q", "builds"])],
+            [
+                worker,
+                _synthetic_builds_pool(args=[*_CELERY_WORKER_ARGS, "-Q", "builds"]),
+            ],
             limit=14400,
             soft_limit=14100,
             slack=60,
@@ -3229,7 +3260,11 @@ def test_builds_pool_guard_rejects_drift():
             worker_queues=queues,
         )
 
-    beat = _synthetic_platform_deployment(_BEAT_COMPONENT, list(_BEAT_ARGS), env=good_env)
+    beat = _synthetic_platform_deployment(
+        _BEAT_COMPONENT,
+        list(_BEAT_ARGS),
+        env=good_env,
+    )
     beat["spec"]["replicas"] = 1
     beat["spec"]["strategy"] = {"type": "Recreate"}
     _assert_beat_is_a_singleton_scheduler([worker, beat])
