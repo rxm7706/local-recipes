@@ -3,10 +3,10 @@
 Mirrors test_asgi_seam.py's pattern: talks to the composed ASGI callable
 itself (not Django's test Client), so a regression in the dispatch order
 (AD-4) is caught here rather than only by manual inspection. Covers the 5
-I/O & Edge-Case Matrix rows from spec-11-1: `/api/v1/*` and bare `/health`
-forward unchanged, `/langflow/*` forwards prefix-stripped, `/api/health`
-stays on the platform's own stub, and everything else still falls through
-to Django.
+I/O & Edge-Case Matrix rows from spec-11-1: bare `/health` forwards to
+Langflow unchanged, `/langflow/*` forwards prefix-stripped, `/api/health`
+stays on the platform's own stub, bare `/api/v1/*` no longer reaches Langflow
+(Story 43.2), and everything else still falls through to Django.
 
 Requires the `langflow` package (the `python-agent-platform` conda env, not
 the pixi env `platform-ci-test` the CI `test` job installs -- Langflow

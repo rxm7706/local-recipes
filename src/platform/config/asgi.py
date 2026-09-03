@@ -133,7 +133,15 @@ async def _dispatch_http(scope, receive, send) -> None:
     station_api = parse_station_api_path(path)
     if station_api is not None:
         station, version = station_api
-        await station_application(station, version)(scope, receive, send)
+        try:
+            app = station_application(station, version)
+        except KeyError:
+            from starlette.responses import JSONResponse
+
+            response = JSONResponse({"detail": "Not Found"}, status_code=404)
+            await response(scope, receive, send)
+            return
+        await app(scope, receive, send)
     elif _is_langflow_bare_health_path(path):
         await langflow_application(scope, receive, send)
     elif _is_langflow_prefixed_path(path):

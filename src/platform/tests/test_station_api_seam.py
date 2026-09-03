@@ -70,7 +70,12 @@ def test_adding_an_unversioned_route_fails_the_contract():
     async def bad_route() -> dict[str, str]:
         return {"bad": "route"}
 
-    assert "/stations/contract-probe/bad-route" in assert_routes_are_versioned(probe)
+    try:
+        assert "/stations/contract-probe/bad-route" in assert_routes_are_versioned(probe)
+    finally:
+        from config.station_api import _station_apps
+
+        _station_apps.pop(("contract-probe", 99), None)
 
 
 @override_settings(

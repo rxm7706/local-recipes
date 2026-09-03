@@ -138,7 +138,7 @@ development_status:
   42-4-celery-hardening-and-the-builds-pool: done
   42-5-role-namespaces-and-the-tenant-claim: done
   43-1-split-the-dream: done
-  43-2-station-api-contract: backlog
+  43-2-station-api-contract: done
   43-3-in-process-station-port-no-self-call: backlog
   43-4-golden-path-cd-by-digest: backlog
   43-5-one-interpreter-story: backlog
