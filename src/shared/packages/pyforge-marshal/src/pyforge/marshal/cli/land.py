@@ -89,9 +89,15 @@ is impossible BY CONSTRUCTION under ``"squash"``/``"rebase"``, see
 from ALL THREE of this function's own wave-outcome exits -- the ``if not
 wave_keys`` no-op (this story's own primary scenario: between-runs drift),
 the already-landed shortcut, and the full-merge path -- setting
-``data["home_current"]``. Any failure (a diverged branch, no network, a
-dirty tree, a held lock) is a new WARN finding (``MRS-LAND-009``), never
-escalated and never affecting this command's own exit."""
+        ``data["home_current"]``. Any failure (a diverged branch, no network, a
+        dirty tree, a held lock) is a new WARN finding (``MRS-LAND-009``), never
+        escalated and never affecting this command's own exit.
+
+    **Sprint-ledger promotion never writes the operator checkout (CAP-5).**
+    ``_promote_sprint_ledger`` publishes onto ``origin/<base>`` through
+    ``VcsPort.commit_paths_onto_remote_tip`` (throwaway detached worktree +
+    fast-forward push). It must not ``commit_paths`` on ``repo_root()`` --
+    that leftover diverged local ``main`` after every ``gh pr merge``."""
 
 from __future__ import annotations
 
@@ -614,7 +620,7 @@ def run_land(
         if promoted:
             data["deferred_work_promoted"] = list(promoted)
         sprint_promoted = _promote_sprint_ledger(
-            fs, vcs, root, slug, wave_keys, deploy_run, findings
+            fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base
         )
         if sprint_promoted:
             data["sprint_ledger_promoted"] = list(sprint_promoted)
@@ -1029,7 +1035,7 @@ def run_land(
     if promoted:
         data["deferred_work_promoted"] = list(promoted)
     sprint_promoted = _promote_sprint_ledger(
-        fs, vcs, root, slug, wave_keys, deploy_run, findings
+        fs, vcs, root, slug, wave_keys, deploy_run, findings, base=base
     )
     if sprint_promoted:
         data["sprint_ledger_promoted"] = list(sprint_promoted)
@@ -1329,6 +1335,8 @@ def _promote_sprint_ledger(
     wave_keys: list[StoryKey],
     deploy_run: "_DeployRun",
     findings: list[Finding],
+    *,
+    base: str,
 ) -> tuple[str, ...]:
     """FR-136 (Story 15.2): mechanically promote the tracked
     ``sprint-status-ledger.yaml`` when a wave lands -- deterministic
@@ -1348,7 +1356,12 @@ def _promote_sprint_ledger(
     Returns the raw ledger keys newly moved to ``done`` this run (empty
     when already converged). Lock contention / write / commit failures
     fire ``MRS-LAND-011`` WARN and return ``()`` -- never blocking
-    ``land``'s exit (the wave already landed)."""
+    ``land``'s exit (the wave already landed).
+
+    CAP-5: the commit is published onto ``origin/<base>`` via
+    ``commit_paths_onto_remote_tip``. This function must not
+    ``write_text_atomic`` + ``commit_paths`` on ``root`` -- that leftover
+    diverged the operator ``main`` checkout after every GitHub merge."""
     if not wave_keys:
         return ()
 
@@ -1421,6 +1434,29 @@ def _promote_sprint_ledger(
         fresh_ledger = fs.read_text(ledger_path)
         if fresh_ledger is None:
             fresh_ledger = ""
+        ledger_rel = (
+            f"_bmad-output/projects/{slug}/planning-artifacts/"
+            "sprint-status-ledger.yaml"
+        )
+        try:
+            vcs.fetch(root, "origin", base)
+            remote_text = vcs.file_text_at_ref(root, f"origin/{base}", ledger_rel)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"cannot fetch {base!r} before promoting the sprint "
+                        f"ledger for {slug!r}; nothing was published this "
+                        f"run: {exc}"
+                    ),
+                    path=str(ledger_path),
+                )
+            )
+            return ()
+        if remote_text is not None:
+            fresh_ledger = remote_text
 
         promote_mod = _load_promote_sprint_status_module()
         project_key = slug.removeprefix("pyforge-")
@@ -1482,22 +1518,6 @@ def _promote_sprint_ledger(
         if not matched and not feed_synced:
             return ()
 
-        try:
-            fs.write_text_atomic(ledger_path, new_text)
-        except FsError as exc:
-            findings.append(
-                Finding(
-                    code=_MRS_LAND_011,
-                    severity=Severity.WARN,
-                    message=(
-                        f"cannot write the promoted sprint-status ledger "
-                        f"to {str(ledger_path)!r}: {exc}"
-                    ),
-                    path=str(ledger_path),
-                )
-            )
-            return ()
-
         promoted_keys = tuple(sorted(matched))
         message = (
             f"marshal: promote sprint-status ledger for {slug!r} "
@@ -1510,13 +1530,20 @@ def _promote_sprint_ledger(
             kind=_LAND_SPRINT_LEDGER_KIND,
             phase=Phase.INTENT,
             payload={
-                "action": "commit_paths",
+                "action": "commit_paths_onto_remote_tip",
                 "promoted": list(promoted_keys),
                 "feed_synced": feed_synced,
+                "base": base,
             },
         )
         try:
-            vcs.commit_paths(root, (ledger_path,), message)
+            vcs.commit_paths_onto_remote_tip(
+                root,
+                remote="origin",
+                ref=base,
+                writes=((ledger_rel, new_text),),
+                message=message,
+            )
         except VcsCommandError as exc:
             findings.append(
                 Finding(
@@ -1538,10 +1565,11 @@ def _promote_sprint_ledger(
                 kind=_LAND_SPRINT_LEDGER_KIND,
                 phase=Phase.OUTCOME,
                 payload={
-                    "action": "commit_paths",
+                    "action": "commit_paths_onto_remote_tip",
                     "promoted": list(promoted_keys),
                     "feed_synced": feed_synced,
                     "commit_message": message,
+                    "base": base,
                 },
                 intent_id=intent_id,
             )

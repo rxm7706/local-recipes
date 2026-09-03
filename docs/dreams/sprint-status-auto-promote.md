@@ -88,9 +88,32 @@ remembering.
   generator actually compute — both already do the right thing when run;
   the gap is entirely about *when* they run.
 
+## Frontier leftover (2026-09-02) — promotion must not write the operator checkout
+
+Story 15.2 made landing the trigger (CAP-1). The leftover is *where* that
+write lands. `_promote_sprint_ledger` committed
+`marshal: promote sprint-status ledger…` on `repo_root()` — the operator's
+shared `main` checkout — after `gh pr merge` had already advanced
+`origin/main`. Two writers, no fetch of the merge first: local `main`
+ended ahead-by-promote and behind-by-merge every time (41.3, 41.4, 42.1
+in one drain). Rebasing the leftover is not the fix.
+
+The story worktree is the wrong isolation (a `done` flip on the PR is a
+lie until merge). Story 4.3 already taught the right isolation for
+`merge_branch`: a throwaway detached worktree pinned to the tip that
+will receive the commit, then a compare-and-swap / fast-forward publish
+— never `git checkout` on the shared working tree. Promotion must do
+the same: fetch `origin/<base>`, write the twin onto that tip, commit
+there, fast-forward-push to the remote. The operator `main` checkout
+stays untouched.
+
 ## Realization log
 
 - **2026-08-03** — Captured after the third same-session incident of the
   dashboard reading stale after a story landed (2.1, the `8-5` block fix,
   2.4), each caught only because the user asked "why does the dashboard
   still show X running." Not yet acted on.
+- **2026-09-02** — CAP-1 shipped (Story 15.2 / FR-136) but wrote the
+  promote commit on the operator `main` checkout. Operator asked why this
+  was not a worktree. Added as this leftover; contract is CAP-5 on
+  `spec-sprint-status-auto-promote`.

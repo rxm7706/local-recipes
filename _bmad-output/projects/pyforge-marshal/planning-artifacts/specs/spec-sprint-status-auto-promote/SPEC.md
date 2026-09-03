@@ -5,11 +5,13 @@ owner-dream: docs/dreams/sprint-status-auto-promote.md
 surface:
   - scripts/promote_sprint_status.py
   - pyforge.doctor.sources.fleet_scan
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py
 sources:
   - ../../../../../../docs/dreams/sprint-status-auto-promote.md
 open_questions:
   - "Trigger mechanism unchosen: the Dream names three (standing check-in step, post-landing hook keyed off a run's state.json / loop-home merge, scheduled task) and picks none; the hook shape decides whether this lands as a marshal deploy/land step or a repo-level script"
-  - "Landing surface for the promoted diff: the ledger and data.js are tracked, so an automated promotion still produces a commit that must reach main — via a maintenance PR, folded into marshal land, or direct — undecided"
   - "Detector home: extend dashboard_drift_check.py vs. a new landed-but-unpromoted detector registered alongside forward_dependency_check.py"
 ---
 
@@ -59,6 +61,16 @@ noticed," and this Spec makes it structural.
   a run is live. The trigger is landing, not a mid-run poll. Success: with a
   run live, the automation defers or scopes around that run's project;
   promotion fires only once the story has landed.
+- **CAP-5 — promotion never writes the operator checkout.** Intent: the
+  tracked-twin commit is published onto `origin/<base>` from a throwaway
+  detached worktree pinned to that remote tip after `fetch`, then
+  fast-forward-pushed. The operator `main` working tree, the story
+  dispatch worktree, and `loop/<slug>` are never the commit surface
+  (Story 4.3 already forbade checking `base` out a second time on the
+  shared tree). Success: after `gh pr merge` + promote, local `main` is
+  not a diverge leftover (ahead-by-promote / behind-by-merge); a dirty
+  operator checkout cannot absorb or lose the twin; a non-fast-forward
+  remote refuses loudly (`MRS-LAND-011`) instead of rewriting history.
 
 ## Constraints
 
@@ -77,6 +89,10 @@ noticed," and this Spec makes it structural.
   may lag a project not currently loop-driven); automated runs must not turn
   that into silent regression on `main` — a downgrade in the produced diff
   is surfaced, not auto-landed unreviewed.
+- **Landing surface (resolved 2026-09-02):** the promoted twin reaches
+  `main` by a fast-forward push of an isolated commit onto
+  `origin/<landing_base_branch>` — not a maintenance PR, not a commit on
+  the operator checkout, not a `done` flip on the still-open story PR.
 - Detector and promotion must work per-project: one project's live run
   (CAP-4 deferral) must not block promoting another project's landed story.
 

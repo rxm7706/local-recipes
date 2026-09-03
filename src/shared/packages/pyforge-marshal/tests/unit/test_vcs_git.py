@@ -1658,3 +1658,41 @@ def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
 def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
     with pytest.raises(VcsCommandError):
         vcs.fast_forward(repo, "origin/no-such-branch")
+
+
+def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(
+    vcs, repo, remote
+):
+    """CAP-5: promote publishes on origin/main from a throwaway worktree.
+    The operator checkout stays on its pre-promote HEAD, dirty files stay,
+    and no detached worktree is leaked."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "-u", "origin", "main")
+    dirty = repo / "scratch.txt"
+    dirty.write_text("uncommitted\n", encoding="utf-8")
+    before_head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    before_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    rel = "_bmad-output/projects/acme/planning-artifacts/sprint-status-ledger.yaml"
+    sha = vcs.commit_paths_onto_remote_tip(
+        repo,
+        remote="origin",
+        ref="main",
+        writes=((rel, "development_status:\n  4-4-batch: done\n"),),
+        message="marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)",
+    )
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before_head
+    assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip() == before_branch
+    assert dirty.read_text(encoding="utf-8") == "uncommitted\n"
+    assert not (repo / rel).exists()
+    assert not any("marshal-promote-" in path for path in _worktree_paths(repo))
+    origin_sha = _git(remote, "rev-parse", "refs/heads/main").stdout.strip()
+    assert origin_sha == sha
+    shown = _git(repo, "show", f"{sha}:{rel}").stdout
+    assert "4-4-batch: done" in shown
+
+
+def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
+    with pytest.raises(VcsCommandError, match="at least one write"):
+        vcs.commit_paths_onto_remote_tip(
+            repo, remote="origin", ref="main", writes=(), message="nope"
+        )

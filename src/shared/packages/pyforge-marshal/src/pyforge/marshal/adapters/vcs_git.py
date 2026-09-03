@@ -1153,6 +1153,116 @@ class GitVcs:
             )
         return result.stdout
 
+    def commit_paths_onto_remote_tip(
+        self,
+        repo_root: Path,
+        *,
+        remote: str,
+        ref: str,
+        writes: tuple[tuple[str, str], ...],
+        message: str,
+    ) -> str:
+        """CAP-5: publish path writes onto ``origin/<ref>`` from a throwaway
+        detached worktree. Never checks out or commits in ``repo_root``."""
+        if not writes:
+            raise VcsCommandError(
+                "commit_paths_onto_remote_tip requires at least one write, got none"
+            )
+        self.fetch(repo_root, remote, ref)
+        tip_result = _run(
+            ["git", "-C", str(repo_root), "rev-parse", "--verify", f"{remote}/{ref}"]
+        )
+        if tip_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}"
+            )
+        old_sha = tip_result.stdout.strip()
+
+        tmp_path = Path(tempfile.mkdtemp(prefix="marshal-promote-"))
+        tmp_path.rmdir()
+        try:
+            add_result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(tmp_path),
+                    old_sha,
+                ],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            if add_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git worktree add --detach {tmp_path} {old_sha} failed: "
+                    f"{add_result.stderr.strip()}"
+                )
+            paths: list[Path] = []
+            for rel, content in writes:
+                dest = tmp_path / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(content, encoding="utf-8")
+                paths.append(dest)
+            new_sha = self.commit_paths(tmp_path, tuple(paths), message)
+            ancestor = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "merge-base",
+                    "--is-ancestor",
+                    old_sha,
+                    new_sha,
+                ]
+            )
+            if ancestor.returncode != 0:
+                raise VcsCommandError(
+                    f"{new_sha} is not a descendant of {remote}/{ref} "
+                    f"({old_sha}); refusing to push a non-fast-forward"
+                )
+            push_result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "push",
+                    remote,
+                    f"{new_sha}:refs/heads/{ref}",
+                ],
+                timeout_s=_GIT_FETCH_TIMEOUT_S,
+            )
+            if push_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git push {remote} {new_sha}:refs/heads/{ref} failed: "
+                    f"{push_result.stderr.strip()}"
+                )
+            return new_sha
+        finally:
+            try:
+                remove_result = _run(
+                    [
+                        "git",
+                        "-C",
+                        str(repo_root),
+                        "worktree",
+                        "remove",
+                        "--force",
+                        str(tmp_path),
+                    ],
+                    timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+                )
+                removed = remove_result.returncode == 0
+            except VcsCommandError:
+                removed = False
+            if not removed:
+                shutil.rmtree(tmp_path, ignore_errors=True)
+                try:
+                    _run(["git", "-C", str(repo_root), "worktree", "prune"])
+                except VcsCommandError:
+                    pass
+
 
 def stage_index_paths(
     repo_root: Path,

@@ -80,6 +80,7 @@ class _FakeVcs:
         self.fast_forward_calls: list[tuple[object, str]] = []
         self.commit_paths_raises = commit_paths_raises
         self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
+        self.isolated_promote_calls: list[tuple[object, str, str, tuple[tuple[str, str], ...], str]] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -139,6 +140,29 @@ class _FakeVcs:
         if self.commit_paths_raises:
             raise VcsCommandError("git commit failed: nothing to commit (test double)")
         return "deferred-work-commit-sha"
+
+    def file_text_at_ref(self, repo_root, ref, path):
+        candidate = Path(repo_root) / path
+        if candidate.is_file():
+            return candidate.read_text(encoding="utf-8")
+        return None
+
+    def commit_paths_onto_remote_tip(
+        self, repo_root, *, remote, ref, writes, message
+    ):
+        self.isolated_promote_calls.append(
+            (repo_root, remote, ref, tuple(writes), message)
+        )
+        if self.commit_paths_raises:
+            raise VcsCommandError("git push failed: non-fast-forward (test double)")
+        for rel, content in writes:
+            dest = Path(repo_root) / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(content, encoding="utf-8")
+        self.commit_paths_calls.append(
+            (repo_root, tuple(Path(rel) for rel, _ in writes), message)
+        )
+        return "isolated-promote-sha"
 
 
 class _FakeForge:
@@ -2337,3 +2361,30 @@ def test_sprint_ledger_lock_contention_reports_warn(tmp_path, capsys, monkeypatc
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-011" in codes
     assert "sprint_ledger_promoted" not in payload["data"]
+
+
+def test_sprint_ledger_promote_uses_isolated_remote_tip(tmp_path, capsys, monkeypatch):
+    """CAP-5: land publishes via commit_paths_onto_remote_tip, never a
+    raw commit_paths against the operator tree as the only write."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "in-progress"})
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["sprint_ledger_promoted"] == ["4-4-batch"]
+    assert len(vcs.isolated_promote_calls) == 1
+    _root, remote, ref, writes, message = vcs.isolated_promote_calls[0]
+    assert remote == "origin"
+    assert ref == "main"
+    assert writes[0][0].endswith("sprint-status-ledger.yaml")
+    assert "4-4-batch: done" in writes[0][1]
+    assert "sprint-status ledger" in message

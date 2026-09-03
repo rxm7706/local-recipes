@@ -448,3 +448,28 @@ class VcsPort(Protocol):
         when the path is absent at ``ref``. Raises ``VcsCommandError`` on
         other git failures."""
         ...
+
+    def commit_paths_onto_remote_tip(
+        self,
+        repo_root: Path,
+        *,
+        remote: str,
+        ref: str,
+        writes: tuple[tuple[str, str], ...],
+        message: str,
+    ) -> str:
+        """CAP-5 / land-promote-isolation: fetch ``remote``/``ref``, commit
+        ``writes`` (repo-relative POSIX path, full file text) onto that
+        remote tip inside a throwaway detached worktree, and
+        fast-forward-push the new commit to ``refs/heads/<ref>``.
+
+        NEVER mutates ``repo_root``'s working tree, index, or local
+        ``refs/heads/<ref>`` -- git refuses two worktrees on one branch,
+        and the operator checkout is typically already on ``main``.
+        ``repo_root`` is used only as ``git -C`` for fetch / worktree add /
+        push (shared object store). Never ``--force``.
+
+        Returns the new commit sha. Raises ``VcsCommandError`` if
+        ``writes`` is empty, fetch fails, the push is not a fast-forward,
+        or on any other git failure."""
+        ...
