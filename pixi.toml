@@ -35,11 +35,11 @@ platforms = [
 [feature.python.dependencies]
 python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.78.0"                 # Pixi package & environment manager
-gh = ">=2.98.0"                   # GitHub CLI for PR / issue / repo automation
+gh = ">=2.99.0"                   # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.61"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.16.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 bmad-method = ">=6.11.0"          # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=1.0.1"              # Spec-kit for spec-driven development
+spec-kit = ">=1.0.4"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 # Canonical upgrade command (19 excludes). tomlkit / structlog / sqlglot / pyarrow / pandas
@@ -130,7 +130,7 @@ dependencies.shellcheck = ">=0.10.0"
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
 platforms = ["linux-64", "osx-arm64-min"]
-dependencies.google-cloud-sdk = ">=582.0.0"
+dependencies.google-cloud-sdk = ">=583.0.0"
 
 [feature.python-agent-platform]
 # --- python-agent-platform (CAP-5, spec-python-agent-platform, Story 10.2) ---
@@ -178,7 +178,7 @@ platforms = ["linux-64", "osx-arm64-min"]
 channel-priority = "flexible"
 
 [feature.python-agent-platform.dependencies]
-python = "3.12.*"                 # env-scoped python floor -- CAP-5's one interpreter; the rest of the repo stays on 3.14
+python = "3.14.*"                 # env-scoped python floor -- CAP-5's one interpreter; the rest of the repo stays on 3.14
 langflow = ">=1.11.4"             # agentic engine 1/3 (langflow-suite feedstock, python_min 3.11 -- compatible with our 3.12 floor)
 dbgpt = ">=0.8.2"                 # agentic engine 2/3 (db-gpt feedstock)
 dbgpt-serve = ">=0.8.2"           # agentic engine 3/3 (db-gpt feedstock)
@@ -197,7 +197,7 @@ redis-py = ">=8.1.0"              # Redis client driver -- imports as `redis` (n
 # declare, so this env satisfies what the feedstock already documents as the
 # compatible range; not a recipe change (AD-9 -- consume, never fork/vendor).
 chromadb = ">=1.5.9"        # langflow.api.v1.knowledge_bases hard-imports chromadb.errors
-langchain-chroma = ">=0.2.6"  # lfx.base.knowledge_bases.backends.chroma hard-imports langchain_chroma.Chroma
+langchain-chroma = ">=1.1.0"  # lfx.base.knowledge_bases.backends.chroma hard-imports langchain_chroma.Chroma
 elevenlabs = ">=1.52.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs.ElevenLabs
 # Story 11.1: neither `psycopg` (v3) nor `asyncpg` is anywhere in the langflow-suite
 # recipe (not even as a run_constraint) -- upstream langflow-base's own wheel gates
@@ -248,7 +248,7 @@ hiredis = ">=3.4.1"
 django-celery-beat = ">=2.8.1"
 django-environ = ">=0.14.0"
 django-model-utils = ">=5.0.0"
-django-allauth = ">=65.19.1"
+django-allauth = ">=65.19.2"
 django-crispy-forms = ">=2.6"
 crispy-bootstrap5 = ">=2026.3"
 django-compressor = ">=4.5.1"
@@ -318,7 +318,7 @@ kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 platforms = ["linux-64"]  # container-only: the Containerfile pins --platform=linux/amd64, same reason as python-agent-platform's own linux-64 entry
 
 [feature.dbgpt-sidecar.dependencies]
-python = "3.12.*"      # matches python-agent-platform's env-scoped floor -- no reason to diverge, this env never coexists with it
+python = "3.14.*"      # matches python-agent-platform's env-scoped floor -- no reason to diverge, this env never coexists with it
 dbgpt-app = ">=0.8.2"  # the FastAPI server app (webserver CLI + AgenticData text-to-SQL router); pulls its dozen pin_subpackage'd dbgpt-* siblings transitively
 # Story 11.2: NOT for `[service.web.database]` (that metadata store stays
 # permanently on SQLite/PVC -- AD-6 bounded exception, `compose.yml`'s
@@ -338,7 +338,7 @@ psycopg2 = ">=2.9.12"  # matches python-agent-platform (PostgreSQL 17 / psycopg2
 platforms = ["linux-64"]
 
 [feature.mcp-host.dependencies]
-python = "3.12.*"
+python = "3.14.*"
 mcp = ">=2.1.1"
 mcp-types = ">=2.1.1"
 uvicorn = ">=0.52.4"
@@ -356,7 +356,7 @@ starlette = ">=1.6.0"
 platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
-python = "3.12.*"
+python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
 python-slugify = ">=8.0.4"
 pillow = ">=12.3.0"
@@ -377,7 +377,7 @@ django-health-check = ">=4.5.1"
 django = ">=5.2.17,<6"            # steward 20.1: wagtail 7.4.3 requires django>=5.2 (was 5.1.11)
 django-environ = ">=0.14.0"
 django-model-utils = ">=5.0.0"
-django-allauth = ">=65.19.1"
+django-allauth = ">=65.19.2"
 fido2 = ">=2.2.1"                 # django-allauth[mfa]
 qrcode = ">=8.2"                  # django-allauth[mfa]
 django-crispy-forms = ">=2.6"
@@ -401,18 +401,18 @@ sphinx = ">=9.1.0"
 sphinx-autobuild = ">=2025.8.25"
 ruff = ">=0.16.5"
 coverage = ">=7.16.0"
-djlint = ">=1.44.2"
+djlint = ">=1.45.0"
 pre-commit = ">=4.6.2"
 import-linter = ">=2.14"
 httpx = ">=0.28.1"
 factory_boy = ">=3.3.3"           # conda-forge name; 3.3.2 was PyPI-only
-django-debug-toolbar = ">=7.1.1"
+django-debug-toolbar = ">=8.0.0"
 django-extensions = ">=4.1"
 django_coverage_plugin = ">=3.2.2"
 pytest-django = ">=4.13.0"
 # CAP-1 / steward 16.5 — local JWT minting for OIDC mapper tests
 pyjwt = ">=2.13.0"
-cryptography = ">=50.0.0"
+cryptography = ">=50.0.1"
 # CAP-2 / steward 16.3 — structlog + OTel (django-15-factor-base pattern)
 structlog = ">=26.1.0"
 django-structlog = ">=10.1.0"
@@ -434,7 +434,7 @@ wagtail = "==7.4.3"
 mcp = ">=2.1.1"
 mcp-types = ">=2.1.1"
 httpx2 = ">=2.12.0"
-sse-starlette = ">=3.4.8"
+sse-starlette = ">=3.4.10"
 python-multipart = ">=0.0.32"
 # steward 26.4 / FR-34 — FILE provider for Platform CI pytest (image gets
 # these from python-agent-platform conda; do not loosen the 0.5.0 pin).
@@ -499,8 +499,8 @@ pytest = ">=9.1.1"                       # test runner
 django = ">=5.2.17,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 channels = ">=4.3.2,<5.0"                 # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
 daphne = ">=4.2.3,<5.0"                   # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-asgiref = ">=3.12.1,<4.0"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-channels_redis = ">=4.3.0,<5.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+asgiref = ">=3.12.1"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+channels_redis = ">=4.3.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -569,7 +569,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # St
 # Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
-copier = ">=9.17.2"
+copier = ">=9.18.1"
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -654,7 +654,7 @@ cmd = "marshal config"
 hatchling = ">=1.32.0"            # Python build backend (conda + wheel/sdist)
 python-build = ">=1.6.0"          # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                # test runner
-"ruamel.yaml" = ">=0.18.17"       # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
+"ruamel.yaml" = ">=0.19.1"       # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
 pixi-build-python = ">=0.8.6"     # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.6"  # pixi build backend -> recipe-driven .conda
 twine = ">=7.0.0"                 # PyPI upload
@@ -1472,14 +1472,14 @@ pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerab
 bandit = ">=1.9.4"                # Security linter for Python code
 pip = ">=26.2.1"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
-setuptools-scm = ">=10.2.1"       # Version metadata from VCS tags
+setuptools-scm = ">=10.2.2"       # Version metadata from VCS tags
 hatchling = ">=1.32.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.6.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=7.0.0"                 # PyPI artifact uploader
-uv = ">=0.12.7"                   # Fast Rust-based Python package installer / resolver
+uv = ">=0.12.9"                   # Fast Rust-based Python package installer / resolver
 wheel = ">=0.48.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=12.0.0"                # Fast disk-efficient Node package manager
+pnpm = ">=12.3.1"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
@@ -1498,14 +1498,14 @@ pixi-build-python = ">=0.8.6"     # pixi build backend for Python projects
 pixi-build-rust = ">=0.5.6"       # pixi build backend for Rust / Cargo projects
 #ixi-build-go = ">=0.3.0"         # pixi-experimental-backends build backend for Go projects
 #pixi-build-nodejs = ">=0.3.0"    # pixi-experimental-backends build backend for Node.js projects
-pixi-unpack = ">=0.7.10"          # Unpack a pixi-pack bundle on the target machine
+pixi-unpack = ">=0.7.11"          # Unpack a pixi-pack bundle on the target machine
 pixi-pycharm = ">=0.0.12"         # PyCharm / IDE integration helper for pixi
-pixi-pack = ">=0.7.10"            # Bundle a pixi env for offline / air-gapped install
+pixi-pack = ">=0.7.11"            # Bundle a pixi env for offline / air-gapped install
 pixi-to-conda-lock  = ">=0.4.3"   # pixi-to-conda-lock converts a pixi.lock file to a conda-lock.yml file.
 pixi-skills = ">=0.1.5"           # Manage coding agent skills using pixi  #NOTE python >=3.13
 pixi-outdated = ">=0.2.1"         # List outdated deps in pixi.toml
 pixi-kernel = ">=0.7.1"           # Jupyter kernel that uses pixi-managed envs
-pixi-install-to-prefix = ">=0.1.7"  # Install a pixi env to an arbitrary prefix
+pixi-install-to-prefix = ">=0.1.8"  # Install a pixi env to an arbitrary prefix
 pixi-inject = ">=0.1.3"           # Inject extra deps into an existing pixi env
 pixi-inspect = ">=2.0.2"          # pixi-inspect is a pixi extension used to inspect and retrieve metadata from a conda package.
 #pixi-devenv = ">=0.3.1"           # Tool to work with multiple pixi projects in development mode.  #NOTE python >=3.13
@@ -1559,9 +1559,9 @@ dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pan
 # unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
 # (nothing here invokes it; it lives on in the grayskull env) rather than
 # waiting on the feedstock fix.
-dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
-dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
-dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
+dbt-core = ">=1.12.3"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
+dbt-duckdb = ">=1.11.0"            # dbt DuckDB adapter
+dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
 # dlt: genuinely blocked on python 3.14, in two stages.
 # (1) conda-forge dlt is 1.28.2, which caps `python >=3.10,<3.14`. Upstream dlt
 #     1.29.1 already declares requires-python `<3.15,>=3.10`, so a feedstock bump
@@ -1573,7 +1573,7 @@ dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
 # now ships linux-64, linux-aarch64, osx-64, osx-arm64 and win-64. Platform is no
 # longer the issue; the py314 gap is.
 #dlt = ">=1.28.1"                  # dlt is an open-source python-first scalable data loading library that does not require any backend to run.
-great-expectations = ">=1.21.0"   # GE data contracts in Kedro nodes
+great-expectations = ">=1.22.0"   # GE data contracts in Kedro nodes
 pandera = ">=0.32.1"              # Statistical data validation for Pandas, Dask, and Spark
 duckdb = ">=1.5.5"                # Embedded analytical SQL database
 getdaft = ">=0.6.13"              # Distributed Dataframes for Multimodal Data
@@ -1632,7 +1632,7 @@ office2pdf = ">=0.6.7"            # DOCX/XLSX/PPTX -> PDF (pure Rust)
 olefile = ">=0.47"                # OLE2 / old-style Microsoft Office file parser (used for legacy .doc loader in markitdown)
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
-pandoc = ">=3.10.2"               # Universal document format converter
+pandoc = ">=3.11"               # Universal document format converter
 pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-backed)
 "pdfminer.six" = ">=20260107"     # PDF parsing library for text extraction (alternative to PyMuPDF)
 pdfplumber = ">=0.11.10"          # Extract text, tables, and metadata from PDFs
@@ -1646,8 +1646,8 @@ pypdf = ">=6.16.2"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
-qpdf = ">=12.3.2"                 # PDF transformation, linearization, and compression CLI
-sentence-transformers = ">=6.0.0" # Dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
+qpdf = ">=12.4.1"                 # PDF transformation, linearization, and compression CLI
+sentence-transformers = ">=6.0.1" # Dense text embeddings for long-document RAG (J6 BMAD-PRD path), slide dedup, template matching
 sentencepiece = ">=0.2.1"         # Tokenizer lib (transitive on linux+osx via mlx-lm; explicit for win-64 parity); needed by SD3+/T5/MarianMT
 speechrecognition = ">=3.10.4"    # Speech recognition library for Python (supports multiple engines)
 tesseract = ">=5.5.3"             # Google's OCR engine (binary; pairs with pytesseract)
@@ -1675,14 +1675,21 @@ playwright = ">=1.62.1"           # Node binary for browser automation (CLI)
 #aichat = ">=0.30.0"
 agno = ">=2.6.22"                 # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
 a2a-sdk = ">=1.1.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
-google-genai = ">=2.20.0"         # Google GenAI API client library
+google-genai = ">=2.22.0"         # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.70.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.73.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
-fastmcp = ">=4.0.0b5"             # Forward-looking placeholder, 2026-08-29: nothing in this repo actually imports third-party fastmcp anymore (.claude/tools/{conda_forge_server,gemini_server}.py and recipes/kedro-mcp all migrated to the official `mcp` SDK's mcp.server.mcpserver.MCPServer). Kept pinned at >=4.0.0b5 -- satisfied today only by recipes/fastmcp-v4's local SelfExplainML build (conda-forge tops out at 3.4.7, which hard-requires mcp<2.0) -- purely so the solver picks up conda-forge's own fastmcp automatically once it ships a real >=4.0 release, with no further edit needed here. Safe to delete entirely if that never happens and nothing else starts depending on it.
-fastmcp-slim = ">=4.0.0b5"        # fastmcp's own hard dep (exact-pinned by its recipe); declared explicitly here too so the solver doesn't exclude SelfExplainML's 4.0.0b5 build in favor of conda-forge's <=3.4.7 under flexible channel priority (G74-class). Same forward-looking-placeholder status as fastmcp above.
+# Workspace channel-priority is strict: conda-forge having ANY fastmcp /
+# fastmcp-slim build (today 3.4.7, mcp<2) hides SelfExplainML's 4.0.0b5
+# even when 3.x is infeasible against mcp>=2.1.1. Pin the channel so the
+# solver can take 4.x without flipping this kitchen-sink env to flexible
+# (DW-10-2-2). kedro-mcp's SelfExplainML recipe still run-depends
+# fastmcp>=4.0.0b5, so these are not optional placeholders. Drop the
+# channel= once conda-forge ships a real >=4.0 that accepts mcp 2.x.
+fastmcp = { version = ">=4.0.0b5", channel = "SelfExplainML" }
+fastmcp-slim = { version = ">=4.0.0b5", channel = "SelfExplainML" }
 github-copilot-sdk =">=1.0.11"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
@@ -1690,8 +1697,8 @@ langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
 mcp = ">=2.1.1"                     # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
 ollama = ">=0.32.15"               # Ollama Go server (local LLM runtime)
-pydantic-ai = ">=2.36.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=10642"           # llama.cpp local LLM inference engine
+pydantic-ai = ">=2.38.0"          # Pydantic-AI agent framework
+"llama.cpp" = ">=10751"           # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
@@ -1843,7 +1850,7 @@ python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.78.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.2.1"                    # Python package installer
-uv = ">=0.12.7"                   # fast Rust-based Python package installer / resolver
+uv = ">=0.12.9"                   # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
@@ -2314,7 +2321,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # ->
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 43.2: station API contract test
 django = ">=5.2.17,<6"  # Story 43.2: portal wrapper contract test (django-pyforge via PYTHONPATH)
 pyjwt = ">=2.13.0"
-cryptography = ">=50.0.0"
+cryptography = ">=50.0.1"
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
