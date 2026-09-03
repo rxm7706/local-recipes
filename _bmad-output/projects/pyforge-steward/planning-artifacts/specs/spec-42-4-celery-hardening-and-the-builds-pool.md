@@ -2,9 +2,10 @@
 title: "Celery hardening and the builds pool"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "in-progress"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
+baseline_revision: "1d9b50fbdd218dde1c16646d7b023aa790ebbec9"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"

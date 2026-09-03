@@ -904,10 +904,9 @@ def test_the_retention_task_is_scheduled_and_runnable_by_hand(
 ) -> None:
     """A retention function nothing calls bounds nothing.
 
-    Two runners, because the chart deploys no `celery beat` today (Story 42.4
-    owns Celery's topology): the schedule declares the cadence with the code,
-    and the management command is what an operator -- or any scheduler -- can
-    actually run in the meantime.
+    Two runners: the schedule declares the cadence with the code (Story 42.4
+    deploys the `beat` Deployment that ticks it), and the management command
+    is what an operator can run without waiting for the next tick.
     """
     entry = settings.CELERY_BEAT_SCHEDULE["prune-run-state"]
 

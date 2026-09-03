@@ -46,7 +46,9 @@ pixi run -e platform-dev helm install platform src/platform/deploy/charts/platfo
 ```
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
-readiness), Celery worker Deployment, one `consume-events-<station>`
+readiness), Celery worker Deployment (the general pool), a `worker-builds`
+Deployment (the builds pool) and a single-replica `beat` Deployment (Story
+42.4), one `consume-events-<station>`
 Deployment per station in `events.consumers` (Story 42.3), migrate hook Job
 (`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
 StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccounts, and an
@@ -124,7 +126,7 @@ capability-naming reason where helm/PyYAML are absent.
   pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
   redis container and is wired into platform pods' `REDIS_URL` via
   secretKeyRef + runtime env expansion. A NetworkPolicy restricts ingress
-  on port 6379 to web/worker/migrate and `consume-events-*` pods only. **redis-cache** stays
+  on port 6379 to web/worker/worker-builds/beat/migrate and `consume-events-*` pods only. **redis-cache** stays
   on `emptyDir` (ephemeral, `allkeys-lru`). **redis-broker** is durable
   and bounded (Story 40.2): AOF on a dedicated RWO PVC at `/data`,
   `--maxmemory` strictly below the container memory limit, and
@@ -144,6 +146,24 @@ capability-naming reason where helm/PyYAML are absent.
   (300s). These `DJANGO_PYFORGE_EVENT_*` knobs are process environment
   variables, not chart values. The envelope carries `traceparent`;
   `enqueue_supervised_run` forwards it as a Celery header.
+- **Celery hardening and the builds pool (Story 42.4).** Delivery is
+  at-least-once (`task_acks_late`, `task_reject_on_worker_lost`,
+  `worker_prefetch_multiplier = 1`): a worker killed mid-task hands its
+  message back and the task re-runs once; a second loss terminalises the
+  run as `worker_lost` instead of looping. Queues are declared once, in
+  `django_pyforge.queues`: `priority` (Doctor remedies, supervisor
+  housekeeping), `default`, one per station, and `builds`. The `worker`
+  Deployment consumes `worker.queues` in that order (`priority` first;
+  the render refuses a list naming `builds`); `worker-builds` consumes only
+  `builds` with `--time-limit worker.builds.taskTimeLimitSeconds` (4h by
+  default, must exceed 300s) and a `terminationGracePeriodSeconds` derived
+  as limit + `drainSlackSeconds`. The same limit is exported to every
+  platform pod as `CELERY_BUILDS_TASK_TIME_LIMIT`, which sizes the broker
+  visibility timeout and the supervisor's sweep. `beat` (one replica,
+  Recreate) fires `prune-run-state` and `sweep-lost-runs`; the sweep marks
+  a live run FAILED with reason `worker_lost` once it has been silent for
+  its pool's limit and no worker reports holding its task (`manage.py
+  sweep_lost_runs` runs it by hand).
 - **Dead-letter retention (Story 40.2).** The `pyforge.events.dlq` stream
   is never auto-trimmed. Operators inspect it with
   `manage.py list_event_dlq` and purge deliberately, e.g.

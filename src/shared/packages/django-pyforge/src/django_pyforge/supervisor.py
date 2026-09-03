@@ -18,6 +18,23 @@ That is a ceiling, not a semaphore: the failure it exists to stop is an agent
 loop issuing thousands of starts, and an off-by-a-few at the boundary does not
 restore that failure. Making it exact would need a lock on a row that does not
 exist yet, and that cost buys nothing here.
+
+Story 42.4 (CAP-11 / CAP-17, red-team S-2 / T-6, directive R-10) closes the
+other half of the ledger: a worker killed mid-task used to leave its row
+``RUNNING`` forever, because the task's ``except`` never ran and nothing else
+wrote. Two things now stand behind a live row:
+
+* ``begin_attempt`` -- the worker's first act on a delivery. It refuses to run
+  a run whose row is already terminal (revoked, swept or finished), bumps
+  ``heartbeat_at`` so the sweep measures from the latest attempt, and lets a
+  message the broker re-delivered (``acks_late`` + ``reject_on_worker_lost``
+  put a lost worker's message back) run exactly once more -- a second
+  re-delivery is the message loop that setting is documented to cause, and is
+  terminalised here instead of re-run.
+* ``sweep_lost_runs`` -- BS-8, partial: a live row whose last sign of life is
+  older than its pool's hard limit, and whose task no worker reports holding,
+  is marked ``FAILED`` with reason ``worker_lost``. The limit is per station
+  (``queues.station_time_limit``) so a builds-pool run is not failed at 300 s.
 """
 
 from __future__ import annotations
@@ -44,11 +61,20 @@ from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.assertion.schema import audience_for
 from django_pyforge.models import McpHandle
 from django_pyforge.models import RunState
+from django_pyforge.queues import station_time_limit
 from django_pyforge.rate_limit import START_SCOPE
 from django_pyforge.rate_limit import consume
 from django_pyforge.rate_limit import int_setting
 
 HANDLE_ENTROPY_BYTES = 32
+# Story 42.4: the reason a swept (or re-delivered-twice) run is FAILED with.
+WORKER_LOST_REASON = "worker_lost"
+# Marker kept in a LIVE row's `result` once the broker has re-delivered its
+# task. `complete_run` overwrites `result` on completion, so it never survives
+# into a terminal row's payload except inside the worker_lost report.
+REDELIVERED_KEY = "redelivered"
+# How long the sweep waits for workers to answer an inspect broadcast.
+INSPECT_TIMEOUT_SECONDS = 2.0
 HANDLE_TTL = timedelta(hours=24)
 ATLAS_STATION = "atlas"
 RUN_PIPELINE_TOOL = "run_pipeline"
@@ -430,6 +456,211 @@ def celery_control() -> Any:
     except ImportError:
         return None
     return current_app.control
+
+
+def begin_attempt(run_id: str, *, redelivered: bool = False) -> bool:
+    """The worker's first act on a delivery: may this run execute now?
+
+    ``False`` means "do not run" -- and the row already says why:
+
+    * the row is terminal: revoked, swept as ``worker_lost``, or a re-delivery
+      of a run that already finished. Running it would do work the ledger has
+      already closed the book on.
+    * the row is gone: an unsupervised task is not a supervised run (AD-12).
+    * the message was re-delivered and the row already records a re-delivery.
+      ``acks_late`` + ``reject_on_worker_lost`` put a lost worker's message
+      back exactly so it runs again; a task that loses its worker twice is the
+      message loop that setting is documented to cause (a build that OOM-kills
+      every pool it lands on), so the second re-delivery terminalises the run
+      as ``worker_lost`` instead of running it a third time.
+
+    ``True`` bumps ``heartbeat_at`` first, so ``sweep_lost_runs`` measures the
+    limit from the latest attempt rather than from the original start.
+    """
+    row = RunState.objects.filter(pk=run_id).values("status", "result").first()
+    if row is None:
+        logger.warning(
+            "supervisor.attempt_without_row",
+            extra={"event": "supervisor.attempt_without_row", "run_id": run_id},
+        )
+        return False
+    if row["status"] in RunState.TERMINAL_STATUSES:
+        logger.info(
+            "supervisor.attempt_on_terminal_run",
+            extra={
+                "event": "supervisor.attempt_on_terminal_run",
+                "run_id": run_id,
+                "status": row["status"],
+                "redelivered": redelivered,
+            },
+        )
+        return False
+    now = timezone.now()
+    live = RunState.objects.filter(pk=run_id).exclude(
+        status__in=RunState.TERMINAL_STATUSES,
+    )
+    if not redelivered:
+        live.update(heartbeat_at=now)
+        return True
+    prior = row["result"] if isinstance(row["result"], dict) else {}
+    if prior.get(REDELIVERED_KEY):
+        logger.error(
+            "supervisor.redelivered_twice",
+            extra={"event": "supervisor.redelivered_twice", "run_id": run_id},
+        )
+        complete_run(
+            run_id,
+            status=RunState.Status.FAILED,
+            result={
+                "error": "worker lost twice; not re-running a third time",
+                "reason": WORKER_LOST_REASON,
+                REDELIVERED_KEY: True,
+                "attempts": 2,
+            },
+        )
+        return False
+    logger.warning(
+        "supervisor.redelivered",
+        extra={"event": "supervisor.redelivered", "run_id": run_id},
+    )
+    live.update(heartbeat_at=now, result={**prior, REDELIVERED_KEY: True})
+    return True
+
+
+def _celery_inspector() -> Any:
+    control = celery_control()
+    if control is None:
+        return None
+    return control.inspect(timeout=INSPECT_TIMEOUT_SECONDS)
+
+
+class InspectUnavailableError(Exception):
+    """The workers could not be asked what they hold (broker unreachable)."""
+
+
+def live_task_ids(inspector: Any | None = None) -> frozenset[str]:
+    """Task ids some worker reports holding -- active, reserved or scheduled.
+
+    An EMPTY answer (no worker replied to the broadcast) means no worker holds
+    anything, and is a valid answer. A broadcast that RAISES is not: the
+    broker could not be reached, so nothing is known, and the caller must not
+    treat silence as absence.
+    """
+    face = inspector if inspector is not None else _celery_inspector()
+    if face is None:
+        return frozenset()
+    held: set[str] = set()
+    for probe in ("active", "reserved", "scheduled"):
+        method = getattr(face, probe, None)
+        if method is None:
+            continue
+        try:
+            replies = method()
+        except Exception as exc:
+            msg = f"inspect.{probe} failed: {exc!r}"
+            raise InspectUnavailableError(msg) from exc
+        for tasks in (replies or {}).values():
+            for item in tasks or []:
+                if not isinstance(item, dict):
+                    continue
+                request = item.get("request") if isinstance(item.get("request"), dict) else item
+                task_id = request.get("id")
+                if isinstance(task_id, str) and task_id:
+                    held.add(task_id)
+    return frozenset(held)
+
+
+def sweep_lost_runs(
+    *,
+    now: datetime | None = None,
+    inspector: Any | None = None,
+) -> dict[str, Any]:
+    """Mark live runs whose worker is gone as FAILED / ``worker_lost`` (BS-8, partial).
+
+    A row is a candidate when its last sign of life (``heartbeat_at``, else
+    ``started_at``) is older than the hard limit of the pool its station's
+    work can land on -- past that limit the task has either been killed by
+    Celery's own hard limit (whose SIGKILL runs no ``except`` in the child)
+    or its worker was lost. Candidates whose task id a worker still reports
+    holding are left alone: a re-delivered task legitimately runs past the
+    original start. When the workers cannot be asked at all, nothing is
+    swept and the report says so; silence from a dead broker is not proof
+    that a task is dead.
+    """
+    moment = now if now is not None else timezone.now()
+    live_rows = list(
+        RunState.objects.filter(status__in=RunState.LIVE_STATUSES).values(
+            "id",
+            "station",
+            "celery_task_id",
+            "started_at",
+            "heartbeat_at",
+        ),
+    )
+    stale: list[tuple[dict[str, Any], int, datetime]] = []
+    for row in live_rows:
+        last_seen = row["heartbeat_at"] or row["started_at"]
+        if last_seen is None:
+            continue
+        limit = station_time_limit(row["station"])
+        if moment - last_seen > timedelta(seconds=limit):
+            stale.append((row, limit, last_seen))
+    report: dict[str, Any] = {
+        "live": len(live_rows),
+        "stale": len(stale),
+        "swept": 0,
+        "still_held": 0,
+        "inspected": False,
+        "run_ids": [],
+    }
+    if not stale:
+        return report
+    try:
+        held = live_task_ids(inspector)
+    except InspectUnavailableError as exc:
+        logger.error(
+            "supervisor.sweep_inspect_unavailable",
+            extra={
+                "event": "supervisor.sweep_inspect_unavailable",
+                "stale": len(stale),
+                "error": str(exc),
+            },
+        )
+        report["error"] = str(exc)
+        return report
+    report["inspected"] = True
+    for row, limit, last_seen in stale:
+        task_id = row["celery_task_id"]
+        if task_id and task_id in held:
+            report["still_held"] += 1
+            continue
+        run_id = str(row["id"])
+        idle = int((moment - last_seen).total_seconds())
+        logger.error(
+            "supervisor.worker_lost",
+            extra={
+                "event": "supervisor.worker_lost",
+                "run_id": run_id,
+                "station": row["station"],
+                "task_id": task_id,
+                "idle_seconds": idle,
+                "limit_seconds": limit,
+            },
+        )
+        complete_run(
+            run_id,
+            status=RunState.Status.FAILED,
+            result={
+                "error": f"worker lost: no live task for {idle}s (limit {limit}s)",
+                "reason": WORKER_LOST_REASON,
+                "task_id": task_id,
+                "last_seen_at": _iso(last_seen),
+                "limit_seconds": limit,
+            },
+        )
+        report["swept"] += 1
+        report["run_ids"].append(run_id)
+    return report
 
 
 def revoke_subject(

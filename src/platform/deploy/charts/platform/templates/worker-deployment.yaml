@@ -1,6 +1,27 @@
 # Celery worker: same image and env surface as the web Deployment
 # (compose.yml's `worker` service mirrored), only the command differs.
 # No probes -- the worker has no HTTP surface.
+#
+# Story 42.4: the GENERAL pool. `-Q` lists `worker.queues` in order
+# (priority first). `builds` is refused here -- it has its own Deployment
+# (worker-builds-deployment.yaml) with an hours-scale limit; on this pool a
+# build would be killed at CELERY_TASK_TIME_LIMIT (300s).
+{{- $queues := .Values.worker.queues }}
+{{- if not (kindIs "slice" $queues) }}
+{{- fail (printf "worker.queues must be a list of queue names, got %s" (kindOf $queues)) }}
+{{- end }}
+{{- if not $queues }}
+{{- fail "worker.queues must name at least one queue (the general pool would consume nothing)" }}
+{{- end }}
+{{- /* `--set worker.queues={}` parses as [""]: a blank entry renders `-Q ""`. */}}
+{{- range $queue := $queues }}
+{{- if not (trim (toString $queue)) }}
+{{- fail "worker.queues must not contain a blank entry (it would render as -Q \"\")" }}
+{{- end }}
+{{- end }}
+{{- if has "builds" $queues }}
+{{- fail "worker.queues must not include \"builds\": that queue belongs to the worker-builds Deployment (Story 42.4); on this pool a build is cut off at the 300s limit" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,7 +60,7 @@ spec:
           # args (not command): the image ENTRYPOINT (/app/entrypoint.sh,
           # which sources the pixi shell-hook) must keep running, with
           # this as its "$@".
-          args: ["celery", "-A", "config", "worker", "-l", "info"]
+          args: ["celery", "-A", "config", "worker", "-l", "info", "-Q", {{ join "," $queues | quote }}]
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
           volumeMounts:

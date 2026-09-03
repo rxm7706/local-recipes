@@ -66,11 +66,22 @@ _CONSUME_EVENTS_ARGS = ("python", "manage.py", "consume_events", "--station")
 _CONSUME_EVENTS_COMPONENTS = frozenset(
     f"{_CONSUME_EVENTS_PREFIX}{station}" for station in _DEFAULT_EVENT_CONSUMERS
 )
+# Story 42.4: the builds pool (a second Celery worker consuming only
+# `builds`) and the single-replica beat scheduler -- both platform-image
+# pods that reach redis-broker.
+_WORKER_BUILDS_COMPONENT = "worker-builds"
+_BEAT_COMPONENT = "beat"
+_CELERY_WORKER_ARGS = ("celery", "-A", "config", "worker", "-l", "info")
+_BEAT_ARGS = ("celery", "-A", "config", "beat", "-l", "info", "--pidfile=")
+_BUILDS_LIMIT_ENV = "CELERY_BUILDS_TASK_TIME_LIMIT"
 # The pods that run the Story 10.3 platform image and must therefore carry
 # the restricted-v2 contract, and reach Redis (NetworkPolicy / REDIS_* env).
 # "migrate" doubles as proof the hook Job renders (`helm template` emits
 # hooks).
-_PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"}) | _CONSUME_EVENTS_COMPONENTS
+_PLATFORM_COMPONENTS = (
+    frozenset({"web", "worker", _WORKER_BUILDS_COMPONENT, _BEAT_COMPONENT, "migrate"})
+    | _CONSUME_EVENTS_COMPONENTS
+)
 # Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
 # is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
 _PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase", "postgres-backup"}
@@ -1917,7 +1928,11 @@ def test_worker_is_celery_deployment_not_a_second_public_asgi():
     docs = _render(_CORE_CHART, release="platform")
     by_component = _pod_specs_by_component(docs)
     worker = by_component["worker"]["containers"][0]
-    assert worker.get("args") == ["celery", "-A", "config", "worker", "-l", "info"]
+    # Story 42.4: the general pool consumes values `worker.queues`, in order.
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    expected_queues = ",".join(values["worker"]["queues"])
+    assert worker.get("args") == [*_CELERY_WORKER_ARGS, "-Q", expected_queues]
     assert not worker.get("ports"), worker.get("ports")
     worker_services = [
         doc
@@ -2928,3 +2943,296 @@ def test_consume_events_guard_rejects_drift_from_worker():
         _assert_consume_events_deployments_mirror_worker([worker, drifted_env], ["doctor"])
     with pytest.raises(AssertionError, match="worker Deployment missing"):
         _assert_consume_events_deployments_mirror_worker([doctor], ["doctor"])
+
+
+# ---------------------------------------------------------------------------
+# Story 42.4 -- the builds pool and the beat scheduler (red-team S-2 / T-6, R-10)
+# ---------------------------------------------------------------------------
+
+
+def _deployment_by_component(docs: list[dict[str, Any]], component: str) -> dict[str, Any]:
+    """The one Deployment whose pod template carries ``component``. A pool
+    shipped as a Job/CronJob would be a one-shot, not a consumer."""
+    found = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and ((_pod_template(doc).get("metadata") or {}).get("labels") or {}).get(
+            "app.kubernetes.io/component",
+        )
+        == component
+    ]
+    assert len(found) == 1, f"expected exactly one {component!r} Deployment, got {len(found)}"
+    return found[0]
+
+
+def _assert_pod_mirrors_worker(
+    spec: dict[str, Any],
+    worker: dict[str, Any],
+    where: str,
+) -> dict[str, Any]:
+    """Same image, env, security contexts, service account and volumes as the
+    Celery worker -- only the args may differ. Returns the one container."""
+    worker_container = worker["containers"][0]
+    containers = spec.get("containers") or []
+    assert len(containers) == 1, f"{where}: expected one container, got {len(containers)}"
+    container = containers[0]
+    assert container.get("image") == worker_container.get("image"), (
+        f"{where}: image {container.get('image')!r} != worker {worker_container.get('image')!r}"
+    )
+    assert container.get("env") == worker_container.get("env"), f"{where}: env differs from worker"
+    assert container.get("securityContext") == worker_container.get("securityContext"), (
+        f"{where}: container securityContext differs from worker"
+    )
+    assert container.get("volumeMounts") == worker_container.get("volumeMounts"), (
+        f"{where}: volumeMounts differ from worker"
+    )
+    assert spec.get("securityContext") == worker.get("securityContext"), (
+        f"{where}: pod securityContext differs from worker"
+    )
+    assert spec.get("serviceAccountName") == worker.get("serviceAccountName"), (
+        f"{where}: serviceAccountName differs from worker"
+    )
+    assert spec.get("volumes") == worker.get("volumes"), f"{where}: volumes differ from worker"
+    return container
+
+
+def _env_value(container: dict[str, Any], name: str) -> str | None:
+    for item in container.get("env") or []:
+        if item.get("name") == name:
+            return item.get("value")
+    return None
+
+
+def _assert_builds_pool(
+    docs: list[dict[str, Any]],
+    *,
+    limit: int,
+    soft_limit: int,
+    slack: int,
+    worker_queues: list[str],
+) -> None:
+    """AC (Story 42.4): `worker` consumes `worker.queues` (never `builds`);
+    a separate `worker-builds` Deployment consumes `builds` with an
+    hours-scale `--time-limit`, mirrors the worker, exports the same limit
+    as CELERY_BUILDS_TASK_TIME_LIMIT on both pods, and has
+    terminationGracePeriodSeconds == limit + slack."""
+    by_component = _pod_specs_by_component(docs)
+    assert "worker" in by_component, "worker Deployment missing from render"
+    worker = by_component["worker"]
+    worker_args = worker["containers"][0].get("args") or []
+    assert worker_args == [*_CELERY_WORKER_ARGS, "-Q", ",".join(worker_queues)], (
+        f"worker args {worker_args!r} do not consume worker.queues {worker_queues!r}"
+    )
+    consumed = set(",".join(worker_args[-1:]).split(","))
+    assert "builds" not in consumed, "the general worker must not consume builds (300s limit)"
+    assert "default" in consumed and "priority" in consumed, consumed
+
+    assert _WORKER_BUILDS_COMPONENT in by_component, "worker-builds Deployment missing from render"
+    spec = by_component[_WORKER_BUILDS_COMPONENT]
+    container = _assert_pod_mirrors_worker(spec, worker, where=_WORKER_BUILDS_COMPONENT)
+    expected_args = [
+        *_CELERY_WORKER_ARGS,
+        "-Q",
+        "builds",
+        "--time-limit",
+        str(limit),
+        "--soft-time-limit",
+        str(soft_limit),
+    ]
+    assert container.get("args") == expected_args, (
+        f"worker-builds args must consume builds with the hours-scale limit; "
+        f"got {container.get('args')!r}"
+    )
+    assert limit > 300, f"builds limit {limit} is the 300s pool by another name"  # noqa: PLR2004
+    assert 0 < soft_limit < limit, (soft_limit, limit)
+    grace = int(spec.get("terminationGracePeriodSeconds") or 0)
+    assert grace == limit + slack, (
+        f"worker-builds terminationGracePeriodSeconds {grace} != limit {limit} + slack {slack}"
+    )
+    for component in ("worker", _WORKER_BUILDS_COMPONENT):
+        exported = _env_value(by_component[component]["containers"][0], _BUILDS_LIMIT_ENV)
+        assert exported == str(limit), (
+            f"{component}: {_BUILDS_LIMIT_ENV} is {exported!r}, expected {limit!r}"
+        )
+
+
+def _assert_beat_is_a_singleton_scheduler(docs: list[dict[str, Any]]) -> None:
+    """One `beat` Deployment: exactly one replica, Recreate, `celery beat`,
+    mirroring the worker."""
+    deployment = _deployment_by_component(docs, _BEAT_COMPONENT)
+    assert deployment["spec"].get("replicas") == 1, "beat must be a single replica"
+    assert (deployment["spec"].get("strategy") or {}).get("type") == "Recreate", (
+        "beat rollouts must never overlap two schedulers"
+    )
+    by_component = _pod_specs_by_component(docs)
+    container = _assert_pod_mirrors_worker(
+        by_component[_BEAT_COMPONENT],
+        by_component["worker"],
+        where=_BEAT_COMPONENT,
+    )
+    assert container.get("args") == list(_BEAT_ARGS), container.get("args")
+
+
+def _builds_values(values: dict[str, Any]) -> dict[str, int]:
+    builds = values["worker"]["builds"]
+    return {
+        "limit": int(builds["taskTimeLimitSeconds"]),
+        "soft_limit": int(builds["softTimeLimitSeconds"]),
+        "slack": int(builds["drainSlackSeconds"]),
+    }
+
+
+@requires_helm
+def test_builds_pool_is_a_separate_deployment_with_an_hours_scale_limit():
+    """AC (Story 42.4): rendered with default values, `worker` consumes the
+    default + per-station queues and `worker-builds` consumes `builds` with
+    terminationGracePeriodSeconds = builds limit + slack."""
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    docs = _render(_CORE_CHART)
+    _assert_builds_pool(
+        docs,
+        worker_queues=list(values["worker"]["queues"]),
+        **_builds_values(values),
+    )
+    assert _builds_values(values)["limit"] >= 3600, "the builds pool is hours-scale"  # noqa: PLR2004
+
+
+@requires_helm
+def test_builds_pool_grace_derives_from_the_limit():
+    """Raising the limit moves the args, the exported env AND the drain
+    budget together -- the grace period is derived, not a second literal."""
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "worker.builds.taskTimeLimitSeconds=7200",
+        "--set",
+        "worker.builds.softTimeLimitSeconds=7000",
+        "--set",
+        "worker.builds.drainSlackSeconds=100",
+    )
+    _assert_builds_pool(
+        docs,
+        limit=7200,
+        soft_limit=7000,
+        slack=100,
+        worker_queues=list(values["worker"]["queues"]),
+    )
+
+
+@requires_helm
+def test_chart_refuses_a_build_on_the_general_pool():
+    """Never-clauses: no builds pod with the 300s limit; no build on the
+    general worker; no soft limit at or past the hard one."""
+    with pytest.raises(AssertionError, match="must not include"):
+        _render(_CORE_CHART, "--set", "worker.queues={builds}")
+    with pytest.raises(AssertionError, match="must exceed 300"):
+        _render(_CORE_CHART, "--set", "worker.builds.taskTimeLimitSeconds=300")
+    with pytest.raises(AssertionError, match="softTimeLimitSeconds must be between"):
+        _render(_CORE_CHART, "--set", "worker.builds.softTimeLimitSeconds=14400")
+    with pytest.raises(AssertionError, match="blank entry"):
+        _render(_CORE_CHART, "--set", "worker.queues={}")
+
+
+@requires_helm
+def test_beat_is_a_single_replica_scheduler_on_the_platform_image():
+    docs = _render(_CORE_CHART)
+    _assert_beat_is_a_singleton_scheduler(docs)
+
+
+def _synthetic_builds_pool(
+    *,
+    args: list[str] | None = None,
+    grace: int = 14460,
+    env: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    default_env = [
+        {"name": "REDIS_URL", "value": "redis://broker"},
+        {"name": _BUILDS_LIMIT_ENV, "value": "14400"},
+    ]
+    doc = _synthetic_platform_deployment(
+        _WORKER_BUILDS_COMPONENT,
+        args
+        if args is not None
+        else [*_CELERY_WORKER_ARGS, "-Q", "builds", "--time-limit", "14400", "--soft-time-limit", "14100"],
+        env=env if env is not None else default_env,
+    )
+    doc["spec"]["template"]["spec"]["terminationGracePeriodSeconds"] = grace
+    return doc
+
+
+def test_builds_pool_guard_rejects_drift():
+    """Guard-removed companion (ungated): synthetic docs prove the helper
+    raises when the general worker consumes builds, the builds pod carries
+    the 300s limit, the grace period is not derived, or the exported limit
+    disagrees with the args."""
+    good_env = [
+        {"name": "REDIS_URL", "value": "redis://broker"},
+        {"name": _BUILDS_LIMIT_ENV, "value": "14400"},
+    ]
+    queues = ["priority", "default", "atlas"]
+    worker = _synthetic_platform_deployment(
+        "worker",
+        [*_CELERY_WORKER_ARGS, "-Q", ",".join(queues)],
+        env=good_env,
+    )
+    good = _synthetic_builds_pool()
+    _assert_builds_pool(
+        [worker, good],
+        limit=14400,
+        soft_limit=14100,
+        slack=60,
+        worker_queues=queues,
+    )
+
+    with pytest.raises(AssertionError, match="do not consume worker.queues"):
+        _assert_builds_pool(
+            [worker, good],
+            limit=14400,
+            soft_limit=14100,
+            slack=60,
+            worker_queues=["priority", "default", "atlas", "builds"],
+        )
+    with pytest.raises(AssertionError, match="hours-scale limit"):
+        _assert_builds_pool(
+            [worker, _synthetic_builds_pool(args=[*_CELERY_WORKER_ARGS, "-Q", "builds"])],
+            limit=14400,
+            soft_limit=14100,
+            slack=60,
+            worker_queues=queues,
+        )
+    with pytest.raises(AssertionError, match="!= limit"):
+        _assert_builds_pool(
+            [worker, _synthetic_builds_pool(grace=310)],
+            limit=14400,
+            soft_limit=14100,
+            slack=60,
+            worker_queues=queues,
+        )
+    with pytest.raises(AssertionError, match=_BUILDS_LIMIT_ENV):
+        _assert_builds_pool(
+            [worker, _synthetic_builds_pool(env=[{"name": "REDIS_URL", "value": "redis://broker"}])],
+            limit=14400,
+            soft_limit=14100,
+            slack=60,
+            worker_queues=queues,
+        )
+    with pytest.raises(AssertionError, match="worker-builds Deployment missing"):
+        _assert_builds_pool(
+            [worker],
+            limit=14400,
+            soft_limit=14100,
+            slack=60,
+            worker_queues=queues,
+        )
+
+    beat = _synthetic_platform_deployment(_BEAT_COMPONENT, list(_BEAT_ARGS), env=good_env)
+    beat["spec"]["replicas"] = 1
+    beat["spec"]["strategy"] = {"type": "Recreate"}
+    _assert_beat_is_a_singleton_scheduler([worker, beat])
+    beat["spec"]["replicas"] = 2
+    with pytest.raises(AssertionError, match="single replica"):
+        _assert_beat_is_a_singleton_scheduler([worker, beat])

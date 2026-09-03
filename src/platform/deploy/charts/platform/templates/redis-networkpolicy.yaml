@@ -25,6 +25,8 @@ spec:
                 values:
                   - web
                   - worker
+                  - worker-builds
+                  - beat
                   - migrate
                   {{- range $station := uniq $.Values.events.consumers }}
                   - consume-events-{{ $station }}

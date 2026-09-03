@@ -1,0 +1,91 @@
+{{/*
+Story 42.4 (red-team T-6 / S-2, directive R-10): the BUILDS pool. Same image,
+env, security contexts and volumes as the general Celery worker -- only the
+args differ: `-Q builds` and an hours-scale `--time-limit` from values
+`worker.builds.taskTimeLimitSeconds`. That one number also reaches every
+platform pod as CELERY_BUILDS_TASK_TIME_LIMIT (platform.djangoEnv) so the
+supervisor's worker-lost sweep measures a Mason build against the same limit,
+and it DERIVES terminationGracePeriodSeconds (limit + drainSlackSeconds), so a
+raised limit can never leave the kubelet SIGKILLing a build the limit still
+allows. No probes -- the worker has no HTTP surface.
+*/}}
+{{- $builds := .Values.worker.builds }}
+{{- $limit := int $builds.taskTimeLimitSeconds }}
+{{- $soft := int $builds.softTimeLimitSeconds }}
+{{- $slack := int $builds.drainSlackSeconds }}
+{{- if le $limit 300 }}
+{{- fail (printf "worker.builds.taskTimeLimitSeconds must exceed 300 (the general pool's CELERY_TASK_TIME_LIMIT), got %d -- a builds pod with the 300s limit is what this pool exists to prevent (Story 42.4)" $limit) }}
+{{- end }}
+{{- if or (le $soft 0) (ge $soft $limit) }}
+{{- fail (printf "worker.builds.softTimeLimitSeconds must be between 1 and taskTimeLimitSeconds-1 (%d), got %d" (sub $limit 1) $soft) }}
+{{- end }}
+{{- if lt $slack 0 }}
+{{- fail (printf "worker.builds.drainSlackSeconds must be >= 0, got %d" $slack) }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.workerBuilds.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker-builds
+spec:
+  replicas: {{ $builds.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker-builds
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker-builds
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # DERIVED: the builds hard limit plus shutdown slack. A build started
+      # just before SIGTERM may legitimately run the whole limit.
+      terminationGracePeriodSeconds: {{ add $limit $slack }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: worker-builds
+          image: {{ include "platform.imageRef" (dict "image" .Values.image "path" "image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): the image ENTRYPOINT (/app/entrypoint.sh,
+          # which sources the pixi shell-hook) must keep running, with
+          # this as its "$@". The CLI limits override the settings module's
+          # 300s/60s for THIS worker only (task attributes stay unset).
+          args:
+            - celery
+            - -A
+            - config
+            - worker
+            - -l
+            - info
+            - -Q
+            - builds
+            - --time-limit
+            - {{ $limit | quote }}
+            - --soft-time-limit
+            - {{ $soft | quote }}
+          env:
+            {{- include "platform.djangoEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: wagtail-media
+              mountPath: {{ .Values.media.mountPath | quote }}
+            {{- include "platform.flagsVolumeMount" . | nindent 12 }}
+          {{- with $builds.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: wagtail-media
+          persistentVolumeClaim:
+            claimName: {{ include "platform.media.pvcName" . }}
+        {{- include "platform.flagsVolume" . | nindent 8 }}

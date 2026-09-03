@@ -80,13 +80,58 @@ ingress:
   tls: []
 
 # Celery worker (same image, `celery -A config worker`, no HTTP surface).
+# Story 42.4: this is the GENERAL pool. It consumes `worker.queues` (in
+# that order -- `queue_order_strategy=priority` in settings drains the
+# list front to back, so `priority` first means Doctor remedies and
+# supervisor housekeeping never wait behind a station backlog) and NEVER
+# `builds`: the template refuses a list that names it, because a build on
+# this pool would be cut off at CELERY_TASK_TIME_LIMIT (300s). The list
+# mirrors django_pyforge.queues.WORKER_QUEUES; a test couples the two.
 worker:
   replicaCount: 1
+  queues:
+    - priority
+    - default
+    - atlas
+    - doctor
+    - herald
+    - marshal
+    - mason
+    - scribe
+    - steward
+    - warden
   # Drain budget: CELERY_TASK_TIME_LIMIT = 5 * 60 in
   # config/settings/base.py, so a task started just before SIGTERM may
   # legitimately run 300s; 310 leaves it that plus shutdown slack before
   # the kubelet SIGKILLs mid-task.
   terminationGracePeriodSeconds: 310
+  # Same empty-default seam rationale as the top-level `resources`.
+  resources: {}
+  # The builds pool (Story 42.4, red-team T-6): a second worker Deployment
+  # consuming ONLY `builds`, with an hours-scale hard limit passed as
+  # `--time-limit` AND exported as CELERY_BUILDS_TASK_TIME_LIMIT on every
+  # platform pod (so the supervisor's worker-lost sweep uses the same
+  # number). Its terminationGracePeriodSeconds is DERIVED in the template:
+  # taskTimeLimitSeconds + drainSlackSeconds, so raising the limit can
+  # never leave the kubelet SIGKILLing a build the limit still allows.
+  builds:
+    replicaCount: 1
+    # 4h. Must exceed 300s (the general pool's limit) or the render fails.
+    taskTimeLimitSeconds: 14400
+    # Raised inside the task first, so a build can clean up before the
+    # hard kill; must be below taskTimeLimitSeconds.
+    softTimeLimitSeconds: 14100
+    # Shutdown slack added to the limit for the drain budget.
+    drainSlackSeconds: 60
+    # Same empty-default seam rationale as the top-level `resources`.
+    resources: {}
+
+# Celery beat (Story 42.4): the one scheduler process that fires
+# CELERY_BEAT_SCHEDULE (run_state retention from 42.2, the worker-lost
+# sweep from 42.4) through django_celery_beat's DatabaseScheduler. Always
+# exactly one replica -- a second beat double-fires every entry -- so the
+# template hardcodes replicas: 1 and Recreate; no replicaCount knob.
+beat:
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
 
