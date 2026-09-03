@@ -108,7 +108,7 @@ def test_context_files_not_hand_edited():
     root = _repo_root()
     for name in ("CLAUDE.md", "AGENTS.md"):
         diff = subprocess.check_output(
-            ["git", "diff", "origin/main", "--", name],
+            ["git", "diff", "origin/main...HEAD", "--", name],
             cwd=root,
             text=True,
         )
@@ -124,7 +124,7 @@ def test_conda_forge_expert_not_replaced():
     skill = (cfe / "SKILL.md").read_text(encoding="utf-8")
     assert "conda-forge" in skill.lower()
     named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", ".claude/skills/conda-forge-expert"],
+        ["git", "diff", "--name-only", "origin/main...HEAD", "--", ".claude/skills/conda-forge-expert"],
         cwd=root,
         text=True,
     )
@@ -134,7 +134,7 @@ def test_conda_forge_expert_not_replaced():
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
     named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
+        ["git", "diff", "--name-only", "origin/main...HEAD", "--", "src/platform"],
         cwd=root,
         text=True,
     )

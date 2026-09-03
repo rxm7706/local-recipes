@@ -1380,3 +1380,37 @@ def test_followup_true_still_launches(
         process=FakeProcess(),
     )
     assert harness.calls
+
+
+def test_relocated_spec_path_maps_primary_tree_onto_worktree(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    wt = tmp_path / "wt"
+    rel = Path(
+        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-5.md"
+    )
+    (repo / rel).parent.mkdir(parents=True)
+    (wt / rel).parent.mkdir(parents=True)
+    (repo / rel).write_text("primary\n", encoding="utf-8")
+    (wt / rel).write_text("worktree\n", encoding="utf-8")
+    relocated = dispatch_core.relocated_spec_path(repo / rel, repo, wt)
+    assert relocated == (wt / rel).resolve()
+    assert relocated.read_text(encoding="utf-8") == "worktree\n"
+
+
+def test_relocated_spec_path_keeps_already_worktree_path(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    wt = tmp_path / "wt"
+    rel = Path("specs/spec.md")
+    (wt / rel).parent.mkdir(parents=True)
+    target = wt / rel
+    target.write_text("ok\n", encoding="utf-8")
+    assert dispatch_core.relocated_spec_path(target, repo, wt) == target.resolve()
+
+
+def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="neither under worktree"):
+        dispatch_core.relocated_spec_path(
+            tmp_path / "other" / "spec.md",
+            tmp_path / "repo",
+            tmp_path / "wt",
+        )

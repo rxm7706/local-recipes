@@ -54,6 +54,9 @@ STATION_SLUG_PREFIX = "pyforge-"
 
 #: The one ledger status that means "not in the backlog any more".
 DONE_STATUS = "done"
+#: Land/promote only — not a new implement session. ``review`` after merge
+#: is still not ``done``, but re-dispatching it re-ran whole stories.
+NON_IMPLEMENT_STATUSES = frozenset({DONE_STATUS, "review"})
 
 
 class FleetCampaignMode(StrEnum):
@@ -458,7 +461,7 @@ def station_backlog(
     for raw_key, raw_status in statuses:
         if not isinstance(raw_key, str):
             continue
-        if str(raw_status).strip().lower() == DONE_STATUS:
+        if str(raw_status).strip().lower() in NON_IMPLEMENT_STATUSES:
             continue
         try:
             normalize(raw_key)

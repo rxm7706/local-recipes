@@ -219,7 +219,7 @@ def test_dispatch_renders_profile_argv_env_and_detaches(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="22-8-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model="opus",
         budget_env={"MARSHAL_MAX_TOKENS_PER_STORY": "5"},
         log_path=log_path,
@@ -254,7 +254,7 @@ def test_dispatch_omitted_model_tier_reports_reason(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="22-8-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model="haiku",  # not in fakecli's model_map, no passthrough
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -275,6 +275,25 @@ def test_dispatch_refuses_a_falsy_resolution(tmp_path: Path) -> None:
             model=None,
             budget_env={},
             log_path=tmp_path / "log",
+        )
+
+
+def test_dispatch_refuses_spec_outside_worktree(
+    tmp_path: Path, bare_path: Path
+) -> None:
+    resolution = _launch_ready_resolution(tmp_path, bare_path)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    with pytest.raises(BuildHarnessError, match="not inside dispatch worktree"):
+        BmadBuildHarness().dispatch(
+            worktree,
+            resolution=resolution,
+            project_slug="pyforge-marshal",
+            story_key="22-8-example",
+            spec_path=tmp_path / "outside.md",
+            model="opus",
+            budget_env={},
+            log_path=tmp_path / "session.log",
         )
 
 
@@ -427,7 +446,7 @@ def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model="opus",
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -477,7 +496,7 @@ def test_dispatch_ccr_store_round_trip_is_byte_exact(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -510,7 +529,7 @@ def test_wrapped_launch_tail_is_byte_identical_to_the_unwrapped_one(
             resolution=resolution,
             project_slug="pyforge-marshal",
             story_key="28-2-example",
-            spec_path=tmp_path / "spec.md",
+            spec_path=worktree / "spec.md",
             model="opus",
             budget_env={},
             log_path=tmp_path / f"session-{wire_layer['enabled']}.log",
@@ -543,7 +562,7 @@ def test_dispatch_without_a_wire_layer_is_byte_identical_to_pre_28_2(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -568,7 +587,7 @@ def test_dispatch_degrades_when_the_wrapper_binary_is_absent(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -593,7 +612,7 @@ def test_dispatch_degrades_when_the_profile_declares_no_wrapper(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -622,7 +641,7 @@ def test_dispatch_degrades_when_the_ccr_store_cannot_be_created(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -666,7 +685,7 @@ def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(
         resolution=resolution,
         project_slug="pyforge-marshal",
         story_key="28-2-example",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "session.log",
@@ -698,7 +717,7 @@ def test_dispatch_child_survives_via_new_session(
         resolution=resolution,
         project_slug="s",
         story_key="1-1-x",
-        spec_path=tmp_path / "spec.md",
+        spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
         log_path=tmp_path / "log",
