@@ -14,6 +14,9 @@ Delivery semantics (Story 42.3, red-team A-2 / A-4, directive R-9):
   least the handler timeout — never a message a live consumer is still
   working on), quarantines the unparseable and the exhausted, and leaves the
   rest pending under the harvester for its retry pass.
+* Duplicate suppression is per consumer group: every station's group sees
+  every entry (one stream, AD-8), so the applied mark is
+  ``applied:<group>:<event id>`` and one group's read never starves another.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from collections.abc import Callable
 from typing import Any
@@ -31,6 +35,7 @@ from django_pyforge.events.constants import DLQ
 from django_pyforge.events.constants import DLQ_ATTEMPTS_FIELD
 from django_pyforge.events.constants import DLQ_ERROR_FIELD
 from django_pyforge.events.constants import DLQ_GROUP_FIELD
+from django_pyforge.events.constants import DLQ_QUARANTINED_AT_FIELD
 from django_pyforge.events.constants import DLQ_REASON_EXHAUSTED
 from django_pyforge.events.constants import DLQ_REASON_FIELD
 from django_pyforge.events.constants import DLQ_REASON_UNPARSEABLE
@@ -60,6 +65,7 @@ from django_pyforge.events.tracing import current_traceparent
 from django_pyforge.events.tracing import parse_traceparent
 
 Handler = Callable[[dict[str, Any]], None]
+StopCheck = Callable[[], bool]
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +79,9 @@ _HANDLER_TIMEOUT_MS_ENV = "DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS"
 _BATCH = 100
 # redis-py's XPENDING row as a tuple: (id, consumer, idle_ms, delivery_count).
 _PENDING_TUPLE_LEN = 4
+# `scheme://user:password@host` -> `scheme://***@host`. Driver exceptions
+# embed DSNs, and the DLQ is never trimmed.
+_URL_USERINFO_RE = re.compile(r"(\b[A-Za-z][A-Za-z0-9+.-]*://)[^/\s@]+@")
 
 
 def _env_int(name: str, default: int) -> int:
@@ -96,20 +105,30 @@ def max_attempts() -> int:
 
 
 def handler_timeout_ms() -> int:
-    """The handler budget; also ``harvest_poison``'s default ``min_idle_time``."""
-    return max(0, _env_int(_HANDLER_TIMEOUT_MS_ENV, EVENT_HANDLER_TIMEOUT_MS_DEFAULT))
+    """The handler budget; also ``harvest_poison``'s default ``min_idle_time``.
+
+    Floored at 1 ms: at 0 a harvest would claim entries a live consumer is
+    still processing (the A-4 regression).
+    """
+    return max(1, _env_int(_HANDLER_TIMEOUT_MS_ENV, EVENT_HANDLER_TIMEOUT_MS_DEFAULT))
 
 
 def backoff_ms(attempts: int) -> int:
     """Wait before the next attempt after ``attempts`` failed deliveries.
 
     ``base * 2**(attempts-1)`` capped at the max: with the defaults 1s, 2s,
-    4s, 8s, then 16s ... 60s.
+    4s, 8s, then 16s ... 60s. Floored at 1 ms: XCLAIM with ``min_idle_time=0``
+    re-claims immediately, including entries a harvester just took.
     """
     base = max(0, _env_int(_BACKOFF_BASE_MS_ENV, EVENT_BACKOFF_BASE_MS_DEFAULT))
     cap = max(0, _env_int(_BACKOFF_MAX_MS_ENV, EVENT_BACKOFF_MAX_MS_DEFAULT))
     exponent = max(0, attempts - 1)
-    return min(base * (2**exponent), cap)
+    return max(1, min(base * (2**exponent), cap))
+
+
+def redact_secrets(text: str) -> str:
+    """Strip URL userinfo (``scheme://user:pass@`` -> ``scheme://***@``)."""
+    return _URL_USERINFO_RE.sub(r"\1***@", text)
 
 
 def _as_id(value: Any) -> str:
@@ -141,8 +160,9 @@ class LoopDepthExceededError(ValueError):
         )
 
 
-def applied_key(event_id: str) -> str:
-    return f"{APPLIED_PREFIX}{event_id}"
+def applied_key(event_id: str, group: str) -> str:
+    """The per-group duplicate-suppression key for one event id."""
+    return f"{APPLIED_PREFIX}{group}:{event_id}"
 
 
 def last_error_key(stream_id: str) -> str:
@@ -223,6 +243,10 @@ def _pending_row(row: Any) -> tuple[str, str, int, int] | None:
     return None
 
 
+def _never_stop() -> bool:
+    return False
+
+
 class EventFabric:
     """XADD CloudEvents onto redis-broker; consume with attempts, backoff, DLQ."""
 
@@ -290,18 +314,28 @@ class EventFabric:
                 raise
             return
 
-    def consume(self, group: str, consumer: str, handler: Handler) -> int:
+    def consume(
+        self,
+        group: str,
+        consumer: str,
+        handler: Handler,
+        *,
+        should_stop: StopCheck | None = None,
+    ) -> int:
         """One pass: retry due pending entries, then read new ones.
 
         Returns the number of events the handler completed. Never sleeps —
         an entry whose backoff has not elapsed is simply not attempted, so a
-        caller polling in a loop does not spin on a failing event.
+        caller polling in a loop does not spin on a failing event. Once
+        ``should_stop()`` answers True no further entry is claimed or read;
+        the handler already running always finishes.
         """
         _require_station(group)
         self.ensure_group(group)
+        stop = should_stop or _never_stop
         handled = 0
-        handled += self._retry_pending(group, consumer, handler)
-        handled += self._drain(group, consumer, handler)
+        handled += self._retry_pending(group, consumer, handler, stop)
+        handled += self._drain(group, consumer, handler, stop)
         return handled
 
     def harvest_poison(
@@ -316,7 +350,9 @@ class EventFabric:
         moved to the DLQ.
         """
         _require_station(group)
-        threshold = int(min_idle_time) if min_idle_time is not None else handler_timeout_ms()
+        threshold = handler_timeout_ms()
+        if min_idle_time is not None:
+            threshold = int(min_idle_time)
         result = self.broker.xautoclaim(
             STREAM,
             group,
@@ -362,18 +398,30 @@ class EventFabric:
         return moved
 
     def _pending_rows(self, group: str, consumer: str | None = None) -> list[Any]:
-        if not hasattr(self.broker, "xpending_range"):
-            return []
+        xpending_range = getattr(self.broker, "xpending_range", None)
+        if xpending_range is None:
+            # Without XPENDING there is no attempt counter, hence no retry
+            # ceiling and no quarantine: refuse rather than run unbounded.
+            msg = "event broker must support XPENDING (xpending_range)"
+            raise TypeError(msg)
         kwargs: dict[str, Any] = {}
         if consumer is not None:
             kwargs["consumername"] = consumer
-        rows = self.broker.xpending_range(STREAM, group, "-", "+", _BATCH, **kwargs)
+        rows = xpending_range(STREAM, group, "-", "+", _BATCH, **kwargs)
         return rows or []
 
-    def _retry_pending(self, group: str, consumer: str, handler: Handler) -> int:
+    def _retry_pending(
+        self,
+        group: str,
+        consumer: str,
+        handler: Handler,
+        should_stop: StopCheck,
+    ) -> int:
         handled = 0
         ceiling = max_attempts()
         for item in self._pending_rows(group, consumer):
+            if should_stop():
+                break
             row = _pending_row(item)
             if row is None:
                 continue
@@ -384,7 +432,21 @@ class EventFabric:
                 # if any, is what the DLQ entry carries.
                 fields = self._fields_of(stream_id)
                 if fields is None:
+                    # Trimmed out of the stream (MAXLEN) while still pending:
+                    # nothing left to quarantine. Say so before letting go.
+                    logger.error(
+                        "pending entry %s no longer in %s; acknowledging without DLQ",
+                        stream_id,
+                        STREAM,
+                        extra={
+                            "stream_id": stream_id,
+                            "group": group,
+                            "attempts": attempts,
+                            "error": self.broker.get(last_error_key(stream_id)),
+                        },
+                    )
                     self.broker.xack(STREAM, group, stream_id)
+                    self.broker.delete(last_error_key(stream_id))
                     continue
                 self._quarantine(
                     group,
@@ -415,11 +477,24 @@ class EventFabric:
                 return dict(fields)
         return None
 
-    def _drain(self, group: str, consumer: str, handler: Handler) -> int:
+    def _drain(
+        self,
+        group: str,
+        consumer: str,
+        handler: Handler,
+        should_stop: StopCheck,
+    ) -> int:
+        if should_stop():
+            return 0
         rows = self.broker.xreadgroup(group, consumer, {STREAM: ">"}, count=_BATCH)
         handled = 0
         for _stream, messages in rows or []:
             for stream_id, fields in messages:
+                if should_stop():
+                    # Already delivered to this consumer: left pending, and
+                    # retried after backoff by the next pass (same name) or
+                    # reclaimed by a harvest (new name).
+                    return handled
                 sid = _as_id(stream_id)
                 handled += self._apply(group, sid, fields, handler, attempt=1)
         return handled
@@ -443,7 +518,7 @@ class EventFabric:
                 attempts=attempt,
             )
             return 0
-        key = applied_key(str(event["id"]))
+        key = applied_key(str(event["id"]), group)
         if not self._mark_applied(key):
             self.broker.xack(STREAM, group, stream_id)
             return 0
@@ -452,7 +527,7 @@ class EventFabric:
                 handler(event)
         except Exception as exc:  # noqa: BLE001 -- any handler failure is a retry
             self.broker.delete(key)
-            error = f"{type(exc).__name__}: {exc}"
+            error = redact_secrets(f"{type(exc).__name__}: {exc}")
             self.broker.set(last_error_key(stream_id), error, ex=_applied_ttl_seconds())
             if attempt >= max_attempts():
                 self._quarantine(
@@ -504,13 +579,14 @@ class EventFabric:
                 if reason == DLQ_REASON_UNPARSEABLE
                 else f"{attempts} attempt(s) spent; last handler error not recorded"
             )
+        error = redact_secrets(str(error))
         entry = dict(fields)
         entry[DLQ_REASON_FIELD] = reason
-        entry[DLQ_ERROR_FIELD] = str(error)
+        entry[DLQ_ERROR_FIELD] = error
         entry[DLQ_ATTEMPTS_FIELD] = str(attempts)
         entry[DLQ_GROUP_FIELD] = group
         entry[DLQ_STREAM_ID_FIELD] = stream_id
-        entry["quarantined_at"] = str(int(time.time()))
+        entry[DLQ_QUARANTINED_AT_FIELD] = str(int(time.time()))
         self.broker.xadd(DLQ, entry)
         self.broker.xack(STREAM, group, stream_id)
         self.broker.delete(last_error_key(stream_id))

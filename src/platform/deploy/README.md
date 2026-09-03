@@ -133,14 +133,17 @@ capability-naming reason where helm/PyYAML are absent.
 - **Event delivery (Story 42.3).** `events.consumers` renders one
   `consume-events-<station>` Deployment per station
   (`manage.py consume_events --station <name>`; consumer group = station).
-  A handler failure leaves the entry pending and retries after
-  1s/2s/4s/8s (`DJANGO_PYFORGE_EVENT_BACKOFF_BASE_MS` / `_MAX_MS`); after
-  `DJANGO_PYFORGE_EVENT_MAX_ATTEMPTS` (5) the event is written to the DLQ
-  with `reason`, `error`, `attempts`, `group`, `stream_id` and only then
-  ACKed. `harvest_poison` reclaims entries another consumer abandoned only
-  once idle ≥ `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS` (300s). The
-  envelope carries `traceparent`; `enqueue_supervised_run` forwards it as a
-  Celery header.
+  A handler failure leaves the entry pending, records the (secret-redacted)
+  error under `pyforge.events.lasterror:<stream_id>` (TTL = the applied-key
+  TTL) and retries after 1s/2s/4s/8s (`DJANGO_PYFORGE_EVENT_BACKOFF_BASE_MS`
+  / `_MAX_MS`); after `DJANGO_PYFORGE_EVENT_MAX_ATTEMPTS` (5) the event is
+  written to the DLQ with `reason`, `error`, `attempts`, `group`,
+  `stream_id`, `quarantined_at` and only then ACKed (`manage.py
+  list_event_dlq` prints them). `harvest_poison` reclaims entries another
+  consumer abandoned only once idle ≥ `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS`
+  (300s). These `DJANGO_PYFORGE_EVENT_*` knobs are process environment
+  variables, not chart values. The envelope carries `traceparent`;
+  `enqueue_supervised_run` forwards it as a Celery header.
 - **Dead-letter retention (Story 40.2).** The `pyforge.events.dlq` stream
   is never auto-trimmed. Operators inspect it with
   `manage.py list_event_dlq` and purge deliberately, e.g.

@@ -7,7 +7,8 @@ against the eight tokens at render time rather than failing inside the pod.
 No probes -- the consumer has no HTTP surface.
 */}}
 {{- $stations := list "atlas" "doctor" "herald" "marshal" "mason" "scribe" "steward" "warden" }}
-{{- range $station := .Values.events.consumers }}
+{{- /* uniq: a repeated station must not render two Deployments with one name. */}}
+{{- range $station := uniq .Values.events.consumers }}
 {{- if not (has $station $stations) }}
 {{- fail (printf "events.consumers: %q is not a station token (one of: %s)" $station (join ", " $stations)) }}
 {{- end }}
@@ -37,8 +38,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       # Drain budget for the in-flight handler -- values-documented against
-      # DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS (defaults to the Celery hard
-      # limit). SIGTERM ends the loop after the current pass.
+      # DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS (an independent literal equal
+      # to the Celery hard limit). SIGTERM stops further claims/reads at once;
+      # only the handler already running finishes.
       terminationGracePeriodSeconds: {{ $.Values.events.terminationGracePeriodSeconds }}
       securityContext:
         {{- include "platform.restrictedPodSecurityContext" $ | nindent 8 }}

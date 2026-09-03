@@ -4,17 +4,17 @@ The chart ships this as a Deployment per station in ``events.consumers``:
 ``manage.py consume_events --station doctor``. Consumer group = station token
 (AD-8). Each pass retries due pending entries then reads new ones; every
 ``--harvest-every`` passes it reclaims entries another consumer abandoned.
-SIGTERM finishes the current pass and exits, so a handler is never cut off
-mid-event by a rollout.
+SIGTERM stops the fabric from claiming or reading any further entry and
+interrupts the idle wait; the handler already running always finishes, so a
+rollout never cuts an event off mid-handler.
 """
 
 from __future__ import annotations
 
 import contextlib
-import logging
 import signal
 import socket
-import time
+import threading
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -24,6 +24,7 @@ from django.core.management.base import CommandError
 
 from django_pyforge.events import STATION_TOKENS
 from django_pyforge.events import EventFabric
+from django_pyforge.events import connect_event_broker
 from django_pyforge.events.adapters import station_handler
 from django_pyforge.events.adapters import subscriptions_for
 from django_pyforge.events.fabric import Handler
@@ -32,18 +33,31 @@ from django_pyforge.events.fabric import handler_timeout_ms
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-logger = logging.getLogger(__name__)
 
+class StopFlag:
+    """Set by SIGTERM/SIGINT (or a test); read by the fabric before each entry.
 
-class _StopFlag:
-    """Set by SIGTERM/SIGINT; the loop checks it after every pass."""
+    A :class:`threading.Event`, so the idle wait is interruptible: the signal
+    handler only sets it and does nothing else (no logging, no I/O -- it runs
+    reentrantly inside whatever the main thread was doing).
+    """
 
     def __init__(self) -> None:
-        self.requested = False
+        self._event = threading.Event()
 
-    def _request(self, signum: int, _frame: Any) -> None:
-        self.requested = True
-        logger.info("consume_events stopping after this pass", extra={"signal": signum})
+    def request(self, *_args: Any) -> None:
+        self._event.set()
+
+    def is_set(self) -> bool:
+        return self._event.is_set()
+
+    @property
+    def requested(self) -> bool:
+        return self._event.is_set()
+
+    def wait(self, timeout: float) -> bool:
+        """Idle until ``timeout`` elapses or a stop is requested."""
+        return self._event.wait(timeout)
 
     @contextlib.contextmanager
     def installed(self) -> Iterator[None]:
@@ -51,7 +65,7 @@ class _StopFlag:
         for sig in (signal.SIGTERM, signal.SIGINT):
             # Not the main thread (tests): no handler, the loop ends on --once.
             with contextlib.suppress(ValueError):
-                previous[sig] = signal.signal(sig, self._request)
+                previous[sig] = signal.signal(sig, self.request)
         try:
             yield
         finally:
@@ -68,20 +82,24 @@ def run_passes(
     interval: float,
     harvest_every: int,
     once: bool,
-    stop: _StopFlag,
+    stop: StopFlag,
 ) -> tuple[int, int, int]:
-    """``(passes, handled, quarantined)`` after the loop ends."""
+    """``(passes, handled, quarantined)`` after the loop ends.
+
+    The idle wait is taken only after a pass that handled nothing, and only
+    for as long as no stop is requested.
+    """
     passes = handled_total = moved_total = 0
     while True:
         passes += 1
-        handled = fabric.consume(station, consumer, handler)
+        handled = fabric.consume(station, consumer, handler, should_stop=stop.is_set)
         handled_total += handled
         if once or (harvest_every and passes % harvest_every == 0):
             moved_total += fabric.harvest_poison(station, consumer)
         if once or stop.requested:
             return passes, handled_total, moved_total
         if handled == 0 and interval:
-            time.sleep(interval)
+            stop.wait(interval)
 
 
 class Command(BaseCommand):
@@ -105,7 +123,7 @@ class Command(BaseCommand):
             "--interval",
             type=float,
             default=1.0,
-            help="seconds to sleep after a pass that handled nothing",
+            help="seconds to wait after a pass that handled nothing",
         )
         parser.add_argument(
             "--harvest-every",
@@ -125,25 +143,32 @@ class Command(BaseCommand):
         if station not in STATION_TOKENS:
             msg = f"--station must be a station token, got {station!r}"
             raise CommandError(msg)
+        subscribed = subscriptions_for(station)
+        if not subscribed:
+            # A consumer with nothing to react to would ACK the whole stream
+            # and look healthy while doing nothing (SUBSCRIPTIONS is the map).
+            msg = f"station {station!r} subscribes to no event type; nothing to consume"
+            raise CommandError(msg)
         consumer = options.get("consumer") or f"{station}-{socket.gethostname()}"
         client = options.get("client")
         if client is None:
-            import redis  # noqa: PLC0415 -- optional runtime driver
-
-            client = redis.Redis.from_url(
+            # AD-10: the fabric binds to redis-broker and refuses a URL shared
+            # with redis-cache.
+            fabric = connect_event_broker(
                 settings.REDIS_BROKER_URL,
-                decode_responses=True,
+                settings.REDIS_CACHE_URL,
             )
+        else:
+            fabric = EventFabric(client)
         handler = options.get("handler") or station_handler(station)
-        fabric = EventFabric(client)
         fabric.ensure_group(station)
         once = bool(options["once"])
         self.stdout.write(
             f"consuming pyforge.events as group={station} consumer={consumer} "
-            f"types={sorted(subscriptions_for(station))} "
+            f"types={sorted(subscribed)} "
             f"handler_timeout_ms={handler_timeout_ms()}",
         )
-        stop = _StopFlag()
+        stop = StopFlag()
         with stop.installed() if not once else contextlib.nullcontext():
             passes, handled, moved = run_passes(
                 fabric,

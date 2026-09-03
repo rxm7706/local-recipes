@@ -14,6 +14,7 @@ carried by a plain :class:`contextvars.ContextVar` that always works.
 from __future__ import annotations
 
 import re
+from contextlib import ExitStack
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
@@ -24,8 +25,11 @@ if TYPE_CHECKING:
 
 TRACEPARENT_HEADER = "traceparent"
 # version-traceid-spanid-flags, lowercase hex; an all-zero trace or span id
-# is invalid per the W3C Trace Context spec.
-_TRACEPARENT_RE = re.compile(r"^[0-9a-f]{2}-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$")
+# is invalid per the W3C Trace Context spec, and so is version ``ff``.
+_TRACEPARENT_RE = re.compile(
+    r"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$",
+)
+_FORBIDDEN_VERSION = "ff"
 
 _current_traceparent: ContextVar[str | None] = ContextVar(
     "django_pyforge_traceparent",
@@ -44,7 +48,9 @@ def parse_traceparent(value: Any) -> tuple[str, str] | None:
     match = _TRACEPARENT_RE.match(value)
     if match is None:
         return None
-    trace_id, span_id = match.group(1), match.group(2)
+    version, trace_id, span_id = match.group(1), match.group(2), match.group(3)
+    if version == _FORBIDDEN_VERSION:
+        return None
     if set(trace_id) == {"0"} or set(span_id) == {"0"}:
         return None
     return trace_id, span_id
@@ -101,8 +107,9 @@ def traceparent_from_task_request(request: Any) -> str | None:
 def bind_structlog_trace(traceparent: str) -> list[str]:
     """Bind ``traceparent`` + ``trace_id`` into structlog's contextvars.
 
-    Returns the keys bound so the caller can unbind them. No-op without
-    structlog.
+    For the Celery task receiver, where django-structlog has just rebuilt
+    the context and there is nothing outer to restore. Returns the keys
+    bound. No-op without structlog.
     """
     try:
         from structlog.contextvars import bind_contextvars  # noqa: PLC0415
@@ -115,14 +122,14 @@ def bind_structlog_trace(traceparent: str) -> list[str]:
     return ["traceparent", "trace_id"]
 
 
-def _unbind_structlog(keys: list[str]) -> None:
-    if not keys:
-        return
+def _structlog_scope(traceparent: str, trace_id: str) -> Any:
+    """``structlog.contextvars.bound_contextvars`` (restores outer values on
+    exit), or ``None`` without structlog."""
     try:
-        from structlog.contextvars import unbind_contextvars  # noqa: PLC0415
+        from structlog.contextvars import bound_contextvars  # noqa: PLC0415
     except ImportError:
-        return
-    unbind_contextvars(*keys)
+        return None
+    return bound_contextvars(traceparent=traceparent, trace_id=trace_id)
 
 
 @contextmanager
@@ -130,28 +137,29 @@ def bound_trace(traceparent: str | None) -> Iterator[None]:
     """Run the body under ``traceparent``: contextvar, OTel context, structlog.
 
     A missing or malformed header binds nothing (the body still runs); a
-    consumer must never refuse an event for lack of a trace.
+    consumer must never refuse an event for lack of a trace. On exit every
+    layer is restored to what it was, whatever raised.
     """
-    if not parse_traceparent(traceparent):
+    parsed = parse_traceparent(traceparent)
+    if parsed is None:
         yield
         return
     assert traceparent is not None
+    trace_id = parsed[0]
     token = _current_traceparent.set(traceparent)
-    otel_token: Any = None
-    otel_context: Any = None
     try:
-        from opentelemetry import context as otel_context  # noqa: PLC0415
-        from opentelemetry import propagate  # noqa: PLC0415
-    except ImportError:
-        otel_context = None
-    if otel_context is not None:
-        extracted = propagate.extract({TRACEPARENT_HEADER: traceparent})
-        otel_token = otel_context.attach(extracted)
-    bound = bind_structlog_trace(traceparent)
-    try:
-        yield
+        with ExitStack() as stack:
+            try:
+                from opentelemetry import context as otel_context  # noqa: PLC0415
+                from opentelemetry import propagate  # noqa: PLC0415
+            except ImportError:
+                pass
+            else:
+                extracted = propagate.extract({TRACEPARENT_HEADER: traceparent})
+                stack.callback(otel_context.detach, otel_context.attach(extracted))
+            scope = _structlog_scope(traceparent, trace_id)
+            if scope is not None:
+                stack.enter_context(scope)
+            yield
     finally:
-        _unbind_structlog(bound)
-        if otel_context is not None and otel_token is not None:
-            otel_context.detach(otel_token)
         _current_traceparent.reset(token)

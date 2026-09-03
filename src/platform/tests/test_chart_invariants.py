@@ -2868,6 +2868,39 @@ def test_consume_events_follows_values_and_refuses_non_station():
     _assert_consume_events_deployments_mirror_worker(docs, ["warden"])
     with pytest.raises(AssertionError, match="not a station token"):
         _render(_CORE_CHART, "--set", "events.consumers={nope}")
+    # Review P12: a repeated station renders ONE Deployment (two with one
+    # name would be a helm apply error), and the NetworkPolicy lists it once.
+    docs = _render(_CORE_CHART, "--set", "events.consumers={doctor,doctor}")
+    _assert_consume_events_deployments_mirror_worker(docs, ["doctor"])
+    policies = [doc for doc in docs if doc.get("kind") == "NetworkPolicy"]
+    for policy in policies:
+        for rule in policy["spec"].get("ingress") or []:
+            for peer in rule.get("from") or []:
+                for expr in (peer.get("podSelector") or {}).get("matchExpressions") or []:
+                    values = expr.get("values") or []
+                    assert len(values) == len(set(values)), (
+                        f"{policy['metadata']['name']}: duplicate peers {values!r}"
+                    )
+
+
+def test_values_event_consumers_match_subscriptions():
+    """Review P7 (ungated, no helm): the stations the chart deploys consumers
+    for are exactly the stations that subscribe to something. A consumer for
+    a station with no subscriptions would ACK the whole stream while looking
+    healthy; a subscribing station with no consumer is a producer with no
+    listener (A-1)."""
+    from django_pyforge.events import SUBSCRIPTIONS  # noqa: PLC0415
+
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    consumers = list(values["events"]["consumers"])
+    assert len(consumers) == len(set(consumers)), f"duplicate stations: {consumers}"
+    assert set(consumers) == set(SUBSCRIPTIONS), (
+        f"values.yaml events.consumers {sorted(consumers)} must equal the "
+        f"subscribing stations {sorted(SUBSCRIPTIONS)}"
+    )
+    for station, types in SUBSCRIPTIONS.items():
+        assert types, f"{station} is listed as a consumer but subscribes to nothing"
 
 
 def test_consume_events_guard_rejects_drift_from_worker():

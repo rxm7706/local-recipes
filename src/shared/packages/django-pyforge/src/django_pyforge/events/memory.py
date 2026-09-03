@@ -5,15 +5,15 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from dataclasses import field
-from typing import TYPE_CHECKING
 from typing import Any
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
 
 
 class StreamResponseError(Exception):
     """Redis-style stream errors (BUSYGROUP / NOGROUP)."""
+
+
+class DataError(ValueError):
+    """Mirror of ``redis.exceptions.DataError`` for argument-shape mistakes."""
 
 
 def _as_str(value: Any) -> str:
@@ -55,9 +55,10 @@ class _Group:
 class MemoryRedis:
     """Enough Streams + SET/GET for EventFabric tests.
 
-    Pending idle times are real milliseconds (``time.monotonic``) plus an
-    offset a test moves with :meth:`advance_ms`, so backoff and harvest
-    thresholds are exercised without sleeping.
+    The stream clock is purely logical: pending idle times start at zero and
+    move only through :meth:`advance_ms`, so backoff and harvest thresholds
+    are deterministic whatever the wall clock does. (Key TTLs still use
+    wall time -- they model SET EX, not stream idleness.)
     """
 
     def __init__(self) -> None:
@@ -66,14 +67,14 @@ class MemoryRedis:
         self._streams: dict[str, list[_Entry]] = {}
         self._groups: dict[str, dict[str, _Group]] = {}
         self._seq = 0
-        self._offset_ms = 0
+        self._clock_ms = 0
 
     def _now_ms(self) -> int:
-        return int(time.monotonic() * 1000) + self._offset_ms
+        return self._clock_ms
 
     def advance_ms(self, milliseconds: int) -> None:
-        """Age every pending entry by ``milliseconds`` (test clock)."""
-        self._offset_ms += int(milliseconds)
+        """Age every pending entry by ``milliseconds`` (the only way time moves)."""
+        self._clock_ms += int(milliseconds)
 
     def _purge_expired(self, key: str) -> None:
         expires = self._expiry.get(key)
@@ -148,6 +149,14 @@ class MemoryRedis:
         if maxlen is not None and len(entries) > maxlen:
             del entries[: len(entries) - maxlen]
         return stream_id
+
+    def xdel(self, name: str, *ids: str) -> int:
+        """Remove entries from the stream; pending references survive (as in Redis)."""
+        entries = self._streams.get(name, [])
+        wanted = {_as_str(i) for i in ids}
+        before = len(entries)
+        entries[:] = [entry for entry in entries if entry.stream_id not in wanted]
+        return before - len(entries)
 
     def xlen(self, name: str) -> int:
         return len(self._streams.get(name, []))
@@ -281,15 +290,19 @@ class MemoryRedis:
         groupname: str,
         consumername: str,
         min_idle_time: int,
-        message_ids: Iterable[str] | str,
+        message_ids: Any,
         **_kwargs: Any,
     ) -> list[tuple[str, dict[str, str]]]:
+        # redis-py's contract: a non-empty list or tuple of ids, never a bare
+        # id (which it rejects with DataError). Pinned here so the in-memory
+        # suite cannot pass a call shape the real driver refuses.
+        if not isinstance(message_ids, (list, tuple)) or not message_ids:
+            msg = "XCLAIM message_ids must be a non empty list or tuple of message ids"
+            raise DataError(msg)
         group = self._require_group(name, groupname)
-        single = isinstance(message_ids, (str, bytes))
-        ids = [message_ids] if single else list(message_ids)
         now = self._now_ms()
         claimed: list[tuple[str, dict[str, str]]] = []
-        for stream_id in ids:
+        for stream_id in message_ids:
             pending = group.pending.get(_as_str(stream_id))
             if pending is None:
                 continue

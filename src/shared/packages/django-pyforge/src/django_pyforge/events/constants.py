@@ -50,9 +50,10 @@ EVENT_BACKOFF_BASE_MS_DEFAULT = 1_000
 EVENT_BACKOFF_MAX_MS_DEFAULT = 60_000
 # Handler budget. ``harvest_poison`` may only claim an entry that has been
 # pending at least this long, otherwise it steals a message a healthy
-# consumer is still processing (A-4). Equal to CELERY_TASK_TIME_LIMIT (the
-# longest work a handler may legitimately wait on). Override via
-# DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS.
+# consumer is still processing (A-4). An independent literal that is EQUAL
+# to (not derived from) config.settings.base's CELERY_TASK_TIME_LIMIT of
+# 300 s -- the longest work a handler may legitimately wait on; change both
+# together. Override via DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS.
 EVENT_HANDLER_TIMEOUT_MS_DEFAULT = 5 * 60 * 1000
 
 # DLQ entry fields written next to the original ``event`` field.
@@ -61,14 +62,15 @@ DLQ_ERROR_FIELD = "error"
 DLQ_ATTEMPTS_FIELD = "attempts"
 DLQ_GROUP_FIELD = "group"
 DLQ_STREAM_ID_FIELD = "stream_id"
+DLQ_QUARANTINED_AT_FIELD = "quarantined_at"
 DLQ_REASON_UNPARSEABLE = "unparseable"
 DLQ_REASON_EXHAUSTED = "exhausted"
 
 # Chrome registry: adding a type is a django-pyforge change, not a story-local
 # string. Story 42.3 registers the Warden -> Doctor -> Mason vocabulary; every
-# type carries the dataschema its ``data`` object is validated against in the
-# consuming adapter (BS-6: validation in adapters, never at the stream
-# boundary).
+# type names the dataschema URN its ``data`` object is published under. The
+# consuming adapter checks the required keys for its type (BS-6: validation
+# in adapters, never at the stream boundary); nothing resolves the URN.
 EVENT_SCHEMAS: dict[str, str] = {
     # Warden -> Doctor: an audit verdict that needs a reaction.
     "recipe.audit.failed": "urn:pyforge:schema:events:recipe.audit.failed:v1",

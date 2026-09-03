@@ -9,6 +9,30 @@ from django.core.management.base import BaseCommand
 
 from django_pyforge.events import DLQ
 from django_pyforge.events import list_quarantined
+from django_pyforge.events.constants import DLQ_ATTEMPTS_FIELD
+from django_pyforge.events.constants import DLQ_ERROR_FIELD
+from django_pyforge.events.constants import DLQ_GROUP_FIELD
+from django_pyforge.events.constants import DLQ_QUARANTINED_AT_FIELD
+from django_pyforge.events.constants import DLQ_REASON_FIELD
+from django_pyforge.events.constants import DLQ_STREAM_ID_FIELD
+from django_pyforge.events.constants import EVENT_FIELD
+
+# Story 42.3: the metadata every quarantine writes next to the event.
+_META_FIELDS = (
+    DLQ_REASON_FIELD,
+    DLQ_ATTEMPTS_FIELD,
+    DLQ_GROUP_FIELD,
+    DLQ_STREAM_ID_FIELD,
+    DLQ_QUARANTINED_AT_FIELD,
+    DLQ_ERROR_FIELD,
+)
+
+
+def format_entry(stream_id: str, fields: dict[str, Any]) -> str:
+    """One line: ``<dlq id>\\t<reason=.. attempts=.. ...>\\t<event>``."""
+    meta = " ".join(f"{name}={fields[name]}" for name in _META_FIELDS if name in fields)
+    payload = fields.get(EVENT_FIELD, fields)
+    return f"{stream_id}\t{meta or '-'}\t{payload}"
 
 
 class Command(BaseCommand):
@@ -29,5 +53,4 @@ class Command(BaseCommand):
             self.stdout.write(f"{DLQ}: (empty)")
             return
         for stream_id, fields in entries:
-            payload = fields.get("event", fields)
-            self.stdout.write(f"{stream_id}\t{payload}")
+            self.stdout.write(format_entry(stream_id, fields))

@@ -8,6 +8,8 @@ from typing import Any
 from django_pyforge.events.constants import EVENT_TYPES
 from django_pyforge.events.constants import STATION_TOKENS
 from django_pyforge.events.constants import SUBSCRIPTIONS
+from django_pyforge.events.fabric import Handler
+from django_pyforge.events.fabric import UnregisteredEventTypeError
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +85,8 @@ _ADAPTERS: dict[str, DomainAdapter] = {
 
 def register_adapter(adapter: DomainAdapter) -> None:
     if adapter.event_type not in EVENT_TYPES:
-        msg = f"event type {adapter.event_type!r} is not registered"
-        raise PayloadShapeError(msg)
+        msg = f"event type {adapter.event_type!r} is not registered in django-pyforge"
+        raise UnregisteredEventTypeError(msg)
     _ADAPTERS[adapter.event_type] = adapter
 
 
@@ -99,7 +101,7 @@ def subscriptions_for(station: str) -> frozenset[str]:
     return SUBSCRIPTIONS.get(station, frozenset())
 
 
-def station_handler(station: str) -> Any:
+def station_handler(station: str) -> Handler:
     """The handler ``consume_events --station <name>`` runs.
 
     Routes each event to the adapter for its type when the station
