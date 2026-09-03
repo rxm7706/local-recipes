@@ -1,0 +1,69 @@
+{{/*
+Story 42.4: Celery beat -- the scheduler that fires CELERY_BEAT_SCHEDULE
+(run_state retention, Story 42.2; the worker-lost sweep, Story 42.4) through
+django_celery_beat's DatabaseScheduler. Until this Deployment, both entries
+existed only as code: no process in the chart ticked them. Same image, env,
+security contexts and volumes as the Celery worker; only the args differ.
+
+Exactly ONE replica, always: two beats double-fire every entry. `replicas` is
+therefore hardcoded (no values knob) and the strategy is Recreate so a
+rollout never overlaps the old and new scheduler. `--pidfile=` (empty)
+because /app is deliberately not writable in the image and the pid lock is a
+single-host guard this Deployment already provides. No probes -- beat has no
+HTTP surface.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.beat.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: beat
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Beat holds no in-flight task; it only needs to flush its DB sync.
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: beat
+          image: {{ include "platform.imageRef" (dict "image" .Values.image "path" "image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): the image ENTRYPOINT (/app/entrypoint.sh,
+          # which sources the pixi shell-hook) must keep running, with
+          # this as its "$@".
+          args: ["celery", "-A", "config", "beat", "-l", "info", "--pidfile="]
+          env:
+            {{- include "platform.djangoEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: wagtail-media
+              mountPath: {{ .Values.media.mountPath | quote }}
+            {{- include "platform.flagsVolumeMount" . | nindent 12 }}
+          {{- with .Values.beat.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: wagtail-media
+          persistentVolumeClaim:
+            claimName: {{ include "platform.media.pvcName" . }}
+        {{- include "platform.flagsVolume" . | nindent 8 }}

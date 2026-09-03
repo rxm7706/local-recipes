@@ -62,6 +62,16 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-worker" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{/*
+Story 42.4: the builds pool and the beat scheduler. Same truncation rule.
+*/}}
+{{- define "platform.workerBuilds.fullname" -}}
+{{- printf "%s-worker-builds" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "platform.beat.fullname" -}}
+{{- printf "%s-beat" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{/*
 Story 42.3: per-station event consumer, from (dict "root" $ "station" <token>).
 */}}
 {{- define "platform.consumeEvents.fullname" -}}
@@ -305,6 +315,11 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
   value: "file"
 - name: FLAGD_OFFLINE_FLAG_SOURCE_PATH
   value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
+{{- /* Story 42.4: the builds pool's hard limit, on EVERY platform pod, so the
+       supervisor's worker-lost sweep (wherever it runs) and the broker
+       visibility timeout agree with the --time-limit the builds pod passes. */}}
+- name: CELERY_BUILDS_TASK_TIME_LIMIT
+  value: {{ int .Values.worker.builds.taskTimeLimitSeconds | quote }}
 {{- end }}
 
 {{/*

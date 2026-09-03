@@ -39,6 +39,14 @@ for _dist, _module in _STATION_PORTAL_PACKAGES:
     _portal_src = BASE_DIR.parent / "shared" / "packages" / _dist / "src"
     if _portal_src.is_dir() and importlib.util.find_spec(_module) is None:
         sys.path.insert(0, str(_portal_src))
+# Story 42.4: the Celery queue topology is the chrome's table, not a settings
+# literal (after the sys.path insert above, hence mid-module). Plain module --
+# no models, no settings access at import.
+from django_pyforge.queues import ALL_QUEUES  # noqa: E402
+from django_pyforge.queues import DEFAULT_QUEUE  # noqa: E402
+from django_pyforge.queues import SWEEP_LOST_RUNS_TASK  # noqa: E402
+from django_pyforge.queues import route_task  # noqa: E402
+
 # platformapp/
 APPS_DIR = BASE_DIR / "platformapp"
 env = environ.Env()
@@ -425,11 +433,66 @@ CELERY_TASK_SERIALIZER = "json"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_serializer
 CELERY_RESULT_SERIALIZER = "json"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
-# TODO: set to whatever value is adequate in your circumstances
+# The GENERAL pool's hard limit. Story 42.4 keeps it at five minutes on
+# purpose: hours-scale work has its own pool (`builds`, below) -- raising this
+# number would hand every queue that limit and put a build on the pool that
+# answers Doctor remedies.
 CELERY_TASK_TIME_LIMIT = 5 * 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
-# TODO: set to whatever value is adequate in your circumstances
 CELERY_TASK_SOFT_TIME_LIMIT = 60
+# CELERY HARDENING (Story 42.4, CAP-11 / CAP-17, red-team S-2 / T-6 -> R-10)
+# ------------------------------------------------------------------------------
+# At-least-once delivery. A message is acknowledged AFTER the task returns
+# (acks_late), and a worker process that dies mid-task hands its message back
+# to the broker instead of acking it (reject_on_worker_lost) -- so a SIGKILL'd
+# worker's task is re-delivered and re-run rather than silently dropped with
+# its RunState row RUNNING forever. Prefetch 1 so a worker holds only the
+# message it is running: a killed worker loses one task, not a prefetched
+# batch, and the priority queue is not stuck behind reservations.
+#
+# The trade is that every task must tolerate a re-run (at-least-once, never
+# exactly-once). The supervisor bounds that to ONE re-run per task
+# (`django_pyforge.supervisor.begin_attempt`), because a task that kills its
+# worker every time is otherwise the message loop `reject_on_worker_lost`
+# documents.
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# Queues. The topology lives in django_pyforge.queues (one table for the
+# settings, the chart and the tests): `priority` + `default` + one queue per
+# station on the general pool, `builds` on its own Deployment. Declaring every
+# queue here means a worker started with no `-Q` (compose, a laptop) consumes
+# all of them; the chart is what splits the pools with `-Q`.
+from kombu import Queue  # noqa: E402
+
+CELERY_TASK_DEFAULT_QUEUE = DEFAULT_QUEUE
+CELERY_TASK_QUEUES = tuple(Queue(name) for name in ALL_QUEUES)
+CELERY_TASK_ROUTES = (route_task,)
+# The builds pool's hard limit -- hours, not minutes. Its Deployment passes
+# the SAME number as `--time-limit` (values `worker.builds.taskTimeLimitSeconds`
+# feeds both this env var and the args), so the sweep on any pod and the
+# limit on the builds pod agree. Validated here, like the prune interval: the
+# broker's visibility timeout is derived from it at settings-load, and a
+# builds limit at or under the general limit is "a builds pod with the 300 s
+# limit" by another route.
+_DEFAULT_BUILDS_TASK_TIME_LIMIT = 4 * 60 * 60
+CELERY_BUILDS_TASK_TIME_LIMIT = env.int(
+    "CELERY_BUILDS_TASK_TIME_LIMIT",
+    default=_DEFAULT_BUILDS_TASK_TIME_LIMIT,
+)
+if CELERY_BUILDS_TASK_TIME_LIMIT <= CELERY_TASK_TIME_LIMIT:
+    CELERY_BUILDS_TASK_TIME_LIMIT = _DEFAULT_BUILDS_TASK_TIME_LIMIT
+# https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/redis.html#visibility-timeout
+# With acks_late on Redis an unacked message is re-delivered once the
+# visibility timeout passes, so it MUST exceed the longest task any pool may
+# run or a live build is delivered twice. The longest is the builds limit;
+# the general limit is the slack. `queue_order_strategy=priority` makes a
+# worker drain its `-Q` list in order, which is what puts `priority` ahead of
+# a station backlog.
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "visibility_timeout": CELERY_BUILDS_TASK_TIME_LIMIT + CELERY_TASK_TIME_LIMIT,
+    "queue_order_strategy": "priority",
+}
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Story 42.2 / red-team B-7: run_state had no retention at all, so the table
@@ -447,10 +510,24 @@ RUN_STATE_PRUNE_INTERVAL_SECONDS = env.int(
 )
 if RUN_STATE_PRUNE_INTERVAL_SECONDS <= 0:
     RUN_STATE_PRUNE_INTERVAL_SECONDS = _DEFAULT_PRUNE_INTERVAL_SECONDS
+# Story 42.4: the worker-lost sweep (BS-8 partial). Every few minutes, not
+# hourly: a row it fails has already sat RUNNING for at least its pool's hard
+# limit, and the caller polling `get` is waiting on exactly this write.
+_DEFAULT_SWEEP_INTERVAL_SECONDS = 5 * 60
+RUN_STATE_SWEEP_INTERVAL_SECONDS = env.int(
+    "RUN_STATE_SWEEP_INTERVAL_SECONDS",
+    default=_DEFAULT_SWEEP_INTERVAL_SECONDS,
+)
+if RUN_STATE_SWEEP_INTERVAL_SECONDS <= 0:
+    RUN_STATE_SWEEP_INTERVAL_SECONDS = _DEFAULT_SWEEP_INTERVAL_SECONDS
 CELERY_BEAT_SCHEDULE = {
     "prune-run-state": {
         "task": "django_pyforge.tasks.prune_run_state_task",
         "schedule": RUN_STATE_PRUNE_INTERVAL_SECONDS,
+    },
+    "sweep-lost-runs": {
+        "task": SWEEP_LOST_RUNS_TASK,
+        "schedule": RUN_STATE_SWEEP_INTERVAL_SECONDS,
     },
 }
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
