@@ -2917,3 +2917,135 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-42-2-6: `test_mcp_start_audit_returns_handle` leaks a committed live `RunState` row per run, which `MAX_RUNNING_PER_SUB` now counts.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: `test_mcp_start_audit_returns_handle` leaks a committed live `RunState` row per run, which `MAX_RUNNING_PER_SUB` now counts.
+  evidence: Found during the review pass. `TestClient` drives the app in a worker thread whose connection is in autocommit, so a row the tool creates is committed OUTSIDE the test transaction and survives rollback — the leak predates this story (subject `agent-10-2`, one row per run). Harmless until now; with the 42.2 ceilings in place, five `--reuse-db` runs against the same database exhaust that subject's allowance and the sixth run reds a pre-existing test. CI is unaffected (a fresh PostgreSQL service per job), so the exposure is repeated local runs without `--create-db`. This story's own MCP tests are immune by construction (`_fresh_subject`), which is why they were written that way rather than seeding a fixed subject.
+  location: src/platform/tests/test_warden_portal_audit_start_get.py
+  origin: spec-deferred 50ce8084d1fb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-7: `enforce_run_bounds` spends a `start` token before it checks either ceiling, so a subject parked at a ceiling burns its rate allowance on refusals.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: `enforce_run_bounds` spends a `start` token before it checks either ceiling, so a subject parked at a ceiling burns its rate allowance on refusals.
+  evidence: Raised independently by three review layers. After ~30 refused attempts in a minute the caller receives 429 `rate limited` instead of the 409 that names its live run ids — the response AC 3 exists to deliver, and the one the caller needs in order to wait on or revoke its own runs. Kept as-is because the bucket is the cheap cache check standing in front of two indexed COUNT queries: checking ceilings first would let an unbounded caller drive unbounded database work, which is the failure this story exists to stop. Revisit if the 409 path ever becomes the common case.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+  origin: spec-deferred 51cbaac4e31a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-8: The token bucket is a non-atomic read-modify-write, so concurrent requests across web pods lose updates and the effective ceiling exceeds `burst`.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: The token bucket is a non-atomic read-modify-write, so concurrent requests across web pods lose updates and the effective ceiling exceeds `burst`.
+  evidence: `consume()` does `store.get` -> compute -> `store.set` with no `INCR`, no CAS and no Lua script. N simultaneous requests read the same token count and the last write wins. Same class as the documented count-then-create race on the ceilings, and tolerable for the same reason — an agent loop issuing thousands of calls is still stopped, and a boundary off by the concurrency count does not restore that failure. Recorded because the module's docstring argues its other properties carefully and is silent on this one. Wall clock compounds it: a pod with a fast clock mints tokens, and only backwards skew is guarded (`max(0.0, moment - updated_at)`).
+  location: src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
+  origin: spec-deferred f4e841b2809b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-9: Migration 0004 adds `subject` without backfilling it, so every pre-existing run counts against nobody's ceiling and cannot be revoked by subject.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: Migration 0004 adds `subject` without backfilling it, so every pre-existing run counts against nobody's ceiling and cannot be revoked by subject.
+  evidence: `McpHandle.subject` already carries the value, so a `RunPython` backfill joining `run_state` to `mcp_handles` would be mechanical. Left out because it is a data migration over an estate whose row count is unknown, and because the safe guard landed instead: `revoke_subject` now refuses an empty subject, so the `subject=""` cohort cannot be cancelled wholesale by accident. Until backfilled, those rows are invisible to `MAX_RUNNING_PER_SUB` and unreachable by `steward revoke --sub`.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/migrations/0004_run_bounds.py
+  origin: spec-deferred c10ce373744e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-10: Neither the Helm chart nor compose exposes the eight new tunables, so "tunable without a code change" holds only for whoever can set pod env.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: Neither the Helm chart nor compose exposes the eight new tunables, so "tunable without a code change" holds only for whoever can set pod env.
+  evidence: `grep -rn "MAX_RUNNING_PER_SUB|MCP_RATE_LIMIT|RUN_STATE_RETENTION"` over `src/platform/deploy/` and `src/platform/compose/` returns nothing. The settings themselves are correct — every number is an `env.int` with a documented default, which is what the spec's Always clause requires — but an operator tuning them today edits the Deployment rather than `values.yaml`. Belongs with the same chart pass that adds the `beat` Deployment (Story 42.4).
+  location: src/platform/deploy/charts/platform/values.yaml
+  origin: spec-deferred 275898433474 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-11: The `pyforge-steward` skill card's duty list omits `revoke` (this story) and `restore` (Story 41.1), and that file is context-injected.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: The `pyforge-steward` skill card's duty list omits `revoke` (this story) and `restore` (Story 41.1), and that file is context-injected.
+  evidence: `.claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md` line 90 enumerates the duties ending at `validate-fast`, citing `cli.py:L41-L55`; its grammar block has no `steward revoke --sub` line. The only `revoke` on that page is the unrelated `steward keys revoke` subcommand, which makes the omission actively misleading. An agent reading the card will not know the duty exists. Not fixed here because the card is SKF-compiled output that `skf-update-skill` regenerates, and because Story 41.1 established that the refresh is a separate pass — but that backlog is now two duties deep.
+  location: .claude/skills/pyforge-steward/0.1.0/pyforge-steward/SKILL.md
+  origin: spec-deferred 88a8fcf7b7c5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-12: Celery tasks outside `execute_supervised_run` carry no `sub` header, so `revoke --sub` does not reach them.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: Celery tasks outside `execute_supervised_run` carry no `sub` header, so `revoke --sub` does not reach them.
+  evidence: The spec's Approach says "every Celery task tagged with `sub`". Live untagged enqueues remain: `run_compliance_job.delay` (`django_warden_fabric/views.py`), `run_django_task.delay` (`platformapp/front_door/celery_task_backend.py`), plus the langflow and dbgpt integrations. The narrower reading was implemented — the Problem paragraph describes only the supervisor `start` path, which is the only one that creates a `RunState` row — so a revoked subject can still hold work on those queues. Widening needs each of those call sites to carry a verified subject, which most of them do not have today.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/views.py
+  origin: spec-deferred 06604e77b7b1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-13: No `RateLimit-*` response headers, so a well-behaved agent can only discover its limit by tripping it.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: No `RateLimit-*` response headers, so a well-behaved agent can only discover its limit by tripping it.
+  evidence: `Decision` already carries `remaining`, `retry_after`, `rate_per_minute` and `burst`; everything except `Retry-After` on a refusal is discarded. For an agent-facing platform the `RateLimit-Limit` / `-Remaining` / `-Reset` triple is the difference between a client that self-throttles and one that must fail first. Related: the MCP bucket is charged for reads as well as writes, so a client polling `get_run` once a second while holding its permitted runs is throttled for waiting; no cheaper read cost and no documented safe poll cadence exist yet.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
+  origin: spec-deferred 536a9e4da372 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-14: `manage.py revoke_subject` exits 0 when the broker revoke failed, so a shell or cron caller reads a partial revoke as success.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: `manage.py revoke_subject` exits 0 when the broker revoke failed, so a shell or cron caller reads a partial revoke as success.
+  evidence: `handle()` writes `revoke error: ...` to stderr and returns `None`. Only the steward duty gets this right, because it parses `ok` out of the JSON report — which is what its own `test_a_partial_revoke_is_not_reported_as_ success` pins. The command's contract should match its wrapper's; a `CommandError` on `report["revoke_error"]` would do it. Low because the sanctioned operator grammar is `pyforge steward revoke`, not the management command.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/management/commands/revoke_subject.py
+  origin: spec-deferred 55a8ece075d0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-15: The steward `revoke` duty exposes neither `--reason` nor `--json`, though the command it drives accepts both.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: The steward `revoke` duty exposes neither `--reason` nor `--json`, though the command it drives accepts both.
+  evidence: `manage.py revoke_subject` takes `--reason` (recorded on every cancelled run's `result`), so every revoke driven through the operator grammar is logged as the default "revoked by operator" with no incident reference. `_add_revoke_arguments` also omits the `--json` flag its sibling duties (`init`/`shell-init`/`setup`/`initrepo`/`validate-fast`) carry, even though `RevokeDuty` already returns the full report in `details`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  origin: spec-deferred 1d51b02666b9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-16: `_restore` returns a FULL bucket for stored state that is present but malformed, a fail-open path in a module that promises not to have one.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: `_restore` returns a FULL bucket for stored state that is present but malformed, a fail-open path in a module that promises not to have one.
+  evidence: A non-dict value, a missing key, or a non-finite number all return `(burst, now)`. The module docstring says "silently allowing traffic because the cache is down is the one outcome this module must never produce"; a poisoned or schema-drifted key produces exactly that. Kept deliberately: the alternative — treating malformed state as unavailable — would lock out every subject during a rolling deploy that changed the stored shape, which is a worse failure than one refill. The narrower real bug (an unbounded `Retry-After` from a negative token count) was patched in this pass; only the full-bucket-on-garbage policy remains.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
+  origin: spec-deferred 49d0a361b008 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-17: Six new `spec-surface` `drift: fail` rows for this story's four new files land under three OTHER specs' globs and need scoped stamps at landing.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: Six new `spec-surface` `drift: fail` rows for this story's four new files land under three OTHER specs' globs and need scoped stamps at landing.
+  evidence: Measured against a detached worktree at the `629ee8c5` baseline: 196 fails before, 136 after, and the comm-diff shows exactly six new rows, all of kind "added" — `revoke.py` and `test_revoke_duty.py` under `pyforge-steward/spec-pyforge-steward`, and the 0004 changeset plus `test_agent_rate_limits_and_run_bounds.py` under both `pyforge-steward/spec-python-agent-platform` and `pyforge-mason/spec-django-accelerator-framework`. Not stamped here for two reasons: `--write-baseline` reads the WORKING TREE, so stamping from a dirty dispatch worktree bakes in uncommitted bytes, and a foreign spec's baseline needs the three-check procedure first. Landing-pass work, scoped per spec — never a bare `--write-baseline`.
+  location: scripts/.spec-surface-baseline.json
+  origin: spec-deferred 65f67bcb68da — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
