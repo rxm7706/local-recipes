@@ -11,6 +11,7 @@ addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib --ignore
 # resolve it from source so local pytest matches pixi path installs.
 pythonpath = [
     "../shared/packages/django-pyforge/src",
+    "../shared/packages/pyforge-core/src",
     "../shared/packages/django-warden/src",
     "../shared/packages/django-atlas/src",
     "../shared/packages/django-doctor/src",
