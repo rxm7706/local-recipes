@@ -169,8 +169,9 @@ def refuse_unverified_broker_tls(settings_module: ModuleType | None = None) -> N
 
     The broker URL comes from the composed ``CELERY_BROKER_URL`` on
     *settings_module* when there is one — the URL Celery will actually connect
-    with — rather than a re-derivation that django-environ's
-    ``REDIS_BROKER_URL_FILE`` handling could disagree with.
+    with — rather than a re-derivation of the ``REDIS_BROKER_URL`` →
+    ``REDIS_URL`` → default chain, which can disagree with it (django-environ
+    does not strip whitespace or treat ``""`` as unset).
 
     ``config.broker_tls`` already composes ``CERT_REQUIRED`` for every one of
     these, so the refusal is the operator-facing half of a posture that is

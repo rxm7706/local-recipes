@@ -72,6 +72,23 @@ Ingress on `ingress.host` (default `platform.internal`).
 terminator, set `django.secureSslRedirect: "False"` — the same switch the
 compose stack flips locally.
 
+**Broker TLS (Story 41.4):** a `rediss://` broker is *verified*, not merely
+encrypted — `ssl_cert_reqs` is `CERT_REQUIRED` and the certificate is checked
+against a real CA. The chart wires plaintext `redis://` today, so these knobs
+matter once a deployment points `REDIS_URL` / `REDIS_BROKER_URL` at a TLS
+broker:
+
+  | env | value |
+  |---|---|
+  | `COMPONENT_BROKER_CA_BUNDLE` | Path to the corporate CA — a concatenated PEM file or a hashed directory. **Second tier:** consulted only when the OS trust store resolves nothing, so on a host that ships a default CA file the OS store wins. To override that store, set `SSL_CERT_FILE` / `SSL_CERT_DIR` instead. |
+  | `COMPONENT_BROKER_SSL_CERT_REQS` | `required` (default) or `none`. `none` is honoured **only** under `COMPONENT_RUNTIME=local` — a deployed component that sets it refuses to boot rather than connecting unverified. |
+
+A deployed component with a `rediss://` broker and no resolvable CA trust
+refuses to boot, naming any path that was configured and rejected. Install the
+CA into the OS trust store (`update-ca-certificates` and friends) or set
+`COMPONENT_BROKER_CA_BUNDLE` to a path the container can read; the whole
+posture is declared in `src/platform/config/broker_tls.py`.
+
 ## OpenShift
 
 **Cluster bring-up** (CRC 2.63.0 / OpenShift 4.22.7, internal-registry image

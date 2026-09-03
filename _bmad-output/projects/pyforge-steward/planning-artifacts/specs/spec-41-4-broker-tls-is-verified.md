@@ -3,7 +3,7 @@ title: "Broker TLS is verified"
 type: "fix"
 created: "2026-09-02"
 status: "done"
-followup_review_recommended: true
+followup_review_recommended: false
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "7841e5c84e9b348737f2de84cc0f66fcb2a442f2"
@@ -98,6 +98,97 @@ deferred:
       src/platform/config/settings/base.py
     severity: low
   - summary: >-
+      load_django_settings() makes Django construct its Settings object twice,
+      re-entrantly, on every process that imports config.*.
+    evidence: |-
+      config/__init__.py imports celery_app, whose module scope calls
+      configure_observability() -> load_django_settings() -> settings.INSTALLED_APPS.
+      That re-enters LazySettings._setup while Django's outer Settings.__init__ is
+      still importing config.settings.production (which reaches config/__init__.py
+      through `from .base import *`). The inner Settings object is assigned to
+      _wrapped and then silently replaced by the outer one; read_dot_env() also runs
+      twice. No in-repo regression is observable (the whole-suite failure/error set is
+      byte-identical to baseline, 436 passed here vs 420 pre-change with the delta
+      exactly this story's tests), but the work is duplicated and the settings module
+      is imported while the config package is only partially initialised. The existing
+      "materializes settings even when OTel is disabled" entry records the import-time
+      contract; it does not record the double construction.
+    location: >-
+      src/platform/config/observability/__init__.py -- load_django_settings()
+    severity: medium
+  - summary: >-
+      A CA path that is readable but not parseable as PEM passes the boot gate and
+      fails at first connect.
+    evidence: |-
+      resolve_ca_trust() checks existence and permission bits, never content, so an
+      empty or truncated corporate bundle resolves as a trust source, stage 1 accepts
+      it, and the component boots -- then every broker handshake fails. That inverts
+      the property resolve_ca_trust()'s own docstring advertises ("a typo or a
+      permission mistake degrades to no trust source -- which stage 1 refuses at boot
+      instead of failing at first connect"). A guard would be a throwaway
+      SSLContext.load_verify_locations(cafile=...) in a try/except ssl.SSLError; note
+      it only helps the cafile half, since capath lookup is lazy by design.
+    location: >-
+      src/platform/config/broker_tls.py -- resolve_ca_trust()
+    severity: medium
+  - summary: >-
+      config.settings.production with COMPONENT_RUNTIME=local composes CERT_NONE and
+      no stage 1 runs to refuse it.
+    evidence: |-
+      Confirmed live: the production leaf + COMPONENT_RUNTIME=local +
+      COMPONENT_BROKER_SSL_CERT_REQS=none + a rediss:// broker loads cleanly and
+      composes ssl_cert_reqs=0, because run_stage_one() early-returns on
+      is_deployed(). The intent keys the exception to COMPONENT_RUNTIME
+      ("CERT_NONE is permitted only under COMPONENT_RUNTIME=local"), so this is
+      contract-compliant and was rejected as a finding in the first review pass on
+      those grounds; R-14's own wording is "must fail the production settings check",
+      which is the leaf, not the marker. Whether the lever should also be refused at
+      the production leaf is the product decision left open.
+    location: >-
+      src/platform/config/startup/stage_one.py -- run_stage_one()
+    severity: medium
+  - summary: >-
+      config.asgi -- the entrypoint the production image actually runs -- is covered
+      by nothing in the env CI uses.
+    evidence: |-
+      Containerfile CMD is `gunicorn config.asgi:application`. The three tests that
+      import config.asgi are each gated on pytest.importorskip("langflow"), and
+      langflow is in the python-agent-platform feature, not platform-ci-test -- which
+      is what Platform CI installs for `python -m pytest`. So they skip in CI. This
+      story's entrypoint tests exclude config.asgi for the same reason. The container
+      job boots the image with a healthy config, which is a control, not a refusal.
+      Needs either a langflow-free import path for the ASGI seam or a container-level
+      refusal case.
+    location: >-
+      src/platform/config/asgi.py
+    severity: medium
+  - summary: >-
+      LANGFLOW_REDIS_URL is a third consumer of the shared Redis URL with no TLS
+      posture, alongside CHANNEL_LAYERS and the django-redis caches.
+    evidence: |-
+      config/settings/base.py does `os.environ["LANGFLOW_REDIS_URL"] =
+      env("LANGFLOW_REDIS_URL", default=REDIS_CACHE_URL)`, handing the same URL to a
+      third-party service that builds its own client. The existing "CHANNEL_LAYERS and
+      REDIS_CACHE_URL share the URL" entry names two consumers; a follow-up scoped
+      from it would miss this one.
+    location: >-
+      src/platform/config/settings/base.py
+    severity: low
+  - summary: >-
+      test_production_leaf_source_wires_stage_one is still a source-substring
+      assertion, and the call-position requirement it sits next to is unguarded.
+    evidence: |-
+      It asserts `"run_stage_one(" in source`, the exact assertion style this story's
+      review pass removed from the broker suite, and it passes regardless of where in
+      production.py the call sits. Story 41.4 made the position load-bearing: the
+      condition reads the composed CELERY_BROKER_URL off the module, so moving the
+      call above the Celery block silently reverts stage 1 to the env-derived URL.
+      test_run_stage_one_forwards_the_settings_module pins the forwarding; nothing
+      pins the ordering.
+    location: >-
+      src/platform/tests/test_startup_required_settings.py
+    severity: low
+  - summary: >-
       scripts/.spec-surface-baseline.json needs a scoped stamp for the changed and
       new config/** files.
     evidence: |-
@@ -105,9 +196,11 @@ deferred:
       pyforge-mason/spec-django-accelerator-framework entry; settings/base.py,
       startup/stage_one.py, startup/__init__.py, observability/__init__.py, manage.py
       and settings/production.py all changed, and config/broker_tls.py is new with no
-      entry at all, so spec-surface-check will report surface-changed. Left to the
-      dedicated fleet reconciliation pass (a scoped stamp from a clean tree, never a
-      bare --write-baseline), matching what stories 41.1, 41.2 and 41.3 did.
+      entry at all, so spec-surface-check will report surface-changed. The follow-up
+      review pass also touched deploy/README.md and tests/test_startup_required_settings.py.
+      Left to the dedicated fleet reconciliation pass (a scoped stamp from a clean
+      tree, never a bare --write-baseline), matching what stories 41.1, 41.2 and 41.3
+      did.
     location: >-
       scripts/.spec-surface-baseline.json
     severity: low
@@ -299,6 +392,35 @@ Child envs now also neutralise `DJANGO_READ_DOT_ENV_FILE`, `SSL_CERT_DIR` and
   fails before analysing any file, on a clean tree too — recorded as deferred,
   not caused here.
 
+**2026-09-02 — follow-up review pass, 15 findings applied.** The four that
+changed behaviour: the scheme match now strips whitespace as well as folding
+case (`" rediss://…"` reaches kombu's `rediss` transport, so matching the raw
+string composed no SSL options for it); `ssl_check_hostname` is declared rather
+than inherited from redis-py's default; the capath check requires search rather
+than read permission, so a hardened `0711` CA directory is no longer refused at
+boot; and `COMPONENT_BROKER_CA_BUNDLE` accepts a hashed directory and tolerates
+surrounding whitespace, with every rejected path named back to the operator via
+`skipped_trust_paths()`.
+
+The rest were coverage and honesty. Three of this story's own guarantees turned
+out to be unpinned — provable by mutation, since the suite stayed green with
+`run_stage_one`'s argument dropped, with `_readable_dir`'s permission check
+deleted, and with `configure_observability()` removed from *both* `wsgi.py` and
+`manage.py`. That last one matters most: the previous pass replaced a
+source-substring test with child processes precisely to guard it, but
+`config/__init__.py` imports `celery_app`, whose module scope calls
+`configure_observability()` — so every child produced the refusal regardless of
+the entrypoint's own line. Counting calls made *after* that import is what
+actually observes it. And the `FileAwareMapping` / `REDIS_BROKER_URL_FILE`
+rationale repeated in two docstrings and the first triage log is simply false
+here: `base.py` builds `environ.Env()`, so no `_FILE` key is ever read. The
+patch it justified stands on the whitespace and empty-value divergence alone.
+
+Finally, the two operator knobs are documented where an operator looks
+(`src/platform/deploy/README.md`), including the second-tier caveat that an
+explicit `COMPONENT_BROKER_CA_BUNDLE` cannot override a resolving OS trust
+store — the deferred item that the contractual ordering makes unavoidable.
+
 **Not done, deliberately.** The Helm chart is untouched: it wires `redis://`,
 and the OS trust-store tier needs no chart key. Wiring
 `COMPONENT_BROKER_CA_BUNDLE` / a `rediss://` broker into `values.yaml` belongs
@@ -330,10 +452,14 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
     `ssl_ca_path` after verifying redis-py 8.1.0 / kombu 5.6.2 / celery 5.6.3 all
     carry the kwarg through to `load_verify_locations(capath=…)`.
   - `[medium]` `[patch]` Stage 1 validated a broker URL re-derived from raw
-    `os.environ`, which disagrees with django-environ's `FileAwareMapping`
-    (`REDIS_BROKER_URL_FILE` secret-mount precedence) and on empty values. It now
-    reads the composed `CELERY_BROKER_URL` off the `settings_module` it was already
-    handed and discarding; env is the fallback only.
+    `os.environ`, which can disagree with the composed value on whitespace and on
+    empty strings. It now reads the composed `CELERY_BROKER_URL` off the
+    `settings_module` it was already handed and discarding; env is the fallback
+    only. (**Corrected in the 2026-09-02 follow-up pass:** this entry originally
+    also cited django-environ's `FileAwareMapping` / `REDIS_BROKER_URL_FILE`
+    secret-mount precedence. That is not true of this codebase — `base.py` builds
+    `environ.Env()`, not `environ.FileAwareEnv()`, so no `_FILE` key is ever read.
+    The patch stands on the whitespace/empty-value divergence alone.)
   - `[medium]` `[patch]` `is_tls_broker()` was a case-sensitive `startswith`, so a
     legal `REDISS://` URL reached the `rediss` transport with zero ssl kwargs —
     kombu's own "defaulting to insecure SSL behaviour" path. Match is case-blind.
@@ -369,6 +495,99 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
     exist and `pixi run -e python-agent-platform`, an env that cannot even collect
     this suite. Updated to the verbatim `platform-ci-test` command actually used.
 
+### 2026-09-02 — Review pass (follow-up)
+
+The single allowed follow-up review of a `done` spec (step-01's
+`followup_review_recommended: true` branch, CAP-11). Four layers over the
+whole diff since `7841e5c84e`.
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 15: (high 0, medium 4, low 11)
+- defer: 6: (high 0, medium 5, low 1)
+- reject: 7: (high 0, medium 2, low 5)
+- addressed_findings:
+  - `[medium]` `[patch]` `broker_url_from_settings()` returned the composed URL
+    unstripped, so `REDIS_BROKER_URL=" rediss://…"` composed **no** SSL options
+    while `urlsplit` (which strips leading spaces before reading the scheme) still
+    routed it to kombu's `rediss` transport — encrypted but unauthenticated,
+    reachable by a stray ConfigMap space. Verified live that
+    `urlsplit(" rediss://…").scheme == "rediss"`. `is_tls_broker()` now strips
+    before matching (one site, covers every caller) and the composed URL reaches
+    stage 1 stripped.
+  - `[medium]` `[patch]` `ssl_check_hostname` was never declared, so "verified"
+    rested on redis-py 8.1's default: a certificate any trusted CA issued, for any
+    hostname, would have been accepted had that default changed. Now composed
+    explicitly, `True` exactly where verification is on — which is also what
+    redis-py coerces it to for `CERT_NONE`.
+  - `[medium]` `[patch]` Nothing pinned `run_stage_one` **forwarding** its settings
+    module: the only case exercising it sets a `none` policy, which raises before
+    the URL is read. Proven by mutation — dropping the argument left the suite at
+    67 passed while stage 1 silently reverted to the env-derived URL.
+    `test_run_stage_one_forwards_the_settings_module` (control + refusal driven
+    only by the module's URL) now fails on that mutation.
+  - `[medium]` `[patch]` The entrypoint refusal tests could not observe what their
+    docstring claimed: `config/__init__.py` imports `celery_app`, which calls
+    `configure_observability()` at module scope, so *any* `import config.*`
+    produces the refusal. Proven by mutation — deleting the call from both
+    `wsgi.py` and `manage.py` left the suite at 67 passed.
+    `test_entrypoint_makes_its_own_observability_call` counts calls made after
+    that import and fails on it; the older test's docstring now states what it
+    actually guards.
+  - `[low]` `[patch]` `_readable_dir` demanded `R_OK|X_OK`, but OpenSSL's hashed
+    lookup opens `<hash>.<n>` by constructed name and never lists the directory —
+    a hardened `0711` CA directory is a correct install and was being refused at
+    boot. Now `X_OK` only, with both halves tested (`0711` trusted, `0o000` not).
+  - `[low]` `[patch]` The `os.access` check on the capath half was unguarded:
+    removing it entirely left the suite at 67 passed (the only chmod test targets a
+    file). `test_existing_but_unsearchable_ca_dir_is_not_trusted` is the mirror.
+  - `[low]` `[patch]` `COMPONENT_BROKER_CA_BUNDLE` was neither stripped nor allowed
+    to be a directory — a trailing newline (how a ConfigMap or here-doc hands over a
+    path) or a hashed-directory path silently resolved to no trust, producing a
+    refusal telling the operator to set what they had set. Both shapes now accepted,
+    value stripped.
+  - `[low]` `[patch]` A rejected trust path was never named back: a typo and a
+    permissions mistake produced byte-identical output. New `skipped_trust_paths()`
+    reports each configured-but-unusable `ENV=path`, appended to
+    `no_ca_trust_message()`; OpenSSL's compiled-in defaults are excluded (nobody
+    configured them).
+  - `[low]` `[patch]` The `FileAwareMapping` / `REDIS_BROKER_URL_FILE` rationale in
+    `broker_url_from_settings()`, `refuse_unverified_broker_tls()` and the previous
+    pass's triage entry is false here: `base.py` builds `environ.Env()`, not
+    `environ.FileAwareEnv()`, so no `_FILE` key is read. Verified live. All three
+    rewritten to the divergence that is real (whitespace, empty values, the
+    layering chain); the prior triage entry carries a dated correction.
+  - `[low]` `[patch]` `pytest.importorskip("redis.connection")` could silently
+    delete the only third-party contract test. redis-py is a hard runtime
+    dependency of a Celery/Redis deployment — imported directly now, so its absence
+    fails loudly.
+  - `[low]` `[patch]` The `SSLConnection` constructor test covered only the
+    `CERT_REQUIRED` mapping; the `CERT_NONE` one (no CA keys, and the shape that
+    interacts with redis-py's `check_hostname` coercion) was compared to a dict
+    literal alone. `test_redis_py_accepts_the_unverified_kwargs_too` constructs it
+    for real.
+  - `[low]` `[patch]` The OS tier's *compiled-in default* — the one the shipped
+    image runs on — had no test; every trust case pinned `SSL_CERT_FILE`/`_DIR`.
+    `test_openssl_compiled_defaults_are_the_first_tier` covers the unset case
+    against `ssl.get_default_verify_paths()` itself.
+  - `[low]` `[patch]` `__all__` omitted `BROKER_URL_ENV_VAR` and
+    `REDIS_URL_ENV_VAR`, both consumed as public names by the tests and rendered
+    into operator-facing text. Added, along with the new `CAFILE_ENV_VAR` /
+    `CAPATH_ENV_VAR` / `skipped_trust_paths`.
+  - `[low]` `[patch]` `test_startup_required_settings.py` was not isolated after
+    `run_stage_one` grew a second condition: its autouse fixture cleared only
+    `COMPONENT_RUNTIME`, so its happy paths passed only because the ambient shell
+    exported no broker keys. It now clears them too; `CONTROLLED_ENV_KEYS` also
+    gained `OTEL_SDK_DISABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT`, which change which
+    telemetry path the entrypoint children take.
+  - `[low]` `[patch]` The two operator knobs were documented nowhere an operator
+    would look — only in docstrings and this spec. `src/platform/deploy/README.md`
+    now carries a **Broker TLS** table: both env keys, the second-tier caveat, and
+    the remedy for the no-trust boot refusal.
+  - `[low]` `[patch]` "Files changed" described `manage.py` as entrypoint wiring
+    when its diff is comment-only (the wiring lives inside
+    `configure_observability()`). Corrected below.
+
 ## Auto Run Result
 
 Status: done
@@ -396,7 +615,9 @@ entrypoint demoted stage-1 refusals to a debug log and booted with empty default
 
 - `src/platform/config/broker_tls.py` — new; the single declaration site for the
   broker's TLS posture (policy names, `resolve_cert_reqs`, `resolve_ca_trust`,
-  `broker_use_ssl`, `is_tls_broker`).
+  `broker_use_ssl`, `is_tls_broker`, `skipped_trust_paths`). Composes
+  `ssl_check_hostname` explicitly; the scheme match is case- and
+  whitespace-blind; the explicit CA knob takes a file or a hashed directory.
 - `src/platform/config/startup/stage_one.py` — adds `refuse_unverified_broker_tls()`
   with three named refusals; `run_stage_one` now reads the composed broker URL off
   the settings module instead of discarding it.
@@ -407,13 +628,53 @@ entrypoint demoted stage-1 refusals to a debug log and booted with empty default
 - `src/platform/config/observability/__init__.py` — `configure_observability()` loads
   Django settings before instrumenting, restoring fail-fast at every entrypoint.
 - `src/platform/config/settings/production.py` — stale stage-1 call-site comment.
-- `src/platform/manage.py` — entrypoint wiring for the observability ordering.
-- `src/platform/tests/test_broker_tls_verified.py` — new; 44 tests, including real
-  child processes for all three ACs and for each entrypoint.
+- `src/platform/manage.py` — comment only, pointing at the observability ordering;
+  the wiring itself lives inside `configure_observability()`.
+- `src/platform/deploy/README.md` — **Broker TLS** operator section: both env
+  knobs, the second-tier caveat, and the remedy for the no-trust boot refusal.
+- `src/platform/tests/test_broker_tls_verified.py` — new; 60 tests, including real
+  child processes for all three ACs, for each entrypoint's refusal, for each
+  entrypoint's own `configure_observability()` call, and for the composed
+  `CELERY_BROKER_URL` on the real production leaf.
+- `src/platform/tests/test_startup_required_settings.py` — autouse fixture clears
+  the broker env keys, so the second stage-1 condition cannot decide its cases.
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`
   — `41-4-broker-tls-is-verified: backlog → review`.
 
 ### Review findings breakdown
+
+Two passes ran against this story. The counts below are cumulative; each pass is
+itemised separately in the Review Triage Log above.
+
+**Follow-up pass (2026-09-02, the single allowed one for a `done` spec):**
+
+- Patches applied: 15 (4 medium, 11 low). Four were proven necessary by
+  mutation — the pre-existing suite stayed at 67 passed with `run_stage_one`'s
+  argument dropped, with `_readable_dir`'s `os.access` removed, with
+  `configure_observability()` deleted from `wsgi.py` *and* `manage.py`, and the
+  whitespace hole was reachable with the shipped code. The new cases fail on all
+  four.
+- Items deferred: 6 (5 medium, 1 low) — appended to frontmatter `deferred`. The
+  substantive ones: `load_django_settings()` constructs Django's `Settings`
+  twice, re-entrantly; a readable-but-unparseable CA file still passes the boot
+  gate; the production leaf under `COMPONENT_RUNTIME=local` composes `CERT_NONE`
+  with no refusal; `config.asgi` — the image's actual entrypoint — is covered by
+  nothing in the env CI runs.
+- Items rejected: 7. Chiefly — the `followup_review_recommended: false`
+  frontmatter "contradicting" the body's computed `true` (that is step-01's
+  forced-false rule for a `done` spec, not a defect); `baseline_commit` vs
+  `baseline_revision` (distinct fields, epic stamp vs branch base); the
+  `Tasks`/ledger/`Auto Run Result` state triple (documented: `done` is the
+  landing step's); stage 1 reading `CELERY_BROKER_USE_SSL` directly instead of
+  recomputing the policy (no leaf assigns it); a warning for a non-production
+  leaf with `COMPONENT_RUNTIME` unset (the three entrypoints `setdefault` it);
+  and re-reading AC3 as "the laptop must keep `CERT_NONE` as its *default*"
+  (the AC's subject is the `CERT_NONE` mode staying honoured, which it does —
+  the opt-in is now documented, which was the real gap). The precedence
+  inversion and the plaintext chart were deduplicated against existing
+  `deferred` entries rather than re-raised.
+
+**First pass (2026-09-02):**
 
 - Patches applied: 11 (5 medium, 6 low) — all accepted by the implementer, none
   rejected on evidence. Itemised in the Review Triage Log above.
@@ -433,26 +694,51 @@ entrypoint demoted stage-1 refusals to a debug log and booted with empty default
 
 ### Follow-up review recommendation
 
-`true`. Patched findings by severity: high 0, medium 5, low 6. Score =
-3 × 5 + 1 × 6 = **21**, which is ≥ 5.
+`false` — **forced**. This run *was* the single allowed follow-up review of a
+`done` spec (step-01's `followup_review_recommended: true` branch), and step-04
+requires the flag to be `false` at HALT regardless of score. For the record, the
+computation would have said `true`: patched findings high 0, medium 4, low 11,
+score = 3 × 4 + 1 × 11 = **23**, which is ≥ 5. The residue is carried by the six
+new `deferred` entries, not by another review pass.
 
 ### Verification performed
 
-- Spec's `## Verification` command, run verbatim from `src/platform` after the patch
-  pass: `pixi run --frozen -e platform-ci-test python -m pytest
-  tests/test_startup_required_settings.py tests/test_broker_tls_verified.py -q` →
-  **67 passed**. (Pre-patch it was 45 passed on the same two files.)
-- Full platform suite: 420 passed, 40 skipped, 6 failed, 120 errors — failure and
-  error sets byte-identical to the pre-change baseline measured by stashing the diff.
-  The 120 errors are "no PostgreSQL socket"; the 6 failures are the pre-existing
-  openfeature / dbgpt / cloudevents / restarts / supervisor set.
-- `ruff check` clean on every touched file (repo-wide count unchanged at exactly 116,
-  none in these files); `lint-imports` reports 0 broken, so the host↔factory boundary
-  holds and the new module imports only stdlib plus `config.locality`.
-- Frontmatter re-parsed as YAML after the `deferred` append: one list, 7 well-formed
-  items.
-- No I/O & Edge-Case Matrix in the intent contract, so the matrix test audit did not
-  apply.
+Follow-up pass, all from `src/platform` in the `platform-ci-test` env:
+
+- Spec's `## Verification` command, run verbatim: `pixi run --frozen -e
+  platform-ci-test python -m pytest tests/test_startup_required_settings.py
+  tests/test_broker_tls_verified.py -q` → **83 passed** (was 67 before this pass;
+  45 before the first patch pass).
+- **Mutation-verified the four new guards** — each mutation applied, the suite
+  run, then the file restored from a byte-copy and confirmed clean against the
+  branch:
+  - `run_stage_one` calling `refuse_unverified_broker_tls()` with no argument →
+    `test_run_stage_one_forwards_the_settings_module` fails.
+  - `configure_observability()` deleted from `config/wsgi.py` →
+    `test_entrypoint_makes_its_own_observability_call[wsgi]` fails (`CALLS 0`).
+  - `_readable_dir` losing its `os.access` check →
+    `test_existing_but_unsearchable_ca_dir_is_not_trusted` fails.
+  - `is_tls_broker` matching the raw string →
+    `test_padded_tls_url_still_composes_ssl_options[leading-space, both]` fails.
+  All five expected failures observed, and only those.
+- Full platform suite: **436 passed**, 40 skipped, 6 failed, 120 errors — the
+  failure and error sets are unchanged from the recorded baseline (420 passed
+  there; the delta is exactly this story's 16 new tests). The 120 errors are "no
+  PostgreSQL socket"; the 6 failures are the pre-existing openfeature / dbgpt /
+  cloudevents / restarts / supervisor set.
+- `ruff check` clean on every touched file; repo-wide count unchanged at exactly
+  **116**, the pre-existing baseline.
+- `tests/meta/test_no_pyforge_import.py` (real `lint-imports`): passed — the
+  host↔factory boundary holds.
+- Live probes behind the patches, in the same env: `urlsplit(" rediss://…")`
+  reports scheme `rediss` (the whitespace hole is real); redis-py 8.1 declares
+  `ssl_check_hostname` and coerces it to `False` for `CERT_NONE`;
+  `environ.FileAwareEnv` exists but `base.py:44` builds `environ.Env()` (the
+  `_FILE` rationale was false).
+- Frontmatter re-parsed as YAML after the `deferred` append: one list, 13
+  well-formed items (7 prior + 6 new).
+- No I/O & Edge-Case Matrix in the intent contract, so the matrix test audit did
+  not apply.
 
 ### Residual risks
 
@@ -461,6 +747,15 @@ entrypoint demoted stage-1 refusals to a debug log and booted with empty default
   This story makes TLS honest when used; turning it on in-cluster is separate.
 - `config.asgi` is the one entrypoint without a real child-process boot test; it
   imports `langflow_integration`, which needs the `python-agent-platform` env.
+  The follow-up pass established this is worse than it looked — the three tests
+  that import `config.asgi` are all `importorskip("langflow")`-gated, so they
+  skip in the env CI actually runs, and `config.asgi` is what the image's
+  `CMD` executes. Recorded as a `deferred` entry.
+- A CA path that is readable but not parseable as PEM still satisfies the boot
+  gate and fails at first connect, which is the inverse of what this module
+  promises. Deferred rather than patched: the guard only covers the `cafile`
+  half (capath lookup is lazy), so it is a partial fix that deserves its own
+  decision.
 - AC3 is satisfied under the reading that `CERT_NONE` stays *reachable* locally
   (the intent's Approach says "permitted only under `COMPONENT_RUNTIME=local`"), not
   that it stays the local *default*. A laptop pointed at a self-signed `rediss://`

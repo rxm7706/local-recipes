@@ -17,6 +17,7 @@ from types import ModuleType
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
+from config import broker_tls
 from config.locality import LOCAL
 from config.locality import RUNTIME_ENV_VAR
 from config.startup import refuse_required_settings
@@ -24,10 +25,24 @@ from config.startup import run_stage_one
 from config.startup.stage_one import REQUIRED_SETTINGS
 from config.startup.stage_one import RequiredSetting
 
+#: Story 41.4 added a second condition to ``run_stage_one``, so these cases now
+#: evaluate broker TLS too. Clearing its env keys keeps them about the
+#: required-settings contract: without this, a shell exporting a ``rediss://``
+#: broker URL or ``COMPONENT_BROKER_SSL_CERT_REQS`` would turn the happy paths
+#: red for a reason that has nothing to do with what they assert.
+_BROKER_ENV_KEYS = (
+    broker_tls.BROKER_URL_ENV_VAR,
+    broker_tls.REDIS_URL_ENV_VAR,
+    broker_tls.CERT_REQS_ENV_VAR,
+    broker_tls.CA_BUNDLE_ENV_VAR,
+)
+
 
 @pytest.fixture(autouse=True)
 def _deployed(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(RUNTIME_ENV_VAR, raising=False)
+    for key in _BROKER_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture

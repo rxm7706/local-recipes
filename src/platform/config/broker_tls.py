@@ -56,10 +56,14 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 __all__ = [
+    "BROKER_URL_ENV_VAR",
+    "CAFILE_ENV_VAR",
+    "CAPATH_ENV_VAR",
     "CA_BUNDLE_ENV_VAR",
     "CERT_REQS_BY_NAME",
     "CERT_REQS_ENV_VAR",
     "DEFAULT_REDIS_URL",
+    "REDIS_URL_ENV_VAR",
     "TLS_SCHEME",
     "UNVERIFIED",
     "VERIFIED",
@@ -72,6 +76,7 @@ __all__ = [
     "requested_cert_reqs_name",
     "resolve_ca_trust",
     "resolve_cert_reqs",
+    "skipped_trust_paths",
     "unrecognised_policy_message",
     "unverified_when_deployed_message",
 ]
@@ -95,6 +100,12 @@ CERT_REQS_ENV_VAR: Final[str] = "COMPONENT_BROKER_SSL_CERT_REQS"
 
 #: Env key holding an explicit PEM bundle path (second tier, after the OS store).
 CA_BUNDLE_ENV_VAR: Final[str] = "COMPONENT_BROKER_CA_BUNDLE"
+
+#: OpenSSL's own env keys for the OS trust store -- what
+#: ``ssl.get_default_verify_paths()`` consults. Named here so a path an operator
+#: configured but this process cannot use can be named back to them.
+CAFILE_ENV_VAR: Final[str] = "SSL_CERT_FILE"
+CAPATH_ENV_VAR: Final[str] = "SSL_CERT_DIR"
 
 #: The verified policy -- the default everywhere, and the only deployed value.
 VERIFIED: Final[str] = "required"
@@ -145,8 +156,15 @@ def is_tls_broker(url: str) -> bool:
 
     The scheme is compared case-insensitively; only the prefix is lower-cased,
     so a credential-bearing URL is never wholesale transformed.
+
+    Surrounding whitespace is stripped first, for the same reason the case is
+    folded: ``urlsplit`` strips leading/trailing spaces and control characters
+    before reading the scheme, so ``" rediss://…"`` (a stray space in a
+    ConfigMap value) reaches kombu's ``rediss`` transport. Matching it exactly
+    here would compose no SSL options for it -- encrypted but unauthenticated,
+    the posture this module exists to remove.
     """
-    return url[: len(TLS_SCHEME)].lower() == TLS_SCHEME
+    return url.strip()[: len(TLS_SCHEME)].lower() == TLS_SCHEME
 
 
 def broker_url_from_env() -> str:
@@ -167,11 +185,16 @@ def broker_url_from_settings(settings_module: ModuleType | None = None) -> str:
     """Return the broker URL Celery will actually connect with.
 
     Prefers the composed ``CELERY_BROKER_URL`` on the settings module being
-    validated over re-deriving it from the environment. django-environ reads
-    through a ``FileAwareMapping``, which gives ``REDIS_BROKER_URL_FILE`` (the
-    Kubernetes/Docker secret-mount pattern) precedence over the plain variable,
-    and it neither strips surrounding whitespace nor treats ``""`` as unset --
-    so a re-derived URL can disagree with the composed one in both directions.
+    validated over re-deriving it from the environment. The two can disagree:
+    ``config.settings.base`` composes through django-environ, which neither
+    strips surrounding whitespace nor treats ``""`` as unset, and layers
+    ``REDIS_BROKER_URL`` over ``REDIS_URL`` over a default -- so a
+    re-derivation has to reproduce that chain exactly to stay honest, while the
+    composed value simply *is* what Celery connects with. (It would diverge
+    further still if base settings ever moved to ``environ.FileAwareEnv``,
+    whose ``FileAwareMapping`` gives ``REDIS_BROKER_URL_FILE`` -- the
+    Kubernetes/Docker secret-mount pattern -- precedence over the plain
+    variable; it uses ``environ.Env`` today, so no ``_FILE`` key is read.)
 
     Args:
         settings_module: The leaf settings module being validated, if any.
@@ -181,7 +204,7 @@ def broker_url_from_settings(settings_module: ModuleType | None = None) -> str:
     """
     composed = getattr(settings_module, "CELERY_BROKER_URL", None)
     if isinstance(composed, str) and composed.strip():
-        return composed
+        return composed.strip()
     return broker_url_from_env()
 
 
@@ -202,14 +225,55 @@ def _readable_file(candidate: str | None) -> str | None:
 
 
 def _readable_dir(candidate: str | None) -> str | None:
-    """Return *candidate* when it is a directory this process can search."""
-    if (
-        candidate
-        and Path(candidate).is_dir()
-        and os.access(candidate, os.R_OK | os.X_OK)
-    ):
+    """Return *candidate* when it is a directory this process can search.
+
+    Search (``X_OK``) is the whole requirement: OpenSSL's hashed-directory
+    lookup opens ``<hash>.<n>`` by constructed name and never lists the
+    directory, so a hardened ``0711`` CA directory is usable. Demanding
+    ``R_OK`` too would refuse a component whose operator installed the
+    corporate CA correctly.
+    """
+    if candidate and Path(candidate).is_dir() and os.access(candidate, os.X_OK):
         return candidate
     return None
+
+
+def _configured_bundle() -> str:
+    """The explicit :data:`CA_BUNDLE_ENV_VAR` path, whitespace stripped."""
+    return os.environ.get(CA_BUNDLE_ENV_VAR, "").strip()
+
+
+def _explicit_trust() -> CaTrust:
+    """Resolve the second tier: the operator's own bundle path.
+
+    Accepts either shape, exactly as the OS tier does -- a concatenated PEM
+    file or a hashed directory. Pointing the knob at ``/etc/pki/tls/certs``
+    should not silently resolve to nothing.
+    """
+    configured = _configured_bundle()
+    return CaTrust(
+        cafile=_readable_file(configured),
+        capath=_readable_dir(configured),
+    )
+
+
+def skipped_trust_paths() -> tuple[str, ...]:
+    """Return ``ENV=path`` for each configured trust path this process cannot use.
+
+    A missing path and an unreadable one both degrade to "no trust source", and
+    the resulting refusal is otherwise identical for a typo and for a
+    permission mistake. Naming the rejected path is what tells those apart.
+    OpenSSL's compiled-in defaults are not reported: nobody configured them.
+    """
+    skipped = []
+    for env_var in (CAFILE_ENV_VAR, CAPATH_ENV_VAR, CA_BUNDLE_ENV_VAR):
+        configured = os.environ.get(env_var, "").strip()
+        if not configured:
+            continue
+        usable = _readable_file(configured) or _readable_dir(configured)
+        if usable is None:
+            skipped.append(f"{env_var}={configured}")
+    return tuple(skipped)
 
 
 def resolve_ca_trust() -> CaTrust:
@@ -224,7 +288,8 @@ def resolve_ca_trust() -> CaTrust:
 
     A configured path that is missing or unreadable is skipped rather than
     trusted, so a typo or a permission mistake degrades to "no trust source" --
-    which stage 1 refuses at boot instead of failing at first connect.
+    which stage 1 refuses at boot instead of failing at first connect, naming
+    the skipped path (:func:`skipped_trust_paths`).
     """
     defaults = ssl.get_default_verify_paths()
     os_trust = CaTrust(
@@ -233,7 +298,7 @@ def resolve_ca_trust() -> CaTrust:
     )
     if os_trust:
         return os_trust
-    return CaTrust(cafile=_readable_file(os.environ.get(CA_BUNDLE_ENV_VAR)))
+    return _explicit_trust()
 
 
 def unrecognised_policy_message(requested: str) -> str:
@@ -259,15 +324,26 @@ def unverified_when_deployed_message(requested: str) -> str:
 
 
 def no_ca_trust_message() -> str:
-    """Message for a TLS broker with nothing to verify its certificate against."""
-    return (
+    """Message for a TLS broker with nothing to verify its certificate against.
+
+    Names any path that *was* configured and rejected, so a typo and a
+    permission mistake stop producing byte-identical output.
+    """
+    message = (
         f"The Celery broker URL is a {TLS_SCHEME} URL "
         f"({BROKER_URL_ENV_VAR} / {REDIS_URL_ENV_VAR}) but no CA trust source "
         "resolved, so the broker's certificate cannot be verified. Install the "
-        "corporate CA into the OS trust store (or set SSL_CERT_FILE / "
-        f"SSL_CERT_DIR), or set {CA_BUNDLE_ENV_VAR} to a PEM bundle path this "
-        "component can read."
+        f"corporate CA into the OS trust store (or set {CAFILE_ENV_VAR} / "
+        f"{CAPATH_ENV_VAR}), or set {CA_BUNDLE_ENV_VAR} to a PEM bundle path "
+        "this component can read."
     )
+    skipped = skipped_trust_paths()
+    if skipped:
+        message += (
+            " Configured but unusable (missing, or not readable/searchable by "
+            f"this process): {', '.join(skipped)}."
+        )
+    return message
 
 
 def resolve_cert_reqs() -> ssl.VerifyMode:
@@ -315,6 +391,13 @@ def broker_use_ssl(url: str) -> dict[str, object] | None:
     verify against) or when none resolve; the latter is a deployed refusal at
     stage 1, and locally leaves OpenSSL's own defaults in charge.
 
+    ``ssl_check_hostname`` is declared rather than inherited. A certificate any
+    trusted CA issued, for any hostname, is not a verified broker -- and
+    leaving that to redis-py's default would make this module's posture a
+    property of the pinned library version instead of a property of this file.
+    It is off exactly where verification is off, which is also what redis-py
+    coerces it to for ``CERT_NONE``.
+
     Args:
         url: The broker URL (``CELERY_BROKER_URL`` / result backend).
 
@@ -324,7 +407,11 @@ def broker_use_ssl(url: str) -> dict[str, object] | None:
     if not is_tls_broker(url):
         return None
     cert_reqs = resolve_cert_reqs()
-    options: dict[str, object] = {"ssl_cert_reqs": cert_reqs}
-    if cert_reqs != ssl.CERT_NONE:
+    verifying = cert_reqs != ssl.CERT_NONE
+    options: dict[str, object] = {
+        "ssl_cert_reqs": cert_reqs,
+        "ssl_check_hostname": verifying,
+    }
+    if verifying:
         options.update(resolve_ca_trust().as_ssl_options())
     return options
