@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.models import RunState
+from django_pyforge.non_atomic import non_atomic_view
 from django_pyforge.roles import claims_from_request
 from django_pyforge.roles import roles_from_request
 from django_pyforge.supervisor import ATLAS_STATION
@@ -63,6 +64,7 @@ def load_atlas_inventory_row() -> dict[str, Any]:
 
 @require_GET
 @require_station_role("atlas")
+@non_atomic_view
 def chrome_home(request: HttpRequest) -> HttpResponse:
     PortalClient().emit(
         _subject(request),

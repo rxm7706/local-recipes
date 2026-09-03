@@ -2,9 +2,12 @@
 title: "In-process station port, no self-call"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
-baseline_commit: "58ee07a0"
+status: "done"
+updated: "2026-09-03"
+followup_review_recommended: false
+review_loop_iteration: 1
+baseline_commit: "b13288d25dc8da31313df976dd8ba6383e16f74f"
+baseline_revision: "b13288d25dc8da31313df976dd8ba6383e16f74f"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
@@ -54,11 +57,46 @@ Ledger key `43-3-in-process-station-port-no-self-call`. Host never imports `pyfo
 
 ## Tasks
 
-- [ ] In-process port in chrome
-- [ ] Profile switch
-- [ ] Non-atomic sweep + policy test
-- [ ] Loopback-call test
-- [ ] Ledger `43-3-in-process-station-port-no-self-call` → `review` then `done` via `sprint-ledger-sync`.
+- [x] In-process port in chrome
+- [x] Profile switch
+- [x] Non-atomic sweep + policy test
+- [x] Loopback-call test
+- [x] Ledger `43-3-in-process-station-port-no-self-call` → `review` then `done` via `sprint-ledger-sync`.
+
+## Review Triage Log
+
+### 2026-09-03 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (medium 1, low 1)
+- defer: 1: (low 1)
+- reject: 3: (low 3)
+- addressed_findings:
+  - `[medium]` `[patch]` Strengthen loopback test to forbid urllib in default profile and add ASGI invoker integration test.
+  - `[low]` `[patch]` Remove duplicate API_VERSION_HEADER import in loopback test module.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Co-located portals now reach station APIs through a registered in-process ASGI invoker (`pyforge.core.station_port` + `config.station_port.asgi_invoke`) instead of HTTP loopback. `STATION_REMOTE=1` selects urllib HTTP via `PyForgeStationClient`. Long-poll views (`get_audit`, atlas `chrome_home`, `runs_board`) are `non_atomic_requests` with a policy registry test.
+
+**Files changed:**
+- `pyforge/core/station_port.py` — in-process registry + `STATION_REMOTE` profile switch
+- `django_pyforge/station_port.py` — default transport bridge
+- `django_pyforge/station_client.py` — auto-select in-process transport
+- `django_pyforge/non_atomic.py` — policy registry + decorator
+- `config/station_port.py` — host ASGI wiring (no `pyforge.*` import)
+- Portal views + `UsersConfig.ready()` wiring
+- Tests: loopback, non-atomic policy, pyforge-core unit
+
+**Review:** 2 patches applied; 1 deferred (PortalClient.invoke argv dispatch stub remains for herald projection); 3 rejected as noise.
+
+**Follow-up review:** false (score 1×medium + 1×low = 4 < 5)
+
+**Verification:** `platform-ci-test` pytest — `test_station_port_no_loopback.py`, `test_non_atomic_views.py`, `test_no_pyforge_import.py`, `test_station_api_seam.py` (15 passed); `pyforge-core-test` `test_station_port.py` (5 passed).
+
+**Residual risks:** `PortalClient.invoke` still uses argv projection for herald deck status rather than live CLI dispatch; acceptable for current portal scope but noted as deferred follow-up.
 
 ## Verification
 
