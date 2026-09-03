@@ -310,14 +310,30 @@ def test_the_same_verifier_runs_on_both_transports(
 
 
 def _module_scope_imports(path: Path) -> list[str]:
-    """Dotted module names imported at MODULE scope (never inside a function)."""
+    """Dotted module names imported at MODULE scope (never inside a function).
+
+    Module scope is not the same as ``tree.body``: an import nested in a
+    top-level ``try:``/``if:``/``with:`` still runs on import, so scanning only
+    the outermost statements would let ``try: import django`` past the guard.
+    Function and lambda bodies are the real exclusion -- ``mcp_auth`` imports
+    Django inside ``_settings_public_pem`` BY DESIGN, which is exactly what
+    makes the module chrome.
+    """
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     names: list[str] = []
-    for node in tree.body:
+    stack: list[ast.AST] = list(tree.body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda):
+            continue
         if isinstance(node, ast.Import):
             names.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.level == 0:
-            names.append(node.module or "")
+            continue
+        if isinstance(node, ast.ImportFrom):
+            if node.level == 0:
+                names.append(node.module or "")
+            continue
+        stack.extend(ast.iter_child_nodes(node))
     return names
 
 
@@ -399,6 +415,39 @@ def test_the_verifier_is_django_free_and_the_only_rule_set() -> None:
     )
 
 
+def test_the_django_free_scan_sees_imports_nested_at_module_scope(
+    tmp_path: Path,
+) -> None:
+    """Guard removal check for the scan itself: an import inside a top-level
+    ``try:``/``if:`` runs on import just like an outermost one, so a scan that
+    reads only ``tree.body`` would clear ``try: import django`` -- while an
+    import inside a function must still be invisible, because that deferred
+    shape is exactly how ``mcp_auth`` reaches Django settings without becoming
+    a Django module.
+    """
+    module = tmp_path / "sample.py"
+    module.write_text(
+        "import os\n"
+        "try:\n"
+        "    import django.conf\n"
+        "except ImportError:\n"
+        "    django = None\n"
+        "if os.environ:\n"
+        "    from django.core import exceptions\n"
+        "\n"
+        "def later():\n"
+        "    from django.db import models\n"
+        "    return models\n",
+        encoding="utf-8",
+    )
+
+    found = _module_scope_imports(module)
+
+    assert "django.conf" in found, "an import inside a module-scope try: still runs"
+    assert "django.core" in found, "an import inside a module-scope if: still runs"
+    assert "django.db" not in found, "a function-scope import is not module scope"
+
+
 # ---------------------------------------------------------------------------
 # AC 2 / AC 3 -- the streaming proxy and its header discipline
 # ---------------------------------------------------------------------------
@@ -417,6 +466,8 @@ class _StubUpstream:
         first_delay: float = 0.0,
         fails_after: BaseException | None = None,
         fails_on_close: bool = False,
+        close_failure: BaseException | None = None,
+        open_failure: BaseException | None = None,
     ) -> None:
         self.status_code = status_code
         self.headers = (
@@ -427,6 +478,8 @@ class _StubUpstream:
         self._first_delay = first_delay
         self._fails_after = fails_after
         self.fails_on_close = fails_on_close
+        self.close_failure = close_failure
+        self.open_failure = open_failure
 
     async def aiter_bytes(self):
         if self._first_delay:
@@ -447,6 +500,8 @@ class _StubStreamContext:
         return self._upstream
 
     async def __aexit__(self, *exc_info: object) -> None:
+        if self._upstream.close_failure is not None:
+            raise self._upstream.close_failure
         if self._upstream.fails_on_close:
             msg = "upstream connection dropped during teardown"
             raise httpx.ReadError(msg)
@@ -464,6 +519,8 @@ class _StubClient:
         return None
 
     def stream(self, method: str, url: str, **kwargs: Any) -> _StubStreamContext:
+        if self._upstream.open_failure is not None:
+            raise self._upstream.open_failure
         self._calls.append({"method": method, "url": url, **kwargs})
         return _StubStreamContext(self._upstream)
 
@@ -742,6 +799,62 @@ def test_a_mid_stream_failure_closes_the_body_exactly_once(
         assert len(starts) == 1, timed
         assert len(closes) == 1, timed
         assert any(m.get("body") == b"partial" for _at, m in timed)
+
+
+@pytest.mark.usefixtures("_sidecar")
+@pytest.mark.parametrize(
+    "failure",
+    [
+        # httpx's failure surface is not one tree. StreamError subclasses
+        # RuntimeError and InvalidURL subclasses Exception, so `except
+        # httpx.RequestError` -- the obvious catch, and the one the pre-patch
+        # code used -- misses both.
+        httpx.StreamClosed(),
+        httpx.ReadError("gone"),
+    ],
+    ids=["stream-error", "request-error"],
+)
+def test_a_teardown_failure_outside_request_error_still_closes_the_body(
+    atlas_assertion: str,
+    failure: BaseException,
+) -> None:
+    """A failure raised while unwinding the stream arrives AFTER the head is
+    sent, so it can only be answered by closing the body -- and it must be
+    answered, whichever branch of httpx's exception surface it comes from.
+    Escaping here leaves an unhandled ASGI exception on a response the client
+    is still reading.
+    """
+    upstream = _StubUpstream(chunks=(b"partial",), close_failure=failure)
+
+    timed, _calls, _kwargs = _proxy(upstream, _scope(assertion=atlas_assertion))
+
+    starts = [m for _at, m in timed if m["type"] == "http.response.start"]
+    closes = [
+        m
+        for _at, m in timed
+        if m["type"] == "http.response.body" and m.get("more_body") is False
+    ]
+    assert len(starts) == 1, timed
+    assert len(closes) == 1, timed
+    assert any(m.get("body") == b"partial" for _at, m in timed)
+
+
+@pytest.mark.usefixtures("_sidecar")
+def test_a_sidecar_url_httpx_rejects_answers_502_rather_than_crashing(
+    atlas_assertion: str,
+) -> None:
+    """`httpx.InvalidURL` is not a RequestError, so a malformed
+    MCP_HOST_SIDECAR_BASE_URL would escape as an unhandled ASGI exception --
+    no status, no body -- instead of the 502 this proxy answers for every
+    other way the hop cannot be made.
+    """
+    upstream = _StubUpstream(open_failure=httpx.InvalidURL("not a url"))
+
+    timed, calls, _kwargs = _proxy(upstream, _scope(assertion=atlas_assertion))
+
+    assert calls == [], "a rejected URL must not count as a forwarded call"
+    start = next(m for _at, m in timed if m["type"] == "http.response.start")
+    assert start["status"] == HTTPStatus.BAD_GATEWAY
 
 
 @pytest.mark.usefixtures("_sidecar")

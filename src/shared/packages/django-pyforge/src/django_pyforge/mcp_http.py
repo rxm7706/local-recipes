@@ -416,11 +416,21 @@ async def proxy_station_mcp(
 ) -> None:
     """Stream the request to the mcp-host sidecar. Unreachable → 502 + error log.
 
-    Streamed both ways: the response head goes out as soon as the sidecar sends
-    it and every chunk is relayed as it arrives, so a long tool call reaches the
+    The RESPONSE is streamed: its head goes out as soon as the sidecar sends it
+    and every chunk is relayed as it arrives, so a long tool call reaches the
     client as it runs instead of being buffered to completion (red-team T-5).
+    The request body is still read to completion first -- an ASGI request body
+    has no length until ``more_body`` is false, and the hop needs one.
     """
     import httpx
+
+    # httpx's failure surface is NOT one tree: StreamError subclasses
+    # RuntimeError and InvalidURL subclasses Exception, so neither is a
+    # RequestError. Catching RequestError alone lets a teardown failure escape
+    # AFTER the head was sent -- the exact case the `started` branch below
+    # exists to close -- and turns a malformed sidecar base URL into an
+    # unhandled ASGI exception instead of a 502.
+    hop_failures = (httpx.RequestError, httpx.StreamError, httpx.InvalidURL)
 
     body, _replay = await read_body(receive)
     url = f"{base}/stations/{station}/mcp"
@@ -443,7 +453,7 @@ async def proxy_station_mcp(
             started = True
             await _stream_upstream_body(response, send)
             closed = True
-    except httpx.RequestError as exc:
+    except hop_failures as exc:
         logger.error("mcp-host sidecar unreachable at %s: %s", base, exc)
         if started:
             # A failure raised while unwinding the stream (teardown, not the
