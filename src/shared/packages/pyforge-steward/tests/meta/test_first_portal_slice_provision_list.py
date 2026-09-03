@@ -215,6 +215,7 @@ def test_authenticated_steward_home_renders_provision_inventory(monkeypatch):
     from django.template import Engine
     from django.test import RequestFactory
     from django_pyforge.assertion.client import PortalClient
+    from django_pyforge.roles import prefixed_station
     from django_steward_portal import views
 
     captured: dict[str, object] = {}
@@ -243,11 +244,11 @@ def test_authenticated_steward_home_renders_provision_inventory(monkeypatch):
     )
 
     forbidden = RequestFactory().get("/stations/steward/")
-    forbidden.idp_roles = ["warden"]
+    forbidden.idp_roles = [prefixed_station("warden")]
     assert views.chrome_home(forbidden).status_code == HTTPStatus.FORBIDDEN
 
     request = RequestFactory().get("/stations/steward/")
-    request.idp_roles = ["steward"]
+    request.idp_roles = [prefixed_station("steward")]
     response = views.chrome_home(request)
     assert response.status_code == HTTPStatus.OK
     body = response.content.decode()
