@@ -23,7 +23,7 @@ _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
 def test_mason_role_get_renders_one_diagnosis() -> None:
     request = RequestFactory().get("/stations/mason/")
-    request.idp_roles = ["mason"]
+    request.idp_roles = ["pyforge:station:mason"]
     setattr(
         request,
         IDP_TOKEN_CLAIMS_ATTR,
@@ -40,7 +40,7 @@ def test_mason_role_get_renders_one_diagnosis() -> None:
 
 def test_mason_view_uses_portal_client_last_diagnose() -> None:
     request = RequestFactory().get("/stations/mason/")
-    request.idp_roles = ["mason"]
+    request.idp_roles = ["pyforge:station:mason"]
     sentinel = {
         "ok": True,
         "tool": "last_diagnose",
@@ -60,7 +60,7 @@ def test_mason_view_uses_portal_client_last_diagnose() -> None:
 
 def test_wrong_role_is_forbidden_without_portal_client() -> None:
     request = RequestFactory().get("/stations/mason/")
-    request.idp_roles = ["warden"]
+    request.idp_roles = ["pyforge:station:warden"]
     with patch.object(PortalClient, "last_diagnose") as mocked:
         response = mason_views.chrome_home(request)
     assert response.status_code == HTTPStatus.FORBIDDEN

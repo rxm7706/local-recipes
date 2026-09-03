@@ -17,6 +17,8 @@ EXT_GIT_SHA = "gitsha"
 EXT_SBOM_PURL = "sbompurl"
 EXT_WORK_ITEM_ID = "workitemid"
 EXT_LOOP_DEPTH = "pyforgeloopdepth"
+# Story 42.5: tenant id from the publishing assertion's ``pyforge:tenant:*`` claim.
+EXT_TENANT = "pyforgetenant"
 # CloudEvents Distributed Tracing extension (W3C traceparent). Story 42.3,
 # red-team A-5: the envelope is the only thing that crosses the bus, so the
 # trace context must ride on it.
@@ -80,6 +82,8 @@ EVENT_SCHEMAS: dict[str, str] = {
     "recipe.rebuild.requested": "urn:pyforge:schema:events:recipe.rebuild.requested:v1",
     # Mason -> Doctor: the remedy ran; outcome attached.
     "remedy.completed": "urn:pyforge:schema:events:remedy.completed:v1",
+    # Supervisor -> bus: a bounded run was published (Story 42.5).
+    "run.started": "urn:pyforge:schema:events:run.started:v1",
 }
 EVENT_TYPES = frozenset(EVENT_SCHEMAS)
 

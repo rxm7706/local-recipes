@@ -49,6 +49,7 @@ from datetime import timedelta
 from http import HTTPStatus
 from typing import Any
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from django.db import transaction
@@ -57,14 +58,23 @@ from django.utils import timezone
 
 from django_pyforge.assertion.crypto import verify_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
+from django_pyforge.assertion.schema import CLAIM_ROLES
 from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.assertion.schema import audience_for
+from django_pyforge.events.constants import EVENT_SCHEMAS
+from django_pyforge.events.constants import EXT_GIT_SHA
+from django_pyforge.events.constants import EXT_SBOM_PURL
+from django_pyforge.events.constants import EXT_SPEC_ID
+from django_pyforge.events.constants import EXT_TENANT
+from django_pyforge.events.fabric import EventBrokerConfigError
+from django_pyforge.events.fabric import connect_event_broker
 from django_pyforge.models import McpHandle
 from django_pyforge.models import RunState
 from django_pyforge.queues import station_time_limit
 from django_pyforge.rate_limit import START_SCOPE
 from django_pyforge.rate_limit import consume
 from django_pyforge.rate_limit import int_setting
+from django_pyforge.roles import unique_tenant_from_raw
 
 HANDLE_ENTROPY_BYTES = 32
 # Story 42.4: the reason a swept (or re-delivered-twice) run is FAILED with.
@@ -335,6 +345,71 @@ def enforce_run_bounds(*, station: str, subject: str) -> None:
         )
 
 
+def _tenant_from_assertion_claims(claims: dict[str, object]) -> str:
+    raw_roles = claims.get(CLAIM_ROLES)
+    if not isinstance(raw_roles, list):
+        return ""
+    return unique_tenant_from_raw(raw_roles)
+
+
+def _publish_run_started_event(
+    *,
+    run_id: str,
+    station: str,
+    subject: str,
+    tenant: str,
+) -> None:
+    """Best-effort ``run.started`` on the event bus (Story 42.5)."""
+    broker_url = getattr(settings, "REDIS_BROKER_URL", "") or getattr(
+        settings,
+        "CELERY_BROKER_URL",
+        "",
+    )
+    cache_url = getattr(settings, "REDIS_CACHE_URL", "") or getattr(
+        settings,
+        "REDIS_URL",
+        "",
+    )
+    if not isinstance(broker_url, str) or not broker_url.strip():
+        return
+    if not isinstance(cache_url, str) or not cache_url.strip():
+        return
+    try:
+        fabric = connect_event_broker(broker_url.strip(), cache_url.strip())
+    except EventBrokerConfigError:
+        logger.warning(
+            "supervisor.run_started_event_skipped",
+            extra={
+                "event": "supervisor.run_started_event_skipped",
+                "run_id": run_id,
+                "reason": "broker/cache URLs must differ",
+            },
+        )
+        return
+    envelope: dict[str, Any] = {
+        "type": "run.started",
+        "source": f"/stations/{station}",
+        "dataschema": EVENT_SCHEMAS["run.started"],
+        EXT_SPEC_ID: "spec-42-5-role-namespaces-and-the-tenant-claim",
+        EXT_GIT_SHA: "local",
+        EXT_SBOM_PURL: "pkg:pypi/django-pyforge@0.1.0",
+        "data": {"run_id": run_id, "station": station, "subject": subject},
+    }
+    if tenant:
+        envelope[EXT_TENANT] = tenant
+    try:
+        fabric.publish(envelope)
+    except Exception as exc:
+        logger.warning(
+            "supervisor.run_started_event_failed",
+            extra={
+                "event": "supervisor.run_started_event_failed",
+                "run_id": run_id,
+                "reason": str(exc),
+            },
+        )
+
+
 def publish_start(
     *,
     station: str,
@@ -349,6 +424,7 @@ def publish_start(
     subject = claims.get(CLAIM_SUB)
     if not isinstance(subject, str) or not subject:
         raise HandleRefusedError
+    tenant = _tenant_from_assertion_claims(claims)
     enforce_run_bounds(station=station, subject=subject)
     token = mint_handle()
     if len(token) < HANDLE_ENTROPY_BYTES:
@@ -364,6 +440,7 @@ def publish_start(
             status=RunState.Status.RUNNING,
             station=station,
             subject=subject,
+            tenant=tenant,
             celery_task_id=task_id,
             started_at=started,
             heartbeat_at=started,
@@ -408,6 +485,12 @@ def publish_start(
             result={"error": f"enqueue failed: {exc}"},
         )
         raise
+    _publish_run_started_event(
+        run_id=run_id,
+        station=station,
+        subject=subject,
+        tenant=tenant,
+    )
     return token
 
 

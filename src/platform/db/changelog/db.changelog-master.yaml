@@ -22,6 +22,9 @@ databaseChangeLog:
       file: changes/python-agent-platform-20-django-pyforge-0004-run-bounds.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/python-agent-platform-21-django-pyforge-0005-run-state-tenant.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/python-agent-platform-15-django-contrib-auth-contenttypes.sql
       relativeToChangelogFile: true
   - include:

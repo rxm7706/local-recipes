@@ -1147,18 +1147,28 @@ class PyForgeEvent(BaseModel):
 
 ## 2. Keycloak RBAC & Unified Security Matrix
 
-PyForge enforces a strict, unified Role-Based Access Control (RBAC) model across human browser sessions, CLI operators, and autonomous AI agents:
+PyForge enforces a strict, unified Role-Based Access Control (RBAC) model across human browser sessions, CLI operators, and autonomous AI agents. All values live in one configurable group claim under these prefixes only:
 
 
-| Enterprise Persona         | Keycloak Realm Role     | Lane 2 (`django-<station>`)                          | Host MCP / `python-services-engine` scopes |
+| Prefix | Example | Meaning |
+| :----- | :------ | :------ |
+| `pyforge:station:<name>` | `pyforge:station:atlas` | Reachability for that station slug (Lane 2 chrome + MCP audience) |
+| `pyforge:tenant:<id>` | `pyforge:tenant:east` | Lane 3 analytical row-slicing tenant (never a station slug) |
+| `pyforge:admin` | `pyforge:admin` | Platform administrator — all stations |
+
+Bare station slugs (e.g. a group named `atlas`) are refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation warning for one release.
+
+
+| Enterprise Persona         | Keycloak group claim    | Lane 2 (`django-<station>`)                          | Host MCP / `python-services-engine` scopes |
 | :------------------------- | :---------------------- | :--------------------------------------------------- | :---------------------------------------- |
-| **Platform Administrator** | `pyforge-admin`         | Full read/write + Django Admin (`/admin/`)           | Full access (`*`) + secret rotation       |
-| **Station Maintainer**     | `maintainer`            | Station workflow triggers (Mason build, Marshal run) | `service:write`, `mcp:tools:execute`      |
-| **Compliance Auditor**     | `compliance-auditor`    | Read-only inspection & Gate waivers                  | `warden:read`, `audit:export`             |
-| **Developer / Viewer**     | `viewer`                | Read-only Guildhall docs, dashboards, and decks      | `service:read` (Public queries only)      |
-| **Autonomous AI Agent**    | `agent-service-account` | Headless API access via Bearer Token / API Key       | Leased MCP tool execution (`mcp:tools:*`) |
+| **Platform Administrator** | `pyforge:admin`         | Full read/write + Django Admin (`/admin/`)           | Full access (`*`) + secret rotation       |
+| **Station Maintainer**     | `pyforge:station:<name>` | Station workflow triggers (Mason build, Marshal run) | `service:write`, `mcp:tools:execute`      |
+| **Compliance Auditor**     | `pyforge:station:warden` + read scopes | Read-only inspection & Gate waivers                  | `warden:read`, `audit:export`             |
+| **Developer / Viewer**     | `pyforge:station:*` (read stations) | Read-only Guildhall docs, dashboards, and decks      | `service:read` (Public queries only)      |
+| **Autonomous AI Agent**    | `pyforge:station:<name>` | Headless API access via Bearer Token / API Key       | Leased MCP tool execution (`mcp:tools:*`) |
+| **Multi-tenant analyst**   | `pyforge:station:atlas` + `pyforge:tenant:east` | Lane 3 board rows sliced to tenant `east`            | N/A (browser session)                     |
 
-- **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses Keycloak JWT claims (`resource_access.pyforge.roles`), dynamically updating the user's active Django permissions per-request without storing local passwords.
+- **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses the configured group claim on each request (`DJANGO_PYFORGE_GROUP_CLAIM`, default `groups`), re-reading prefixed roles per-request without storing local passwords (canopy AD-15).
 - **MCP / services-engine scope verification:** OAuth2 scopes via `Security(verify_token, scopes=["mason:build"])` on the **host** ASGI, not nine `:800x` processes.
 
 ---

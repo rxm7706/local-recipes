@@ -60,7 +60,7 @@ OTHER_AGENT = "agent-42-2-bystander"
 
 
 def _assertion(sub: str, station: str = STATION) -> str:
-    return mint_assertion(sub=sub, roles=[station], station=station)
+    return mint_assertion(sub=sub, roles=[f"pyforge:station:{station}"], station=station)
 
 
 def _scope(assertion: str, station: str = STATION) -> dict[str, Any]:

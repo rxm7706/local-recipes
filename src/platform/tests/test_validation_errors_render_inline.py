@@ -35,7 +35,7 @@ VERSION_MSG = "version is not a valid PEP 440 string"
 
 def test_rejected_submission_renders_errors_inline() -> None:
     request = RequestFactory().post(FORM_PATH, data={"version": "not-pep440"})
-    request.idp_roles = ["chrome-probe"]
+    request.idp_roles = ["pyforge:station:chrome-probe"]
     response = chrome_form(request)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     body = response.content.decode()

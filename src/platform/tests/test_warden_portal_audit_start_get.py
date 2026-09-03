@@ -135,7 +135,7 @@ def _warden_mcp_host():
 @pytest.mark.django_db
 def test_mcp_start_audit_returns_handle(monkeypatch):
     monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
-    assertion = mint_assertion(sub="agent-10-2", roles=["warden"], station="warden")
+    assertion = mint_assertion(sub="agent-10-2", roles=["pyforge:station:warden"], station="warden")
     with TestClient(_warden_mcp_host()) as mcp_client:
         response = mcp_client.post(
             "/stations/warden/mcp",
@@ -345,7 +345,7 @@ def test_mcp_start_at_the_per_sub_ceiling_projects_the_409_and_run_ids(
     settings.MAX_RUNNING_PER_SUB = 1
     settings.MAX_QUEUE_DEPTH_PER_STATION = 10_000
     subject = _fresh_subject("agent-42-2")
-    assertion = mint_assertion(sub=subject, roles=["warden"], station="warden")
+    assertion = mint_assertion(sub=subject, roles=["pyforge:station:warden"], station="warden")
 
     with TestClient(_warden_mcp_host()) as mcp_client:
         first = _call_start_audit(mcp_client, assertion, 4)
@@ -376,7 +376,7 @@ def test_mcp_start_at_the_station_ceiling_projects_the_429_and_retry_after(
     settings.MAX_RUNNING_PER_SUB = 10_000
     assertion = mint_assertion(
         sub=_fresh_subject("agent-42-2-b"),
-        roles=["warden"],
+        roles=["pyforge:station:warden"],
         station="warden",
     )
 

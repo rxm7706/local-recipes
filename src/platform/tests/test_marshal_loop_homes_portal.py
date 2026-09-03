@@ -57,7 +57,7 @@ def test_authenticated_marshal_role_sees_homes(
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path))
     _provision(tmp_path, "pyforge-atlas")
     request = RequestFactory().get("/stations/marshal/")
-    request.idp_roles = ["marshal"]
+    request.idp_roles = ["pyforge:station:marshal"]
     response = marshal_views.chrome_home(request)
     assert response.status_code == HTTPStatus.OK
     body = response.content.decode()
@@ -72,7 +72,7 @@ def test_authenticated_marshal_role_empty_homes(
 ) -> None:
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path))
     request = RequestFactory().get("/stations/marshal/")
-    request.idp_roles = ["marshal"]
+    request.idp_roles = ["pyforge:station:marshal"]
     response = marshal_views.chrome_home(request)
     assert response.status_code == HTTPStatus.OK
     assert b'id="marshal-loop-homes-empty"' in response.content
@@ -80,7 +80,7 @@ def test_authenticated_marshal_role_empty_homes(
 
 def test_marshal_role_required() -> None:
     denied = RequestFactory().get("/stations/marshal/")
-    denied.idp_roles = ["steward"]
+    denied.idp_roles = ["pyforge:station:steward"]
     response = marshal_views.chrome_home(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
 

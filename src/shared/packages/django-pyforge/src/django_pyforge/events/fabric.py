@@ -52,6 +52,7 @@ from django_pyforge.events.constants import EXT_GIT_SHA
 from django_pyforge.events.constants import EXT_LOOP_DEPTH
 from django_pyforge.events.constants import EXT_SBOM_PURL
 from django_pyforge.events.constants import EXT_SPEC_ID
+from django_pyforge.events.constants import EXT_TENANT
 from django_pyforge.events.constants import EXT_TRACEPARENT
 from django_pyforge.events.constants import EXT_WORK_ITEM_ID
 from django_pyforge.events.constants import LAST_ERROR_PREFIX
@@ -295,6 +296,9 @@ class EventFabric:
             body[EXT_WORK_ITEM_ID] = workitemid
         if traceparent:
             body[EXT_TRACEPARENT] = traceparent
+        tenant = event.get(EXT_TENANT)
+        if tenant:
+            body[EXT_TENANT] = tenant
         if "data" in event:
             body["data"] = event["data"]
         self.broker.xadd(

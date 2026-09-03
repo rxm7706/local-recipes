@@ -65,7 +65,7 @@ _SURVIVAL_FORBIDDEN = (
 
 @pytest.fixture
 def atlas_assertion() -> str:
-    return mint_assertion(sub="agent-21-3", roles=["atlas"], station="atlas")
+    return mint_assertion(sub="agent-21-3", roles=["pyforge:station:atlas"], station="atlas")
 
 
 def _register_counting_runner(calls: dict[str, int]) -> None:
@@ -179,7 +179,7 @@ def test_possession_without_assertion_is_refused(
         get_run(station="atlas", handle=handle, assertion="")
     with pytest.raises(HandleRefusedError):
         get_run(station="atlas", handle=handle, assertion="not-a-jwt")
-    other = mint_assertion(sub="someone-else", roles=["atlas"], station="atlas")
+    other = mint_assertion(sub="someone-else", roles=["pyforge:station:atlas"], station="atlas")
     with pytest.raises(HandleRefusedError):
         get_run(station="atlas", handle=handle, assertion=other)
 

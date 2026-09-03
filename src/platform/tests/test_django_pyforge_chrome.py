@@ -29,6 +29,7 @@ from django_pyforge.portals import PortalConfig
 from django_pyforge.probe_portal import views as probe_views
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
+from django_pyforge.roles import prefixed_station
 from django_warden_fabric import views as warden_views
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
@@ -240,7 +241,7 @@ def _switcher_html(request: HttpRequest) -> str:
 
 def test_missing_station_role_omits_that_station_from_the_switcher() -> None:
     request = RequestFactory().get("/stations/warden/")
-    request.idp_roles = ["warden"]
+    request.idp_roles = ["pyforge:station:warden"]
     html = _switcher_html(request)
     assert "/stations/warden/" in html
     for name in EXPECTED_PORTALS - {"warden"}:
@@ -250,11 +251,11 @@ def test_missing_station_role_omits_that_station_from_the_switcher() -> None:
 
 def test_direct_url_is_refused_by_the_station_not_the_switcher() -> None:
     hidden_req = RequestFactory().get("/stations/chrome-probe/")
-    hidden_req.idp_roles = ["warden"]
+    hidden_req.idp_roles = ["pyforge:station:warden"]
     hidden = probe_views.chrome_home(hidden_req)
     assert hidden.status_code == HTTPStatus.FORBIDDEN
     visible_req = RequestFactory().get("/stations/warden/")
-    visible_req.idp_roles = ["warden"]
+    visible_req.idp_roles = ["pyforge:station:warden"]
     visible = warden_views.chrome_home(visible_req)
     assert visible.status_code == HTTPStatus.OK
     body = visible.content.decode()
@@ -286,7 +287,7 @@ def test_switcher_uses_token_roles_not_django_groups() -> None:
 
 def test_empty_token_roles_on_the_next_request_list_no_stations() -> None:
     first = RequestFactory().get("/stations/warden/")
-    first.idp_roles = list(EXPECTED_PORTALS)
+    first.idp_roles = [prefixed_station(name) for name in SWITCHER_PORTALS]
     first_names = {portal.station_name for portal in chrome(first)["pyforge_portals"]}
     assert first_names == SWITCHER_PORTALS
     assert "infra-probe" not in first_names
@@ -310,14 +311,16 @@ def test_token_roles_middleware_does_not_grant_from_session_role_list() -> None:
     TokenRolesMiddleware(inner)(request)
     assert seen["roles"] == []
     preset = RequestFactory().get("/")
-    preset.idp_roles = ["chrome-probe"]
+    preset.idp_roles = ["pyforge:station:chrome-probe"]
     preset.session = {IDP_TOKEN_ROLES_SESSION_KEY: ["warden"]}
     TokenRolesMiddleware(inner)(preset)
-    assert seen["roles"] == ["chrome-probe"]
+    assert seen["roles"] == [prefixed_station("chrome-probe")]
     claims_session = RequestFactory().get("/")
-    claims_session.session = {IDP_TOKEN_CLAIMS_SESSION_KEY: {"groups": ["warden"]}}
+    claims_session.session = {
+        IDP_TOKEN_CLAIMS_SESSION_KEY: {"groups": [prefixed_station("warden")]},
+    }
     TokenRolesMiddleware(inner)(claims_session)
-    assert seen["roles"] == ["warden"]
+    assert seen["roles"] == [prefixed_station("warden")]
     html = _switcher_html(claims_session)
     assert "/stations/warden/" in html
     assert "/stations/chrome-probe/" not in html
