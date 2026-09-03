@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from django.http import Http404
 from django.shortcuts import render
 from django.utils import timezone
+from django_pyforge.non_atomic import non_atomic_view
 from django_pyforge.supervisor import SupervisorUnavailableError
 from django_pyforge.supervisor import query_board
 from wagtail.models import Page
@@ -48,6 +49,7 @@ def age_label(last_ok_at: datetime | None, *, now: datetime) -> str:
     return f"{seconds}s"
 
 
+@non_atomic_view
 def runs_board(request: HttpRequest) -> HttpResponse:
     now = timezone.now()
     try:

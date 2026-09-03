@@ -18,3 +18,7 @@ class UsersConfig(AppConfig):
         from config.startup import run_stage_two  # noqa: PLC0415
 
         run_stage_two()
+
+        from config.station_port import wire_station_port  # noqa: PLC0415
+
+        wire_station_port()

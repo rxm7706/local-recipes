@@ -40,6 +40,10 @@ class StationHttpClient:
         transport: Transport | None = None,
     ) -> PyForgeStationClient:
         assertion = self._portal.emit(sub, roles, station, private_pem=private_pem)
+        if transport is None:
+            from django_pyforge.station_port import default_transport
+
+            transport = default_transport()
         return PyForgeStationClient(
             station=station,
             version=version,
@@ -61,6 +65,10 @@ class StationHttpClient:
         private_pem: str | None = None,
         transport: Transport | None = None,
     ) -> bytes:
+        if transport is None:
+            from django_pyforge.station_port import default_transport
+
+            transport = default_transport()
         client = self.emit_and_build(
             station=station,
             sub=sub,

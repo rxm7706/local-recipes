@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.schema import CLAIM_SUB
+from django_pyforge.non_atomic import non_atomic_view
 from django_pyforge.roles import claims_from_request
 from django_pyforge.roles import roles_from_request
 from django_pyforge.supervisor import HandleExpiredError
@@ -103,6 +104,7 @@ def start_audit(request: HttpRequest) -> HttpResponse:
 
 @require_GET
 @require_station_role("warden")
+@non_atomic_view
 def get_audit(request: HttpRequest) -> HttpResponse:
     """HTMX get after disconnect: same run, new assertion, no recompute."""
     identity = _portal_identity(request)
