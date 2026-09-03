@@ -991,8 +991,20 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/langcodes@1.iml" filepath="$PROJECT_DIR$/.idea/langcodes@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langflow.iml" filepath="$PROJECT_DIR$/.idea/langflow.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langflow-base.iml" filepath="$PROJECT_DIR$/.idea/langflow-base.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-base@1.iml" filepath="$PROJECT_DIR$/.idea/langflow-base@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-base@2.iml" filepath="$PROJECT_DIR$/.idea/langflow-base@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-base@3.iml" filepath="$PROJECT_DIR$/.idea/langflow-base@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langflow-sdk.iml" filepath="$PROJECT_DIR$/.idea/langflow-sdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-sdk@1.iml" filepath="$PROJECT_DIR$/.idea/langflow-sdk@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-sdk@2.iml" filepath="$PROJECT_DIR$/.idea/langflow-sdk@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-sdk@3.iml" filepath="$PROJECT_DIR$/.idea/langflow-sdk@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow@1.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow@2.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow@3.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow@3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow@1.iml" filepath="$PROJECT_DIR$/.idea/langflow@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow@2.iml" filepath="$PROJECT_DIR$/.idea/langflow@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow@3.iml" filepath="$PROJECT_DIR$/.idea/langflow@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph.iml" filepath="$PROJECT_DIR$/.idea/langgraph.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" filepath="$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-api.iml" filepath="$PROJECT_DIR$/.idea/langgraph-api.iml" />
@@ -1010,10 +1022,70 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/lazy-loader@4.iml" filepath="$PROJECT_DIR$/.idea/lazy-loader@4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lesscpy.iml" filepath="$PROJECT_DIR$/.idea/lesscpy.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lfx.iml" filepath="$PROJECT_DIR$/.idea/lfx.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-amazon.iml" filepath="$PROJECT_DIR$/.idea/lfx-amazon.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-amazon@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-amazon@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-amazon@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-amazon@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-anthropic.iml" filepath="$PROJECT_DIR$/.idea/lfx-anthropic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-anthropic@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-anthropic@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-anthropic@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-anthropic@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lfx-arxiv.iml" filepath="$PROJECT_DIR$/.idea/lfx-arxiv.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-arxiv@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-arxiv@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-arxiv@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-arxiv@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-arxiv@3.iml" filepath="$PROJECT_DIR$/.idea/lfx-arxiv@3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-bundles.iml" filepath="$PROJECT_DIR$/.idea/lfx-bundles.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-bundles@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-bundles@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-bundles@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-bundles@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-cohere.iml" filepath="$PROJECT_DIR$/.idea/lfx-cohere.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-cohere@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-cohere@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-cohere@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-cohere@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-datastax.iml" filepath="$PROJECT_DIR$/.idea/lfx-datastax.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-datastax@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-datastax@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-datastax@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-datastax@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lfx-docling.iml" filepath="$PROJECT_DIR$/.idea/lfx-docling.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-docling@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-docling@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-docling@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-docling@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-docling@3.iml" filepath="$PROJECT_DIR$/.idea/lfx-docling@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lfx-duckduckgo.iml" filepath="$PROJECT_DIR$/.idea/lfx-duckduckgo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-duckduckgo@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-duckduckgo@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-duckduckgo@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-duckduckgo@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-duckduckgo@3.iml" filepath="$PROJECT_DIR$/.idea/lfx-duckduckgo@3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-empiriolabs.iml" filepath="$PROJECT_DIR$/.idea/lfx-empiriolabs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-empiriolabs@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-empiriolabs@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-empiriolabs@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-empiriolabs@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-exa.iml" filepath="$PROJECT_DIR$/.idea/lfx-exa.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-exa@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-exa@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-exa@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-exa@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-firecrawl.iml" filepath="$PROJECT_DIR$/.idea/lfx-firecrawl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-firecrawl@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-firecrawl@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-firecrawl@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-firecrawl@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lfx-ibm.iml" filepath="$PROJECT_DIR$/.idea/lfx-ibm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-ibm@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-ibm@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-ibm@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-ibm@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-ibm@3.iml" filepath="$PROJECT_DIR$/.idea/lfx-ibm@3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-nextplaid.iml" filepath="$PROJECT_DIR$/.idea/lfx-nextplaid.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-nextplaid@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-nextplaid@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-nextplaid@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-nextplaid@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai-compatible.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai-compatible.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai-compatible@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai-compatible@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai-compatible@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai-compatible@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-openai@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-openai@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-oracle.iml" filepath="$PROJECT_DIR$/.idea/lfx-oracle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-oracle@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-oracle@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-oracle@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-oracle@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-paddle.iml" filepath="$PROJECT_DIR$/.idea/lfx-paddle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-paddle@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-paddle@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-paddle@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-paddle@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-valkey.iml" filepath="$PROJECT_DIR$/.idea/lfx-valkey.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-valkey@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-valkey@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-valkey@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-valkey@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-vllm.iml" filepath="$PROJECT_DIR$/.idea/lfx-vllm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-vllm@1.iml" filepath="$PROJECT_DIR$/.idea/lfx-vllm@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-vllm@2.iml" filepath="$PROJECT_DIR$/.idea/lfx-vllm@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx@1.iml" filepath="$PROJECT_DIR$/.idea/lfx@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx@2.iml" filepath="$PROJECT_DIR$/.idea/lfx@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx@3.iml" filepath="$PROJECT_DIR$/.idea/lfx@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web.iml" filepath="$PROJECT_DIR$/.idea/lia-web.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web@1.iml" filepath="$PROJECT_DIR$/.idea/lia-web@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web@2.iml" filepath="$PROJECT_DIR$/.idea/lia-web@2.iml" />

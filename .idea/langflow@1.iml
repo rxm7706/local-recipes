@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.system.id="pyproject.toml" type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$/build_artifacts/linux64/bld/rattler-build_langflow-sdk_1788351505/work">
+      <sourceFolder url="file://$MODULE_DIR$/build_artifacts/linux64/bld/rattler-build_langflow-sdk_1788351505/work/src" />
+    </content>
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="lfx-duckduckgo@1" exported="" />
+    <orderEntry type="module" module-name="lfx-ibm@1" exported="" />
+    <orderEntry type="module" module-name="lfx-datastax" exported="" />
+    <orderEntry type="module" module-name="lfx-cohere" exported="" />
+    <orderEntry type="module" module-name="lfx-amazon" exported="" />
+    <orderEntry type="module" module-name="lfx-bundles" exported="" />
+    <orderEntry type="module" module-name="lfx-oracle" exported="" />
+    <orderEntry type="module" module-name="langflow-base@1" exported="" />
+    <orderEntry type="module" module-name="lfx-vllm" exported="" />
+    <orderEntry type="module" module-name="lfx-openai-compatible" exported="" />
+    <orderEntry type="module" module-name="lfx-arxiv@1" exported="" />
+    <orderEntry type="module" module-name="lfx-exa" exported="" />
+    <orderEntry type="module" module-name="lfx-valkey" exported="" />
+    <orderEntry type="module" module-name="lfx-openai" exported="" />
+    <orderEntry type="module" module-name="lfx-empiriolabs" exported="" />
+    <orderEntry type="module" module-name="lfx-firecrawl" exported="" />
+    <orderEntry type="module" module-name="lfx-paddle" exported="" />
+    <orderEntry type="module" module-name="lfx-docling@1" exported="" />
+    <orderEntry type="module" module-name="lfx-nextplaid" exported="" />
+    <orderEntry type="module" module-name="lfx-anthropic" exported="" />
+  </component>
+</module>
