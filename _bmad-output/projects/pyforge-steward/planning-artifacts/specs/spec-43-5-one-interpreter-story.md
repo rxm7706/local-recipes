@@ -2,9 +2,12 @@
 title: "One interpreter story"
 type: "docs"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
+status: "done"
+updated: "2026-09-03"
 baseline_commit: "637f4158"
+baseline_revision: "8ace5673f950bce88b6253cc46e6dc3cdc4abb4c"
+followup_review_recommended: false
+review_loop_iteration: 1
 severity: "HIGH"
 decision: "hybrid (a)+(c) — operator 2026-09-02"
 context:
@@ -93,11 +96,54 @@ interpreter shim.
 
 ## Tasks
 
-- [ ] AD in `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`.
-- [ ] `scripts/pixi_env_matrix.py` + test; Dream table replaced.
-- [ ] Review report S-5 / R-16 + readiness wording (done 2026-09-02 with this amendment; verify).
-- [ ] Dream Grounding "Python floor" bullet (done 2026-09-02; verify).
-- [ ] Ledger `43-5-one-interpreter-story` → `review` then `done` via `sprint-ledger-sync`.
+- [x] AD in `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`.
+- [x] `scripts/pixi_env_matrix.py` + test; Dream table replaced.
+- [x] Review report S-5 / R-16 + readiness wording (done 2026-09-02 with this amendment; verify).
+- [x] Dream Grounding "Python floor" bullet (done 2026-09-02; verify).
+- [x] Ledger `43-5-one-interpreter-story` → `review` then `done` via `sprint-ledger-sync`.
+
+## Auto Run Result
+
+Status: done
+
+Baseline: `8ace5673f950bce88b6253cc46e6dc3cdc4abb4c`
+
+### Summary
+
+Recorded canopy **AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-SDK isolation), replaced the Dream's Multi-Python claims with a lock-derived matrix (`scripts/pixi_env_matrix.py`), added Grounding **Python floor** bullet, and wired `bmad-drift` `pixi-env-matrix-stale` detection.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `architecture/.../ARCHITECTURE-SPINE.md` | AD-23 + stack Python row |
+| `scripts/pixi_env_matrix.py` | New lock → markdown matrix generator |
+| `tests/scripts/test_pixi_env_matrix.py` | Unit tests (stdlib + PyYAML) |
+| `docs/dreams/pyforge-unifying-strategy.md` | Grounding Python floor + measured matrix |
+| `docs/dreams/archive/...-topology.md` | Superseded notice on historical Multi-Python table |
+| `pyforge/doctor/sources/factory.py` | `check_pixi_env_matrix` bmad-drift warn |
+
+### Review Triage Log
+
+### 2026-09-03 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 1
+- addressed_findings:
+  - none
+
+Deferred: archive Fleet conventions row still lists pre-43.5 Python floor split — living Grounding + AD-23 supersede it; archive edit out of scope for 43.5.
+
+Rejected: dream line-count creep (~446 lines) — matrix block is generated and required by AC.
+
+### Verification
+
+- `pixi run -e local-recipes python -m pytest tests/scripts/test_pixi_env_matrix.py` — 3 passed
+- `python scripts/pixi_env_matrix.py --check --dream docs/dreams/pyforge-unifying-strategy.md` — exit 0
+- `pixi run -e pyforge-doctor python -m pyforge.doctor.sources bmad-drift` — no `pixi-env-matrix-stale`
+- `pixi run -e pyforge-doctor python -m pyforge.doctor.sources dream-chain --dreams` — exit 0 (warn-only hygiene)
 
 ## Verification
 

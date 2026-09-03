@@ -509,6 +509,11 @@ Governed by `pixi.toml` and locked in `pixi.lock`, the entire PyForge codebase r
 
 ### 3. Multi-Python Resolution & Runtime Matrix (Python 3.12, 3.13, 3.14)
 
+> **Superseded 2026-09-03 (steward 43.5).** The "100 % SUCCESS / byte-for-byte" table below
+> is historical. The living Dream carries a lock-derived matrix in
+> [`pyforge-unifying-strategy.md`](../pyforge-unifying-strategy.md) § *Pixi environment matrix
+> (measured)*; canopy **AD-23** records the hybrid interpreter decision.
+
 Empirical resolution testing with the Pixi solver (`pixi lock`) confirms that the entire PyForge dependency tree (over 1,000+ packages including all 10 high-leverage station recommendations) solves cleanly across all active Python versions:
 
 
