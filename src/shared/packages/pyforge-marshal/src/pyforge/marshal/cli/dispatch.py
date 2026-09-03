@@ -2928,7 +2928,11 @@ def execute_fleet_cycle(
             basis = (
                 "declared skip policy"
                 if story in station_skips
-                else f"blocked, and {mode.value} skips past it"
+                else (
+                    "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
+                    if dispatch_fleet.is_harness_done_advance_reason(reason)
+                    else f"blocked, and {mode.value} skips past it"
+                )
             )
             findings.append(
                 Finding(
@@ -3107,7 +3111,13 @@ def execute_fleet_cycle(
         refused_any = False
         last_detail: str | None = wave_detail
         primary_story = stories_to_dispatch[0]
-        for story in stories_to_dispatch:
+        pending = list(stories_to_dispatch)
+        seen_dispatch: set[str] = set()
+        while pending:
+            story = pending.pop(0)
+            if story in seen_dispatch:
+                continue
+            seen_dispatch.add(story)
             try:
                 attempt = dispatch_once(
                     slug=slug,
@@ -3143,6 +3153,44 @@ def execute_fleet_cycle(
                     detail or "dispatch refused"
                 )
                 refused_any = True
+                if (
+                    parallel_cap <= 1
+                    and dispatch_fleet.is_harness_done_advance_reason(detail or "")
+                ):
+                    follow_blocked = _station_blocked_map(
+                        fs=fs,
+                        vcs=vcs,
+                        process=process,
+                        repo_root=repo_root,
+                        slug=slug,
+                        backlog=backlog,
+                        configured_skips=station_skips,
+                        campaign_blocked=campaign_blocked.get(slug, {}),
+                        effective_policy=effective_policy,
+                    )
+                    follow = dispatch_fleet.plan_station_queue(
+                        slug=slug,
+                        backlog=backlog,
+                        mode=mode,
+                        leave_remaining=leave_remaining,
+                        blocked=follow_blocked,
+                        declared_skips=station_skips,
+                    )
+                    if follow.next_story and follow.next_story not in seen_dispatch:
+                        pending.append(follow.next_story)
+                        findings.append(
+                            Finding(
+                                code="MRS-DRAIN-004",
+                                severity=Severity.WARN,
+                                message=(
+                                    f"station {slug!r}: skipping story {story!r} "
+                                    "(harness-done CAP-4 (MRS-DISP-040); "
+                                    "remaining backlog continues) -- "
+                                    f"{detail}. Dispatching {follow.next_story!r} "
+                                    "this cycle."
+                                ),
+                            )
+                        )
             elif status is dispatch_fleet.StationCycleStatus.DISPATCHED:
                 dispatched_any = True
             elif status is dispatch_fleet.StationCycleStatus.IN_FLIGHT:
