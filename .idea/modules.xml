@@ -588,6 +588,15 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/datashader@3.iml" filepath="$PROJECT_DIR$/.idea/datashader@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/datefinder.iml" filepath="$PROJECT_DIR$/.idea/datefinder.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/dateparser.iml" filepath="$PROJECT_DIR$/.idea/dateparser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt.iml" filepath="$PROJECT_DIR$/.idea/dbgpt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-acc-auto.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-acc-auto.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-acc-flash-attn.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-acc-flash-attn.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-app.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-client.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-ext.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-ext.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-mono.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-mono.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-sandbox.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-sandbox.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/dbgpt-serve.iml" filepath="$PROJECT_DIR$/.idea/dbgpt-serve.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/dbt-adapters.iml" filepath="$PROJECT_DIR$/.idea/dbt-adapters.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/dbt-common.iml" filepath="$PROJECT_DIR$/.idea/dbt-common.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/dbt-core.iml" filepath="$PROJECT_DIR$/.idea/dbt-core.iml" />
@@ -1136,6 +1145,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/long-path@1.iml" filepath="$PROJECT_DIR$/.idea/long-path@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/luigi.iml" filepath="$PROJECT_DIR$/.idea/luigi.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/luigi@1.iml" filepath="$PROJECT_DIR$/.idea/luigi@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lyric-component-ts-transpiling.iml" filepath="$PROJECT_DIR$/.idea/lyric-component-ts-transpiling.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lyric-js-worker.iml" filepath="$PROJECT_DIR$/.idea/lyric-js-worker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lyric-py.iml" filepath="$PROJECT_DIR$/.idea/lyric-py.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lyric-py-worker.iml" filepath="$PROJECT_DIR$/.idea/lyric-py-worker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lyric-task.iml" filepath="$PROJECT_DIR$/.idea/lyric-task.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mapclassify.iml" filepath="$PROJECT_DIR$/.idea/mapclassify.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mapclassify@1.iml" filepath="$PROJECT_DIR$/.idea/mapclassify@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/markdown-it-py.iml" filepath="$PROJECT_DIR$/.idea/markdown-it-py.iml" />
@@ -1567,6 +1581,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/pytest-repeat.iml" filepath="$PROJECT_DIR$/.idea/pytest-repeat.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pytest-rerunfailures.iml" filepath="$PROJECT_DIR$/.idea/pytest-rerunfailures.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pytest-xdist.iml" filepath="$PROJECT_DIR$/.idea/pytest-xdist.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/python.iml" filepath="$PROJECT_DIR$/.idea/python.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/python-Levenshtein.iml" filepath="$PROJECT_DIR$/.idea/python-Levenshtein.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/python-daemon.iml" filepath="$PROJECT_DIR$/.idea/python-daemon.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/python-daemon@1.iml" filepath="$PROJECT_DIR$/.idea/python-daemon@1.iml" />
