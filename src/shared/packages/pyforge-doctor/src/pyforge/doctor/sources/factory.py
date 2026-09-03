@@ -146,10 +146,12 @@ precedent for ``spec_surface_check.py``'s ``--write-baseline``.
 from __future__ import annotations
 
 import fnmatch
+import importlib.util
 import json
 import os
 import re
 import stat
+import sys
 from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
@@ -1273,6 +1275,43 @@ def check_dream_owners(target: Path) -> list[Finding]:
     return out
 
 
+def _load_pixi_env_matrix_module(target: Path):
+    script = target / "scripts" / "pixi_env_matrix.py"
+    mod_name = "pixi_env_matrix_doctor"
+    spec = importlib.util.spec_from_file_location(mod_name, script)
+    if spec is None or spec.loader is None:
+        raise OSError(f"cannot load {script}")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def check_pixi_env_matrix(target: Path) -> list[Finding]:
+    """Dream measured matrix must track ``pixi.lock`` (Story 43.5 / canopy AD-23)."""
+    out: list[Finding] = []
+    dream = target / "docs" / "dreams" / "pyforge-unifying-strategy.md"
+    lock = target / "pixi.lock"
+    if not dream.is_file() or not lock.is_file():
+        return out
+    try:
+        mod = _load_pixi_env_matrix_module(target)
+        if mod.matrix_is_stale(dream, lock):
+            out.append(
+                _finding(
+                    DRIFT,
+                    "pixi-env-matrix-stale",
+                    _rel(dream, target),
+                    "measured Pixi environment matrix is older than pixi.lock — "
+                    "run `python scripts/pixi_env_matrix.py --update --dream "
+                    "docs/dreams/pyforge-unifying-strategy.md`",
+                )
+            )
+    except OSError as exc:
+        out.append(_unevaluable("check_pixi_env_matrix", str(exc), target))
+    return out
+
+
 # ------------------------------------------------------------------- gather
 #: The 13 ported checks, by NAME -- looked up in this module's own globals at
 #: call time inside ``_gather`` (never captured into a tuple of function
@@ -1295,6 +1334,7 @@ _CHECK_NAMES: tuple[str, ...] = (
     "check_spec_indexed",
     "check_dream_owners",
     "check_dream_vocab",
+    "check_pixi_env_matrix",
     "check_coverage",
 )
 
