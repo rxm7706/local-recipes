@@ -7,17 +7,9 @@ from datetime import datetime
 
 import jwt
 from django.conf import settings
-from jwt.exceptions import ExpiredSignatureError
-from jwt.exceptions import InvalidAudienceError
-from jwt.exceptions import InvalidSignatureError
-from jwt.exceptions import PyJWTError
 
 from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import BadSignatureError
-from django_pyforge.assertion.exceptions import ExpiredAssertionError
-from django_pyforge.assertion.exceptions import WrongAudienceError
 from django_pyforge.assertion.schema import ALG
-from django_pyforge.assertion.schema import AUDIENCE_PREFIX
 from django_pyforge.assertion.schema import CLAIM_AUD
 from django_pyforge.assertion.schema import CLAIM_DELEGATED_BY
 from django_pyforge.assertion.schema import CLAIM_EXP
@@ -27,6 +19,7 @@ from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.assertion.schema import DELEGATED_BY
 from django_pyforge.assertion.schema import MAX_TTL_SECONDS
 from django_pyforge.assertion.schema import audience_for
+from django_pyforge.assertion.verify import verify_assertion_claims
 
 
 def _setting_pem(name: str, override: str | None) -> str:
@@ -89,44 +82,6 @@ def verify_assertion(
     audience: str,
     public_pem: str | None = None,
 ) -> dict[str, object]:
+    """Verify with the settings-resolved key. Rules live in ``verify`` (42.1)."""
     pem = _setting_pem("PYFORGE_ASSERTION_PUBLIC_KEY", public_pem)
-    try:
-        claims = jwt.decode(
-            token,
-            pem,
-            algorithms=[ALG],
-            audience=audience,
-            options={
-                "require": [
-                    CLAIM_SUB,
-                    CLAIM_ROLES,
-                    CLAIM_AUD,
-                    CLAIM_EXP,
-                    CLAIM_IAT,
-                    CLAIM_DELEGATED_BY,
-                ],
-            },
-        )
-    except ExpiredSignatureError as exc:
-        raise ExpiredAssertionError from exc
-    except InvalidAudienceError as exc:
-        raise WrongAudienceError from exc
-    except InvalidSignatureError as exc:
-        raise BadSignatureError from exc
-    except PyJWTError as exc:
-        raise AssertionRefusedError from exc
-    if claims.get(CLAIM_DELEGATED_BY) != DELEGATED_BY:
-        msg = "delegated_by is not pyforge-host"
-        raise AssertionRefusedError(msg)
-    iat = int(claims[CLAIM_IAT])
-    exp = int(claims[CLAIM_EXP])
-    if exp - iat > MAX_TTL_SECONDS:
-        msg = "exp exceeds five minutes from iat"
-        raise AssertionRefusedError(msg)
-    aud = claims.get(CLAIM_AUD)
-    if not isinstance(aud, str) or not aud.startswith(AUDIENCE_PREFIX):
-        raise WrongAudienceError
-    if not isinstance(claims.get(CLAIM_ROLES), list):
-        msg = "roles must be a list"
-        raise AssertionRefusedError(msg)
-    return claims
+    return verify_assertion_claims(token, audience=audience, public_pem=pem)

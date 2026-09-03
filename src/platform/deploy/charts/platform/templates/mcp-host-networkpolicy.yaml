@@ -1,0 +1,30 @@
+{{/*
+Story 42.1 (CAP-4, red-team X-5): mcp-host answers MCP with no auth of its
+own, so the namespace must not be able to reach it. Only `web` -- the pod that
+runs dispatch_station_mcp, which verifies the assertion before it proxies --
+may open :8090. mTLS or a mesh policy for that hop is deferred to the steward
+deploy profile; this is the floor, not the ceiling.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.mcpHost.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-host
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-host
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "platform.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: web
+      ports:
+        - protocol: TCP
+          port: 8090

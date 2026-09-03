@@ -154,6 +154,8 @@ def test_mcp_start_audit_returns_handle(monkeypatch):
                 "mcp-protocol-version": "2026-07-28",
                 "mcp-method": "tools/call",
                 "mcp-name": "start_audit",
+                # Story 42.1: the transport gate verifies before it routes.
+                "authorization": f"Bearer {assertion}",
             },
         )
     assert response.status_code == HTTPStatus.OK, response.text

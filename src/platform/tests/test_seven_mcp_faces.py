@@ -7,6 +7,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
+from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_http import SUPPORTED_MCP_REVISIONS
 from django_pyforge.mcp_http import UNSUPPORTED_PROTOCOL_VERSION
@@ -90,6 +91,14 @@ def _host_app(station: str):
     return application
 
 
+def _authorization(station: str) -> str:
+    """Story 42.1: the transport gate verifies before it routes, so every POST
+    through ``dispatch_station_mcp`` carries an assertion for its station.
+    """
+    token = mint_assertion(sub="fixture-21-4", roles=[station], station=station)
+    return f"Bearer {token}"
+
+
 def _post(station: str, payload: dict, headers: dict | None = None):
     with TestClient(_host_app(station)) as client:
         return client.post(
@@ -98,6 +107,7 @@ def _post(station: str, payload: dict, headers: dict | None = None):
             headers={
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
+                "authorization": _authorization(station),
                 **(headers or {}),
             },
         )

@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
+from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.flags import FLAG_KEY
 from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import eval_view
@@ -122,6 +123,13 @@ def _mcp_host():
 
 
 def _mcp_value(key: str) -> bool:
+    # Story 42.1: the flags face sits behind the same transport gate as every
+    # other station, so the fixture carries an `mcp:flags` assertion.
+    authorization = "Bearer " + mint_assertion(
+        sub="flag-fixture",
+        roles=["flags"],
+        station="flags",
+    )
     with TestClient(_mcp_host()) as client:
         init = client.post(
             "/stations/flags/mcp",
@@ -138,6 +146,7 @@ def _mcp_value(key: str) -> bool:
             headers={
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
+                "authorization": authorization,
             },
         )
         assert init.status_code < HTTPStatus.INTERNAL_SERVER_ERROR, init.text
@@ -153,6 +162,7 @@ def _mcp_value(key: str) -> bool:
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
                 "mcp-protocol-version": "2025-03-26",
+                "authorization": authorization,
             },
         )
     assert response.status_code == HTTPStatus.OK, response.text

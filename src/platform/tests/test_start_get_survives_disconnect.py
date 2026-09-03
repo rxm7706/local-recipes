@@ -256,6 +256,8 @@ def test_mcp_start_returns_handle_without_waiting(
                 "mcp-protocol-version": "2026-07-28",
                 "mcp-method": "tools/call",
                 "mcp-name": "start_run_pipeline",
+                # Story 42.1: the transport gate verifies before it routes.
+                "authorization": f"Bearer {atlas_assertion}",
             },
         )
     assert response.status_code == HTTPStatus.OK, response.text
@@ -270,6 +272,43 @@ def test_mcp_start_returns_handle_without_waiting(
     assert McpHandle.objects.filter(handle=handle).exists()
     run = McpHandle.objects.get(handle=handle).run
     assert run.status == RunState.Status.RUNNING
+
+
+@pytest.mark.django_db
+def test_start_is_unreachable_without_a_transport_assertion(
+    monkeypatch,
+    atlas_assertion: str,
+) -> None:
+    """Story 42.1 / red-team T-4: an anonymous `tools/call` never reaches the
+    supervisor, so no run row is created -- the tool-argument assertion is
+    defence in depth BEHIND the transport gate, not the only gate.
+    """
+    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    before = RunState.objects.count()
+    with TestClient(_host_app()) as client:
+        response = client.post(
+            "/stations/atlas/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/call",
+                "params": {
+                    "name": "start_run_pipeline",
+                    "arguments": {"name": "core", "assertion": atlas_assertion},
+                    "_meta": {
+                        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                        "io.modelcontextprotocol/clientCapabilities": {},
+                    },
+                },
+            },
+            headers={
+                "accept": "application/json, text/event-stream",
+                "content-type": "application/json",
+                "mcp-protocol-version": "2026-07-28",
+            },
+        )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED, response.text
+    assert RunState.objects.count() == before
 
 
 def test_survival_is_not_progress_sticky_or_stream_replay() -> None:

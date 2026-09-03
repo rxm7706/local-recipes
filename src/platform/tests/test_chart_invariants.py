@@ -71,6 +71,8 @@ _PLANE_FILE_MARKERS = (".duckdb", "atlas.duckdb")
 _PLANE_PVC_LABEL = "pyforge.io/query-plane"
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
+# Story 21.x / 42.1: the isolated MCP-host sidecar.
+_MCP_HOST_COMPONENT = "mcp-host"
 _REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
 # Story 26.2 / canopy AD-19: env names that must be secretKeyRef, never `value`.
 _SECRET_ENV_NAMES = frozenset(
@@ -870,6 +872,126 @@ def _assert_redis_network_policy_restricts_platform_pods(
     )
 
 
+def _release_scoping_labels(docs: list[dict[str, Any]]) -> dict[str, str]:
+    """The release scoping labels, DERIVED from a rendered workload's own
+    ``spec.selector.matchLabels`` (the ``platform.selectorLabels`` include)
+    rather than re-declared here -- everything but the component key.
+    """
+    for doc in docs:
+        if doc.get("kind") != "Deployment":
+            continue
+        labels = (doc.get("metadata") or {}).get("labels") or {}
+        if labels.get("app.kubernetes.io/component") != _MCP_HOST_COMPONENT:
+            continue
+        match_labels = dict(doc["spec"]["selector"]["matchLabels"])
+        match_labels.pop("app.kubernetes.io/component", None)
+        assert match_labels, (
+            f"the mcp-host Deployment selector carries no scoping labels beyond "
+            f"its component: {doc['spec']['selector']}"
+        )
+        return match_labels
+    msg = "no mcp-host Deployment in the render to derive scoping labels from"
+    raise AssertionError(msg)
+
+
+def _assert_selector_is_release_scoped(
+    selector: dict[str, Any],
+    scoping_labels: dict[str, str],
+    where: str,
+) -> None:
+    """A selector must carry the release scoping labels, not only a component.
+
+    ``app.kubernetes.io/component`` alone matches ANY pod in the namespace
+    carrying that component label -- including one from another release, or one
+    an attacker labels. Dropping the ``platform.selectorLabels`` include from
+    either selector is therefore a silent widening, so both are checked here.
+    """
+    for key, value in sorted(scoping_labels.items()):
+        assert selector.get(key) == value, (
+            f"{where}: selector is not release-scoped -- {key} is "
+            f"{selector.get(key)!r}, expected {value!r} (selector: {selector!r})"
+        )
+
+
+def _assert_mcp_host_network_policy_admits_web_only(
+    docs: list[dict[str, Any]],
+    *,
+    policy_name: str,
+    scoping_labels: dict[str, str],
+) -> None:
+    """Story 42.1 / red-team X-5: exactly one NetworkPolicy selects the
+    mcp-host pods and its only ingress rule admits the ``web`` component of
+    THIS release on TCP/8090. mcp-host carries no auth of its own, so any
+    second admitted peer -- another component, another namespace, or any pod
+    that merely wears the ``web`` component label -- is a namespace-wide (or
+    cluster-wide) unauthenticated MCP server.
+    """
+    policies = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"] == policy_name
+    ]
+    rendered = [
+        doc["metadata"]["name"] for doc in docs if doc.get("kind") == "NetworkPolicy"
+    ]
+    assert len(policies) == 1, (
+        f"expected exactly one mcp-host NetworkPolicy named {policy_name!r}, "
+        f"got {rendered}"
+    )
+    policy = policies[0]
+    selector = policy["spec"]["podSelector"].get("matchLabels", {})
+    assert selector.get("app.kubernetes.io/component") == _MCP_HOST_COMPONENT, (
+        f"mcp-host NetworkPolicy selects {selector!r}, not the mcp-host component"
+    )
+    _assert_selector_is_release_scoped(
+        selector,
+        scoping_labels,
+        "mcp-host NetworkPolicy podSelector",
+    )
+    assert policy["spec"].get("policyTypes") == ["Ingress"], policy["spec"]
+
+    ingress_rules = policy["spec"].get("ingress") or []
+    assert len(ingress_rules) == 1, (
+        f"mcp-host NetworkPolicy must have exactly one ingress rule, got "
+        f"{ingress_rules!r}"
+    )
+    rule = ingress_rules[0]
+    from_entries = rule.get("from") or []
+    assert len(from_entries) == 1, (
+        f"mcp-host ingress.from must have one podSelector entry, got {from_entries!r}"
+    )
+    # A peer is the UNION of its keys: a namespaceSelector or ipBlock sitting
+    # beside the podSelector widens the rule to web-labelled pods in any
+    # namespace (or to raw CIDRs), which is precisely the X-5 exposure.
+    entry_keys = set(from_entries[0])
+    assert entry_keys == {"podSelector"}, (
+        f"mcp-host ingress peer must be a podSelector and nothing else, got "
+        f"{sorted(entry_keys)}"
+    )
+    pod_selector = from_entries[0].get("podSelector") or {}
+    # A matchExpressions branch would be a second way to widen the rule --
+    # require the single-component matchLabels form, nothing else.
+    assert not pod_selector.get("matchExpressions"), (
+        f"mcp-host ingress must admit web by matchLabels only, got {pod_selector!r}"
+    )
+    admitted_labels = pod_selector.get("matchLabels") or {}
+    admitted = admitted_labels.get("app.kubernetes.io/component")
+    assert admitted == "web", (
+        f"mcp-host ingress admits {admitted!r}; only web reaches the sidecar "
+        f"(Story 42.1 -- web is where the assertion is verified)"
+    )
+    _assert_selector_is_release_scoped(
+        admitted_labels,
+        scoping_labels,
+        "mcp-host NetworkPolicy ingress podSelector",
+    )
+    ports = rule.get("ports") or []
+    assert ports == [{"protocol": "TCP", "port": 8090}], (
+        f"mcp-host NetworkPolicy must allow TCP/8090 only, got {ports!r}"
+    )
+
+
 def _assert_liquibase_then_fake_migrate_jobs(docs: list[dict[str, Any]]) -> None:
     """Story 27.2 / FR-24 / canopy AD-9: two hook Jobs, weights -1 then 0,
     same platform image as web, no initContainers, liquibase update then
@@ -1189,9 +1311,6 @@ def test_platform_pods_wire_dbgpt_sidecar_base_url_to_internal_service():
         assert "localhost" not in dbgpt_env.get("value", "")
 
 
-_MCP_HOST_COMPONENT = "mcp-host"
-
-
 @requires_helm
 def test_mcp_host_deployment_and_service_restricted_v2():
     """AC (spec-mcp-era-isolation): mcp-host Deployment + ClusterIP Service
@@ -1381,6 +1500,224 @@ def test_redis_network_policy_restricts_ingress_to_platform_pods():
             redis_policy_name=policy["metadata"]["name"],
             redis_component=component,
         )
+
+
+@requires_helm
+def test_mcp_host_network_policy_admits_web_pods_only():
+    """AC (Story 42.1): the default render carries a NetworkPolicy that lets
+    only ``web`` reach mcp-host:8090, and the Redis policies are unchanged by
+    it (they keep their own web/worker/migrate rule on 6379).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    named = [
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _MCP_HOST_COMPONENT
+    ]
+    assert len(named) == 1, (
+        f"the default render must carry exactly one mcp-host NetworkPolicy "
+        f"(red-team X-5: without it any pod in the namespace can call the "
+        f"sidecar), got {named}"
+    )
+    _assert_mcp_host_network_policy_admits_web_only(
+        docs,
+        policy_name=named[0],
+        scoping_labels=_release_scoping_labels(docs),
+    )
+
+    redis_policies = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and str(
+            doc["spec"]["podSelector"]
+            .get("matchLabels", {})
+            .get("app.kubernetes.io/component", ""),
+        ).startswith("redis-")
+    ]
+    assert len(redis_policies) == len(_REDIS_COMPONENTS), redis_policies
+    for policy in redis_policies:
+        _assert_redis_network_policy_restricts_platform_pods(
+            docs,
+            redis_policy_name=policy["metadata"]["name"],
+            redis_component=policy["spec"]["podSelector"]["matchLabels"][
+                "app.kubernetes.io/component"
+            ],
+        )
+
+
+# The scoping labels a synthetic mcp-host policy must carry to be release-scoped
+# (the shape `platform.selectorLabels` renders; the real proof DERIVES its own).
+_FIXTURE_SCOPING_LABELS = {
+    "app.kubernetes.io/name": "platform",
+    "app.kubernetes.io/instance": "platform",
+}
+
+
+def _mcp_host_policy_fixture(
+    *,
+    peer: dict[str, Any] | None = None,
+    ports: list[dict[str, Any]] | None = None,
+    pod_selector_labels: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """A synthetic, otherwise-conforming mcp-host NetworkPolicy document."""
+    return [
+        {
+            "kind": "NetworkPolicy",
+            "metadata": {"name": "platform-mcp-host"},
+            "spec": {
+                "podSelector": {
+                    "matchLabels": pod_selector_labels
+                    if pod_selector_labels is not None
+                    else {
+                        **_FIXTURE_SCOPING_LABELS,
+                        "app.kubernetes.io/component": "mcp-host",
+                    },
+                },
+                "policyTypes": ["Ingress"],
+                "ingress": [
+                    {
+                        "from": [
+                            peer
+                            if peer is not None
+                            else {
+                                "podSelector": {
+                                    "matchLabels": {
+                                        **_FIXTURE_SCOPING_LABELS,
+                                        "app.kubernetes.io/component": "web",
+                                    },
+                                },
+                            },
+                        ],
+                        "ports": ports
+                        if ports is not None
+                        else [{"protocol": "TCP", "port": 8090}],
+                    },
+                ],
+            },
+        },
+    ]
+
+
+def _check_mcp_host_policy_fixture(docs: list[dict[str, Any]]) -> None:
+    _assert_mcp_host_network_policy_admits_web_only(
+        docs,
+        policy_name="platform-mcp-host",
+        scoping_labels=_FIXTURE_SCOPING_LABELS,
+    )
+
+
+def test_mcp_host_network_policy_fixture_passes_the_check():
+    """The fixture itself is conforming -- otherwise every companion below
+    could be passing for the wrong reason.
+    """
+    _check_mcp_host_policy_fixture(_mcp_host_policy_fixture())
+
+
+def test_mcp_host_network_policy_check_fails_when_a_second_component_is_admitted():
+    """A policy that also admits `worker` must raise (guard removed)."""
+    contaminated = _mcp_host_policy_fixture(
+        peer={
+            "podSelector": {
+                "matchExpressions": [
+                    {
+                        "key": "app.kubernetes.io/component",
+                        "operator": "In",
+                        "values": ["web", "worker"],
+                    },
+                ],
+            },
+        },
+    )
+
+    with pytest.raises(AssertionError, match="matchLabels only"):
+        _check_mcp_host_policy_fixture(contaminated)
+
+
+def test_mcp_host_network_policy_check_fails_when_the_policy_is_missing():
+    """No mcp-host policy at all must raise, not pass vacuously."""
+    with pytest.raises(AssertionError, match="exactly one mcp-host NetworkPolicy"):
+        _assert_mcp_host_network_policy_admits_web_only(
+            [{"kind": "NetworkPolicy", "metadata": {"name": "platform-redis-cache"}}],
+            policy_name="platform-mcp-host",
+            scoping_labels=_FIXTURE_SCOPING_LABELS,
+        )
+
+
+def test_mcp_host_network_policy_check_fails_on_a_wide_open_port():
+    """A rule that opens a port other than 8090 must raise."""
+    contaminated = _mcp_host_policy_fixture(ports=[])
+
+    with pytest.raises(AssertionError, match="TCP/8090 only"):
+        _check_mcp_host_policy_fixture(contaminated)
+
+
+def test_mcp_host_network_policy_check_fails_on_a_namespace_selector_peer():
+    """A namespaceSelector beside the podSelector admits web-labelled pods in
+    ANY namespace -- the X-5 exposure -- and must raise (guard removed).
+    """
+    contaminated = _mcp_host_policy_fixture(
+        peer={
+            "podSelector": {
+                "matchLabels": {
+                    **_FIXTURE_SCOPING_LABELS,
+                    "app.kubernetes.io/component": "web",
+                },
+            },
+            "namespaceSelector": {},
+        },
+    )
+
+    with pytest.raises(AssertionError, match="podSelector and nothing else"):
+        _check_mcp_host_policy_fixture(contaminated)
+
+
+def test_mcp_host_network_policy_check_fails_on_an_ip_block_peer():
+    """An ipBlock beside the podSelector admits raw CIDRs; must raise."""
+    contaminated = _mcp_host_policy_fixture(
+        peer={
+            "podSelector": {
+                "matchLabels": {
+                    **_FIXTURE_SCOPING_LABELS,
+                    "app.kubernetes.io/component": "web",
+                },
+            },
+            "ipBlock": {"cidr": "0.0.0.0/0"},
+        },
+    )
+
+    with pytest.raises(AssertionError, match="podSelector and nothing else"):
+        _check_mcp_host_policy_fixture(contaminated)
+
+
+def test_mcp_host_network_policy_check_fails_when_the_ingress_peer_loses_scoping():
+    """Dropping the selectorLabels include from the ingress selector widens the
+    rule to any pod in the namespace labelled `component: web`; must raise.
+    """
+    contaminated = _mcp_host_policy_fixture(
+        peer={
+            "podSelector": {
+                "matchLabels": {"app.kubernetes.io/component": "web"},
+            },
+        },
+    )
+
+    with pytest.raises(AssertionError, match="not release-scoped"):
+        _check_mcp_host_policy_fixture(contaminated)
+
+
+def test_mcp_host_network_policy_check_fails_when_the_policy_selector_loses_scoping():
+    """Dropping the selectorLabels include from the policy's own podSelector
+    makes it govern another release's mcp-host too; must raise.
+    """
+    contaminated = _mcp_host_policy_fixture(
+        pod_selector_labels={"app.kubernetes.io/component": "mcp-host"},
+    )
+
+    with pytest.raises(AssertionError, match="not release-scoped"):
+        _check_mcp_host_policy_fixture(contaminated)
 
 
 @requires_helm

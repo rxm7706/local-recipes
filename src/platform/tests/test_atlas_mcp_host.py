@@ -10,6 +10,7 @@ import pytest
 from mcp.server.mcpserver import MCPServer
 from starlette.testclient import TestClient
 
+from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.mcp_http import (
     SUPPORTED_MCP_REVISIONS,
     UNSUPPORTED_PROTOCOL_VERSION,
@@ -92,6 +93,14 @@ def _host_app():
     return application
 
 
+def _authorization(station: str = "atlas") -> str:
+    """Story 42.1: the transport gate verifies before it routes, so every POST
+    through ``dispatch_station_mcp`` carries an assertion for its station.
+    """
+    token = mint_assertion(sub="fixture-21-2", roles=[station], station=station)
+    return f"Bearer {token}"
+
+
 def _post(path: str, payload: dict, headers: dict | None = None):
     with TestClient(_host_app()) as client:
         return client.post(
@@ -100,6 +109,7 @@ def _post(path: str, payload: dict, headers: dict | None = None):
             headers={
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
+                "authorization": _authorization(),
                 **(headers or {}),
             },
         )
