@@ -20,6 +20,15 @@ class RunState(models.Model):
         RUNNING = "running", "running"
         SUCCEEDED = "succeeded", "succeeded"
         FAILED = "failed", "failed"
+        # Story 42.2: an operator revoked this subject. Terminal, and distinct
+        # from FAILED because the run never got to fail -- conflating the two
+        # would make "how often does this station break?" unanswerable.
+        CANCELLED = "cancelled", "cancelled"
+
+    #: Terminal statuses. A row in one of these is finished and prunable.
+    TERMINAL_STATUSES = ("succeeded", "failed", "cancelled")
+    #: In-flight statuses. These are what the run bounds count (Story 42.2).
+    LIVE_STATUSES = ("pending", "running")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     station = models.CharField(max_length=64, default="")
@@ -28,6 +37,14 @@ class RunState(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
+    # Story 42.2: the `sub` claim of the assertion that published this run.
+    # The run bounds count by this, and `revoke --sub` selects by it, so the
+    # subject has to be on the run row and not only on its handle.
+    subject = models.CharField(max_length=255, default="")
+    # The Celery task id this run was published with. Chosen before the task is
+    # sent (never read back from the result), so revoke can name a task that is
+    # still only queued.
+    celery_task_id = models.CharField(max_length=255, default="")
     result = models.JSONField(null=True, blank=True)
     started_at = models.DateTimeField(blank=True, null=True)
     heartbeat_at = models.DateTimeField(blank=True, null=True)
@@ -36,10 +53,30 @@ class RunState(models.Model):
 
     class Meta:
         db_table = "run_state"
+        # Named explicitly rather than left to Django's hashed default: these
+        # back the two hot bound queries (live runs per subject, per station)
+        # and the revoke selection, and a named index is one an operator can
+        # recognise in `pg_indexes` and a changeset can reproduce verbatim.
+        indexes = [
+            models.Index(
+                fields=["subject", "status"],
+                name="run_state_subject_status",
+            ),
+            models.Index(
+                fields=["station", "status"],
+                name="run_state_station_status",
+            ),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(
-                    status__in=("pending", "running", "succeeded", "failed"),
+                    status__in=(
+                        "pending",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled",
+                    ),
                 ),
                 name="run_state_status_valid",
             ),

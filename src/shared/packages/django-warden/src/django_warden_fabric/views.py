@@ -24,6 +24,8 @@ from django_pyforge.roles import roles_from_request
 from django_pyforge.supervisor import HandleExpiredError
 from django_pyforge.supervisor import HandleNotFoundError
 from django_pyforge.supervisor import HandleRefusedError
+from django_pyforge.supervisor import RunBoundExceeded
+from django_pyforge.supervisor import bound_refusal_payload
 
 from .mcp_asgi import RUN_AUDIT_TOOL
 from .mcp_asgi import WARDEN_STATION
@@ -78,13 +80,24 @@ def start_audit(request: HttpRequest) -> HttpResponse:
         target = "."
     else:
         target = target.strip()
-    handle = PortalClient().start(
-        station=WARDEN_STATION,
-        sub=sub,
-        roles=roles,
-        tool=RUN_AUDIT_TOOL,
-        payload={"target": target},
-    )
+    try:
+        handle = PortalClient().start(
+            station=WARDEN_STATION,
+            sub=sub,
+            roles=roles,
+            tool=RUN_AUDIT_TOOL,
+            payload={"target": target},
+        )
+    except RunBoundExceeded as exc:
+        # Story 42.2: the bound decides the status, not this view, and the body
+        # is `bound_refusal_payload` -- the SAME projection the MCP `start`
+        # tools carry -- so the two faces refuse one condition identically
+        # rather than each describing it their own way.
+        return JsonResponse(
+            bound_refusal_payload(exc),
+            status=int(exc.status),
+            headers=exc.headers(),
+        )
     return render(request, "warden_fabric/audit_started.html", {"handle": handle})
 
 

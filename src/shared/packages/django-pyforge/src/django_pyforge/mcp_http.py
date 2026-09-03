@@ -9,6 +9,12 @@ before either route is taken, because this dispatch runs ahead of every Django
 middleware; and the sidecar hop streams, carries only a header allowlist whose
 credential is the assertion this host verified, and budgets at least the Celery
 hard limit instead of five seconds.
+
+Story 42.2 (CAP-11, red-team A-6): the verified ``sub`` is then charged a token
+in ``rate_limit``, so a looping agent meets 429 here rather than filling
+PostgreSQL and the broker behind it. The limiter runs after the gate on
+purpose — an unverified caller has no subject to charge, and charging one it
+merely claimed would let any client drain another's allowance.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
+from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_auth import TransportRefusal
 from django_pyforge.mcp_auth import authorize_station_scope
@@ -39,6 +46,8 @@ from django_pyforge.mcp_dual_era import (  # noqa: F401
     read_body,
     send_http,
 )
+from django_pyforge.rate_limit import MCP_SCOPE
+from django_pyforge.rate_limit import consume
 
 logger = logging.getLogger(__name__)
 
@@ -143,14 +152,58 @@ def loaded_station_mcp_apps() -> dict[str, Any]:
     return _mcp_apps
 
 
+def station_rate_refusal(claims: dict[str, Any]) -> TransportRefusal | None:
+    """Charge this call to its verified ``sub``; ``None`` when it may proceed.
+
+    Every refusal here is 429 with a ``Retry-After``, including the one raised
+    because the limiter's own store did not answer: an agent that cannot be
+    counted must not be admitted (the fail-closed clause), and telling it when
+    to come back is the difference between backpressure and a black hole.
+    """
+    subject = claims.get(CLAIM_SUB)
+    subject = subject if isinstance(subject, str) else ""
+    decision = consume(MCP_SCOPE, subject)
+    if decision.allowed:
+        return None
+    return TransportRefusal(
+        HTTPStatus.TOO_MANY_REQUESTS,
+        "rate limited",
+        decision.reason,
+        retry_after=decision.retry_after,
+    )
+
+
+async def _refuse(send: Any, station: str, refusal: TransportRefusal) -> None:
+    """Log the refusal structurally, then send it. One shape for every gate."""
+    logger.warning(
+        "mcp.transport_refused",
+        extra={
+            "event": "mcp.transport_refused",
+            "station": station,
+            "status": int(refusal.status),
+            "reason": refusal.reason,
+        },
+    )
+    await send_http(
+        send,
+        refusal.status,
+        refusal.body(),
+        extra_headers=refusal.headers() or None,
+    )
+
+
 async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -> bool:
-    """Authorize, then route to the sidecar proxy or the in-process app.
+    """Authorize, rate-limit, then route to the sidecar proxy or the app.
 
     The gate is here rather than in a middleware because nothing downstream of
     this call is a middleware: this dispatch runs first. It reads headers only,
     so every JSON-RPC method -- ``initialize`` and ``tools/list`` included --
     passes through it (red-team T-4), and the request body reaches the station
     unread.
+
+    The limiter runs between the two, so a refused subject costs neither a
+    sidecar hop nor a station call (red-team A-6), and an unverified caller
+    never gets to spend a subject's allowance.
     """
     station = match_station_mcp(scope["path"])
     if station is None:
@@ -169,16 +222,11 @@ async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -
         return True
     authorized = authorize_station_scope(scope, station)
     if isinstance(authorized, TransportRefusal):
-        logger.warning(
-            "mcp.transport_refused",
-            extra={
-                "event": "mcp.transport_refused",
-                "station": station,
-                "status": int(authorized.status),
-                "reason": authorized.reason,
-            },
-        )
-        await send_http(send, authorized.status, authorized.body())
+        await _refuse(send, station, authorized)
+        return True
+    limited = station_rate_refusal(authorized.claims)
+    if limited is not None:
+        await _refuse(send, station, limited)
         return True
     base = sidecar_base_url()
     if base:

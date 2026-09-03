@@ -14,6 +14,7 @@ distributions:
       django_pyforge.0001_supervisor_tables: 3
       django_pyforge.0002_run_result_and_handle_subject: 4
       django_pyforge.0003_run_state_timing: 5
+      django_pyforge.0004_run_bounds: 20
       users.0001_initial: 6
       users.0002_user_idp_subject: 7
       front_door.0001_homepage: 8

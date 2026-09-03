@@ -85,7 +85,7 @@ def test_start_returns_before_work_finishes(monkeypatch, atlas_assertion: str) -
     def capture_delay(*args: object, **kwargs: object) -> None:
         delayed.append((args, kwargs))
 
-    monkeypatch.setattr(execute_supervised_run, "delay", capture_delay)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", capture_delay)
     handle = publish_start(
         station="atlas",
         assertion=atlas_assertion,
@@ -111,14 +111,16 @@ def test_disconnect_then_get_does_not_recompute(
     def capture_delay(*args: object, **kwargs: object) -> None:
         delayed.append((args, kwargs))
 
-    monkeypatch.setattr(execute_supervised_run, "delay", capture_delay)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", capture_delay)
     handle = publish_start(
         station="atlas",
         assertion=atlas_assertion,
         payload={"name": "core"},
     )
-    args, _kwargs = delayed[0]
-    execute_supervised_run(*args)
+    _args, kwargs = delayed[0]
+    # Story 42.2: the enqueue is `apply_async` (it carries the `sub` header and
+    # the pre-minted task id), so the positional args live under `args=`.
+    execute_supervised_run(*kwargs["args"])
     first = get_run(station="atlas", handle=handle, assertion=atlas_assertion)
     second = get_run(station="atlas", handle=handle, assertion=atlas_assertion)
     assert first["status"] == RunState.Status.SUCCEEDED
@@ -131,7 +133,7 @@ def test_disconnect_then_get_does_not_recompute(
 def test_get_succeeds_on_a_second_connection(monkeypatch, atlas_assertion: str) -> None:
     calls: dict[str, int] = {"n": 0}
     _register_counting_runner(calls)
-    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
     handle = publish_start(
         station="atlas",
         assertion=atlas_assertion,
@@ -167,7 +169,7 @@ def test_possession_without_assertion_is_refused(
     monkeypatch,
     atlas_assertion: str,
 ) -> None:
-    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
     handle = publish_start(
         station="atlas",
         assertion=atlas_assertion,
@@ -187,7 +189,7 @@ def test_handles_are_opaque_high_entropy_and_ttl(
     monkeypatch,
     atlas_assertion: str,
 ) -> None:
-    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
     token = mint_handle()
     assert len(token) >= HANDLE_ENTROPY_BYTES
     assert token.isalnum() or "-" in token or "_" in token
@@ -233,7 +235,7 @@ def test_mcp_start_returns_handle_without_waiting(
     monkeypatch,
     atlas_assertion: str,
 ) -> None:
-    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
     with TestClient(_host_app()) as client:
         response = client.post(
             "/stations/atlas/mcp",
@@ -283,7 +285,7 @@ def test_start_is_unreachable_without_a_transport_assertion(
     supervisor, so no run row is created -- the tool-argument assertion is
     defence in depth BEHIND the transport gate, not the only gate.
     """
-    monkeypatch.setattr(execute_supervised_run, "delay", lambda *a, **k: None)
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
     before = RunState.objects.count()
     with TestClient(_host_app()) as client:
         response = client.post(

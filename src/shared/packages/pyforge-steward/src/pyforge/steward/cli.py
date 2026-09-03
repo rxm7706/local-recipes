@@ -37,7 +37,8 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
 # `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
 # `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
-# `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap).
+# `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
+# `revoke` (Epic 42, Story 42.2 — stop one runaway subject).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -53,6 +54,7 @@ DUTIES: tuple[str, ...] = (
     "initrepo",
     "validate-fast",
     "restore",
+    "revoke",
 )
 
 _HELP = {
@@ -108,6 +110,10 @@ _HELP = {
         "PostgreSQL restore drill — scratch DB + manifest count assertions "
         "(Story 41.1; operator full restore is deploy/restore.md)"
     ),
+    "revoke": (
+        "stop one runaway subject — revoke its queued Celery tasks and cancel "
+        "its live supervisor runs (Story 42.2)"
+    ),
 }
 
 
@@ -155,6 +161,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_suite_subparsers(duty_parser)
         elif name == "restore":
             _add_restore_subparsers(duty_parser)
+        elif name == "revoke":
+            _add_revoke_arguments(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -277,6 +285,30 @@ def _add_restore_subparsers(restore_parser: argparse.ArgumentParser) -> None:
         required=True,
         metavar="PATH",
         help="directory holding manifest.json (e.g. .../backup/base/latest)",
+    )
+
+
+def _add_revoke_arguments(revoke_parser: argparse.ArgumentParser) -> None:
+    """Story 42.2: flags directly on the duty, mirroring `provision`/`restore`.
+
+    No verb subcommand, because the spec's grammar is exactly
+    `pyforge steward revoke --sub <id>` — inventing `revoke subject <id>`
+    beside it would be a second spelling of one operation.
+    """
+    revoke_parser.add_argument(
+        "--sub",
+        required=True,
+        metavar="ID",
+        help="the assertion `sub` claim whose tasks and runs are revoked",
+    )
+    revoke_parser.add_argument(
+        "--python",
+        default=None,
+        metavar="BIN",
+        help=(
+            "interpreter that can import the platform's Django "
+            "(default: the one running steward)"
+        ),
     )
 
 
@@ -911,6 +943,10 @@ def resolve_duty(name: str) -> Duty:
         from .restore import RestoreDuty
 
         return RestoreDuty()
+    if name == "revoke":
+        from .revoke import RevokeDuty
+
+        return RevokeDuty()
     return NullDuty(name)
 
 
