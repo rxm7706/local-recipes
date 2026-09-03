@@ -373,10 +373,11 @@ def _spec_text_prefer_worktree(
 ) -> str:
     """Prefer the worktree copy: main often still says ready-for-dev."""
     try:
-        relative = spec_path.resolve().relative_to(repo_root.resolve())
+        worktree_spec = dispatch_core.relocated_spec_path(
+            spec_path, repo_root, worktree
+        )
     except ValueError:
         return main_text
-    worktree_spec = worktree / relative
     try:
         if worktree_spec.is_file():
             return worktree_spec.read_text(encoding="utf-8")
@@ -1561,6 +1562,20 @@ def dispatch_once(
         )
         return _done()
     data["worktree_path"] = str(worktree)
+    try:
+        spec_path = dispatch_core.relocated_spec_path(
+            spec_path, repo_root, worktree
+        )
+    except ValueError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-005",
+                severity=Severity.ERROR,
+                message=f"cannot relocate spec into dispatch worktree: {exc}",
+            )
+        )
+        return _done()
+    data["spec_path"] = str(spec_path)
 
     try:
         baseline_head_sha = vcs.worktree_head_sha(worktree)
