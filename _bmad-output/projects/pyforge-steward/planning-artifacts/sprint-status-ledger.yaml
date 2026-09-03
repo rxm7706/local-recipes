@@ -141,7 +141,7 @@ development_status:
   43-2-station-api-contract: done
   43-3-in-process-station-port-no-self-call: done
   43-4-golden-path-cd-by-digest: done
-  43-5-one-interpreter-story: backlog
+  43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
