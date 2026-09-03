@@ -108,6 +108,12 @@ Marshal's chain iff its Dream is `owner: marshal`.
   while writing it: a stale feed silently overwrote the tracked ledger and
   dropped six `done` keys while reporting success — terminal states are now
   monotonic, and a write that un-finishes a story is refused and named.
+  **2026-09-02 leftover:** 15.2 promoted on the operator `main` checkout
+  after GitHub already moved `origin/main`, so every land left local
+  `main` diverged. Isolation belongs in a throwaway worktree on the
+  remote tip (same lesson as Story 4.3 `merge_branch`), not on `main`
+  and not on the story dispatch branch. See [[sprint-status-auto-promote]]
+  and CAP-5.
 - **Dashboard path derivation** → **FR-140..143**. `generate.py` string-glued
   slugs onto project paths in several places, each with its own patch; a `TODO`
   in the code named the gap. One resolver, one override table, derived
@@ -272,6 +278,11 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   feed the pre-existing Open Question 17 (installer verb mapping, still
   undecided). The four original standalone documents survive at
   `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/`.
+- **2026-09-02** — landing-to-ledger leftover: promote-on-operator-`main`
+  after `gh pr merge` (41.3 / 41.4 / 42.1). Bound as CAP-5 on
+  [[sprint-status-auto-promote]]; land must publish the twin from an
+  isolated worktree onto `origin/<base>` and never commit on the shared
+  checkout.
 - **2026-08-21** — **AD-61 corrected: a real, live defect in the never-write
   guard.** Story 10.7's own implementation work found that `docs/dreams/*.md`
   and `**/planning-artifacts/**` are `never_write` patterns while the

@@ -1871,6 +1871,9 @@ contract** (§ 17).
 Landing triggers ledger promotion mechanically.
 **Consequences:** a landed story's tracked-ledger entry is current without a separately
 remembered command; the trigger is deterministic, not heuristic.
+**2026-09-02:** the promote commit is published onto `origin/<base>` from an
+isolated detached worktree (CAP-5). It must not be committed on the operator
+`main` checkout — that leftover diverged local `main` after every `gh pr merge`.
 
 #### FR-137: Staleness is detectable on its own
 A check answers "is the tracked ledger behind git?" independently of any run.
