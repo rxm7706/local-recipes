@@ -1,4 +1,4 @@
-"""Stage 1: required-settings refusals at settings import (CAP-3).
+"""Stage 1: settings-import refusals (CAP-3).
 
 Called in two places from ``config.settings.production``:
 
@@ -7,7 +7,13 @@ Called in two places from ``config.settings.production``:
    that names the setting and its remedy, rather than an opaque django-environ
    mid-import failure.
 2. ``run_stage_one(sys.modules[__name__])`` — last statement of the leaf, after
-   composition, for any namespace checks that belong at import time.
+   composition, so conditions that read composed values see the final state.
+
+Conditions, in the order ``run_stage_one`` evaluates them:
+
+* ``refuse_required_settings`` — deployed env keys that must be supplied.
+* ``refuse_unverified_broker_tls`` — Story 41.4 / CAP-12: a deployed broker is
+  verified TLS or it does not boot. Reads the composed ``CELERY_BROKER_URL``.
 
 Every condition is deployed-only (``is_deployed()`` early return).
 
@@ -17,12 +23,14 @@ Portions adapted from millsks/django-15-factor-base (MIT License).
 from __future__ import annotations
 
 import os
+import ssl
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Final
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config import broker_tls
 from config.locality import is_deployed
 
 if TYPE_CHECKING:
@@ -32,6 +40,7 @@ __all__ = [
     "REQUIRED_SETTINGS",
     "RequiredSetting",
     "refuse_required_settings",
+    "refuse_unverified_broker_tls",
     "run_stage_one",
 ]
 
@@ -144,13 +153,65 @@ def refuse_required_settings() -> None:
             raise ImproperlyConfigured(message)
 
 
+def refuse_unverified_broker_tls(settings_module: ModuleType | None = None) -> None:
+    """Refuse a deployed component whose broker TLS would not be verified.
+
+    Story 41.4 / CAP-12 (red-team X-2 → R-14). Three forbidden states, each
+    named in its message:
+
+    1. an unrecognised ``COMPONENT_BROKER_SSL_CERT_REQS`` value;
+    2. a policy weaker than ``CERT_REQUIRED`` while deployed — encrypted but
+       unauthenticated is the exact posture this story removes;
+    3. a ``rediss://`` broker with no CA trust source to verify it against.
+
+    Case 2 branches on the *verify mode* rather than the policy name, so a
+    weaker rung added to ``CERT_REQS_BY_NAME`` later cannot become deployable
+    by omission.
+
+    The broker URL comes from the composed ``CELERY_BROKER_URL`` on
+    *settings_module* when there is one — the URL Celery will actually connect
+    with — rather than a re-derivation that django-environ's
+    ``REDIS_BROKER_URL_FILE`` handling could disagree with.
+
+    ``config.broker_tls`` already composes ``CERT_REQUIRED`` for every one of
+    these, so the refusal is the operator-facing half of a posture that is
+    already fail-closed, never the only thing standing between production and
+    ``CERT_NONE``.
+
+    Args:
+        settings_module: The leaf settings module being validated, if any.
+
+    Raises:
+        ImproperlyConfigured: Message always names the env key and its remedy.
+    """
+    if not is_deployed():
+        return
+
+    requested = broker_tls.requested_cert_reqs_name()
+    mode = broker_tls.CERT_REQS_BY_NAME.get(requested)
+    if mode is None:
+        raise ImproperlyConfigured(broker_tls.unrecognised_policy_message(requested))
+
+    if mode != ssl.CERT_REQUIRED:
+        raise ImproperlyConfigured(
+            broker_tls.unverified_when_deployed_message(requested),
+        )
+
+    broker_url = broker_tls.broker_url_from_settings(settings_module)
+    if broker_tls.is_tls_broker(broker_url) and not broker_tls.resolve_ca_trust():
+        raise ImproperlyConfigured(broker_tls.no_ca_trust_message())
+
+
 def run_stage_one(settings_module: ModuleType, /) -> None:
     """Evaluate every stage-1 condition against a settings module being composed.
 
-    The ``settings_module`` argument is required for call-site uniformity with
-    the django-15-factor-base pattern (conditions that read composed names use
-    ``getattr`` on it). CAP-3 stage 1 currently validates required env keys via
-    ``os.environ``; the module is accepted and reserved for later conditions.
+    Conditions run in this order:
+
+    1. :func:`refuse_required_settings` — deployed env keys that must be
+       supplied. Reads ``os.environ``; it runs before django-environ would.
+    2. :func:`refuse_unverified_broker_tls` — Story 41.4 / CAP-12. Reads the
+       *composed* ``CELERY_BROKER_URL`` off ``settings_module``, which is why
+       this entry point takes one and why leaves call it last.
 
     Args:
         settings_module: The leaf settings module (``sys.modules[__name__]``).
@@ -161,6 +222,5 @@ def run_stage_one(settings_module: ModuleType, /) -> None:
     if not is_deployed():
         return
 
-    # Reserved for namespace-based conditions; silence unused-arg linters.
-    _ = settings_module
     refuse_required_settings()
+    refuse_unverified_broker_tls(settings_module)

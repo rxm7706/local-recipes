@@ -4,7 +4,6 @@
 import importlib.util
 import json
 import os
-import ssl
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -13,6 +12,9 @@ import environ
 from django.urls import reverse_lazy
 
 from config.authorization.claims import load_claims_contract
+from config.broker_tls import DEFAULT_REDIS_URL
+from config.broker_tls import broker_use_ssl
+from config.broker_tls import is_tls_broker
 from config.observability.logging import build_logging_config
 from config.observability.logging import configure_structlog
 
@@ -372,10 +374,10 @@ configure_structlog()
 # carries request_id into the Celery tasks a request enqueues.
 DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
-REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+REDIS_URL = env("REDIS_URL", default=DEFAULT_REDIS_URL)
 REDIS_BROKER_URL = env("REDIS_BROKER_URL", default=REDIS_URL)
 REDIS_CACHE_URL = env("REDIS_CACHE_URL", default=REDIS_URL)
-REDIS_SSL = REDIS_BROKER_URL.startswith("rediss://")
+REDIS_SSL = is_tls_broker(REDIS_BROKER_URL)
 
 from platformapp.front_door.lane1_runtime import locmem_cache_aliases  # noqa: E402
 
@@ -395,7 +397,10 @@ if USE_TZ:
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
 CELERY_BROKER_URL = REDIS_BROKER_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
-CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
+# Story 41.4 / CAP-12 (red-team X-2 → R-14): a rediss:// broker is VERIFIED
+# against the corporate CA bundle. CERT_NONE is laptop-only and refused at
+# stage 1 when deployed -- see config/broker_tls.py for the whole posture.
+CELERY_BROKER_USE_SSL = broker_use_ssl(REDIS_BROKER_URL)
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
 CELERY_RESULT_BACKEND = REDIS_BROKER_URL
 # Story 40.2 / canopy AD-12: every call site is fire-and-forget (.delay()
