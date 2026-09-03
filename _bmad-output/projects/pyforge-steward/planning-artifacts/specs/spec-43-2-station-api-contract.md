@@ -2,9 +2,10 @@
 title: "Station API contract and the /api/v1 collision"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
+status: "in-progress"
+updated: "2026-09-03"
 baseline_commit: "58ee07a0"
+baseline_revision: "e26da35a8b7709ce19cdd511702682381a4f4802"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"

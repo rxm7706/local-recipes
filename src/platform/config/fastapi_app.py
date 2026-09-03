@@ -1,19 +1,20 @@
 """FastAPI sub-app mounted at ``/api/`` by :mod:`config.asgi`.
 
 Story 10.1 scope: only the seam itself, exposing a bare ``GET /api/health``
-probe. :mod:`config.asgi` routes every ``/api/*`` HTTP path here EXCEPT
-``/api/v1/*`` (websocket connections are not path-routed at all yet -- every
-one reaches the stock ``websocket_application`` stub regardless of path,
-since nothing under this seam handles websockets today).
+probe. :mod:`config.asgi` routes every ``/api/*`` HTTP path here except
+versioned station APIs (Story 43.2: ``/stations/<name>/api/v<N>/`` on
+:mod:`config.station_api` sub-apps). Websocket connections are not
+path-routed at all yet -- every one reaches the stock ``websocket_application``
+stub regardless of path, since nothing under this seam handles websockets today.
 
-Story 11.1 attached the real Langflow mount (``/api/v1/``, bare ``/health``/
-``/health_check``, and prefix-stripped ``/langflow/*``) directly in
-:mod:`config.asgi` -- ahead of this seam in the dispatch order (AD-4) --
-rather than through this module, since Langflow builds and owns its own
-FastAPI app (:mod:`langflow_integration.asgi`). This seam's own
-``/api/health`` is unaffected: it doesn't start with ``/api/v1/``, so it still
-falls through here. DB-GPT's ``/api/dbgpt/`` mount (spec-python-agent-platform
-CAP-3, Story 11.2) is not yet attached -- not assumed here.
+Story 11.1 attached Langflow at bare ``/health``/``/health_check`` and
+prefix-stripped ``/langflow/*`` directly in :mod:`config.asgi` -- ahead of
+this seam in the dispatch order (AD-4) -- rather than through this module,
+since Langflow builds and owns its own FastAPI app
+(:mod:`langflow_integration.asgi`). Story 43.2 removed bare ``/api/v1/*``
+from Langflow's mount; ``/langflow/api/v1/...`` still reaches Langflow.
+DB-GPT's ``/api/dbgpt/`` mount (spec-python-agent-platform CAP-3, Story 11.2)
+is not yet attached -- not assumed here.
 
 Routes here declare their own full ``/api/...`` path (see ``/api/health``
 below): the composed dispatcher forwards the whole, unmodified ASGI scope

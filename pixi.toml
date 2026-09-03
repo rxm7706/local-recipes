@@ -2311,6 +2311,10 @@ depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
 # spec-19-2-the-shared-test-support-kit.md
 [feature.pyforge-testing-kit.dependencies]
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 43.2: station API contract test
+django = ">=5.2.17,<6"  # Story 43.2: portal wrapper contract test (django-pyforge via PYTHONPATH)
+pyjwt = ">=2.13.0"
+cryptography = ">=50.0.0"
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -2318,6 +2322,7 @@ pytest = ">=9.1.1"                       # test runner
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-test]
 description = "Run the pyforge.testing_kit test suite"
 cmd = "pytest src/shared/packages/pyforge-testing-kit/tests -q"
+env = { PYTHONPATH = "src/shared/packages/django-pyforge/src:src/shared/packages/pyforge-core/src" }
 
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

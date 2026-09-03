@@ -44,16 +44,15 @@ def _get(path: str):
     return asyncio.run(_call())
 
 
-def test_api_v1_forwards_to_langflow_unchanged():
+def test_bare_api_v1_does_not_forward_to_langflow():
     # Langflow's own `/api/v1/flows` route (trailing-slash required) issues
-    # Starlette's default redirect -- a real Langflow-specific response
-    # shape the platform's own FastAPI stub (only `/api/health`) could never
-    # produce, so this proves the request reached Langflow's app, not just
-    # "some" app.
+    # Starlette's default redirect — a response shape the platform's own
+    # FastAPI stub could never produce. Story 43.2 moved Langflow off bare
+    # `/api/v1/*`; only `/langflow/api/v1/...` still reaches Langflow.
     response = _get("/api/v1/flows")
 
-    assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    assert response.headers["location"] == "http://testserver/api/v1/flows/"
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Not Found"}
 
 
 def test_bare_health_forwards_to_langflow():
