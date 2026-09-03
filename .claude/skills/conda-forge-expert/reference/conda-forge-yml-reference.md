@@ -136,7 +136,14 @@ it, then add the tag to `exclude:` in your next bump.
 
 ### `noarch_platforms`
 
-Default is `[linux_64]` for noarch packages. **Adding more platforms is
+Default is `[linux_64]` for noarch packages. Listing `osx_arm64` here (plus
+`provider: {osx_arm64: default}`, since osx_arm64 is not an enabled-by-default
+platform) gives a **native Apple-Silicon test leg**: conda-smithy's `build_platform`
+default is the identity mapping, so the leg renders on Azure's `macOS-15-arm64`
+image and, host == target, its test phase runs. Live exemplar: `pythran-feedstock`
+(`noarch_platforms: [linux_64, osx_arm64, win_64]`, rerendered 2026-08-18). Set
+`build_platform: {osx_arm64: osx_64}` only if you deliberately want the cross
+route on the Intel image (tests then skip). **Adding more platforms is
 pure waste for most pure-Python recipes** — the artifact is a single
 platform-independent `.conda` regardless of where it's built, so the
 extra subdirs only generate **test legs**, not different artifacts.

@@ -13,12 +13,13 @@ source:
   sha256: 0e63a7e00a1f7108d4fa406511c779bed9c1eca7ded688a9af01706f33878a95
 
 build:
-  number: 1
+  number: 2
   script:
     env:
       PYTHONUTF8: "1"
       # Strip debug symbols — conda-forge default for Rust builds.
       CARGO_PROFILE_RELEASE_STRIP: symbols
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: ${{ "1" if match(python, ">=3.14") else "0" }}
     content:
       - |
         cd bindings/python/lyric-py
@@ -83,14 +84,15 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lyric-py-feedstock
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: 
+    - "pyo3-abi3-forward-compat-for-cp314 (fixes feedstock PR #3, not pushed)"
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33764
-  cfe-last-checked: 2026-06-27T02:38:06Z
+  cfe-last-checked: 2026-09-03T09:58:30Z
   cfe-generated-by-version: 8.55.0
   cfe-generated-at-datetime: 2026-06-27T02:38:06Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-27T02:32:55Z
+  cfe-local-build-datetime: 2026-09-03T10:04:16Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -130,4 +132,23 @@ extra:
 #    # run-export from host pins the run python to the build's minor version.
 #    # lyric-task releases in lockstep with lyric-py (same upstream tag);
 #    # upstream pyproject declares it unconstrained.
+#
+# 2026-09-03 (py3.14 unblock; conda-forge/lyric-py-feedstock PR #3 "Rebuild for
+# python 3.14" is red on every cp314 leg): pyo3-ffi 0.22.6 aborts with "the
+# configured Python interpreter version (3.14) is newer than PyO3's maximum
+# supported version (3.13)". Upstream pins pyo3 0.22.5 in the workspace
+# Cargo.toml, has no release after v0.1.7 (2025-03-11), and main still carries
+# the same pin; 3.14 support needs pyo3 >=0.25, whose 0.23+ API break makes a
+# source patch a port, not a recipe fix. Recipe-level fix: PyO3's documented
+# forward-compat switch PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1, which builds the
+# 3.14 variant against the stable ABI (Py_LIMITED_API) instead of refusing.
+# Scoped with a jinja conditional so the 3.11-3.13 variants render "0" and
+# stay byte-identical in behaviour (pyo3-build-config's is_abi3() treats only
+# the literal "1" as on). The lyric-py Rust source uses no limited-API-
+# incompatible pyo3 types (grep: PyBuffer/PyCode/PyDateTime/PyCapsule/...).
+# build.number 1->2 (matches the bot PR's bump). No PR opened.
+# build:
+#   script:
+#     env:
+#       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1" only when match(python, ">=3.14")
 ####
