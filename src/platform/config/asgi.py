@@ -38,8 +38,11 @@ configure_observability()
 django_application = get_asgi_application()
 
 # Import websocket application here, so apps from django_application are loaded first
-# FastAPI seam (Story 10.1): owns the whole /api/ namespace except /api/v1/,
-# which Story 11.1 routes to Langflow's own app instead (see below). DB-GPT
+# FastAPI seam (Story 10.1): owns the /api/ namespace. Story 43.2 moved
+# Langflow off bare /api/v1 — Langflow stays at /langflow/api/v1/... and
+# bare /health paths (see below). Versioned station APIs live at
+# /stations/<name>/api/v<N>/ on the station FastAPI sub-apps (station_api).
+# DB-GPT
 # (Story 11.2) never gets an ASGI mount at all -- AD-14/AD-17 moved it to
 # Pattern B (its own sidecar container, reached over Celery/REST) before this
 # module would have needed one; see the registry-consult touchpoint below.
@@ -48,6 +51,8 @@ from django_pyforge.mcp_http import loaded_station_mcp_apps  # noqa: E402
 
 from config.engine_patterns import ENGINE_PATTERNS  # noqa: E402
 from config.fastapi_app import fastapi_application  # noqa: E402
+from config.station_api import parse_station_api_path  # noqa: E402
+from config.station_api import station_application  # noqa: E402
 from config.websocket import websocket_application  # noqa: E402
 
 # Station MCP faces (canopy AD-5) are discovered via django_pyforge.mcp_http.
@@ -83,10 +88,6 @@ if ENGINE_PATTERNS["dbgpt"] == "A":
 # native route prefixes, so they forward with the ASGI scope UNCHANGED --
 # no path rewriting, unlike the /langflow/ prefix-strip below.
 _LANGFLOW_BARE_HEALTH_PATHS = frozenset({"/health", "/health_check"})
-
-
-def _is_langflow_api_v1_path(path: str) -> bool:
-    return path == "/api/v1" or path.startswith("/api/v1/")
 
 
 def _is_langflow_bare_health_path(path: str) -> bool:
@@ -129,7 +130,19 @@ async def _dispatch_http(scope, receive, send) -> None:
     path = scope["path"]
     if await dispatch_station_mcp(scope, receive, send):
         return
-    if _is_langflow_api_v1_path(path) or _is_langflow_bare_health_path(path):
+    station_api = parse_station_api_path(path)
+    if station_api is not None:
+        station, version = station_api
+        try:
+            app = station_application(station, version)
+        except KeyError:
+            from starlette.responses import JSONResponse
+
+            response = JSONResponse({"detail": "Not Found"}, status_code=404)
+            await response(scope, receive, send)
+            return
+        await app(scope, receive, send)
+    elif _is_langflow_bare_health_path(path):
         await langflow_application(scope, receive, send)
     elif _is_langflow_prefixed_path(path):
         await langflow_application(_strip_langflow_prefix(scope), receive, send)

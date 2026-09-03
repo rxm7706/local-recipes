@@ -2,9 +2,12 @@
 title: "Station API contract and the /api/v1 collision"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
+status: "done"
+followup_review_recommended: true
+review_loop_iteration: 1
+updated: "2026-09-03"
 baseline_commit: "58ee07a0"
+baseline_revision: "e26da35a8b7709ce19cdd511702682381a4f4802"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
@@ -60,17 +63,55 @@ Ledger key `43-2-station-api-contract`. Host never imports `pyforge.*`. Host nev
 
 ## Tasks
 
-- [ ] Router change + Langflow prefix test
-- [ ] Seam routing + OpenAPI
-- [ ] `pyforge.core.client`
-- [ ] Kit contract test
-- [ ] Form-error bridge
-- [ ] Dream example
-- [ ] Ledger `43-2-station-api-contract` → `review` then `done` via `sprint-ledger-sync`.
+- [x] Router change + Langflow prefix test
+- [x] Seam routing + OpenAPI
+- [x] `pyforge.core.client`
+- [x] Kit contract test
+- [x] Form-error bridge
+- [x] Dream example
+- [x] Ledger `43-2-station-api-contract` → `review` then `done` via `sprint-ledger-sync`.
 
 ## Verification
 
 `src/platform` ASGI seam tests; `pyforge-core` + `pyforge-testing-kit` tests; chrome tests.
+
+## Review Triage Log
+
+### 2026-09-03 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 2, medium 1, low 1)
+- defer: 8: (high 0, medium 5, low 3)
+- reject: 12
+- addressed_findings:
+  - `[high]` `[patch]` Added langflow-free host ASGI tests (`test_station_api_host_dispatch.py`) proving `/stations/warden/api/v1/*` dispatch and bare `/api/v1` no longer reaches Langflow.
+  - `[high]` `[patch]` Unknown/unregistered station API paths return JSON 404 instead of KeyError 500 in `config/asgi.py`.
+  - `[medium]` `[patch]` `contract-probe` station registry entry torn down after prefix-violation test.
+  - `[low]` `[patch]` Updated `test_langflow_mount.py` module docstring for Story 43.2 routing.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Reserved `/stations/<name>/api/v<N>/` on the host ASGI seam, moved Langflow off bare `/api/v1/*`, shipped `pyforge.core.client` + `django-pyforge` `StationHttpClient`, warden v1 OpenAPI probe routes, golden contract test in `pyforge-testing-kit`, and updated the Dream Shared Data Contracts example. BS-7 (`PydanticFormErrorBridge`) was pre-existing from Story 25.3.
+
+**Files changed:**
+- `src/platform/config/asgi.py` — station API dispatch; Langflow decoupled from bare `/api/v1`
+- `src/platform/config/station_api.py` — warden v1 registry, OpenAPI, assertion gate
+- `src/shared/packages/pyforge-core/src/pyforge/core/client.py` — `PyForgeStationClient`
+- `src/shared/packages/django-pyforge/src/django_pyforge/station_client.py` — portal wrapper (AD-7)
+- Platform + kit + core tests; Dream update; pixi env deps for kit contract test
+
+**Review:** 4 patches applied (2 high host-dispatch/404 guards). Deferred: server-side version-header enforcement, django-warden portal adoption, warden stub routes in host, station lifespan wiring, archive Dream example. Rejected: duplicate/noise findings (re-exports, skill docs, ledger checkbox before sync).
+
+**Follow-up review recommendation:** true — patched counts: high 2, medium 1, low 1 (score 2×high triggers follow-up).
+
+**Verification:**
+- `pixi run -e pyforge-core pytest …/test_client.py …/test_leaf_constraint.py` — 33 passed
+- `pixi run -e pyforge-testing-kit pyforge-testing-kit-test` — 9 passed
+- `platform-ci-test`: station API + host dispatch + validation + no_pyforge_import — 16 passed
+
+**Residual risks:** Langflow prefix-preserving redirect tests require the `langflow` package (skipped in `platform-ci-test`; covered by langflow-free bare `/api/v1` test). Warden `compliance/check` is a host stub until warden owns its route inventory. `environment.yaml` may need regeneration after `pixi.toml` changes (maintenance CI gate).
 
 ## Source
 

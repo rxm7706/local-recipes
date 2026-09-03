@@ -329,6 +329,12 @@ graph LR
   Vault/ESO stay outside the image. No MinIO as a fourth core kind.
 - **Bind installed pins; do not re-pin.** See `stack.md` § Estate leverage.
 
+## Shared Data Contracts (`pyforge.core.client`)
+
+Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Example:
+``PyForgeStationClient(station="warden").post("/compliance/check", …)``
+→ ``/stations/warden/api/v1/compliance/check`` with ``X-PyForge-API-Version`` + Bearer assertion.
+
 ---
 
 ## Fleet conventions (one vocabulary)
@@ -390,4 +396,4 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   13.2) owns the two feedstock loosenings under Rule 1; steward **43.6** flips the pins;
   `mcp-host` stays as MCP-SDK isolation (langflow pins `mcp <2`). Review S-5 / R-16 wording
   corrected. `DW-FU-10-4` bound to Mason 13.1.
-- **2026-09-03** — Story **43.1**: historical topology to `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md`; living Dream ≤400 lines, build-target mermaid only; `dreams-hygiene` `historical-section-too-long`.
+- **2026-09-03** — **43.1** archived historical topology (living Dream ≤400 lines). **43.2** shipped ``/stations/<name>/api/v<N>/``, ``pyforge.core.client``; Langflow off bare ``/api/v1``.
