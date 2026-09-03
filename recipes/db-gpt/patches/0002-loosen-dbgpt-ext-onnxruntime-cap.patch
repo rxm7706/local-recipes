@@ -1,0 +1,11 @@
+--- a/packages/dbgpt-ext/pyproject.toml
++++ b/packages/dbgpt-ext/pyproject.toml
+@@ -75,7 +75,7 @@
+ storage_milvus = ["pymilvus"]
+ storage_weaviate = ["weaviate-client"]
+ storage_chromadb = [
+-    "onnxruntime>=1.14.1,<=1.18.1",
++    "onnxruntime>=1.14.1",
+     "chromadb>=0.4.22"
+     ]
+ storage_elasticsearch = ["elasticsearch"]

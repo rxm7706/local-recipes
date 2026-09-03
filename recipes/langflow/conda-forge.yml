@@ -1,0 +1,28 @@
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+conda_forge_output_validation: true
+noarch_platforms:
+  - linux_64
+  - win_64
+bot:
+  automerge: false
+  inspection: update-grayskull
+  check_solvable: true
+  run_deps_from_wheel: true
+  # Upstream tags many commits (including .dev builds and version bumps) without
+  # cutting a GitHub Release or publishing to PyPI. The default source set reads
+  # releases.atom, which lists bare tags, so the bot was proposing tags that
+  # were never released. githubreleases follows /releases/latest, which GitHub only
+  # serves for a published, non-draft, non-prerelease Release.
+  version_updates:
+    sources:
+      - githubreleases
+    allowed_tag_globs:
+      - "v[0-9]*.[0-9]*.[0-9]*"
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+shellcheck:
+  enabled: true

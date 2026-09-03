@@ -1,0 +1,11 @@
+--- a/packages/dbgpt-core/pyproject.toml
++++ b/packages/dbgpt-core/pyproject.toml
+@@ -50,7 +50,7 @@
+     "termcolor",
+     "pandas==2.2.3",
+     # numpy should less than 2.0.0
+-    "numpy>=1.21.0,<2.0.0",
++    "numpy>=1.21.0",
+     "auto-gpt-plugin-template>=0.0.3",
+     "mcp>=1.8.0",
+ ]
