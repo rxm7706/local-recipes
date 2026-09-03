@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.11.3"
+  version: "1.11.4"
   sdk_version: "0.3.3"
   # lfx-* extension bundles are versioned independently of langflow itself
   # (src/bundles/<name>/pyproject.toml), so each gets its own context pin.
@@ -17,7 +17,7 @@ recipe:
 
 source:
   url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0ca9b584c1d011f6e2d9588a465e1facbc18cebd29e7c5b6ff7c791ec8030b93
+  sha256: e33b205553cb27800c26fcf6826e80fdb88b764c3f007f28e2d3ab989b1a1cf0
   # Langflow bundles a very large number of third-party integrations (IBM watsonx,
   # MongoDB, ClickHouse, etc.) as hard dependencies by default. These patches strip
   # out everything that isn't needed to import and run langflow. Nobody uses all of
@@ -28,9 +28,19 @@ source:
     - patches/0001-strip-integration-deps.patch
     - patches/0002-lean-umbrella-deps.patch
     - patches/0003-strip-ibm-db-dep.patch
+    # Loosens src/backend/base/pyproject.toml's exact bcrypt==4.0.1 pin to
+    # >=4.0.1,<5 to match the loosened langflow-base run: dep below (G26:
+    # pip_check reads the WHEEL's dist-info METADATA, which still bakes in
+    # upstream's exact pin unless the source pyproject is patched too).
+    - patches/0004-loosen-bcrypt-pin.patch
+    # Loosens src/backend/base/pyproject.toml's marker-split onnxruntime deps to
+    # >=1.20 to match the loosened langflow-base run: dep below (G26: pip_check
+    # reads the WHEEL's dist-info METADATA, which still bakes in upstream's
+    # per-interpreter marker split unless the source pyproject is patched too).
+    - patches/0005-loosen-onnxruntime-pin.patch
 
 build:
-  number: 0
+  number: 2
 
 outputs:
   - package:
@@ -325,7 +335,9 @@ outputs:
         - orjson >=3.11.6,<4.0.0
         - alembic >=1.13.0,<2.0.0
         - passlib >=1.7.4,<2.0.0
-        - bcrypt ==4.0.1
+        # Loosened from an exact ==4.0.1 pin (upstream PR #1266): ==4.0.1 has no
+        # py3.14 (cp314) conda-forge build. <5 avoids adopting bcrypt's next major.
+        - bcrypt >=4.0.1,<5
         - pillow >=12.1.1,<13.0.0
         - docstring_parser >=0.16,<1.0.0
         - pyjwt >=2.12.1
@@ -372,7 +384,9 @@ outputs:
         - scipy >=1.15.2,<2.0.0
         - jaraco.context >=6.1.0
         - wheel >=0.46.2,<1.0.0
-        - onnxruntime >=1.20,<1.24
+        # Loosened from >=1.20,<1.24 — noarch: python collapses upstream's
+        # marker split and silently drops cp314 (first cp314 build is 1.25.1).
+        - onnxruntime >=1.20  # TODO: tighten once upstream drops the py<3.14 cap
         - dynaconf >=3.2.13,<4.0.0
         - pyasn1 >=0.6.3,<0.7.0
         - langgraph-checkpoint >4.0.0,<5.0.0
@@ -382,7 +396,7 @@ outputs:
         - langchain-mongodb >=0.11.0
         - langchain-perplexity >=1.0.0,<2.0.0
         - langchain-qdrant >=1.0.0,<2.0.0
-        - langchain-chroma >=0.2.6,<0.3.0
+        - langchain-chroma >=0.2.6,<2.0.0
         - elevenlabs >=1.52.0,<2.0.0
         - clickhouse-connect ==0.7.19
         - duckdb >=1.0.0,<2.0.0
@@ -394,10 +408,28 @@ outputs:
           pip_check: true
           python_version:
             - ${{ python_min }}.*
+      - python:
+          imports:
+            - langflow
+          pip_check: true
+          python_version:
+            - 3.14.*
       - package_contents:
           site_packages:
             - langflow/frontend/index.html
             - langflow/frontend/assets/*.js
+      - script:
+          - python -c "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); h = ctx.hash('bcrypt-pin-loosen-roundtrip'); assert ctx.verify('bcrypt-pin-loosen-roundtrip', h), 'bcrypt verify failed'; import bcrypt as _b; _ver = getattr(_b, '__version__', '0.0'); _tup = tuple(int(x) for x in _ver.split('.')[:2]); assert _tup >= (4, 1), f'expected resolved bcrypt >=4.1 to prove the loosened pin actually took effect, got {_ver}'; print('bcrypt version:', _ver); print('bcrypt hash/verify OK')"
+        requirements:
+          run:
+            - python 3.14.*
+      - script:
+          - python -c "import sys; import langflow; import markitdown; import onnxruntime as ort; from magika import Magika; ver = ort.__version__; parts = [int(x) for x in ver.split('.')[:3]]; parts += [0] * (3 - len(parts)); assert not (sys.version_info >= (3, 14) and tuple(parts) < (1, 25, 1)), f'py3.14 needs onnxruntime >=1.25.1, got {ver}'; r = Magika().identify_bytes(b'hello py314 onnxruntime'); assert r.output.label; print('onnxruntime version:', ver); print('langflow + markitdown/magika/onnxruntime OK:', r.output.label)"
+        requirements:
+          run:
+            - python 3.14.*
+            - markitdown >=0.1.4
+            - magika >=0.6.1,!=0.6.3,<0.7.0
     about:
       license_file:
         - LICENSE
@@ -425,7 +457,7 @@ outputs:
         - openai >=1.68.2,<3.0.0
         - langchain-anthropic >=1.4.6,<1.5.0
         - langchain-aws >=1.1.0,<1.2.0
-        - langchain-chroma >=0.2.6,<0.3.0
+        - langchain-chroma >=0.2.6,<2.0.0
         - langchain-experimental >=0.4.1,<0.5.0
         - langchain-google-genai >=4.1.2,<4.2.0
         - langchain-groq >=1.1.1,<1.2.0
@@ -503,41 +535,65 @@ extra:
     - pkg:pypi/langflow@${{ version }}
   cfe-upstream-repo: https://github.com/langflow-ai/langflow
   cfe-upstream-homepage: https://pypi.org/project/langflow/
-  cfe-import-names: [langflow]
-  cfe-source-kind: github-tag:langflow-monorepo-root
+  cfe-import-names: [langflow_sdk, lfx, lfx_duckduckgo, lfx_arxiv, lfx_ibm, lfx_docling, langflow]
+  cfe-source-kind: github-tag
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
-  cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - langflow-base
-    - lfx
-    - opendsstar
-  cfe-last-checked: 2026-06-24T09:58:17Z
-  cfe-generated-by-version: 8.42.2
-  cfe-generated-at-datetime: 2026-06-24T09:58:17Z
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langflow-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - loosen-langchain-chroma-run-constraint-for-py314 (feedstock PR pending)
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-03T09:21:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-24T09:58:17Z
+  cfe-local-build-datetime: 2026-09-03T09:29:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-# source:
-#    # GitHub monorepo tag archive (G54): langflow lives at the langflow-ai/
-#    # langflow monorepo root. version == the monorepo tag (1.10.0), so
-#    # v${{ version }} is the tag. hatchling backend (G55).
-# build:
-#    # LEAN re-architecture (mirrors the langflow-suite langflow output): the
-#    # umbrella's pyproject.toml [project.dependencies] is sed-patched to depend
-#    # on langflow-base (not langflow-base[complete]) and to drop the 4 lfx-*
-#    # hard-deps -> they + all integrations become optional run_constraints.
-#    # This drops ragstack-ai-knowledge-store (BUSL-1.1, non-OSI, never-submit)
-#    # from the hard-dep set entirely.
-# requirements:
-#  run:
-#    # Lean hard-dep: only langflow-base ==0.10.0 (the importable `langflow`).
-#    # Prerequisite chain blockers: langflow-base -> lfx -> opendsstar (not on cf).
-#    # The litellm/fastapi + otel-cluster external-cf skews now gate only the
-#    # OPTIONAL integrations (run_constraints), no longer langflow's core.
+# story-10.4 (2026-08-20): resynced this local mirror to the LIVE
+# conda-forge/langflow-feedstock recipe.yaml (was 2 versions stale at
+# 1.10.1; live is 1.11.4, adding the lfx-duckduckgo/lfx-arxiv/lfx-ibm/
+# lfx-docling extension-bundle outputs and patches/0003). Loosened
+# langflow-base's bcrypt ==4.0.1 -> >=4.0.1,<5 (spec:
+# spec-10-4-the-bcrypt-pin-stops-blocking-3-14.md) — bcrypt ==4.0.1 has
+# no py3.14 (cp314) conda-forge build and was the sole named blocker to
+# a python-3.14 solve of langflow+dbgpt+django. Bumped build.number 0->1
+# and added a script test round-tripping passlib's CryptContext(schemes=
+# ["bcrypt"]).hash()/.verify() to prove hashing still functions under the
+# loosened pin (not just an import test). Landed as a maintainer-edit
+# push directly to conda-forge/langflow-feedstock (rxm7706 is a listed
+# co-maintainer). An upstream langflow-ai/langflow issue proposing
+# dropping the unmaintained passlib dep was filed in parallel (see
+# docs/specs/langflow-conda-forge.md Current State for the issue URL).
+#
+# story-13.1 (2026-09-02): loosened langflow-base's onnxruntime
+# >=1.20,<1.24 -> >=1.20 (spec: spec-13-1-langflow-base-onnxruntime-pin-
+# admits-python-3-14.md) — the collapsed noarch pin silently dropped cp314
+# after bcrypt was fixed (DW-FU-10-4). Added patches/0005-loosen-
+# onnxruntime-pin.patch (G26 METADATA alignment), build.number 1->2, a
+# py3.14 pip_check block, and a script test proving onnxruntime >=1.25.1
+# plus markitdown/magika imports on py3.14. Feedstock PR TBD.
+#
+# 2026-09-03 (py3.14 unblock, langchain-chroma): resynced this mirror to the LIVE
+# feedstock at f6f6c7b (PR #18 merged 2026-09-02: bcrypt + onnxruntime loosened
+# upstream; python_min "3.11" left implicit here per the repo floor rule) and
+# pruned the stale recipe-dir LICENSE (the feedstock resolves license_file
+# from the source archive). Then loosened the langchain-chroma run_constraint
+# >=0.2.6,<0.3.0 -> >=0.2.6,<2.0.0 on BOTH the langflow-base and langflow
+# outputs. Why: the only 0.2.x build on conda-forge (0.2.6) caps python
+# <3.13, so any env that co-installs langchain-chroma (this repo's
+# python-agent-platform pixi env does, for lfx's chroma backend) cannot
+# solve on py3.14 while the <0.3.0 constraint stands; 1.1.0 is the first
+# release with a py3.14-capable build (python <4, langchain-core >=1.1.3,<2 --
+# compatible with langflow's own langchain-core 1.x pin). No source patch
+# needed: patch 0001 already strips langchain-chroma from langflow-base's
+# hard deps, so the wheel METADATA carries it only under the `chroma` extra,
+# which pip_check does not enforce and the test env never installs.
+# build.number 1->2. Promote a short inline note above the two constraint
+# lines when pushing to the feedstock (matches the bcrypt/onnxruntime style).
+# run_constraints:
+#   langchain-chroma >=0.2.6,<2.0.0  # was <0.3.0; 0.2.6 caps python <3.13
 ####

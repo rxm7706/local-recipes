@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.8.1"
+  version: "0.8.2"
 
 recipe:
   name: dbgpt-split
@@ -10,8 +10,10 @@ recipe:
 
 source:
   url: https://github.com/eosphoros-ai/DB-GPT/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 65e25642dfb0f2e3028a50301fda060ca09008d754ea46a8268edc47c131a2ec
+  sha256: 84cf1a81aa9412b7195483b8697474051b5a55932b897b8e71ec4bc654701521
   patches:
+    - patches/0001-loosen-dbgpt-core-numpy-cap.patch
+    - patches/0002-loosen-dbgpt-ext-onnxruntime-cap.patch
     # Loosens packages/dbgpt-client/pyproject.toml's sqlalchemy>=2.0.25,<2.0.29
     # cap to <2.1 to match the loosened dbgpt-client run: dep below (G26:
     # pip_check reads the WHEEL's dist-info METADATA, which still bakes in
@@ -19,7 +21,7 @@ source:
     - patches/0003-loosen-dbgpt-client-sqlalchemy-cap.patch
 
 build:
-  number: 1
+  number: 2
 
 outputs:
   - package:
@@ -167,12 +169,6 @@ outputs:
             - dbgpt_client
           pip_check: true
           python_version:
-            - 3.12.*
-      - python:
-          imports:
-            - dbgpt_client
-          pip_check: true
-          python_version:
             - 3.14.*
       - script:
           - python -c "import sqlalchemy as sa; ver = sa.__version__; parts = tuple(int(x) for x in ver.split('.')[:3]); assert parts >= (2, 0, 25), f'need sqlalchemy >=2.0.25, got {ver}'; import dbgpt_client; print('dbgpt_client + sqlalchemy', ver, 'OK')"
@@ -310,7 +306,7 @@ outputs:
         - olefile
         - pypdf
         - pdfplumber
-        - onnxruntime >=1.14.1,<=1.18.1
+        - onnxruntime >=1.14.1
     tests:
       - python:
           pip_check: true
@@ -350,7 +346,7 @@ outputs:
         - ${{ pin_subpackage('dbgpt', lower_bound='x.x.x', upper_bound='x.x.x') }}
         - termcolor
         - pandas >=2.2.3
-        - numpy >=1.21.0,<2.0.0
+        - numpy >=1.21.0
         - auto-gpt-plugin-template >=0.0.3
         - mcp >=1.4.1
     tests:
@@ -488,14 +484,15 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: pending-approval-on-conda-forge
   cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: 
+    - loosen-numpy-and-onnxruntime-caps-for-py314 (feedstock PR pending)
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33883
-  cfe-last-checked: 2026-07-04T22:21:00Z
+  cfe-last-checked: 2026-09-03T09:21:44Z
   cfe-generated-by-version: 8.62.0
   cfe-generated-at-datetime: 2026-07-01T08:34:44Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-01T08:34:44Z
+  cfe-local-build-datetime: 2026-09-03T09:29:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -519,4 +516,27 @@ extra:
 # dbgpt-client-sqlalchemy-cap.patch (G26 METADATA alignment), build.number 0->1,
 # a py3.14 pip_check block, and a script test proving sqlalchemy >=2.0.25 on
 # py3.14. Feedstock PR #4 (conda-forge/db-gpt-feedstock).
+#
+# 2026-09-03 (py3.14 unblock, numpy + onnxruntime): resynced this mirror to the
+# LIVE feedstock at cfa8ae5 (PR #5 "py314" merged 2026-09-02: v0.8.1 -> 0.8.2,
+# python >=3.11 on every output) and pruned the local-only patches 0001/0002
+# (the feedstock loosens `==` pins in-build via a python replace instead).
+# Then loosened the two remaining caps that have no cp314 conda-forge build:
+#   dbgpt-agent   run: numpy >=1.21.0,<2.0.0      -> numpy >=1.21.0
+#                 (numpy 1.x stops at py3.12; 1.26.4 is the last 1.x)
+#   dbgpt-ext-rag run: onnxruntime >=1.14.1,<=1.18.1 -> onnxruntime >=1.14.1
+#                 (the first onnxruntime with a cp314 build is 1.28.0)
+# Both caps originate in upstream extras -- dbgpt-core's [agent] extra and
+# dbgpt-ext's [storage_chromadb] extra -- so the WHEEL METADATA is loosened
+# too via source patches 0001/0002 (G26 alignment; same mechanism as the
+# feedstock's own patch 0003 for the sqlalchemy cap). Upstream's comment on
+# the numpy cap ("numpy should less than 2.0.0") gives no reason; pandas
+# >=2.2.3 supports numpy 2, and the dbgpt-app "*" test leg (py3.14, numpy 2.x,
+# onnxruntime 1.28) is the runtime check. build.number 1->2.
+# source:
+#   patches: 0001 numpy cap (dbgpt-core), 0002 onnxruntime cap (dbgpt-ext)
+# run (dbgpt-agent):
+#   numpy >=1.21.0        # was <2.0.0; no numpy 1.x cp314 build exists
+# run (dbgpt-ext-rag):
+#   onnxruntime >=1.14.1  # was <=1.18.1; first cp314 onnxruntime is 1.28.0
 ####
