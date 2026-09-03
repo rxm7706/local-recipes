@@ -132,7 +132,7 @@ development_status:
   41-2-query-plane-process-boundary: done
   41-3-scribe-ddl-moves-into-the-changelog: done
   41-4-broker-tls-is-verified: done
-  42-1-mcp-transport-authorization: backlog
+  42-1-mcp-transport-authorization: done
   42-2-agent-rate-limits-and-run-bounds: backlog
   42-3-bus-delivery-semantics-and-a-deployed-consumer: backlog
   42-4-celery-hardening-and-the-builds-pool: backlog
