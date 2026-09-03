@@ -432,6 +432,27 @@ CELERY_TASK_TIME_LIMIT = 5 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# Story 42.2 / red-team B-7: run_state had no retention at all, so the table
+# grew for the life of the deployment. DatabaseScheduler syncs entries declared
+# here into django_celery_beat on startup, so the schedule ships with the code
+# rather than depending on an operator adding a row by hand.
+#
+# Validated HERE rather than at read time like the other 42.2 knobs: beat
+# consumes this at settings-load, so a 0 or negative would ship straight into
+# `schedule` as a hot loop instead of being rejected on the way out.
+_DEFAULT_PRUNE_INTERVAL_SECONDS = 3600
+RUN_STATE_PRUNE_INTERVAL_SECONDS = env.int(
+    "RUN_STATE_PRUNE_INTERVAL_SECONDS",
+    default=_DEFAULT_PRUNE_INTERVAL_SECONDS,
+)
+if RUN_STATE_PRUNE_INTERVAL_SECONDS <= 0:
+    RUN_STATE_PRUNE_INTERVAL_SECONDS = _DEFAULT_PRUNE_INTERVAL_SECONDS
+CELERY_BEAT_SCHEDULE = {
+    "prune-run-state": {
+        "task": "django_pyforge.tasks.prune_run_state_task",
+        "schedule": RUN_STATE_PRUNE_INTERVAL_SECONDS,
+    },
+}
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
 CELERY_WORKER_SEND_TASK_EVENTS = True
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std-setting-task_send_sent_event
@@ -609,6 +630,42 @@ os.environ["LANGFLOW_ESTATE_READ_DSN"] = QUERY_PLANE_ESTATE_DSN
 # Not the OIDC local-dev persona mint (config.local_dev.tokens).
 PYFORGE_ASSERTION_PRIVATE_KEY = env("PYFORGE_ASSERTION_PRIVATE_KEY", default="")
 PYFORGE_ASSERTION_PUBLIC_KEY = env("PYFORGE_ASSERTION_PUBLIC_KEY", default="")
+
+# AGENT RATE LIMITS AND RUN BOUNDS (Story 42.2, CAP-11 / CAP-17)
+# ------------------------------------------------------------------------------
+# Red-team A-6 / B-7 → directive R-8. Every number is a setting so a deployment
+# can tune it without a code change; these are the documented defaults, and
+# they are per SUBJECT (the verified `sub` claim), never per client name.
+#
+# Bucket state lives in CACHES["default"] — redis-cache (AD-10), evictable —
+# never on redis-broker, whose exhaustion is what these bounds exist to
+# prevent. See django_pyforge/rate_limit.py.
+#
+# The MCP route carries reads as well as writes, so it is the wider bucket. A
+# `start` costs a database row and a queued task, so its bucket is narrower and
+# is additionally capped by the two ceilings below.
+MCP_RATE_LIMIT_PER_MINUTE = env.int("MCP_RATE_LIMIT_PER_MINUTE", default=120)
+MCP_RATE_LIMIT_BURST = env.int("MCP_RATE_LIMIT_BURST", default=120)
+SUPERVISOR_START_RATE_PER_MINUTE = env.int(
+    "SUPERVISOR_START_RATE_PER_MINUTE",
+    default=30,
+)
+SUPERVISOR_START_BURST = env.int("SUPERVISOR_START_BURST", default=30)
+# Concurrent non-terminal runs one subject may hold. Reaching it is 409 with
+# the live run ids, because the caller's own runs are the conflict.
+MAX_RUNNING_PER_SUB = env.int("MAX_RUNNING_PER_SUB", default=5)
+# Non-terminal runs one station may hold across all subjects — the queue-depth
+# ceiling. Reaching it is 429 with Retry-After and no RunState row.
+MAX_QUEUE_DEPTH_PER_STATION = env.int("MAX_QUEUE_DEPTH_PER_STATION", default=100)
+# Retention: terminal rows older than this are pruned by the beat task, and the
+# table is additionally capped so a burst inside the window cannot unbound it.
+RUN_STATE_RETENTION_DAYS = env.int("RUN_STATE_RETENTION_DAYS", default=14)
+RUN_STATE_MAX_ROWS = env.int("RUN_STATE_MAX_ROWS", default=100_000)
+# Rows one sweep may remove. The first sweep after this story deploys runs over
+# a table that has never been pruned, and one unbounded DELETE across it can
+# exceed CELERY_TASK_SOFT_TIME_LIMIT and never complete — a retention task that
+# cannot finish bounds nothing. The sweep reports `truncated` when work remains.
+RUN_STATE_PRUNE_BATCH = env.int("RUN_STATE_PRUNE_BATCH", default=5_000)
 
 # Your stuff...
 # ------------------------------------------------------------------------------

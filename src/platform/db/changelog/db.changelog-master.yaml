@@ -14,6 +14,13 @@ databaseChangeLog:
   - include:
       file: changes/python-agent-platform-5-django-pyforge-0003-run-state-timing.sql
       relativeToChangelogFile: true
+  # Story 42.2: run bounds (subject, celery_task_id, cancelled, bound indexes).
+  # Ordered here, straight after the table's own changesets, rather than at the
+  # end of the file -- it alters run_state, so it must follow :3-:5 and cannot
+  # wait behind the contrib/third-party catch-ups.
+  - include:
+      file: changes/python-agent-platform-20-django-pyforge-0004-run-bounds.sql
+      relativeToChangelogFile: true
   - include:
       file: changes/python-agent-platform-15-django-contrib-auth-contenttypes.sql
       relativeToChangelogFile: true

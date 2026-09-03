@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.supervisor import get_run as supervisor_get_run
-from django_pyforge.supervisor import publish_start
 from django_pyforge.supervisor import register_runner
+from django_pyforge.supervisor import start_bounded
 
 WARDEN_STATION = "warden"
 RUN_AUDIT_TOOL = "run_audit"
@@ -34,8 +34,13 @@ def attach_warden_start_get(server: Any, *, station: str = WARDEN_STATION) -> An
 
     @server.tool()
     def start_audit(target: str, assertion: str) -> dict[str, str]:
-        """Return a handle immediately; work publishes through the supervisor."""
-        handle = publish_start(
+        """Return a handle immediately; work publishes through the supervisor.
+
+        Story 42.2: ``start_bounded``, so a run bound reaches the agent as the
+        same projected refusal the portal renders (status, retry_after,
+        run_ids) instead of a flattened sentence.
+        """
+        handle = start_bounded(
             station=station,
             assertion=assertion,
             tool=RUN_AUDIT_TOOL,

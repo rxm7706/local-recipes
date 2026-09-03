@@ -2553,3 +2553,367 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-40-1: Structured-log assertions for assertion.mint_refused (caplog on 401/403, no bearer echo) — AC requires logging but tests only check HTTP status.
+
+- source_spec: `planning-artifacts/specs/spec-40-1-idp-bearer-is-verified-before-mint.md`
+  summary: Structured-log assertions for assertion.mint_refused (caplog on 401/403, no bearer echo) — AC requires logging but tests only check HTTP status.
+  evidence: Refusal tests assert status codes only; removing logger.warning would not fail CI today.
+  origin: spec-deferred 03d7c6b1f3a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-40-1-2: HTTPS JWKS fetch path integration test (production urlopen contract).
+
+- source_spec: `planning-artifacts/specs/spec-40-1-idp-bearer-is-verified-before-mint.md`
+  summary: HTTPS JWKS fetch path integration test (production urlopen contract).
+  evidence: All assertion tests use file:// JWKS; _fetch_https is never exercised in CI.
+  origin: spec-deferred d58ee2121818 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-40-1-3: Import-time no-network invariant test for django_pyforge.assertion.jwks.
+
+- source_spec: `planning-artifacts/specs/spec-40-1-idp-bearer-is-verified-before-mint.md`
+  summary: Import-time no-network invariant test for django_pyforge.assertion.jwks.
+  evidence: Lazy load is implemented but not pinned by a test that blocks urlopen at import.
+  origin: spec-deferred 02a2d7cd20e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-40-1-4: Full 503 matrix for every _require_verifier_settings() failure mode beyond empty OIDC_JWKS_URL (http:// scheme, blank issuer/audience/algorithms).
+
+- source_spec: `planning-artifacts/specs/spec-40-1-idp-bearer-is-verified-before-mint.md`
+  summary: Full 503 matrix for every _require_verifier_settings() failure mode beyond empty OIDC_JWKS_URL (http:// scheme, blank issuer/audience/algorithms).
+  evidence: Only test_unconfigured_verifier_returns_503 covers empty JWKS URL; other misconfigurations could regress undetected.
+  origin: spec-deferred 9247533f1e37 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-2: Reconcile `resilience-invariants.md` BS-5 row to Story 41.2 single-writer-on-RWO / Parquet model (still describes read-only shared mounts).
+
+- source_spec: `planning-artifacts/specs/spec-41-2-query-plane-process-boundary.md`
+  summary: Reconcile `resilience-invariants.md` BS-5 row to Story 41.2 single-writer-on-RWO / Parquet model (still describes read-only shared mounts).
+  evidence: Companion invariant doc not in Story 41.2 AC scope; Dream/stack updated but tier-2 resilience doc drift remains.
+  origin: spec-deferred cd1c82a2f0e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-2-2: Extend estate DuckDB policy gate to cover file-backed `ibis.duckdb.connect` and aliased `duckdb` imports.
+
+- source_spec: `planning-artifacts/specs/spec-41-2-query-plane-process-boundary.md`
+  summary: Extend estate DuckDB policy gate to cover file-backed `ibis.duckdb.connect` and aliased `duckdb` imports.
+  evidence: AST gate matches bare `duckdb.connect` only; production dashboard/semantic layers use no-arg in-memory ibis today but file-backed regression would pass.
+  origin: spec-deferred b3fdec19aaea — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-2-3: Add positive Helm fixture when writer plane PVC lands (`pyforge.io/query-plane`, RWO).
+
+- source_spec: `planning-artifacts/specs/spec-41-2-query-plane-process-boundary.md`
+  summary: Add positive Helm fixture when writer plane PVC lands (`pyforge.io/query-plane`, RWO).
+  evidence: Chart RWO invariant is vacuous on live render until a plane PVC template exists; spec residual already notes this.
+  origin: spec-deferred 00bfc74ef4eb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-2-4: Run duckdb-boundary chart live-render proofs in platform-ci-test (helm currently platform-dev only).
+
+- source_spec: `planning-artifacts/specs/spec-41-2-query-plane-process-boundary.md`
+  summary: Run duckdb-boundary chart live-render proofs in platform-ci-test (helm currently platform-dev only).
+  evidence: @requires_helm proofs skip in platform-ci-test; guard fixtures only catch synthetic violations, not template regressions.
+  origin: spec-deferred b0f3185e8c6f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3: db.changelog-master.yaml's include order does not satisfy its own FK dependencies: python-agent-platform:18 adds a socialaccount FK to django_site, which :10 (sites.0001) creates later.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: db.changelog-master.yaml's include order does not satisfy its own FK dependencies: python-agent-platform:18 adds a socialaccount FK to django_site, which :10 (sites.0001) creates later.
+  evidence: Real `liquibase update` on the master changelog stops at `Run: 10` with `ERROR: relation "django_site" does not exist`. Reproduced identically against the baseline master changelog (`git show a4316334fe:...`), so it predates this story; scribe's changesets are appended last and are unaffected. No test executes the master changelog in include order.
+  location: src/platform/db/changelog/db.changelog-master.yaml
+  origin: spec-deferred b2e7ae9d2371 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-2: No CI workflow runs the scribe suite, so this story's behavioural proofs (DDL-revoked role, named error, changeset-provisioned database) gate nothing.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: No CI workflow runs the scribe suite, so this story's behavioural proofs (DDL-revoked role, named error, changeset-provisioned database) gate nothing.
+  evidence: Nothing under .github/workflows/ invokes `pyforge-scribe-test`, and `src/shared/packages/pyforge-scribe/**` is absent from platform-ci.yml's `paths:` filter. This PR runs platform CI only because it touches src/platform/**; a later edit to graph_store_pg.py alone triggers no workflow. Pre-existing — the scribe suite was never wired in.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred 5bd99ab9e250 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-3: platform_app's real grant set is never executed by any test; the DML-revoked-role test hand-writes equivalent grants instead.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: platform_app's real grant set is never executed by any test; the DML-revoked-role test hand-writes equivalent grants instead.
+  evidence: No test applies create_app_role.sql or pyforge-scribe:3 and then connects. test_store_works_as_a_ddl_revoked_role synthesises its own role and types the grants into the test body, so the shipped SQL could drift from it and stay green. Flipping :3's precondition to `expectedResult:0` would skip the grants on exactly the databases where platform_app exists, and every test still passes.
+  location: src/platform/db/changelog/changes/pyforge-scribe-3-app-role-grants.sql
+  origin: spec-deferred b017b5861086 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-4: Red-team B-1 is only half-addressed — numbering is per-distribution, but scribe's changesets still ship inside the single master changelog, so a scribe schema change still rides the platform release.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: Red-team B-1 is only half-addressed — numbering is per-distribution, but scribe's changesets still ship inside the single master changelog, so a scribe schema change still rides the platform release.
+  evidence: There is no per-distribution sub-changelog, includeAll, or contexts:/labels: on the new changesets, and every estate gets scribe's DDL whether or not scribe is deployed. Unmapped django-<station> migrations also still fall through to `default: python-agent-platform`, so the release coupling B-1 names persists by default until each station registers.
+  location: src/platform/db/changelog/db.changelog-master.yaml
+  origin: spec-deferred b1923db21c86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-5: graph_nodes.embedding is declared without a dimension, so no ivfflat or hnsw index is possible and query_similar sequentially scans the table.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: graph_nodes.embedding is declared without a dimension, so no ivfflat or hnsw index is possible and query_similar sequentially scans the table.
+  evidence: `embedding vector` in pyforge-scribe:2, and no index changeset exists. This is parity with the pre-41.3 driver, not a regression, but bringing the DDL under governance is the natural moment to fix it — and it leaves the new README's CREATE INDEX CONCURRENTLY exception process with no user.
+  location: src/platform/db/changelog/changes/pyforge-scribe-2-graph-nodes.sql
+  origin: spec-deferred a441d8e7a1a7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-6: Every django_db test in src/platform errors at test-database setup on `ValidationError: slug 'home' is already in use`.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: Every django_db test in src/platform errors at test-database setup on `ValidationError: slug 'home' is already in use`.
+  evidence: Raised from front_door.apps::_seed_lane1_homepage in post_migrate. Reproduced on tests/test_health_endpoint.py, which this story never touches, and it persists with --create-db, so it is not a --reuse-db artifact. It blocks test_app_role_create_alter_drop_refused_by_postgresql and test_live_first_party_tree_is_covered locally; the CI step they mirror was run directly instead.
+  location: src/platform/platformapp/front_door/lane1_seed.py:41
+  origin: spec-deferred e7fd703e7270 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-7: Two test_openfeature_channel_policy tests are red on main from a cachebox pin drift.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: Two test_openfeature_channel_policy tests are red on main from a cachebox pin drift.
+  evidence: `cachebox must be pinned '>=5.1,<6' so conda-forge 6.x is not selected (got '>=5.2.3')`. The test reads pixi.toml, which this story does not modify.
+  location: src/platform/tests/policy/test_openfeature_channel_policy.py:137
+  origin: spec-deferred eca25a0ad356 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-3-8: GraphSchemaMissing is not re-exported from pyforge.scribe, and no scribe doc records that the durable graph store now requires Liquibase to have run.
+
+- source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
+  summary: GraphSchemaMissing is not re-exported from pyforge.scribe, and no scribe doc records that the durable graph store now requires Liquibase to have run.
+  evidence: PostgresGraphStore.__init__ now raises on an unprovisioned database — a behaviour change for every existing consumer — but only src/platform/db/README.md says so. The scribe package README, docs/cli-runbooks.md and .claude/skills/pyforge-scribe/SKILL.md are silent.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py
+  origin: spec-deferred bce4bb0e169d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4: An explicit COMPONENT_BROKER_CA_BUNDLE cannot override a resolving OS trust store, so the operator knob is unreachable on any host that ships a default CA file.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: An explicit COMPONENT_BROKER_CA_BUNDLE cannot override a resolving OS trust store, so the operator knob is unreachable on any host that ships a default CA file.
+  evidence: The intent's "Always" clause mandates "Truststore first; explicit bundle path second", so the ordering is contractual and was deliberately not changed here. The consequence is that tier 2 is reached only when tier 1 resolves nothing: `.pixi/envs/python-agent-platform/ssl/cert.pem` exists, and Containerfile:153 copies the env to the same absolute prefix, so the compiled-in default resolves inside the shipped image. An operator installing a private CA at, say, /etc/pki/corp-ca.pem and setting COMPONENT_BROKER_CA_BUNDLE gets the distro bundle in ssl_ca_certs instead, and fails verification at first connect. The escape hatch under the current ordering is SSL_CERT_FILE / SSL_CERT_DIR. Needs a product decision (explicit-wins, or document SSL_CERT_FILE as the knob).
+  location: src/platform/config/broker_tls.py — resolve_ca_trust()
+  origin: spec-deferred 0719d3dc32ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-2: CHANNEL_LAYERS (channels_redis) and REDIS_CACHE_URL (django-redis) share the Redis URL but get none of this TLS posture.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: CHANNEL_LAYERS (channels_redis) and REDIS_CACHE_URL (django-redis) share the Redis URL but get none of this TLS posture.
+  evidence: src/platform/config/settings/production.py wires channel_layers_for_broker( REDIS_BROKER_URL) and the django-redis cache aliases; both build their own TLS context with no COMPONENT_BROKER_CA_BUNDLE and no CERT_NONE opt-out. The intent scoped this story to "the Celery broker and the result backend", so this is out of scope here, but it means "single declaration site for the broker's TLS posture" is true for Celery only.
+  location: src/platform/config/settings/production.py
+  origin: spec-deferred c22fd7e99777 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-3: The Helm chart still wires plaintext redis://, so no deployed component takes the new code path and nothing refuses unencrypted broker traffic.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: The Helm chart still wires plaintext redis://, so no deployed component takes the new code path and nothing refuses unencrypted broker traffic.
+  evidence: deploy/charts/platform/templates/_helpers.tpl templates redis:// for REDIS_BROKER_URL, REDIS_CACHE_URL and REDIS_URL, with no TLS key and no COMPONENT_BROKER_CA_BUNDLE; tests/test_chart_invariants.py is unchanged. This story makes TLS honest when it is used; it does not turn it on. Red-team X-2 / directive R-14 is only half-discharged until the chart moves to rediss:// and a deployed plaintext broker is itself refused.
+  location: deploy/charts/platform/templates/_helpers.tpl
+  origin: spec-deferred 5652c1016bee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-4: mypy cannot run at all, so the new modules got no type check.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: mypy cannot run at all, so the new modules got no type check.
+  evidence: "Error constructing plugin instance of NewSemanalDjangoPlugin" / INTERNAL ERROR (django-stubs vs mypy 2.3.1). It fails before analysing any file, on a clean tree too. Platform CI runs `mypy platformapp config tests`, so that step is red independently of this story — pre-existing, not caused here.
+  location: src/platform (Platform CI mypy step)
+  origin: spec-deferred 306fd05c246e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-5: configure_observability() now materializes Django settings even when OTel is disabled, and config/__init__.py imports celery_app at module scope.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: configure_observability() now materializes Django settings even when OTel is disabled, and config/__init__.py imports celery_app at module scope.
+  evidence: The story added load_django_settings() to configure_observability() to repair a real swallow (DjangoInstrumentor catching ImproperlyConfigured and calling settings.configure()). The call sits ahead of configure_telemetry's otel_sdk_is_disabled() early return, so fail-fast is now imposed on a broader set of process configurations than the bug required, and importing any config.* module pins the settings singleton to whatever DJANGO_SETTINGS_MODULE is set at that moment. No in-repo regression observed — the full suite's failure/error set is byte-identical to baseline — but the import-time contract is now stricter and undocumented.
+  location: src/platform/config/observability/__init__.py
+  origin: spec-deferred f2ce97b91c74 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-6: REDIS_SSL in base settings has no readers anywhere in the tree.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: REDIS_SSL in base settings has no readers anywhere in the tree.
+  evidence: The removed CELERY_BROKER_USE_SSL ternary was its only consumer; a repo-wide grep now returns only its own definition. This change kept it alive (rewritten through is_tls_broker) rather than removing a public settings name that ops tooling might read. Decide whether to drop it or record why it stays.
+  location: src/platform/config/settings/base.py
+  origin: spec-deferred d081c2e07dbf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-41-4-7: scripts/.spec-surface-baseline.json needs a scoped stamp for the changed and new config/** files.
+
+- source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
+  summary: scripts/.spec-surface-baseline.json needs a scoped stamp for the changed and new config/** files.
+  evidence: The baseline hashes src/platform/config/** per file under the pyforge-mason/spec-django-accelerator-framework entry; settings/base.py, startup/stage_one.py, startup/__init__.py, observability/__init__.py, manage.py and settings/production.py all changed, and config/broker_tls.py is new with no entry at all, so spec-surface-check will report surface-changed. Left to the dedicated fleet reconciliation pass (a scoped stamp from a clean tree, never a bare --write-baseline), matching what stories 41.1, 41.2 and 41.3 did.
+  location: scripts/.spec-surface-baseline.json
+  origin: spec-deferred f142ec1dd975 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
+  evidence: `config/settings/base.py:610-611` defaults both assertion keys to `""`; only `config/settings/test.py:66-67` assigns them, and `grep -rn ASSERTION src/platform/deploy/` returns nothing — `platform.djangoEnv` carries no such env and no secretKeyRef. `resolve_public_pem()` therefore yields `""` and the gate takes its fail-closed 503 branch. The underlying gap is pre-existing — `supervisor.start_run`/`get`, `assertion/client.py`, `AssertionMiddleware` and the mason/doctor portals already call `crypto.verify_assertion`, whose `_setting_pem` raises on an empty key — but this story widens the blast radius from "the supervisor tools and portals" to "every JSON-RPC method on every station". Wiring the keypair Secret is AD-19 / Story 40.1 territory; the matching chart invariant and a `REQUIRED_SETTINGS` entry belong with it.
+  location: src/platform/deploy/charts/platform/templates/_helpers.tpl (platform.djangoEnv)
+  origin: spec-deferred e25b89413149 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1-2: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: The new NetworkPolicy admits only `component: web`, while mcp-host's three probes are httpGet on the same port and originate from the node.
+  evidence: `mcp-host-deployment.yaml:40-55` uses httpGet startup/liveness/readiness probes on `:8090`; the policy has no ipBlock or node allowance. The chart's only prior NetworkPolicy guards Redis, whose probes are `exec`, so there is no in-repo precedent for an HTTP-probed pod behind a podSelector-only ingress rule. On a CNI that subjects node→pod probe traffic to NetworkPolicy the pod never passes its startupProbe. Not fixable inside this story: AC 4 requires ingress "only from web pods", and the invariant enforces exactly one ingress rule, so a probe exception would fail the story's own test. Needs a deploy-profile decision alongside the mTLS/mesh item above.
+  location: src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
+  origin: spec-deferred 027cb8cce764 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1-3: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: The sidecar hop never watches `receive` for `http.disconnect`, and its budget rose from 5s to at least 300s.
+  evidence: `_stream_upstream_body` relays until upstream ends; with `Queue(maxsize=1)` backpressure an abandoned request pins both the pump task and the upstream sidecar connection for the full read budget. Harmless at the old 5s cap, a real resource-holding window at the Celery hard limit. Out of scope on intent authority — the intent asks only that the budget be raised.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
+  origin: spec-deferred 16bc6c104154 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1-4: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: Agent-facing docs and station skills still document a bare `POST /stations/<name>/mcp`, which now returns 401.
+  evidence: `CLAUDE.md`, `AGENTS.md`, the eight `.claude/skills/pyforge-*/SKILL.md` blocks and the `bmad-agent-*` persona skills all describe the route with no `Authorization: Bearer <assertion>` requirement and no pointer to how a caller obtains one. No in-repo caller breaks (portals call in-process by design, per `assertion/client.py`), so the whole behavioural change lands on out-of-repo callers whose contract lives in files this story does not touch.
+  origin: spec-deferred 025d5b60e556 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1-5: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: AC 4's only chart-render proof is `@requires_helm`, and the CI test env has no helm, so it silently skips there.
+  evidence: `requires_helm` is a `skipif`, not a failure. The Platform CI `test` job runs the `platform-ci-test` pixi env, whose deps declare no helm; `kubernetes-helm` is only in `feature.platform-dev`. The story's three (now eight) guard-removed companions are not helm-gated but feed hand-built dicts to the helper, so they prove the helper, not the chart — the template could be deleted with a green CI run. Pre-existing for every chart test in this suite, not introduced here.
+  location: src/platform/tests/test_chart_invariants.py
+  origin: spec-deferred 20e3e0ad533b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-1-6: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-mcp-transport-authorization.md`
+  summary: 401/403 refusals carry no `WWW-Authenticate` challenge and the body is not JSON-RPC-shaped.
+  evidence: `TransportRefusal.body()` emits `{"error": "..."}` on an endpoint that otherwise speaks JSON-RPC 2.0, and no challenge header points a client at the mint view or at protected-resource metadata, so an MCP client has no discoverable path from the refusal to a working call. The intent specifies the status codes only.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/mcp_auth.py
+  origin: spec-deferred 645ced623f6b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2: No `celery beat` process is deployed, so `CELERY_BEAT_SCHEDULE`'s retention entry never fires in the cluster.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: No `celery beat` process is deployed, so `CELERY_BEAT_SCHEDULE`'s retention entry never fires in the cluster.
+  evidence: The chart's only Celery workload is `worker-deployment.yaml` (`args: ["celery", "-A", "config", "worker", "-l", "info"]`); `grep -n beat` over `compose/compose.yml` and `deploy/charts/platform/values.yaml` returns nothing. `CELERY_BEAT_SCHEDULER` has named `django_celery_beat`'s DatabaseScheduler since before this story, with nothing running it. Mitigated but not closed: `manage.py prune_run_state` makes the sweep runnable by an operator or any external scheduler today, and the story's own test drives both runners. Adding a beat Deployment belongs with Story 42.4, which owns Celery's deployment topology (per-station queues, the `builds` pool, grace periods).
+  location: src/platform/deploy/charts/platform/templates/
+  origin: spec-deferred 120db8626212 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-2: The station and per-subject ceilings are count-then-create, so simultaneous starts can overshoot by the number of racing requests.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: The station and per-subject ceilings are count-then-create, so simultaneous starts can overshoot by the number of racing requests.
+  evidence: `enforce_run_bounds` reads `station_queue_depth` / `live_runs_for_subject` before `publish_start` opens its transaction; nothing serialises the two steps. Deliberate, and documented in `supervisor.py`'s module docstring: the failure the bound exists to stop is an agent loop issuing thousands of starts, which an off-by-a-few boundary does not restore, and making it exact needs a lock on a row that does not exist yet. Revisit only if a bound is ever repurposed as a licence/quota rather than backpressure.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+  origin: spec-deferred d67fea3b5d6b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-3: A silently-failing cache `set` leaves the bucket unwritten for one request before the next `get` fails closed.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: A silently-failing cache `set` leaves the bucket unwritten for one request before the next `get` fails closed.
+  evidence: `django_redis` with `IGNORE_EXCEPTIONS` swallows a write failure into `None`, and `set`'s return is backend-dependent (`BaseCache.set` returns `None` normally), so it cannot be read as a health signal without coupling the limiter to one backend. The following `get` returns `None` and refuses, so the window is one request per subject per outage, not an open door.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
+  origin: spec-deferred 9cf6509a1547 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-4: The scoped spec-surface stamp for `spec-pyforge-unifying-strategy` is not run by this story.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: The scoped spec-surface stamp for `spec-pyforge-unifying-strategy` is not run by this story.
+  evidence: `.memlog.md` carries this story's surface entry, which downgrades the drift from `fail` to `drift-presumed: warn`, but `--write-baseline --spec pyforge-steward/spec-pyforge-unifying-strategy` must run from a CLEAN worktree after the commit lands or it bakes uncommitted working-tree bytes into the baseline. That spec's baseline also still lags Stories 40.1, 41.2–41.4 and 42.1 (~60 paths), which this story neither caused nor reconciled.
+  location: scripts/.spec-surface-baseline.json
+  origin: spec-deferred 6e9cafc1fb4f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-5: Nothing outside the pytest settings supplies `PYFORGE_ASSERTION_PUBLIC_KEY` (inherited from Story 42.1), so the limiter is unreachable in a deployed run.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: Nothing outside the pytest settings supplies `PYFORGE_ASSERTION_PUBLIC_KEY` (inherited from Story 42.1), so the limiter is unreachable in a deployed run.
+  evidence: The rate limiter sits behind the transport gate, which answers 503 when no public key resolves. Until the AD-19 keypair Secret lands (Story 40.1 territory), no deployed MCP call gets far enough to be counted. Recorded here only because it now also gates this story's AC 1; the underlying gap and its remedy are already tracked on `spec-42-1-mcp-transport-authorization.md`.
+  location: src/platform/deploy/charts/platform/templates/_helpers.tpl
+  origin: spec-deferred 1886c187bae3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

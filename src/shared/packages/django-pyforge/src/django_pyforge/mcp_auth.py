@@ -43,14 +43,29 @@ class AuthorizedCall:
 
 @dataclass(frozen=True)
 class TransportRefusal:
-    """A refusal the caller must send instead of routing the request."""
+    """A refusal the caller must send instead of routing the request.
+
+    ``retry_after`` is seconds and defaults to 0, meaning "retrying will not
+    help" — an unsigned token stays unsigned. Story 42.2's rate limiter is the
+    one refusal a caller *should* retry, so it is the one that sets it.
+    """
 
     status: HTTPStatus
     error: str
     reason: str
+    retry_after: int = 0
 
     def body(self) -> bytes:
-        return json.dumps({"error": self.error}).encode("utf-8")
+        payload: dict[str, Any] = {"error": self.error}
+        if self.retry_after > 0:
+            payload["retry_after"] = int(self.retry_after)
+        return json.dumps(payload).encode("utf-8")
+
+    def headers(self) -> list[tuple[bytes, bytes]]:
+        """``Retry-After``, only when there is a wait worth naming."""
+        if self.retry_after <= 0:
+            return []
+        return [(b"retry-after", str(int(self.retry_after)).encode("ascii"))]
 
 
 def bearer_from_headers(headers: Any) -> str | None:
