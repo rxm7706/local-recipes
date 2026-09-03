@@ -2,9 +2,12 @@
 title: "Golden Path CD by digest"
 type: "feature"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
+status: "done"
+review_loop_iteration: 1
+followup_review_recommended: false
+updated: "2026-09-03"
 baseline_commit: "58ee07a0"
+baseline_revision: "a323a9cbcd0ed7c8f35a44e9825de10a1eb94662"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
@@ -16,7 +19,15 @@ context:
   - "src/platform/deploy/charts/platform/templates/_helpers.tpl"
 warnings: []
 deferred:
-  - "GitOps repository / Argo profile (steward deploy-profile)."
+  - summary: >-
+      GitOps repository / Argo profile (steward deploy-profile).
+  - summary: >-
+      golden-path-promotion rebuilds all three images after the container job — extra CI minutes per platform-ci run.
+    evidence: |-
+      The promotion job runs three docker builds independently rather than reusing container job artifacts.
+    location: >-
+      .github/workflows/platform-ci.yml
+    severity: medium
 ---
 
 <intent-contract>
@@ -56,13 +67,50 @@ Ledger key `43-4-golden-path-cd-by-digest`. Host never imports `pyforge.*`. Ward
 
 ## Tasks
 
-- [ ] CI push-by-digest + artifact
-- [ ] Chart `required` + refusal test
-- [ ] Deploy workflow
-- [ ] 12.9 gating
-- [ ] Ledger `43-4-golden-path-cd-by-digest` → `review` then `done` via `sprint-ledger-sync`.
+- [x] CI push-by-digest + artifact
+- [x] Chart `required` + refusal test
+- [x] Deploy workflow
+- [x] 12.9 gating
+- [x] Ledger `43-4-golden-path-cd-by-digest` → `review` then `done` via `sprint-ledger-sync`.
 
-## Verification
+## Review Triage Log
+
+### 2026-09-03 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 0, low 1)
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 2
+- addressed_findings:
+  - `[low]` `[patch]` Optional registry push used invalid `docker push repo@digest` syntax — retagged with `:${{ github.sha }}` and push by tag.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Golden-path CD by digest — chart refuses bare/`latest` renders; Platform CI publishes a combined `golden-path-promotion` artifact (three image digests + Warden JSON); new `platform-deploy.yml` verifies the artifact and helm-templates by digest only.
+
+Files changed:
+- `src/platform/deploy/charts/platform/templates/_helpers.tpl` — digest-or-pinned-tag required; `latest` refused
+- `src/platform/deploy/charts/platform/values.yaml` — removed mutable `latest` defaults
+- `src/platform/tests/test_chart_invariants.py` — auto-inject test digests; refusal tests
+- `.github/workflows/platform-ci.yml` — `golden-path-promotion` job; optional registry push
+- `.github/workflows/platform-deploy.yml` — deploy-by-digest workflow (new)
+- `scripts/platform-golden-path-promotion.sh` — record digests + Warden verdict (new)
+- `scripts/platform-deploy-verify-promotion.py` — refuse digests without verdict (new)
+- `src/platform/deploy/README.md` — digest requirement documented
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` — `43-4` → `done`
+
+Review findings: 1 patch applied; 1 deferred (golden-path-promotion rebuilds images after `container` — CI cost); 2 rejected (noise).
+
+Follow-up review recommendation: false (1 low patch; score 1 < 5).
+
+Verification:
+- `82 passed` — `src/platform/tests/test_chart_invariants.py` (platform-dev helm on PATH)
+- `actionlint` clean on `platform-deploy.yml`; `platform-ci.yml` only pre-existing shellcheck infos
+- `pixi run -e local-recipes sprint-ledger-sync --project steward` — wrote steward (239)
+
+Residual risks: `golden-path-promotion` adds a third docker build pass on every platform-ci run; live registry push path not exercised without `PLATFORM_CI_PUSH_REGISTRY` + `PLATFORM_CI_REGISTRY`; GitOps/Argo profile still deferred.
 
 `helm template` invariants; workflow lint (`actionlint` via `pixi exec`).
 

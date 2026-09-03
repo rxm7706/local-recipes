@@ -130,6 +130,11 @@ _CHART_VALUE_SECRET_KEYS = frozenset(
     {"password", "secret", "secretkey", "apikey", "token", "clientsecret"},
 )
 
+# Story 43.4: deterministic digest for helm-gated core renders -- real
+# deploys pin the CI-recorded digest; tests inject this placeholder.
+_TEST_IMAGE_DIGEST = "sha256:" + ("a" * 64)
+_CORE_IMAGE_PIN_PREFIXES = ("image", "sidecar.image", "mcpHost.image")
+
 requires_helm = pytest.mark.skipif(
     shutil.which("helm") is None,
     reason=(
@@ -158,6 +163,22 @@ def _import_yaml() -> Any:
     )
 
 
+def _args_contain_values_path(argv: list[str], prefix: str) -> bool:
+    """True when argv already sets digest or tag for a values image path."""
+    needles = (f"{prefix}.digest=", f"{prefix}.tag=")
+    idx = 0
+    while idx < len(argv):
+        item = argv[idx]
+        if item.startswith("--set") and "=" in item:
+            if any(needle in item for needle in needles):
+                return True
+        if item == "--set" and idx + 1 < len(argv):
+            if any(argv[idx + 1].startswith(needle) for needle in needles):
+                return True
+        idx += 1
+    return False
+
+
 def _helm(*args: str) -> str:
     argv = ["helm", *args]
     touches_core = False
@@ -174,6 +195,10 @@ def _helm(*args: str) -> str:
         argv.extend(
             ["--set-file", f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}"],
         )
+    if touches_core:
+        for prefix in _CORE_IMAGE_PIN_PREFIXES:
+            if not _args_contain_values_path(argv, prefix):
+                argv.extend(["--set", f"{prefix}.digest={_TEST_IMAGE_DIGEST}"])
     result = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
         argv,
         check=False,
@@ -200,13 +225,9 @@ def _render(
 
 
 def _strip_image_tag(image: str) -> str:
-    """The image reference without its trailing tag: split on the LAST ":"
-    only when what follows contains no "/" (a ":" inside a
-    registry-host:port segment is always followed by a "/" path).
-    Digest/port-safe enough for these fixtures -- an "@sha256:..." digest
-    reference would need real reference parsing, and none appears in this
-    chart's values.
-    """
+    """The image reference without its trailing tag or digest suffix."""
+    if "@" in image:
+        return image.split("@", 1)[0]
     head, sep, tail = image.rpartition(":")
     if sep and "/" not in tail:
         return head
@@ -1400,6 +1421,10 @@ def test_helm_template_fails_when_mcp_host_repository_empty() -> None:
             "--set-file",
             f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
             "--set",
+            f"image.digest={_TEST_IMAGE_DIGEST}",
+            "--set",
+            f"sidecar.image.digest={_TEST_IMAGE_DIGEST}",
+            "--set",
             "mcpHost.image.repository=",
         ],
         check=False,
@@ -1412,6 +1437,60 @@ def test_helm_template_fails_when_mcp_host_repository_empty() -> None:
     assert "mcpHost.image.repository is required" in combined
     assert ":<nil>" not in combined
     assert ":latest" not in combined or "platform-mcp-host:" not in combined
+
+
+@requires_helm
+def test_helm_template_fails_without_platform_image_digest_or_tag() -> None:
+    """Story 43.4: bare helm template fails naming the values path."""
+    result = subprocess.run(  # noqa: S603
+        [
+            "helm",
+            "template",
+            "test-release",
+            str(_CORE_CHART),
+            "--set-file",
+            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            "--set",
+            f"sidecar.image.digest={_TEST_IMAGE_DIGEST}",
+            "--set",
+            f"mcpHost.image.digest={_TEST_IMAGE_DIGEST}",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode != 0, result.stdout
+    combined = result.stderr + result.stdout
+    assert "image.digest or image.tag is required" in combined
+
+
+@requires_helm
+def test_helm_template_refuses_latest_platform_image_tag() -> None:
+    """Story 43.4: `latest` is refused for platform images."""
+    result = subprocess.run(  # noqa: S603
+        [
+            "helm",
+            "template",
+            "test-release",
+            str(_CORE_CHART),
+            "--set-file",
+            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            "--set",
+            "image.tag=latest",
+            "--set",
+            f"sidecar.image.digest={_TEST_IMAGE_DIGEST}",
+            "--set",
+            f"mcpHost.image.digest={_TEST_IMAGE_DIGEST}",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode != 0, result.stdout
+    combined = result.stderr + result.stdout
+    assert 'image.tag="latest" is refused' in combined
 
 
 def test_mcp_host_values_have_no_enabled_knob() -> None:
