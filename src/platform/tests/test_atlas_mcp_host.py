@@ -97,7 +97,7 @@ def _authorization(station: str = "atlas") -> str:
     """Story 42.1: the transport gate verifies before it routes, so every POST
     through ``dispatch_station_mcp`` carries an assertion for its station.
     """
-    token = mint_assertion(sub="fixture-21-2", roles=[station], station=station)
+    token = mint_assertion(sub="fixture-21-2", roles=[f"pyforge:station:{station}"], station=station)
     return f"Bearer {token}"
 
 

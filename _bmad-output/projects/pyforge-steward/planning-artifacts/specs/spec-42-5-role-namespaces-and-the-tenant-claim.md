@@ -2,10 +2,13 @@
 title: "Role namespaces and the tenant claim"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
-updated: "2026-09-02"
-baseline_commit: "58ee07a0"
+status: "done"
+updated: "2026-09-03"
+baseline_commit: "b1e8e188d504add83c7e074f1bf01759270ca742"
+baseline_revision: "b1e8e188d504add83c7e074f1bf01759270ca742"
 severity: "HIGH"
+followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md"
@@ -16,7 +19,13 @@ context:
   - "src/platform/tests/test_host_board_row_isolation.py"
 warnings: []
 deferred:
-  - "Per-tenant quotas (after R-8 limiter)."
+  - summary: >-
+      Per-tenant quotas (after R-8 limiter).
+  - summary: >-
+      Legacy bare tenant ids (east/west without pyforge:tenant:) are not accepted even under DJANGO_PYFORGE_LEGACY_BARE_ROLES — only bare station slugs get the migration switch.
+    evidence: |-
+      Spec AC targets bare station names; tenant prefix is required from day one per R-13.
+    severity: low
 ---
 
 <intent-contract>
@@ -55,16 +64,51 @@ Ledger key `42-5-role-namespaces-and-the-tenant-claim`. Host never imports `pyfo
 
 ## Tasks
 
-- [ ] Parser + prefixes
-- [ ] Migration switch + deprecation log
-- [ ] `RunState.tenant` migration via changelog
-- [ ] CloudEvents extension
-- [ ] Tests + Dream matrix
-- [ ] Ledger `42-5-role-namespaces-and-the-tenant-claim` → `review` then `done` via `sprint-ledger-sync`.
+- [x] Parser + prefixes
+- [x] Migration switch + deprecation log
+- [x] `RunState.tenant` migration via changelog
+- [x] CloudEvents extension
+- [x] Tests + Dream matrix
+- [x] Ledger `42-5-role-namespaces-and-the-tenant-claim` → `review` then `done` via `sprint-ledger-sync`.
 
 ## Verification
 
 `src/platform/tests/test_host_board_row_isolation.py`, `test_django_pyforge_chrome.py`, assertion tests.
+
+## Review Triage Log
+
+### 2026-09-03 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (low 1)
+- reject: 2
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+Implemented prefixed role namespaces in `django_pyforge.roles` (`pyforge:station:*`, `pyforge:tenant:*`, `pyforge:admin`) with bare-station refusal and `DJANGO_PYFORGE_LEGACY_BARE_ROLES` deprecation logging. Lane 3 board slicing reads tenant prefix; mint uses `station_granted`; `RunState.tenant` + Liquibase changeset 21; `pyforgetenant` CloudEvents extension and `run.started` publish on supervisor start; Dream RBAC matrix updated.
+
+**Files changed:**
+- `django_pyforge/roles.py` — parser, reachability + tenant helpers
+- `django_atlas_portal/board.py` — tenant-based row role
+- `django_pyforge/models.py` + migration/changelog — `RunState.tenant`
+- `django_pyforge/events/*` — `pyforgetenant`, `run.started`
+- `django_pyforge/supervisor.py` — tenant persistence + event emit
+- `django_pyforge/assertion/views.py` — prefixed station gate
+- `docs/dreams/pyforge-unifying-strategy.md` — RBAC matrix
+- Platform tests — prefixed roles + `test_role_namespaces.py`
+
+**Review:** 0 patches; 1 defer (legacy bare tenants); 2 reject (noise).
+
+**Follow-up review:** false (0 patch findings).
+
+**Verification:** 55 passed non-db (`test_django_pyforge_chrome`, assertion suite, `test_role_namespaces`) under `platform-ci-test`; django_db suites require PostgreSQL (not available locally).
+
+**Residual risks:** IdP mappers must emit prefixed groups before legacy switch is removed; `run.started` publish is best-effort when broker URLs differ.
 
 ## Source
 

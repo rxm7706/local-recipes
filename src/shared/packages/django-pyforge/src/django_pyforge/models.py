@@ -41,6 +41,9 @@ class RunState(models.Model):
     # The run bounds count by this, and `revoke --sub` selects by it, so the
     # subject has to be on the run row and not only on its handle.
     subject = models.CharField(max_length=255, default="")
+    # Story 42.5: tenant id from ``pyforge:tenant:<id>`` on the assertion that
+    # published this run. Empty when the caller holds no unique tenant claim.
+    tenant = models.CharField(max_length=64, default="")
     # The Celery task id this run was published with. Chosen before the task is
     # sent (never read back from the result), so revoke can name a task that is
     # still only queued.

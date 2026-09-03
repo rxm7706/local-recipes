@@ -13,6 +13,7 @@ from django.utils import timezone
 from django_atlas_portal import views as atlas_views
 from django_pyforge.models import RunState
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
+from django_pyforge.roles import prefixed_station
 
 _ROW_ID = re.compile(r'id="atlas-inventory-row"')
 
@@ -27,7 +28,7 @@ def _atlas_client(*, groups: list[str], sub: str = "atlas-op") -> Client:
 
 @pytest.mark.django_db
 def test_authenticated_atlas_get_renders_one_idle_row() -> None:
-    response = _atlas_client(groups=["atlas"]).get("/stations/atlas/")
+    response = _atlas_client(groups=[prefixed_station("atlas")]).get("/stations/atlas/")
     assert response.status_code == HTTPStatus.OK
     html = response.content.decode()
     assert len(_ROW_ID.findall(html)) == 1
@@ -56,7 +57,7 @@ def test_authenticated_atlas_get_renders_latest_run_row() -> None:
         started_at=newer,
     )
 
-    response = _atlas_client(groups=["atlas"]).get("/stations/atlas/")
+    response = _atlas_client(groups=[prefixed_station("atlas")]).get("/stations/atlas/")
     assert response.status_code == HTTPStatus.OK
     html = response.content.decode()
     assert len(_ROW_ID.findall(html)) == 1
@@ -66,7 +67,7 @@ def test_authenticated_atlas_get_renders_latest_run_row() -> None:
 
 def test_warden_role_is_forbidden_and_has_no_row() -> None:
     denied = RequestFactory().get("/stations/atlas/")
-    denied.idp_roles = ["warden"]
+    denied.idp_roles = ["pyforge:station:warden"]
     response = atlas_views.chrome_home(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert b"atlas-inventory-row" not in response.content
@@ -74,6 +75,6 @@ def test_warden_role_is_forbidden_and_has_no_row() -> None:
 
 @pytest.mark.django_db
 def test_warden_session_get_is_forbidden() -> None:
-    response = _atlas_client(groups=["warden"]).get("/stations/atlas/")
+    response = _atlas_client(groups=[prefixed_station("warden")]).get("/stations/atlas/")
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert b"atlas-inventory-row" not in response.content

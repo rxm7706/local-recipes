@@ -21,6 +21,7 @@ from django_pyforge.context_processors import is_switcher_tile
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
+from django_pyforge.roles import prefixed_station
 from django_pyforge.workclass_probe import views as infra_views
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
@@ -137,10 +138,11 @@ def _model_subclasses(tree: ast.AST) -> list[str]:
 def test_one_session_eight_station_gets() -> None:
     client = Client()
     session = client.session
-    session[IDP_TOKEN_ROLES_SESSION_KEY] = list(EIGHT_STATIONS)
+    prefixed = [prefixed_station(station) for station in EIGHT_STATIONS]
+    session[IDP_TOKEN_ROLES_SESSION_KEY] = prefixed
     session[IDP_TOKEN_CLAIMS_SESSION_KEY] = {
         "sub": "operator",
-        "groups": list(EIGHT_STATIONS),
+        "groups": prefixed,
     }
     session.save()
 
@@ -212,7 +214,7 @@ def test_work_class_01_and_02_are_not_switcher_tiles() -> None:
 
 def test_work_class_01_is_omitted_from_switcher_but_url_resolves() -> None:
     request = RequestFactory().get("/stations/infra-probe/")
-    request.idp_roles = ["infra-probe", "warden"]
+    request.idp_roles = ["pyforge:station:infra-probe", "pyforge:station:warden"]
     listed = {portal.station_name for portal in chrome(request)["pyforge_portals"]}
     assert "infra-probe" not in listed
     assert "warden" in listed
@@ -226,7 +228,7 @@ def test_work_class_01_is_omitted_from_switcher_but_url_resolves() -> None:
     match = resolve("/stations/infra-probe/")
     assert match.func.__name__ == "chrome_home"
     allowed = RequestFactory().get("/stations/infra-probe/")
-    allowed.idp_roles = ["infra-probe"]
+    allowed.idp_roles = ["pyforge:station:infra-probe"]
     response = infra_views.chrome_home(allowed)
     assert response.status_code == HTTPStatus.OK
     assert b'id="infra-probe-body"' in response.content
@@ -239,7 +241,7 @@ def test_work_class_01_is_omitted_from_switcher_but_url_resolves() -> None:
 @pytest.mark.django_db
 def test_new_shell_without_role_is_forbidden() -> None:
     denied = RequestFactory().get("/stations/atlas/")
-    denied.idp_roles = ["warden"]
+    denied.idp_roles = ["pyforge:station:warden"]
     response = atlas_views.chrome_home(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
     allowed = RequestFactory().get("/stations/atlas/")

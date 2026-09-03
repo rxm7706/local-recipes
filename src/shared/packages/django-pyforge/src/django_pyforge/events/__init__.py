@@ -19,6 +19,7 @@ from django_pyforge.events.constants import EXT_GIT_SHA
 from django_pyforge.events.constants import EXT_LOOP_DEPTH
 from django_pyforge.events.constants import EXT_SBOM_PURL
 from django_pyforge.events.constants import EXT_SPEC_ID
+from django_pyforge.events.constants import EXT_TENANT
 from django_pyforge.events.constants import EXT_TRACEPARENT
 from django_pyforge.events.constants import EXT_WORK_ITEM_ID
 from django_pyforge.events.constants import LOOP_DEPTH_CEILING
@@ -53,6 +54,7 @@ __all__ = [
     "EXT_LOOP_DEPTH",
     "EXT_SBOM_PURL",
     "EXT_SPEC_ID",
+    "EXT_TENANT",
     "EXT_TRACEPARENT",
     "EXT_WORK_ITEM_ID",
     "LOOP_DEPTH_CEILING",

@@ -38,6 +38,7 @@ from django_pyforge.assertion.schema import DELEGATED_BY
 from django_pyforge.assertion.schema import MAX_TTL_SECONDS
 from django_pyforge.assertion.schema import audience_for
 from django_pyforge.assertion.views import mint
+from django_pyforge.roles import prefixed_station
 from jwt.algorithms import RSAAlgorithm
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
@@ -84,7 +85,7 @@ _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 _BANNED_B64 = re.compile(r"\b(urlsafe_b64decode|b64decode)\b")
 _STATION = "warden"
 _SUB = "idp-user-alice"
-_ROLES = ["warden"]
+_ROLES = [prefixed_station("warden")]
 _TEST_ISSUER = "https://test.invalid/realms/platform"
 _TEST_AUDIENCE = "platform-web"
 
@@ -696,7 +697,7 @@ def test_unknown_kid_refreshes_once(
 def test_station_not_in_roles_returns_403(idp_test_keys: dict[str, object]) -> None:
     bearer = _idp_bearer(
         _SUB,
-        ["steward"],
+        ["pyforge:station:steward"],
         private_pem=idp_test_keys["private_pem"],
         kid=idp_test_keys["kid"],
     )
@@ -708,7 +709,7 @@ def test_flags_station_not_in_roles_returns_403(
 ) -> None:
     bearer = _idp_bearer(
         _SUB,
-        ["warden"],
+        ["pyforge:station:warden"],
         private_pem=idp_test_keys["private_pem"],
         kid=idp_test_keys["kid"],
     )

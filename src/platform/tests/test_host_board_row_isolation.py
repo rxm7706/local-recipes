@@ -14,7 +14,9 @@ import pytest
 from django.test import Client
 from django.urls import resolve
 from django_atlas_portal import board as atlas_board
-from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
+from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
+from django_pyforge.roles import prefixed_station
+from django_pyforge.roles import prefixed_tenant
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -55,15 +57,20 @@ def _import_modules(tree: ast.AST) -> list[str]:
 def _client_with_roles(*roles: str) -> Client:
     client = Client()
     session = client.session
-    session[IDP_TOKEN_ROLES_SESSION_KEY] = list(roles)
+    session[IDP_TOKEN_CLAIMS_SESSION_KEY] = {"groups": list(roles)}
     session.save()
     return client
 
 
+def _board_roles(*extra: str) -> tuple[str, ...]:
+    """Station + tenant prefixed roles for the atlas board fixture."""
+    return (prefixed_station("atlas"), *extra)
+
+
 @pytest.mark.django_db
 def test_two_roles_same_url_return_disjoint_rows() -> None:
-    east = _client_with_roles("atlas", "east")
-    west = _client_with_roles("atlas", "west")
+    east = _client_with_roles(*_board_roles(prefixed_tenant("east")))
+    west = _client_with_roles(*_board_roles(prefixed_tenant("west")))
     east_response = east.get(BOARD_PATH)
     west_response = west.get(BOARD_PATH)
     assert east_response.status_code == HTTPStatus.OK
@@ -114,7 +121,7 @@ def test_board_filter_then_search_never_searches_master(
     monkeypatch.setattr(atlas_board, "filter_by_role", wrapped_filter)
     monkeypatch.setattr(atlas_board, "search", wrapped_search)
 
-    response = _client_with_roles("atlas", "east").get(BOARD_PATH)
+    response = _client_with_roles(*_board_roles(prefixed_tenant("east"))).get(BOARD_PATH)
     assert response.status_code == HTTPStatus.OK
     assert order == ["get_master_dataset", "filter_by_role", "search"]
 
@@ -131,7 +138,7 @@ def test_search_rejects_unfiltered_master() -> None:
 
 @pytest.mark.django_db
 def test_atlas_only_token_returns_empty_rows() -> None:
-    response = _client_with_roles("atlas").get(BOARD_PATH)
+    response = _client_with_roles(prefixed_station("atlas")).get(BOARD_PATH)
     assert response.status_code == HTTPStatus.OK
     assert response["Cache-Control"] == "no-store"
     assert response.json() == {"rows": []}
@@ -139,14 +146,16 @@ def test_atlas_only_token_returns_empty_rows() -> None:
 
 @pytest.mark.django_db
 def test_multiple_row_roles_fail_closed() -> None:
-    response = _client_with_roles("atlas", "east", "west").get(BOARD_PATH)
+    response = _client_with_roles(
+        *_board_roles(prefixed_tenant("east"), prefixed_tenant("west")),
+    ).get(BOARD_PATH)
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"rows": []}
 
 
 @pytest.mark.django_db
 def test_query_and_body_cannot_widen_rows() -> None:
-    client = _client_with_roles("atlas", "east")
+    client = _client_with_roles(*_board_roles(prefixed_tenant("east")))
     crafted = client.get(BOARD_PATH, {"tenant": "west", "role": "west"})
     assert crafted.status_code == HTTPStatus.OK
     rows = crafted.json()["rows"]
@@ -166,7 +175,7 @@ def test_board_url_without_atlas_station_role_is_forbidden() -> None:
     anon = Client().get(BOARD_PATH)
     assert anon.status_code == HTTPStatus.FORBIDDEN
     assert b'"rows"' not in anon.content
-    row_only = _client_with_roles("east").get(BOARD_PATH)
+    row_only = _client_with_roles(prefixed_tenant("east")).get(BOARD_PATH)
     assert row_only.status_code == HTTPStatus.FORBIDDEN
     assert b'"rows"' not in row_only.content
 

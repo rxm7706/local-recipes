@@ -141,7 +141,7 @@ def _mint(station: str, *, sub: str = "agent-42-1", iat: int | None = None) -> s
     """Sign with the golden key directly -- no Django settings involved."""
     return mint_assertion(
         sub=sub,
-        roles=[station],
+        roles=[f"pyforge:station:{station}"],
         station=station,
         private_pem=GOLDEN_PRIVATE_PEM,
         iat=iat,

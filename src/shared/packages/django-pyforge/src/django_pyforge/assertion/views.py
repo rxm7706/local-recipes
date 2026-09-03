@@ -15,6 +15,7 @@ from jwt.exceptions import PyJWTError
 from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
 from django_pyforge.assertion.exceptions import StationNotInRolesError
+from django_pyforge.roles import station_granted
 from django_pyforge.assertion.exceptions import VerifierNotConfiguredError
 from django_pyforge.assertion.identity import verify_idp_bearer
 
@@ -57,7 +58,7 @@ def mint(request: HttpRequest) -> HttpResponse:
             extra={"reason": _refusal_reason(exc), "event": "assertion.mint_refused"},
         )
         return JsonResponse({"error": "refused"}, status=401)
-    if station not in roles:
+    if not station_granted(station, roles):
         refusal = StationNotInRolesError("station is not in verified roles")
         logger.warning(
             "assertion.mint_refused",

@@ -127,7 +127,7 @@ def _mcp_value(key: str) -> bool:
     # other station, so the fixture carries an `mcp:flags` assertion.
     authorization = "Bearer " + mint_assertion(
         sub="flag-fixture",
-        roles=["flags"],
+        roles=["pyforge:station:flags"],
         station="flags",
     )
     with TestClient(_mcp_host()) as client:

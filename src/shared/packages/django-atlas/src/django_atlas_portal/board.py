@@ -20,7 +20,7 @@ from pyforge.steward.dashboard.filtering import filter_by_role
 from pyforge.steward.dashboard.filtering import search
 
 from django_pyforge.access import require_station_role
-from django_pyforge.roles import roles_from_request
+from django_pyforge.roles import tenant_from_request
 
 BOARD_CACHE_KEY = "atlas-board-master"
 BOARD_DECLARATION = AccessDeclaration(access_column="tenant", roles=("east", "west"))
@@ -41,16 +41,17 @@ def fetch_master_dataset() -> tuple[dict[str, Any], ...]:
     return tuple(copy.deepcopy(row) for row in _MASTER_ROWS)
 
 
-def row_role_from_token(token_roles: frozenset[str]) -> str | None:
-    """Unique intersection of token roles with the declaration vocabulary.
+def row_role_from_token(token_tenant: str | None) -> str | None:
+    """Unique tenant id for row slicing, validated against the declaration.
 
-    Zero or multiple matches fail closed (``role=None`` → empty frame).
-    Station role ``atlas`` is reachability, not a row tag.
+    Zero or multiple tenant claims fail closed (``role=None`` → empty frame).
+    Station reachability is ``pyforge:station:atlas``, not a row tag.
     """
-    matched = token_roles & frozenset(BOARD_DECLARATION.roles)
-    if len(matched) != 1:
+    if token_tenant is None:
         return None
-    return next(iter(matched))
+    if token_tenant not in BOARD_DECLARATION.roles:
+        return None
+    return token_tenant
 
 
 def _keep_all(_row: Mapping[str, Any]) -> bool:
@@ -62,7 +63,7 @@ def _keep_all(_row: Mapping[str, Any]) -> bool:
 def board_view(request: HttpRequest) -> JsonResponse:
     """Serve role-sliced rows at one path for every caller (canopy AD-20)."""
     master = get_master_dataset(BOARD_CACHE_KEY, fetch_master_dataset, cache=cache)
-    role = row_role_from_token(roles_from_request(request))
+    role = row_role_from_token(tenant_from_request(request))
     filtered = filter_by_role(master, BOARD_DECLARATION, role)
     rows = search(filtered, _keep_all)
     response = JsonResponse({"rows": [dict(row) for row in rows]})

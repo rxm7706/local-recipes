@@ -13,7 +13,7 @@ from django_pyforge.assertion.client import PortalClient
 def _herald_request() -> object:
     request = RequestFactory().get("/stations/herald/")
     request.idp_token_claims = {"sub": "herald-operator", "groups": ["herald"]}
-    request.idp_roles = ["herald"]
+    request.idp_roles = ["pyforge:station:herald"]
     return request
 
 
@@ -70,6 +70,6 @@ def test_portal_client_invoke_signs_then_projects() -> None:
 
 def test_herald_home_without_role_is_forbidden() -> None:
     denied = RequestFactory().get("/stations/herald/")
-    denied.idp_roles = ["steward"]
+    denied.idp_roles = ["pyforge:station:steward"]
     response = herald_views.chrome_home(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
