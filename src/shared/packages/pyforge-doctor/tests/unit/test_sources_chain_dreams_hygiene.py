@@ -148,6 +148,44 @@ def test_realized_without_realization_log_reports(tmp_path: Path) -> None:
     assert any(f.check == "realization-log-missing" for f in findings)
 
 
+def test_historical_section_too_long_on_fixture(tmp_path: Path) -> None:
+    """Story 43.1: fires on a long *historical* section, not on conformant Dreams."""
+    _write_roster(tmp_path)
+    body_lines = [
+        "---",
+        "owner: steward",
+        "status: specified",
+        "type: dream",
+        "title: Hist",
+        "---",
+        "",
+        "intro",
+        "",
+        "## Historical illustration (do not build)",
+    ]
+    body_lines += [f"line {i}" for i in range(25)]
+    body_lines += ["", "## Realization log", "", "- noted"]
+    path = tmp_path / "docs" / "dreams" / "hist-fixture.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(body_lines) + "\n", encoding="utf-8")
+    _write_readme(tmp_path, [])
+    findings = chain.gather_dreams_hygiene(tmp_path)
+    assert any(f.check == "historical-section-too-long" for f in findings)
+
+
+def test_living_unifying_strategy_has_no_historical_section_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: post-43.1 living Dream must not trip its own detector."""
+    repo = Path(__file__).resolve().parents[6]
+    monkeypatch.chdir(repo)
+    findings = chain.gather_dreams_hygiene(repo)
+    hist = [f for f in findings if f.check == "historical-section-too-long"]
+    assert not any(
+        f.evidence.get("subject") == "pyforge-unifying-strategy" for f in hist
+    )
+
+
 def test_dreamt_may_omit_realization_log(tmp_path: Path) -> None:
     _write_roster(tmp_path)
     _write_dream(

@@ -137,7 +137,7 @@ development_status:
   42-3-bus-delivery-semantics-and-a-deployed-consumer: done
   42-4-celery-hardening-and-the-builds-pool: done
   42-5-role-namespaces-and-the-tenant-claim: done
-  43-1-split-the-dream: backlog
+  43-1-split-the-dream: review
   43-2-station-api-contract: backlog
   43-3-in-process-station-port-no-self-call: backlog
   43-4-golden-path-cd-by-digest: backlog
