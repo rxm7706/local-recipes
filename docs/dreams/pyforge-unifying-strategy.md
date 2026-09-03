@@ -47,7 +47,7 @@ the cookiecutter host). Table + `extends:` live in
 | `pap:CAP-2` | parent CAP-2 | Langflow Pattern A + `langflow_schema` |
 | `pap:CAP-3` | parent CAP-3 | DB-GPT via `pap:AD-17` pattern switch (Pattern B today) |
 | `pap:CAP-4` | parent CAP-4 | Celery; async never blocks Django |
-| `pap:CAP-5` | parent CAP-5 | One factory-sourced env; Python `3.12.*` |
+| `pap:CAP-5` | parent CAP-5 | One factory-sourced env; Python `3.14.*` |
 | `pap:CAP-6` | parent CAP-6 | Air-gap parity is a failing check |
 
 **Single-Spec merge is parked, not forgotten.** Copy `pap:CAP-*` full text into Unifying
@@ -345,44 +345,43 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=1d48935b690b3fcd -->
+<!-- pixi-env-matrix:begin lock-sha256=f46a192f9ecce8a4 -->
 
-Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
+Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
 | Environment | Python | Conda records | Platforms |
 |---|---|---:|---|
 | ``bmad-suite-full`` | ``3.14.*`` | 80 | ``linux-64`` |
 | ``bmad-ui`` | ``3.14.*`` | 51 | ``linux-64`` |
-| ``build`` | ``3.14.*`` | 240 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``build`` | ``3.14.*`` | 241 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``conda-smithy`` | ``3.14.*`` | 232 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``dbgpt-sidecar`` | ``3.12.*`` | 410 | ``linux-64`` |
+| ``dbgpt-sidecar`` | ``3.14.*`` | 404 | ``linux-64`` |
 | ``default`` | ``3.14.*`` | 124 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``gcloud`` | ``3.14.*`` | 151 | ``linux-64``, ``osx-arm64-min`` |
 | ``grayskull`` | ``3.14.*`` | 247 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``linux`` | ``3.14.*`` | 150 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``local-recipes`` | ``3.14.*`` | 1,173 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``mcp-host`` | ``3.12.*`` | 67 | ``linux-64`` |
-| ``osx`` | ``3.14.*`` | 239 | ``osx-arm64-min`` |
-| ``platform-ci-test`` | ``3.12.*`` | 327 | ``linux-64`` |
-| ``platform-dev`` | ``3.12.*`` | 508 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-atlas`` | ``3.14.*`` | 459 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``local-recipes`` | ``3.14.*`` | 1,172 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``mcp-host`` | ``3.14.*`` | 67 | ``linux-64`` |
+| ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
+| ``platform-ci-test`` | ``3.14.*`` | 329 | ``linux-64`` |
+| ``platform-dev`` | ``3.14.*`` | 504 | ``linux-64``, ``osx-arm64-min`` |
+| ``pyforge-atlas`` | ``3.14.*`` | 460 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-ci`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-container`` | ``3.14.*`` | 596 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-container`` | ``3.14.*`` | 597 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-doctor`` | ``3.14.*`` | 92 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-herald`` | ``3.14.*`` | 136 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-marshal`` | ``3.14.*`` | 137 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-mason`` | ``3.12.*`` | 123 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-mason`` | ``3.12.*`` | 124 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 63 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-steward`` | ``3.14.*`` | 78 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.12.*`` | 50 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 164 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``python-agent-platform`` | ``3.12.*`` | 503 | ``linux-64``, ``osx-arm64-min`` |
+| ``python-agent-platform`` | ``3.14.*`` | 499 | ``linux-64``, ``osx-arm64-min`` |
 | ``vuln-db`` | ``3.14.*`` | 246 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``win`` | ``3.14.*`` | 304 | ``win-64`` |
+| ``win`` | ``3.14.*`` | 305 | ``win-64`` |
 
 <!-- pixi-env-matrix:end -->
-
 ## Fleet conventions (one vocabulary)
 
 Contract is Grounding (2026-08-30). Ten-row evidence table:

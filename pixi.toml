@@ -137,8 +137,8 @@ dependencies.google-cloud-sdk = ">=583.0.0"
 # The ONE environment that runs the three agentic engines (langflow, dbgpt,
 # dbgpt-serve) alongside Django on a single Python interpreter, sourced
 # entirely from this factory's own conda-forge feedstocks. Pins
-# `python = "3.12.*"` env-scoped ONLY -- no other feature/env in this file
-# changes its python floor; the rest of the repo stays on 3.14. Promotes the
+# `python = "3.14.*"` -- CAP-5's one interpreter across laptop and cluster;
+# every pixi env in this file shares the same floor (Story 43.6). Promotes the
 # operator-verified 373-package conda-native solve
 # (docs/dreams/enterprise-multi-agent-orchestration.md) into a first-class,
 # reproducible pixi env. Epic 11's engine-mounting stories and this epic's
@@ -179,7 +179,7 @@ channel-priority = "flexible"
 
 [feature.python-agent-platform.dependencies]
 python = "3.14.*"                 # env-scoped python floor -- CAP-5's one interpreter; the rest of the repo stays on 3.14
-langflow = ">=1.11.4"             # agentic engine 1/3 (langflow-suite feedstock, python_min 3.11 -- compatible with our 3.12 floor)
+langflow = ">=1.11.4"             # agentic engine 1/3 (langflow-suite feedstock, python_min 3.11 -- compatible with our 3.14 floor)
 dbgpt = ">=0.8.2"                 # agentic engine 2/3 (db-gpt feedstock)
 dbgpt-serve = ">=0.8.2"           # agentic engine 3/3 (db-gpt feedstock)
 django = ">=5.2.17,<6"            # the host web framework the engines mount into (Epic 11)
@@ -499,8 +499,8 @@ pytest = ">=9.1.1"                       # test runner
 django = ">=5.2.17,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 channels = ">=4.3.2,<5.0"                 # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
 daphne = ">=4.2.3,<5.0"                   # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-asgiref = ">=3.12.1"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-channels_redis = ">=4.3.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+asgiref = ">=3.12.1,<4.0"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+channels_redis = ">=4.3.0,<5.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."

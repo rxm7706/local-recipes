@@ -1,4 +1,3 @@
-[33m WARN[0m Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-43.2/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
 name: build
 channels:
 - conda-forge
@@ -8,11 +7,11 @@ dependencies:
 - python >=3.14.6,3.14.*
 - python 3.14.*
 - pixi >=0.78.0
-- gh >=2.98.0
+- gh >=2.99.0
 - gitpython >=3.1.61
 - nodejs >=24.16.0,<27.0,!=25.*
 - bmad-method >=6.11.0
-- spec-kit >=1.0.1
+- spec-kit >=1.0.4
 - truststore >=0.10.4
 - conda >=26.5.0
 - conda-libmamba-solver >=24.9.0
@@ -23,5 +22,5 @@ dependencies:
 - frozendict *
 - rattler-build-conda-compat >=1.2.0,<2.0.0a0
 - pip >=26.2.1
-- uv >=0.12.7
+- uv >=0.12.9
 
