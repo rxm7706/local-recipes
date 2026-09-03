@@ -160,6 +160,33 @@ def resolve_story_spec_path(repo_root: Path, slug: str, story: str) -> Path | No
     return None
 
 
+def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Path:
+    """Map a primary-tree spec onto the dispatch worktree copy.
+
+    Harness prompts must never receive ``repo_root`` paths: bmad-build-auto
+    writes status/baseline onto whatever path is named, and that leaked
+    onto operator ``main`` (Story 42.5). Already-relocated paths are
+    returned unchanged.
+    """
+    spec = spec_path.resolve()
+    wt = worktree.resolve()
+    root = canonical_repo_root(repo_root)
+    try:
+        spec.relative_to(wt)
+    except ValueError:
+        pass
+    else:
+        return spec
+    try:
+        relative = spec.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(
+            f"spec_path {str(spec)!r} is neither under worktree "
+            f"{str(wt)!r} nor repo root {str(root)!r}"
+        ) from exc
+    return wt / relative
+
+
 def expected_story_spec_glob(repo_root: Path, slug: str, story: str) -> str | None:
     """The tracked spec glob operators must author (Story 28.19, CAP-2).
 

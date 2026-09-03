@@ -59,7 +59,12 @@ def finalize_dispatch_land(project_slug: str, story_key: str) -> int:
             data=data,
         )
 
-    _promote_sprint_ledger(fs, vcs, root, project_slug, [key], deploy_run, findings)
+    # CAP-5 made ``base`` keyword-only. Omitting it crashed finalize
+    # after a green merge, so the tracked ledger stayed backlog/review
+    # and drain re-implemented the landed story (42.2 / 42.3).
+    _promote_sprint_ledger(
+        fs, vcs, root, project_slug, [key], deploy_run, findings, base="main"
+    )
     blocking = [f for f in findings if f.severity.name == "ERROR"]
     if blocking:
         for finding in blocking:

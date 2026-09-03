@@ -207,6 +207,14 @@ class BmadBuildHarness:
                 f"(skipped: {[s.profile for s in resolution.skipped]!r})"
             )
         profile = resolution.spec
+        try:
+            spec_path.resolve().relative_to(worktree.resolve())
+        except ValueError as exc:
+            raise BuildHarnessError(
+                f"spec_path {str(spec_path)!r} is not inside dispatch "
+                f"worktree {str(worktree)!r} — refusing to leak writes "
+                f"onto the primary tree"
+            ) from exc
         prompt = (
             f"Run bmad-build-auto for this single story only.\n"
             f"Station: {project_slug}\n"

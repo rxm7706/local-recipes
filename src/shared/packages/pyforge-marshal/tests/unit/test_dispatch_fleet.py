@@ -86,8 +86,9 @@ def test_station_backlog_drops_done_and_malformed_keys() -> None:
         ("2-1-queued", "backlog"),
         ("not-a-story-key", "backlog"),
         ("10-1-later", "review"),
+        ("3-1-ready", "in-progress"),
     )
-    assert station_backlog(statuses) == ("2-1-queued", "10-1-later")
+    assert station_backlog(statuses) == ("2-1-queued", "3-1-ready")
 
 
 def test_station_backlog_orders_by_story_key_not_lexicographically() -> None:
