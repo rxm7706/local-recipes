@@ -110,17 +110,28 @@ def _station_project_slug(bare_slug: str) -> str:
     return bare_slug if bare_slug.startswith("pyforge-") else f"pyforge-{bare_slug}"
 
 
-def _dispatch_branch_candidates(bare_slug: str, story_key: str) -> tuple[str, ...]:
-    """Expected dispatch branch names for ATTENTION matching (Story 28.23)."""
-    from pyforge.marshal.core.dispatch import (
-        dispatch_worktree_branch,
-        legacy_dispatch_worktree_branch,
-    )
+def _safe_dispatch_ref_segment(raw: str, fallback: str) -> str:
+    """Same sanitizer as marshal ``_safe_ref_segment`` (Story 22.9).
 
+    Inlined so ``pixi run -e local-recipes fleet-picture`` never imports
+    ``pyforge.marshal`` (that package is not in the local-recipes env).
+    """
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", raw)
+    cleaned = re.sub(r"\.{2,}", ".", cleaned).strip("-.")
+    return cleaned or fallback
+
+
+def _dispatch_branch_candidates(bare_slug: str, story_key: str) -> tuple[str, ...]:
+    """Expected dispatch branch names for ATTENTION matching (Story 28.23).
+
+    Mirrors marshal ``dispatch_worktree_branch`` / ``legacy_dispatch_worktree_branch``
+    without importing that package — fleet-picture is a local-recipes reporter.
+    """
     station = _station_project_slug(bare_slug)
     return (
-        dispatch_worktree_branch(station, story_key),
-        legacy_dispatch_worktree_branch(story_key),
+        f"dispatch/{_safe_dispatch_ref_segment(station, 'project')}"
+        f"/{_safe_dispatch_ref_segment(story_key, 'story')}",
+        f"marshal/{_safe_dispatch_ref_segment(story_key, 'story')}",
     )
 
 
@@ -871,14 +882,17 @@ def main() -> int:
     ) in rows:
         live_row = live.get(slug, {}) or {}
         story = current.get(slug, live_row.get("story") or "")
-        needs.extend(
-            _dispatch_stranded_work_needs_lines(
-                slug=slug,
-                story=story,
-                live_row=live_row,
-                open_prs_by_head=open_prs_by_head,
+        try:
+            needs.extend(
+                _dispatch_stranded_work_needs_lines(
+                    slug=slug,
+                    story=story,
+                    live_row=live_row,
+                    open_prs_by_head=open_prs_by_head,
+                )
             )
-        )
+        except Exception:  # noqa: BLE001 -- ATTENTION never kills the report
+            watch.append(f"{slug}: could not check stranded dispatch work")
         if live_row.get("dispatch_verification_verdict") == "refused" and run:
             gate = live_row.get("dispatch_verification_failed_gate") or "?"
             needs.append(

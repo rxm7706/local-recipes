@@ -400,3 +400,26 @@ def test_no_bmad_loop_import_in_fleet_picture_or_detector():
     assert not any(
         n == "bmad_loop" or n.startswith("bmad_loop.") for n in sys.modules
     )
+
+
+def test_dispatch_branch_candidates_do_not_import_marshal():
+    """local-recipes env has no pyforge.marshal — ATTENTION must still name branches."""
+    tree = ast.parse(FLEET_PATH.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                assert "pyforge.marshal" not in alias.name
+        elif isinstance(node, ast.ImportFrom):
+            assert "pyforge.marshal" not in (node.module or "")
+    for name in list(sys.modules):
+        if name == "pyforge.marshal" or name.startswith("pyforge.marshal."):
+            del sys.modules[name]
+    mod = _load_fleet()
+    assert mod._dispatch_branch_candidates("steward", "42.5") == (
+        "dispatch/pyforge-steward/42.5",
+        "marshal/42.5",
+    )
+    assert not any(
+        n == "pyforge.marshal" or n.startswith("pyforge.marshal.")
+        for n in sys.modules
+    )
