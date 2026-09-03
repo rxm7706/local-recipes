@@ -794,6 +794,32 @@ _REALIZATION_LOG_RE = re.compile(
 _STATUSES_REQUIRING_REALIZATION_LOG = frozenset(
     {"pitched", "specified", "realized", "archived"}
 )
+#: Story 43.1 — ``specified``/``realized`` Dreams must not carry long
+#: "historical" sections (red-team R-4 / B-10).
+_STATUSES_HISTORICAL_SECTION_CHECK = frozenset({"specified", "realized"})
+_HISTORICAL_SECTION_MAX_LINES = 20
+_HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
+
+
+def _long_historical_sections(body: str, *, max_lines: int = _HISTORICAL_SECTION_MAX_LINES) -> list[tuple[str, int]]:
+    """Return ``(heading, line_count)`` for sections titled *historical* over budget."""
+    lines = body.splitlines()
+    out: list[tuple[str, int]] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if _HEADING_LINE_RE.match(line) and "historical" in line.casefold():
+            title = line.strip()
+            i += 1
+            start = i
+            while i < len(lines) and not _HEADING_LINE_RE.match(lines[i]):
+                i += 1
+            count = i - start
+            if count > max_lines:
+                out.append((title, count))
+        else:
+            i += 1
+    return out
 
 
 def gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
@@ -1056,6 +1082,25 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
                         evidence={"subject": slug, "status": status_s},
                     )
                 )
+            if status_s in _STATUSES_HISTORICAL_SECTION_CHECK:
+                for title, nlines in _long_historical_sections(body):
+                    findings.append(
+                        Finding(
+                            source=Source.DREAMS_HYGIENE,
+                            check="historical-section-too-long",
+                            status=DoctorStatus.WARN,
+                            message=(
+                                f"Dream {slug!r} section {title!r} is "
+                                f"{nlines} lines (>{_HISTORICAL_SECTION_MAX_LINES})"
+                            ),
+                            evidence={
+                                "subject": slug,
+                                "section": title,
+                                "lines": nlines,
+                                "max_lines": _HISTORICAL_SECTION_MAX_LINES,
+                            },
+                        )
+                    )
 
         if slug in readme_statuses and status_s and readme_statuses[slug] != status_s:
             findings.append(
