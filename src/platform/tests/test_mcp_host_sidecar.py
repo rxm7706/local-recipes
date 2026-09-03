@@ -13,6 +13,7 @@ from unittest.mock import patch
 import pytest
 from starlette.testclient import TestClient
 
+from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.mcp_dual_era import SUPPORTED_MCP_REVISIONS
 from django_pyforge.mcp_dual_era import UNSUPPORTED_PROTOCOL_VERSION
 from django_pyforge.mcp_http import dispatch_station_mcp
@@ -112,12 +113,39 @@ def test_mcp_host_get_is_405(mcp_client: TestClient) -> None:
     assert response.headers.get("allow") == "POST"
 
 
+def _atlas_scope(assertion: str) -> dict:
+    """Story 42.1: the proxy path is behind the transport gate, so a dispatch
+    fixture now carries the assertion it verifies before it proxies.
+    """
+    return {
+        "type": "http",
+        "path": "/stations/atlas/mcp",
+        "method": "POST",
+        "headers": [
+            (b"content-type", b"application/json"),
+            (b"authorization", f"Bearer {assertion}".encode("latin-1")),
+        ],
+    }
+
+
 def test_dispatch_proxies_when_url_set(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://mcp-host:8090")
+    assertion = mint_assertion(sub="agent-sidecar", roles=["atlas"], station="atlas")
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
-    mock_response.content = b'{"jsonrpc":"2.0","id":1,"result":{"ok":true}}'
+
+    async def _aiter_bytes():
+        yield b'{"jsonrpc":"2.0","id":1,"result":{"ok":true}}'
+
+    mock_response.aiter_bytes = _aiter_bytes
+
+    class _StreamContext:
+        async def __aenter__(self):
+            return mock_response
+
+        async def __aexit__(self, *args):
+            return None
 
     class _Client:
         async def __aenter__(self):
@@ -126,8 +154,8 @@ def test_dispatch_proxies_when_url_set(monkeypatch: pytest.MonkeyPatch) -> None:
         async def __aexit__(self, *args):
             return None
 
-        async def request(self, *args, **kwargs):
-            return mock_response
+        def stream(self, *args, **kwargs):
+            return _StreamContext()
 
     sent: list[dict] = []
 
@@ -139,24 +167,20 @@ def test_dispatch_proxies_when_url_set(monkeypatch: pytest.MonkeyPatch) -> None:
 
     async def _run() -> bool:
         with patch("httpx.AsyncClient", return_value=_Client()):
-            return await dispatch_station_mcp(
-                {
-                    "type": "http",
-                    "path": "/stations/atlas/mcp",
-                    "method": "POST",
-                    "headers": [(b"content-type", b"application/json")],
-                },
-                receive,
-                send,
-            )
+            return await dispatch_station_mcp(_atlas_scope(assertion), receive, send)
 
     assert asyncio.run(_run()) is True
     start = next(m for m in sent if m["type"] == "http.response.start")
     assert start["status"] == 200
+    body = b"".join(
+        m.get("body", b"") for m in sent if m["type"] == "http.response.body"
+    )
+    assert body == b'{"jsonrpc":"2.0","id":1,"result":{"ok":true}}'
 
 
 def test_dispatch_502_when_sidecar_down(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:1")
+    assertion = mint_assertion(sub="agent-sidecar", roles=["atlas"], station="atlas")
     sent: list[dict] = []
 
     async def receive():
@@ -166,16 +190,7 @@ def test_dispatch_502_when_sidecar_down(monkeypatch: pytest.MonkeyPatch) -> None
         sent.append(message)
 
     async def _run() -> bool:
-        return await dispatch_station_mcp(
-            {
-                "type": "http",
-                "path": "/stations/atlas/mcp",
-                "method": "POST",
-                "headers": [],
-            },
-            receive,
-            send,
-        )
+        return await dispatch_station_mcp(_atlas_scope(assertion), receive, send)
 
     assert asyncio.run(_run()) is True
     start = next(m for m in sent if m["type"] == "http.response.start")
