@@ -61,6 +61,13 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- define "platform.worker.fullname" -}}
 {{- printf "%s-worker" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
+{{/*
+Story 42.3: per-station event consumer, from (dict "root" $ "station" <token>).
+*/}}
+{{- define "platform.consumeEvents.fullname" -}}
+{{- $base := include "platform.fullname" .root | trunc 40 | trimSuffix "-" }}
+{{- printf "%s-consume-events-%s" $base .station | trunc 63 | trimSuffix "-" }}
+{{- end }}
 
 {{- define "platform.migrate.fullname" -}}
 {{- printf "%s-migrate" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}

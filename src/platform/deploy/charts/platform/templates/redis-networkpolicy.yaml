@@ -26,6 +26,9 @@ spec:
                   - web
                   - worker
                   - migrate
+                  {{- range $station := uniq $.Values.events.consumers }}
+                  - consume-events-{{ $station }}
+                  {{- end }}
       ports:
         - protocol: TCP
           port: 6379
