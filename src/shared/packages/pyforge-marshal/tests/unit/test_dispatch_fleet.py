@@ -87,6 +87,7 @@ def test_station_backlog_drops_done_and_malformed_keys() -> None:
         ("not-a-story-key", "backlog"),
         ("10-1-later", "review"),
         ("3-1-ready", "in-progress"),
+        ("4-6-held", "blocked"),
     )
     assert station_backlog(statuses) == ("2-1-queued", "3-1-ready")
 
@@ -157,6 +158,24 @@ def test_other_modes_stop_at_a_blocked_story_and_never_force_past_it() -> None:
     assert plan.outcome is StationQueueOutcome.BLOCKED
     assert plan.blocked_story == "12-7-live-ocp"
     assert plan.next_story is None
+
+
+def test_harness_done_040_is_skipped_under_drain_to_zero() -> None:
+    """Harness-done CAP-4 (040) must not halt drain_to_zero on a ledger-stale head."""
+    plan = plan_station_queue(
+        slug="pyforge-steward",
+        backlog=("43-4-landed-head", "43-5-next"),
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        blocked={
+            "43-4-landed-head": (
+                "MRS-DISP-040: awaiting-operator (skipped-unverified)"
+            )
+        },
+    )
+    assert plan.outcome is StationQueueOutcome.DISPATCH
+    assert plan.next_story == "43-5-next"
+    assert plan.skipped[0][0] == "43-4-landed-head"
+    assert "43-4-landed-head" in plan.backlog
 
 
 def test_a_declared_skip_is_honored_under_every_mode() -> None:
@@ -2312,6 +2331,88 @@ def test_harness_done_dirty_pr_does_not_relaunch_on_drain(
     assert _status_by_station(report)[slug] is StationCycleStatus.REFUSED
     assert any(f.code == "MRS-DISP-040" for f in report.findings)
     assert any("1017" in f.message for f in report.findings)
+
+
+def test_harness_done_040_advances_to_next_backlog_same_cycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """040 on a harness-done head must dispatch the next implementable story."""
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+    from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-steward"
+    done_head = "43-4-query-plane"
+    next_story = "43-5-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [done_head, next_story]})
+    _seed_done_worktree_spec(tmp_path, slug, done_head)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        dispatch_cli,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (
+            DispatchLandingVerdict.REFUSED,
+            "https://github.com/rxm7706/local-recipes/pull/1033",
+            None,
+        ),
+    )
+    harness = FakeBuildHarness()
+    campaign_blocked: dict[str, dict[str, str]] = {}
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={
+            slug: (
+                (done_head, "backlog"),
+                (next_story, "backlog"),
+                ("43-6-held", "blocked"),
+            )
+        },
+        build_harness=harness,
+        station=slug,
+        campaign_blocked=campaign_blocked,
+    )
+    assert harness.dispatched == [(slug, "43.5")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert report.complete is False
+    assert done_head in campaign_blocked[slug]
+    assert any(f.code == "MRS-DISP-040" for f in report.findings)
+    assert any(f.code == "MRS-DRAIN-004" for f in report.findings)
+
+
+def test_harness_done_040_second_cycle_does_not_block_the_station(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A journaled 040 must not become MRS-DRAIN-005 / campaign-complete."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-steward"
+    next_story = "43-5-next-implementable"
+    _seed_fleet(tmp_path, stories={slug: [next_story]})
+    monkeypatch.chdir(tmp_path)
+    campaign_blocked = {
+        slug: {
+            "43-4-landed-head": "MRS-DISP-040: awaiting-operator (skipped-unverified)"
+        }
+    }
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={
+            slug: (
+                ("43-4-landed-head", "backlog"),
+                (next_story, "backlog"),
+                ("43-6-held", "blocked"),
+            )
+        },
+        build_harness=harness,
+        station=slug,
+        campaign_blocked=campaign_blocked,
+    )
+    assert harness.dispatched == [(slug, "43.5")]
+    assert _status_by_station(report)[slug] is StationCycleStatus.DISPATCHED
+    assert report.complete is False
+    assert not any(f.code == "MRS-DRAIN-005" for f in report.findings)
 
 
 def test_harness_done_no_pr_does_not_relaunch_on_drain(

@@ -56,7 +56,19 @@ STATION_SLUG_PREFIX = "pyforge-"
 DONE_STATUS = "done"
 #: Land/promote only — not a new implement session. ``review`` after merge
 #: is still not ``done``, but re-dispatching it re-ran whole stories.
-NON_IMPLEMENT_STATUSES = frozenset({DONE_STATUS, "review"})
+#: ``blocked`` is an operator hold (e.g. steward 43.6 waiting on mason 13.x)
+#: — never an implementable drain head.
+NON_IMPLEMENT_STATUSES = frozenset({DONE_STATUS, "review", "blocked"})
+
+#: CAP-4 land-only refusal after a harness-done spec (Story 29.2). Not a
+#: station-terminal derived block: the ledger often still says ``backlog``
+#: until isolated promote, and treating 040 as BLOCKED exits ``drain_to_zero``.
+HARNESS_DONE_ADVANCE_CODE = "MRS-DISP-040"
+
+
+def is_harness_done_advance_reason(reason: str) -> bool:
+    """True when a campaign-block reason is harness-done CAP-4 (MRS-DISP-040)."""
+    return reason.startswith(HARNESS_DONE_ADVANCE_CODE)
 
 
 class FleetCampaignMode(StrEnum):
@@ -609,6 +621,11 @@ def plan_station_queue(
       a non-liveness refusal this campaign already recorded. That is what the
       campaign mode governs: ``skip_on_blocked`` steps past it (reporting
       it), the other two modes stop the station there.
+    * ``MRS-DISP-040`` (harness-done, CAP-4 land-only) is recorded as a
+      campaign block so the same story is never relaunched, but it is
+      skipped under every mode the way a declared skip is: remaining
+      implementable backlog must still dispatch. A real derived block
+      (missing spec, CAP-2 failed) still stops ``drain_to_zero``.
 
     Neither kind is ever removed from the backlog or auto-retried -- both
     stay queued, reported by name, for a human.
@@ -637,7 +654,9 @@ def plan_station_queue(
                 next_story=story,
                 skipped=tuple(skipped),
             )
-        if mode is FleetCampaignMode.SKIP_ON_BLOCKED:
+        if mode is FleetCampaignMode.SKIP_ON_BLOCKED or is_harness_done_advance_reason(
+            reason
+        ):
             skipped.append((story, reason))
             continue
         return StationQueuePlan(
