@@ -3049,3 +3049,251 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-42-3: The shipped adapters validate shape and log; Doctor's and Mason's actual reactions (choosing a remedy, running a rebuild, reporting completion) are not implemented here.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The shipped adapters validate shape and log; Doctor's and Mason's actual reactions (choosing a remedy, running a rebuild, reporting completion) are not implemented here.
+  evidence: `DomainAdapter.apply` is a no-op for all four types in `django_pyforge/events/adapters.py`. The story's Approach binds the vocabulary, the consumer runner and its Deployment — which now exist and are proven end to end (publish -> consume -> Celery header) — but the station-side behaviour behind each type is station work (Doctor owns the `remedy.requested` consumer per the change proposal's ownership table). `register_adapter()` is the seam: a station subclasses the adapter for its type and re-registers it at AppConfig ready time.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/adapters.py
+  origin: spec-deferred c5a1635a3361 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-2: A process that dies mid-handler leaves the event at-most-once: the applied key is set before the handler runs (red-team A-3, not in this story's scope).
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: A process that dies mid-handler leaves the event at-most-once: the applied key is set before the handler runs (red-team A-3, not in this story's scope).
+  evidence: `_apply` does `SET NX` before calling the handler and only deletes the key on a raised exception. After a crash the retry pass re-claims the entry, `_mark_applied` fails because the key is still set, and the entry is ACKed as a duplicate without re-running. The TTL from Story 40.2 bounds this to seven days. Fixing it means moving the applied mark after the handler (at-least-once) or a per-consumer in-flight marker; both change the idempotency contract and belong to a story that names A-3.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred c3e6568d3cd6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-3: The handler timeout is a budget, not an enforced limit: nothing interrupts a handler that runs past `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS`.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The handler timeout is a budget, not an enforced limit: nothing interrupts a handler that runs past `DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS`.
+  evidence: The consumer runs handlers inline. The timeout is what `harvest_poison` uses as its `min_idle_time` (so a live handler is never stolen from) and what the chart's `terminationGracePeriodSeconds` is sized against; a handler that hangs holds its entry until the pod is replaced, after which the harvest reclaims it. A real limit needs a thread or `SIGALRM` guard; handlers today enqueue Celery work rather than doing it, so the exposure is a stuck consumer, not a stuck event. Review P3 narrowed the rollout exposure to exactly one handler: SIGTERM now stops the fabric before the next claim/read and interrupts the idle wait.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/management/commands/consume_events.py
+  origin: spec-deferred 1eef53560bc7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-4: `consume_events` now binds through `connect_event_broker` (review P6), so a deployment whose `REDIS_CACHE_URL` equals `REDIS_BROKER_URL` -- the compose stack, which sets only `REDIS_URL` -- refuses to start the consumer with `EventBrokerConfigError`.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: `consume_events` now binds through `connect_event_broker` (review P6), so a deployment whose `REDIS_CACHE_URL` equals `REDIS_BROKER_URL` -- the compose stack, which sets only `REDIS_URL` -- refuses to start the consumer with `EventBrokerConfigError`.
+  evidence: `config/settings/base.py` defaults both `REDIS_BROKER_URL` and `REDIS_CACHE_URL` to `REDIS_URL`; the chart sets distinct Service URLs, compose does not. That refusal is AD-10 doing its job (one Redis serving both roles is the canopy anti-pattern), and it lands on the same compose gap already recorded above (no `consume-events` service). Running the consumer locally needs `REDIS_CACHE_URL` pointed at a second database or instance.
+  location: src/platform/compose/compose.yml
+  origin: spec-deferred d2b7e301ee52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-5: A SIGTERM that lands mid-batch leaves the entries XREADGROUP already delivered (but not yet attempted) pending under the departing consumer name.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: A SIGTERM that lands mid-batch leaves the entries XREADGROUP already delivered (but not yet attempted) pending under the departing consumer name.
+  evidence: Review P3's stop check runs before each entry, so a batch of up to 100 new entries read in one XREADGROUP may be partly unattempted when the loop returns. Those entries carry delivery count 1 and are retried after `backoff_ms(1)` by a consumer of the same name, or reclaimed by `harvest_poison` after the handler timeout by the replacement pod (whose hostname-derived name differs) -- a delay, never a loss. Covered by `test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_idle`. Reading smaller batches once a stop is likely would shorten it.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred 93dd72ab6eab — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-6: A harvest claim counts as a delivery, so an abandoned delivery spends an attempt; with `EVENT_MAX_ATTEMPTS=1` a reclaimed entry is quarantined without a retry.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: A harvest claim counts as a delivery, so an abandoned delivery spends an attempt; with `EVENT_MAX_ATTEMPTS=1` a reclaimed entry is quarantined without a retry.
+  evidence: XAUTOCLAIM increments the delivery counter (JUSTID would not, but then the fields needed for the unparseable check are not returned). The rule is stated in `harvest_poison` and covered by `test_harvest_quarantines_exhausted_entry_with_recorded_error`; with the default of five attempts it costs one retry per crash, which is the honest reading of "delivered and never acknowledged".
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred b634a61bf243 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-7: compose.yml has no `consume-events` service; only the chart deploys the consumer.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: compose.yml has no `consume-events` service; only the chart deploys the consumer.
+  evidence: AC 4 names `helm template`. The local compose stack still runs a producer with no listener; `python manage.py consume_events --station doctor` from a shell against the compose Redis is the workaround until a compose service is added alongside `worker`.
+  location: src/platform/compose/compose.yml
+  origin: spec-deferred 8cd74bd9678d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-8: `events.replicaCount` and `events.resources` are one knob for every consumer station.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: `events.replicaCount` and `events.resources` are one knob for every consumer station.
+  evidence: The values block is a list of station names plus shared settings. Per-station replicas would need a map-shaped value; deliberately not done until a station needs more than one consumer.
+  location: src/platform/deploy/charts/platform/values.yaml
+  origin: spec-deferred 1ab61d6bae11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-9: `test_execute_supervised_run_leaves_no_celery_result_key` (pre-existing, Story 40.2) fails locally for lack of a `django_db` mark; unchanged here.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: `test_execute_supervised_run_leaves_no_celery_result_key` (pre-existing, Story 40.2) fails locally for lack of a `django_db` mark; unchanged here.
+  evidence: It calls `migrate` and creates a `RunState` row without the mark, so pytest-django refuses the connection. Identical at the `1af2ca2b62` baseline (verified by running the HEAD copy in isolation); it is one of the thirteen pre-existing local failures the platform-suite memory note lists. Not touched because it is not this story's test and a mark change deserves its own eyes.
+  location: src/platform/tests/test_cloudevents_redis_broker.py
+  origin: spec-deferred 87ff8d12d36c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-10: Ruff and mypy findings on the touched files are pre-existing categories, not new ones.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: Ruff and mypy findings on the touched files are pre-existing categories, not new ones.
+  evidence: `ruff check` (platform config) over the touched django-pyforge files: 18 findings, all `PLR0913`/`PLR0917`/`FBT001`/`FBT002` on signatures that predate this story plus five `E501` in code this story did not write. `mypy tests/test_cloudevents_redis_broker.py tests/test_chart_invariants.py` (CI's scope): five errors, all in pre-existing code (`CountingRedis.xadd` override, the `lookup_runner` monkeypatch, the liquibase Job helper's `Any | None` key). Platform CI's `ruff check .` does not lint `src/shared/packages/`.
+  location: src/platform/pyproject.toml
+  origin: spec-deferred 604a08154215 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-11: Scoped spec-surface stamp for `spec-pyforge-unifying-strategy` is not run by this story.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: Scoped spec-surface stamp for `spec-pyforge-unifying-strategy` is not run by this story.
+  evidence: The memlog entry for this story is appended (downgrading the drift to `drift-presumed: warn`); `--write-baseline --spec pyforge-steward/spec-pyforge-unifying-strategy` must run from a CLEAN worktree after landing, never from the dispatch worktree — the same residual Story 42.2 recorded, whose ~60-path lag this story does not reconcile either.
+  location: scripts/.spec-surface-baseline.json
+  origin: spec-deferred 2d7798eb123a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-12: The real-redis delivery test skips in CI: `platform-ci-test` has no `redis-server` binary, so CI proves retry/backoff/DLQ/harvest only against `MemoryRedis`.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The real-redis delivery test skips in CI: `platform-ci-test` has no `redis-server` binary, so CI proves retry/backoff/DLQ/harvest only against `MemoryRedis`.
+  evidence: `test_real_redis_retry_backoff_dlq_and_harvest` skips when `shutil.which("redis-server")` is None; the binary is a `platform-dev` feature dependency only and CI's `redis:7` is a service container, not a PATH binary. Adding it to the CI env is a `pixi.toml` + `environment.yaml` change outside this story. The in-memory double now pins redis-py's XCLAIM contract (review P13b), which narrows but does not close the gap.
+  location: pixi.toml (feature.platform-dev)
+  origin: spec-deferred 864542725626 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-13: A process that dies mid-handler still leaves that group's event at-most-once (red-team A-3): the group-scoped applied key is set before the handler runs, so the redelivery is ACKed as a duplicate.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: A process that dies mid-handler still leaves that group's event at-most-once (red-team A-3): the group-scoped applied key is set before the handler runs, so the redelivery is ACKed as a duplicate.
+  evidence: Review pass reaffirmed the implementation pass's A-3 entry after the applied key became group-scoped (review P1): scoping fixed cross-group loss, not same-group crash loss. Out of this story's intent (A-1, A-2, A-4, A-5, R-9).
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred 60b84d1bc4e8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-14: The handler timeout remains a budget, not an enforced limit; a handler that blocks past it stalls the single-threaded consumer and the harvester re-runs the entry concurrently after the threshold.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The handler timeout remains a budget, not an enforced limit; a handler that blocks past it stalls the single-threaded consumer and the harvester re-runs the entry concurrently after the threshold.
+  evidence: Nothing wraps `handler(event)` in a timeout. Reaffirmed by the review pass; the intent treats the handler timeout as a given, not a deliverable.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred 6bc0d169948a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-15: Consumer names default to `<station>-<hostname>` (the pod name), so every rollout mints a new consumer and dead consumers accumulate in the group; nothing runs XGROUP DELCONSUMER.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: Consumer names default to `<station>-<hostname>` (the pod name), so every rollout mints a new consumer and dead consumers accumulate in the group; nothing runs XGROUP DELCONSUMER.
+  evidence: `consume_events.py` derives the consumer from `socket.gethostname()`; abandoned entries return only via `harvest_poison` after the handler timeout, and `XINFO CONSUMERS` grows with each restart.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/management/commands/consume_events.py
+  origin: spec-deferred 341892aa5399 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-16: The consumer has no in-process reconnect for a broker outage; a redis ConnectionError ends the loop and the pod relies on Kubernetes restarts (CrashLoopBackOff) to recover.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The consumer has no in-process reconnect for a broker outage; a redis ConnectionError ends the loop and the pod relies on Kubernetes restarts (CrashLoopBackOff) to recover.
+  evidence: `run_passes` wraps neither `consume` nor `harvest_poison`; a redis-broker restart kills every consumer pod once.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/management/commands/consume_events.py
+  origin: spec-deferred 70ec5f7d3ec9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-3-17: The consume-events Deployment has no liveness probe, so a consumer whose Redis socket hangs or whose handler blocks forever is never replaced.
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: The consume-events Deployment has no liveness probe, so a consumer whose Redis socket hangs or whose handler blocks forever is never replaced.
+  evidence: The template states "No probes -- the consumer has no HTTP surface"; an exec probe on a per-pass heartbeat file would let the Deployment self-heal. Parity with the worker Deployment, which the intent asked for, is preserved as shipped.
+  location: src/platform/deploy/charts/platform/templates/consume-events-deployment.yaml
+  origin: spec-deferred 1a0310b208e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-4: Compose stack still runs a single undifferentiated Celery worker with no beat or builds pool — local dev does not mirror the Kubernetes split-pool topology introduced here.
+
+- source_spec: `planning-artifacts/specs/spec-42-4-celery-hardening-and-the-builds-pool.md`
+  summary: Compose stack still runs a single undifferentiated Celery worker with no beat or builds pool — local dev does not mirror the Kubernetes split-pool topology introduced here.
+  evidence: src/platform/compose/compose.yml worker service unchanged; deploy/README documents K8s only.
+  location: src/platform/compose/compose.yml
+  origin: spec-deferred e9c1ae35bc3d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-4-2: Story 42.4 Helm render tests are gated on `@requires_helm` and skip in platform-ci-test when helm is absent — the same pre-existing CI pattern as other chart stories.
+
+- source_spec: `planning-artifacts/specs/spec-42-4-celery-hardening-and-the-builds-pool.md`
+  summary: Story 42.4 Helm render tests are gated on `@requires_helm` and skip in platform-ci-test when helm is absent — the same pre-existing CI pattern as other chart stories.
+  evidence: test_chart_invariants.py `@requires_helm`; platform-ci-test env has no kubernetes-helm dependency.
+  location: src/platform/tests/test_chart_invariants.py
+  origin: spec-deferred 395c8d2f9102 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-5: Per-tenant quotas (after R-8 limiter).
+
+- source_spec: `planning-artifacts/specs/spec-42-5-role-namespaces-and-the-tenant-claim.md`
+  summary: Per-tenant quotas (after R-8 limiter).
+  evidence: Per-tenant quotas (after R-8 limiter).
+  origin: spec-deferred 2d5f6c25f413 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-5-2: Legacy bare tenant ids (east/west without pyforge:tenant:) are not accepted even under DJANGO_PYFORGE_LEGACY_BARE_ROLES — only bare station slugs get the migration switch.
+
+- source_spec: `planning-artifacts/specs/spec-42-5-role-namespaces-and-the-tenant-claim.md`
+  summary: Legacy bare tenant ids (east/west without pyforge:tenant:) are not accepted even under DJANGO_PYFORGE_LEGACY_BARE_ROLES — only bare station slugs get the migration switch.
+  evidence: Spec AC targets bare station names; tenant prefix is required from day one per R-13.
+  origin: spec-deferred 0d3ef5a74e33 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-43-4: GitOps repository / Argo profile (steward deploy-profile).
+
+- source_spec: `planning-artifacts/specs/spec-43-4-golden-path-cd-by-digest.md`
+  summary: GitOps repository / Argo profile (steward deploy-profile).
+  evidence: GitOps repository / Argo profile (steward deploy-profile).
+  origin: spec-deferred dd1ebb009b7a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-43-4-2: golden-path-promotion rebuilds all three images after the container job — extra CI minutes per platform-ci run.
+
+- source_spec: `planning-artifacts/specs/spec-43-4-golden-path-cd-by-digest.md`
+  summary: golden-path-promotion rebuilds all three images after the container job — extra CI minutes per platform-ci run.
+  evidence: The promotion job runs three docker builds independently rather than reusing container job artifacts.
+  location: .github/workflows/platform-ci.yml
+  origin: spec-deferred dbd876ccb82a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -1,6 +1,6 @@
 ---
-status: in-progress
-spec_updated: 2026-07-15
+status: shipped
+spec_updated: 2026-09-03
 ---
 # Tech Spec: `pyforge.warden` (**Warden**) — Python dependency **compliance gate** (multi-axis)
 

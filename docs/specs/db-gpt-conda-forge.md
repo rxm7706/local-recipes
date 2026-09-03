@@ -1,8 +1,8 @@
 ---
-status: in-progress
+status: shipped
 implemented_by: bmad-quick-dev
 shipped_ref: "5 prereq PRs merged (#33764–#33768); db-gpt itself delivered via external PR #33883 (consume-not-submit, G58) — live detail in § Current State"
-spec_updated: 2026-07-02
+spec_updated: 2026-09-03
 ---
 # Tech Spec: DB-GPT on conda-forge
 

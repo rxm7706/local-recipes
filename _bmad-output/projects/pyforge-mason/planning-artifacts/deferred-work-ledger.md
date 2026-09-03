@@ -1404,3 +1404,32 @@ status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-13-2-1: Rule 2 CFE retro (G26 upper-bound cap case study, v8.86.0) deferred — mason meta-tests forbid in-story conda-forge-expert edits; land via maintenance PR.
+
+- source_spec: `planning-artifacts/specs/spec-13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14.md`
+  summary: Rule 2 CFE retro (G26 upper-bound cap case study, v8.86.0) deferred — mason meta-tests forbid in-story conda-forge-expert edits; land via maintenance PR.
+  evidence: test_persona_consults_cfe.py::test_conda_forge_expert_not_replaced_or_skf_nested fails when CFE SKILL/CHANGELOG change on the story branch.
+  origin: spec-deferred 22c09d04c9a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-13-2-2: Sidecar runtime validation on Python 3.14 (Celery REST round-trip + SQLite metadata store) deferred to Steward 43.6.
+
+- source_spec: `planning-artifacts/specs/spec-13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14.md`
+  summary: Sidecar runtime validation on Python 3.14 (Celery REST round-trip + SQLite metadata store) deferred to Steward 43.6.
+  evidence: dbgpt-client sqlalchemy blocker cleared, but dbgpt-app 3.14 solve still fails on dbgpt-ext-rag's onnxruntime <=1.18.1 (no cp314 build) — sidecar image rebuild belongs to platform-image story.
+  origin: spec-deferred c0fc10a4d69f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-13-2-3: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
+
+- source_spec: `planning-artifacts/specs/spec-13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14.md`
+  summary: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
+  evidence: mamba dry-run: dbgpt+dbgpt-serve+dbgpt-client+django solves on 3.14 with local build; dbgpt-app fails on onnxruntime >=1.14.1,<=1.18.1 missing for cp314.
+  origin: spec-deferred b4726b1d9e43 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
