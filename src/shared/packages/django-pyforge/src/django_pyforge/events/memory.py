@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
@@ -49,7 +50,12 @@ class _Group:
 
 
 class MemoryRedis:
-    """Enough Streams + SET/GET for EventFabric tests."""
+    """Enough Streams + SET/GET for EventFabric tests.
+
+    Pending idle times are real milliseconds (``time.monotonic``) plus an
+    offset a test moves with :meth:`advance_ms`, so backoff and harvest
+    thresholds are exercised without sleeping.
+    """
 
     def __init__(self) -> None:
         self._kv: dict[str, str] = {}
@@ -57,7 +63,14 @@ class MemoryRedis:
         self._streams: dict[str, list[_Entry]] = {}
         self._groups: dict[str, dict[str, _Group]] = {}
         self._seq = 0
-        self._clock = 0
+        self._offset_ms = 0
+
+    def _now_ms(self) -> int:
+        return int(time.monotonic() * 1000) + self._offset_ms
+
+    def advance_ms(self, milliseconds: int) -> None:
+        """Age every pending entry by ``milliseconds`` (test clock)."""
+        self._offset_ms += int(milliseconds)
 
     def _purge_expired(self, key: str) -> None:
         expires = self._expiry.get(key)
@@ -133,6 +146,9 @@ class MemoryRedis:
             del entries[: len(entries) - maxlen]
         return stream_id
 
+    def xlen(self, name: str) -> int:
+        return len(self._streams.get(name, []))
+
     def xgroup_create(
         self,
         name: str,
@@ -197,15 +213,16 @@ class MemoryRedis:
     ) -> tuple[str, list[tuple[str, dict[str, str]]]]:
         group = self._require_group(name, groupname)
         start = _parse_stream_id(start_id)
+        now = self._now_ms()
         claimed: list[tuple[str, dict[str, str]]] = []
         for pending in sorted(group.pending.values(), key=lambda item: _parse_stream_id(item.stream_id)):
             if _parse_stream_id(pending.stream_id) < start:
                 continue
-            idle = max(0, self._clock - pending.delivered_at)
+            idle = max(0, now - pending.delivered_at)
             if idle < min_idle_time:
                 continue
             pending.consumer = consumername
-            pending.delivered_at = self._clock
+            pending.delivered_at = now
             pending.delivery_count += 1
             fields = self._fields(name, pending.stream_id)
             if fields is not None:
@@ -222,12 +239,14 @@ class MemoryRedis:
         min: str = "-",  # noqa: A002 -- redis-py argument name
         max: str = "+",  # noqa: A002 -- redis-py argument name
         count: int = 100,
+        consumername: str | None = None,
         **_kwargs: Any,
     ) -> list[dict[str, str | int]]:
         group = self._require_group(name, groupname)
         lo = _parse_stream_id(min)
         hi = _parse_stream_id(max)
         cap = count
+        now = self._now_ms()
         out: list[dict[str, str | int]] = []
         for pending in sorted(
             group.pending.values(),
@@ -236,7 +255,9 @@ class MemoryRedis:
             parsed = _parse_stream_id(pending.stream_id)
             if parsed < lo or parsed > hi:
                 continue
-            idle = self._clock - pending.delivered_at
+            if consumername is not None and pending.consumer != consumername:
+                continue
+            idle = now - pending.delivered_at
             if idle < 0:
                 idle = 0
             out.append(
@@ -257,20 +278,22 @@ class MemoryRedis:
         groupname: str,
         consumername: str,
         min_idle_time: int,
-        *ids: str,
+        message_ids: Iterable[str] | str,
         **_kwargs: Any,
     ) -> list[tuple[str, dict[str, str]]]:
         group = self._require_group(name, groupname)
+        ids = [message_ids] if isinstance(message_ids, (str, bytes)) else list(message_ids)
+        now = self._now_ms()
         claimed: list[tuple[str, dict[str, str]]] = []
         for stream_id in ids:
             pending = group.pending.get(_as_str(stream_id))
             if pending is None:
                 continue
-            idle = max(0, self._clock - pending.delivered_at)
+            idle = max(0, now - pending.delivered_at)
             if idle < min_idle_time:
                 continue
             pending.consumer = consumername
-            pending.delivered_at = self._clock
+            pending.delivered_at = now
             pending.delivery_count += 1
             fields = self._fields(name, pending.stream_id)
             if fields is not None:
@@ -310,7 +333,7 @@ class MemoryRedis:
         consumername: str,
         count: int | None,
     ) -> list[tuple[str, dict[str, str]]]:
-        self._clock += 1
+        now = self._now_ms()
         last = _parse_stream_id(group.last_id)
         messages: list[tuple[str, dict[str, str]]] = []
         for entry in self._streams.get(stream_name, []):
@@ -321,7 +344,7 @@ class MemoryRedis:
             group.pending[entry.stream_id] = _Pending(
                 stream_id=entry.stream_id,
                 consumer=consumername,
-                delivered_at=self._clock,
+                delivered_at=now,
             )
             group.last_id = entry.stream_id
             messages.append((entry.stream_id, dict(entry.fields)))
@@ -337,7 +360,7 @@ class MemoryRedis:
         start: str,
         count: int | None,
     ) -> list[tuple[str, dict[str, str]]]:
-        self._clock += 1
+        now = self._now_ms()
         floor = _parse_stream_id(start)
         messages: list[tuple[str, dict[str, str]]] = []
         for pending in sorted(group.pending.values(), key=lambda item: _parse_stream_id(item.stream_id)):
@@ -348,7 +371,7 @@ class MemoryRedis:
             fields = self._fields(stream_name, pending.stream_id)
             if fields is None:
                 continue
-            pending.delivered_at = self._clock
+            pending.delivered_at = now
             pending.delivery_count += 1
             messages.append((pending.stream_id, fields))
             if count is not None and len(messages) >= count:

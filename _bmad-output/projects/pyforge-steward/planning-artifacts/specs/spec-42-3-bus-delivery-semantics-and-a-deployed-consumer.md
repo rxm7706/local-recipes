@@ -2,9 +2,10 @@
 title: "Bus delivery semantics and a deployed consumer"
 type: "fix"
 created: "2026-09-02"
-status: "ready-for-dev"
+status: "in-progress"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
+baseline_revision: "1af2ca2b629b3f9a83da8ebe9d651d56a89de9b3"
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
