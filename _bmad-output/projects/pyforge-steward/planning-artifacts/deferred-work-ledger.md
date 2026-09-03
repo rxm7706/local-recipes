@@ -3070,6 +3070,37 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+### DW-FU-42-2-18: A RUNNING row whose worker died without reaching `complete_run` counts against both ceilings forever, and nothing reaps it.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: A RUNNING row whose worker died without reaching `complete_run` counts against both ceilings forever, and nothing reaps it.
+  evidence: Found by the 2026-09-02 follow-up pass (two review layers). A hard `CELERY_TASK_TIME_LIMIT` SIGKILL, an OOM kill or a pod eviction ends the task without the `except` in `execute_supervised_run` running, so the row stays RUNNING; retention never touches live rows by design. Before this story such a row was a phantom on the board; with the ceilings in place enough of them lock a subject out (`MAX_RUNNING_PER_SUB`) and then the station (`MAX_QUEUE_DEPTH_PER_STATION`), and the only lever is `revoke --sub` per subject. Not patched because a reaper cannot yet tell a dead worker from a task still waiting on the queue: rows are RUNNING from publish and nothing stamps `heartbeat_at` when a worker picks the task up, so "heartbeat older than the hard limit" also describes a task that has legitimately queued behind a full station for ten minutes. The fix needs a pickup heartbeat (or a PENDING->RUNNING transition at pickup) first; then a `prune_run_state` pass that FAILs live rows whose heartbeat is older than `CELERY_TASK_TIME_LIMIT` plus grace is mechanical, and the worker pre-flight added this pass already makes such a row safe to terminalise (a late pickup skips it).
+  location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+  origin: spec-deferred aaa86de4ce7c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-19: `django_cache_aliases` sets no `SOCKET_CONNECT_TIMEOUT` / `SOCKET_TIMEOUT`, so a partitioned redis-cache stalls each limiter call for the kernel's TCP timeout rather than failing closed quickly.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: `django_cache_aliases` sets no `SOCKET_CONNECT_TIMEOUT` / `SOCKET_TIMEOUT`, so a partitioned redis-cache stalls each limiter call for the kernel's TCP timeout rather than failing closed quickly.
+  evidence: Found by the 2026-09-02 follow-up pass. `IGNORE_EXCEPTIONS` turns a connection *failure* into a fast `None`, but a black-holed host is a hang, not a failure, and django_redis passes no timeout unless the OPTIONS name one. This pass moved the limiter off the event loop (`sync_to_async`, thread-insensitive), so a stall no longer freezes the pod, but each stalled call still holds an executor thread until the socket gives up. Pre-existing (steward 20.2 composed the alias, and sessions and renditions share it) and one setting away: `SOCKET_CONNECT_TIMEOUT` and `SOCKET_TIMEOUT` of a few seconds in the alias OPTIONS, which is also what makes the fail-closed refusal *fast*. Belongs with the cache composition, not this story, because it changes every consumer of the alias.
+  location: src/platform/platformapp/front_door/lane1_runtime.py
+  origin: spec-deferred dae189bbb8f6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-42-2-20: No index serves the retention sweep, so both passes scan `run_state` on every tick once the table is large.
+
+- source_spec: `planning-artifacts/specs/spec-42-2-agent-rate-limits-and-run-bounds.md`
+  summary: No index serves the retention sweep, so both passes scan `run_state` on every tick once the table is large.
+  evidence: Found by the 2026-09-02 follow-up pass. The two indexes 0004 adds (`subject, status` and `station, status`) serve the start-path counts and the revoke selection; the age pass filters `status IN (...) AND completed_at < cutoff` and the cap pass orders terminal rows by `completed_at, started_at`, neither of which they cover. Tolerable while `RUN_STATE_MAX_ROWS` holds the table near 100k rows and the sweep runs hourly; a `(status, completed_at)` index is a new migration plus a CAP-9 Liquibase changeset, which is why it is not folded into a review pass.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/models.py
+  origin: spec-deferred ef1cf7616ead — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
 ### DW-FU-42-3: The shipped adapters validate shape and log; Doctor's and Mason's actual reactions (choosing a remedy, running a rebuild, reporting completion) are not implemented here.
 
 - source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`

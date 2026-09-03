@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
+import uuid
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
@@ -278,6 +279,71 @@ def test_mcp_start_returns_handle_without_waiting(
     assert McpHandle.objects.filter(handle=handle).exists()
     run = McpHandle.objects.get(handle=handle).run
     assert run.status == RunState.Status.RUNNING
+
+
+def _call_start_run_pipeline(client: TestClient, assertion: str, call_id: int):
+    """One real `tools/call` of `start_run_pipeline` through the host dispatch."""
+    return client.post(
+        "/stations/atlas/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": call_id,
+            "method": "tools/call",
+            "params": {
+                "name": "start_run_pipeline",
+                "arguments": {"name": "core", "assertion": assertion},
+                "_meta": {
+                    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                    "io.modelcontextprotocol/clientCapabilities": {},
+                },
+            },
+        },
+        headers={
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+            "mcp-protocol-version": "2026-07-28",
+            "mcp-method": "tools/call",
+            "mcp-name": "start_run_pipeline",
+            "authorization": f"Bearer {assertion}",
+        },
+    )
+
+
+@pytest.mark.django_db
+def test_mcp_start_run_pipeline_at_the_per_sub_ceiling_projects_the_409(
+    monkeypatch,
+    settings,
+) -> None:
+    """Story 42.2 AC 3 on the ATLAS tool. Its warden twin is pinned in
+    `test_warden_portal_audit_start_get.py`; without this one, a bare
+    `publish_start` here would pass every test in the suite while atlas agents
+    got `Error executing tool start_run_pipeline` and nothing else.
+
+    A fresh subject, because `TestClient` runs the app in a worker thread whose
+    connection commits outside the test transaction: the rows it creates
+    survive rollback, and a fixed subject would count them.
+    """
+    monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
+    settings.MAX_RUNNING_PER_SUB = 1
+    settings.MAX_QUEUE_DEPTH_PER_STATION = 10_000
+    subject = f"agent-21-3-{uuid.uuid4().hex[:12]}"
+    assertion = mint_assertion(sub=subject, roles=["atlas"], station="atlas")
+
+    with TestClient(_host_app()) as client:
+        first = _call_start_run_pipeline(client, assertion, 4)
+        refused = _call_start_run_pipeline(client, assertion, 5)
+
+    assert first.status_code == HTTPStatus.OK, first.text
+    assert (first.json().get("result") or {}).get("isError") is False
+    result = refused.json().get("result") or {}
+    assert result.get("isError") is True, refused.text
+    text = result["content"][0]["text"]
+    payload = json.loads(text[text.index("{") :])
+    assert payload["status"] == int(HTTPStatus.CONFLICT)
+    assert payload["error"] == "too many running"
+    assert payload["limit"] == 1
+    (live_run_id,) = payload["run_ids"]
+    assert RunState.objects.filter(pk=live_run_id, subject=subject).exists()
 
 
 @pytest.mark.django_db

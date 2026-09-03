@@ -28,6 +28,8 @@ from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
+from asgiref.sync import sync_to_async
+
 from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_auth import TransportRefusal
@@ -224,7 +226,16 @@ async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -
     if isinstance(authorized, TransportRefusal):
         await _refuse(send, station, authorized)
         return True
-    limited = station_rate_refusal(authorized.claims)
+    # Off the event loop. The bucket is a synchronous round trip to redis-cache
+    # and the cache composition sets no socket timeout, so run ON the loop a
+    # stalled cache would hold this loop -- every in-flight request on the pod,
+    # MCP or not -- for as long as the socket did. A refusal that takes the
+    # platform down with it is the opposite of fail-closed. Not thread-sensitive:
+    # the cache client is thread-safe and must not queue behind Django's ORM
+    # thread, which is exactly the thread a stalled call would otherwise block.
+    limited = await sync_to_async(station_rate_refusal, thread_sensitive=False)(
+        authorized.claims,
+    )
     if limited is not None:
         await _refuse(send, station, limited)
         return True

@@ -23,14 +23,19 @@ import argparse
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .bootstrap import repo_root
 from .interfaces import DutyResult
 
 MANAGE_PY_RELATIVE = ("src", "platform", "manage.py")
 COMMAND = "revoke_subject"
+# The host command does two things -- a SELECT/UPDATE on `run_state` and a
+# Celery broadcast -- and mid-incident is exactly when either may not answer. A
+# duty that hangs there gives the operator neither a result nor an exit code.
+REVOKE_TIMEOUT_SECONDS = 120
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
@@ -67,13 +72,18 @@ def run_revoke(
         msg = f"platform manage.py not found at {manage}"
         raise RuntimeError(msg)
     call = runner if runner is not None else subprocess.run
-    proc = call(
-        revoke_command(sub, python=python, root=root),
-        cwd=str(manage.parent),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = call(
+            revoke_command(sub, python=python, root=root),
+            cwd=str(manage.parent),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=REVOKE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        msg = f"revoke_subject timed out after {exc.timeout:g}s"
+        raise RuntimeError(msg) from exc
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout or "").strip()
         msg = f"revoke_subject exited {proc.returncode}: {detail}"
@@ -109,7 +119,9 @@ class RevokeDuty:
             )
         cancelled = report.get("cancelled_runs", 0)
         revoked = len(report.get("revoked_tasks") or ())
-        ok = bool(report.get("ok", True))
+        # `ok` is the command's own verdict. A report that lacks it is a broken
+        # contract, and a broken contract must not project as a clean revoke.
+        ok = report.get("ok") is True
         summary = (
             f"revoke {sub}: cancelled {cancelled} run(s), "
             f"revoked {revoked} task(s)"

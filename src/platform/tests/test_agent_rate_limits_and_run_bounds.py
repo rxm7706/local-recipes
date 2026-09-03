@@ -17,6 +17,10 @@ import ast
 import asyncio
 import json
 import logging
+import os
+import subprocess
+import sys
+import threading
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
@@ -39,6 +43,8 @@ from django_pyforge.rate_limit import consume
 from django_pyforge.supervisor import StationQueueFull
 from django_pyforge.supervisor import SubjectRateLimited
 from django_pyforge.supervisor import TooManyRunningForSubject
+from django_pyforge.supervisor import celery_control
+from django_pyforge.supervisor import complete_run
 from django_pyforge.supervisor import live_runs_for_subject
 from django_pyforge.supervisor import prune_run_state
 from django_pyforge.supervisor import publish_start
@@ -193,6 +199,38 @@ class _RaisingCache:
         raise ConnectionError(msg)
 
 
+class _WriteFailingCache:
+    """Reads answer, writes fail: a read-only replica, a MISCONF'd persistence
+    error. The shape a read-only guard misses -- the bucket is never written,
+    so every read is a fresh full bucket.
+    """
+
+    def get(self, _key: str, default: Any = None) -> Any:
+        return default
+
+    def set(self, *args: Any, **kwargs: Any) -> None:
+        msg = "READONLY You can't write against a read only replica"
+        raise ConnectionError(msg)
+
+
+class _RecordingCache:
+    """A working store that also records what every ``set`` was told."""
+
+    def __init__(self) -> None:
+        self.data: dict[str, Any] = {}
+        self.timeouts: list[Any] = []
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.data.get(key, default)
+
+    def set(self, key: str, value: Any, timeout: Any = None) -> None:
+        self.data[key] = value
+        self.timeouts.append(timeout)
+
+    def delete(self, key: str) -> None:
+        self.data.pop(key, None)
+
+
 class _StubControl:
     """Celery's control face, reduced to what revoke uses."""
 
@@ -281,16 +319,87 @@ def test_the_route_fails_closed_when_the_cache_is_down(monkeypatch, caplog) -> N
     assert errors[0].levelno == logging.ERROR
 
 
+@pytest.mark.usefixtures("_one_per_minute")
+def test_the_sidecar_hop_is_behind_the_limiter_too(monkeypatch) -> None:
+    """The deployed transport proxies to the mcp-host sidecar. A refused subject
+    must cost no sidecar hop: a limiter that guarded only the in-process face
+    these tests drive would leave the production path unbounded.
+    """
+    from django_pyforge import mcp_http  # noqa: PLC0415
+
+    hops: list[str] = []
+
+    async def fake_proxy(
+        _base: str,
+        station: str,
+        _scope: Any,
+        _receive: Any,
+        send: Any,
+        *,
+        assertion: str,
+    ) -> None:
+        assert assertion
+        hops.append(station)
+        await send(
+            {
+                "type": "http.response.start",
+                "status": int(HTTPStatus.OK),
+                "headers": [(b"content-type", b"application/json")],
+            },
+        )
+        await send({"type": "http.response.body", "body": b"{}"})
+
+    monkeypatch.setattr(mcp_http, "sidecar_base_url", lambda: "http://mcp-host:8090")
+    monkeypatch.setattr(mcp_http, "proxy_station_mcp", fake_proxy)
+
+    allowed = _dispatch(_scope(_assertion(AGENT)))
+    refused = _dispatch(_scope(_assertion(AGENT)))
+
+    assert _status(allowed) == HTTPStatus.OK
+    assert _status(refused) == HTTPStatus.TOO_MANY_REQUESTS
+    assert hops == [STATION], "a refused call must never reach the sidecar"
+
+
+def test_the_limiter_runs_off_the_event_loop(monkeypatch) -> None:
+    """The bucket is a synchronous round trip to redis-cache and the cache
+    composition sets no socket timeout, so run ON the loop a stalled cache
+    would hold every in-flight request on the pod for as long as the socket did
+    -- a refusal that takes the platform down with it. The round trip has to
+    happen on another thread.
+    """
+    loop_thread = threading.get_ident()
+    seen: list[int] = []
+
+    class _ThreadRecordingCache:
+        def get(self, _key: str, default: Any = None) -> Any:
+            seen.append(threading.get_ident())
+            return default
+
+        def set(self, *args: Any, **kwargs: Any) -> None:
+            return None
+
+    monkeypatch.setattr(rate_limit, "limiter_cache", _ThreadRecordingCache)
+
+    sent = _dispatch(_scope(_assertion(AGENT)))
+
+    assert _status(sent) == HTTPStatus.OK
+    assert seen, "the limiter never consulted its store"
+    assert seen[0] != loop_thread, "the cache round trip ran on the event loop thread"
+
+
 @pytest.mark.parametrize(
     "store",
-    [_DeadCache(), _RaisingCache()],
-    ids=["swallowed-into-none", "raises"],
+    [_DeadCache(), _RaisingCache(), _WriteFailingCache()],
+    ids=["swallowed-into-none", "raises", "reads-but-cannot-write"],
 )
 def test_consume_never_allows_when_the_store_does_not_answer(store: Any) -> None:
-    """Both backend shapes -- swallowed into None, or raised -- are refusals.
+    """Every backend shape -- swallowed into None, raised, or read-only -- is a
+    refusal.
 
     The `None` case is the subtle one: it is indistinguishable from a cache
-    miss unless the read passes a non-`None` default, which is why it does.
+    miss unless the read passes a non-`None` default, which is why it does. The
+    read-only case is the one a read-side guard alone would fail open on: the
+    bucket is never written, so every read is a fresh full bucket.
     """
     decision = consume(MCP_SCOPE, AGENT, cache=store)
 
@@ -366,6 +475,42 @@ def test_a_token_bucket_refills_over_time() -> None:
     assert later.allowed is True, "a second of refill at 60/min is one token"
 
 
+def test_a_bucket_key_outlives_its_own_refill() -> None:
+    """Expiry is harmless only because an expired key reads as a FULL bucket,
+    and a full bucket is only the truth once a drained one has had time to
+    refill. A TTL shorter than the refill would turn "rate per minute" into
+    "burst per TTL" -- and no other test would notice, because LocMemCache
+    expires on the wall clock these tests never advance.
+    """
+    bucket = Bucket(scope=MCP_SCOPE, rate_per_minute=6, burst=12)
+    refill_seconds = bucket.burst / bucket.per_second
+
+    assert bucket.ttl_seconds >= refill_seconds
+
+    store = _RecordingCache()
+    consume(MCP_SCOPE, "ttl-subject", bucket=bucket, cache=store, now=1_000_000.0)
+
+    assert store.timeouts == [bucket.ttl_seconds]
+
+
+def test_a_call_with_no_subject_is_refused_as_unattributable_not_as_an_outage(
+    caplog,
+) -> None:
+    """Refused, still -- a limiter with an unbounded hole is not a limiter --
+    but under its own reason and event. A missing subject is an attribution
+    fault upstream; reporting it as `cache_unavailable` would page whoever
+    watches that event for an outage that is not happening.
+    """
+    with caplog.at_level(logging.ERROR):
+        decision = consume(MCP_SCOPE, "")
+
+    assert decision.allowed is False
+    assert decision.reason == rate_limit.REASON_NO_SUBJECT
+    events = {record.__dict__.get("event") for record in caplog.records}
+    assert "ratelimit.unattributable" in events
+    assert "ratelimit.cache_unavailable" not in events
+
+
 def test_limiter_state_lives_on_redis_cache_not_the_broker() -> None:
     """AD-10: the alias the limiter names is the cache one in the deployed
     composition. Putting buckets on the `noeviction` broker would make the
@@ -380,6 +525,86 @@ def test_limiter_state_lives_on_redis_cache_not_the_broker() -> None:
     assert channel_layers_for_broker(broker_url)["default"]["CONFIG"]["hosts"] == [
         broker_url,
     ]
+
+
+#: Enough of a deployed env for ``config.settings.production`` to import
+#: (mirrors ``test_broker_tls_verified.DEPLOYED_REQUIRED_ENV``).
+_DEPLOYED_REQUIRED_ENV = {
+    "DJANGO_SETTINGS_MODULE": "config.settings.production",
+    "DJANGO_SECRET_KEY": "story-42-2-test-secret-key-not-for-production-use",
+    "DJANGO_ADMIN_URL": "secret-admin/",
+    "MCP_HOST_SIDECAR_BASE_URL": "http://platform-mcp-host:8090",
+    "COMPONENT_OIDC_ISSUER": "https://idp.invalid/realms/platform",
+    "COMPONENT_OIDC_JWKS_URL": "https://idp.invalid/realms/platform/certs",
+    "COMPONENT_OIDC_AUDIENCE": "platform-web",
+}
+
+
+def _settings_probe(expression: str, **env: str) -> str:
+    """Evaluate ``expression`` against a FRESHLY loaded settings module.
+
+    Settings are read once per process, so anything decided at settings-load
+    can only be observed by loading them again -- in a child, under the
+    environment the test controls. ``DJANGO_READ_DOT_ENV_FILE`` is dropped so a
+    developer's ``.env`` cannot hand the child the very knob under test, and the
+    locality keys so the deployed module composes as deployed.
+    """
+    child_env = dict(os.environ)
+    for key in ("DJANGO_READ_DOT_ENV_FILE", "COMPONENT_RUNTIME", "COMPONENT_PROCESS"):
+        child_env.pop(key, None)
+    child_env["PYTHONPATH"] = os.pathsep.join(
+        [str(PLATFORM_ROOT), *(entry for entry in sys.path if entry)],
+    )
+    child_env.update(env)
+    proc = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
+        [
+            sys.executable,
+            "-c",
+            f"from django.conf import settings; print({expression})",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        cwd=PLATFORM_ROOT,
+        env=child_env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return proc.stdout.strip()
+
+
+def test_a_non_positive_prune_interval_cannot_ship_as_a_hot_loop() -> None:
+    """The interval is validated at settings-load, where beat consumes it, so a
+    `0` in the environment must come out as the documented default rather than
+    as a `schedule` of zero -- a retention sweep that never stops running.
+    """
+    schedule = _settings_probe(
+        'settings.CELERY_BEAT_SCHEDULE["prune-run-state"]["schedule"]',
+        DJANGO_SETTINGS_MODULE="config.settings.test",
+        RUN_STATE_PRUNE_INTERVAL_SECONDS="0",
+    )
+
+    assert int(schedule) == 3600  # noqa: PLR2004 -- the documented default
+
+
+def test_production_composes_the_limiter_alias_on_redis_cache() -> None:
+    """AD-10 on the deployed settings module itself, not on the helper that
+    builds the alias: production feeds `REDIS_CACHE_URL` -- never the broker's
+    URL -- into the alias the limiter names.
+    """
+    cache_url = "redis://redis-cache.invalid:6379/1"
+    broker_url = "redis://redis-broker.invalid:6379/0"
+    out = _settings_probe(
+        f'settings.CACHES["{rate_limit.CACHE_ALIAS}"]["LOCATION"], '
+        "settings.CELERY_BROKER_URL",
+        **_DEPLOYED_REQUIRED_ENV,
+        REDIS_CACHE_URL=cache_url,
+        REDIS_BROKER_URL=broker_url,
+    )
+
+    location, broker = out.split()
+    assert location == cache_url
+    assert broker == broker_url
 
 
 def _env_int_settings(text: str) -> set[str]:
@@ -426,6 +651,36 @@ def test_every_bound_is_a_documented_setting(settings) -> None:
         assert getattr(settings, name) > 0, name
 
 
+@pytest.mark.parametrize(
+    "bad",
+    [0, -1, "abc", None],
+    ids=["zero", "negative", "text", "none"],
+)
+def test_a_bad_bound_setting_falls_back_to_its_documented_default(
+    settings,
+    caplog,
+    bad: Any,
+) -> None:
+    """Zero is rejected, not honoured. Honoured, `MAX_RUNNING_PER_SUB=0` is 409
+    on every start and `RUN_STATE_RETENTION_DAYS=0` prunes every terminal row
+    on the next sweep; each falls back to its documented default, loudly.
+    """
+    settings.MAX_RUNNING_PER_SUB = bad
+    settings.RUN_STATE_RETENTION_DAYS = bad
+
+    with caplog.at_level(logging.ERROR):
+        assert rate_limit.int_setting("MAX_RUNNING_PER_SUB", 5) == 5  # noqa: PLR2004
+        retention = rate_limit.int_setting("RUN_STATE_RETENTION_DAYS", 14)
+        assert retention == 14  # noqa: PLR2004 -- the documented default
+
+    rejected = [
+        record.__dict__.get("setting")
+        for record in caplog.records
+        if record.__dict__.get("event") == "ratelimit.bad_setting"
+    ]
+    assert rejected == ["MAX_RUNNING_PER_SUB", "RUN_STATE_RETENTION_DAYS"]
+
+
 # ---------------------------------------------------------------------------
 # AC 2 / AC 3 -- supervisor start ceilings
 # ---------------------------------------------------------------------------
@@ -451,6 +706,26 @@ def _no_enqueue(monkeypatch) -> None:
         lambda *a, **k: None,
     )
     register_runner(STATION, "run_pipeline", lambda payload: dict(payload or {}))
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("_no_enqueue")
+def test_a_zero_ceiling_is_not_a_refusal_of_every_start(settings) -> None:
+    """The guard, observed where it matters: with both ceilings misconfigured to
+    zero, `start` still admits a caller under the documented defaults instead
+    of turning the platform off.
+    """
+    settings.MAX_RUNNING_PER_SUB = 0
+    settings.MAX_QUEUE_DEPTH_PER_STATION = 0
+
+    handle = publish_start(
+        station=STATION,
+        assertion=_assertion(AGENT),
+        payload={"name": "core"},
+    )
+
+    assert handle
+    assert live_runs_for_subject(AGENT)
 
 
 @pytest.mark.django_db
@@ -624,13 +899,87 @@ def test_a_finishing_worker_cannot_overwrite_a_revoked_run() -> None:
     """
     run = _live_run()
     revoke_subject(AGENT, control=_StubControl())
-    register_runner(STATION, "run_pipeline", lambda payload: dict(payload or {}))
 
-    execute_supervised_run(str(run.id), STATION, "run_pipeline", {"name": "core"})
+    # The worker had started BEFORE the revoke, so it reaches its final write.
+    # A worker that had not started never gets that far -- see the pre-flight
+    # test below.
+    complete_run(str(run.id), status=RunState.Status.SUCCEEDED, result={"v": 1})
 
     run.refresh_from_db()
     assert run.status == RunState.Status.CANCELLED
     assert run.result["cancelled"] is True
+
+
+@pytest.mark.django_db
+def test_revoke_does_not_overwrite_a_run_that_finished_first() -> None:
+    """The mirror of the test above. A run that finishes between revoke's
+    SELECT and its UPDATE is already terminal, and a cancellation that lands
+    too late must not replace its `succeeded` -- and its result -- with a
+    `cancelled`. Terminal wins in both directions, and the report counts what
+    was actually cancelled.
+    """
+    run = _live_run()
+
+    class _FinishesFirst:
+        """The broker call lands after the worker has already finished."""
+
+        def revoke(self, _task_ids: list[str], **_kwargs: Any) -> None:
+            complete_run(
+                str(run.id),
+                status=RunState.Status.SUCCEEDED,
+                result={"v": 1},
+            )
+
+    report = revoke_subject(AGENT, control=_FinishesFirst())
+
+    run.refresh_from_db()
+    assert run.status == RunState.Status.SUCCEEDED
+    assert run.result == {"v": 1}
+    assert report["cancelled_runs"] == 0
+    assert report["run_ids"] == [str(run.id)]
+
+
+@pytest.mark.django_db
+def test_a_worker_never_runs_a_task_whose_run_was_revoked_first(caplog) -> None:
+    """`control.revoke` is a broadcast held in worker memory. A worker that
+    connected after it was sent -- a restart, a rollout, a scale-up -- has never
+    heard of the id and would run the task in full, with only its final write
+    dropped. The ledger is the record of a revoke, so the worker consults it
+    before doing any work at all.
+    """
+    calls = {"n": 0}
+
+    def runner(payload: dict[str, Any]) -> dict[str, Any]:
+        calls["n"] += 1
+        return dict(payload)
+
+    register_runner(STATION, "run_pipeline", runner)
+    run = _live_run()
+    revoke_subject(AGENT, control=_StubControl())
+
+    with caplog.at_level(logging.INFO):
+        execute_supervised_run(str(run.id), STATION, "run_pipeline", {"name": "core"})
+
+    assert calls["n"] == 0, "a revoked run's work must not be done"
+    run.refresh_from_db()
+    assert run.status == RunState.Status.CANCELLED
+    assert any(
+        record.__dict__.get("event") == "supervisor.run_skipped_terminal"
+        for record in caplog.records
+    )
+
+
+def test_celery_control_is_the_apps_broadcast_face() -> None:
+    """Every revoke test injects a stub control, so this is the line that pins
+    the production path: `control=None` reaches Celery's real broadcast face --
+    not the app object, and not a dead end that reports every revoke failed.
+    """
+    from celery import current_app  # noqa: PLC0415
+
+    face = celery_control()
+
+    assert face is current_app.control
+    assert callable(face.revoke)
 
 
 @pytest.mark.django_db
@@ -900,6 +1249,103 @@ def test_the_cap_pass_spends_what_the_age_pass_left(settings) -> None:
 
 
 @pytest.mark.django_db
+def test_a_terminal_row_with_no_completed_at_is_aged_out_not_exempt(settings) -> None:
+    """Rows terminalised before the timing columns existed (0003) carry no
+    `completed_at`. Filtering on `completed_at < cutoff` alone would exempt
+    them from retention forever; a terminal row that cannot show it is recent
+    is treated as old.
+    """
+    settings.RUN_STATE_RETENTION_DAYS = 7
+    settings.RUN_STATE_MAX_ROWS = 1000
+    undated = RunState.objects.create(
+        status=RunState.Status.SUCCEEDED,
+        station=STATION,
+        subject=AGENT,
+    )
+    recent = _terminal_run(age_days=1)
+
+    report = prune_run_state()
+
+    assert report["aged_out"] == 1
+    assert not RunState.objects.filter(pk=undated.pk).exists()
+    assert RunState.objects.filter(pk=recent.pk).exists()
+
+
+@pytest.mark.django_db
+def test_live_rows_above_the_cap_are_not_reported_as_work_remaining(settings) -> None:
+    """Only terminal rows are prunable. Live rows alone above `max_rows` are the
+    ceilings' concern, and a sweep that called that `truncated` would send an
+    operator -- or the self-rescheduling task -- round forever with nothing it
+    may delete.
+    """
+    settings.RUN_STATE_RETENTION_DAYS = 7
+    settings.RUN_STATE_MAX_ROWS = 1
+    RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).delete()
+    _live_run()
+    _live_run()
+
+    report = prune_run_state()
+
+    assert report["over_cap"] == 0
+    assert report["remaining"] > report["max_rows"]
+    assert report["truncated"] is False
+
+
+@pytest.mark.django_db
+def test_a_truncated_sweep_that_made_progress_enqueues_its_follow_up(
+    settings,
+    monkeypatch,
+) -> None:
+    """One batch per beat tick caps the drain below what a few subjects at the
+    default start rate publish, so the table would grow straight through the
+    bound. A truncated sweep that removed something enqueues the next one; a
+    sweep that removed nothing does not, so the chain terminates whatever
+    `truncated` says.
+    """
+    from django_pyforge import tasks  # noqa: PLC0415
+
+    settings.RUN_STATE_RETENTION_DAYS = 7
+    settings.RUN_STATE_MAX_ROWS = 1000
+    settings.RUN_STATE_PRUNE_BATCH = 2
+    for _ in range(5):
+        _terminal_run(age_days=30)
+    scheduled: list[dict[str, Any]] = []
+    monkeypatch.setattr(
+        tasks.prune_run_state_task,
+        "apply_async",
+        lambda **kwargs: scheduled.append(kwargs),
+    )
+
+    first = tasks.prune_run_state_task()
+
+    assert first["aged_out"] == 2  # noqa: PLR2004 -- the batch
+    assert first["rescheduled"] is True
+    assert len(scheduled) == 1
+    assert scheduled[0]["countdown"] >= 0
+
+    # "Work remains" with no progress must not chain: that is a loop, not a drain.
+    monkeypatch.setattr(
+        tasks,
+        "prune_run_state",
+        lambda: {
+            "aged_out": 0,
+            "over_cap": 0,
+            "expired_handles": 0,
+            "remaining": 3,
+            "retention_days": 7,
+            "max_rows": 1000,
+            "batch_limit": 2,
+            "truncated": True,
+        },
+    )
+
+    stalled = tasks.prune_run_state_task()
+
+    assert stalled["rescheduled"] is False
+    assert len(scheduled) == 1
+
+
+@pytest.mark.django_db
 def test_the_retention_task_is_scheduled_and_runnable_by_hand(
     settings,
     capsys,
@@ -910,12 +1356,17 @@ def test_the_retention_task_is_scheduled_and_runnable_by_hand(
     deploys the `beat` Deployment that ticks it), and the management command
     is what an operator can run without waiting for the next tick.
     """
+    from celery import current_app  # noqa: PLC0415
+    from django_pyforge.tasks import prune_run_state_task  # noqa: PLC0415
+
     entry = settings.CELERY_BEAT_SCHEDULE["prune-run-state"]
 
-    assert entry["task"] == "django_pyforge.tasks.prune_run_state_task"
+    # The name Celery REGISTERED, not a literal that happens to match today:
+    # beat resolves this string against the registry at dispatch time, and a
+    # renamed or relocated task would leave the schedule pointing at nothing.
+    assert entry["task"] == prune_run_state_task.name
+    assert entry["task"] in current_app.tasks
     assert entry["schedule"] > 0
-
-    from django_pyforge.tasks import prune_run_state_task  # noqa: PLC0415
 
     settings.RUN_STATE_RETENTION_DAYS = 1
     _terminal_run(age_days=9999)
