@@ -1,0 +1,83 @@
+name: Platform Deploy
+
+# Story 43.4 ("Golden Path CD by digest"): promote exactly the digest that
+# passed Warden in Platform CI. Host never imports pyforge.*; Warden remains
+# the sole quality gate — this workflow only verifies the CI artifact and
+# renders the chart by digest (no second scan verdict).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: 'Platform CI workflow run id that uploaded golden-path-promotion'
+        required: true
+        type: string
+      platform_digest:
+        description: 'Platform image digest (sha256:...) from the promotion artifact'
+        required: true
+        type: string
+      sidecar_digest:
+        description: 'DB-GPT sidecar digest (sha256:...) from the promotion artifact'
+        required: true
+        type: string
+      mcp_host_digest:
+        description: 'MCP-host sidecar digest (sha256:...) from the promotion artifact'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: golden-path-promotion
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse digest without a Warden verdict in the promotion artifact
+        env:
+          PLATFORM_DIGEST: ${{ inputs.platform_digest }}
+          SIDECAR_DIGEST: ${{ inputs.sidecar_digest }}
+          MCP_HOST_DIGEST: ${{ inputs.mcp_host_digest }}
+        run: python scripts/platform-deploy-verify-promotion.py
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.77.0
+          environments: platform-dev
+          locked: true
+          cache: true
+
+      - name: helm template with digest only (no mutable tags)
+        run: |
+          helm template platform src/platform/deploy/charts/platform \
+            --set image.digest="${{ inputs.platform_digest }}" \
+            --set sidecar.image.digest="${{ inputs.sidecar_digest }}" \
+            --set mcpHost.image.digest="${{ inputs.mcp_host_digest }}" \
+            --set-file flags.tree=src/platform/config/flags.json \
+            > platform-deploy-render.yaml
+          grep -q "@${{ inputs.platform_digest }}" platform-deploy-render.yaml
+          grep -q "@${{ inputs.sidecar_digest }}" platform-deploy-render.yaml
+          grep -q "@${{ inputs.mcp_host_digest }}" platform-deploy-render.yaml
+          if grep -E ':latest\b' platform-deploy-render.yaml; then
+            echo "::error::render contains a :latest image reference"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: platform-deploy-render
+          path: platform-deploy-render.yaml
+          retention-days: 7
+          if-no-files-found: error

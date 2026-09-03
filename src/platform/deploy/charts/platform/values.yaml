@@ -18,10 +18,10 @@ image:
   # default resolution" (a local/preloaded image).
   registry: ""
   repository: platform
-  tag: latest
-  # Templates force Always whenever the EFFECTIVE tag is "latest"
-  # (mutable-tag staleness under IfNotPresent); this value applies to any
-  # other tag.
+  # Story 43.4: no default tag -- set image.digest (preferred) or a
+  # pinned non-latest tag at deploy time; `latest` is refused.
+  digest: ""
+  tag: ""
   pullPolicy: IfNotPresent
 
 # Pull credentials for authenticated registries -- CAP-6: an internal
@@ -264,7 +264,8 @@ sidecar:
   image:
     registry: ""
     repository: platform-dbgpt-sidecar
-    tag: latest
+    digest: ""
+    tag: ""
     pullPolicy: IfNotPresent
   # DB-GPT resolves `[service.web.database].path` against
   # $HOME/.dbgpt/workspace — with HOME=/app/.home that lands here
@@ -289,7 +290,8 @@ mcpHost:
   image:
     registry: ""
     repository: platform-mcp-host
-    tag: latest
+    digest: ""
+    tag: ""
     pullPolicy: IfNotPresent
   resources: {}
 

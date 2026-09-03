@@ -171,35 +171,52 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Image reference from (dict "image" <{registry, repository, tag}> "path"
-<values path>) -- registry-relocatable (CAP-6): the registry prefix is
-prepended only when set, so every image in this chart re-points to an
-internal mirror through values alone. The tag is `required` so a nulled
-tag fails the render naming its values path instead of shipping
-"repo:<nil>".
+Image reference from (dict "image" <{registry, repository, tag, digest}>
+"path" <values path>) -- registry-relocatable (CAP-6): the registry
+prefix is prepended only when set. Story 43.4: deploy by digest OR a
+pinned non-latest tag; `latest` is refused; bare renders fail naming the
+values path instead of shipping a mutable default.
 */}}
 {{- define "platform.imageRef" -}}
 {{- $image := .image }}
-{{- $tag := required (printf "%s.tag is required (a null tag would render \"%s:<nil>\")" .path $image.repository) $image.tag | toString }}
-{{- if $image.registry }}
-{{- printf "%s/%s:%s" $image.registry $image.repository $tag }}
-{{- else }}
-{{- printf "%s:%s" $image.repository $tag }}
-{{- end }}
+{{- $path := .path }}
+{{- $digest := trim (toString (default "" $image.digest)) -}}
+{{- if $digest -}}
+{{- if $image.registry -}}
+{{- printf "%s/%s@%s" $image.registry $image.repository $digest -}}
+{{- else -}}
+{{- printf "%s@%s" $image.repository $digest -}}
+{{- end -}}
+{{- else -}}
+{{- $tag := trim (toString (default "" $image.tag)) -}}
+{{- if not $tag -}}
+{{- fail (printf "%s.digest or %s.tag is required (deploy by digest or a pinned tag; no mutable default)" $path $path) -}}
+{{- end -}}
+{{- if eq $tag "latest" -}}
+{{- fail (printf "%s.tag=%q is refused (mutable tags are forbidden; set %s.digest or a pinned tag)" $path $tag $path) -}}
+{{- end -}}
+{{- if $image.registry -}}
+{{- printf "%s/%s:%s" $image.registry $image.repository $tag -}}
+{{- else -}}
+{{- printf "%s:%s" $image.repository $tag -}}
+{{- end -}}
+{{- end -}}
 {{- end }}
 
 {{/*
-Pull policy for an image dict: force Always when the effective tag is
-"latest" -- a mutable tag with IfNotPresent pins every node to whatever
-it pulled first, so rollouts silently serve stale images. Any other tag
-uses the values-supplied pullPolicy unchanged.
+Pull policy for an image dict: digests are immutable (use values
+pullPolicy). Force Always when the effective tag is "latest" -- defense
+in depth even though the render refuses that tag (Story 43.4).
 */}}
 {{- define "platform.imagePullPolicy" -}}
-{{- if eq (.tag | toString) "latest" }}
-{{- "Always" }}
-{{- else }}
-{{- .pullPolicy }}
-{{- end }}
+{{- $digest := trim (toString (default "" .digest)) -}}
+{{- if $digest -}}
+{{- .pullPolicy -}}
+{{- else if eq (.tag | toString) "latest" -}}
+{{- "Always" -}}
+{{- else -}}
+{{- .pullPolicy -}}
+{{- end -}}
 {{- end }}
 
 {{/*

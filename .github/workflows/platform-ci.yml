@@ -90,7 +90,10 @@ on:
       - 'src/shared/packages/django-*/**'
       - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
+      - '.github/workflows/platform-deploy.yml'
       - '.github/actions/platform-test-setup/**'
+      - 'scripts/platform-golden-path-promotion.sh'
+      - 'scripts/platform-deploy-verify-promotion.py'
   push:
     branches: [main]
     paths:
@@ -107,7 +110,10 @@ on:
       - 'src/shared/packages/django-*/**'
       - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
+      - '.github/workflows/platform-deploy.yml'
       - '.github/actions/platform-test-setup/**'
+      - 'scripts/platform-golden-path-promotion.sh'
+      - 'scripts/platform-deploy-verify-promotion.py'
   workflow_dispatch:
     inputs:
       jobs:
@@ -136,6 +142,7 @@ permissions:
 #   PLATFORM_CI_AIR_GAP_PARITY=true
 #   PLATFORM_CI_GKE_PORTABILITY_SMOKE=true
 #   PLATFORM_CI_OCP_PORTABILITY_SMOKE=true
+#   PLATFORM_CI_PUSH_REGISTRY=true (optional digest push; needs PLATFORM_CI_REGISTRY)
 # Requires GitHub Actions secret CRC_PULL_SECRET (Red Hat pull secret from
 # console.redhat.com/openshift/create/local) when ocp-portability-smoke runs.
 # workflow_dispatch exposes air_gap_parity / gke_portability_smoke /
@@ -652,6 +659,72 @@ jobs:
             platform-ci-redis-${{ matrix.engine }} || true
           ${{ matrix.engine }} network rm platform-ci-net-${{ matrix.engine }} || true
           ${{ matrix.engine }} rmi platform-ci-${{ matrix.engine }} || true
+
+  # Story 43.4 ("Golden Path CD by digest"): after the docker container leg
+  # is green, record immutable image digests + the Warden verdict as ONE
+  # artifact for the deploy workflow. Uses docker only (not podman) for
+  # digest capture; rebuilds all three chart images here so sidecar digests
+  # exist even though the `container` job builds only the platform image.
+  golden-path-promotion:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    needs: container
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      - name: Build platform + sidecar images (docker; digest source)
+        run: |
+          docker build -f src/platform/Containerfile -t "${{ env.PLATFORM_CI_IMAGE_REF }}" .
+          docker build -f src/platform/compose/dbgpt/Containerfile -t "${{ env.PLATFORM_CI_SIDECAR_REF }}" .
+          docker build -f src/platform/compose/mcp-host/Containerfile -t "${{ env.PLATFORM_CI_MCP_HOST_REF }}" .
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.77.0
+          environments: pyforge-warden
+          locked: true
+          cache: true
+
+      - name: Record digests + Warden verdict (golden-path promotion)
+        env:
+          PLATFORM_REF: ${{ env.PLATFORM_CI_IMAGE_REF }}
+          SIDECAR_REF: ${{ env.PLATFORM_CI_SIDECAR_REF }}
+          MCP_HOST_REF: ${{ env.PLATFORM_CI_MCP_HOST_REF }}
+          OUT: golden-path-promotion.json
+        run: bash scripts/platform-golden-path-promotion.sh
+
+      - name: Push images by digest (optional; CAP-6 registry via vars)
+        if: vars.PLATFORM_CI_PUSH_REGISTRY == 'true'
+        env:
+          REGISTRY: ${{ vars.PLATFORM_CI_REGISTRY }}
+        run: |
+          if [ -z "${REGISTRY}" ]; then
+            echo "::error::PLATFORM_CI_PUSH_REGISTRY=true but PLATFORM_CI_REGISTRY is unset"
+            exit 1
+          fi
+          platform_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_IMAGE_REF }}")"
+          sidecar_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_SIDECAR_REF }}")"
+          mcp_host_digest="$(docker inspect --format='{{.Id}}' "${{ env.PLATFORM_CI_MCP_HOST_REF }}")"
+          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" "${REGISTRY}/platform:${{ github.sha }}"
+          docker tag "${{ env.PLATFORM_CI_SIDECAR_REF }}" "${REGISTRY}/platform-dbgpt-sidecar:${{ github.sha }}"
+          docker tag "${{ env.PLATFORM_CI_MCP_HOST_REF }}" "${REGISTRY}/platform-mcp-host:${{ github.sha }}"
+          docker push "${REGISTRY}/platform:${{ github.sha }}"
+          docker push "${REGISTRY}/platform-dbgpt-sidecar:${{ github.sha }}"
+          docker push "${REGISTRY}/platform-mcp-host:${{ github.sha }}"
+          echo "platform digest (local id): ${platform_digest}"
+          echo "sidecar digest (local id): ${sidecar_digest}"
+          echo "mcp-host digest (local id): ${mcp_host_digest}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: golden-path-promotion
+          path: golden-path-promotion.json
+          retention-days: 30
+          if-no-files-found: error
 
   # Story 10.5 (AD-14 Pattern B): the DB-GPT sidecar's own docker/podman
   # build + health + rootless-UID job, sibling to `container` above and

@@ -14,8 +14,9 @@ Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
   every command below is `pixi run -e platform-dev helm ...` from the repo
   root. Verified against Helm v4.2.4 (conda-forge).
 - The **Story 10.3 platform image** pushed somewhere the cluster can pull
-  (values: `image.registry`/`image.repository`/`image.tag` — fully
-  parameterized, so an internal mirror works with values alone, CAP-6).
+  (values: `image.registry`/`image.repository` plus **`image.digest`** (preferred)
+  or a pinned non-latest `image.tag` — Story 43.4 refuses `latest` and bare
+  renders; CAP-6 registry relocation uses `registry` alone).
 - A **pre-created Secret** (AD-12: the chart never renders a Secret and
   carries no credential defaults). Default name `platform-secrets`
   (values: `existingSecret`), keys:
@@ -42,8 +43,18 @@ kubectl create secret generic platform-secrets \
     --from-literal=POSTGRES_PASSWORD=... \
     --from-literal=REDIS_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
-    --set-file flags.tree=src/platform/config/flags.json
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set image.digest=sha256:<digest-from-platform-ci>
 ```
+
+**Golden-path CD (Story 43.4):** Platform CI's `golden-path-promotion` job
+uploads one artifact (`golden-path-promotion.json`) with the three chart
+image digests and the Warden verdict for the commit. Deploy only that digest
+via `.github/workflows/platform-deploy.yml` (`workflow_dispatch` with the
+CI run id and digests) — the workflow refuses a digest that is not recorded
+with a Warden verdict. Sidecar images use `sidecar.image.digest` and
+`mcpHost.image.digest` the same way. Optional registry push:
+`PLATFORM_CI_PUSH_REGISTRY=true` + `PLATFORM_CI_REGISTRY` repo variable.
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
 readiness), Celery worker Deployment (the general pool), a `worker-builds`
@@ -88,7 +99,11 @@ anywhere** — the image's own `USER 1001:0` covers vanilla K8s).
 
 ```sh
 pixi run -e platform-dev helm lint src/platform/deploy/charts/platform src/platform/deploy/overlays/ocp/chart
-pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform
+pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform \
+    --set-file flags.tree=src/platform/config/flags.json \
+    --set image.digest=sha256:<digest> \
+    --set sidecar.image.digest=sha256:<digest> \
+    --set mcpHost.image.digest=sha256:<digest>
 ```
 
 `src/platform/tests/test_chart_invariants.py` asserts the story's
