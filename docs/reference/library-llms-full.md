@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; last full re-sync **2026-08-25** (restored 18-section catalog after a 64-line stub; `environment.yaml` export; platform-ci-test conda-only; kedro-mcp/kedro-skills/boring-semantic-layer on SelfExplainML conda; psycopg >=3.2 / psycopg2 >=2.9.10; Liquibase + OpenFeature; pyforge-testing-kit env); earlier incremental: incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3), 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, floor `>=0.1.1` (conda SelfExplainML, atlas + local-recipes), Story 12-1; then a second 2026-08-09 pass re-syncing 12 version floors to `pixi.toml` — incl. `fastmcp` 2.14.3->3.4.5 and `pixi` 0.75.0->0.76.1 — and documenting the two deps the catalog had never carried: `pyyaml` (pyforge-doctor) and `httpx2` (pyforge-herald)) and 2026-08-14 (Story 10.2, CAP-5: the new `python-agent-platform` env — the FIRST env in this catalog pinned off `python 3.14.x` (env-scoped `python = "3.12.*"`) — documented with `langflow`/`dbgpt-serve`/`fastapi`/`django-health-check`/`redis-py`; `pixitainer` uncommented + bumped to `>=0.8.3`, linux-64 only; plus 33 unrelated version floors re-synced to `pixi.toml` and `pyforge-core`'s env row added — the catalog was already drifted on these before this story, `llms-full-check` now exits 0) and 2026-08-20 (Story 11.1: the new `platform-dev` env — composes onto `python-agent-platform` — documented with `postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`; `python-agent-platform` itself gains `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg`, four deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`, discovered live wiring the actual Langflow ASGI mount) and 2026-08-23 (Story 12.1: **copier** documented as the pyforge-marshal/Genesis template engine; pyforge-marshal env row updated; quick-index scaffolding line reconciled with Copier adoption) and 2026-08-27 (atlas Story 20.1, CAP-5: **duckdb-server** documented — pyforge-atlas env, linux-64 only, the CAP-19 query plane's optional HTTP/Arrow face behind the one `query-plane-boot` script; import package `pkg`) and 2026-08-29 (32 version floors re-synced to `pixi.toml` after a `pixi update` pass, incl. `pixi` 0.77.0->0.78.0, `fastmcp` 2.14.3->3.4.7, `mcp` re-pointed to the `local-recipes` env's actual floor 1.28.1 (env-scoped ceiling below the other envs' 2.1.1, per steward 21.2's fastmcp<2.0 constraint), `pnpm` 11.24.0->12.0.0, and `duckdb-server` 0.27.0->0.31.0). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; last full re-sync **2026-08-25**; version-floor re-sync 2026-09-04 (31 floors caught up to `pixi.toml`, prose untouched) (restored 18-section catalog after a 64-line stub; `environment.yaml` export; platform-ci-test conda-only; kedro-mcp/kedro-skills/boring-semantic-layer on SelfExplainML conda; psycopg >=3.2 / psycopg2 >=2.9.10; Liquibase + OpenFeature; pyforge-testing-kit env); earlier incremental: incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3), 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, floor `>=0.1.1` (conda SelfExplainML, atlas + local-recipes), Story 12-1; then a second 2026-08-09 pass re-syncing 12 version floors to `pixi.toml` — incl. `fastmcp` 2.14.3->3.4.5 and `pixi` 0.75.0->0.76.1 — and documenting the two deps the catalog had never carried: `pyyaml` (pyforge-doctor) and `httpx2` (pyforge-herald)) and 2026-08-14 (Story 10.2, CAP-5: the new `python-agent-platform` env — the FIRST env in this catalog pinned off `python 3.14.x` (env-scoped `python = "3.12.*"`) — documented with `langflow`/`dbgpt-serve`/`fastapi`/`django-health-check`/`redis-py`; `pixitainer` uncommented + bumped to `>=0.8.3`, linux-64 only; plus 33 unrelated version floors re-synced to `pixi.toml` and `pyforge-core`'s env row added — the catalog was already drifted on these before this story, `llms-full-check` now exits 0) and 2026-08-20 (Story 11.1: the new `platform-dev` env — composes onto `python-agent-platform` — documented with `postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`; `python-agent-platform` itself gains `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg`, four deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`, discovered live wiring the actual Langflow ASGI mount) and 2026-08-23 (Story 12.1: **copier** documented as the pyforge-marshal/Genesis template engine; pyforge-marshal env row updated; quick-index scaffolding line reconciled with Copier adoption) and 2026-08-27 (atlas Story 20.1, CAP-5: **duckdb-server** documented — pyforge-atlas env, linux-64 only, the CAP-19 query plane's optional HTTP/Arrow face behind the one `query-plane-boot` script; import package `pkg`) and 2026-08-29 (32 version floors re-synced to `pixi.toml` after a `pixi update` pass, incl. `pixi` 0.77.0->0.78.0, `fastmcp` 2.14.3->3.4.7, `mcp` re-pointed to the `local-recipes` env's actual floor 1.28.1 (env-scoped ceiling below the other envs' 2.1.1, per steward 21.2's fastmcp<2.0 constraint), `pnpm` 11.24.0->12.0.0, and `duckdb-server` 0.27.0->0.31.0). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -105,10 +105,10 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.12.7) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.12.9) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
-- **nodejs** (>=24.16.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
-- **gh** (>=2.98.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
+- **nodejs** (>=24.19.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
+- **gh** (>=2.99.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
 - **gitpython** (>=3.1.61) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
@@ -117,7 +117,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   used by the vuln-db tasks.
 - **bmad-method** (>=6.11.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=1.0.1) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=1.0.4) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -188,7 +188,7 @@ All in `local-recipes`. These are CLIs invoked as `pixi-<name>` or `pixi <name>`
   — pixi build backends: let a `pixi.toml` `[package]` build conda packages from
   rattler-build recipes, CMake projects, Python projects (PEP 517), or Cargo crates
   respectively.
-- **pixi-pack** (>=0.7.10) / **pixi-unpack** (>=0.7.10) — bundle a pixi environment into a
+- **pixi-pack** (>=0.7.11) / **pixi-unpack** (>=0.7.11) — bundle a pixi environment into a
   single archive for offline/air-gapped machines, and unpack it there.
 - **pixi-to-conda-lock** (>=0.4.3) — convert `pixi.lock` → `conda-lock.yml` for tools
   that only understand conda-lock.
@@ -197,7 +197,7 @@ All in `local-recipes`. These are CLIs invoked as `pixi-<name>` or `pixi <name>`
   available.
 - **pixi-inject** (>=0.1.3) — inject extra conda packages into an existing pixi env
   without editing the manifest.
-- **pixi-install-to-prefix** (>=0.1.7) — install a pixi env to an arbitrary directory
+- **pixi-install-to-prefix** (>=0.1.8) — install a pixi env to an arbitrary directory
   prefix.
 - **pixi-inspect** (>=2.0.2) — inspect/retrieve metadata from a conda package.
 - **pixi-kernel** (>=0.7.1) — Jupyter kernels backed by pixi envs.
@@ -246,7 +246,7 @@ All in `local-recipes`.
 
 ## 5. Project scaffolding & templating
 
-- **copier** (>=9.17,<10) — template-based project scaffolding with first-class
+- **copier** (>=9.18.1) — template-based project scaffolding with first-class
   update/recopy support; **pyforge-marshal-only** (Genesis seed installer engine,
   `marshal seed` verbs). Imported only in `seed/engine/copier.py` (P-02).
 - **cookiecutter** (>=2.7.1) — template-based project scaffolding from local or git
@@ -284,7 +284,7 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **dbt-core** (>=1.11.11) + **dbt-duckdb** (>=1.9.4) + **dbt-postgres** (>=1.10.0) —
+- **dbt-core** (>=1.12.3) + **dbt-duckdb** (>=1.11.0) + **dbt-postgres** (>=1.11.0) —
   SQL transformation framework + adapters. Unblocked 2026-08-30: the click conflict
   that pinned the trio out fell when conda-recipe-manager (exact click==8.2.1
   feedstock pin) moved to the grayskull-only `crm` feature.
@@ -337,10 +337,10 @@ Small utilities:
 
 All in `local-recipes`.
 
-- **dagster** (>=1.13.20) — asset-based data orchestrator: software-defined assets,
+- **dagster** (>=1.13.21) — asset-based data orchestrator: software-defined assets,
   schedules, sensors, partitions, type-checked IO.
-- **dagster-webserver** (>=1.13.20) — the Dagster UI (`dagster dev`).
-- **dagster-pipes** (>=1.13.20) — run external-process transform logic (scripts,
+- **dagster-webserver** (>=1.13.21) — the Dagster UI (`dagster dev`).
+- **dagster-pipes** (>=1.13.21) — run external-process transform logic (scripts,
   containers) with structured logging/metadata back into Dagster.
 - **kedro** (>=1.5.0) — opinionated pipeline framework: nodes, pipelines, data
   catalog, config environments. (A Kedro 3.14-compat warning is suppressed via
@@ -356,7 +356,7 @@ All in `local-recipes`.
   env only** (dev/tooling, never a package run-dep); exact-pinned to the audited
   version (no floor) — see the audit at
   `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
-- **great-expectations** (>=1.21.0) — data-quality contracts: expectations suites,
+- **great-expectations** (>=1.22.0) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
   schemas (pandas/dask/spark).
@@ -412,7 +412,7 @@ Any-format → Markdown (LLM ingestion):
 - **beautifulsoup4** (>=4.15.0) — `from bs4 import BeautifulSoup`; forgiving HTML
   parsing/scraping.
 - **lxml** (>=6.1.2) — fast C-backed XML/HTML parsing + XPath.
-- **pandoc** (>=3.10) — `pandoc` CLI; universal document converter (md ↔ docx ↔ html
+- **pandoc** (>=3.11) — `pandoc` CLI; universal document converter (md ↔ docx ↔ html
   ↔ latex ↔ epub ↔ rst …).
 
 PDF stack (pick by need):
@@ -426,7 +426,7 @@ PDF stack (pick by need):
 - **pdf2image** (>=1.17.0) — PDF pages → PIL images (Poppler-backed) for vision-model
   input.
 - **poppler** (>=26.7.0) — PDF rendering binaries (`pdftoppm`, `pdftotext`, …).
-- **qpdf** (>=12.3.2) — `qpdf` CLI; PDF transforms: linearize, compress,
+- **qpdf** (>=12.4.1) — `qpdf` CLI; PDF transforms: linearize, compress,
   encrypt/decrypt, split.
 
 Office formats:
@@ -486,14 +486,14 @@ Hugging Face stack:
   launching for HF models.
 - **diffusers** (>=0.39.0) — diffusion pipelines (Stable Diffusion et al.) for local
   image generation.
-- **sentence-transformers** (>=6.0.0) — dense text embeddings + cosine search; used
+- **sentence-transformers** (>=6.0.1) — dense text embeddings + cosine search; used
   for long-document RAG, slide dedup, template matching.
 - **sentencepiece** (>=0.2.1) — subword tokenizer runtime (T5/MarianMT/SD3 need it).
 - **hf-transfer** (>=0.1.9) — Rust accelerator for model downloads; enable with
   `HF_HUB_ENABLE_HF_TRANSFER=1`.
 
 Local inference runtimes:
-- **llama.cpp** (>=10642) — `llama-cli` / `llama-server` binaries; GGUF model
+- **llama.cpp** (>=10751) — `llama-cli` / `llama-server` binaries; GGUF model
   inference on CPU/GPU; `llama-server` exposes an OpenAI-compatible API.
 - **ollama** (>=0.32.15) — the Ollama server binary (Go): `ollama serve`,
   `ollama run <model>`; local model registry + OpenAI-compatible endpoint.
@@ -533,7 +533,7 @@ This is the stack for *building* agents and agent servers.
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.20.0) — `from google import genai`; Gemini API client.
+- **google-genai** (>=2.22.0) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.11) — drive GitHub Copilot programmatically from
   Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
@@ -541,7 +541,7 @@ Provider SDKs:
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.36.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.38.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -553,7 +553,7 @@ Agentic engines (**`python-agent-platform` env only**, CAP-5, Story 10.2 — the
   feedstock, `python_min` 3.11). Pulls in `slowapi` transitively via
   `langflow-base`, which resolves to a `SelfExplainML`-channel 0.1.10 build here
   (see `channel-priority` note on the feature, § "Version pins" above).
-- **chromadb** (>=1.5.9) / **langchain-chroma** (>=0.2.6,<0.3.0) /
+- **chromadb** (>=1.5.9) / **langchain-chroma** (>=1.1.0) /
   **elevenlabs** (>=1.52.0,<2.0.0) — Story 11.1: `langflow.main.create_app()`
   hard-imports all three at module load (`langflow.api.v1.knowledge_bases`,
   `lfx.base.knowledge_bases.backends.chroma`, `langflow.api.v1.voice_mode`),
@@ -598,7 +598,7 @@ Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.70.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.73.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -702,7 +702,7 @@ Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.44.0) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
-- **google-cloud-sdk** (>=582.0.0) — the `gcloud` CLI. **`gcloud` env only,
+- **google-cloud-sdk** (>=583.0.0) — the `gcloud` CLI. **`gcloud` env only,
   linux/macOS only.** Used once for `gcloud auth application-default login`; after
   that the BigQuery lib picks up cached ADC automatically.
 - **azure-identity** (>=1.25.3) — Azure AD/Entra credential objects for all Azure
@@ -729,7 +729,7 @@ HTTP & APIs:
 All in `local-recipes`.
 
 Linters & formatters:
-- **ruff** (>=0.16.5) — extremely fast Python linter + formatter (flake8/isort/black
+- **ruff** (>=0.16.6) — extremely fast Python linter + formatter (flake8/isort/black
   replacement). Default Python QA tool here.
 - **yamllint** (>=1.38.0) — YAML linting.
 - **taplo** (>=0.10.0) — TOML linter/formatter/LSP (use on pixi.toml itself).
@@ -761,7 +761,7 @@ Terminal & CLI building:
 - **typer** (>=0.27.2) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=12.0.0) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=12.3.2) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.18.0) — Yarn Berry.
 
@@ -801,14 +801,14 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **cachebox** (>=5.2.3) — fast in-process cache.
 - **crispy-bootstrap5** (>=2026.3) — django-crispy-forms Bootstrap 5 template pack.
 - **cron-descriptor** (>=2.1.0) — human-readable cron strings (django-celery-beat).
-- **cryptography** (>=50.0.0) — crypto primitives (Fernet, TLS helpers).
-- **django-allauth** (>=65.19.1) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
+- **cryptography** (>=50.0.1) — crypto primitives (Fernet, TLS helpers).
+- **django-allauth** (>=65.19.2) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
 - **django-anymail** (>=15.1) — Django transactional email backends.
 - **django-appconf** (>=1.2.0) — Django app default-settings helper (compressor).
 - **django-celery-beat** (>=2.9.0) — periodic Celery tasks in Django DB.
 - **django-compressor** (>=4.6.0) — compress JS/CSS in Django.
 - **django-crispy-forms** (>=2.6) — Django form rendering.
-- **django-debug-toolbar** (>=7.1.1) — Django debug panel (`platform-ci-test` / local).
+- **django-debug-toolbar** (>=8.0.0) — Django debug panel (`platform-ci-test` / local).
 - **django-environ** (>=0.14.0) — 12-factor env → Django settings.
 - **django-extensions** (>=4.1) — Django management extras.
 - **django-ipware** (>=7.0.1) — client IP from request (wraps python-ipware).
@@ -818,7 +818,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **django-stubs** (>=6.1.0) — mypy/django-stubs types (`platform-ci-test`).
 - **django-timezone-field** (>=7.2.2) — timezone model field (celery-beat).
 - **django_coverage_plugin** (>=3.2.2) — coverage.py Django template plugin (conda name).
-- **djlint** (>=1.44.2) — Django/Jinja HTML linter.
+- **djlint** (>=1.45.0) — Django/Jinja HTML linter.
 - **factory_boy** (>=3.3.3) — test fixtures (conda name `factory_boy`, not factory-boy).
 - **fido2** (>=2.2.1) — WebAuthn/FIDO2 (allauth MFA extra).
 - **gunicorn** (>=26.2.0) — WSGI HTTP server.
@@ -852,7 +852,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **rjsmin** (>=1.2.2) — JS minifier (django-compressor).
 - **sphinx** (>=9.1.0) — docs generator (`platform-ci-test`).
 - **sphinx-autobuild** (>=2025.8.25) — live-reload Sphinx.
-- **sse-starlette** (>=3.4.8) — Server-Sent Events for Starlette.
+- **sse-starlette** (>=3.4.10) — Server-Sent Events for Starlette.
 - **text-unidecode** (>=1.3) — ASCII transliteration (python-slugify).
 - **uvicorn** (>=0.52.4) — ASGI server.
 - **uvicorn-worker** (>=0.4.0) — gunicorn worker class for uvicorn.
