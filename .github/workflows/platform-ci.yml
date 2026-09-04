@@ -203,6 +203,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The depth-1 checkout carries no origin/main, and
+      # tests/test_warden_portal_audit_start_get.py::test_platform_diff_has_no_pyforge_import
+      # diffs src/platform against it (it skips, loudly, when the ref is
+      # missing). One shallow fetch of main's tip makes the guard real here.
+      - name: Fetch origin/main for the platform diff guard
+        working-directory: .
+        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+
       # workflow_dispatch (unlike pull_request/push) has no `paths:` filter --
       # GitHub Actions doesn't support one for that trigger -- so a manual run
       # against a ref predating this story would otherwise fail on the
@@ -345,6 +353,20 @@ jobs:
           fi
           podman --version
           id -u
+
+      # The python-agent-platform env is ~2 GB and the multi-stage build holds
+      # it twice (builder + final layer); rootless podman's storage lives on
+      # the runner's ~14 GB root disk and ran out committing that layer
+      # ("write .../site-packages/...: no space left on device", 2026-09-04).
+      # Drop the preinstalled toolchains nobody here uses (~25 GB).
+      - name: Free runner disk for the image build
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/lib/jvm \
+            /usr/local/.ghcup /usr/share/swift || true
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
 
       - name: Build image (${{ matrix.engine }})
         run: ${{ matrix.engine }} build -f src/platform/Containerfile -t platform-ci-${{ matrix.engine }} .
