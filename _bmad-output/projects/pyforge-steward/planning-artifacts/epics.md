@@ -2674,4 +2674,4 @@ and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not
 unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
 already reflected by Epic 30's own text. No epic or story required correction.
 
-**2026-09-04 addendum (foundry cutover, solutioning iteration 4):** 44 epics / 168 `### Story` headings (this file; the 2026-09-04 iteration-3 figure of 210 was not reproduced). Epic 44's fifteen stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
+**2026-09-04 addendum (foundry cutover, solutioning iteration 4):** 44 epics / 168 `### Story` headings (this file; the 2026-09-04 iteration-3 figure of 210 was not reproduced). Epic 44's stories are `blocked` by design until the operator flips each — 44.13 flipped to `backlog` 2026-09-04 (the first flip; Phase 4 opens), the other fourteen `blocked` (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.

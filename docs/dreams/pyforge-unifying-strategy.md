@@ -541,3 +541,6 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   (`fnd:AD-23`); Story 44.15 Actions-minutes metering for `steward budget` (`fnd:CAP-10`,
   `blocked`; 44.14 depends on it). The 2026-08-30 billing block had cleared (a real Detectors
   run on `main`). No open question remains; Epic 44 = 15 stories, all `blocked`.
+- **2026-09-04 (Phase 4 opens)** — First flip: `44-13-memlog-fidelity` `blocked` → `backlog`
+  (pre-flight clean; PR #1043). The other fourteen Epic 44 stories stay `blocked` until flipped
+  one by one; 44.3 / 44.9 / 44.10 still need explicit confirmation at dispatch.

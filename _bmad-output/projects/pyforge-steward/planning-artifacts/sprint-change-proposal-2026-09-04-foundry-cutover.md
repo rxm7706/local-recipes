@@ -217,6 +217,8 @@ SPEC.md (`open_questions: []`; CAP-1 success; CAP-10; Constraints; Assumptions),
 Order: 44.13 → 44.1 ∥ 44.2 ∥ 44.15 → 44.3 → 44.11 ∥ 44.12 → 44.14 → realization in dependency
 order → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.
 
-**Next.** No iteration is pending. The next operator act is the first flip:
-`44-13-memlog-fidelity` from `blocked` to `backlog` (pre-flight: `sprint-ledger-sync --project
-steward --repair-feed`, then `story-status-check`), after which `bmad-build` drafts its story spec.
+**Next → done 2026-09-04.** No iteration is pending. The first flip landed on this branch:
+`44-13-memlog-fidelity` `blocked` → `backlog` after the pre-flight (`sprint-ledger-sync --project
+steward --repair-feed`: unchanged, 256 keys; `story-status-check`: ok), promoted to the tracked twin.
+Phase 4 is open for that one story; `bmad-build` drafts its story spec next. 44.1 ∥ 44.2 ∥ 44.15
+stay `blocked` until flipped.

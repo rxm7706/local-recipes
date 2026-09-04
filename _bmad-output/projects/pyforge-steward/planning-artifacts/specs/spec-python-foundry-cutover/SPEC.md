@@ -20,7 +20,8 @@ open_questions: []
 > `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
 > not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
 > (Stories 44.1–44.15) under the cutover spine (`fnd:AD-1..23`) — **solutioning iteration 4,
-> no open question remains; every story ledger `blocked`**. The cutover is regenerative: Dreams and
+> no open question remains; Phase 4 opened 2026-09-04 with 44.13 flipped to `backlog`,
+> every other story ledger `blocked`**. The cutover is regenerative: Dreams and
 > memlogs seed foundry; every capability is rebuilt or moved per the capability ledger.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
