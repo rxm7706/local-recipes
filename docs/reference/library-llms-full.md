@@ -848,6 +848,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **python-ipware** (>=3.0.0) — client IP extraction.
 - **python-multipart** (>=0.0.32) — multipart form parser (Starlette/FastAPI).
 - **python-slugify** (>=8.0.4) — slugify strings.
+- **pytz** (>=2025.2) — IANA tz database for `pytz.timezone(...)`; `dbgpt-sidecar` only — `dbgpt_serve` imports it and pandas 3.x no longer pulls it in.
 - **qrcode** (>=8.2) — QR codes (allauth MFA extra).
 - **rcssmin** (>=1.2.2) — CSS minifier (django-compressor).
 - **rjsmin** (>=1.2.2) — JS minifier (django-compressor).

@@ -168,6 +168,13 @@ COPY src/shared/packages/django-atlas/src/django_atlas_portal /app/django_atlas_
 # Story 23.1: atlas board imports pyforge.steward.dashboard; platform COPY
 # of src/platform cannot see the factory package, same shape as chrome.
 COPY src/shared/packages/pyforge-steward/src/pyforge /app/pyforge
+# Story 14.2 made pyforge.steward depend on pyforge.core (atomic_write). The
+# builder installs both as editable .pth entries pointing at /app/src/shared/...,
+# which this stage does not carry -- so collectstatic died with
+# `ModuleNotFoundError: No module named 'pyforge.core'` (Platform CI, 2026-09-04).
+# Same COPY shape as steward above; both are `pyforge` namespace packages
+# (no __init__.py), so steward/ and core/ merge under /app/pyforge/.
+COPY src/shared/packages/pyforge-core/src/pyforge/core /app/pyforge/core
 COPY src/shared/packages/django-doctor/src/django_doctor_portal /app/django_doctor_portal
 COPY src/shared/packages/django-herald/src/django_herald_portal /app/django_herald_portal
 COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal
