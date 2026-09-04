@@ -6,12 +6,12 @@ altitude: feature
 paradigm: "strangler-fig repository cutover: a fresh lasting root receives the estate by manifest-driven moves over a bounded two-remote interval; the recipe plant is an island with its own lock; the old root becomes a read-only archive"
 scope: "spec-python-foundry-cutover CAP-1..7 (cite fnd:CAP-n) — the move from rxm7706/local-recipes to python-foundry, Phases 0–6, decomposed as steward Epic 44 (all stories ledger-blocked). Inherits canopy AD-1..23 and pap:AD-1..17 read-only."
 status: draft
-iteration: 3
-gate: "PASS-WITH-FIXES 2026-09-04 — rubric walker + reality-check + adversarial-pairs lenses in reviews/; clear fixes applied; iteration 2 folds the review answers and the flag-gated cutover; iteration 3 makes the cutover regenerative: Dreams + memlogs seed foundry, every capability rebuilt or moved"
+iteration: 4
+gate: "PASS-WITH-FIXES 2026-09-04 — rubric walker + reality-check + adversarial-pairs lenses in reviews/; clear fixes applied; iteration 2 folds the review answers and the flag-gated cutover; iteration 3 makes the cutover regenerative: Dreams + memlogs seed foundry, every capability rebuilt or moved; iteration 4 closes the last two open questions: private foundry, CI evidence ladder, minutes metering"
 created: "2026-09-04"
 updated: "2026-09-04"
 chain: pyforge-unifying-strategy
-binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9]
+binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10]
 sources:
   - ../../specs/spec-python-foundry-cutover/SPEC.md
   - ../../specs/spec-python-foundry-cutover/.memlog.md
@@ -26,11 +26,11 @@ companions:
 
 # Architecture Spine — python-foundry-cutover
 
-> **Solutioning iteration 3 (2026-09-04).** Iteration 1 was revised after the reviewer gate; iteration 2 made the cutover a flag with a regenerable plan; iteration 3 makes it regenerative: Dreams and memlogs are the only unconditional move, and every capability reaches foundry by rebuild or by move, decided per row. Drafted on the
+> **Solutioning iteration 4 (2026-09-04).** Iteration 1 was revised after the reviewer gate; iteration 2 made the cutover a flag with a regenerable plan; iteration 3 makes it regenerative: Dreams and memlogs are the only unconditional move, and every capability reaches foundry by rebuild or by move, decided per row; iteration 4 closes the last two open questions: foundry is private, and CI evidence is a real run with the remote host as self-hosted fallback (AD-23). Drafted on the
 > Fast path; every inferred call still carries `[ASSUMPTION]` for the operator's review loop.
 > Nothing here is dispatched: Epic 44's stories are ledger `blocked` until the operator flips
 > them (AD-9). Cite this file's ids as **`fnd:AD-n`**; the Canopy spine's as **canopy AD-n**;
-> the host spine's as **`pap:AD-n`**. Two open questions remain — see the last section.
+> the host spine's as **`pap:AD-n`**. No open question remains — see the last section.
 
 ## Design Paradigm
 
@@ -172,9 +172,9 @@ flowchart LR
 
 ### AD-14 — Repo operational envelope
 
-- **Binds:** CAP-1; Story 44.3
-- **Prevents:** a repository created with undecided visibility, no branch protection, and secrets re-typed by hand
-- **Rule:** Visibility is decided before 44.3 (`repo-visibility`; `dashboard.yml` deploys GitHub Pages and visibility drives the Actions-minutes budget). Default branch `main`, protected, merge commits only; the operator and the marshal bot identity may push. Secrets and variables (`CRC_PULL_SECRET`, `HERALD_WEBHOOK_SECRET`, the six `vars.PLATFORM_CI_*`) are manifest rows of kind `secret` (no value in the manifest) re-provisioned through `steward keys` (FR-5 inventory).
+- **Binds:** CAP-1, CAP-6; Stories 44.3, 44.9
+- **Prevents:** a repository created with undecided visibility, no branch protection, and secrets re-typed by hand; a conda-forge reviewer sent to a link that is dead outside the account
+- **Rule:** Visibility is **private, permanently** (operator 2026-09-04, iteration 4; closes `repo-visibility`). `dashboard.yml` keeps deploying GitHub Pages on the paid plan that already serves the public site from the private `local-recipes`; the win-64 leg (AD-19) bills at 2×, so Actions minutes are a standing budget under AD-23. Nothing Mason submits carries a foundry URL; the strip on the submit path stays. Default branch `main`, protected, merge commits only; the operator and the marshal bot identity may push. Secrets and variables (`CRC_PULL_SECRET`, `HERALD_WEBHOOK_SECRET`, the six `vars.PLATFORM_CI_*`) are manifest rows of kind `secret` (no value in the manifest) re-provisioned through `steward keys` (FR-5 inventory).
 
 ### AD-15 — Identity strings are manifest rows; environment ids are not renamed here
 
@@ -223,6 +223,12 @@ flowchart LR
 - **Binds:** CAP-8, CAP-9; every capability row
 - **Prevents:** a fragmented root of record; double maintenance of a capability being rebuilt while its source keeps changing; a flip that outruns its dependencies
 - **Rule:** `pyforge.cutover_root` remains the only root-of-record switch. Each capability row carries its own state; the flip is allowed only when every capability it depends on is `verified-in-foundry`. A capability entering `rebuilding` or `moving` freezes its source paths in `local-recipes` at once; `frozen-path-changed` is keyed by ledger state, not by the flag, and `steward cutover plan --append` reports any source change against a frozen row as a finding.
+
+### AD-23 — CI evidence ladder and the minutes guard `[ADOPTED]`
+
+- **Binds:** CAP-1, CAP-9, CAP-10; Stories 44.3, 44.14, 44.15
+- **Prevents:** a "green" that never ran (the 2026-08-30 block failed every job in 2 s and looked cheap); CAP-1 dispatched into a blocked account; a drain that discovers the minutes ceiling by being refused
+- **Rule:** CAP-1's evidence is a real green workflow run on a registered runner, in this order: GitHub-hosted; the AD-19 remote Linux dev host registered as a self-hosted runner (estate workflows declare its label as the `runs-on` fallback); and, only while both are unavailable, a documented fresh-clone run of the estate gates on that host — **provisional**, never CAP-1's success. With no evidence path at all, 44.3 does not dispatch. `steward budget check` meters the account's Actions minutes (the billing API through a `user`-scoped credential in `steward keys`, never a token in the manifest) against the plan's included minutes and the declared ceiling; it is read at 44.3's confirmation, by Marshal's foundry drains and by the rebuild harness as their ceiling (Story 44.15). AD-8's classification is unchanged; runner selection lives here.
 
 ## Consistency Conventions
 
@@ -290,7 +296,7 @@ flowchart LR
 
 | Capability | Lives in | Governed by |
 |---|---|---|
-| CAP-1 open foundry | `python-foundry` root, estate workflows | AD-1, AD-3, AD-8, AD-9, AD-14, AD-16 |
+| CAP-1 open foundry | `python-foundry` root, estate workflows | AD-1, AD-3, AD-8, AD-9, AD-14, AD-16, AD-23 |
 | CAP-2 realize the estate | `src/packages/`, `skills/`, `_bmad*/`, `docs/dreams/` | AD-2, AD-5, AD-6, AD-7, AD-12, AD-15, AD-18, AD-19 |
 | CAP-3 CFE comes home | `skills/domain/conda-forge-expert`, `pyforge/mason/resolve.py` | AD-4, AD-5, AD-13, AD-16 |
 | CAP-4 factory island | `factory/` | AD-3, AD-4, AD-8 |
@@ -298,7 +304,8 @@ flowchart LR
 | CAP-6 Mason → conda-forge | `pyforge-mason` submit/update paths | AD-4, AD-9, AD-11, AD-15 |
 | CAP-7 archive | `rxm7706/local-recipes` | AD-1, AD-8, AD-9, AD-11, AD-15 |
 | CAP-8 flag-gated, replayable cutover | `steward cutover plan/apply`, `flags.json`, `pyforge-core` flag reader | AD-2, AD-17, AD-18, AD-22 |
-| CAP-9 capability ledger + rebuild harness | `steward cutover plan` (ledger), foundry's own planning tree, Marshal drains | AD-2, AD-18, AD-20, AD-21, AD-22 |
+| CAP-9 capability ledger + rebuild harness | `steward cutover plan` (ledger), foundry's own planning tree, Marshal drains | AD-2, AD-18, AD-20, AD-21, AD-22, AD-23 |
+| CAP-10 metered minutes budget | `steward budget` (metering source), `steward keys`, estate workflows' `runs-on` | AD-14, AD-19, AD-23 |
 
 ## Deferred
 
@@ -315,9 +322,8 @@ flowchart LR
 | Renaming the `local-recipes` pixi env | AD-15 holds it; 974 call sites + GATE-011 | A named rename story, after 44.10 |
 | Which capabilities rebuild versus move | Operator-owned per row; first pass in `cutover.md` is `[ASSUMPTION]` | 44.1 renders the ledger with the four signals scored |
 
-## Open Questions (iteration 3)
+## Open Questions (iteration 4)
 
-- **repo-visibility** — private (Spec assumption) or public? `dashboard.yml` deploys GitHub Pages; visibility decides Pages and the Actions budget. Bends AD-14.
-- **actions-minutes** — inherited from the Spec: if the Actions billing block persists, what is CAP-1's CI evidence? Bends AD-8, AD-14.
+None. Answered in iteration 4: `repo-visibility` (AD-14 — private, permanently) and `actions-minutes` (AD-23 — evidence ladder, self-hosted fallback on the remote host, provisional fresh-clone run, no dispatch without an evidence path; CAP-10 metering, Story 44.15).
 
 Answered in iteration 2 (recorded as ADs): `windows-symlink-adapters` and `runtime-state-home` (AD-19), `cursor-skill-discovery` and `skf-export-root` (AD-5), `loop-home-cutover-timing` (AD-17). Answered in iteration 3: `planning-history-scope` (AD-20), `ingest-keys-import` (rebuild the ingest in `pyforge-steward` behind the station port; capability ledger first pass).

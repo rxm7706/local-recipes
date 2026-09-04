@@ -13,15 +13,14 @@ companions:
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
-open_questions:
-  - actions-minutes
+open_questions: []
 ---
 
 > **Canonical contract.** Derived 2026-09-04 from the Dream § *Cutover to
 > `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
 > not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
-> (Stories 44.1–44.14) under the cutover spine (`fnd:AD-1..22`) — **solutioning iteration 3,
-> operator review continuing; every story ledger `blocked`**. The cutover is regenerative: Dreams and
+> (Stories 44.1–44.15) under the cutover spine (`fnd:AD-1..23`) — **solutioning iteration 4,
+> no open question remains; every story ledger `blocked`**. The cutover is regenerative: Dreams and
 > memlogs seed foundry; every capability is rebuilt or moved per the capability ledger.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
@@ -44,6 +43,9 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     recipe-free, lean-pixi estate with estate-only CI.
   - **success:** The clone exists; CI is green on the empty estate; no `recipes/`
     directory; the `environment.yaml` export is automated or absent, never by hand.
+    The green run is a real workflow run on a registered runner — GitHub-hosted, or the
+    remote host as self-hosted fallback (spine AD-23); a fresh-clone run of the estate
+    gates is provisional evidence only.
 
 - **CAP-2 — Realize the estate (Phase 1).**
   - **intent:** Every capability of the estate reaches foundry by rebuild or by move per the
@@ -102,6 +104,16 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     flipping `pyforge.cutover_root` switches the ledger of record, Mason's targets and the
     loop-home remotes without a redeploy, and flipping back restores them.
 
+- **CAP-10 — Metered minutes budget.**
+  - **intent:** `steward budget` knows the account's GitHub Actions-minutes spend and
+    ceiling, so the foundry dispatch, Marshal's drains and the rebuild harness never run
+    blind into a billing block again.
+  - **success:** `steward budget check` returns a real under/over verdict against the
+    plan's included minutes and the declared ceiling from a metering source (the Actions
+    billing API through a `user`-scoped credential held in `steward keys`, never in the
+    manifest); the 44.3 confirmation, Marshal's foundry drains and the rebuild harness read
+    it as their ceiling; the honest-stub property is retired for this source only.
+
 ## Constraints
 
 - Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
@@ -123,6 +135,12 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
   exists. CAP-1, CAP-6 and CAP-7 are outward; the ledger holds them `blocked` until
   the operator flips each one. Never auto-drained.
+- Foundry is private, permanently (operator 2026-09-04, iteration 4): Pages and the win-64
+  leg ride the paid plan; Actions minutes are a standing budget; nothing Mason submits
+  carries a foundry URL.
+- CI evidence is a real run (spine AD-23): GitHub-hosted, or the remote host as self-hosted
+  fallback; a fresh-clone run is provisional; with no evidence path 44.3 does not dispatch,
+  and `steward budget check` (CAP-10) reports the minutes state at the confirmation.
 - Fresh repo (operator 2026-09-04): no history import; source SHAs live in the
   move-list manifest.
 - The move-list manifest (Story 44.1) is derived from the spec-surface map and precedes
@@ -164,6 +182,8 @@ is archived with its last SHA pinned in the foundry manifest.
 ## Assumptions
 
 - `gh` auth for rxm7706 can create a private repository (CAP-1).
+- The paid GitHub plan that serves Pages from the private `local-recipes` today persists
+  for foundry (CAP-1, CAP-10).
 - No detector enforces a line-count cap on the living Dream; the Dream section grows
   the file past 43.1's 400-line target by design.
 - Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
@@ -171,6 +191,6 @@ is archived with its last SHA pinned in the foundry manifest.
 
 ## Open Questions
 
-- **actions-minutes:** CAP-1's "CI green on the empty estate" needs GitHub Actions
-  minutes, and rxm7706 was under an account-wide billing block on 2026-08-30. If it is
-  still blocked when 44.3 dispatches, what counts as CAP-1's CI evidence?
+None. `actions-minutes` answered 2026-09-04 (iteration 4): the evidence ladder and the
+minutes guard are spine AD-23 and CAP-10 (Story 44.15). `repo-visibility` answered the same
+day: private, permanently (spine AD-14).
