@@ -9,6 +9,7 @@ extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-1..7 
 surface: []
 companions:
   - cutover.md
+  - ../../architecture/architecture-python-foundry-cutover-2026-09-04/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
@@ -18,8 +19,9 @@ open_questions:
 
 > **Canonical contract.** Derived 2026-09-04 from the Dream § *Cutover to
 > `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
-> not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Realized by steward **Epic 44**
-> (Stories 44.1–44.10). The evergreen Spec is not re-derived for this work.
+> not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
+> (Stories 44.1–44.10) under the cutover spine (`fnd:AD-1..16`) — **solutioning iteration 1,
+> operator review pending; every story ledger `blocked`**. The evergreen Spec is not re-derived.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -83,6 +85,9 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 
 ## Constraints
 
+- Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
+  and Epic 44 are BMAD Phase 3 artifacts the operator reviews and refines in iterations;
+  no story spec is drafted and no 44.x leaves ledger `blocked` until the operator flips it.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
   exists. CAP-1, CAP-6 and CAP-7 are outward; the ledger holds them `blocked` until
   the operator flips each one. Never auto-drained.

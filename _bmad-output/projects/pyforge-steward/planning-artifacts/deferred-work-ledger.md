@@ -2477,7 +2477,8 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-17** — Lock topology: `factory/` island lock and per-package `pixi.toml` scheduled ahead of any further eight-wide station wave; `environment.yaml` regeneration automated in CI. (red-team D-2)
   evidence: Review § 4 (R-17); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
+  status: promoted
+  disposition: 2026-09-04 — promoted to steward Story 44.7 (spec-python-foundry-cutover fnd:CAP-4, Phase 3 factory island; R-17a env export in 44.3); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2487,6 +2488,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   summary: **R-18** — Sizing rewrite: per-pod rows for web (memory-bound; `--preload`; Langflow RSS measured), worker (CPU-bound; separate builds pool), mcp-host, DB-GPT sidecar, Liquibase Job (JVM), Vizro; requests/limits in values; HPA on web and worker; PodDisruptionBudgets; LLM inference stated as external. (red-team S-7, T-7)
   evidence: Review § 4 (R-18); finding ids in parentheses map to § 2 rows with file:line citations.
   status: open
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2496,6 +2498,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   summary: **R-19** — Network baseline: default-deny NetworkPolicy in the namespace with explicit allows; `automountServiceAccountToken: false`. (red-team X-4, X-6)
   evidence: Review § 4 (R-19); finding ids in parentheses map to § 2 rows with file:line citations.
   status: open
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2505,6 +2508,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   summary: **R-20** — Secrets profile: age key custody and rotation, an `ExternalSecret` example for the Vault/ESO profile, a rotation runbook for `DJANGO_SECRET_KEY`, `REDIS_PASSWORD`, the DB roles and the assertion PEM (dual-key verify during rotation). (red-team X-7)
   evidence: Review § 4 (R-20); finding ids in parentheses map to § 2 rows with file:line citations.
   status: open
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2514,6 +2518,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   summary: **R-21** — Observability contract: SLOs for `/ht/`, MCP p99, queue age, event lag; alert rules; a metrics write path for Doctor's flag kill-switch. (red-team A-7, B-5)
   evidence: Review § 4 (R-21); finding ids in parentheses map to § 2 rows with file:line citations.
   status: open
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2523,6 +2528,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   summary: **R-22** — Live browser streaming: implement `/ws/events/` as a Channels consumer over redis-broker Streams with per-`sub` filtering, or delete the pillar from the Dream. (red-team T-8)
   evidence: Review § 4 (R-22); finding ids in parentheses map to § 2 rows with file:line citations.
   status: open
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2531,7 +2537,8 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-23** — Dream doc fixes: `readOnlyRootFilesystem`, Windows / free-threading claims aligned to the shipped Containerfile and `pixi.toml` platforms. (red-team X-6, D-5)
   evidence: Review § 4 (R-23); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
+  status: promoted
+  disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2540,7 +2547,8 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-24** — Pin the Keycloak version once (`26.4.0`) across Dream, compose and research. (red-team S-6)
   evidence: Review § 4 (R-24); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
+  status: promoted
+  disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -2549,9 +2557,21 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-25** — Rewrite the "zero domain models" constraint as "no station-domain models on `django-<station>`". (red-team T-9)
   evidence: Review § 4 (R-25); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
+  status: promoted
+  disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+## Foundry cutover 2026-09-04 — carried residue (owner: steward; not a story yet)
+
+Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 44.10 when it dispatches.
+
+### DW-CC-2026-09-04-1
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md`
+  summary: Worktree residue on the `local-recipes` checkout — 268 registered git worktrees (58 `.worktrees/`, 66 `.cursor/worktrees`, 33 `.claude/worktrees`, 93 retired under loop homes, 8 loop homes, 3 `local-recipes-wt-*`) and 85 GB under `.claude/worktrees/` — retired at Phase 6, never moved (fnd:AD-1).
+  evidence: `git worktree list --porcelain | grep -c '^worktree '` = 268 on 2026-09-04; `du -sh .claude/worktrees` = 85G.
+  status: open
 
 ### DW-FU-40-1: Structured-log assertions for assertion.mint_refused (caplog on 401/403, no bearer echo) — AC requires logging but tests only check HTTP status.
 

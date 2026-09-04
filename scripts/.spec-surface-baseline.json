@@ -6200,6 +6200,10 @@
   },
   "memlog": "403581212a5b38b639ca828bd3451c6d7757b825"
  },
+ "pyforge-steward/spec-python-foundry-cutover": {
+  "files": {},
+  "memlog": "69b0bc18ef9f2fa3b0e158157c07e61570c0a05b"
+ },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
    "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "81b5946b11bb4c5ac1884d8e515a9ca0cade0369",

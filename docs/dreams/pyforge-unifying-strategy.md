@@ -435,6 +435,12 @@ gate on 44.6 / 44.9 is ledger state, as 43.6 was behind Mason 13. Before any led
 `sprint-ledger-sync --project steward --repair-feed` (the Tier-3 feed stops at Epic 38; a
 bare sync refuses) then `story-status-check`.
 
+**Solutioning first (operator 2026-09-04).** BMAD Phase 3 only: the Spec, the cutover
+architecture spine (`architecture-python-foundry-cutover-2026-09-04`, cite `fnd:AD-n`)
+and Epic 44 are solutioning artifacts under review; the operator iterates on them before
+any implementation. Every 44.x is held ledger `blocked`; the flip to `backlog` is the move
+into Phase 4, story by story. No story spec is drafted until then.
+
 **Never.** No `services/` / `:800x` tree. The estate `pixi.lock` never absorbs the factory
 solver farm. Graphify move-list and package fold never in one story. No `CAP-20` in the
 evergreen Spec. The archive's phase table is the record of where this came from, not a
@@ -492,5 +498,6 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
 - **2026-09-04** — Gate closed 2026-09-03: 43.3–43.6 shipped, Mason 13.1 / 13.2 done,
   steward 196/196. Cutover promoted out of the archive into § *Cutover to `python-foundry`*
   as the build target (43.1 had filed it under "do not build"). Operator rulings: fresh repo;
-  fold docs / carry ops. `spec-python-foundry-cutover` (`fnd:CAP-1..7`) derived; steward
-  Epic 44 (44.1–44.10) minted; 44.3 / 44.9 / 44.10 held `blocked` for operator flips.
+  fold docs / carry ops. `spec-python-foundry-cutover` (`fnd:CAP-1..7`) derived; cutover architecture spine
+  (`fnd:AD-1..16`, iteration 1) and steward Epic 44 (44.1–44.10) decomposed as solutioning;
+  every story held `blocked` until the operator's review iterations close (Phase 3 → 4).
