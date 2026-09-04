@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -31,7 +32,7 @@ _PKG = REPO / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
 if str(_PKG) not in sys.path:
     sys.path.insert(0, str(_PKG))
 
-from pyforge.marshal.coverage_gate import (  # noqa: E402
+from pyforge.marshal.coverage_gate import (
     STATIONS,
     evaluate_coverage_payload,
     package_root,
@@ -40,6 +41,20 @@ from pyforge.marshal.coverage_gate import (  # noqa: E402
     touched_source_modules,
     touched_stations,
 )
+
+
+def _normalize_base(base: str) -> str:
+    """``origin/<name>`` for a bare branch name (GITHUB_BASE_REF is the name
+    only); anything already a revision is returned as-is -- ``origin/...``,
+    a ``<remote>/<branch>`` path, or a bare commit sha. The push-event
+    workflow passes ``git rev-parse HEAD~1``; prefixing that made every
+    push-to-main run die with "unknown revision 'origin/<sha>'"
+    (2026-08-24 -> 2026-09-04)."""
+    if not base or base.startswith("origin/") or "/" in base:
+        return base
+    if re.fullmatch(r"[0-9a-f]{7,40}", base):
+        return base
+    return f"origin/{base}"
 
 
 def _git_diff_names(base: str, head: str) -> list[str]:
@@ -234,11 +249,7 @@ def main(argv: list[str] | None = None) -> int:
             if line.strip()
         ]
     else:
-        base = args.base
-        if base and not base.startswith("origin/") and "/" not in base:
-            # GITHUB_BASE_REF is the branch name only.
-            base = f"origin/{base}"
-        paths = _git_diff_names(base, args.head)
+        paths = _git_diff_names(_normalize_base(args.base), args.head)
 
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths))

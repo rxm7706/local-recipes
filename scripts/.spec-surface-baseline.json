@@ -3182,7 +3182,7 @@
    "src/shared/packages/pyforge-marshal/tests/meta/test_cap8_compression_ladder_seam.py": "3230819063a244dd5aa70e7f39b580853ff3a3c1",
    "src/shared/packages/pyforge-marshal/tests/meta/test_cli_tool_parity.py": "249664221c0fa376758eca9093ffddbe22331e3b",
    "src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gate_names_module.py": "a83534512de0aa08a798517e0a68f08e26443d2e",
-   "src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gates_ci_driver.py": "4638bf27a7c488dfa254ee4bb8ba992a3d8a98c2",
+   "src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gates_ci_driver.py": "731382bedfacc817621a40676dfc41ff88f9d4b0",
    "src/shared/packages/pyforge-marshal/tests/meta/test_derived_context_skill_contract.py": "e7ddffa576339f32640fc098b2789c218e453cfd",
    "src/shared/packages/pyforge-marshal/tests/meta/test_engine_version_range_sync.py": "d70de6f6fb1d2e745ea031f023c6cee500b8ceca",
    "src/shared/packages/pyforge-marshal/tests/meta/test_finding_remedy_reference_sync.py": "eba50c33ad85b3f3ab8a93100666908077d19e84",
@@ -3341,7 +3341,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "b267344fe5ea1802971c7876603bb87756c48ae3",
    "src/shared/packages/pyforge-marshal/tests/unit/test_wave_scheduler.py": "ee92600544d54e358dc02829b81f157c1ad81895"
   },
-  "memlog": "0d927b00257bcadbf658525681f557a6f5cfe3b8"
+  "memlog": "9dcc7f9ca0993f20fe99a59e668023f5513f28dc"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -3350,7 +3350,7 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "d2d0a7404ec8362ef0b50e91279679edbcfd181d",
-   "scripts/coverage_gates_ci.py": "49d865e2397d95d7c92c3598913833d7e5671011",
+   "scripts/coverage_gates_ci.py": "2ad532cb52522ae400d30a5547efb5cc0e219df5",
    "scripts/run_station_coverage_gate.py": "cce6514079506f6881e4dad32e6ab69c44abe714",
    "src/shared/packages/pyforge-testing-kit/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-testing-kit/README.md": "10864883edbba41aea3aa358b19de28841090a7b",
@@ -3366,7 +3366,7 @@
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "820a9616c92f04d056718f3afcfb0774a2239fd2"
   },
-  "memlog": "a658d076fc1a93ce3fd2793859f44a89af20c454"
+  "memlog": "8ea6db033652d798a1590ad5bc685dcd63daef45"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
