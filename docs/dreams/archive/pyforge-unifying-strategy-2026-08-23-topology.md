@@ -374,6 +374,8 @@ Nine FastAPI `:800x` processes, `portals/`, CodeRed CRX, MinIO as a core kind, C
 
 ## One working tree — `python-foundry`
 
+> Superseded as build target 2026-09-04 by the living Dream § *Cutover to `python-foundry`*; this copy is the record.
+
 Today’s clone is `rxm7706/local-recipes` (copy source). The lasting git root is
 **`python-foundry`** (Pixi workspace `pyforge`). `python-platform-foundry` is
 superseded. Do not merge the factory solver farm into the estate `pixi.lock`.
