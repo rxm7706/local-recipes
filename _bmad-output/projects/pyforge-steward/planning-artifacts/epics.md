@@ -2490,10 +2490,10 @@ So that laptop and cluster run one interpreter and Atlas/Doctor import inside th
 **And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
 **And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
-## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7)
+## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8)
 
-The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..16`).
-Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Solutioning iteration 1 — every story below is ledger `blocked` until the operator's review iterations close and flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3).
+The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
+Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Solutioning iteration 2 — every story below is ledger `blocked` until the operator's review iterations close and flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11 and 44.12 are enablers.
 
 ### Story 44.1: The move-list manifest
 
@@ -2504,6 +2504,7 @@ So that no move story can route a path twice or drop one silently.
 **Type:** docs • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-2 (input) • fnd:AD-1, fnd:AD-2, fnd:AD-15, fnd:AD-16 • red-team D-2 • prior art `pyforge.scribe.extras.move_list` (scribe 6.1)
 **Given** `git ls-files` (rows, allowlisted trees included), `scripts/spec_surface_check.py`'s classification (owner only) and `scribe index move-list` extended with a `parent_depth` signal (coupling) **When** the manifest renders **Then** 100 % of the 24,858 tracked paths carry exactly one destination by ordered precedence, a `source_sha` and the foundry epoch SHA; a path matched by two equal-precedence rules is row kind `ambiguous` and blocks
 **And** the manifest is a machine-readable file with per-directory rollups at the spine's seeded location (`docs/foundry/manifest.*`, `[ASSUMPTION]`), rows carry `kind` (`file` | `secret` | `identity`), and its row shape matches `fnd:AD-2`'s convention
+**And** `steward cutover plan --regenerate` rebuilds it from scratch and `--append` folds in only the delta since the recorded `source_sha`; both preserve `moved` rows (idempotent over status)
 
 ### Story 44.2: The red-team document fixes
 
@@ -2524,7 +2525,7 @@ So that Phase 1 has a lasting root to move into.
 **Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-1 • fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9, fnd:AD-14, fnd:AD-16 • R-17a
 **Outward (`fnd:AD-9`):** creates a GitHub repository — held `blocked`; dispatched only on the operator's explicit confirmation, never by a drain.
 **Given** a fresh clone **When** CI runs on the empty estate **Then** it is green, no `recipes/` directory exists, `pixi.toml` is `name = "pyforge"` with no solver-farm tooling, and `environment.yaml` is either workflow-produced or absent
-**And** the repo envelope is set per `fnd:AD-14`: visibility decided (`repo-visibility`), `main` protected with merge commits only, secrets and vars re-provisioned through `steward keys` from manifest rows of kind `secret`, the foundry epoch SHA recorded
+**And** the repo envelope is set per `fnd:AD-14`: visibility decided (`repo-visibility`), `main` protected with merge commits only, secrets and vars re-provisioned through `steward keys` from manifest rows of kind `secret`, the foundry epoch SHA recorded, and `src/platform/config/flags.json` carries `pyforge.cutover_root: local-recipes` (`fnd:AD-17`)
 **And** the open questions `repo-visibility` and `actions-minutes` are answered before dispatch
 
 ### Story 44.4: Fold the packages
@@ -2533,11 +2534,12 @@ As a platform operator,
 I want `src/shared/packages/*` under `src/packages/` in foundry with every consumer path rewritten from manifest rows and no source copied into the host image,
 So that station envs solve and the host boots in foundry from workspace members.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.1, S-44.3 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-3, fnd:AD-6, fnd:AD-7, fnd:AD-15 • pap:AD-9 ratified • pap:AD-2 breach closed
+**Type:** feature • **Effort:** L • **Deps:** S-44.1, S-44.3, S-44.12 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-3, fnd:AD-6, fnd:AD-7, fnd:AD-15, fnd:AD-18 • pap:AD-9 ratified • pap:AD-2 breach closed
 **Given** the manifest rows for `src/shared/packages/**` **When** the fold lands **Then** every station env solves, the host boots, no `src/shared/` exists, the Containerfile has none of its ten `COPY src/shared/packages/...` lines and no `COPY . /app` of package source, each of the seven `django-*` packages carries a `pixi.toml` (workspace member, as the ten `pyforge-*` already do), and `five_tier.py` / `script_map_from_packages_root` / `marshal-policy.toml` / Spec `surface:` globs / CI `paths:` / the 103 `pixi.toml` path sites all point at `src/packages/`
 **And** every `parent_depth` coupling row (the 59 files computing paths by `parents[N]`) is rewritten with no silent wrong-root fallback; `CLAUDE.md` / `AGENTS.md` are refreshed by `skf-export`; the affected specs are re-stamped scoped
 **And** the `src/platform/ingest/github_projects/*` import of `pyforge.steward.keys` has its successor landed per `ingest-keys-import` (never deleted without one)
 **And** distribution and import names are byte-identical to before the fold (package fold only — nothing from Story 44.5 rides along)
+**And** the fold is `steward cutover apply --phase 1a`, re-runnable into foundry after every `--regenerate` or `--append` until the flag flips (`fnd:AD-18`)
 
 ### Story 44.5: Move the estate
 
@@ -2545,10 +2547,10 @@ As a platform operator,
 I want the skills tree, the BMAD chain, the decks and the Dreams in foundry with IDE directories as symlink adapters,
 So that agents and loops resolve everything from the lasting root.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.4 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15
-**Given** the manifest rows for `.claude/skills/**`, `_bmad/**`, `_bmad-output/projects/**`, `docs/dreams/**`, `presentations/**` **When** the move lands **Then** estate-authored skills — the eight station personas included — live under `skills/{stations,personas,domain}/`, `.claude/skills/<x>` are relative symlinks (`.cursor/skills/<x>` only if `cursor-skill-discovery` requires it), installer-written `bmad-*` / `skf-*` dirs are untouched, the CFE cell is left in place for 44.6 (`fnd:AD-13`), and the BMAD chain resolves in foundry with the marker and planning symlinks recreated, never copied; foundry's ledger becomes the ledger of record
-**And** the eight loop homes are re-provisioned against the foundry remote (open question `loop-home-cutover-timing` decides before or after this story)
-**And** the open questions `windows-symlink-adapters`, `cursor-skill-discovery`, `skf-export-root` and `planning-history-scope` are answered before dispatch
+**Type:** feature • **Effort:** L • **Deps:** S-44.4, S-44.11 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15, fnd:AD-18, fnd:AD-19
+**Given** the manifest rows for `.claude/skills/**`, `_bmad/**`, `_bmad-output/projects/**`, `docs/dreams/**`, `presentations/**` **When** the move lands **Then** estate-authored skills — the eight station personas included — live under `skills/{stations,personas,domain}/` with SKF export writing there, no adapter is tracked (the 44.11 link step generates `.claude/skills/<x>` on every machine and `.cursor/skills/<x>` where Cursor is detected), installer-written `bmad-*` / `skf-*` dirs are untouched, the CFE cell is left in place for 44.6 (`fnd:AD-13`), and the BMAD chain resolves in foundry with the marker and planning links generated, never copied; the move is `steward cutover apply --phase 1b`, replayable until the flip
+**And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
+**And** the open question `planning-history-scope` is answered before dispatch
 
 ### Story 44.6: CFE comes home
 
@@ -2601,6 +2603,29 @@ So that the default clone is foundry and `.steward` has one git root.
 **Given** every other 44.x `done` **When** the archive lands **Then** the README opens with the supersession banner, Azure pipelines are disabled, the final SHA is pinned in the foundry manifest and the Dream's Realization log, history is kept, the 268 registered worktrees are retired, and a fresh clone of foundry is the default working tree
 **And** `DW-CC-2026-09-04-1` is resolved
 
+### Story 44.11: Windows-native estate
+
+As a developer on a stock Windows machine with no WSL and no Developer Mode,
+I want the estate to clone and run natively — links generated as junctions, paths under the limit, no shell-only tasks — with the host reached remotely,
+So that the Windows population does recipe, station and planning work first-class.
+
+**Type:** feature • **Effort:** L • **Deps:** S-44.3 • **FR/AD:** fnd:CAP-1, fnd:CAP-2, fnd:CAP-3 • fnd:AD-5, fnd:AD-19
+**Given** a fresh clone on Windows with `core.symlinks` off **When** the link step runs **Then** every runtime link (`.claude/skills/<x>`, the two BMAD planning links, `.cursor/skills/<x>` where Cursor is detected) exists as a junction, none is tracked in git, and a doctor preflight reports them healthy
+**And** the preflight fails loud on a link that is a text file and on the deepest tracked path exceeding the Windows limit from the clone root; long-path registry settings are never assumed
+**And** no pixi task invokes `bash -c`, `sed`, `grep`, `awk`, `find` or `tee` (audited in a test); runtime state resolves to gitignored `var/`
+**And** a win-64 CI leg runs the station suites, the link check and the detectors green; the remote-dev profile for the host is documented in the bootstrap Spec
+
+### Story 44.12: Cutover flag and replay harness
+
+As a platform operator,
+I want one flag that names the root of record and a harness that regenerates, appends and replays the cutover plan,
+So that `local-recipes` keeps evolving until the flip and foundry never falls behind it.
+
+**Type:** feature • **Effort:** M • **Deps:** S-44.1 • **FR/AD:** fnd:CAP-8 • fnd:AD-2, fnd:AD-17, fnd:AD-18 • canopy AD-11
+**Given** `src/platform/config/flags.json` **When** `pyforge.cutover_root` is read **Then** the host reads it in-process and the CLIs read it through a `pyforge-core` reader; its value alone decides the ledger of record, Mason's targets and the loop-home remotes, and flipping it back restores them
+**And** `steward cutover plan --regenerate` and `--append` both preserve `moved` rows (a test proves idempotence over status), and `steward cutover apply --phase <n>` is idempotent when re-run
+**And** a flip is refused while any loop is running and is recorded in the Dream's Realization log
+
 ## Currency validation note — 2026-08-26
 
 Chain-currency sweep pass (arch→epics cascade safety, no story or status changes).
@@ -2615,4 +2640,4 @@ and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not
 unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
 already reflected by Epic 30's own text. No epic or story required correction.
 
-**2026-09-04 addendum (foundry cutover, solutioning):** 44 epics / 206 stories. Epic 44's ten stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
+**2026-09-04 addendum (foundry cutover, solutioning iteration 2):** 44 epics / 208 stories. Epic 44's twelve stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.

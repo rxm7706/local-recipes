@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 251
+# stories: 253
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -145,6 +145,8 @@ development_status:
   43-6-platform-image-moves-to-python-3-14: done
   44-1-the-move-list-manifest: blocked
   44-10-archive-local-recipes: blocked
+  44-11-windows-native-estate: blocked
+  44-12-cutover-flag-and-replay-harness: blocked
   44-2-the-red-team-document-fixes: blocked
   44-3-open-the-foundry: blocked
   44-4-fold-the-packages: blocked

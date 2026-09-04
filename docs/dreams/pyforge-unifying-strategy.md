@@ -429,11 +429,19 @@ re-derived: its SPEC.md is hand-edited past its memlog and `bmad-spec` is its si
 | 5 — Mason → conda-forge (`fnd:CAP-6`) | **44.9** | `submit` → staged-recipes or bot fork; `update` → feedstock maintainer-edit | an agent PR never opens `local-recipes` (asserted on the submit path) | **outward + Mason**; deps 44.6, 44.8 |
 | 6 — Archive (`fnd:CAP-7`) | **44.10** | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered, 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
 
-**Order.** 44.1 ∥ 44.2 → operator flips 44.3 → 44.4 → 44.5 → 44.6 ∥ 44.7 → 44.8 → operator
-flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
+**Order.** 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.4 → 44.5 → **flag flip** →
+44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
 gate on 44.6 / 44.9 is ledger state, as 43.6 was behind Mason 13. Before any ledger write:
 `sprint-ledger-sync --project steward --repair-feed` (the Tier-3 feed stops at Epic 38; a
 bare sync refuses) then `story-status-check`.
+
+**Flag-gated and regenerable (operator 2026-09-04, iteration 2).** The cutover is a flag,
+not a date: `pyforge.cutover_root` in the CAP-13 flag tree names the root of record; the
+transition point is its flip, after 44.5 today, and flipping back is the rollback. Until then
+this repo evolves normally; the plan is regenerated from scratch or appended with the delta at
+will, and every move is a replay into foundry (`fnd:AD-17`, `fnd:AD-18`). Stock Windows
+developers get a native estate through generated junction links and a remote host (`fnd:AD-19`);
+Stories 44.11 and 44.12 carry both.
 
 **Solutioning first (operator 2026-09-04).** BMAD Phase 3 only: the Spec, the cutover
 architecture spine (`architecture-python-foundry-cutover-2026-09-04`, cite `fnd:AD-n`)
@@ -501,3 +509,8 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   fold docs / carry ops. `spec-python-foundry-cutover` (`fnd:CAP-1..7`) derived; cutover architecture spine
   (`fnd:AD-1..16`, iteration 1) and steward Epic 44 (44.1–44.10) decomposed as solutioning;
   every story held `blocked` until the operator's review iterations close (Phase 3 → 4).
+- **2026-09-04 (iteration 2)** — Operator review of PR #1041: the cutover is a flag
+  (`pyforge.cutover_root`), the plan regenerates or appends, moves are replays; stock Windows
+  is a native estate with a remote host; adapters are generated per machine, SKF writes into
+  `skills/`, runtime state in `var/`. Spine `fnd:AD-17..19`, Spec `fnd:CAP-8`, Stories 44.11 /
+  44.12 (both `blocked`). Four open questions remain.

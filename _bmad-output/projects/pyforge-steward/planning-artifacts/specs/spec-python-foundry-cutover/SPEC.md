@@ -20,8 +20,8 @@ open_questions:
 > **Canonical contract.** Derived 2026-09-04 from the Dream § *Cutover to
 > `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
 > not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
-> (Stories 44.1–44.10) under the cutover spine (`fnd:AD-1..16`) — **solutioning iteration 1,
-> operator review pending; every story ledger `blocked`**. The evergreen Spec is not re-derived.
+> (Stories 44.1–44.12) under the cutover spine (`fnd:AD-1..19`) — **solutioning iteration 2,
+> operator review continuing; every story ledger `blocked`**. The evergreen Spec is not re-derived.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -83,11 +83,27 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     manifest; history kept; worktree residue retired; the default clone is foundry
     and `.steward` has one git root.
 
+- **CAP-8 — Flag-gated, replayable cutover.**
+  - **intent:** The operator can regenerate or append the cutover plan at any time while
+    `local-recipes` keeps evolving, replay every move into foundry, and flip the root of
+    record by one flag.
+  - **success:** `steward cutover plan --regenerate` and `--append` both yield a manifest
+    that preserves `moved` rows; `steward cutover apply --phase <n>` is idempotent;
+    flipping `pyforge.cutover_root` switches the ledger of record, Mason's targets and the
+    loop-home remotes without a redeploy, and flipping back restores them.
+
 ## Constraints
 
 - Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
   and Epic 44 are BMAD Phase 3 artifacts the operator reviews and refines in iterations;
   no story spec is drafted and no 44.x leaves ledger `blocked` until the operator flips it.
+- The cutover is a flag, not a date: `pyforge.cutover_root` in the CAP-13 flag tree is the
+  only switch of the root of record; the transition point is the flip (after 44.5 today);
+  before it nothing in `local-recipes` is frozen.
+- Every move is a replay: a move the `steward cutover apply` step cannot reproduce is
+  review-blocking.
+- No symlink is tracked in git; runtime links are generated per machine (symlink on POSIX,
+  junction on Windows) and gitignored. Runtime state lives in gitignored `var/`.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
   exists. CAP-1, CAP-6 and CAP-7 are outward; the ledger holds them `blocked` until
   the operator flips each one. Never auto-drained.
@@ -132,6 +148,8 @@ is archived with its last SHA pinned in the foundry manifest.
 - `gh` auth for rxm7706 can create a private repository (CAP-1).
 - No detector enforces a line-count cap on the living Dream; the Dream section grows
   the file past 43.1's 400-line target by design.
+- Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
+  is native for them and the host is remote (spine AD-19).
 
 ## Open Questions
 

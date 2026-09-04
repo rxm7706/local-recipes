@@ -546,4 +546,6 @@ verify_commands = [
   "src/shared/packages/pyforge-mason/**",
   "src/shared/packages/**",
   "src/platform/Containerfile",
+  "var/**",
+  "src/platform/config/flags.json",
 ]

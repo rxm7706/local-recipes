@@ -10,6 +10,10 @@ Promoted 2026-09-04 out of `docs/dreams/archive/pyforge-unifying-strategy-2026-0
 Dream § *Cutover to `python-foundry`* carries the same table; this file is the
 contract's copy and adds the tree, the faces and the do-not-carry list.
 
+## The flag and the plan (iteration 2)
+
+`pyforge.cutover_root` in `src/platform/config/flags.json` is the root of record; the transition point is its flip, after 44.5 today, and flipping back is the rollback. `steward cutover plan --regenerate` rebuilds the manifest from scratch; `--append` folds in the delta since its recorded `source_sha`; both keep `moved` rows. `steward cutover apply --phase <n>` replays a phase into foundry as often as the plan changes. Until the flip, `local-recipes` evolves normally.
+
 ## Phases → stories
 
 | Phase | CAP | Story | Do | Done when | Gate |
@@ -23,10 +27,12 @@ contract's copy and adds the tree, the faces and the do-not-carry list.
 | 3 — Factory island | CAP-4 | 44.7 | `factory/pixi.toml` + own lock; `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml`; recipes-only CI on `paths: factory/**` (R-17b) | `mason recipe build factory/recipes/<r>` matches today's CFE wrap; `DW-RT-2026-09-02-1` resolved | deps 44.3 |
 | 4 — Working set | CAP-5 | 44.8 | move in-flight + sole-maintainer recipes only | `factory/recipes/` is the working set; universe not copied (count ceiling asserted) | deps 44.7 |
 | 5 — Mason → conda-forge | CAP-6 | 44.9 | `submit` → staged-recipes or bot fork; `update` → feedstock maintainer-edit | an agent PR never opens `local-recipes` (asserted on the submit path) | **outward + Mason**; deps 44.6, 44.8 |
+| — | CAP-1..3 | 44.11 Windows-native estate | generated per-machine links (junctions on Windows), long-path preflight, no shell-only tasks, win-64 CI leg, `var/` state home | link check and detectors green on a Windows runner; a stock Windows clone runs recipes and station CLIs | deps 44.3 |
+| — | CAP-8 | 44.12 cutover flag + replay harness | `pyforge.cutover_root` flag + `pyforge-core` reader; `steward cutover plan --regenerate\|--append` and `apply --phase` | both modes preserve `moved` rows; apply is idempotent; the flip switches ledger, Mason targets, loop homes | deps 44.1 |
 | 6 — Archive | CAP-7 | 44.10 | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered; 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
 
-**Order.** 44.1 ∥ 44.2 → operator flips 44.3 → 44.4 → 44.5 → 44.6 ∥ 44.7 → 44.8 →
-operator flips 44.9 → operator flips 44.10.
+**Order.** 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.4 → 44.5 → **flag flip** → 44.6 ∥ 44.7 → 44.8 →
+operator flips 44.9 → operator flips 44.10. Every move before the flip is a replay (`fnd:AD-18`).
 
 ## Target tree
 
@@ -58,7 +64,8 @@ python-foundry/                        # lasting git root (today: local-recipes)
 │   ├── stations/<station>/SKILL.md    # × 7. Mason → domain/conda-forge-expert
 │   ├── personas/<station>/SKILL.md
 │   └── domain/conda-forge-expert/
-├── .claude/skills/  .cursor/skills/   # adapters → ../../skills/
+├── .claude/skills/  (.cursor/skills/) # generated per-machine links, gitignored (fnd:AD-19)
+├── var/                               # gitignored runtime state: atlas, cfe, worktrees
 └── _bmad-output/projects/
 ```
 

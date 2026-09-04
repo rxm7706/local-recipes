@@ -3,7 +3,7 @@ title: Sprint Change Proposal — cutover to python-foundry (solutioning iterati
 date: 2026-09-04
 project: pyforge-steward
 chain: spec-python-foundry-cutover (extends spec-pyforge-unifying-strategy)
-status: draft — solutioning iteration 1; operator review pending. No story leaves ledger `blocked` until the operator flips it.
+status: draft — solutioning iteration 2; operator review continuing. No story leaves ledger `blocked` until the operator flips it.
 trigger: docs/dreams/pyforge-unifying-strategy.md § "Cutover to python-foundry" (2026-09-04) — the 40→43 + Mason 13 gate closed 2026-09-03 with nothing downstream of it; red-team MEDIUM band DW-RT-2026-09-02-1..9 all open, R-17 is Phases 1–3
 mode: batch
 scope: major — new chain artifacts (Spec, spine, epic), no code
@@ -143,3 +143,27 @@ then let `bmad-build` draft its story spec.
 - `deferred-work-ledger.md` dispositions + `DW-CC-2026-09-04-1`
 - `marshal-policy.toml` `"44"`; `prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md` § 14
 - this proposal
+
+## 7. Iteration 2 — 2026-09-04 (operator review of PR #1041)
+
+**Ruling: the cutover is a flag, not a date.** `pyforge.cutover_root` in the CAP-13 flag tree
+names the root of record; the transition point is its flip (after 44.5 today); flipping back is
+the rollback. `local-recipes` evolves normally until then. The plan is a generated artifact
+with `--regenerate` and `--append` modes; every move is an idempotent replay. Spine
+`fnd:AD-17` (flag), `fnd:AD-18` (replays); Spec `fnd:CAP-8`; Story **44.12**.
+
+**Ruling: stock Windows is a native estate, the host is remote.** No symlink in git; runtime
+links generated per machine (junctions on Windows); long-path preflight; no shell-only tasks;
+win-64 CI leg; runtime state in `var/`. Spine `fnd:AD-19`; Story **44.11**; AD-5 amended for
+per-machine, tool-detected adapters and SKF writing into `skills/`.
+
+**Answered:** `windows-symlink-adapters`, `cursor-skill-discovery`, `skf-export-root`,
+`runtime-state-home`, `loop-home-cutover-timing` (homes re-provision on the flip).
+**Still open:** `planning-history-scope`, `repo-visibility`, `ingest-keys-import`,
+`actions-minutes`.
+
+**Applied:** spine (AD-2, AD-5, AD-11, AD-12, AD-13 amended; AD-17..19 added), SPEC.md
+(CAP-8, Constraints), `cutover.md`, `epics.md` (heading cites CAP-8; 44.1, 44.3, 44.4, 44.5
+updated; 44.11, 44.12 added, `blocked`), Dream § Cutover + Realization, `marshal-policy.toml`
+`"44"` (+ `var/**`, `flags.json`), ledger (12 keys). Order: 44.1 ∥ 44.2 → 44.3 → 44.11 ∥ 44.12 →
+44.4 → 44.5 → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.
