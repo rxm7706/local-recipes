@@ -31,7 +31,14 @@ def _claims(sub: str, *roles: str) -> dict[str, object]:
     return {"sub": sub, "groups": list(roles)}
 
 
-def _authed(client: Client, settings, *, sub: str = "op-1", role: str = "warden") -> Client:
+# Story 42.5: group claims carry the prefixed namespace; a bare "warden" is no station role.
+def _authed(
+    client: Client,
+    settings,
+    *,
+    sub: str = "op-1",
+    role: str = "pyforge:station:warden",
+) -> Client:
     settings.IDP_CLAIMS_SNAPSHOT = _claims(sub, role)
     session = client.session
     session[IDP_TOKEN_CLAIMS_SESSION_KEY] = _claims(sub, role)
@@ -46,7 +53,11 @@ def _handle(html: str) -> str:
 
 
 @pytest.mark.django_db
-def test_start_then_get_after_disconnect_does_not_recompute(client, monkeypatch, settings):
+def test_start_then_get_after_disconnect_does_not_recompute(
+    client,
+    monkeypatch,
+    settings,
+):
     calls = {"n": 0}
     delayed: list[tuple] = []
 
@@ -135,7 +146,11 @@ def _warden_mcp_host():
 @pytest.mark.django_db
 def test_mcp_start_audit_returns_handle(monkeypatch):
     monkeypatch.setattr(execute_supervised_run, "apply_async", lambda *a, **k: None)
-    assertion = mint_assertion(sub="agent-10-2", roles=["pyforge:station:warden"], station="warden")
+    assertion = mint_assertion(
+        sub="agent-10-2",
+        roles=["pyforge:station:warden"],
+        station="warden",
+    )
     with TestClient(_warden_mcp_host()) as mcp_client:
         response = mcp_client.post(
             "/stations/warden/mcp",
@@ -176,7 +191,7 @@ def test_mcp_start_audit_returns_handle(monkeypatch):
 
 @pytest.mark.django_db
 def test_start_is_forbidden_without_warden_role(client, settings):
-    _authed(client, settings, role="atlas")
+    _authed(client, settings, role="pyforge:station:atlas")
     response = client.post("/stations/warden/audits/start/", {"target": "."})
     assert response.status_code == HTTPStatus.FORBIDDEN
 
@@ -345,7 +360,11 @@ def test_mcp_start_at_the_per_sub_ceiling_projects_the_409_and_run_ids(
     settings.MAX_RUNNING_PER_SUB = 1
     settings.MAX_QUEUE_DEPTH_PER_STATION = 10_000
     subject = _fresh_subject("agent-42-2")
-    assertion = mint_assertion(sub=subject, roles=["pyforge:station:warden"], station="warden")
+    assertion = mint_assertion(
+        sub=subject,
+        roles=["pyforge:station:warden"],
+        station="warden",
+    )
 
     with TestClient(_warden_mcp_host()) as mcp_client:
         first = _call_start_audit(mcp_client, assertion, 4)
@@ -394,6 +413,19 @@ def test_mcp_start_at_the_station_ceiling_projects_the_429_and_retry_after(
 
 
 def _platform_python_rels() -> list[str]:
+    has_base = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", "origin/main^{commit}"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if has_base.returncode != 0:
+        # A depth-1 CI checkout carries no origin/main; the Platform CI test job
+        # fetches it explicitly so this guard runs there. Skip loudly, never
+        # crash on `fatal: bad revision`.
+        pytest.skip(
+            "origin/main is not available in this checkout; the diff guard needs the base ref",
+        )
     tracked = subprocess.check_output(
         ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
         cwd=REPO_ROOT,

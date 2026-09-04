@@ -24,7 +24,10 @@ generator). Get them wrong and the sweep mints findings instead of clearing them
 
 1. **Feeds graph** — upstream dated after downstream = finding:
    `research→brief`, `brief→prd`, `prd→arch`, `spec→prd`, `arch→epics`,
-   `epics→sprint`, `code→retro`. (`prd→gates` deliberately excluded.)
+   `code→retro`. (`prd→gates` and, since 2026-09-04, `epics→sprint` deliberately
+   excluded: the tracked ledger is a generated twin dated by git last-touch, which cannot
+   move on an idle station; chain-completeness INV-B answers "did the ledger follow the
+   epics?" by content instead.)
 2. **2-day grace window** — a feeds pair only fires when the gap exceeds 2 days. This
    is what makes a per-station cascade safe *if it lands together*: touch a brief and
    the PRD/arch/epics must follow within the window, or the pass itself goes red.
@@ -71,7 +74,9 @@ One station, one agent, one commit, inside one grace window:
 3. **Arch** — `bmad-architecture` (update): required for **every** station whose PRD
    moved (the `prd→arch` edge fires the moment the PRD is re-cut). Bump `updated:`.
 4. **Epics** — validate against the new arch (`arch→epics`); a genuine validation note,
-   then bump. `epics→sprint` self-heals (the ledger stamps daily).
+   then bump. (`epics→sprint` is no longer a feeds edge — there is no daily ledger stamp;
+   run `sprint-ledger-sync -- --project <slug> --repair-feed` and let INV-B judge the
+   ledger.)
 5. **Retro** (if code→retro fired) — `bmad-retrospective` covering everything since the
    last retro, strategy-convergence note included.
 

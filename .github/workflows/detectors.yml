@@ -70,50 +70,78 @@ jobs:
           # what it can see and would let a false green through.
           fetch-depth: 0
 
+      # pixi FIRST (operator decision 2026-09-04, PR #1043): the dedicated
+      # `detectors` environment in the root workspace -- pyforge-doctor (+ its
+      # run-deps), ruamel.yaml for the CFE catalog generator, playwright-python
+      # for the layout gate -- installed from pixi.lock with `locked: true`, so
+      # the detectors run on exactly the versions pixi.toml pins and there is no
+      # second, hand-maintained dependency list to drift (the 2026-09-04 ruamel
+      # gap was that drift). It is small on purpose: the `local-recipes` env is
+      # ~1102 packages / ~9.8 GB, a poor trade for a suite that finishes in
+      # seconds.
+      #
+      # pip is the FALLBACK, not a second primary: if setup-pixi cannot run
+      # (action outage, a runner without the binary, a lock the manifest has
+      # outgrown), the job says so with a visible warning and installs the same
+      # packages with pip so the detectors still run. The fallback is the old
+      # path verbatim; it exists so a pixi problem never reads as "no findings".
       - uses: actions/setup-python@v7
         with:
-          # pyforge-doctor's own requires-python floor (Story 6.9) -- ten of
-          # the repo-scope detectors are now that package's sources.
+          # pyforge-doctor's own requires-python floor (Story 6.9). Used by the
+          # pip fallback only -- the pixi env carries its own interpreter.
           python-version: '3.14'
 
-      # Deliberately NOT pixi. The repo-scope detectors are stdlib + PyYAML and
-      # shell out to git alone — the same property that lets generate.py run them
-      # directly at deploy time. The `local-recipes` env is ~1102 packages /
-      # ~9.8 GB, which is a poor trade for a suite that finishes in ten seconds.
-      # Story 6.9: ten of those detectors are now `pyforge.doctor.sources`
-      # library gathers with no `scripts/*_check.py` file left to run directly
-      # -- a plain (non-editable) `pip install` of the package is enough
-      # (jsonschema/mcp/PyYAML all resolve from PyPI; no conda/pixi needed).
-      # Story 14.3 (pyforge-core CAP-3/CAP-4) added pyforge-core as a real
-      # run-dependency of pyforge-doctor -- a workspace-local path package,
-      # not on PyPI, so it must be pip-installed first (stdlib-only leaf,
-      # same plain-pip treatment) or pip's resolver 404s trying to fetch it.
-      - name: Install detector dependencies
+      - name: Set up pixi (primary)
+        id: pixi
+        continue-on-error: true
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.78.0
+          environments: detectors
+          locked: true
+          cache: true
+
+      - name: Choose the interpreter (pixi, else pip)
+        id: py
         run: |
-          python -m pip install --quiet pyyaml playwright
+          if [ "${{ steps.pixi.outcome }}" = "success" ] \
+             && pixi run --frozen -e detectors python -c "import pyforge.doctor, yaml, ruamel.yaml" >/dev/null 2>&1; then
+            echo "cmd=pixi run --frozen -e detectors python" >> "$GITHUB_OUTPUT"
+            echo "mode=pixi" >> "$GITHUB_OUTPUT"
+            echo "Detectors run in the locked pixi 'detectors' environment."
+          else
+            echo "cmd=python" >> "$GITHUB_OUTPUT"
+            echo "mode=pip" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Detectors::pixi unavailable (setup-pixi outcome: ${{ steps.pixi.outcome }}) -- falling back to pip. Findings below are real, but the environment is not the locked one."
+          fi
+
+      - name: Install detector dependencies (pip fallback)
+        if: steps.py.outputs.mode == 'pip'
+        run: |
+          python -m pip install --quiet pyyaml playwright "ruamel.yaml>=0.18.17"
           python -m pip install --quiet ./src/shared/packages/pyforge-core
           python -m pip install --quiet ./src/shared/packages/pyforge-doctor
 
       # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,
       # which the detector prefers via channel="chrome" before falling back to a
       # playwright-managed chromium. If neither resolves, check_layout reports
-      # UNKNOWN and the runner exits 2 — surfaced as a warning here, rather than
+      # UNKNOWN and the runner exits 2 -- surfaced as a warning here, rather than
       # quietly skipping the one check that asserts the bar LOOKS right.
       - name: Verify a browser is present for the layout gate
         run: |
           which google-chrome || which chromium || \
-            python -m playwright install --with-deps chromium
+            ${{ steps.py.outputs.cmd }} -m playwright install --with-deps chromium
 
       # Registry integrity is reported first and separately, so a hole in the
       # registry reads as "the registry is wrong" rather than as a finding from
       # some detector.
       - name: Registry integrity
-        run: python scripts/detectors.py --list || true
+        run: ${{ steps.py.outputs.cmd }} scripts/detectors.py --list || true
 
       - name: Run repo-scope detectors
         run: |
           set +e
-          python scripts/detectors.py --scope repo 2>&1 | tee detectors.out
+          ${{ steps.py.outputs.cmd }} scripts/detectors.py --scope repo 2>&1 | tee detectors.out
           rc=${PIPESTATUS[0]}
           set -e
 
@@ -148,4 +176,4 @@ jobs:
       # 2026-07-31 advisory posture for every OTHER repo-scope detector is
       # unchanged (see the header comment above).
       - name: CFE rebuild guard (blocking — Story 12.2)
-        run: python scripts/cfe_rebuild_guard_check.py
+        run: ${{ steps.py.outputs.cmd }} scripts/cfe_rebuild_guard_check.py

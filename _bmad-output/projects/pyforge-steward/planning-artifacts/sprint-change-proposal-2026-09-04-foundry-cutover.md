@@ -3,7 +3,7 @@ title: Sprint Change Proposal — cutover to python-foundry (solutioning iterati
 date: 2026-09-04
 project: pyforge-steward
 chain: spec-python-foundry-cutover (extends spec-pyforge-unifying-strategy)
-status: draft — solutioning iteration 3; operator review continuing. No story leaves ledger `blocked` until the operator flips it.
+status: draft — solutioning iteration 4; open questions closed, operator review continuing. No story leaves ledger `blocked` until the operator flips it.
 trigger: docs/dreams/pyforge-unifying-strategy.md § "Cutover to python-foundry" (2026-09-04) — the 40→43 + Mason 13 gate closed 2026-09-03 with nothing downstream of it; red-team MEDIUM band DW-RT-2026-09-02-1..9 all open, R-17 is Phases 1–3
 mode: batch
 scope: major — new chain artifacts (Spec, spine, epic), no code
@@ -188,3 +188,37 @@ the station port). **Still open:** `repo-visibility`, `actions-minutes`.
 `[ASSUMPTION]`), `epics.md` (heading cites CAP-9; 44.1 reworded; 44.13, 44.14 added, `blocked`),
 Dream § Cutover + Realization, ledger (14 keys, 255 stories). Order: 44.13 → 44.1 ∥ 44.2 → 44.3 →
 44.11 ∥ 44.12 ∥ 44.14 → realization in dependency order → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.
+
+## 9. Iteration 4 — 2026-09-04 (operator answers the last two open questions)
+
+**Ruling: foundry is private, permanently.** Pages and the win-64 leg ride the paid plan that
+already serves the public site from the private `local-recipes`; Actions minutes are a standing
+budget; nothing Mason submits carries a foundry URL. Spine `fnd:AD-14` amended (binds 44.9 too).
+
+**Ruling: CI evidence is a real run, with a ladder and a meter.** CAP-1's evidence is a green
+workflow run on a registered runner — GitHub-hosted first, the `fnd:AD-19` remote Linux dev host
+registered as a self-hosted runner as the fallback; while both are unavailable a documented
+fresh-clone run of the estate gates counts as provisional evidence only; with no evidence path
+at all 44.3 does not dispatch. `steward budget check` gains an Actions-minutes metering source
+(the billing API through a `user`-scoped credential in `steward keys`) read at 44.3's
+confirmation, by Marshal's foundry drains and by the rebuild harness. Spine `fnd:AD-23`; Spec
+`fnd:CAP-10`; Story **44.15** (`blocked`); 44.14 now depends on it.
+
+**Live fact.** The 2026-08-30 billing block had cleared by 2026-09-04 — Detectors run
+33899470280 executed for 77 s on `main` with real findings. Its cause (private-repo CI volume)
+is unchanged, so the guards stand.
+
+**Answered:** `repo-visibility`, `actions-minutes`. **Still open:** none.
+
+**Applied:** spine (AD-14 amended; AD-23 added; capability map; open-questions section),
+SPEC.md (`open_questions: []`; CAP-1 success; CAP-10; Constraints; Assumptions), `cutover.md`
+(envelope section; 44.3 and 44.15 rows; order), `epics.md` (heading cites CAP-10; 44.3 and
+44.14 updated; 44.15 added, `blocked`), Dream § Cutover + Realization, ledger (15 keys, 256).
+Order: 44.13 → 44.1 ∥ 44.2 ∥ 44.15 → 44.3 → 44.11 ∥ 44.12 → 44.14 → realization in dependency
+order → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.
+
+**Next → done 2026-09-04.** No iteration is pending. The first flip landed on this branch:
+`44-13-memlog-fidelity` `blocked` → `backlog` after the pre-flight (`sprint-ledger-sync --project
+steward --repair-feed`: unchanged, 256 keys; `story-status-check`: ok), promoted to the tracked twin.
+Phase 4 is open for that one story; `bmad-build` drafts its story spec next. 44.1 ∥ 44.2 ∥ 44.15
+stay `blocked` until flipped.

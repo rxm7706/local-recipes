@@ -7,11 +7,7 @@ invoker through ``django_pyforge.station_port`` only.
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
 from urllib.parse import urlparse
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 def asgi_invoke(

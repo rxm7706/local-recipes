@@ -161,6 +161,15 @@ def test_story_does_not_add_pyforge_under_src_platform():
         if path.suffix != ".py" or not path.is_file():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        offenders.extend(f"{rel}: {hit}" for hit in _pyforge_imports(tree))
-        offenders.extend(f"{rel}: {hit}" for hit in _raw_http_imports(tree))
+        hits = set(_pyforge_imports(tree)) | set(_raw_http_imports(tree))
+        # "does not ADD": an import the file already carried at origin/main is
+        # not this story's doing -- a branch that merely touches the file
+        # (2026-09-04, PR #1043: a Ruff fix on station_port.py) must not trip it.
+        before = subprocess.run(
+            ["git", "show", f"origin/main:{rel}"], cwd=root, capture_output=True, text=True, check=False
+        )
+        if before.returncode == 0:
+            base_tree = ast.parse(before.stdout)
+            hits -= set(_pyforge_imports(base_tree)) | set(_raw_http_imports(base_tree))
+        offenders.extend(f"{rel}: {hit}" for hit in sorted(hits))
     assert not offenders, f"src/platform gate failed: {changed} {offenders}"

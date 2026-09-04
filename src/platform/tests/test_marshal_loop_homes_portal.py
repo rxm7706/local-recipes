@@ -50,6 +50,14 @@ def test_portal_client_empty_root_is_empty_list(
     assert PortalClient().list_loop_homes() == []
 
 
+def test_portal_client_without_declared_root_lists_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No BMAD_LOOP_HOME_ROOT means no loop homes -- never a home-directory scrape."""
+    monkeypatch.delenv("BMAD_LOOP_HOME_ROOT", raising=False)
+    assert PortalClient().list_loop_homes() == []
+
+
 def test_authenticated_marshal_role_sees_homes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

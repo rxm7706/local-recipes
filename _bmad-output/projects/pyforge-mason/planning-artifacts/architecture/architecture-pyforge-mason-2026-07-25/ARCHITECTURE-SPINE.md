@@ -7,7 +7,7 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: '2026-08-26'
+updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet CI health pass, PR #1043; validated against the memlog entries -- nothing moved in substance
 currency_review: "Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'

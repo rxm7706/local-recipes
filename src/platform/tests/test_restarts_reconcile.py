@@ -23,6 +23,7 @@ BOOT_MODULE = (
 )
 
 _FORBIDDEN_MODULES = frozenset({"boto3", "botocore", "minio", "s3", "boto"})
+_BOOT_ERROR_TAXONOMY = "pyforge.core.errors"
 _THREE = 3
 
 
@@ -86,11 +87,18 @@ def test_removing_reconciliation_makes_the_test_fail() -> None:
 def test_boot_does_not_import_object_store_clients() -> None:
     tree = _boot_tree()
     imported: set[str] = set()
+    dotted: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imported.add(alias.name.split(".")[0])
+                dotted.add(alias.name)
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported.add(node.module.split(".")[0])
+            dotted.add(node.module)
     assert imported.isdisjoint(_FORBIDDEN_MODULES)
-    assert "pyforge" not in imported
+    # Boot stays a self-contained sqlite reconcile -- no pyforge machinery --
+    # with one sanctioned exception: Mason Story 14.3 (CAP-5) makes
+    # BootInterrupted subclass PyforgeError, and pyforge-core's meta suite
+    # requires every error to. The taxonomy base is the only pyforge import.
+    assert {m for m in dotted if m.startswith("pyforge")} <= {_BOOT_ERROR_TAXONOMY}

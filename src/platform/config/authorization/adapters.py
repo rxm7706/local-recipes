@@ -49,7 +49,7 @@ def claims_from(sociallogin: SocialLogin) -> Mapping[str, Any]:
     return flattened
 
 
-class OIDCSocialAccountAdapter(DefaultSocialAccountAdapter):  # type: ignore[misc]
+class OIDCSocialAccountAdapter(DefaultSocialAccountAdapter):
     """Route every interactive sign-in through the one mapper (CAP-1)."""
 
     def is_open_for_signup(

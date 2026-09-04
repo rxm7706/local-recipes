@@ -24,6 +24,16 @@ def main() -> None:
     warden = payload.get("warden")
     if not isinstance(warden, dict):
         _fail("promotion artifact has no Warden verdict object")
+    # A verdict that exists is not a verdict that passed. Platform CI records
+    # whatever Warden composed (today `indeterminate`: its vulnerability axis
+    # cannot yet assess conda-sourced components); only `clean` promotes.
+    status = payload.get("warden_status") or (warden.get("status") or {}).get("value")
+    if status != "clean":
+        driver = ((warden.get("status") or {}).get("driver") or {}).get("finding_id")
+        _fail(
+            f"Warden verdict is {status!r}, not 'clean' (driver: {driver}); "
+            "this digest does not promote",
+        )
 
     requested = {
         "platform": os.environ.get("PLATFORM_DIGEST", "").strip(),
@@ -43,7 +53,7 @@ def main() -> None:
                 f"(artifact has {recorded!r})",
             )
 
-    print("promotion artifact verified for all three digests with Warden verdict present")
+    print("promotion artifact verified for all three digests with a clean Warden verdict")
 
 
 if __name__ == "__main__":

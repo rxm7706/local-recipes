@@ -27,7 +27,7 @@ def test_mason_role_get_renders_one_diagnosis() -> None:
     setattr(
         request,
         IDP_TOKEN_CLAIMS_ATTR,
-        {CLAIM_SUB: "mason-operator", "groups": ["mason"]},
+        {CLAIM_SUB: "mason-operator", "groups": ["pyforge:station:mason"]},
     )
     response = mason_views.chrome_home(request)
     assert response.status_code == HTTPStatus.OK

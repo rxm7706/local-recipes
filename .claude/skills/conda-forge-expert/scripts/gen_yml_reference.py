@@ -27,7 +27,16 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from _paths import get_repo_root  # noqa: E402
+
+# Marker walk via _paths, never a hand-rolled parents[N]: this script is copied
+# into the compiled cfe-recipe-lifecycle slice two directories deeper, where
+# parents[4] resolved one level short and the embedded default below diverged
+# (the slice-2 equivalence harness's "known path-depth bug", fixed v8.85.2).
+REPO_ROOT: Path = get_repo_root() or Path(__file__).resolve().parents[4]
 REFERENCE_DIR = REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "reference"
 
 SCHEMAS = {

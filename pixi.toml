@@ -228,8 +228,8 @@ wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on t
 openfeature-sdk = ">=0.10.0"
 openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
-openfeature-provider-flagd = ">=0.5.0"
-cachebox = ">=5.2.3"
+openfeature-provider-flagd = ">=0.5.0,<0.5.1"
+cachebox = ">=5.2.3,<6"
 # Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
 # image consumes. Do not author recipes — liquibase 5.0.4 and
 # liquibase-postgresql 42.7.13 (vendored JDBC) are on SelfExplainML.
@@ -242,7 +242,7 @@ liquibase-postgresql = ">=42.7.13"
 # django-allauth MFA extras are conda run-deps listed here (fido2, qrcode).
 # whitenoise: cookiecutter 6.9.0 was never on conda-forge (6.7 → 6.11).
 python-slugify = ">=8.0.4"
-rcssmin = { version = ">=1.1.2", build = "py312*" }
+rcssmin = ">=1.1.2"               # django-compressor CSS filter; the former `build = "py312*"` pin (3.12 era) locked a cp312 build into this 3.14 env, so it never imported
 whitenoise = ">=6.12.0"
 hiredis = ">=3.4.1"
 django-celery-beat = ">=2.8.1"
@@ -264,7 +264,7 @@ django-timezone-field = ">=7.2.2"
 python-crontab = ">=3.4.0"
 cron-descriptor = ">=2.1.0"
 django-appconf = ">=1.2.0"
-rjsmin = { version = ">=1.2.2", build = "py312*" }
+rjsmin = ">=1.2.2"                # django-compressor JS filter; same dead cp312 pin -- `manage.py compress` in the image died "rjsmin.jsmin couldn't be imported" (Platform CI, 2026-09-04)
 text-unidecode = ">=1.3"
 fido2 = ">=2.2.1"
 qrcode = ">=8.2"
@@ -318,6 +318,7 @@ kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 platforms = ["linux-64"]  # container-only: the Containerfile pins --platform=linux/amd64, same reason as python-agent-platform's own linux-64 entry
 
 [feature.dbgpt-sidecar.dependencies]
+pytz = ">=2025.2"                 # dbgpt_serve.agent.hub.db.plugin_hub_db imports pytz; pandas 3.x dropped its pytz run-dep, so the sidecar lost it transitively and /api/health never came up (Platform CI container-dbgpt, 2026-09-04)
 python = "3.14.*"      # matches python-agent-platform's env-scoped floor -- no reason to diverge, this env never coexists with it
 dbgpt-app = ">=0.8.2"  # the FastAPI server app (webserver CLI + AgenticData text-to-SQL router); pulls its dozen pin_subpackage'd dbgpt-* siblings transitively
 # Story 11.2: NOT for `[service.web.database]` (that metadata store stays
@@ -356,6 +357,7 @@ starlette = ">=1.6.0"
 platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
+pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
 python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
 python-slugify = ">=8.0.4"
@@ -443,7 +445,7 @@ openfeature-sdk = ">=0.10.0"
 openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = ">=0.5.2"
-cachebox = ">=5.2.3"
+cachebox = ">=5.2.3,<6"
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
@@ -685,6 +687,20 @@ cmd = "python -m pytest tests/packaging -q"
 description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
 cmd = "python -m pytest tests/scripts -q"
 
+# The Detectors workflow's environment (operator decision 2026-09-04, PR #1043): pixi
+# first, pip only as the documented fallback in .github/workflows/detectors.yml.
+# Deliberately tiny -- the repo-scope detectors are pyforge-doctor (+ its package
+# run-deps: python>=3.14, jsonschema, pyyaml, mcp, pyforge-core), ruamel.yaml for the
+# CFE catalog generator that failure_catalog_check shells out to, and playwright-python
+# for check-layout's browser probe. No pytest/hatchling: this env RUNS detectors; it
+# builds and tests nothing (that is `pyforge-doctor`). One lock, one authority: the
+# pip fallback list in the workflow mirrors this table and exists only for a runner
+# where pixi cannot be set up.
+[feature.detectors.dependencies]
+pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg; its run-deps bring python, jsonschema, pyyaml, mcp, pyforge-core
+"ruamel.yaml" = ">=0.18.17"       # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
+playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -> cannot-measure, never a false green)
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -727,6 +743,7 @@ pyforge-atlas = { features = ["pyforge-atlas"], no-default-feature = true }
 # [dependencies]; carries only the built pyforge-doctor package + its conda
 # run-deps + pytest — mirrors pyforge-warden's/pyforge-atlas's lean shape.
 pyforge-doctor = { features = ["pyforge-doctor"], no-default-feature = true }
+detectors = { features = ["detectors"], no-default-feature = true }  # the Detectors workflow's locked env (pixi first, pip fallback) -- PR #1043
 # Lean scribe env (Story 1.1, pyforge-warden mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.
@@ -935,6 +952,10 @@ cmd = "python -m pyforge.doctor.sources ledger-regression"
 [feature.local-recipes.tasks.dashboard-layout-check]
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
 cmd = "python -m pyforge.doctor.sources check-layout"
+
+[feature.local-recipes.tasks.platform-ci-local]
+description = "Replay Platform CI (.github/workflows/platform-ci.yml) locally — the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier — against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host."
+cmd = "bash scripts/platform-ci-local.sh"
 
 [feature.local-recipes.tasks.fleet-picture]
 description = "PyForge fleet progress REPORT: per-station done / in-progress / projected / blocked, plus an ATTENTION block naming anything that needs a human (escalation, dead run, idle-with-backlog, open PR). Read-only and NEVER gating -- always exits 0, unlike the six detectors. Counts come from each station's TRACKED planning-artifacts/sprint-status-ledger.yaml (the twin of the gitignored Tier-3 feed), never from an ad-hoc regex over commit subjects and never from docs/dashboard/data.js, which lags until a merge to main. Running stations are detected live from `marshal status --format json`, so a finished run flips to `complete` on its own rather than rotting in a hardcoded list."

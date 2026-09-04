@@ -2490,10 +2490,10 @@ So that laptop and cluster run one interpreter and Atlas/Doctor import inside th
 **And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
 **And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
-## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9)
+## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
 
 The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
-Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Solutioning iteration 3 — every story below is ledger `blocked` until the operator's review iterations close and flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11 and 44.12 are enablers.
+Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Iteration 4 (`fnd:AD-23`, `fnd:CAP-10`): the last two open questions are closed — foundry is private permanently (`fnd:AD-14`), CI evidence is a real run with the remote host as self-hosted fallback, and 44.15 meters Actions minutes.** **Solutioning iteration 4 — every story below is ledger `blocked` until the operator flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11–44.15 are enablers.
 
 ### Story 44.1: The capability ledger and the move-list manifest
 
@@ -2523,11 +2523,11 @@ As a platform operator,
 I want `rxm7706/python-foundry` created as a fresh, recipe-free, lean-pixi estate with estate-only CI,
 So that Phase 1 has a lasting root to move into.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-1 • fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9, fnd:AD-14, fnd:AD-16 • R-17a
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-1 • fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9, fnd:AD-14, fnd:AD-16, fnd:AD-23 • R-17a
 **Outward (`fnd:AD-9`):** creates a GitHub repository — held `blocked`; dispatched only on the operator's explicit confirmation, never by a drain.
 **Given** a fresh clone **When** CI runs on the empty estate **Then** it is green, no `recipes/` directory exists, `pixi.toml` is `name = "pyforge"` with no solver-farm tooling, and `environment.yaml` is either workflow-produced or absent
-**And** the repo envelope is set per `fnd:AD-14`: visibility decided (`repo-visibility`), `main` protected with merge commits only, secrets and vars re-provisioned through `steward keys` from manifest rows of kind `secret`, the foundry epoch SHA recorded, and `src/platform/config/flags.json` carries `pyforge.cutover_root: local-recipes` (`fnd:AD-17`)
-**And** the open questions `repo-visibility` and `actions-minutes` are answered before dispatch
+**And** the repo envelope is set per `fnd:AD-14`: visibility private (permanently), `main` protected with merge commits only, secrets and vars re-provisioned through `steward keys` from manifest rows of kind `secret`, the foundry epoch SHA recorded, and `src/platform/config/flags.json` carries `pyforge.cutover_root: local-recipes` (`fnd:AD-17`)
+**And** CI evidence follows `fnd:AD-23`: the green run is a real workflow run on a registered runner (GitHub-hosted, or the remote host as self-hosted fallback); a documented fresh-clone run of the estate gates is provisional only; with no evidence path the story does not dispatch, and `steward budget check` (44.15) reports the minutes state at the operator's confirmation
 
 ### Story 44.4: Fold the packages
 
@@ -2644,10 +2644,21 @@ As a platform operator,
 I want a rebuild path in foundry — Dream and memlog to re-derived Spec, spine and epics, drained by Marshal — that cannot pass without the archived suite passing against it,
 So that a rebuilt capability is a regeneration drill, never a rewrite by another name.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.12 • **FR/AD:** fnd:CAP-9 • fnd:AD-18, fnd:AD-21, fnd:AD-22 • regenerable-factory Dream (the drill)
-**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under a `steward budget` ceiling, and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
+**Type:** feature • **Effort:** L • **Deps:** S-44.12, S-44.15 • **FR/AD:** fnd:CAP-9 • fnd:AD-18, fnd:AD-21, fnd:AD-22, fnd:AD-23 • regenerable-factory Dream (the drill)
+**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under the metered `steward budget` ceiling (44.15), and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
 **And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and `steward cutover plan --append` reports any change against them as a finding
 **And** the harness is reusable for every later `rebuild` row without operator scripting
+
+### Story 44.15: Actions-minutes metering
+
+As a platform operator,
+I want `steward budget check` to meter the account's GitHub Actions minutes against the plan's included minutes and my declared ceiling,
+So that the foundry dispatch, Marshal's drains and the rebuild harness read a real budget instead of discovering the ceiling by being refused.
+
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-10 • fnd:AD-14, fnd:AD-23 • steward Epic 4 (4.1–4.3, the honest stub) • `feedback_gh_actions_api_gotchas`
+**Given** a `user`-scoped GitHub credential held in `steward keys` (never in the manifest or `.steward/budget.yaml`) and a ceiling declared by `steward budget set` **When** `steward budget check` runs **Then** it reads the account's Actions billing API, reports included, used and remaining minutes with the private-repo multipliers applied, and returns a real under/over verdict — `EXIT_BUDGET_NOT_CONFIGURED` only when no metering source is configured
+**And** the meta invariant `test_no_cost_integration_sdk_imported_in_budget` is amended for this one source (the GitHub billing API; still no cloud-cost SDK), and every other spend source keeps reporting the honest stub
+**And** `steward budget check --json` is consumable by the 44.3 confirmation, by Marshal's foundry drains and by the 44.14 harness as their ceiling, and a refused runner ("payments have failed" / spending limit) is reported as a finding, never as a cheap green
 
 ## Currency validation note — 2026-08-26
 
@@ -2663,4 +2674,4 @@ and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not
 unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
 already reflected by Epic 30's own text. No epic or story required correction.
 
-**2026-09-04 addendum (foundry cutover, solutioning iteration 3):** 44 epics / 210 stories. Epic 44's fourteen stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
+**2026-09-04 addendum (foundry cutover, solutioning iteration 4):** 44 epics / 168 `### Story` headings (this file; the 2026-09-04 iteration-3 figure of 210 was not reproduced). Epic 44's stories are `blocked` by design until the operator flips each — 44.13 flipped to `backlog` 2026-09-04 (the first flip; Phase 4 opens), the other fourteen `blocked` (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.

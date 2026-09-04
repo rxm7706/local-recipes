@@ -157,6 +157,27 @@ pixi run -e build python test-recipes.py --filter "aws-*" --platform linux-64
 | **osx-64** | Native only | macOS Intel hardware |
 | **osx-arm64** | Native only | macOS Apple Silicon |
 
+### Platform CI Locally (zero Actions minutes)
+
+`pixi run -e local-recipes platform-ci-local` replays `.github/workflows/platform-ci.yml`
+on your machine: the `test` job step for step (`manage.py check`, Ruff, mypy, the policy
+suite, sqlmigrate extraction, the full pytest suite), the three image builds, the
+`container` job's runtime smokes against the built image, and `golden-path-promotion`
+plus the deploy-side verifier. It starts its own PostgreSQL 17 (+pgvector) and Redis 7
+from the `platform-dev` env on 15432/16379 and tears them down on exit.
+
+```bash
+pixi run -e local-recipes platform-ci-local                         # all four stages, docker
+pixi run -e local-recipes platform-ci-local -- --test               # only the test job
+pixi run -e local-recipes platform-ci-local -- --images --container --engine podman
+```
+
+Run it before pushing any `src/platform`, Containerfile or `pixi.toml` change: every push
+re-runs the whole workflow set in CI, and Platform CI alone builds three images per run.
+Images are built from a git-exported context (`git ls-files`, minus `recipes/`) — a raw
+`docker build .` from a developer checkout walks the 32 GB `.pixi/` tree and crawls.
+Logs land under `/tmp/platform-ci-local/`.
+
 ### WSL Setup for Linux Builds
 
 ```bash

@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 __all__ = [
     "EMAIL_CLAIM",
     "NAME_CLAIM",
-    "SyncOutcome",
     "USERNAME_CLAIM",
+    "SyncOutcome",
     "resolve_user",
     "sync_authorization",
     "sync_for_interactive",

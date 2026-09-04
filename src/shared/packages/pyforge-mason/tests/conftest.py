@@ -43,6 +43,41 @@ def _existed_at_origin_main(root: Path, path: str) -> bool:
     return result.returncode == 0
 
 
+_CFE_SURFACE = ".claude/skills/conda-forge-expert"
+_CFE_CHANGELOG = f"{_CFE_SURFACE}/CHANGELOG.md"
+
+
+def _unsanctioned_cfe_commits(root: Path) -> list[str]:
+    """Commits on this branch (``origin/main..HEAD``) that touch the CFE surface
+    without being a sanctioned Rule-2 retro -- subject starts ``retro:`` AND the
+    CFE CHANGELOG moves in the same commit, the fleet rule
+    ``scripts/mason_cfe_surface_check.py`` enforces for mason. Merge commits are
+    skipped (they restate their constituents); uncommitted CFE edits count as
+    unsanctioned. A station story never touches the surface; a fleet hygiene
+    branch may carry the one sanctioned retro (2026-09-04, PR #1043)."""
+    shas = subprocess.check_output(
+        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _CFE_SURFACE],
+        cwd=root,
+        text=True,
+    ).split()
+    bad: list[str] = []
+    for sha in shas:
+        subject = subprocess.check_output(
+            ["git", "log", "-1", "--format=%s", sha], cwd=root, text=True
+        ).strip()
+        files = subprocess.check_output(
+            ["git", "show", "--format=", "--name-only", sha], cwd=root, text=True
+        ).split()
+        if not (subject.startswith("retro:") and _CFE_CHANGELOG in files):
+            bad.append(f"{sha[:10]} {subject}")
+    dirty = subprocess.check_output(
+        ["git", "diff", "--name-only", "HEAD", "--", _CFE_SURFACE], cwd=root, text=True
+    ).split()
+    if dirty:
+        bad.append("uncommitted: " + ", ".join(dirty))
+    return bad
+
+
 def exclude_cfe_rebuild_equivalence_tests(root: Path, paths: list[str]) -> list[str]:
     """Filter a `_git_diff_names`/`_git_dirty_under` path list, dropping only
     paths that are BOTH (1) named per the sanctioned

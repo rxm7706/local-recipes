@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC
+from datetime import datetime
 from http import HTTPStatus
 
-import pytest
 from django.test import override_settings
+from django_pyforge.assertion import crypto
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
@@ -33,7 +35,12 @@ def _get_station(path: str, *, headers: dict[str, str] | None = None):
     return asyncio.run(_call())
 
 
-def _post_station(path: str, *, headers: dict[str, str] | None = None, json_body: dict | None = None):
+def _post_station(
+    path: str,
+    *,
+    headers: dict[str, str] | None = None,
+    json_body: dict | None = None,
+):
     async def _call():
         app = station_application("warden", 1)
         transport = ASGITransport(app=app)
@@ -71,7 +78,9 @@ def test_adding_an_unversioned_route_fails_the_contract():
         return {"bad": "route"}
 
     try:
-        assert "/stations/contract-probe/bad-route" in assert_routes_are_versioned(probe)
+        assert "/stations/contract-probe/bad-route" in assert_routes_are_versioned(
+            probe,
+        )
     finally:
         from config.station_api import _station_apps
 
@@ -82,7 +91,15 @@ def test_adding_an_unversioned_route_fails_the_contract():
     PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
     PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
 )
-def test_station_client_carries_version_header_and_assertion():
+def test_station_client_carries_version_header_and_assertion(monkeypatch):
+    class _FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 9, 4, 12, 0, tzinfo=tz or UTC)
+
+    # The expected token and the client's own mint both read the clock; across
+    # a second boundary they signed different iat/exp and the equality flaked.
+    monkeypatch.setattr(crypto, "datetime", _FrozenDatetime)
     token = PortalClient().emit(
         "cli-user",
         [prefixed_station("warden")],
@@ -91,7 +108,12 @@ def test_station_client_carries_version_header_and_assertion():
     )
     captured: dict[str, object] = {}
 
-    def transport(method: str, url: str, headers: dict[str, str], body: bytes | None) -> bytes:
+    def transport(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        body: bytes | None,
+    ) -> bytes:
         captured["method"] = method
         captured["url"] = url
         captured["headers"] = dict(headers)
@@ -109,7 +131,9 @@ def test_station_client_carries_version_header_and_assertion():
         transport=transport,
     )
 
-    assert captured["url"] == "http://testserver/stations/warden/api/v1/compliance/check"
+    assert (
+        captured["url"] == "http://testserver/stations/warden/api/v1/compliance/check"
+    )
     headers = captured["headers"]
     assert headers[API_VERSION_HEADER] == "1"
     assert headers["Authorization"] == f"Bearer {token}"

@@ -6,7 +6,7 @@ import ast
 import subprocess
 from pathlib import Path
 
-from conftest import exclude_cfe_rebuild_equivalence_tests
+from conftest import _unsanctioned_cfe_commits
 
 STATION = "mason"
 PORTAL_PKG = "django-mason"
@@ -135,11 +135,27 @@ def test_django_mason_has_no_raw_http_pyforge_or_minio():
 
 
 def test_cfe_not_replaced_and_claude_agents_untouched():
-    named_cfe = exclude_cfe_rebuild_equivalence_tests(
-        _repo_root(), _git_diff_names(".claude/skills/conda-forge-expert")
-    )
-    named_docs = _git_diff_names("CLAUDE.md", "AGENTS.md")
-    assert not named_cfe, f"must not replace CFE: {named_cfe}"
+    # Per commit, not whole-branch: a sanctioned `retro:` CFE commit and a
+    # fleet branch's own context-file work are not this story replacing CFE
+    # or editing CLAUDE.md/AGENTS.md (2026-09-04, PR #1043).
+    root = _repo_root()
+    unsanctioned = _unsanctioned_cfe_commits(root)
+    assert not unsanctioned, f"must not replace CFE: {unsanctioned}"
+    mason_source = "src/shared/packages/pyforge-mason/src"
+    shas = subprocess.check_output(
+        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", mason_source],
+        cwd=root,
+        text=True,
+    ).split()
+    named_docs = [
+        f"{sha[:10]} {f}"
+        for sha in shas
+        for f in subprocess.check_output(
+            ["git", "show", "--format=", "--name-only", sha, "--", "CLAUDE.md", "AGENTS.md"],
+            cwd=root,
+            text=True,
+        ).split()
+    ]
     assert not named_docs, f"must not edit CLAUDE.md/AGENTS.md: {named_docs}"
 
 

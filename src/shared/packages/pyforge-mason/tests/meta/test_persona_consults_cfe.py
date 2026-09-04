@@ -8,7 +8,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from conftest import exclude_cfe_rebuild_equivalence_tests
+from conftest import _unsanctioned_cfe_commits, exclude_cfe_rebuild_equivalence_tests
 
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
@@ -294,6 +294,7 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert "skf-create-skill" in customize
 
 
+
 def test_conda_forge_expert_not_replaced_or_skf_nested():
     root = _repo_root()
     cfe = root / ".claude" / "skills" / CONTENT_SKILL
@@ -312,20 +313,46 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
             text = path.read_text(encoding="utf-8", errors="replace")
             assert "generated_by: create-skill" not in text
             assert '"generated_by": "create-skill"' not in text
-    named = exclude_cfe_rebuild_equivalence_tests(
-        root, _git_diff_names(".claude/skills/conda-forge-expert")
-    )
+    unsanctioned = _unsanctioned_cfe_commits(root)
     dirty = exclude_cfe_rebuild_equivalence_tests(
         root, _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
     )
-    assert not named, f"this story must not edit conda-forge-expert: {named}"
+    assert not unsanctioned, (
+        "this story must not edit conda-forge-expert outside a sanctioned `retro:` "
+        f"commit that moves its CHANGELOG: {unsanctioned}"
+    )
     assert not dirty, f"untracked CFE/SKF replacement files: {dirty}"
     assert not (root / SKF_REPLACEMENT).exists()
     assert not list(cfe.rglob("metadata.json"))
 
 
+_MASON_SOURCE = "src/shared/packages/pyforge-mason/src"
+
+
+def _mason_commits_touching(*paths: str) -> list[str]:
+    """Files under ``paths`` edited by a commit on this branch that ALSO edits
+    mason's own source tree -- i.e. by a mason story. The Wave A / 11.1
+    invariants below are story-scoped ("a mason story must not mint these"),
+    so they are checked per commit, not as a whole-branch diff: a fleet branch
+    that also carries platform or context-file work is not a mason story
+    editing the platform (2026-09-04, PR #1043)."""
+    root = _repo_root()
+    shas = subprocess.check_output(
+        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _MASON_SOURCE],
+        cwd=root,
+        text=True,
+    ).split()
+    hits: list[str] = []
+    for sha in shas:
+        files = subprocess.check_output(
+            ["git", "show", "--format=", "--name-only", sha, "--", *paths], cwd=root, text=True
+        ).split()
+        hits.extend(f"{sha[:10]} {f}" for f in files)
+    return hits
+
+
 def test_claude_and_agents_unchanged():
-    named = _git_diff_names("CLAUDE.md", "AGENTS.md")
+    named = _mason_commits_touching("CLAUDE.md", "AGENTS.md")
     assert not named, f"Wave A must not edit CLAUDE.md/AGENTS.md: {named}"
 
 
@@ -334,7 +361,7 @@ def test_does_not_mint_01_portal_mcp_or_persona():
     skills = root / ".claude" / "skills"
     for name in WORK_CLASS_01_PERSONAS:
         assert not (skills / name).exists()
-    named = _git_diff_names(
+    named = _mason_commits_touching(
         "src/shared/packages/django-mason",
         ".claude/skills/pyforge-mason",
         "src/platform",

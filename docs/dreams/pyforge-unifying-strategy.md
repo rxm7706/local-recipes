@@ -349,7 +349,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=f46a192f9ecce8a4 -->
+<!-- pixi-env-matrix:begin lock-sha256=5500787cd272517e -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -359,15 +359,16 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``bmad-ui`` | ``3.14.*`` | 51 | ``linux-64`` |
 | ``build`` | ``3.14.*`` | 241 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``conda-smithy`` | ``3.14.*`` | 232 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``dbgpt-sidecar`` | ``3.14.*`` | 404 | ``linux-64`` |
+| ``dbgpt-sidecar`` | ``3.14.*`` | 405 | ``linux-64`` |
 | ``default`` | ``3.14.*`` | 124 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``detectors`` | ``3.14.*`` | 84 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``gcloud`` | ``3.14.*`` | 151 | ``linux-64``, ``osx-arm64-min`` |
 | ``grayskull`` | ``3.14.*`` | 247 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``linux`` | ``3.14.*`` | 150 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``local-recipes`` | ``3.14.*`` | 1,172 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``mcp-host`` | ``3.14.*`` | 67 | ``linux-64`` |
 | ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
-| ``platform-ci-test`` | ``3.14.*`` | 329 | ``linux-64`` |
+| ``platform-ci-test`` | ``3.14.*`` | 330 | ``linux-64`` |
 | ``platform-dev`` | ``3.14.*`` | 504 | ``linux-64``, ``osx-arm64-min`` |
 | ``pyforge-atlas`` | ``3.14.*`` | 460 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-ci`` | ``3.14.*`` | 121 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
@@ -429,7 +430,7 @@ re-derived: its SPEC.md is hand-edited past its memlog and `bmad-spec` is its si
 | 5 — Mason → conda-forge (`fnd:CAP-6`) | **44.9** | `submit` → staged-recipes or bot fork; `update` → feedstock maintainer-edit | an agent PR never opens `local-recipes` (asserted on the submit path) | **outward + Mason**; deps 44.6, 44.8 |
 | 6 — Archive (`fnd:CAP-7`) | **44.10** | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered, 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
 
-**Order.** 44.13 → 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 ∥ 44.14 → capability
+**Order.** 44.13 → 44.1 ∥ 44.2 ∥ 44.15 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.14 → capability
 realization in dependency order (moves replay, rebuilds drill) → **flag flip** when its dependencies
 are verified → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
 gate on 44.6 / 44.9 is ledger state, as 43.6 was behind Mason 13. Before any ledger write:
@@ -442,6 +443,14 @@ is realized there by **rebuild** (a regeneration drill with the archive as oracl
 (a replay), decided per capability on scored signals, with `retire` for what no Dream wants
 (`fnd:AD-20..22`, `fnd:CAP-9`; Stories 44.13 memlog fidelity, 44.14 rebuild harness). This is the
 regenerable-factory drill at estate scale, and foundry's first fleet run is its own construction.
+
+**Private and metered (operator 2026-09-04, iteration 4).** Foundry is private, permanently:
+Pages and the win-64 leg ride the paid plan, so Actions minutes are a standing budget. CAP-1's
+CI evidence is a real green run — GitHub-hosted, then the remote Linux dev host as self-hosted
+fallback; a fresh-clone run of the estate gates is provisional only; with no evidence path 44.3
+does not dispatch (`fnd:AD-23`). Story 44.15 meters the account's Actions minutes through
+`steward budget check` (`fnd:CAP-10`) so the dispatch, Marshal's drains and the rebuild harness
+read a real ceiling. Nothing Mason submits carries a foundry URL. No open question remains.
 
 **Flag-gated and regenerable (operator 2026-09-04, iteration 2).** The cutover is a flag,
 not a date: `pyforge.cutover_root` in the CAP-13 flag tree names the root of record; the
@@ -527,3 +536,12 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   the archive as oracle, per-capability freeze under the one flag. Spine `fnd:AD-20..22`,
   Spec `fnd:CAP-9`, Stories 44.13 / 44.14 (`blocked`). Answered `planning-history-scope` and
   `ingest-keys-import`; open: `repo-visibility`, `actions-minutes`.
+- **2026-09-04 (iteration 4)** — Operator answered the last two open questions: foundry is
+  private, permanently (`fnd:AD-14` amended); CI evidence is a real run with the remote host as
+  self-hosted fallback, a fresh-clone run provisional, no dispatch without an evidence path
+  (`fnd:AD-23`); Story 44.15 Actions-minutes metering for `steward budget` (`fnd:CAP-10`,
+  `blocked`; 44.14 depends on it). The 2026-08-30 billing block had cleared (a real Detectors
+  run on `main`). No open question remains; Epic 44 = 15 stories, all `blocked`.
+- **2026-09-04 (Phase 4 opens)** — First flip: `44-13-memlog-fidelity` `blocked` → `backlog`
+  (pre-flight clean; PR #1043). The other fourteen Epic 44 stories stay `blocked` until flipped
+  one by one; 44.3 / 44.9 / 44.10 still need explicit confirmation at dispatch.

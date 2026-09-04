@@ -2,7 +2,7 @@
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: 2026-08-26
+updated: 2026-09-04
 project: pyforge-mason
 currency_review: Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift).
 dream: docs/dreams/packaging-factory.md
@@ -1709,3 +1709,24 @@ Tier flips when ALL of the following are met:
 - **Full JetBrains plugin** — replaces docs-only one-pager.
 - **Knowledge-base integration** — decks where source material does NOT fit in prompt + uploaded files. Currently held against customer pressure as a v1 boundary; revisited at Vision tier.
 - **Upstream `presenton-export` source acquired** — Presenton team open-sources the export bundle build pipeline; vendored `presenton-export-node` retired in favor of canonical upstream.
+
+## Currency reconciliation — 2026-09-04
+
+*Chain-currency sweep re-fired: `specs/spec-pyforge-mason/` and
+`specs/spec-django-accelerator-framework/` `.memlog`s moved to 2026-09-04T15:18 while this
+PRD sat at 2026-08-26, past the runbook's 2-day grace window. Reconciled against both memlog
+entries and the as-built tree (PR #1043).*
+
+**What moved, and why none of it is a new FR.** Two `(event)` surface-reconcile entries from
+the fleet CI health pass. (1) `pyforge-mason/tests/unit/test_cfe_rebuild_guard_merges.py`:
+`retro_commits_since` now ignores merge commits — the synthetic `refs/pull/N/merge` commit
+GitHub checks out for `pull_request` runs had reddened the blocking Detectors step on every
+PR. The rebuild guard's contract is unchanged; a false positive is removed. (2) The
+`src/platform/**` host fixes this Spec co-governs: dated Ruff / mypy debt blocks, the
+`config/settings/test.py` import order, changeset `21-1` folded into 21, the policy ceilings,
+the Lane-1 seeder, Story 42.5 claims in tests, chart digest pins, the boot guard admitting
+`pyforge.core.errors` (Mason Story 14.3's taxonomy, already this PRD's CAP-5), the loop-home
+`Path.home()` fallback removed. Every one makes an existing gate true again; no capability
+and no FR moved. **Verdict:** PRD unchanged in substance; `updated:` re-stamped so the chain
+reads current. Full record:
+`_bmad-output/projects/pyforge-steward/planning-artifacts/retros/retro-pyforge-steward-2026-09-04.md`.

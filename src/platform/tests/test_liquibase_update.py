@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 from pathlib import Path
+
+import pytest
 
 from db.liquibase_update import jdbc_url_from_migration_database_url
 from db.liquibase_update import liquibase_update_argv

@@ -53,7 +53,7 @@ def _assert_liquibase_pins(deps: dict[str, Any]) -> None:
 def _conda_pkg_version(url: str, package: str) -> str | None:
     """Version for ``package`` in a conda URL, matching the exact name."""
     pattern = re.compile(
-        rf"/{re.escape(package)}-(?P<version>\d+(?:\.\d+)*)-[^/]+\.conda(?:\.bz2)?$"
+        rf"/{re.escape(package)}-(?P<version>\d+(?:\.\d+)*)-[^/]+\.conda(?:\.bz2)?$",
     )
     match = pattern.search(url)
     if match is None:
@@ -138,7 +138,7 @@ def test_lock_selecting_liquibase_503_reds() -> None:
     """Drift: a locked liquibase 5.0.3 URL must fail."""
     urls = [
         "https://conda.anaconda.org/SelfExplainML/linux-64/"
-        "liquibase-5.0.3-h123_0.conda"
+        "liquibase-5.0.3-h123_0.conda",
     ]
     with pytest.raises(AssertionError, match="5.0.3"):
         _assert_lock_liquibase_floor(urls)

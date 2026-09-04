@@ -14,11 +14,16 @@ def _repo_root() -> Path:
     The Containerfile copies the app to ``/app/platformapp/front_door``, which
     has no fourth parent — ``IndexError`` crashed the worker on CRC (12.7).
     """
-    for candidate in Path(__file__).resolve().parents:
-        if (candidate / "pixi.toml").is_file():
+    parents = Path(__file__).resolve().parents
+    # Monorepo markers first, over the whole walk: in a checkout the Django
+    # project root (``src/platform``) is reached two levels before the repo
+    # root, and returning it there made every catalog read an empty
+    # ``src/platform/docs/dreams``. The image-shape fallback is a second pass.
+    for candidate in parents:
+        monorepo = (candidate / "pixi.toml").is_file()
+        if monorepo or (candidate / "docs" / "dreams").is_dir():
             return candidate
-        if (candidate / "docs" / "dreams").is_dir():
-            return candidate
+    for candidate in parents:
         if (candidate / "manage.py").is_file() and (candidate / "platformapp").is_dir():
             return candidate
     return _FRONT_DOOR.parents[1]

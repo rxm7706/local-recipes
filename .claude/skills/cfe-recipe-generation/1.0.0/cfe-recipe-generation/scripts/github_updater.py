@@ -264,15 +264,158 @@ def update_recipe(
     }
 
 
+def _fetch_default_branch_head(owner: str, repo: str) -> dict[str, str]:
+    """Return ``{sha, branch}`` for the repo's default-branch HEAD commit.
+
+    Story 15.2 / CAP-2 HEAD-advance path for commit-pinned recipes (G109).
+    Uses the same GitHub REST surface as release autotick.
+    """
+    # Import lazily so tag-mode callers without the checker still fail clearly.
+    sys.path.insert(0, str(Path(__file__).parent))
+    try:
+        from github_version_checker import _api_get  # type: ignore[import-not-found]
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(f"github_version_checker unavailable: {exc}") from exc
+
+    meta = _api_get(f"/repos/{owner}/{repo}")
+    if not isinstance(meta, dict) or not meta.get("default_branch"):
+        raise RuntimeError(f"Could not resolve default branch for {owner}/{repo}")
+    branch = str(meta["default_branch"])
+    commit_payload = _api_get(f"/repos/{owner}/{repo}/commits/{branch}")
+    if not isinstance(commit_payload, dict) or not commit_payload.get("sha"):
+        raise RuntimeError(f"Could not resolve HEAD sha for {owner}/{repo}@{branch}")
+    return {"sha": str(commit_payload["sha"]), "branch": branch}
+
+
+def update_recipe_head(
+    recipe_path: Path,
+    github_repo: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Advance a commit-pinned recipe to the default-branch HEAD (CAP-2).
+
+    Updates ``context.commit`` and recalculates the source sha256. Does **not**
+    invent a new ``context.version`` — callers re-derive version of record per
+    G109 when needed. Tag-mode recipes should use :func:`update_recipe` instead.
+    """
+    if not _CHECKER_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"github_version_checker.py could not be imported: {_CHECKER_IMPORT_ERROR}",
+        }
+    assert extract_github_repo is not None
+
+    try:
+        recipe_data = _get_recipe_context(recipe_path)
+    except (ImportError, FileNotFoundError, Exception) as exc:
+        return {"success": False, "error": str(exc)}
+
+    ctx = recipe_data["context"]
+    current_commit = str(ctx.get("commit", "")).strip() if ctx.get("commit") else ""
+    package_name = str(ctx.get("name", recipe_path.parent.name))
+    if not current_commit:
+        return {
+            "success": False,
+            "error": (
+                "HEAD-advance requires context.commit (commit-pinned recipe). "
+                "Use tag-mode update_recipe for release/tag recipes."
+            ),
+            "mode": "head",
+        }
+
+    if github_repo:
+        parsed = _parse_github_repo(github_repo)
+        if parsed is None:
+            return {"success": False, "error": f"Cannot parse GitHub repo: {github_repo!r}"}
+        owner, repo = parsed
+    else:
+        found = extract_github_repo(recipe_path)
+        if found is None:
+            return {
+                "success": False,
+                "error": "No GitHub URL detected; pass --repo owner/repo.",
+                "recipe": str(recipe_path),
+                "mode": "head",
+            }
+        owner, repo = found
+
+    try:
+        head = _fetch_default_branch_head(owner, repo)
+    except RuntimeError as exc:
+        return {"success": False, "error": str(exc), "owner": owner, "repo": repo, "mode": "head"}
+
+    head_sha = head["sha"]
+    if head_sha == current_commit or head_sha.startswith(current_commit) or current_commit.startswith(head_sha):
+        return {
+            "success": True,
+            "updated": False,
+            "mode": "head",
+            "current_commit": current_commit,
+            "head_commit": head_sha,
+            "branch": head["branch"],
+            "message": f"Already at default-branch HEAD ({current_commit[:12]}…).",
+        }
+
+    source_path = _detect_source_path(recipe_path)
+    actions: list[dict[str, Any]] = [
+        {"action": "update", "path": "context.commit", "value": head_sha},
+        {"action": "update", "path": "build.number", "value": 0},
+        {"action": "calculate_hash", "path": source_path},
+    ]
+
+    if dry_run:
+        return {
+            "success": True,
+            "updated": True,
+            "dry_run": True,
+            "mode": "head",
+            "current_commit": current_commit,
+            "head_commit": head_sha,
+            "branch": head["branch"],
+            "actions": actions,
+            "message": (
+                f"Dry run: would HEAD-advance {package_name} "
+                f"{current_commit[:12]}… → {head_sha[:12]}…."
+            ),
+        }
+
+    python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
+    cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        raw = proc.stderr or proc.stdout
+        try:
+            detail = json.loads(proc.stdout).get("error", raw)
+        except Exception:
+            detail = raw
+        return {"success": False, "error": f"recipe_editor failed: {detail}", "mode": "head"}
+
+    return {
+        "success": True,
+        "updated": True,
+        "mode": "head",
+        "current_commit": current_commit,
+        "new_commit": head_sha,
+        "branch": head["branch"],
+        "message": (
+            f"HEAD-advanced {package_name} {current_commit[:12]}… → {head_sha[:12]}…."
+        ),
+    }
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Autotick bot: update a conda recipe to the latest GitHub release.",
+        description=(
+            "Autotick bot: update a conda recipe to the latest GitHub release "
+            "(tag-mode) or default-branch HEAD (commit-pinned / --head)."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Auto-detects the GitHub repo from the recipe's source URL or about.home.\n"
-            "Set GITHUB_TOKEN or GH_TOKEN to avoid API rate limits (60 req/h unauthenticated).\n\n"
+            "Set GITHUB_TOKEN or GH_TOKEN to avoid API rate limits (60 req/h unauthenticated).\n"
+            "Pass --head for commit-pinned recipes (context.commit); default is tag/release mode.\n\n"
             "Exit: 0 = success (updated or already current), 1 = error."
         ),
     )
@@ -282,7 +425,15 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true",
                         help="Check for updates but do not write the file.")
     parser.add_argument("--pre", action="store_true",
-                        help="Include pre-release versions.")
+                        help="Include pre-release versions (tag-mode only).")
+    parser.add_argument(
+        "--head",
+        action="store_true",
+        help=(
+            "HEAD-advance mode for commit-pinned recipes: bump context.commit "
+            "to the default-branch HEAD and recalculate sha256 (Story 15.2 / CAP-2)."
+        ),
+    )
     args = parser.parse_args()
 
     recipe_path = args.recipe_path
@@ -297,12 +448,19 @@ def main() -> None:
                                "error": f"No recipe.yaml or meta.yaml in {args.recipe_path}"}))
             sys.exit(1)
 
-    result = update_recipe(
-        recipe_path,
-        github_repo=args.repo,
-        dry_run=args.dry_run,
-        allow_prerelease=args.pre,
-    )
+    if args.head:
+        result = update_recipe_head(
+            recipe_path,
+            github_repo=args.repo,
+            dry_run=args.dry_run,
+        )
+    else:
+        result = update_recipe(
+            recipe_path,
+            github_repo=args.repo,
+            dry_run=args.dry_run,
+            allow_prerelease=args.pre,
+        )
     print(json.dumps(result, indent=2))
     sys.exit(0 if result["success"] else 1)
 

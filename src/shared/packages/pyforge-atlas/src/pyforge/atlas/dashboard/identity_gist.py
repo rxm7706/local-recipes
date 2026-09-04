@@ -19,6 +19,7 @@ from typing import Any
 import pandas as pd
 
 from pyforge.atlas.semantic import models
+from pyforge.core.errors import PyforgeError
 from pyforge.atlas.semantic.query_helpers import bsl_query
 
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
@@ -236,7 +237,7 @@ EXTERNAL_SOURCE_SPECS: tuple[tuple[str, str, str, str], ...] = (
 )
 
 
-class IdentityGistError(Exception):
+class IdentityGistError(PyforgeError, Exception):
     """Raised when the export Parquet is absent or empty."""
 
 

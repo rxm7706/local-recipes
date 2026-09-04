@@ -21,11 +21,11 @@ OPENFEATURE_PACKAGES = (
     "openfeature-flagd-core",
     "openfeature-provider-flagd",
 )
-CACHEBOX_SPEC = ">=5.1,<6"
+CACHEBOX_SPEC = ">=5.2.3,<6"
 PROVIDER_SPEC = ">=0.5.0,<0.5.1"
 PLATFORM_ENV = "python-agent-platform"
 _CONDA_VERSION_RE = re.compile(
-    r"/(?P<name>[^/]+)-(?P<version>\d+(?:\.\d+)*)-[^/]+\.conda(?:\.bz2)?$"
+    r"/(?P<name>[^/]+)-(?P<version>\d+(?:\.\d+)*)-[^/]+\.conda(?:\.bz2)?$",
 )
 
 
@@ -150,7 +150,7 @@ def test_lock_selects_openfeature_and_cachebox_5() -> None:
 def test_lock_selecting_cachebox_6_reds() -> None:
     """Drift: a locked cachebox 6.x URL must fail."""
     urls = [
-        "https://conda.anaconda.org/conda-forge/linux-64/cachebox-6.2.5-py312h123_0.conda"
+        "https://conda.anaconda.org/conda-forge/linux-64/cachebox-6.2.5-py312h123_0.conda",
     ]
     with pytest.raises(AssertionError, match="6.2.5"):
         _assert_lock_cachebox_is_5x(urls)
@@ -160,7 +160,7 @@ def test_lock_selecting_provider_052_reds() -> None:
     """Drift: a locked provider 0.5.2 URL must fail."""
     urls = [
         "https://conda.anaconda.org/SelfExplainML/noarch/"
-        "openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda"
+        "openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda",
     ]
     with pytest.raises(AssertionError, match="0.5.2"):
         _assert_lock_provider_is_050(urls)

@@ -1,9 +1,9 @@
 ---
 title: pyforge-scribe
 created: 2026-07-25
-updated: 2026-08-27
+updated: 2026-09-04
 status: final
-currency_review: Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
+currency_review: Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
 ---
 
 # PRD: pyforge-scribe (Scribe)
@@ -275,3 +275,24 @@ This PRD was cut 2026-07-25 and last content-reviewed 2026-08-04, before Scribe 
 **New requirements landed above this PRD's FR ceiling** (owned by their own specs, not retrofitted here): transcript scanner + compile source (spec-scribe-mines-raw-session-transcripts CAP-1..2, Epic 3); `GraphStore` as CAP-18 plugins (FR-45, Epic 4); SKF skill + persona ownership and the first portal slice (canopy FR-37/38, FR-10; Epic 5); durable PG driver + semantic recall (canopy FR-35/36, steward Epic 28); plane ranking (FR-50, steward 34.5). Scribe's five-tier station shape (CLI, portal, MCP face, skill, persona) was declared complete 2026-08-26 (strategy Epic 37.1, 40/40).
 
 **Carried risk, unchanged:** `promote.py` (the only write path outside `.claude/memory/`) has still never received an adversarial review (RISK-1, open since the Story 1.3 dangling-commit recovery).
+
+## Currency reconciliation — 2026-09-04
+
+*Chain-currency sweep re-fired: `specs/spec-pyforge-scribe/`'s `.memlog` moved to
+2026-09-03T20:35 while this PRD sat at 2026-08-27, past the runbook's 2-day grace window.
+Reconciled against the two memlog entries since 2026-08-27, `epics.md` (updated
+2026-08-31), and the as-built package (PR #1043).*
+
+**What moved.** 2026-08-31: a surface reconcile recording the Epic 2–3 + Epic 6 delivery
+and the cross-station integration already in the ledger — "No CAP text change".
+2026-09-03: the fleet-hygiene surface restamp (post-#1038 `pixi lock`; "no new product
+work"). Neither entry changes a CAP, so no FR-1..FR-15 text moves.
+
+**Epic 6 (Stories 6.1–6.3, added to `epics.md` 2026-08-31) landed above this PRD's FR
+ceiling** — the `compile_surface` extras (graphify + cocoindex behind the CAP-18 ports,
+incremental refresh, the graph-node staleness flag). It binds the two "bind now" estate
+pins in `spec-pyforge-unifying-strategy/stack.md` § *Estate leverage* and
+`spec-marshal-token-economy` CAP-13 (its `epics.md` heading carries the binding); it joins
+the 2026-08-26 list above of requirements owned by their own specs, not retrofitted here.
+
+**No FR/content change required.** `updated:` bumped to record that the check ran.
