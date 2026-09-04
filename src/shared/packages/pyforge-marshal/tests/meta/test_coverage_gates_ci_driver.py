@@ -27,6 +27,18 @@ def driver():
     return _load_driver()
 
 
+def test_normalize_base_keeps_revisions_and_prefixes_bare_branch_names(driver):
+    """A bare sha (the push workflow's `git rev-parse HEAD~1`) is a revision
+    already; only a bare branch name (GITHUB_BASE_REF) gets `origin/`."""
+    sha = "f619eae05a233024bf43cc6b68d717fcfffefbaa"
+    assert driver._normalize_base(sha) == sha
+    assert driver._normalize_base(sha[:10]) == sha[:10]
+    assert driver._normalize_base("main") == "origin/main"
+    assert driver._normalize_base("origin/main") == "origin/main"
+    assert driver._normalize_base("upstream/main") == "upstream/main"
+    assert driver._normalize_base("") == ""
+
+
 def test_suite_test_paths_skips_missing_integration(driver, tmp_path: Path):
     root = tmp_path / "pkg"
     (root / "tests" / "unit").mkdir(parents=True)
