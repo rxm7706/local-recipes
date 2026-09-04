@@ -1166,7 +1166,7 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
     )
     volumes = pod_spec.get("volumes") or []
     backup_volume = next(
-        (vol for vol in volumes if vol.get("name") == "backup"), None
+        (vol for vol in volumes if vol.get("name") == "backup"), None,
     )
     assert backup_volume is not None, (
         "postgres pod declares no `backup` volume to back its `backup` "

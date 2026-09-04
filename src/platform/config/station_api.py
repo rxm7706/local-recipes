@@ -23,12 +23,12 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 
 _STATION_API_RE = re.compile(
-    r"^/stations/(?P<station>[a-z][a-z0-9-]*)/api/v(?P<version>\d+)(?:/|$)"
+    r"^/stations/(?P<station>[a-z][a-z0-9-]*)/api/v(?P<version>\d+)(?:/|$)",
 )
 
 # Every registered route path must match this (fail-loud contract test).
 _VERSIONED_ROUTE_RE = re.compile(
-    r"^/stations/[a-z][a-z0-9-]*/api/v\d+(?:/|$)"
+    r"^/stations/[a-z][a-z0-9-]*/api/v\d+(?:/|$)",
 )
 
 _bearer = HTTPBearer(auto_error=False)

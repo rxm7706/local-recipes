@@ -183,7 +183,7 @@ def test_outside_prefix_registration_fails() -> None:
             "urlconf": "django_warden_fabric.urls",
         },
     )
-    errors = validate_portal_config(bad)  # type: ignore[arg-type]
+    errors = validate_portal_config(bad)
     assert any(err.id == "django_pyforge.E001" for err in errors)
 
 
@@ -203,7 +203,7 @@ def test_sla_body_is_not_a_chrome_field() -> None:
             "urlconf": "django_warden_fabric.urls",
         },
     )
-    errors = validate_portal_config(sneaky)  # type: ignore[arg-type]
+    errors = validate_portal_config(sneaky)
     assert any(err.id == "django_pyforge.E003" for err in errors)
 
 

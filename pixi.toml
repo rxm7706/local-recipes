@@ -228,8 +228,8 @@ wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on t
 openfeature-sdk = ">=0.10.0"
 openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
-openfeature-provider-flagd = ">=0.5.0"
-cachebox = ">=5.2.3"
+openfeature-provider-flagd = ">=0.5.0,<0.5.1"
+cachebox = ">=5.2.3,<6"
 # Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
 # image consumes. Do not author recipes — liquibase 5.0.4 and
 # liquibase-postgresql 42.7.13 (vendored JDBC) are on SelfExplainML.
@@ -242,7 +242,7 @@ liquibase-postgresql = ">=42.7.13"
 # django-allauth MFA extras are conda run-deps listed here (fido2, qrcode).
 # whitenoise: cookiecutter 6.9.0 was never on conda-forge (6.7 → 6.11).
 python-slugify = ">=8.0.4"
-rcssmin = { version = ">=1.1.2", build = "py312*" }
+rcssmin = ">=1.1.2"               # django-compressor CSS filter; the former `build = "py312*"` pin (3.12 era) locked a cp312 build into this 3.14 env, so it never imported
 whitenoise = ">=6.12.0"
 hiredis = ">=3.4.1"
 django-celery-beat = ">=2.8.1"
@@ -264,7 +264,7 @@ django-timezone-field = ">=7.2.2"
 python-crontab = ">=3.4.0"
 cron-descriptor = ">=2.1.0"
 django-appconf = ">=1.2.0"
-rjsmin = { version = ">=1.2.2", build = "py312*" }
+rjsmin = ">=1.2.2"                # django-compressor JS filter; same dead cp312 pin -- `manage.py compress` in the image died "rjsmin.jsmin couldn't be imported" (Platform CI, 2026-09-04)
 text-unidecode = ">=1.3"
 fido2 = ">=2.2.1"
 qrcode = ">=8.2"
@@ -445,7 +445,7 @@ openfeature-sdk = ">=0.10.0"
 openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = ">=0.5.2"
-cachebox = ">=5.2.3"
+cachebox = ">=5.2.3,<6"
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --

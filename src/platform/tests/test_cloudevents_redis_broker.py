@@ -410,7 +410,7 @@ def test_broker_without_xpending_is_refused() -> None:
     unbounded."""
 
     class NoPendingRedis(MemoryRedis):
-        xpending_range = None  # type: ignore[assignment]
+        xpending_range = None
 
     broker = NoPendingRedis()
     fabric = EventFabric(broker)
@@ -814,7 +814,7 @@ def test_bound_trace_restores_outer_context_even_when_body_raises() -> None:
     """Review P9: exit restores the outer structlog values (not merely
     unbinds) and resets the contextvar whatever raised inside."""
     structlog = pytest.importorskip("structlog")
-    from django_pyforge.events.tracing import _current_traceparent  # noqa: PLC0415
+    from django_pyforge.events.tracing import _current_traceparent
 
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(trace_id="outer", traceparent="outer-tp")
@@ -852,7 +852,7 @@ def test_task_receiver_rebinds_traceparent_after_structlog_rebuilds_context() ->
     django_pyforge.tasks must put the trace back for either request shape."""
     structlog = pytest.importorskip("structlog")
     signals = pytest.importorskip("django_structlog.celery.signals")
-    import django_pyforge.tasks  # noqa: F401, PLC0415 -- connects the receiver
+    import django_pyforge.tasks  # noqa: F401 -- connects the receiver
 
     requests = (
         SimpleNamespace(traceparent=TRACEPARENT, headers=None),
@@ -938,7 +938,7 @@ def test_trace_id_from_request_reaches_celery_headers_and_structlog(client, sett
 
 
 def test_enqueue_supervised_run_carries_traceparent_header(monkeypatch: pytest.MonkeyPatch) -> None:
-    from django_pyforge import tasks  # noqa: PLC0415
+    from django_pyforge import tasks
 
     captured: dict[str, Any] = {}
 
@@ -1026,7 +1026,7 @@ def test_consume_events_binds_the_broker_through_the_ad10_guard(
     """Review P6: without an injected client the command goes through
     ``connect_event_broker``, so a broker URL shared with the cache is refused."""
     _ensure_django()
-    from django.conf import settings  # noqa: PLC0415
+    from django.conf import settings
 
     monkeypatch.setattr(settings, "REDIS_BROKER_URL", BROKER_URL)
     monkeypatch.setattr(settings, "REDIS_CACHE_URL", BROKER_URL)
@@ -1086,16 +1086,18 @@ def test_applied_key_carries_ttl() -> None:
 
 
 def _ensure_django() -> None:
-    import django  # noqa: PLC0415
+    import django
 
     django.setup()
 
 
-def test_execute_supervised_run_leaves_no_celery_result_key(tmp_path) -> None:
+@pytest.mark.django_db
+def test_execute_supervised_run_leaves_no_celery_result_key(tmp_path, settings) -> None:
+    # `settings` is pytest-django's fixture: the broker/result overrides below are
+    # restored after the test instead of leaking into every later settings assertion.
     pytest.importorskip("pytest_django")
     _ensure_django()
-    from django.conf import settings  # noqa: PLC0415
-    from django.core.management import call_command as django_call_command  # noqa: PLC0415
+    from django.core.management import call_command as django_call_command
 
     django_call_command("migrate", verbosity=0, interactive=False)
     redis_server = shutil.which("redis-server")
@@ -1129,20 +1131,21 @@ def test_execute_supervised_run_leaves_no_celery_result_key(tmp_path) -> None:
         settings.CELERY_TASK_ALWAYS_EAGER = True
         settings.CELERY_TASK_EAGER_PROPAGATES = True
 
-        import redis  # noqa: PLC0415
+        import redis
 
         client = redis.Redis.from_url(broker_url, decode_responses=True)
 
         def _noop_runner(_payload: dict) -> dict:
             return {"ok": True}
 
-        import django_pyforge.supervisor as supervisor  # noqa: PLC0415
-        from django_pyforge.tasks import execute_supervised_run  # noqa: PLC0415
+        from django_pyforge import supervisor
+        from django_pyforge.tasks import execute_supervised_run
 
-        original = supervisor.lookup_runner
-        supervisor.lookup_runner = lambda _station, _tool: _noop_runner
+        # tasks.py binds lookup_runner by name at import, so rebinding the
+        # supervisor attribute never reached it; register through the registry.
+        supervisor.register_runner("warden", "noop", _noop_runner)
         try:
-            from django_pyforge.models import RunState  # noqa: PLC0415
+            from django_pyforge.models import RunState
 
             run = RunState.objects.create(
                 station="warden",
@@ -1150,7 +1153,7 @@ def test_execute_supervised_run_leaves_no_celery_result_key(tmp_path) -> None:
             )
             execute_supervised_run.delay(str(run.pk), "warden", "noop", {})
         finally:
-            supervisor.lookup_runner = original
+            supervisor._runners.pop(("warden", "noop"), None)  # noqa: SLF001 -- no unregister API
 
         meta_keys = [key for key in client.keys("celery-task-meta-*")]
         assert meta_keys == []
@@ -1204,7 +1207,7 @@ def test_real_redis_retry_backoff_dlq_and_harvest(tmp_path, monkeypatch: pytest.
     monkeypatch.setenv("DJANGO_PYFORGE_EVENT_BACKOFF_MAX_MS", "1000")
     monkeypatch.setenv("DJANGO_PYFORGE_EVENT_HANDLER_TIMEOUT_MS", "300")
 
-    import redis  # noqa: PLC0415
+    import redis
 
     data_dir = tmp_path / "broker"
     data_dir.mkdir()
@@ -1268,7 +1271,7 @@ def test_broker_restart_durability(tmp_path, appendonly: bool) -> None:
     if shutil.which("redis-server") is None:
         pytest.skip("redis-server not on PATH (platform-dev env)")
 
-    import redis  # noqa: PLC0415
+    import redis
 
     data_dir = tmp_path / "broker-aof"
     data_dir.mkdir()

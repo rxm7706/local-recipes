@@ -7,19 +7,16 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
+from django_pyforge.assertion.crypto import mint_assertion
+from django_pyforge.mcp_http import SUPPORTED_MCP_REVISIONS
+from django_pyforge.mcp_http import UNSUPPORTED_PROTOCOL_VERSION
+from django_pyforge.mcp_http import asgi_for_server
+from django_pyforge.mcp_http import dispatch_station_mcp
+from django_pyforge.mcp_http import match_station_mcp
+from django_pyforge.mcp_http import register_station_mcp_app
+from django_pyforge.portals import PortalConfig
 from mcp.server.mcpserver import MCPServer
 from starlette.testclient import TestClient
-
-from django_pyforge.assertion.crypto import mint_assertion
-from django_pyforge.mcp_http import (
-    SUPPORTED_MCP_REVISIONS,
-    UNSUPPORTED_PROTOCOL_VERSION,
-    asgi_for_server,
-    dispatch_station_mcp,
-    match_station_mcp,
-    register_station_mcp_app,
-)
-from django_pyforge.portals import PortalConfig
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -86,7 +83,7 @@ def _host_app():
                 "type": "http.response.start",
                 "status": 404,
                 "headers": [(b"content-type", b"text/plain")],
-            }
+            },
         )
         await send({"type": "http.response.body", "body": b"not mcp"})
 

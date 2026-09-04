@@ -38,6 +38,9 @@ requires_helm = pytest.mark.skipif(
 )
 
 
+_TEST_IMAGE_DIGEST = "sha256:" + ("a" * 64)
+
+
 def _render_core() -> list[dict[str, Any]]:
     yaml = pytest.importorskip("yaml")
     flags = _PLATFORM_DIR / "config" / "flags.json"
@@ -49,6 +52,13 @@ def _render_core() -> list[dict[str, Any]]:
             str(_CORE_CHART),
             "--set-file",
             f"flags.tree={flags}",
+            # The chart refuses a mutable image default ("image.digest or
+            # image.tag is required"); pin all three images by digest exactly
+            # as tests/test_chart_invariants.py::_helm does.
+            *(
+                f"--set={prefix}.digest={_TEST_IMAGE_DIGEST}"
+                for prefix in ("image", "sidecar.image", "mcpHost.image")
+            ),
         ],
         check=False,
         capture_output=True,

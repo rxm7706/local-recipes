@@ -58,6 +58,57 @@ plugins = [
 module = "*.migrations.*"
 ignore_errors = true
 
+# Epics 40-43 (2026-08-31 -> 2026-09-03) landed while GitHub Actions was disabled
+# (2026-08-30 -> 2026-09-04): `mypy platformapp config tests` accumulated 114 errors in
+# 27 files that no run reported. 2026-09-04 (PR #1043): the unused `type: ignore`s were
+# removed at source; the rest is disabled PER MODULE with exactly the error codes each
+# module trips (never `ignore_errors`), so the gate is live again for every other module
+# and every other code. Same shape as the Ruff per-file block; tighten or drop an entry
+# whenever its module is touched.
+[[tool.mypy.overrides]]
+module = ["platformapp.users.tests.factories", "tests.test_atlas_portal_inventory_row", "tests.test_broker_tls_verified", "tests.test_herald_portal_deck_status", "tests.test_marshal_loop_homes_portal", "tests.test_mason_portal_last_diagnose", "tests.test_restarts_reconcile", "tests.test_station_portal_shells", "tests.test_validation_errors_render_inline", "tests.test_warden_portal_audit_start_get"]
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = ["platformapp.users.tests.test_views", "tests.test_idp_revoke_next_request", "tests.test_role_namespaces"]
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_chart_invariants", "tests.test_station_api_seam", "tests.test_station_port_no_loopback"]
+disable_error_code = ["index"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_mcp_host_sidecar"]
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_oidc_identity"]
+disable_error_code = ["arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_front_door_publish"]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "return-value"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_structlog_otel_correlation"]
+disable_error_code = ["arg-type", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_django_pyforge_assertion"]
+disable_error_code = ["arg-type", "call-overload", "misc"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_django_pyforge_chrome"]
+disable_error_code = ["assignment", "attr-defined", "index"]
+
+[[tool.mypy.overrides]]
+module = ["platformapp.conftest"]
+disable_error_code = ["return-value"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_celery_hardening_and_builds_pool"]
+disable_error_code = ["var-annotated"]
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 
@@ -175,6 +226,50 @@ force-single-line = true
 "ingest/github_projects/test_github_metrics_dlt.py" = [
   "COM812", "E501", "E402", "I001", "PLR2004",
 ]
+
+# Epics 40-43 (2026-08-31 -> 2026-09-03) landed while GitHub Actions was disabled
+# (2026-08-30 -> 2026-09-04), so `ruff check .` accumulated 234 findings nobody saw.
+# 2026-09-04 (PR #1043): the safe `--fix` set was applied and the rest is ignored
+# PER FILE, with exactly the codes each file violates, so the gate is live again
+# for every other file. Same shape as the Story 12.8 block above; tighten or
+# remove an entry whenever its file is touched.
+"config/asgi.py" = ["PLC0415"]
+"config/authorization/adapters.py" = ["E501"]
+"config/authorization/claims.py" = ["E501"]
+"config/authorization/mapper.py" = ["E501"]
+"config/estate_dsn.py" = ["EM101", "EM102", "N818", "TRY003"]
+"config/local_dev/keys.py" = ["E501", "EM102", "TRY003"]
+"config/local_dev/mint.py" = ["E501"]
+"config/local_dev/personas.py" = ["E501", "EM101", "TRY003"]
+"config/local_dev/tokens.py" = ["E501", "EM102", "TRY003"]
+"config/station_api.py" = ["B008", "E501", "PLC0415"]
+"config/station_port.py" = ["PLC0415"]
+"db/postgres_backup.py" = ["E501", "T201"]
+"mcp_host/app.py" = ["E501"]
+"platformapp/users/provisioning.py" = ["E501"]
+"tests/policy/test_liquibase_channel_policy.py" = ["ISC004", "RUF043"]
+"tests/policy/test_openfeature_channel_policy.py" = ["ISC004", "PT018", "RUF043"]
+"tests/test_agent_rate_limits_and_run_bounds.py" = ["E501"]
+"tests/test_atlas_mcp_host.py" = ["E501"]
+"tests/test_atlas_portal_inventory_row.py" = ["E501"]
+"tests/test_chart_invariants.py" = ["E501", "PT018", "RUF043", "S607"]
+"tests/test_cloudevents_redis_broker.py" = ["C416", "E501", "EM101", "FBT001", "PLC0415", "PLR0913", "PLR0915", "PLR0917", "PLR2004", "PT012", "TC003", "TRY003"]
+"tests/test_console_parity_homes.py" = ["PLC0415"]
+"tests/test_django_pyforge_assertion.py" = ["E501", "PLC0415", "PLR0913", "PLR2004", "SLF001"]
+"tests/test_estate_dsn_is_plane.py" = ["BLE001", "PLC0415"]
+"tests/test_host_board_row_isolation.py" = ["E501"]
+"tests/test_liquibase_update.py" = ["PT018"]
+"tests/test_marshal_loop_homes_portal.py" = ["TC002"]
+"tests/test_mason_portal_last_diagnose.py" = ["E501"]
+"tests/test_mcp_host_sidecar.py" = ["E501", "PLR2004"]
+"tests/test_oidc_identity.py" = ["E501", "PLR2004"]
+"tests/test_postgres_backup.py" = ["PLR2004", "RUF043", "TC003"]
+"tests/test_role_namespaces.py" = ["PLC0415"]
+"tests/test_seven_mcp_faces.py" = ["E501"]
+"tests/test_start_get_survives_disconnect.py" = ["E501"]
+"tests/test_station_api_seam.py" = ["E501", "PLC0415"]
+"tests/test_station_port_no_loopback.py" = ["E501", "EM101", "PLC0415", "TC002", "TRY003"]
+"tests/test_warden_portal_audit_start_get.py" = ["E501", "S607"]
 
 # ==== import-linter ====
 # Story 10.1 / spec-python-agent-platform Boundaries & Constraints: `src/

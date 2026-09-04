@@ -2,14 +2,19 @@
 With these settings, tests run faster.
 """
 
-from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
-from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
-
 from config.authorization.claims import ClaimsContract
 
 from .base import *  # noqa: F403
 from .base import TEMPLATES
 from .base import env
+
+# isort: split
+# After `.base`: its Story 18.1 block puts django-pyforge/src on sys.path when the
+# package is not installed. pytest reaches it through the `pythonpath` ini either
+# way, but mypy's Django plugin imports this module with a bare interpreter, and
+# with these two lines first it died with "No module named django_pyforge".
+from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
+from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
 
 # GENERAL
 # ------------------------------------------------------------------------------

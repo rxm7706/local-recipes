@@ -88,7 +88,7 @@ async def _dispatch_lifespan(receive, send) -> None:
             {
                 "type": "lifespan.startup.failed",
                 "message": f"unexpected {event['type']}",
-            }
+            },
         )
         return
     started = False
@@ -104,7 +104,7 @@ async def _dispatch_lifespan(receive, send) -> None:
                     {
                         "type": "lifespan.shutdown.failed",
                         "message": f"unexpected {event['type']}",
-                    }
+                    },
                 )
                 return
     except Exception as exc:  # noqa: BLE001

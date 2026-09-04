@@ -26,14 +26,14 @@ def test_default_settings_estate_dsn_is_plane() -> None:
 def test_oltp_dsn_fails_the_gate() -> None:
     with pytest.raises(EstateOltpForbidden):
         assert_estate_read_is_plane(
-            "postgresql://platform:platform@postgres:5432/platform"
+            "postgresql://platform:platform@postgres:5432/platform",
         )
 
 
 def test_langflow_schema_url_fails_the_gate() -> None:
     with pytest.raises(EstateOltpForbidden):
         assert_estate_read_is_plane(
-            "postgresql://lf:lf@localhost:5432/platform?options=-c%20search_path=langflow_schema"
+            "postgresql://lf:lf@localhost:5432/platform?options=-c%20search_path=langflow_schema",
         )
 
 

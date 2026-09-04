@@ -12,7 +12,12 @@ from django_pyforge.assertion.client import PortalClient
 
 def _herald_request() -> object:
     request = RequestFactory().get("/stations/herald/")
-    request.idp_token_claims = {"sub": "herald-operator", "groups": ["herald"]}
+    # Story 42.5: group claims carry the prefixed namespace; a bare "herald"
+    # is no station role and the view answers 403.
+    request.idp_token_claims = {
+        "sub": "herald-operator",
+        "groups": ["pyforge:station:herald"],
+    }
     request.idp_roles = ["pyforge:station:herald"]
     return request
 

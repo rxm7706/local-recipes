@@ -124,6 +124,8 @@ class PortalClient:
         that carries Marshal's active-project marker (Story 1.4).
         """
         root = self._loop_home_root()
+        if root is None:
+            return []
         try:
             if not root.is_dir():
                 return []
@@ -150,9 +152,18 @@ class PortalClient:
             )
         return homes
 
-    def _loop_home_root(self) -> Path:
+    def _loop_home_root(self) -> Path | None:
+        """The provisioned loop-home root, or None when the deploy declares none.
+
+        Only ``BMAD_LOOP_HOME_ROOT`` names it. There is deliberately no
+        home-directory fallback: the front door never scrapes laptop state
+        (tests/test_supervisor_tables.py guards ``Path.home()`` here), and a
+        container with no root declared simply lists no loop homes.
+        """
         override = os.environ.get(_LOOP_HOME_ROOT_ENV)
-        root = Path(override).expanduser() if override else Path.home() / ".bmad-loops"
+        if not override:
+            return None
+        root = Path(override).expanduser()
         if not root.is_absolute():
             root = Path.cwd() / root
         return root

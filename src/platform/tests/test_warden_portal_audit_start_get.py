@@ -31,7 +31,14 @@ def _claims(sub: str, *roles: str) -> dict[str, object]:
     return {"sub": sub, "groups": list(roles)}
 
 
-def _authed(client: Client, settings, *, sub: str = "op-1", role: str = "warden") -> Client:
+# Story 42.5: group claims carry the prefixed namespace; a bare "warden" is no station role.
+def _authed(
+    client: Client,
+    settings,
+    *,
+    sub: str = "op-1",
+    role: str = "pyforge:station:warden",
+) -> Client:
     settings.IDP_CLAIMS_SNAPSHOT = _claims(sub, role)
     session = client.session
     session[IDP_TOKEN_CLAIMS_SESSION_KEY] = _claims(sub, role)
@@ -176,7 +183,7 @@ def test_mcp_start_audit_returns_handle(monkeypatch):
 
 @pytest.mark.django_db
 def test_start_is_forbidden_without_warden_role(client, settings):
-    _authed(client, settings, role="atlas")
+    _authed(client, settings, role="pyforge:station:atlas")
     response = client.post("/stations/warden/audits/start/", {"target": "."})
     assert response.status_code == HTTPStatus.FORBIDDEN
 

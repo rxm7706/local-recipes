@@ -86,8 +86,9 @@ def test_wired_asgi_invoker_reaches_station_api_without_http(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("STATION_REMOTE", raising=False)
-    from config.station_port import asgi_invoke
     from django_pyforge.station_port import replace_in_process_handler
+
+    from config.station_port import asgi_invoke
 
     previous = replace_in_process_handler(asgi_invoke)
     try:

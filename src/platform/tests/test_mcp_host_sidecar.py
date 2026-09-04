@@ -11,13 +11,12 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-from starlette.testclient import TestClient
-
 from django_pyforge.assertion.crypto import mint_assertion
 from django_pyforge.mcp_dual_era import SUPPORTED_MCP_REVISIONS
 from django_pyforge.mcp_dual_era import UNSUPPORTED_PROTOCOL_VERSION
 from django_pyforge.mcp_http import dispatch_station_mcp
 from django_pyforge.mcp_http import sidecar_base_url
+from starlette.testclient import TestClient
 
 os.environ.setdefault("MCP_HOST_STATIONS", "atlas")
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]

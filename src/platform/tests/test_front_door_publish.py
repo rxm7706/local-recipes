@@ -13,14 +13,17 @@ from django.core.cache import cache
 from django.test import Client
 from django.test import RequestFactory
 from django.urls import reverse
+from wagtail.coreutils import get_supported_content_language_variant
+from wagtail.models import Collection
+from wagtail.models import Locale
 from wagtail.models import Page
 from wagtail.models import Site
 
+from platformapp.front_door.lane1_seed import LANE1_SLUG
+from platformapp.front_door.lane1_seed import seed_lane1_homepage
 from platformapp.front_door.middleware import WagtailAdminGroupRequiredMiddleware
 from platformapp.front_door.middleware import is_cms_login_path
 from platformapp.front_door.middleware import must_refuse_admin
-from platformapp.front_door.lane1_seed import LANE1_SLUG
-from platformapp.front_door.lane1_seed import seed_lane1_homepage
 from platformapp.front_door.models import HomePage
 from platformapp.users.provisioning import provision_designated_groups
 from platformapp.users.tests.factories import UserFactory
@@ -63,6 +66,51 @@ def test_seed_lane1_homepage_is_idempotent_and_serves_root(client: Client) -> No
     assert LANE1_SLUG in {page.slug for page in HomePage.objects.all()}
 
 
+def test_seed_lane1_homepage_replaces_wagtail_default_page_at_the_slug() -> None:
+    """wagtailcore's initial data seeds a plain Page at slug "home" under root.
+
+    The seeder used to call add_child() straight over it and die on the duplicate
+    slug from post_migrate -- i.e. during test-database creation, so every
+    DB-marked test errored before running. It must move the placeholder aside,
+    seed the HomePage at the slug, and drop the placeholder once no Site uses it.
+    """
+    root = Page.get_first_root_node()
+    HomePage.objects.filter(slug=LANE1_SLUG).delete()
+    Site.objects.all().delete()
+    default_page = Page(title="Welcome to your new Wagtail site!", slug=LANE1_SLUG)
+    root.add_child(instance=default_page)
+    placeholder_pk = Page.objects.get(slug=LANE1_SLUG).pk
+
+    home = seed_lane1_homepage()
+
+    assert home is not None
+    assert HomePage.objects.filter(slug=LANE1_SLUG, live=True).count() == 1
+    assert Page.objects.filter(slug=LANE1_SLUG).count() == 1
+    assert not Page.objects.filter(pk=placeholder_pk).exists()
+    assert Site.objects.get(is_default_site=True).root_page_id == home.pk
+
+
+def test_seed_lane1_homepage_restores_wagtail_baseline_rows() -> None:
+    """A flushed database (transactional-test teardown) loses wagtailcore's initial
+    data; post_migrate re-fires the seeder, which must put back the content-variant
+    Locale and the root Collection or every later page/image save fails."""
+    # Empty every wagtailcore baseline table the way a flush does (pages first:
+    # Page.locale is PROTECT).
+    Site.objects.all().delete()
+    Page.objects.all().delete()
+    Collection.objects.all().delete()
+    Locale.objects.all().delete()
+
+    home = seed_lane1_homepage()
+
+    assert home is not None
+    assert HomePage.objects.filter(slug=LANE1_SLUG, live=True).count() == 1
+    assert Site.objects.get(is_default_site=True).root_page_id == home.pk
+    assert Collection.get_first_root_node() is not None
+    expected = get_supported_content_language_variant(settings.LANGUAGE_CODE)
+    assert Locale.objects.filter(language_code=expected).exists()
+
+
 def test_publish_homepage_body_comes_from_orm(client: Client) -> None:
     _publish_home(PUBLISHED_BODY)
 
@@ -96,8 +144,7 @@ def test_two_clients_see_identical_html_and_body_is_not_on_disk(client: Client) 
             path
             for path in media_root.rglob("*")
             if path.is_file()
-            and PUBLISHED_BODY
-            in path.read_text(encoding="utf-8", errors="ignore")
+            and PUBLISHED_BODY in path.read_text(encoding="utf-8", errors="ignore")
         ]
     assert leaked == []
 

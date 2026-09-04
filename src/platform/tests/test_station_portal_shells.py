@@ -9,7 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from config.settings.base import LOCAL_APPS
 from django.apps import apps
 from django.template.loader import render_to_string
 from django.test import Client
@@ -23,6 +22,8 @@ from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_pyforge.roles import prefixed_station
 from django_pyforge.workclass_probe import views as infra_views
+
+from config.settings.base import LOCAL_APPS
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -245,7 +246,7 @@ def test_new_shell_without_role_is_forbidden() -> None:
     response = atlas_views.chrome_home(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
     allowed = RequestFactory().get("/stations/atlas/")
-    allowed.idp_roles = ["atlas"]
+    allowed.idp_roles = ["pyforge:station:atlas"]  # Story 42.5: prefixed namespace
     ok = atlas_views.chrome_home(allowed)
     assert ok.status_code == HTTPStatus.OK
 
