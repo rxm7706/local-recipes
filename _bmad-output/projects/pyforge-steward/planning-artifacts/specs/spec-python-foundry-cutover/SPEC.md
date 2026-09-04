@@ -20,8 +20,9 @@ open_questions:
 > **Canonical contract.** Derived 2026-09-04 from the Dream § *Cutover to
 > `python-foundry`* (build target). Extends `spec-pyforge-unifying-strategy`; it does
 > not re-mint any Unifying `CAP-*` or `pap:CAP-*`. Decomposed as steward **Epic 44**
-> (Stories 44.1–44.12) under the cutover spine (`fnd:AD-1..19`) — **solutioning iteration 2,
-> operator review continuing; every story ledger `blocked`**. The evergreen Spec is not re-derived.
+> (Stories 44.1–44.14) under the cutover spine (`fnd:AD-1..22`) — **solutioning iteration 3,
+> operator review continuing; every story ledger `blocked`**. The cutover is regenerative: Dreams and
+> memlogs seed foundry; every capability is rebuilt or moved per the capability ledger.
 
 # SPEC — Cutover to `python-foundry` (Phases 0–6)
 
@@ -44,14 +45,14 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
   - **success:** The clone exists; CI is green on the empty estate; no `recipes/`
     directory; the `environment.yaml` export is automated or absent, never by hand.
 
-- **CAP-2 — Move the estate (Phase 1).**
-  - **intent:** `pyforge-core`, the eight `pyforge-<station>`, `pyforge-testing-kit`,
-    `django-pyforge` and the `django-<station>` packages live under `src/packages/`;
-    skills under `skills/` with IDE adapters as symlinks; BMAD, decks and dreams in
-    foundry.
-  - **success:** Every station env solves and the host boots in foundry; no
-    `sys.path` insert and no Containerfile `COPY` of django src remain;
-    `.claude/skills/` and `.cursor/skills/` are symlinks into `skills/`.
+- **CAP-2 — Realize the estate (Phase 1).**
+  - **intent:** Every capability of the estate reaches foundry by rebuild or by move per the
+    capability ledger, with `pyforge-core`, the eight `pyforge-<station>`, `pyforge-testing-kit`,
+    `django-pyforge` and the `django-<station>` packages under `src/packages/`, skills under
+    `skills/` with generated adapters, and the BMAD chain seeded from Dreams and memlogs.
+  - **success:** Every capability row is `verified-in-foundry` under its mode's gate; every
+    station env solves and the host boots from workspace members; no `sys.path` insert and
+    no Containerfile `COPY` of package source remain; no `src/shared/` exists.
 
 - **CAP-3 — CFE comes home (Phase 2).**
   - **intent:** The authoritative conda-forge-expert skill, scripts and tools
@@ -83,6 +84,15 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
     manifest; history kept; worktree residue retired; the default clone is foundry
     and `.steward` has one git root.
 
+- **CAP-9 — Capability ledger and rebuild harness.**
+  - **intent:** The operator sets a mode per capability; the ledger derives from the Dreams
+    and the owner map; a `rebuild` re-derives Spec, spine and epics in foundry from the moved
+    memlog and is drained by Marshal with the archive as oracle.
+  - **success:** `steward cutover plan` emits the ledger with modes, states, dependencies and
+    the four decision signals; a rebuilt capability passes the archived suite or an equivalence
+    check before `verified-in-foundry`; a capability in `rebuilding` or `moving` has its source
+    frozen and `--append` reports drift against it.
+
 - **CAP-8 — Flag-gated, replayable cutover.**
   - **intent:** The operator can regenerate or append the cutover plan at any time while
     `local-recipes` keeps evolving, replay every move into foundry, and flip the root of
@@ -97,6 +107,12 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Solutioning before implementation (operator 2026-09-04): this Spec, the cutover spine
   and Epic 44 are BMAD Phase 3 artifacts the operator reviews and refines in iterations;
   no story spec is drafted and no 44.x leaves ledger `blocked` until the operator flips it.
+- The seed is Dreams plus memlogs only: rendered `SPEC.md`, spines, epics and stories are
+  re-derived in foundry; memlog fidelity (44.13) precedes Phase 0.
+- The oracle gate is non-negotiable: no rebuilt capability is verified without the archived
+  suite or an equivalence check passing against it.
+- Mode is per capability, decided by the operator on scored signals; this is not a rebuild
+  of everything and not a move of everything.
 - The cutover is a flag, not a date: `pyforge.cutover_root` in the CAP-13 flag tree is the
   only switch of the root of record; the transition point is the flip (after 44.5 today);
   before it nothing in `local-recipes` is frozen.
@@ -135,6 +151,8 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Closing R-18..R-22 (an Epic 45 candidate).
 - Copying the `recipes/` universe or the feedstock mirrors.
 - Migrating the 268 registered worktrees; CAP-7 retires them.
+- Carrying rendered planning narrative (research, reviews, proposals, reports, retros, run
+  records, per-story specs of shipped stories); the archive keeps them.
 
 ## Success signal
 

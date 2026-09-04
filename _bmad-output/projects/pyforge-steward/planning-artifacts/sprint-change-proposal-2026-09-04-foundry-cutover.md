@@ -3,7 +3,7 @@ title: Sprint Change Proposal — cutover to python-foundry (solutioning iterati
 date: 2026-09-04
 project: pyforge-steward
 chain: spec-python-foundry-cutover (extends spec-pyforge-unifying-strategy)
-status: draft — solutioning iteration 2; operator review continuing. No story leaves ledger `blocked` until the operator flips it.
+status: draft — solutioning iteration 3; operator review continuing. No story leaves ledger `blocked` until the operator flips it.
 trigger: docs/dreams/pyforge-unifying-strategy.md § "Cutover to python-foundry" (2026-09-04) — the 40→43 + Mason 13 gate closed 2026-09-03 with nothing downstream of it; red-team MEDIUM band DW-RT-2026-09-02-1..9 all open, R-17 is Phases 1–3
 mode: batch
 scope: major — new chain artifacts (Spec, spine, epic), no code
@@ -167,3 +167,24 @@ per-machine, tool-detected adapters and SKF writing into `skills/`.
 updated; 44.11, 44.12 added, `blocked`), Dream § Cutover + Realization, `marshal-policy.toml`
 `"44"` (+ `var/**`, `flags.json`), ledger (12 keys). Order: 44.1 ∥ 44.2 → 44.3 → 44.11 ∥ 44.12 →
 44.4 → 44.5 → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.
+
+## 8. Iteration 3 — 2026-09-04 (operator: Dreams only move; rebuild or move per capability)
+
+**Ruling: the cutover is regenerative.** Foundry is seeded by `docs/dreams/` and every Spec and
+spine `.memlog.md`; every rendered document is re-derived there. Each capability is realized by
+`rebuild` (regeneration drill: Dream + memlog → Spec → spine → epics → Marshal drain, the archived
+suite as oracle) or `move` (replay), or `retire`; decided per row on four scored signals. A
+capability entering `rebuilding` or `moving` freezes its source at once; the one global flag
+flips only when its dependencies are `verified-in-foundry`. Spine `fnd:AD-20` (seed), `AD-21`
+(oracle), `AD-22` (per-capability state and freeze); AD-2, AD-11, AD-17, AD-18 amended. Spec
+`fnd:CAP-9`; CAP-2 reworded to *realize*. Stories **44.13** memlog fidelity (before Phase 0, in
+`local-recipes`) and **44.14** rebuild harness + oracle gate (pilot: Scribe).
+
+**Answered:** `planning-history-scope` (seed = Dreams + memlogs + the ledger; everything else
+re-rendered or archived), `ingest-keys-import` (rebuild the ingest into `pyforge-steward` behind
+the station port). **Still open:** `repo-visibility`, `actions-minutes`.
+
+**Applied:** spine, SPEC.md, `cutover.md` (capability ledger section, first-pass mode table
+`[ASSUMPTION]`), `epics.md` (heading cites CAP-9; 44.1 reworded; 44.13, 44.14 added, `blocked`),
+Dream § Cutover + Realization, ledger (14 keys, 255 stories). Order: 44.13 → 44.1 ∥ 44.2 → 44.3 →
+44.11 ∥ 44.12 ∥ 44.14 → realization in dependency order → flip → 44.6 ∥ 44.7 → 44.8 → 44.9 → 44.10.

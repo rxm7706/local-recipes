@@ -429,11 +429,19 @@ re-derived: its SPEC.md is hand-edited past its memlog and `bmad-spec` is its si
 | 5 — Mason → conda-forge (`fnd:CAP-6`) | **44.9** | `submit` → staged-recipes or bot fork; `update` → feedstock maintainer-edit | an agent PR never opens `local-recipes` (asserted on the submit path) | **outward + Mason**; deps 44.6, 44.8 |
 | 6 — Archive (`fnd:CAP-7`) | **44.10** | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered, 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
 
-**Order.** 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 → 44.4 → 44.5 → **flag flip** →
-44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
+**Order.** 44.13 → 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 ∥ 44.14 → capability
+realization in dependency order (moves replay, rebuilds drill) → **flag flip** when its dependencies
+are verified → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
 gate on 44.6 / 44.9 is ledger state, as 43.6 was behind Mason 13. Before any ledger write:
 `sprint-ledger-sync --project steward --repair-feed` (the Tier-3 feed stops at Epic 38; a
 bare sync refuses) then `story-status-check`.
+
+**Regenerative, not a move (operator 2026-09-04, iteration 3).** Dreams and memlogs are the only
+unconditional move; every rendered Spec, spine and epic is re-derived in foundry. Every capability
+is realized there by **rebuild** (a regeneration drill with the archive as oracle) or by **move**
+(a replay), decided per capability on scored signals, with `retire` for what no Dream wants
+(`fnd:AD-20..22`, `fnd:CAP-9`; Stories 44.13 memlog fidelity, 44.14 rebuild harness). This is the
+regenerable-factory drill at estate scale, and foundry's first fleet run is its own construction.
 
 **Flag-gated and regenerable (operator 2026-09-04, iteration 2).** The cutover is a flag,
 not a date: `pyforge.cutover_root` in the CAP-13 flag tree names the root of record; the
@@ -514,3 +522,8 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   is a native estate with a remote host; adapters are generated per machine, SKF writes into
   `skills/`, runtime state in `var/`. Spine `fnd:AD-17..19`, Spec `fnd:CAP-8`, Stories 44.11 /
   44.12 (both `blocked`). Four open questions remain.
+- **2026-09-04 (iteration 3)** — Operator: Dreams only move; the cutover is regenerative —
+  every capability rebuilt or moved per a capability ledger, Dreams + memlogs as the seed,
+  the archive as oracle, per-capability freeze under the one flag. Spine `fnd:AD-20..22`,
+  Spec `fnd:CAP-9`, Stories 44.13 / 44.14 (`blocked`). Answered `planning-history-scope` and
+  `ingest-keys-import`; open: `repo-visibility`, `actions-minutes`.

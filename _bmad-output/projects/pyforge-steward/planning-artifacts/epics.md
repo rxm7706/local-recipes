@@ -2490,21 +2490,22 @@ So that laptop and cluster run one interpreter and Atlas/Doctor import inside th
 **And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
 **And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
-## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8)
+## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9)
 
 The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
-Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Solutioning iteration 2 — every story below is ledger `blocked` until the operator's review iterations close and flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11 and 44.12 are enablers.
+Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Solutioning iteration 3 — every story below is ledger `blocked` until the operator's review iterations close and flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11 and 44.12 are enablers.
 
-### Story 44.1: The move-list manifest
+### Story 44.1: The capability ledger and the move-list manifest
 
 As a platform operator,
-I want every tracked path in `local-recipes` resolved to exactly one destination — a target-tree path, `stays`, or `dies` — derived from the spec-surface map,
-So that no move story can route a path twice or drop one silently.
+I want every capability of the estate given one mode — `rebuild`, `move`, or `retire` — on scored signals, and every tracked path under a `move` capability resolved to exactly one destination,
+So that realization is decided per capability and no move story can route a path twice or drop one silently.
 
-**Type:** docs • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-2 (input) • fnd:AD-1, fnd:AD-2, fnd:AD-15, fnd:AD-16 • red-team D-2 • prior art `pyforge.scribe.extras.move_list` (scribe 6.1)
+**Type:** docs • **Effort:** M • **Deps:** S-44.13 • **FR/AD:** fnd:CAP-2 (input) • fnd:AD-1, fnd:AD-2, fnd:AD-15, fnd:AD-16 • red-team D-2 • prior art `pyforge.scribe.extras.move_list` (scribe 6.1)
 **Given** `git ls-files` (rows, allowlisted trees included), `scripts/spec_surface_check.py`'s classification (owner only) and `scribe index move-list` extended with a `parent_depth` signal (coupling) **When** the manifest renders **Then** 100 % of the 24,858 tracked paths carry exactly one destination by ordered precedence, a `source_sha` and the foundry epoch SHA; a path matched by two equal-precedence rules is row kind `ambiguous` and blocks
 **And** the manifest is a machine-readable file with per-directory rollups at the spine's seeded location (`docs/foundry/manifest.*`, `[ASSUMPTION]`), rows carry `kind` (`file` | `secret` | `identity`), and its row shape matches `fnd:AD-2`'s convention
 **And** `steward cutover plan --regenerate` rebuilds it from scratch and `--append` folds in only the delta since the recorded `source_sha`; both preserve `moved` rows (idempotent over status)
+**And** the capability ledger (`fnd:AD-2`, `fnd:CAP-9`) has one row per capability with mode, state, dependencies and the four signals scored (Spec fidelity, coupling, open debt, irreplaceable state); the first-pass modes in `cutover.md` are presented to the operator row by row, never applied silently
 
 ### Story 44.2: The red-team document fixes
 
@@ -2626,6 +2627,28 @@ So that `local-recipes` keeps evolving until the flip and foundry never falls be
 **And** `steward cutover plan --regenerate` and `--append` both preserve `moved` rows (a test proves idempotence over status), and `steward cutover apply --phase <n>` is idempotent when re-run
 **And** a flip is refused while any loop is running and is recorded in the Dream's Realization log
 
+### Story 44.13: Memlog fidelity
+
+As a platform operator,
+I want every hand-edit in a rendered `SPEC.md` folded back into its memlog and every Spec proven to re-render without loss,
+So that Dreams plus memlogs can seed foundry and nothing decided is lost in the re-derivation.
+
+**Type:** docs • **Effort:** M • **Deps:** none • **FR/AD:** fnd:CAP-2 (prerequisite), fnd:CAP-9 • fnd:AD-20
+**Given** every `specs/spec-*/SPEC.md` across the eight stations **When** `bmad-spec` re-derives it from its memlog into a scratch folder **Then** the result is byte-equivalent to the rendered file, or every difference is recorded as a memlog entry and the re-derive is repeated until equivalent
+**And** the unifying strategy Spec, hand-edited past its memlog today, is reconciled first and its "never re-derive" exception is retired
+**And** this runs in `local-recipes` before Phase 0; a Spec that cannot be made to re-render without loss is a review-blocking finding, not a silent carry
+
+### Story 44.14: Rebuild harness and oracle gate
+
+As a platform operator,
+I want a rebuild path in foundry — Dream and memlog to re-derived Spec, spine and epics, drained by Marshal — that cannot pass without the archived suite passing against it,
+So that a rebuilt capability is a regeneration drill, never a rewrite by another name.
+
+**Type:** feature • **Effort:** L • **Deps:** S-44.12 • **FR/AD:** fnd:CAP-9 • fnd:AD-18, fnd:AD-21, fnd:AD-22 • regenerable-factory Dream (the drill)
+**Given** one pilot capability marked `rebuild` (Scribe, per the first pass) **When** the harness runs in foundry **Then** its Spec, spine and epics are re-derived from the moved memlog, Marshal drains its stories under a `steward budget` ceiling, and the archived Scribe suite passes against the rebuilt code before the row reads `verified-in-foundry`
+**And** the moment the row entered `rebuilding` its source paths froze in `local-recipes`, and `steward cutover plan --append` reports any change against them as a finding
+**And** the harness is reusable for every later `rebuild` row without operator scripting
+
 ## Currency validation note — 2026-08-26
 
 Chain-currency sweep pass (arch→epics cascade safety, no story or status changes).
@@ -2640,4 +2663,4 @@ and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not
 unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
 already reflected by Epic 30's own text. No epic or story required correction.
 
-**2026-09-04 addendum (foundry cutover, solutioning iteration 2):** 44 epics / 208 stories. Epic 44's twelve stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
+**2026-09-04 addendum (foundry cutover, solutioning iteration 3):** 44 epics / 210 stories. Epic 44's fourteen stories are `blocked` by design (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
