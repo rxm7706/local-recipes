@@ -602,7 +602,25 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "9ec3606b79467d3612d0e97026e297735d1fee35"
+    brief_mirrored_through: "65678fbe1cc90aaa80560ed06f7cdaf1c08586b7"
+                                    # ADVANCED 2026-09-04 from 9ec3606b79 to the newest qualifying
+                                    # retro 65678fbe1c (merge of origin/main into
+                                    # dispatch/pyforge-steward/42.4, 2026-09-03; carries the CFE
+                                    # v8.85.1 PATCH retro ecfb778a67). Delta on the CFE surface is
+                                    # NOT empty but is docs-only: SKILL.md G82 detail + CI-provider
+                                    # table, reference/conda-forge-yml-reference.md noarch_platforms
+                                    # note, failure-catalog.yaml source_sha256 + two symptom tokens,
+                                    # MANIFEST/skill-config 8.85.0 -> 8.85.1. No script changed.
+                                    # Checked before advancing (scripted, not eyeballed): neither
+                                    # compiled slice carries a copy of any touched file, and neither
+                                    # carries the corrected facts' stale wording ("macOS-ARM image is
+                                    # paused", the Azure-default provider rows, the auto
+                                    # build_platform claim). Slice 2's one-line G82 summary in
+                                    # references/knowledge-gotchas.md ("local-only before merge,
+                                    # opt-in on the feedstock after") stays true under v8.85.1.
+                                    # This is OQ5's first NON-intersecting case: a retro whose delta
+                                    # touches no slice content is advanced without a mirror, and
+                                    # the check that proved it is recorded here.
                                     # RE-POINTED to the MERGE commit (PR #1009). Structural, not new
                                     # content: `git diff f45a9209d1 9ec3606b79 -- <CFE surface>` is
                                     # EMPTY. The guard walks merge commits too, so a merge whose
@@ -784,7 +802,25 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "9ec3606b79467d3612d0e97026e297735d1fee35"
+    brief_mirrored_through: "65678fbe1cc90aaa80560ed06f7cdaf1c08586b7"
+                                    # ADVANCED 2026-09-04 from 9ec3606b79 to the newest qualifying
+                                    # retro 65678fbe1c (merge of origin/main into
+                                    # dispatch/pyforge-steward/42.4, 2026-09-03; carries the CFE
+                                    # v8.85.1 PATCH retro ecfb778a67). Delta on the CFE surface is
+                                    # NOT empty but is docs-only: SKILL.md G82 detail + CI-provider
+                                    # table, reference/conda-forge-yml-reference.md noarch_platforms
+                                    # note, failure-catalog.yaml source_sha256 + two symptom tokens,
+                                    # MANIFEST/skill-config 8.85.0 -> 8.85.1. No script changed.
+                                    # Checked before advancing (scripted, not eyeballed): neither
+                                    # compiled slice carries a copy of any touched file, and neither
+                                    # carries the corrected facts' stale wording ("macOS-ARM image is
+                                    # paused", the Azure-default provider rows, the auto
+                                    # build_platform claim). Slice 2's one-line G82 summary in
+                                    # references/knowledge-gotchas.md ("local-only before merge,
+                                    # opt-in on the feedstock after") stays true under v8.85.1.
+                                    # This is OQ5's first NON-intersecting case: a retro whose delta
+                                    # touches no slice content is advanced without a mirror, and
+                                    # the check that proved it is recorded here.
                                     # RE-POINTED to the MERGE commit (PR #1009). Structural, not new
                                     # content: `git diff f45a9209d1 9ec3606b79 -- <CFE surface>` is
                                     # EMPTY. The guard walks merge commits too, so a merge whose
