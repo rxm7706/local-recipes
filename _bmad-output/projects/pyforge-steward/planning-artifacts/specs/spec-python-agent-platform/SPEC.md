@@ -11,6 +11,16 @@ surface:
   # AD-13): the pixi-mirror builder the air-gap-parity CI job runs before
   # blocking egress. Never governed here until this reconciliation pass.
   - scripts/build-pixi-mirror.py
+  # CAP-6 realization, Story 43.4 (spec-43-4-golden-path-cd-by-digest, `done`):
+  # the golden-path CD pair — the host-shell recorder of platform image digests +
+  # Warden verdict, and the verifier that a promotion artifact covers the requested
+  # digests. Ungoverned from 5396c1917a until this reconciliation pass (PR #1043).
+  - scripts/platform-golden-path-promotion.sh
+  - scripts/platform-deploy-verify-promotion.py
+  # CAP-5 evidence, Story 43.5 (spec-43-5-one-interpreter-story, `done`): renders
+  # the measured per-environment matrix from pixi.lock into the Dream (the one-
+  # interpreter table). Ungoverned from c3e33c3735 until this pass (PR #1043).
+  - scripts/pixi_env_matrix.py
 sources:
   - ../../../../../../docs/dreams/python-agent-platform.md
   - ../../../../../../docs/dreams/django-accelerator-framework.md

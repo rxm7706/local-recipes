@@ -5876,6 +5876,9 @@
    "environment.yaml": "5604f9f60510af83b1d354bbc58ef7c430225fe0",
    "pixi.toml": "4167681c8122c222ce612185725ed7cb7d82b596",
    "scripts/build-pixi-mirror.py": "19b7af78744a66e0314975036187265dc750bb1f",
+   "scripts/pixi_env_matrix.py": "f7d44b680f11958e2ba05228bb4b5df03ae101a1",
+   "scripts/platform-deploy-verify-promotion.py": "f7f2f6f403718390a417eeef5a1576bb5590b162",
+   "scripts/platform-golden-path-promotion.sh": "5c21159f2f6667e3539a855b22ce7c2244f4e390",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "f641955d0e0cba34ead2670b9bf8e6500902dec9",
@@ -6198,7 +6201,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "9337bb91b5ef4f368c4f36ce0b6834d684e3c0cc"
+  "memlog": "0ee00951706ebe4add380e0971327538aaa67169"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
