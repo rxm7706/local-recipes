@@ -521,7 +521,13 @@ slices:
                           # only closed CAP-2's success bar; it did not put the replacement in
                           # front of live traffic. Story 12.3 (2026-08-28) flipped `equivalence`
                           # off "green" to "stale" -- see that field's own note below.
-    equivalence: "stale"  # Story 12.3 (2026-08-28): flipped off "green" -- the real audit tool
+    equivalence: "green"  # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
+                          # v8.84.0 --head HEAD-advance was re-ported into the compiled
+                          # github_updater.py byte-for-byte (sha256 identical to the live
+                          # original again), so Clause 2 holds for all 5 scripts and Clause 4
+                          # (`test_help_output_identical`, 3/3) passes. The stale record below
+                          # is kept as history of how the label was lost and regained.
+                          # Story 12.3 (2026-08-28): flipped off "green" -- the real audit tool
                           # now backs this, and it found real drift. CORRECTION (same-day review
                           # pass): this comment's first draft claimed "Clauses 1-4 still hold as
                           # Story 6.3 last verified them" -- FALSE, caught by independent review,
@@ -602,7 +608,13 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "65678fbe1cc90aaa80560ed06f7cdaf1c08586b7"
+    brief_mirrored_through: "1da5fd021307ac62a0be55c831dcb43dbbab54b8"
+                                    # ADVANCED 2026-09-04 from 65678fbe1c to the CFE v8.85.2
+                                    # retro 1da5fd0213 (relocation-aware repo root). Its CFE-surface
+                                    # delta -- scripts/_paths.py, gen_yml_reference.py, _path_guard.py,
+                                    # mapping_manager.py, vulnerability_scanner.py -- intersects NO slice-1 script (slice 1 ships none of the five); the
+                                    # github_updater.py --head re-port rode in the same PR. Non-
+                                    # intersecting: advanced without a mirror, check recorded.
                                     # ADVANCED 2026-09-04 from 9ec3606b79 to the newest qualifying
                                     # retro 65678fbe1c (merge of origin/main into
                                     # dispatch/pyforge-steward/42.4, 2026-09-03; carries the CFE
@@ -685,7 +697,19 @@ slices:
                          # cfe.py's _CFE_SCRIPTS and pixi tasks/MCP tools finds zero references
                          # to cfe-recipe-lifecycle), matching slice 1's own precedent that a
                          # clean audit alone does not advance status past "compiled".
-    equivalence: "stale"  # Story 12.7, PATCHED post-review (was "green" -- FALSE, caught by
+    equivalence: "green"  # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
+                         # five-script parents[4] class below is closed at the SOURCE --
+                         # `_paths.get_repo_root()` is a marker walk (nearest ancestor with
+                         # pixi.toml + .claude/) and `_path_guard.py`, `gen_yml_reference.py`,
+                         # `mapping_manager.py`, `vulnerability_scanner.py` resolve through it
+                         # (old hop kept only as a fallback outside a checkout); all five
+                         # compiled copies re-mirrored sha256-identical. Re-verified the
+                         # reproduced divergence resolved: the compiled `_path_guard.REPO_ROOT`
+                         # is the real repo root and a relative `recipes/` path confines to
+                         # `<repo>/recipes/...`; `test_gen_yml_reference_help_diverges_by_
+                         # known_path_depth_bug` passes via its outputs-agree branch. The
+                         # stale record below is kept as history.
+                         # Story 12.7, PATCHED post-review (was "green" -- FALSE, caught by
                          # adversarial review, not by this pass): a REAL, REPRODUCED
                          # behavioral divergence exists between the live original and the
                          # compiled package, so "green" was not honest. Confirmed live:
@@ -802,7 +826,12 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "65678fbe1cc90aaa80560ed06f7cdaf1c08586b7"
+    brief_mirrored_through: "1da5fd021307ac62a0be55c831dcb43dbbab54b8"
+                                    # ADVANCED 2026-09-04 from 65678fbe1c to the CFE v8.85.2
+                                    # retro 1da5fd0213 (relocation-aware repo root). Its CFE-surface
+                                    # delta -- scripts/_paths.py, gen_yml_reference.py, _path_guard.py,
+                                    # mapping_manager.py, vulnerability_scanner.py -- intersects slice 2 (it ships all five): mirrored byte-for-byte,
+                                    # sha256 verified, harness green -- mirrored THEN advanced.
                                     # ADVANCED 2026-09-04 from 9ec3606b79 to the newest qualifying
                                     # retro 65678fbe1c (merge of origin/main into
                                     # dispatch/pyforge-steward/42.4, 2026-09-03; carries the CFE

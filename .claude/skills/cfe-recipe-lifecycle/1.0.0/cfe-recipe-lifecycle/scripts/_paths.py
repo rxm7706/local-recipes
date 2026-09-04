@@ -26,10 +26,20 @@ from pathlib import Path
 
 
 def get_repo_root() -> Path | None:
-    """Return the monorepo root (parent of ``.claude/``), or ``None`` if this
-    file's own location cannot be resolved to enough ancestor components (a
-    symlink loop, or this module relocated somewhere with fewer than 4 real
-    parents).
+    """Return the monorepo root -- the nearest ancestor of this file that
+    carries BOTH ``pixi.toml`` and a ``.claude/`` directory -- or ``None`` if no
+    ancestor does (a symlink loop, or this module relocated outside any
+    checkout).
+
+    A marker walk, not a fixed-depth ``parents[N]``: this module is copied
+    verbatim into the compiled CFE slices (``.claude/skills/cfe-<slice>/<ver>/
+    <slice>/scripts/``, two levels deeper), where ``parents[4]`` landed on
+    ``.claude/skills/`` and every consumer silently computed paths one level
+    short -- the exact "known path-depth bug" the slice-2 equivalence harness
+    pinned on ``gen_yml_reference.py``. Requiring both markers keeps the walk
+    from stopping at a station package (``src/shared/packages/*`` carry a
+    ``pixi.toml`` but no ``.claude/``); a nested worktree under
+    ``.claude/worktrees/<x>/`` resolves to its own root, as before.
 
     Computed lazily, per call — never at import time — so a resolution
     failure surfaces only to a caller that actually calls this function, not
@@ -45,8 +55,10 @@ def get_repo_root() -> Path | None:
     on-disk cache, and ``bootstrap_data.py`` exits with a diagnostic.
     """
     try:
-        # .claude/skills/conda-forge-expert/scripts/_paths.py -> repo root (4 levels up)
-        return Path(__file__).resolve().parents[4]
+        for candidate in Path(__file__).resolve().parents:
+            if (candidate / "pixi.toml").is_file() and (candidate / ".claude").is_dir():
+                return candidate
+        return None
     except (IndexError, OSError):
         return None
 
