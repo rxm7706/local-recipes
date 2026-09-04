@@ -64,6 +64,10 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("platform-ci.yml setup-pixi (4 jobs)", ".github/workflows/platform-ci.yml",  # PR #1043: four jobs sat on 0.77.0 unregistered while requires-pixi said >=0.78.0
+          r"pixi-version: v" + _PIXI_VERSION, hits=4, kind="exact"),
+    _site("platform-deploy.yml setup-pixi", ".github/workflows/platform-deploy.yml",
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("herald-live-demo.yml setup-pixi (3 jobs)", ".github/workflows/herald-live-demo.yml",
           r"pixi-version: v" + _PIXI_VERSION, hits=3, kind="exact"),
     _site("sync-pypi-mappings/action.yml setup-pixi", ".github/actions/sync-pypi-mappings/action.yml",

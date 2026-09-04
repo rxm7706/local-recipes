@@ -53,9 +53,12 @@ last green, run 32667190614 on 2026-08-23):**
 | 17 | `scripts/fleet_scan.py` chain-currency | the `epics→sprint` edge fired for every idle station | edge retired with rationale; doctor unit test |
 | 18 | `platformapp/front_door/runtime_catalog.py` | `_repo_root()` checked the image-shape rule (`manage.py` + `platformapp/`) on every parent before finishing the walk, so in a checkout it returned `src/platform` two levels short of the monorepo root and every console catalog page (`/console/dreams/` …) listed nothing | monorepo markers over the whole walk first; the image fallback is a second pass |
 | 19 | `tests/test_station_api_seam.py` | expected token and the client's own mint both read the clock; across a second boundary they signed different `iat`/`exp` and the equality flaked (seen once in this pass) | clock frozen for the comparison |
+| 20 | `tests/test_warden_portal_audit_start_get.py::_platform_python_rels` + Platform CI `test` job | the diff guard ran `git diff origin/main` and a depth-1 CI checkout has no such ref → `fatal: bad revision`, CalledProcessError | skips loudly without the base ref; the job fetches `origin/main` at depth 1 so the guard still runs |
+| 21 | Platform CI `container (podman)` | rootless podman ran out of runner disk committing the ~2 GB `python-agent-platform` layer (`no space left on device`); the docker leg fit | the runner's unused toolchains (~25 GB) are dropped before the image builds |
+| 22 | `.github/workflows/platform-ci.yml` (4 jobs), `platform-deploy.yml` | `setup-pixi` pinned `v0.77.0` against `requires-pixi >= 0.78.0` (the 2026-08-29 fleet bump missed them) — first reachable once `container` went green; `pixi-version-check` never saw these sites | pins to `v0.78.0`; both files registered in `scripts/pixi_version_registry.py` (4 + 1 hits) so the detector owns them |
 
-Rows 1–5 and 16–17 belong to the platform / fleet surface; rows 6–15, 18–19 are the platform host
-and its test suite. Rows 8, 10, 11, 15 are defects **introduced by this window's own stories**
+Rows 1–5, 16–17 and 21–22 belong to the platform / fleet surface; rows 6–15, 18–20 are the
+platform host and its test suite. Rows 8, 10, 11, 15 are defects **introduced by this window's own stories**
 (42.5, the Lane-1 CAP-2 seeder, 42.x portal claims, the 1.4 loop-home lister) that the dormant CI
 never surfaced — the one finding no single story review could have shown.
 
