@@ -17,6 +17,7 @@ surface:
   # digests. Ungoverned from 5396c1917a until this reconciliation pass (PR #1043).
   - scripts/platform-golden-path-promotion.sh
   - scripts/platform-deploy-verify-promotion.py
+  - scripts/platform-ci-local.sh
   # CAP-5 evidence, Story 43.5 (spec-43-5-one-interpreter-story, `done`): renders
   # the measured per-environment matrix from pixi.lock into the Dream (the one-
   # interpreter table). Ungoverned from c3e33c3735 until this pass (PR #1043).

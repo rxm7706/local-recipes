@@ -158,6 +158,24 @@ work that closed its own findings while landing). Nothing to check off; nothing 
    environments, so the context transfer ran at ~1.5 kB/s (CI never sees it: its checkout has no
    `.pixi/`). `platform-ci-local` sidesteps it by exporting the git-tracked tree as the context;
    the `.dockerignore` shape itself is still a trap for anyone building by hand. Owner: steward.
+10. **Two of this pass's own misses were local-verification gaps, not CI-only facts.** The batch
+   push reddened the CFE net (`scripts/platform-ci-local.sh` ungoverned — the local spec-surface
+   verdict had run while the file was still untracked, and only tracked files are checked) and
+   the marshal coverage gate (`test_context_files_not_hand_edited` forbids any `CLAUDE.md` diff
+   against `origin/main`; the task's one-line mention moved to the developer guide). Rule for
+   the replay habit: `git add` new files before any surface verdict, and run
+   `pyforge-<station>-test` for every station whose tree the batch touches — the coverage gate
+   counts a memlog move as touching that station. Owner: this document's author (memory), and
+   marshal for the guard's blast radius (any PR touching marshal and `CLAUDE.md` together reds).
+11. **Whole-branch diff guards are a fleet-wide trap.** Twenty-two meta test files across all
+   eight stations assert `git diff origin/main` is empty for the CFE surface, `CLAUDE.md` /
+   `AGENTS.md`, or `src/platform` — story-time invariants ("11.1 must not edit the platform",
+   "Wave A must not edit CLAUDE.md") frozen as permanent tests, so every station suite reds on any
+   later branch that legitimately carries a sanctioned CFE retro, platform work, or a context-file
+   edit. This pass scoped the copies that fired (marshal, steward, atlas, mason: CFE guards accept
+   a `retro:` commit that moves the CHANGELOG; mason's story guards check per commit that touches
+   mason's own source). The remaining copies should move to one shared helper in
+   `pyforge-testing-kit` rather than be patched file by file. Owner: pyforge-testing-kit.
 
 ## Acceptance verdict
 
