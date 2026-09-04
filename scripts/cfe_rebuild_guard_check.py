@@ -209,8 +209,17 @@ def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
     Rule-2 retro: diff touches the CFE surface AND touches CFE_CHANGELOG with
     status A or M in the same commit. None if `git log` itself could not run
     (e.g. `since` unknown to this repo, or `root` is not a git repository) —
-    the exit-2 case."""
-    proc = _run(root, "log", "--format=%H", "--topo-order", f"{since}..HEAD")
+    the exit-2 case.
+
+    Merge commits never qualify (``--no-merges``). A merge restates the churn
+    of the commits it merged in, so counting it made the newest "retro" a SHA
+    nobody authored: every CFE retro PR went red on `main` the moment it merged
+    (the merge became newer than the pointer, forcing a post-merge re-point —
+    PR #1009 → 9ec3606b79), and on the `pull_request` event GitHub checks out a
+    synthetic `refs/pull/N/merge` commit, so a PR carrying a retro could never
+    match at all (run 33912193119, 2026-09-04). Squash merges are disabled in
+    this repo, so the authored retro commit is always in the range."""
+    proc = _run(root, "log", "--no-merges", "--format=%H", "--topo-order", f"{since}..HEAD")
     if proc is None or proc.returncode != 0:
         return None
     shas = [ln for ln in proc.stdout.splitlines() if ln.strip()]

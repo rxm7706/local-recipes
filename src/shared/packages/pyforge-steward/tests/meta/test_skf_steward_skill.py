@@ -115,6 +115,41 @@ def test_context_files_not_hand_edited():
         assert not diff.strip(), f"{name} changed without skf-export-skill"
 
 
+_CFE_SURFACE = ".claude/skills/conda-forge-expert"
+_CFE_CHANGELOG = f"{_CFE_SURFACE}/CHANGELOG.md"
+
+
+def _unsanctioned_cfe_commits(root: Path) -> list[str]:
+    """Commits on this branch (``origin/main..HEAD``) that touch the CFE surface
+    without being a sanctioned Rule-2 retro -- subject starts ``retro:`` AND the
+    CFE CHANGELOG moves in the same commit, the fleet rule
+    ``scripts/mason_cfe_surface_check.py`` enforces for mason. Merge commits are
+    skipped (they restate their constituents); uncommitted CFE edits count as
+    unsanctioned. A station story never touches the surface; a fleet hygiene
+    branch may carry the one sanctioned retro (2026-09-04, PR #1043)."""
+    shas = subprocess.check_output(
+        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _CFE_SURFACE],
+        cwd=root,
+        text=True,
+    ).split()
+    bad: list[str] = []
+    for sha in shas:
+        subject = subprocess.check_output(
+            ["git", "log", "-1", "--format=%s", sha], cwd=root, text=True
+        ).strip()
+        files = subprocess.check_output(
+            ["git", "show", "--format=", "--name-only", sha], cwd=root, text=True
+        ).split()
+        if not (subject.startswith("retro:") and _CFE_CHANGELOG in files):
+            bad.append(f"{sha[:10]} {subject}")
+    dirty = subprocess.check_output(
+        ["git", "diff", "--name-only", "HEAD", "--", _CFE_SURFACE], cwd=root, text=True
+    ).split()
+    if dirty:
+        bad.append("uncommitted: " + ", ".join(dirty))
+    return bad
+
+
 def test_conda_forge_expert_not_replaced():
     root = _repo_root()
     cfe = root / ".claude" / "skills" / "conda-forge-expert"
@@ -123,12 +158,11 @@ def test_conda_forge_expert_not_replaced():
     assert not (cfe / "active").exists()
     skill = (cfe / "SKILL.md").read_text(encoding="utf-8")
     assert "conda-forge" in skill.lower()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main...HEAD", "--", ".claude/skills/conda-forge-expert"],
-        cwd=root,
-        text=True,
+    bad = _unsanctioned_cfe_commits(root)
+    assert not bad, (
+        "conda-forge-expert must not be replaced in this story -- only a sanctioned "
+        f"`retro:` commit that moves its CHANGELOG may touch it: {bad}"
     )
-    assert not named.strip(), "conda-forge-expert must not be replaced in this story"
 
 
 def test_story_does_not_add_pyforge_under_src_platform():
