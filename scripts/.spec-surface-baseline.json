@@ -523,7 +523,7 @@
   "files": {
    "scripts/chain_currency_sweep_check.py": "76cdaf490ca548714b4a9b33320ffaae440c766c"
   },
-  "memlog": "d60c863fac321c899d084e5acaf95ecf44ad25fc"
+  "memlog": "07c92c44d749dd529383c6f0066bf39c0f15ca0a"
  },
  "pyforge-doctor/spec-deferred-work-resolution-sweep": {
   "files": {},
@@ -623,6 +623,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_diagnose.py": "a61c828a0a252d9310fc6c0633e59fa7c56710d2",
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_monitor.py": "977a5af6147ab89c8f77f0a841bd1189bab1bd38",
    "src/shared/packages/pyforge-doctor/tests/unit/test_detector_incident_log.py": "49dedbcbf7e445a8f46ebcc6f5e4ca4abbcd5113",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py": "9e0af2ebdd52c0ad532106e8a05ee8ede185cbf3",
    "src/shared/packages/pyforge-doctor/tests/unit/test_fleet_surface.py": "38b11bb8887fbcee9b7abe5dab468d8ec0530754",
    "src/shared/packages/pyforge-doctor/tests/unit/test_hooks_plugins.py": "8b40085dddca5d194e382b66d0d44e090f2bd11f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_hygiene_definitions.py": "1fc1a64ed2709b72d9529e001c41357b4754a3e6",
@@ -660,7 +661,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "d35600b30cb234c34e3d95a7df53c8e8f5f06561"
+  "memlog": "eac6775060b1254b7bd2ec3b4e3701a7e691ee4a"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2726,9 +2727,9 @@
    "docs/dashboard/kedro-viz/favicon.ico": "76fc39fae24f8b2148f44e4d151967f7b7fa5c62",
    "docs/dashboard/kedro-viz/index.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081",
-   "scripts/fleet_scan.py": "9627a6cd6880cf294685efc0c488e739f1fc5a38"
+   "scripts/fleet_scan.py": "a1082ca13b12d56cc880d110a467f9bfb457b6d1"
   },
-  "memlog": "2a89a04bd237f050f1d736b354aecbe28d812e6a"
+  "memlog": "f3636969c0bf938f70ef538c331e5b81f8ca03f2"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},

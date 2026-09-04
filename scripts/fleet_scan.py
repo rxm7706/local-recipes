@@ -2164,7 +2164,17 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
 # `backfilled` describes true history (a chain retro-fitted after the fact) while this
 # describes a contract that has quietly gone out of date.
 _FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "prd"),
-          ("arch", "epics"), ("epics", "sprint"), ("code", "retro"))
+          ("arch", "epics"), ("code", "retro"))
+# `("epics", "sprint")` deliberately excluded (2026-09-04): the tracked sprint ledger is a
+# GENERATED twin of the Tier-3 feed with no frontmatter, so its `updated` is git last-touch,
+# and `sprint-ledger-sync` writes nothing when no status changed. On an idle station the
+# ledger therefore cannot move, and any currency-only epics re-stamp left a permanent
+# "epics newer than sprint" finding (scribe, 2026-09-04) that no honest act could clear --
+# the runbook's "self-heals, the ledger stamps daily" premise does not hold. The question
+# the edge asked -- did the ledger follow the epics? -- is answered exactly, by content,
+# by chain-completeness INV-B (epics.md story ids == ledger keys, both directions), which
+# fires the moment a story is minted without its key. The sprint stage still counts for
+# layer presence and shelf life.
 # `("prd", "gates")` deliberately excluded: a readiness report is a point-in-time snapshot
 # of a check that ran once, not a living document meant to track the PRD's every touch --
 # an administrative PRD bump does not mean the check needs re-running. `_SHELF_LIFE_DEFAULT`
