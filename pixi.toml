@@ -685,6 +685,20 @@ cmd = "python -m pytest tests/packaging -q"
 description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
 cmd = "python -m pytest tests/scripts -q"
 
+# The Detectors workflow's environment (operator decision 2026-09-04, PR #1043): pixi
+# first, pip only as the documented fallback in .github/workflows/detectors.yml.
+# Deliberately tiny -- the repo-scope detectors are pyforge-doctor (+ its package
+# run-deps: python>=3.14, jsonschema, pyyaml, mcp, pyforge-core), ruamel.yaml for the
+# CFE catalog generator that failure_catalog_check shells out to, and playwright-python
+# for check-layout's browser probe. No pytest/hatchling: this env RUNS detectors; it
+# builds and tests nothing (that is `pyforge-doctor`). One lock, one authority: the
+# pip fallback list in the workflow mirrors this table and exists only for a runner
+# where pixi cannot be set up.
+[feature.detectors.dependencies]
+pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg; its run-deps bring python, jsonschema, pyyaml, mcp, pyforge-core
+"ruamel.yaml" = ">=0.18.17"       # failure_catalog_generator.py, the subprocess behind failure_catalog_check (missing -> UNKNOWN, run 33906009816)
+playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -> cannot-measure, never a false green)
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -727,6 +741,7 @@ pyforge-atlas = { features = ["pyforge-atlas"], no-default-feature = true }
 # [dependencies]; carries only the built pyforge-doctor package + its conda
 # run-deps + pytest — mirrors pyforge-warden's/pyforge-atlas's lean shape.
 pyforge-doctor = { features = ["pyforge-doctor"], no-default-feature = true }
+detectors = { features = ["detectors"], no-default-feature = true }  # the Detectors workflow's locked env (pixi first, pip fallback) -- PR #1043
 # Lean scribe env (Story 1.1, pyforge-warden mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.

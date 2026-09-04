@@ -62,6 +62,8 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("kedro-viz-publish.yml setup-pixi", ".github/workflows/kedro-viz-publish.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
+          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("herald-live-demo.yml setup-pixi (3 jobs)", ".github/workflows/herald-live-demo.yml",
           r"pixi-version: v" + _PIXI_VERSION, hits=3, kind="exact"),
     _site("sync-pypi-mappings/action.yml setup-pixi", ".github/actions/sync-pypi-mappings/action.yml",
