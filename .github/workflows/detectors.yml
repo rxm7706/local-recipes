@@ -88,9 +88,13 @@ jobs:
       # run-dependency of pyforge-doctor -- a workspace-local path package,
       # not on PyPI, so it must be pip-installed first (stdlib-only leaf,
       # same plain-pip treatment) or pip's resolver 404s trying to fetch it.
+      # failure_catalog_check shells out to the CFE skill's
+      # failure_catalog_generator.py, which imports ruamel.yaml (the round-trip
+      # parser; floor from pixi.toml). Without it the detector reports UNKNOWN
+      # (exit 2 — never a false green), as run 33906009816 did on 2026-09-04.
       - name: Install detector dependencies
         run: |
-          python -m pip install --quiet pyyaml playwright
+          python -m pip install --quiet pyyaml playwright "ruamel.yaml>=0.18.17"
           python -m pip install --quiet ./src/shared/packages/pyforge-core
           python -m pip install --quiet ./src/shared/packages/pyforge-doctor
 
