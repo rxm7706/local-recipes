@@ -1,10 +1,10 @@
 ---
-status: in-progress
+status: shipped
 implemented_by: bmad-quick-dev
-shipped_ref: "langflow-suite PR #33972 (draft, all CI legs green); ~17 closure PRs merged, ~30 open-green — live detail in § ⚡ CURRENT STATE"
+shipped_ref: "conda-forge/langflow-feedstock (graduated; v1.11.4 as of 2026-08-20 addendum). Residue: DW-FU-10-4 cp314 onnxruntime — live detail in § ⚡ CURRENT STATE"
 scope: full-closure
 submission_started: 2026-06-24
-spec_updated: 2026-07-02
+spec_updated: 2026-09-03
 ---
 # Tech Spec: langflow-suite on conda-forge (submission + external-skew remediation)
 
