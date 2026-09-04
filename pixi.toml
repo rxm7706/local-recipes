@@ -389,9 +389,9 @@ gunicorn = ">=26.2.0"
 django-anymail = ">=15.1"
 # formerly requirements/local.txt (now pixi-owned)
 werkzeug = ">=3.1.8"
-watchdog = ">=6.0.0"                    # werkzeug[watchdog]
+watchdog = ">=6.0.0"              # werkzeug[watchdog]
 ipdb = ">=0.13.13"
-psycopg = ">=3.3.4"                 # psycopg 3; 3.2+ for PostgreSQL 17 / libpq 17. Conda ships the C extension (PyPI extra [binary]).
+psycopg = ">=3.3.4"               # psycopg 3; 3.2+ for PostgreSQL 17 / libpq 17. Conda ships the C extension (PyPI extra [binary]).
 watchfiles = ">=1.2.0"
 mypy = ">=2.3.1"
 django-stubs = ">=6.1.0"          # compatible-mypy extra is mypy, already pinned
@@ -399,7 +399,7 @@ pytest = ">=9.1.1"
 pytest-sugar = ">=1.1.1"
 sphinx = ">=9.1.0"
 sphinx-autobuild = ">=2025.8.25"
-ruff = ">=0.16.5"
+ruff = ">=0.16.6"
 coverage = ">=7.16.0"
 djlint = ">=1.45.0"
 pre-commit = ">=4.6.2"
@@ -458,10 +458,10 @@ cachebox = ">=5.2.3"
 [feature.pyforge-mason.dependencies]
 pyforge-mason = { path = "src/shared/packages/pyforge-mason" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
-pyyaml = ">=6.0.3"                       # PyYAML -- Story 4.4's engines/condalock.py::check() metadata.content_hash parser (also a package run-dep; mirrors [feature.pyforge-doctor.dependencies]'s identical line)
-hatchling = ">=1.32.0"                   # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
+pyyaml = ">=6.0.3"                # PyYAML -- Story 4.4's engines/condalock.py::check() metadata.content_hash parser (also a package run-dep; mirrors [feature.pyforge-doctor.dependencies]'s identical line)
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."
@@ -493,14 +493,14 @@ cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 [feature.pyforge-steward.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: budget.py/keys.py's mandatory run-dep (atomic_write)
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
-django = ">=5.2.17,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
-channels = ">=4.3.2,<5.0"                 # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
-daphne = ">=4.2.3,<5.0"                   # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-asgiref = ">=3.12.1,<4.0"               # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
-channels_redis = ">=4.3.0,<5.0"      # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
+django = ">=5.2.17,<6"            # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
+channels = ">=4.3.2,<5.0"         # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
+daphne = ">=4.2.3,<5.0"           # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+asgiref = ">=3.12.1,<4.0"         # Story 9.5: load-bearing, not transitive (AD-8's WSGI->ASGI adapter + database_sync_to_async) -- floor is the architecture Stack table's own quote of daphne's transitive requirement. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
+channels_redis = ">=4.3.0,<5.0"   # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -569,7 +569,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # St
 # Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
-copier = ">=9.18.1"
+copier = ">=9.18.1"               # Library and command-line utility for rendering projects templates.
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -654,7 +654,7 @@ cmd = "marshal config"
 hatchling = ">=1.32.0"            # Python build backend (conda + wheel/sdist)
 python-build = ">=1.6.0"          # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                # test runner
-"ruamel.yaml" = ">=0.19.1"       # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
+"ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
 pixi-build-python = ">=0.8.6"     # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.6"  # pixi build backend -> recipe-driven .conda
 twine = ">=7.0.0"                 # PyPI upload
@@ -1472,7 +1472,7 @@ pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerab
 bandit = ">=1.9.4"                # Security linter for Python code
 pip = ">=26.2.1"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
-setuptools-scm = ">=10.2.2"       # Version metadata from VCS tags
+setuptools-scm = ">=10.2.3"       # Version metadata from VCS tags
 hatchling = ">=1.32.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.6.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=7.0.0"                 # PyPI artifact uploader
@@ -1517,7 +1517,7 @@ py-rattler-build = ">=0.72.2"     # Python bindings for rattler-build
 nebi-cli = ">=0.14"               # Local-first workspace management for Pixi
 #nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
 ## BMAD Method + loop orchestration (docs/specs/bmad-loop-adoption.md)
-bmad-method = ">=6.11.0"       # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
+bmad-method = ">=6.11.0"          # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
 # tmux lives in the linux-64/osx-arm64 target tables (no win-64 build; bmad-loop is Linux/macOS — Windows via WSL)
 # BMAD-METHOD: Agentic AI‑SDLC: AI Driven Agile Development
 bmad-builder = ">=2.2.2"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
@@ -1547,9 +1547,9 @@ pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.no
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
 #pyarrow = ">=13.0.0"              # Apache Arrow Python bindings
 pyarrow-all = ">=24.0.0"          # PyArrow with all optional extras (parquet, datasets, …)
-dagster = ">=1.13.20"             # The data orchestration platform built for productivity.
-dagster-pipes = ">=1.13.20"       # Toolkit for Dagster integrations with transform logic outside of Dagster
-dagster-webserver = ">=1.13.20"   # Web UI for dagster.
+dagster = ">=1.13.21"             # The data orchestration platform built for productivity.
+dagster-pipes = ">=1.13.21"       # Toolkit for Dagster integrations with transform logic outside of Dagster
+dagster-webserver = ">=1.13.21"   # Web UI for dagster.
 dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 # --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
 # dbt trio: UNBLOCKED 2026-08-30. Was blocked by a `click` conflict inside THIS
@@ -1559,8 +1559,8 @@ dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pan
 # unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
 # (nothing here invokes it; it lives on in the grayskull env) rather than
 # waiting on the feedstock fix.
-dbt-core = ">=1.12.3"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
-dbt-duckdb = ">=1.11.0"            # dbt DuckDB adapter
+dbt-core = ">=1.12.3"             # With dbt, data analysts and engineers can build analytics the way engineers build applications.
+dbt-duckdb = ">=1.11.0"           # dbt DuckDB adapter
 dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
 # dlt: genuinely blocked on python 3.14, in two stages.
 # (1) conda-forge dlt is 1.28.2, which caps `python >=3.10,<3.14`. Upstream dlt
@@ -1632,7 +1632,7 @@ office2pdf = ">=0.6.7"            # DOCX/XLSX/PPTX -> PDF (pure Rust)
 olefile = ">=0.47"                # OLE2 / old-style Microsoft Office file parser (used for legacy .doc loader in markitdown)
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
-pandoc = ">=3.11"               # Universal document format converter
+pandoc = ">=3.11"                 # Universal document format converter
 pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-backed)
 "pdfminer.six" = ">=20260107"     # PDF parsing library for text extraction (alternative to PyMuPDF)
 pdfplumber = ">=0.11.10"          # Extract text, tables, and metadata from PDFs
@@ -1662,7 +1662,7 @@ ibis-postgres = ">=12.0.0"        # Ibis backend for PostgreSQL
 ibis-mssql = ">=12.0.0"           # Ibis backend for Microsoft SQL Server
 ibis-oracle = ">=12.0.0"          # Ibis backend for Oracle Database
 #pydantic = ">=2.13.4"             # type-hint-driven data validation
-ruff = ">=0.16.5"                 # fast Rust-based Python linter + formatter
+ruff = ">=0.16.6"                 # fast Rust-based Python linter + formatter
 pyright = ">=1.1.411"             # Microsoft's static type checker for Python
 mypy = ">=2.3.1"                  # static type checker for Python
 pyrefly = ">=1.2.0"               # Meta's fast Rust-based Python type checker
@@ -1695,8 +1695,8 @@ langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 #langflow = ">=1.10.3"             # LangChain visual workflow builder,   name: bcrypt > "5.0.0", #setuptools = ">=81.0.0", #rich = ">=14.3.4"
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=2.1.1"                     # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
-ollama = ">=0.32.15"               # Ollama Go server (local LLM runtime)
+mcp = ">=2.1.1"                   # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
+ollama = ">=0.32.15"              # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=2.38.0"          # Pydantic-AI agent framework
 "llama.cpp" = ">=10751"           # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
@@ -1849,7 +1849,7 @@ bmad-suite = ">=2026.9.1"         # SelfExplainML metapackage (spec-bmad-suite-m
 python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.78.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
-pip = ">=26.2.1"                    # Python package installer
+pip = ">=26.2.1"                  # Python package installer
 uv = ">=0.12.9"                   # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
@@ -2013,10 +2013,10 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: admission.py/lasuite.py/basilisk.py/migration_status.py/refresh.py's mandatory run-dep (atomic_write)
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner (kedro-test)
-kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner (kedro-test)
+kedro-viz = ">=12.4.0"            # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
 # AUD-ATLAS-010 (2026-07-27): G1 `wasm-smoke` + the D2 dashboard e2e test drive headless
 # Chromium. TEST-ONLY — deliberately NOT package run-deps (the shipped package never drives
 # a browser), so they live here rather than in the member pixi.toml run-dependencies.
@@ -2037,17 +2037,17 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # real La Suite/Wagtail opener for the attended DW-H3 bring-up (it lives under tools/, outside
 # the no-inline-IO scan root, so package code still imports no HTTP client — AC-2). Named here
 # so pruning the starlette test never takes this declaration with it and breaks the bring-up.
-httpx = ">=0.28.1"
-mcp = ">=2.1.1"                  # steward 21.2: official SDK for atlas MCP host face (no fastmcp in this env)
+httpx = ">=0.28.1"                # A next-generation HTTP client for Python.
+mcp = ">=2.1.1"                   # steward 21.2: official SDK for atlas MCP host face (no fastmcp in this env)
 # Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
 # pyproject.toml runtime dep. SelfExplainML conda (not conda-forge). Same floor
 # as [feature.local-recipes.dependencies]. See
 # _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
-kedro-skills = ">=0.1.1"
+kedro-skills = ">=0.1.1"          # Distribute AI coding skills to Kedro projects.
 # AUD-ATLAS-010: semantic/models.py imports boring_semantic_layer at module
 # level. TEST/env supply only — not a pyforge-atlas package run-dep. Conda
 # from SelfExplainML (conda-forge still at 0.2.0). Same floor as local-recipes.
-boring-semantic-layer = ">=0.2.0"
+boring-semantic-layer = ">=0.2.0" # A boring semantic layer built with ibis
 
 [feature.pyforge-atlas.target.linux-64.dependencies]
 # Story 20.1 (CAP-5, `query-plane-face` ruling 2026-08-26): Mosaic duckdb-server —
@@ -2164,11 +2164,11 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built con
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-3/CAP-4: verdict.py's Lattice + __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...) -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: first non-seed consumer station imports the shared kit (test-time only; not a package run-dep)
-mcp = ">=2.1.1"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
-pyyaml = ">=6.0.3"                        # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
+mcp = ">=2.1.1"                   # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
+pyyaml = ">=6.0.3"                # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
 # --- pyforge-scribe (Scribe): pixi build workspace member (warden mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-scribe (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2181,10 +2181,10 @@ pytest = ">=9.1.1"                       # test runner
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
-psycopg = ">=3.3.4"                        # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); 3.2+ for PostgreSQL 17 / libpq 17
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
+psycopg = ">=3.3.4"               # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); 3.2+ for PostgreSQL 17 / libpq 17
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
 # --- pyforge-herald (Herald): pixi build workspace member (warden/atlas mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-herald (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2199,12 +2199,12 @@ pytest = ">=9.1.1"                       # test runner
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
-mcp = ">=2.1.1"                         # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
-httpx2 = ">=2.12.0"                      # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
-daphne = ">=4.2.3"                   # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
+mcp = ">=2.1.1"                   # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
+httpx2 = ">=2.12.0"               # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
+daphne = ">=4.2.3"                # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
 # Story 14.2: deck_qa.py's headless-render gate drives Chromium via playwright
 # and composes a Pillow contact sheet from the captured PNGs. BOTH playwright
 # entries are required and are different things: conda-forge `playwright`
@@ -2212,10 +2212,10 @@ daphne = ">=4.2.3"                   # Story 13.6: the ASGI host `webhook_host.p
 # while the Python bindings `import playwright` come from `playwright-python`
 # -- declaring only one resolves cleanly and still fails at import (mirrors
 # [feature.pyforge-atlas.dependencies]'s own AUD-ATLAS-010 comment).
-playwright = ">=1.62.1"                  # CLI + browser driver
-playwright-python = ">=1.62.0"           # the `import playwright` bindings
-pillow = ">=12.3.0"                      # Pillow -- render_gate's contact-sheet compositing
-python-pptx = ">=1.0.2"                  # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
+playwright = ">=1.62.1"           # CLI + browser driver
+playwright-python = ">=1.62.0"    # the `import playwright` bindings
+pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
+python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-core (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2232,9 +2232,9 @@ python-pptx = ">=1.0.2"                  # Story 15.1: pptx_pipeline.py's templa
 # _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.
 [feature.pyforge-core.dependencies]
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # -> built conda pkg
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.6.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.6.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
 description = "Run the pyforge.doctor test suite"
@@ -2319,12 +2319,12 @@ depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
 [feature.pyforge-testing-kit.dependencies]
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 43.2: station API contract test
-django = ">=5.2.17,<6"  # Story 43.2: portal wrapper contract test (django-pyforge via PYTHONPATH)
-pyjwt = ">=2.13.0"
-cryptography = ">=50.0.1"
-hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
-python-build = ">=1.6.0"                 # PyPA `python -m build` frontend (wheel + sdist)
-pytest = ">=9.1.1"                       # test runner
+django = ">=5.2.17,<6"            # Story 43.2: portal wrapper contract test (django-pyforge via PYTHONPATH)
+pyjwt = ">=2.13.0"                # JSON Web Token implementation in Python
+cryptography = ">=50.0.1"         # Provides cryptographic recipes and primitives to Python developers
+hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.6.0"          # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-testing-kit.tasks.pyforge-testing-kit-test]
 description = "Run the pyforge.testing_kit test suite"
