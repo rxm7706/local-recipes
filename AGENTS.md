@@ -5,6 +5,58 @@ This is the **framework-neutral** entry point for any coding agent or agentic fr
 It is intentionally tool-agnostic: **everything starts with a Dream; BMAD turns it into a
 spec; the spec drives the build — the agent/framework is interchangeable.**
 
+<!-- bmad:context -->
+<!-- Verified 2026-09-04 against bd37dfd607. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+
+## local-recipes (PyForge)
+
+A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) and the PyForge estate: a Django + Wagtail host at `src/platform/` plus eight `pyforge-<station>` packages and their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). Planning is BMAD: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`. The lasting root is `python-foundry`; that cutover is under contract in PR #1041 (`spec-python-foundry-cutover`, Epic 44, every story `blocked`) and not started.
+
+## Policy
+
+- Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling rejects it.
+- Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first. Never author a new file under `docs/specs/` (legacy).
+- Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`. Exception: `spec-pyforge-unifying-strategy` is hand-edited past its memlog; never re-derive it.
+- Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e local-recipes sprint-ledger-sync -- --project <station>`.
+- Never track anything under `implementation-artifacts/`; it is Tier 3 and gitignored.
+- Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` and write physical `_bmad-output/projects/<slug>/` paths.
+- Never run a bare `spec_surface_check.py --write-baseline`; stamp scoped with `--spec <project>/<spec>` after `git add`, from a clean tree.
+- `src/platform/` never imports `pyforge.*`; reach station code through `pyforge.core.station_port`. No `services/` or `:800x` process tree.
+- Any PR touching a path outside `recipes/` gets the `maintenance` label. A `pixi.toml` change regenerates `environment.yaml` in the same PR (`pixi project export conda-environment -e build > environment.yaml`); that check ignores the label.
+- Merge with `gh pr merge --merge`, never squash. Create with `gh pr create --repo rxm7706/local-recipes`. TODO: disable squash merges in the repository settings; this line goes when that lands.
+- Commit messages carry no `Co-Authored-By` line and no AI attribution. TODO: a `commit-msg` hook in the pre-commit set; this line goes when it lands.
+- Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
+- Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
+- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` or `.claude/skills/pyforge-mason/` path.
+
+## Where things are
+
+- Recipe lifecycle: `.claude/skills/conda-forge-expert/SKILL.md`. Invoke the skill before any conda work; every conda-forge effort closes with a retro that edits that skill and its `CHANGELOG.md`.
+- Station code: read `.claude/skills/pyforge-<station>/SKILL.md` before touching `src/shared/packages/pyforge-<station>/`; use the CLI grammar, never `pyforge.<station>` internals.
+- Architecture invariants and naming (station token, `python-<role>-<class>`, id prefixes, ledger keys): `planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` under `pyforge-steward`; cite `canopy AD-n`, `pap:AD-n` for the host, and `fnd:AD-n` for the cutover spine once PR #1041 merges.
+- Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
+- Governance: `docs/governance/`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
+
+## Running and verifying
+
+- The merge gate is `detectors-ci` measured as no new findings against `main`. It is red at `main` today (pre-existing pin drift and three ungoverned scripts), so diff against `main`; do not expect green.
+- Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit.
+- Before any ledger write: `sprint-ledger-sync -- --project <station> --repair-feed`, then `story-status-check`; a Tier-3 feed behind its tracked twin makes a bare sync refuse.
+- Lint and types are per package (`[tool.ruff]`, `[tool.mypy]` in each `pyproject.toml`); `src/platform` still targets py312 while the interpreter is 3.14. TODO (decided 2026-09-04, not landed): repo-level `ruff` and `mypy` pixi tasks, a `.pre-commit-config.yaml`, mypy strict for `pyforge-core`, py314 targets, and a target-version registry check like `pixi-version-check`. Do not invent these invocations.
+- BMAD skill renders need `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` in this shell.
+
+## Known pitfalls
+
+- Run `uv run` and every pixi task from the repo root; from a package directory `uv run` creates a stray `.venv` there (caught 2026-09-04).
+- A merged story left at `backlog` in a ledger respawns on every drain; promote it with `sprint-ledger-sync` before landing.
+- Unauthenticated GitHub probes fail open (`ok` at a 0/60 rate limit); check `gh api rate_limit` before trusting a green drift verdict.
+- `--write-baseline` reads the working tree; a dirty checkout bakes uncommitted content into the baseline.
+- Squash subjects break merge detection; `git merge-base --is-ancestor` is the proof a story landed.
+- `.cmd` shims in `build.bat` need `call`, or the parent script exits.
+- Marshal's `Deps:` parser is station-local; a cross-project gate is a ledger `blocked` row the operator flips.
+
+<!-- /bmad:context -->
+
 ## Dream-driven: where work starts
 
 **Every deliverable starts as a Dream in `docs/dreams/*.md`** — the raw, pre-technical aspiration
