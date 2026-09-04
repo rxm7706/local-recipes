@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: '2026-08-26'
+updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1043; no AD added, changed, or removed.
 currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
