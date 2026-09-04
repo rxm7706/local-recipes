@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 239
+# stories: 255
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -143,6 +143,20 @@ development_status:
   43-4-golden-path-cd-by-digest: done
   43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: done
+  44-1-the-move-list-manifest: blocked
+  44-10-archive-local-recipes: blocked
+  44-11-windows-native-estate: blocked
+  44-12-cutover-flag-and-replay-harness: blocked
+  44-13-memlog-fidelity: blocked
+  44-14-rebuild-harness-and-oracle-gate: blocked
+  44-2-the-red-team-document-fixes: blocked
+  44-3-open-the-foundry: blocked
+  44-4-fold-the-packages: blocked
+  44-5-move-the-estate: blocked
+  44-6-cfe-comes-home: blocked
+  44-7-the-factory-island: blocked
+  44-8-the-working-set: blocked
+  44-9-mason-submits-to-conda-forge: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
@@ -243,6 +257,8 @@ development_status:
   epic-42-retrospective: optional
   epic-43: done
   epic-43-retrospective: optional
+  epic-44: backlog
+  epic-44-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

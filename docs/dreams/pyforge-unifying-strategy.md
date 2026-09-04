@@ -101,14 +101,18 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
 - **Python floor.** **Decided 2026-09-02 (hybrid):** one interpreter `3.14.*` for every env
   once Mason 13.1 (`langflow-base` `onnxruntime <1.24`) and 13.2 (`dbgpt-client`
   `sqlalchemy <2.0.29`) land; steward **43.6** flips the pins. `mcp-host` stays — it isolates
-  `mcp` 2.x from langflow's `mcp <2` pin, not the interpreter. Until 43.6: no silent raise.
+  `mcp` 2.x from langflow's `mcp <2` pin, not the interpreter. **43.6 shipped 2026-09-03.**
   Measured matrix: § *Pixi environment matrix (measured)* below; regenerate with
   `python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`.
+- **Cutover is under contract (2026-09-04).** Gate closed 2026-09-03 (40 → 43 `done`,
+  Mason 13 `done`, 43.3–43.6 shipped). Plan: § *Cutover to `python-foundry`*. Spec:
+  `spec-python-foundry-cutover` (`fnd:CAP-1`..`7`, extends this chain). Steward **Epic 44**.
+  Phase 0 is outward and operator-confirmed; R-18..R-22 carry, never block.
 ## How to read this Dream (2026-08-26)
 
 Evergreen Foundry Dream. **Grounding** + **The Dream** (query plane) +
-**High-Leverage matrix** + **Constraints** + `spec-pyforge-unifying-strategy`
-are authoritative. Build-target mermaid only in the living file.
+**High-Leverage matrix** + **Constraints** + **Cutover to `python-foundry`** +
+`spec-pyforge-unifying-strategy` are authoritative. Build-target mermaid only in the living file.
 
 Historical 10-layer / `services/` / `:800x` illustration, sizing, station
 reviews, extended Grounding (2026-08-30), fleet evidence, and realization
@@ -393,6 +397,71 @@ Formula: `python-<role>-<class>`. Full map:
 [archive § Living names](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
 Destination: **`python-foundry`**; mount **`src/platform/`**; eight stations.
 
+## Cutover to `python-foundry` (build target, 2026-09-04)
+
+**Ruling.** The gate on this cutover (Epics 40 → 41 → 42 → 43, Mason 13.1 / 13.2) closed
+2026-09-03 — "Then cutover Phase 1 may start." Until this section nothing sat downstream of
+it: the phase table was filed in the archive under "do not build", with no Spec capability,
+epic, or story. **The first step is the contract, not the repo:** this section →
+`bmad-spec` derives **`spec-python-foundry-cutover`** (`extends:
+spec-pyforge-unifying-strategy`; CAP space **`fnd:CAP-1`..`fnd:CAP-7`**, one per phase — a
+third space beside `pap:` and bare Unifying `CAP-*`, never collapsed) →
+`bmad-correct-course` mints steward **Epic 44**. Creating the GitHub repo is the first
+*dispatch*, operator-confirmed at that moment, never auto-drained.
+
+**Decisions (operator, 2026-09-04).** Foundry is a **fresh empty repo**: history stays in
+archived `local-recipes` at a pinned SHA, the move-list records source SHAs, the deferred
+secret-leak rewrite is left behind by construction. Red-team MEDIUM band: **R-17** is Phase 3
+(44.7); **R-23 / R-24 / R-25** fold into 44.2; **R-18..R-22** stay open ledger entries owned
+by steward ("Epic 45 candidate") and never block Phase 1. The evergreen Spec is not
+re-derived: its SPEC.md is hand-edited past its memlog and `bmad-spec` is its single writer.
+
+| Phase | Story | Do | Done when | Gate |
+|---|---|---|---|---|
+| — | **44.1** move-list manifest | derive every tracked path → target-tree destination, `stays`, or `dies`, from the spec-surface map; never a hand list | 100 % of tracked files resolve to one destination; source SHA recorded | — |
+| — | **44.2** document fixes | R-23 `readOnlyRootFilesystem` + Windows / free-threading claims aligned to the Containerfile and `pixi.toml` platforms; R-24 Keycloak `26.4.0` pinned once; R-25 "no station-domain models on `django-<station>`"; `stack.md` / `convergence.md` floor `3.12.*` → `3.14.*` | edits land; `DW-RT-2026-09-02-7/-8/-9` resolved | — |
+| 0 — Open foundry (`fnd:CAP-1`) | **44.3** | create `rxm7706/python-foundry`, workspace `pyforge`, empty of recipes, lean `pixi.toml`, estate-only CI; `environment.yaml` export automated or not carried, never by hand (R-17a) | clone exists; CI green on the empty estate | **outward** — ledger `blocked` until the operator flips |
+| 1a — Fold the packages (`fnd:CAP-2`) | **44.4** | `src/shared/packages/` → `src/packages/`; a `pixi.toml` per `django-*`; drop `sys.path` inserts and Containerfile `COPY` of django src; `five_tier.py` `_packages_root` retargeted; package fold **only** | station envs solve; the host boots in foundry | deps 44.1, 44.3 |
+| 1b — Move the estate (`fnd:CAP-2`) | **44.5** | skills → `skills/` (`stations/`, `personas/`, `domain/`), `.claude/skills/` + `.cursor/skills/` as symlink adapters; BMAD, decks, dreams | adapters are symlinks; the BMAD chain resolves in foundry | deps 44.4; never blended with 44.4 |
+| 2 — CFE comes home (`fnd:CAP-3`) | **44.6** | authoritative skill / scripts / tools → `skills/domain/conda-forge-expert`; retros land in foundry; `pyforge/mason/resolve.py` chain (flag → `MASON_CFE_ROOT` → cwd walk) retargeted | no `MASON_CFE_ROOT` resolves to `local-recipes`; `mason-cfe-surface-check` + `cfe-rebuild-guard-check` pass | **Mason** (Rules 1 + 2); deps 44.5 |
+| 3 — Factory island (`fnd:CAP-4`, R-17b) | **44.7** | `factory/pixi.toml` + own lock; `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml`; recipes-only CI on `paths: factory/**` | `mason recipe build factory/recipes/…` matches today's CFE wrap; `DW-RT-2026-09-02-1` resolved | deps 44.3 |
+| 4 — Working set (`fnd:CAP-5`) | **44.8** | move in-flight + sole-maintainer recipes only | `factory/recipes/` is the working set; the 7,855-dir `recipes/` universe was not copied (count ceiling asserted) | deps 44.7 |
+| 5 — Mason → conda-forge (`fnd:CAP-6`) | **44.9** | `submit` → staged-recipes or bot fork; `update` → feedstock maintainer-edit | an agent PR never opens `local-recipes` (asserted on the submit path) | **outward + Mason**; deps 44.6, 44.8 |
+| 6 — Archive (`fnd:CAP-7`) | **44.10** | README superseded; disable Azure; pin last SHA; keep history; retire the worktree residue (268 registered, 85 GB under `.claude/worktrees/`) | default clone is foundry; `.steward` has one git root | **outward, irreversible**; deps all |
+
+**Order.** 44.13 → 44.1 ∥ 44.2 → operator flips 44.3 → 44.11 ∥ 44.12 ∥ 44.14 → capability
+realization in dependency order (moves replay, rebuilds drill) → **flag flip** when its dependencies
+are verified → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. Marshal's `Deps:` parser is station-local, so the Mason
+gate on 44.6 / 44.9 is ledger state, as 43.6 was behind Mason 13. Before any ledger write:
+`sprint-ledger-sync --project steward --repair-feed` (the Tier-3 feed stops at Epic 38; a
+bare sync refuses) then `story-status-check`.
+
+**Regenerative, not a move (operator 2026-09-04, iteration 3).** Dreams and memlogs are the only
+unconditional move; every rendered Spec, spine and epic is re-derived in foundry. Every capability
+is realized there by **rebuild** (a regeneration drill with the archive as oracle) or by **move**
+(a replay), decided per capability on scored signals, with `retire` for what no Dream wants
+(`fnd:AD-20..22`, `fnd:CAP-9`; Stories 44.13 memlog fidelity, 44.14 rebuild harness). This is the
+regenerable-factory drill at estate scale, and foundry's first fleet run is its own construction.
+
+**Flag-gated and regenerable (operator 2026-09-04, iteration 2).** The cutover is a flag,
+not a date: `pyforge.cutover_root` in the CAP-13 flag tree names the root of record; the
+transition point is its flip, after 44.5 today, and flipping back is the rollback. Until then
+this repo evolves normally; the plan is regenerated from scratch or appended with the delta at
+will, and every move is a replay into foundry (`fnd:AD-17`, `fnd:AD-18`). Stock Windows
+developers get a native estate through generated junction links and a remote host (`fnd:AD-19`);
+Stories 44.11 and 44.12 carry both.
+
+**Solutioning first (operator 2026-09-04).** BMAD Phase 3 only: the Spec, the cutover
+architecture spine (`architecture-python-foundry-cutover-2026-09-04`, cite `fnd:AD-n`)
+and Epic 44 are solutioning artifacts under review; the operator iterates on them before
+any implementation. Every 44.x is held ledger `blocked`; the flip to `backlog` is the move
+into Phase 4, story by story. No story spec is drafted until then.
+
+**Never.** No `services/` / `:800x` tree. The estate `pixi.lock` never absorbs the factory
+solver farm. Graphify move-list and package fold never in one story. No `CAP-20` in the
+evergreen Spec. The archive's phase table is the record of where this came from, not a
+second copy to maintain.
+
 ## Kinships
 
 [[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward; binds Mode A isolation) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[kedro-org-tooling-adoption]] (kedro-skills / kedro-mcp — authoring, not a second home) · [[pyforge-atlas]] (Kedro home, BSL, vss, plane writer) · [[marshal-token-economy]] (own Spec, CAP-1..CAP-13; five-layer agent-loop compression + retrieval, summarized as §6 above) · [[pyforge-scribe]] (three CAP-18 ports; ingest writes through GraphStore; 34.5 plane driver) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine; vizro-mcp authoring is shared) · [[pyforge-steward]] (deploy & secure hosting; go-sops/age; Vault profile) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine — no private Chroma for estate RAG) · [[db-gpt-django-plugin]] (DB knowledge base — SQL on the plane, not OLTP DSN) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (hook specs + plugins; not eight Kedro projects)
@@ -442,3 +511,19 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   `mcp-host` stays as MCP-SDK isolation (langflow pins `mcp <2`). Review S-5 / R-16 wording
   corrected. `DW-FU-10-4` bound to Mason 13.1.
 - **2026-09-03** — **43.1** archived historical topology (living Dream ≤400 lines). **43.2** shipped ``/stations/<name>/api/v<N>/``, ``pyforge.core.client``; Langflow off bare ``/api/v1``.
+- **2026-09-04** — Gate closed 2026-09-03: 43.3–43.6 shipped, Mason 13.1 / 13.2 done,
+  steward 196/196. Cutover promoted out of the archive into § *Cutover to `python-foundry`*
+  as the build target (43.1 had filed it under "do not build"). Operator rulings: fresh repo;
+  fold docs / carry ops. `spec-python-foundry-cutover` (`fnd:CAP-1..7`) derived; cutover architecture spine
+  (`fnd:AD-1..16`, iteration 1) and steward Epic 44 (44.1–44.10) decomposed as solutioning;
+  every story held `blocked` until the operator's review iterations close (Phase 3 → 4).
+- **2026-09-04 (iteration 2)** — Operator review of PR #1041: the cutover is a flag
+  (`pyforge.cutover_root`), the plan regenerates or appends, moves are replays; stock Windows
+  is a native estate with a remote host; adapters are generated per machine, SKF writes into
+  `skills/`, runtime state in `var/`. Spine `fnd:AD-17..19`, Spec `fnd:CAP-8`, Stories 44.11 /
+  44.12 (both `blocked`). Four open questions remain.
+- **2026-09-04 (iteration 3)** — Operator: Dreams only move; the cutover is regenerative —
+  every capability rebuilt or moved per a capability ledger, Dreams + memlogs as the seed,
+  the archive as oracle, per-capability freeze under the one flag. Spine `fnd:AD-20..22`,
+  Spec `fnd:CAP-9`, Stories 44.13 / 44.14 (`blocked`). Answered `planning-history-scope` and
+  `ingest-keys-import`; open: `repo-visibility`, `actions-minutes`.

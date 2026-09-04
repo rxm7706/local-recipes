@@ -1350,3 +1350,13 @@ correct-course. Record: `sprint-change-proposal-2026-09-02-red-team-critical.md`
 R-3 … R-16; R-17 … R-25 sit in the deferred-work ledger as `DW-RT-2026-09-02-*`. No FR
 changes; SPEC Constraints gained a dated Always/Never block. Order 40 → 41 → 42 → 43, all
 before cutover Phase 1. Record: `sprint-change-proposal-2026-09-02-red-team-high.md`.
+
+**2026-09-04 correct-course (foundry cutover — solutioning):** the 40 → 43 + Mason 13 gate
+closed 2026-09-03 with nothing downstream of it. The cutover is now under contract as a
+sibling Spec, `spec-python-foundry-cutover` (`fnd:CAP-1..7`, extends this chain), with its
+own architecture spine (`architecture-python-foundry-cutover-2026-09-04`, `fnd:AD-1..16`)
+and steward **Epic 44** (ten stories). **Phase 3 only:** every 44.x is ledger `blocked` while
+the operator reviews and refines the solutioning; no FR changes — the cutover is layout,
+not product scope, and this PRD's FRs are unaffected. R-17 is Story 44.7; R-23/24/25 fold
+into 44.2; R-18..R-22 carry as steward-owned ledger entries (Epic 45 candidate). Record:
+`sprint-change-proposal-2026-09-04-foundry-cutover.md`.

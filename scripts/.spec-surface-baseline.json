@@ -2802,7 +2802,7 @@
    "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "58200b6ade45dfd74349a2f7c51a55cea9d68125",
    "_bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml": "800edeb44cd031883735ca3825a11673d20c4754",
    "_bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml": "9d0fbf0e0e8d376d2710cf99044ec3344b0e1fce",
-   "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml": "b83d40be2413c44ea32f27ff71c3dc345891622a",
+   "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml": "780232501ab1b014cc1ee6b0a9031c22f44c4cdb",
    "_bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml": "fb660a99998425e9bed7c5322b3ce9d7658bc1db",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py": "aea6770d7627cc1caaed02e96447514285ceba1b",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py": "5bc9dc48af134f83ea37010c1aeb80e4bbd4f9fa",
@@ -2811,7 +2811,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__init__.py": "f9b68a9ff5fdbbe326318c42a250002fc77fb8df",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py": "8ab81b837d96803d2646023a0242d3f5d8cae9c3"
   },
-  "memlog": "2f2a291b88045e3f370409d37ad66c726c1d7ac2"
+  "memlog": "8ac55edda3cf1970de71d21765c455bf3eec8f49"
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
@@ -6199,6 +6199,10 @@
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
   "memlog": "403581212a5b38b639ca828bd3451c6d7757b825"
+ },
+ "pyforge-steward/spec-python-foundry-cutover": {
+  "files": {},
+  "memlog": "69b0bc18ef9f2fa3b0e158157c07e61570c0a05b"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {

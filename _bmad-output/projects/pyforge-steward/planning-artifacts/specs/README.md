@@ -14,6 +14,7 @@ This directory also holds Dream-level Specs for Steward-owned satellite
 Dreams (`spec-unified-container/SPEC.md`, `spec-bmad-module-provisioning/SPEC.md`,
 `spec-platform-image-one-pixi-env/SPEC.md` (`shipped`),
 `spec-mcp-era-isolation/SPEC.md` (`ready`; CAP-4 / Epic 35 cluster fail-loud),
+`spec-python-foundry-cutover/SPEC.md` (`ready`; `fnd:CAP-1..7`, Epic 44 cutover to `python-foundry`),
 `spec-build-league-scorecard/SPEC.md` (`draft`, Q5 parked),
 `spec-htap-query-plane/SPEC.md` (`archived` / absorbed — retirement record;
 query plane is unifying CAP-19 / Epic 34),
