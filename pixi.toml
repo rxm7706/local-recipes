@@ -1479,7 +1479,7 @@ twine = ">=7.0.0"                 # PyPI artifact uploader
 uv = ">=0.12.9"                   # Fast Rust-based Python package installer / resolver
 wheel = ">=0.48.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=12.3.1"                # Fast disk-efficient Node package manager
+pnpm = ">=12.3.2"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
