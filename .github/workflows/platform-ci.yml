@@ -704,10 +704,14 @@ jobs:
           docker build -f src/platform/compose/dbgpt/Containerfile -t "${{ env.PLATFORM_CI_SIDECAR_REF }}" .
           docker build -f src/platform/compose/mcp-host/Containerfile -t "${{ env.PLATFORM_CI_MCP_HOST_REF }}" .
 
+      # activate-environment puts the env's bin on PATH for the steps below;
+      # scripts/platform-golden-path-promotion.sh calls `warden` bare and
+      # died with "warden is required (pyforge-warden env)" without it.
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.78.0
           environments: pyforge-warden
+          activate-environment: pyforge-warden
           locked: true
           cache: true
 
