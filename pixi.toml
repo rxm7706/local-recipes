@@ -33,11 +33,11 @@ platforms = [
 ]
 
 [feature.python.dependencies]
-python = ">=3.14.6,3.14.*"        # Python language interpreter
+python = ">=3.14.7,3.14.*"        # Python language interpreter
 pixi = ">=0.78.0"                 # Pixi package & environment manager
 gh = ">=2.99.0"                   # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.61"            # Pythonic Git wrapper for complex repo interactions
-nodejs = ">=24.16.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
+nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 bmad-method = ">=6.11.0"          # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=1.0.4"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
@@ -213,12 +213,12 @@ elevenlabs = ">=1.52.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs
 # Floor 3.2 is the PostgreSQL 17 / libpq 17 line (encrypted cancel, chunked
 # results); conda-forge current is 3.3.x.
 psycopg = ">=3.2.10"
-httpx = ">=0.28.1"                 # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
-dlt = ">=1.30.0"                # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
+httpx = ">=0.28.1"                # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
+dlt = ">=1.30.0"                  # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
-pytest = ">=9.1.1"                   # Story 12.8: github_metrics dlt ingest tests
-duckdb = ">=1.5.5"              # Story 12.8: dry-run destination for github-metrics-dlt --dry-run
-wagtail = ">=7.4.3,<8.0"           # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host
+pytest = ">=9.1.1"                # Story 12.8: github_metrics dlt ingest tests
+duckdb = ">=1.5.5"                # Story 12.8: dry-run destination for github-metrics-dlt --dry-run
+wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host
 # Story 26.3 (FR-33, canopy AD-16): flag libraries on the env the platform
 # image consumes (`pixi install --frozen -e python-agent-platform`). Do not
 # author recipes here — OpenFeature is on SelfExplainML; cachebox 5.2.3 is
@@ -428,7 +428,7 @@ opentelemetry-instrumentation-celery = ">=0.65b0"
 opentelemetry-instrumentation-psycopg = ">=0.65b0"
 opentelemetry-instrumentation-redis = ">=0.65b0"
 # steward 20.1 / canopy AD-13: Lane 1 CMS (pytest must import wagtail)
-wagtail = "==7.4.3"
+wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host # Pin to LTS version for Django
 # steward 21.2 / canopy AD-5: official MCP SDK 2.x (dual-era). This env has no
 # fastmcp, so unlike [feature.local-recipes] it can take mcp 2.0.0.
 mcp = ">=2.1.1"
@@ -1838,7 +1838,7 @@ platforms = ["linux-64"]
 channels = ["conda-forge", "SelfExplainML"]
 
 [feature.bmad-suite-full.dependencies]
-python = ">=3.14.6,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
+python = ">=3.14.7,3.14.*"        # minimal python floor so the lean proof env below solves standalone (no other feature composed)
 bmad-suite = ">=2026.9.1"         # SelfExplainML metapackage (spec-bmad-suite-metapackage CAP-2) -- pulls all 13 active suite members at upstream-aligned pins
 
 [feature.local-recipes.pypi-dependencies]
