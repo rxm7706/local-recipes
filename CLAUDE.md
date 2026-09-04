@@ -42,6 +42,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 **Tests:**
 - CFE skill suite: `pixi run -e local-recipes test-skill` — scope with `--unit` / `--integration` / `--meta`, single test via `--keyword <expr>`; network tests are opt-in (`-m network`).
 - A PyForge station: `pixi run -e pyforge-<station> pyforge-<station>-test` (e.g. `pixi run -e pyforge-warden pyforge-warden-test`).
+- Platform CI, locally and for zero Actions minutes: `pixi run -e local-recipes platform-ci-local` replays `.github/workflows/platform-ci.yml` on this machine (the test job step for step, the three image builds, the container job's runtime smokes, golden-path-promotion + the deploy verifier) against an ephemeral PostgreSQL/Redis; `-- --test`, `--images`, `--container`, `--promotion` select stages, `--engine podman` the other engine. Run it before pushing any `src/platform` or Containerfile change.
 - Dashboard structural gate: `pixi run -e local-recipes dashboard-dryrun` — builds the Dashboard object offline, but also runs the Playwright e2e/ARIA suite, which launches a real local server (not fully offline despite the gate's name).
 
 **Health / status:**

@@ -56,8 +56,9 @@ last green, run 32667190614 on 2026-08-23):**
 | 20 | `tests/test_warden_portal_audit_start_get.py::_platform_python_rels` + Platform CI `test` job | the diff guard ran `git diff origin/main` and a depth-1 CI checkout has no such ref → `fatal: bad revision`, CalledProcessError | skips loudly without the base ref; the job fetches `origin/main` at depth 1 so the guard still runs |
 | 21 | Platform CI `container (podman)` | rootless podman ran out of runner disk committing the ~2 GB `python-agent-platform` layer (`no space left on device`); the docker leg fit | the runner's unused toolchains (~25 GB) are dropped before the image builds |
 | 22 | `.github/workflows/platform-ci.yml` (4 jobs), `platform-deploy.yml` | `setup-pixi` pinned `v0.77.0` against `requires-pixi >= 0.78.0` (the 2026-08-29 fleet bump missed them) — first reachable once `container` went green; `pixi-version-check` never saw these sites | pins to `v0.78.0`; both files registered in `scripts/pixi_version_registry.py` (4 + 1 hits) so the detector owns them |
+| 23 | `golden-path-promotion` job + `scripts/platform-golden-path-promotion.sh` (Story 43.4) | the job installed `pyforge-warden` without activating it (`warden is required`), then scanned `src/platform`, whose `pyproject.toml` declares no dependencies ("zero dependencies extracted", exit 1); and `set -e` around `warden scan` meant any non-clean verdict aborted the record it exists to write | env activated; the scan targets the workspace `pixi.toml` staged alone in a scratch dir (the image env is its `python-agent-platform` feature); the verdict is recorded with `warden_exit_code` / `warden_status` — today `indeterminate`, 329 components, vulnerability axis 0 assessed |
 
-Rows 1–5, 16–17 and 21–22 belong to the platform / fleet surface; rows 6–15, 18–20 are the
+Rows 1–5, 16–17 and 21–23 belong to the platform / fleet surface; rows 6–15, 18–20 are the
 platform host and its test suite. Rows 8, 10, 11, 15 are defects **introduced by this window's own stories**
 (42.5, the Lane-1 CAP-2 seeder, 42.x portal claims, the 1.4 loop-home lister) that the dormant CI
 never surfaced — the one finding no single story review could have shown.
@@ -103,6 +104,13 @@ the memlog moves and scoped stamps for every spec surface the fixes crossed, and
 None of the epic stories were re-implemented; the fixes are the smallest change that makes each
 gate true again, and the debt blocks (row 6) record exactly what was deferred and why.
 
+One thing this session added beyond fixes, at the operator's ask after rows 20–23 had cost four
+sequential Platform CI cycles for four one-line CI-only fixes: **`pixi run -e local-recipes
+platform-ci-local`** (`scripts/platform-ci-local.sh`) replays the workflow on the developer's
+machine — the test job step for step, the three image builds, the container job's runtime
+smokes, golden-path-promotion and the deploy verifier — against an ephemeral PostgreSQL/Redis,
+for zero Actions minutes. Rows 20–23 were re-verified through it before the final push.
+
 ## Previous-retro follow-through
 
 `retro-pyforge-steward-2026-08-31.md` carried **no action items** (its window was reconciliation
@@ -127,6 +135,29 @@ work that closed its own findings while landing). Nothing to check off; nothing 
    Liquibase changelog in the window's lineage; `db/sqlmigrate_extraction.py` already names the
    id CI expects. Proposed: the extraction gate refuses any `--changeset` line whose id is not in
    `sqlmigrate-map.yaml`. Owner: steward (the Story 27.2 / 41.3 lineage).
+6. **Marshal flake, not fixed here:** `tests/unit/test_harness_bmadbuild.py::test_dispatch_child_survives_via_new_session`
+   raised `ProcessLookupError` at `os.kill(result.pid, 0)` once in three Coverage-gates runs
+   (run 33918807089; green in 33916628261, 33917654671 and 5/5 locally). The detached `sleep 5`
+   child was already gone and reaped when probed; no sibling test kills process groups, and
+   `child_env` is a full custom env. Owner: pyforge-marshal — capture the child's log on
+   failure before hardening the assertion.
+7. **`golden-path-promotion` had never run.** It became reachable only once `container` went
+   green, then failed twice more on its own setup (stale `setup-pixi` pin, env not activated).
+   A job that is skipped by `needs:` for weeks is an unreviewed job; when Actions is re-enabled,
+   walk every `needs:`-gated job once by hand. Owner: steward (Platform CI).
+8. **The golden-path Warden verdict is `indeterminate` by construction (row 23).** Warden's
+   vulnerability axis feeds PyPI components only, maps no conda ecosystem, treats every
+   manifest range as `no-version`, rejects this workspace's `pixi.lock` (`unparsable-manifest`),
+   and no CI job provisions its offline OSV database (`OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY`
+   is unset everywhere). Until those land, the promotion record carries an honest
+   `indeterminate`, and `platform-deploy` must gate on `warden_status == "clean"` rather than on
+   the record's existence. Owners: pyforge-warden (lock reader + conda ecosystem + DB
+   provisioning) and steward (the deploy-side gate).
+9. **A raw `docker build .` from a developer checkout crawls for an hour.** `.dockerignore` excludes
+   `.pixi/*` and re-includes `.pixi/config.toml`; that negation stops BuildKit pruning the 32 GB of
+   environments, so the context transfer ran at ~1.5 kB/s (CI never sees it: its checkout has no
+   `.pixi/`). `platform-ci-local` sidesteps it by exporting the git-tracked tree as the context;
+   the `.dockerignore` shape itself is still a trap for anyone building by hand. Owner: steward.
 
 ## Acceptance verdict
 

@@ -7,7 +7,14 @@ set -euo pipefail
 PLATFORM_REF="${PLATFORM_REF:?PLATFORM_REF is required}"
 SIDECAR_REF="${SIDECAR_REF:?SIDECAR_REF is required}"
 MCP_HOST_REF="${MCP_HOST_REF:?MCP_HOST_REF is required}"
-WARDEN_TARGET="${WARDEN_TARGET:-src/platform}"
+# What Warden scans. `src/platform/pyproject.toml` declares no dependencies
+# (the image env is the `python-agent-platform` feature of the workspace
+# `pixi.toml`), so scanning src/platform yields "zero dependencies extracted"
+# and exit 1. Warden has no per-environment selector and its lock reader does
+# not accept this workspace's pixi.lock yet, so the honest target is the
+# workspace manifest alone, staged in a scratch dir so nothing else under the
+# repo root (symlinked skill trees, 7,800 recipes) enters discovery.
+WARDEN_TARGET="${WARDEN_TARGET:-}"
 OUT="${OUT:-}"
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -29,9 +36,28 @@ SIDECAR_DIGEST="$(image_digest "$SIDECAR_REF")"
 MCP_HOST_DIGEST="$(image_digest "$MCP_HOST_REF")"
 export PLATFORM_DIGEST SIDECAR_DIGEST MCP_HOST_DIGEST
 
-WARDEN_JSON="$(mktemp)"
-trap 'rm -f "$WARDEN_JSON"' EXIT
+SCRATCH="$(mktemp -d)"
+trap 'rm -rf "$SCRATCH"' EXIT
+if [ -z "$WARDEN_TARGET" ]; then
+  mkdir -p "$SCRATCH/workspace"
+  cp pixi.toml "$SCRATCH/workspace/pixi.toml"
+  WARDEN_TARGET="$SCRATCH/workspace"
+fi
+WARDEN_JSON="$SCRATCH/warden.json"
+# The verdict is RECORDED here, whatever it is; the deploy workflow is what
+# refuses a digest whose verdict is not clean. Warden exits non-zero for any
+# non-clean composed status (today: `indeterminate`, since its vulnerability
+# axis cannot yet assess conda-sourced components), so the exit code is
+# captured into the record instead of aborting the promotion.
+set +e
 warden scan "$WARDEN_TARGET" --format json >"$WARDEN_JSON"
+WARDEN_EXIT=$?
+set -e
+export WARDEN_EXIT
+if [ ! -s "$WARDEN_JSON" ]; then
+  echo "::error::warden produced no report (exit $WARDEN_EXIT)" >&2
+  exit 1
+fi
 
 python - "$WARDEN_JSON" "$OUT" <<'PY'
 import json
@@ -64,6 +90,8 @@ payload = {
     },
     "warden": json.load(open(warden_path, encoding="utf-8")),
 }
+payload["warden_exit_code"] = int(os.environ.get("WARDEN_EXIT", "0"))
+payload["warden_status"] = (payload["warden"].get("status") or {}).get("value")
 text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
 sys.stdout.write(text)
 if out_path:

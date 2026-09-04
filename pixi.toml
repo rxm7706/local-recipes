@@ -953,6 +953,10 @@ cmd = "python -m pyforge.doctor.sources ledger-regression"
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
 cmd = "python -m pyforge.doctor.sources check-layout"
 
+[feature.local-recipes.tasks.platform-ci-local]
+description = "Replay Platform CI (.github/workflows/platform-ci.yml) locally — the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier — against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host."
+cmd = "bash scripts/platform-ci-local.sh"
+
 [feature.local-recipes.tasks.fleet-picture]
 description = "PyForge fleet progress REPORT: per-station done / in-progress / projected / blocked, plus an ATTENTION block naming anything that needs a human (escalation, dead run, idle-with-backlog, open PR). Read-only and NEVER gating -- always exits 0, unlike the six detectors. Counts come from each station's TRACKED planning-artifacts/sprint-status-ledger.yaml (the twin of the gitignored Tier-3 feed), never from an ad-hoc regex over commit subjects and never from docs/dashboard/data.js, which lags until a merge to main. Running stations are detected live from `marshal status --format json`, so a finished run flips to `complete` on its own rather than rotting in a hardcoded list."
 cmd = "python scripts/fleet_picture.py"
