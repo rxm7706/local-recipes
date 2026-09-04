@@ -21,10 +21,21 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from pathlib import Path
 
-# .claude/skills/conda-forge-expert/scripts/ -> repo root (4 levels up)
-REPO_ROOT = Path(__file__).resolve().parents[4]
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from _paths import get_repo_root  # noqa: E402
+
+# _paths' marker walk (nearest ancestor with pixi.toml + .claude/), so the copy
+# of this module inside a compiled CFE slice -- two directories deeper -- confines
+# to the REAL recipes/ tree instead of a phantom .claude/skills/recipes/ (the
+# reproduced slice-2 divergence: a relative recipes/ path the live original
+# accepted and the compiled copy rejected; fixed v8.85.2). The parents[4] hop
+# survives only as the fallback for a copy that sits outside any checkout.
+REPO_ROOT = get_repo_root() or Path(__file__).resolve().parents[4]
 
 #: Default confinement root. Prefer :func:`recipes_root` — this constant does
 #: not honour ``CFE_RECIPES_ROOT``.

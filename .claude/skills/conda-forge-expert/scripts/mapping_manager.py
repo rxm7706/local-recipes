@@ -34,6 +34,7 @@ except ImportError:
 # the mapping cache (next run would see unparseable JSON and have to refetch
 # the full mapping from the network).
 sys.path.insert(0, str(Path(__file__).parent))
+from _paths import get_data_dir  # noqa: E402
 try:
     from _http import atomic_writer as _atomic_writer  # type: ignore[import-not-found]
 except ImportError:
@@ -59,8 +60,10 @@ except ImportError:
 
 
 def _get_data_dir() -> Path:
-    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
-    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+    """Skill-scoped data directory (.claude/data/conda-forge-expert/) via _paths'
+    marker walk, so the copy inside a compiled CFE slice resolves the SAME
+    directory (v8.85.2); the un-resolved parent hop is only the fallback."""
+    return get_data_dir() or Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
 
 
 # The location of our local data cache
