@@ -3826,12 +3826,12 @@
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "9a82fed5392f3c74b401fbe0c465241577fe2d4a",
+   "src/platform/Containerfile": "7e02771da662ddffe2ae53adf2da120aee3d0e73",
    "src/platform/README.md": "771d6da8f65c87a74a7bad38b65765b0036d52bc",
    "src/platform/compose/compose.yml": "7d4074edf17e817b5d40a0e217bd30fcc3ff8bcb",
-   "src/platform/compose/dbgpt/Containerfile": "bff7ae6b1c3e3fa08bb014d8e990c597f875171a",
+   "src/platform/compose/dbgpt/Containerfile": "c700f57e1078417e9db21b795af8367eec23e834",
    "src/platform/compose/keycloak/realms/platform-realm.json": "180b04e7be5e25480866ae10af3d1554406b4a63",
-   "src/platform/compose/mcp-host/Containerfile": "a16dc48ff41cdf0084e2dd704a3da634c1e93d73",
+   "src/platform/compose/mcp-host/Containerfile": "59200fde5b9149687adcf476401e20054ffe029e",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
    "src/platform/config/asgi.py": "4301a142c50575fccd3a6299373c505b110794ff",
    "src/platform/config/authorization/__init__.py": "7ea6e73b863ae18929f8a2db7bb5381af5c2fcb2",
@@ -3903,7 +3903,7 @@
    "src/platform/db/liquibase_update.py": "7684baff411dfe5124744b1d4d24e69f8e6bbe41",
    "src/platform/db/postgres_backup.py": "7fe5012fd5cd17293cdb73358f5ef7d4f812ebd4",
    "src/platform/db/sqlmigrate-map.yaml": "67f3b96864dddd8e38746ebab295928b841341c2",
-   "src/platform/db/sqlmigrate_extraction.py": "9de01a656a5ac8005be21f868fd4ab0488a972c9",
+   "src/platform/db/sqlmigrate_extraction.py": "10e18515ad3d90e2ca100613868254ff44cbe3a5",
    "src/platform/dbgpt_integration/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/dbgpt_integration/apps.py": "f07c0fa65e0d303e21f181c11d68aef0f4e2441d",
    "src/platform/dbgpt_integration/migrations/0001_create_dbgpt_schema.py": "3be3bdb56be63aff53176b66bde14e6615766281",
@@ -4074,7 +4074,7 @@
    "src/platform/tests/policy/test_liquibase_ddl_governance.py": "58a963e50bdd75bccc0e3d675c6de99a8f485f79",
    "src/platform/tests/policy/test_non_atomic_views.py": "5675fb430e7ab0b8007ae6e5a0bf0bc914bb75f7",
    "src/platform/tests/policy/test_openfeature_channel_policy.py": "a012ee20f327fa49a60f883e429deb7caffa1d33",
-   "src/platform/tests/policy/test_sqlmigrate_extraction.py": "91d3080cb8f5a9085f7d60c421835fd7c812b682",
+   "src/platform/tests/policy/test_sqlmigrate_extraction.py": "e7403ffe0235c444b932e0935fe9e2e28f14d244",
    "src/platform/tests/policy/test_test_databases_still_migrate.py": "2e7b1d80edb7035bc59582e8c58458db730b38b3",
    "src/platform/tests/policy/test_typing_policy.py": "b703b46e8dd7a0b27dd2fa32f8ff34e279a5ad09",
    "src/platform/tests/test_agent_rate_limits_and_run_bounds.py": "c49b1859f13ebbdac74ed414ce066e0194943a03",
@@ -4155,7 +4155,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8"
   },
-  "memlog": "32b8b412c88a38595e14fa13310fe5859b06a852"
+  "memlog": "faa8fab39911b73c0d7b9289dc85ac7e4d396bb7"
  },
  "pyforge-mason/spec-fleet-stewardship": {
   "files": {},
@@ -4854,9 +4854,9 @@
    "pixi.lock": "e5c21baee93411899ce941fe3e9873dbeb13b9f0",
    "pixi.toml": "70ef4d9e800ed122ff6f53867d810d02cf6050e7",
    "scripts/platform_image_pip_layer.py": "10b16d060483c3f6ca4ef20e321a2ca832d0c0a7",
-   "src/platform/Containerfile": "9a82fed5392f3c74b401fbe0c465241577fe2d4a"
+   "src/platform/Containerfile": "7e02771da662ddffe2ae53adf2da120aee3d0e73"
   },
-  "memlog": "d5c1bbc3fb9a59021c0673d319facebf37f96641"
+  "memlog": "e3aa11286526aa69d823e59a82cb97147475d1d1"
  },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
@@ -5881,7 +5881,7 @@
    "pixi.toml": "70ef4d9e800ed122ff6f53867d810d02cf6050e7",
    "scripts/build-pixi-mirror.py": "19b7af78744a66e0314975036187265dc750bb1f",
    "scripts/pixi_env_matrix.py": "f7d44b680f11958e2ba05228bb4b5df03ae101a1",
-   "scripts/platform-ci-local.sh": "124af09fb92e2718ea54074fd7fe59dc119ed4b1",
+   "scripts/platform-ci-local.sh": "76040a2427320ed5a3af29cf5a888b9ffce00bf1",
    "scripts/platform-deploy-verify-promotion.py": "21fe08d7ccdeebc7346b60fe589d00371691243c",
    "scripts/platform-golden-path-promotion.sh": "d272c95a085ebf39cf2409071710e03e706bf30a",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
@@ -5890,12 +5890,12 @@
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "9a82fed5392f3c74b401fbe0c465241577fe2d4a",
+   "src/platform/Containerfile": "7e02771da662ddffe2ae53adf2da120aee3d0e73",
    "src/platform/README.md": "771d6da8f65c87a74a7bad38b65765b0036d52bc",
    "src/platform/compose/compose.yml": "7d4074edf17e817b5d40a0e217bd30fcc3ff8bcb",
-   "src/platform/compose/dbgpt/Containerfile": "bff7ae6b1c3e3fa08bb014d8e990c597f875171a",
+   "src/platform/compose/dbgpt/Containerfile": "c700f57e1078417e9db21b795af8367eec23e834",
    "src/platform/compose/keycloak/realms/platform-realm.json": "180b04e7be5e25480866ae10af3d1554406b4a63",
-   "src/platform/compose/mcp-host/Containerfile": "a16dc48ff41cdf0084e2dd704a3da634c1e93d73",
+   "src/platform/compose/mcp-host/Containerfile": "59200fde5b9149687adcf476401e20054ffe029e",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
    "src/platform/config/asgi.py": "4301a142c50575fccd3a6299373c505b110794ff",
    "src/platform/config/authorization/__init__.py": "7ea6e73b863ae18929f8a2db7bb5381af5c2fcb2",
@@ -5967,7 +5967,7 @@
    "src/platform/db/liquibase_update.py": "7684baff411dfe5124744b1d4d24e69f8e6bbe41",
    "src/platform/db/postgres_backup.py": "7fe5012fd5cd17293cdb73358f5ef7d4f812ebd4",
    "src/platform/db/sqlmigrate-map.yaml": "67f3b96864dddd8e38746ebab295928b841341c2",
-   "src/platform/db/sqlmigrate_extraction.py": "9de01a656a5ac8005be21f868fd4ab0488a972c9",
+   "src/platform/db/sqlmigrate_extraction.py": "10e18515ad3d90e2ca100613868254ff44cbe3a5",
    "src/platform/dbgpt_integration/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/dbgpt_integration/apps.py": "f07c0fa65e0d303e21f181c11d68aef0f4e2441d",
    "src/platform/dbgpt_integration/migrations/0001_create_dbgpt_schema.py": "3be3bdb56be63aff53176b66bde14e6615766281",
@@ -6138,7 +6138,7 @@
    "src/platform/tests/policy/test_liquibase_ddl_governance.py": "58a963e50bdd75bccc0e3d675c6de99a8f485f79",
    "src/platform/tests/policy/test_non_atomic_views.py": "5675fb430e7ab0b8007ae6e5a0bf0bc914bb75f7",
    "src/platform/tests/policy/test_openfeature_channel_policy.py": "a012ee20f327fa49a60f883e429deb7caffa1d33",
-   "src/platform/tests/policy/test_sqlmigrate_extraction.py": "91d3080cb8f5a9085f7d60c421835fd7c812b682",
+   "src/platform/tests/policy/test_sqlmigrate_extraction.py": "e7403ffe0235c444b932e0935fe9e2e28f14d244",
    "src/platform/tests/policy/test_test_databases_still_migrate.py": "2e7b1d80edb7035bc59582e8c58458db730b38b3",
    "src/platform/tests/policy/test_typing_policy.py": "b703b46e8dd7a0b27dd2fa32f8ff34e279a5ad09",
    "src/platform/tests/test_agent_rate_limits_and_run_bounds.py": "c49b1859f13ebbdac74ed414ce066e0194943a03",
@@ -6206,7 +6206,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "e76db0456d9e712e802b72274ea0b738470570bf"
+  "memlog": "25b463f9bc2e61769062aa536336fb75377e95d6"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},
