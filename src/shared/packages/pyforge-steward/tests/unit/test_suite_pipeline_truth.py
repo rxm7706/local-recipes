@@ -78,13 +78,14 @@ def test_baseline_2026_08_22_reproduces_research_matrix_shape(tmp_path: Path):
     assert loop.upstream_npm.value is None
     assert loop.upstream_npm.ok is True
 
-    # eval-quality (joined 2026-09-05 in WDS's seat): bare CLI, recorded before
-    # its pixi pin — "missing" names the wired stage; the 0.2.0.dev0 recipe is
-    # ahead of upstream's v0.1.0, which is not a recipe drift.
+    # eval-quality (joined 2026-09-05 in WDS's seat): bare CLI on PATH after the
+    # same-day channel upload + pixi pin -> "runnable" settles the wired stage;
+    # the 0.2.0.dev0 recipe is ahead of upstream's v0.1.0, not a recipe drift.
     eq = by_name["bmad-eval-quality"]
-    assert eq.wired.value == "missing"
-    assert "wired" in eq.drifts
+    assert eq.wired.value == "runnable"
+    assert "wired" not in eq.drifts
     assert "recipe" not in eq.drifts
+    assert eq.drifts == ()
     assert "bmad-method-wds-expansion" not in by_name
 
     # Unwired set from the Dream.

@@ -22,7 +22,9 @@ REPO = Path(__file__).resolve().parents[2]
 
 # The 11 explicit bmad-* member pins carried under
 # [feature.local-recipes.dependencies] at spec time (baseline_revision
-# a35b7d5e59b731ef6bc7b9c42bb96c148cc57521). This story must not remove or
+# a35b7d5e59b731ef6bc7b9c42bb96c148cc57521; bmad-method-wds-expansion left the set
+# 2026-09-05 when upstream deprecated it and bmad-eval-quality took its suite seat --
+# that pin lives in the unix target tables, see the last test). This story must not remove or
 # replace any of them -- the factory default keeps every explicit pin for
 # pipeline-truth / doctor drift granularity. (Two more active suite members,
 # bmad-module-skill-forge and mybmad-dashboard, live in
@@ -35,7 +37,6 @@ BASELINE_LOCAL_RECIPES_BMAD_PINS = {
     "bmad-dashboard",
     "bmad-loop",
     "bmad-method-test-architecture-enterprise",
-    "bmad-method-wds-expansion",
     "bmad-module-template",
     "bmad-utility-skills",
     "bmad-labs-skills",
@@ -143,3 +144,17 @@ def test_pixi_lock_check_resolves_the_bmad_suite_full_environment() -> None:
     assert proc.returncode == 0, (
         f"pixi lock --check failed (stdout={proc.stdout!r} stderr={proc.stderr!r})"
     )
+
+
+def test_eval_quality_pin_lives_in_the_unix_target_tables() -> None:
+    """Story 45.1 (2026-09-05): SelfExplainML carries only the ``__unix`` noarch
+    variant of bmad-eval-quality (the ``__win`` variant needs a Windows build), so
+    the pin sits in the linux-64 / osx-arm64 target tables -- the same shape as
+    bmad-module-skill-forge -- and never in the platform-agnostic table, or the
+    win-64 solve of the local-recipes environment breaks."""
+    feat = _data()["feature"]["local-recipes"]
+    assert "bmad-eval-quality" not in feat["dependencies"]
+    assert "bmad-method-wds-expansion" not in feat["dependencies"]
+    for plat in ("linux-64", "osx-arm64"):
+        assert feat["target"][plat]["dependencies"]["bmad-eval-quality"] == ">=0.2.0.dev0", plat
+    assert "bmad-eval-quality" not in feat["target"].get("win-64", {}).get("dependencies", {})

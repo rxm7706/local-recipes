@@ -168,3 +168,9 @@ or driver code.
   stays `in-progress` until the operator uploads to SelfExplainML and the pixi pin lands (follow-up
   PR). CAP-2 (Story 45.2, the twin-run pilot) is still blocked on a first contract — status stays
   `specified`.
+- **2026-09-05 (published + pinned)** — PR #1059 merged (`5cc084dfbe`); the four artifacts uploaded to
+  SelfExplainML (`bmad-method` 6.12.0, `bmad-labs-skills` 1.0.0.dev0 build 1, `bmad-eval-quality`
+  0.2.0.dev0, `bmad-suite` 2026.9.5); the pin PR adds `bmad-eval-quality >=0.2.0.dev0` to the
+  `local-recipes` feature (WDS pin dropped), so `eval-quality` is on PATH in the day-to-day env and
+  steward's pipeline-truth reads it `runnable`. **Story 45.1 done.** CAP-2 / Story 45.2 (the
+  twin-run pilot) remains blocked on a first contract — status stays `specified`.

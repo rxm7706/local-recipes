@@ -621,10 +621,14 @@ in `CLAUDE.md` and `_bmad-output/`.
   ideation workflows).
 - **bmad-method-test-architecture-enterprise** (>=1.24.0) — TEA module: enterprise
   test-architecture workflows.
-- **bmad-method-wds-expansion** (>=0.4.3) — Whiteport Design Studio (UX/design)
-  expansion.
+- **bmad-eval-quality** (>=0.2.0.dev0) — `eval-quality` CLI: compile / seal / preflight /
+  score Behavioral Evaluation Contracts (twin-run grading: clean vs planted-defect). Commit-pinned
+  0.2.0 line from `main` — npm/tag 0.1.0 lack `score`. Bin is `eval-quality`, not `bmad-eval-quality`.
+  Pinned in the linux-64 / osx-arm64 target tables only: SelfExplainML has just the `__unix`
+  noarch variant (the `__win` one needs a Windows build), so win-64 skips it like skill-forge.
+  (`bmad-method-wds-expansion` retired 2026-09-05: upstream deprecated, folded into BMM as `bmad-ux`.)
 - **bmad-utility-skills** (>=2.0.0) — 10 maintainer utility skills.
-- **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (21 skills).
+- **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (22 skills).
 - **bmad-manticore** (>=3.1.0.dev0) — brain dump → a rendered, graphics-rich video in
   your own words. `noarch`. Note the version is a `.dev0` pre-release: upstream wrote
   2.0.0 but never tagged it, so this rides a commit pin until a `v2.0.0` tag appears.

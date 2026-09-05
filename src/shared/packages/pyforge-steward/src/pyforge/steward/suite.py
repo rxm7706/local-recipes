@@ -840,15 +840,16 @@ BASELINE_2026_08_22: dict[str, dict[str, str | None]] = {
         "wired": "wired",
     },
     # Joined 2026-09-05 (Story 45.1) in WDS's seat — this row is recorded
-    # 2026-09-05, not 2026-08-22: upstream tag/npm still v0.1.0, recipe on the
-    # commit-pinned 0.2.0 line, not yet on the channel or pinned in pixi.
+    # 2026-09-05, not 2026-08-22: upstream tag/npm still v0.1.0; recipe, channel
+    # (SelfExplainML upload 2026-09-05) and the pixi-installed bin all on the
+    # commit-pinned 0.2.0 line; eval-quality on PATH -> runnable.
     "bmad-eval-quality": {
         "upstream_npm": "0.1.0",
         "upstream_github": "0.1.0",
         "recipe": "0.2.0.dev0",
-        "channel": None,
-        "installed": None,
-        "wired": "missing",
+        "channel": "0.2.0.dev0",
+        "installed": "0.2.0.dev0",
+        "wired": "runnable",
     },
     "bmad-utility-skills": {
         "upstream_npm": None,
