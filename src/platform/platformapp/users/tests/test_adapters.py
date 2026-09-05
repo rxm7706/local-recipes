@@ -28,10 +28,13 @@ def test_account_adapter_honours_registration_flag() -> None:
 def test_social_adapter_honours_registration_flag() -> None:
     request = RequestFactory().get("/")
     with override_settings(ACCOUNT_ALLOW_REGISTRATION=False):
-        assert SocialAccountAdapter().is_open_for_signup(
-            request,
-            sociallogin=None,
-        ) is False
+        assert (
+            SocialAccountAdapter().is_open_for_signup(
+                request,
+                sociallogin=None,
+            )
+            is False
+        )
 
 
 def test_social_adapter_populate_user_name_from_full_and_parts() -> None:

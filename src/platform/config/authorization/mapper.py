@@ -132,7 +132,9 @@ def _create_user(subject: str, claims: Mapping[str, Any]) -> User:
     return user
 
 
-def _resolve_a_lost_insert(subject: str, username: str, conflict: IntegrityError) -> User:
+def _resolve_a_lost_insert(
+    subject: str, username: str, conflict: IntegrityError
+) -> User:
     winner = get_user_model().objects.filter(idp_subject=subject).first()
     if winner is None:
         logger.warning(
@@ -212,7 +214,11 @@ def _available_username(user: User, desired: str, subject: str) -> str:
 
 
 def _username_candidates(desired: str, subject: str) -> list[str]:
-    ordered = [desired, _derived_username(subject), _username_from_identity_key(subject)]
+    ordered = [
+        desired,
+        _derived_username(subject),
+        _username_from_identity_key(subject),
+    ]
     return list(dict.fromkeys(ordered))
 
 

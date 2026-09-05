@@ -144,8 +144,8 @@ def test_portal_dirs_must_not_ship_chrome_copies() -> None:
             or CHROME_COPY_NAMES.search(path.name)
         )
     ]
-    assert offenders == [], (
-        "portals must not ship chrome copies: " + ", ".join(offenders)
+    assert offenders == [], "portals must not ship chrome copies: " + ", ".join(
+        offenders
     )
 
 

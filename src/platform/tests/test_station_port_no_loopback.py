@@ -36,7 +36,9 @@ def test_default_profile_uses_in_process_port_without_loopback(
 
     captured: dict[str, object] = {}
 
-    def fake_invoke(method: str, url: str, headers: dict[str, str], body: bytes | None) -> bytes:
+    def fake_invoke(
+        method: str, url: str, headers: dict[str, str], body: bytes | None
+    ) -> bytes:
         captured["method"] = method
         captured["url"] = url
         captured["headers"] = dict(headers)
@@ -50,7 +52,9 @@ def test_default_profile_uses_in_process_port_without_loopback(
     previous = replace_in_process_handler(fake_invoke)
 
     def _forbid_http(*args: object, **kwargs: object) -> None:
-        raise AssertionError("urllib HTTP must not run in the default in-process profile")
+        raise AssertionError(
+            "urllib HTTP must not run in the default in-process profile"
+        )
 
     monkeypatch.setattr(
         "pyforge.core.client.urllib.request.urlopen",
@@ -122,7 +126,9 @@ def test_station_remote_uses_http_transport_with_assertion(
 
     captured: dict[str, object] = {}
 
-    def transport(method: str, url: str, headers: dict[str, str], body: bytes | None) -> bytes:
+    def transport(
+        method: str, url: str, headers: dict[str, str], body: bytes | None
+    ) -> bytes:
         captured["method"] = method
         captured["url"] = url
         captured["headers"] = dict(headers)
@@ -140,7 +146,9 @@ def test_station_remote_uses_http_transport_with_assertion(
         transport=transport,
     )
 
-    assert captured["url"] == "http://testserver/stations/warden/api/v1/compliance/check"
+    assert (
+        captured["url"] == "http://testserver/stations/warden/api/v1/compliance/check"
+    )
     headers = captured["headers"]
     assert headers[API_VERSION_HEADER] == "1"
     assert headers["Authorization"].startswith("Bearer ")

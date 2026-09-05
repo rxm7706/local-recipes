@@ -130,12 +130,7 @@ def test_populated_relabel_keeps_job_and_history() -> None:
 
 def test_distribution_name_is_django_warden() -> None:
     text = (
-        REPO_ROOT
-        / "src"
-        / "shared"
-        / "packages"
-        / "django-warden"
-        / "pyproject.toml"
+        REPO_ROOT / "src" / "shared" / "packages" / "django-warden" / "pyproject.toml"
     ).read_text(encoding="utf-8")
     assert 'name = "django-warden"' in text
 

@@ -11,7 +11,9 @@ import pytest
 def test_run_restore_drill_missing_manifest(tmp_path: Path, monkeypatch):
     from db import postgres_backup  # noqa: PLC0415 — platform test package root
 
-    monkeypatch.setenv("MIGRATION_DATABASE_URL", "postgres://u:p@localhost:5432/platform")
+    monkeypatch.setenv(
+        "MIGRATION_DATABASE_URL", "postgres://u:p@localhost:5432/platform"
+    )
     with pytest.raises(FileNotFoundError, match="manifest.json"):
         postgres_backup.run_restore_drill(backup_path=tmp_path / "missing")
 

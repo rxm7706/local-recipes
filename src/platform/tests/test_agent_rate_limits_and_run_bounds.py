@@ -60,7 +60,9 @@ OTHER_AGENT = "agent-42-2-bystander"
 
 
 def _assertion(sub: str, station: str = STATION) -> str:
-    return mint_assertion(sub=sub, roles=[f"pyforge:station:{station}"], station=station)
+    return mint_assertion(
+        sub=sub, roles=[f"pyforge:station:{station}"], station=station
+    )
 
 
 def _scope(assertion: str, station: str = STATION) -> dict[str, Any]:
@@ -404,7 +406,7 @@ def _env_int_settings(text: str) -> set[str]:
 
 
 def test_every_bound_is_a_documented_setting(settings) -> None:
-    """"Numbers are settings with documented defaults" -- and each default is
+    """ "Numbers are settings with documented defaults" -- and each default is
     a positive integer, so a knob cannot ship as an unusable zero.
     """
     declared = _env_int_settings(BASE_SETTINGS_PATH.read_text(encoding="utf-8"))

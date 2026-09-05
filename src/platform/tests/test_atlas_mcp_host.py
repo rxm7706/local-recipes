@@ -94,7 +94,9 @@ def _authorization(station: str = "atlas") -> str:
     """Story 42.1: the transport gate verifies before it routes, so every POST
     through ``dispatch_station_mcp`` carries an assertion for its station.
     """
-    token = mint_assertion(sub="fixture-21-2", roles=[f"pyforge:station:{station}"], station=station)
+    token = mint_assertion(
+        sub="fixture-21-2", roles=[f"pyforge:station:{station}"], station=station
+    )
     return f"Bearer {token}"
 
 
@@ -159,7 +161,9 @@ def test_modern_revision_header_is_accepted_on_the_same_post_path():
     )
     assert response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
     body = response.json()
-    assert "error" not in body or body["error"].get("code") != UNSUPPORTED_PROTOCOL_VERSION
+    assert (
+        "error" not in body or body["error"].get("code") != UNSUPPORTED_PROTOCOL_VERSION
+    )
 
 
 @pytest.mark.parametrize("revision", ["2024-11-05", "2099-01-01"])

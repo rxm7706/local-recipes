@@ -102,12 +102,7 @@ def console_health(request: HttpRequest) -> HttpResponse:
 
 
 def console_editorial(request: HttpRequest) -> HttpResponse:
-    pages = (
-        Page.objects.type(ConsoleEditorialPage)
-        .live()
-        .specific()
-        .order_by("title")
-    )
+    pages = Page.objects.type(ConsoleEditorialPage).live().specific().order_by("title")
     return render(
         request,
         "front_door/console_editorial.html",

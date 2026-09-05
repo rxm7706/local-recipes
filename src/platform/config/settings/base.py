@@ -202,11 +202,15 @@ AUTH_USER_MODEL = "users.User"
 LOGIN_REDIRECT_URL = "users:redirect"
 OIDC_PROVIDER_ID = env.str("COMPONENT_OIDC_PROVIDER_ID", default="oidc")
 # Unauthenticated requests redirect to the IdP, not a local password form.
-LOGIN_URL = reverse_lazy("openid_connect_login", kwargs={"provider_id": OIDC_PROVIDER_ID})
+LOGIN_URL = reverse_lazy(
+    "openid_connect_login", kwargs={"provider_id": OIDC_PROVIDER_ID}
+)
 CLAIMS_CONTRACT = load_claims_contract(env)
 # Story 26.1 / FR-31: re-read IdP roles from token claims on each request.
 DJANGO_PYFORGE_GROUP_CLAIM = CLAIMS_CONTRACT.group_claim or "groups"
-DJANGO_PYFORGE_IDP_CLAIMS_GETTER = "config.authorization.current_claims.fetch_current_idp_claims"
+DJANGO_PYFORGE_IDP_CLAIMS_GETTER = (
+    "config.authorization.current_claims.fetch_current_idp_claims"
+)
 IDP_CLAIMS_SNAPSHOT = None
 IDP_USERINFO = None
 # steward 20.1 / canopy AD-13: Wagtail admin is IdP-only (not a URLconf override).
@@ -215,8 +219,12 @@ WAGTAILUSERS_PASSWORD_ENABLED = False
 WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False
 WAGTAIL_PASSWORD_MANAGEMENT_ENABLED = False
 WAGTAIL_SITE_NAME = env.str("WAGTAIL_SITE_NAME", default="PyForge")
-WAGTAILADMIN_BASE_URL = env.str("WAGTAILADMIN_BASE_URL", default="http://localhost:8000")
-WAGTAIL_ADMIN_IDP_GROUP = env.str("COMPONENT_WAGTAIL_ADMIN_GROUP", default="wagtail-admin")
+WAGTAILADMIN_BASE_URL = env.str(
+    "WAGTAILADMIN_BASE_URL", default="http://localhost:8000"
+)
+WAGTAIL_ADMIN_IDP_GROUP = env.str(
+    "COMPONENT_WAGTAIL_ADMIN_GROUP", default="wagtail-admin"
+)
 WAGTAILSEARCH_BACKENDS = {
     "default": {
         "BACKEND": "wagtail.search.backends.database",
@@ -539,7 +547,9 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # django-allauth
 # ------------------------------------------------------------------------------
 # OIDC-only: no local registration or password login (CAP-1).
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False)
+ACCOUNT_ALLOW_REGISTRATION = env.bool(
+    "DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False
+)
 # OIDC-only: no password login. allauth W001 requires every login method
 # to appear as a required signup field — empty LOGIN_METHODS always fails.
 ACCOUNT_LOGIN_METHODS = {"email"}
@@ -635,7 +645,8 @@ os.environ["LANGFLOW_CACHE_TYPE"] = LANGFLOW_CACHE_TYPE
 os.environ["LANGFLOW_REDIS_URL"] = env("LANGFLOW_REDIS_URL", default=REDIS_CACHE_URL)
 
 LANGFLOW_CONFIG_DIR = env(
-    "LANGFLOW_CONFIG_DIR", default=str(BASE_DIR / ".langflow" / "config"),
+    "LANGFLOW_CONFIG_DIR",
+    default=str(BASE_DIR / ".langflow" / "config"),
 )
 LANGFLOW_KNOWLEDGE_BASES_DIR = env(
     "LANGFLOW_KNOWLEDGE_BASES_DIR",

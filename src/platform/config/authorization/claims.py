@@ -93,7 +93,11 @@ def read_group_claim(claims: Mapping[str, Any], path: str) -> list[str] | None:
         return None if name is None else [name]
     if isinstance(value, list | tuple):
         names = [_read_name(item) for item in value]
-        return None if any(name is None for name in names) else [name for name in names if name is not None]
+        return (
+            None
+            if any(name is None for name in names)
+            else [name for name in names if name is not None]
+        )
     return None
 
 

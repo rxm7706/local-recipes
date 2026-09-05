@@ -74,7 +74,9 @@ def test_sync_sets_staff_from_group_claim() -> None:
     assert outcome.ignored == ()
 
 
-def test_sync_ignores_unmatched_groups_and_logs(caplog: pytest.LogCaptureFixture) -> None:
+def test_sync_ignores_unmatched_groups_and_logs(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     structlog.configure(
         processors=[structlog.processors.KeyValueRenderer()],
         wrapper_class=structlog.make_filtering_bound_logger(0),
@@ -93,7 +95,9 @@ def test_sync_ignores_unmatched_groups_and_logs(caplog: pytest.LogCaptureFixture
 def test_adapter_pre_social_login_establishes_session() -> None:
     persona = get_persona("staff")
     claims = build_claims(persona)
-    account = SocialAccount(provider="openid_connect", uid=persona.subject, extra_data={"userinfo": claims})
+    account = SocialAccount(
+        provider="openid_connect", uid=persona.subject, extra_data={"userinfo": claims}
+    )
     sociallogin = SocialLogin(account=account)
     request = HttpRequest()
     request.session = {}
@@ -114,7 +118,9 @@ def test_adapter_pre_social_login_establishes_session() -> None:
 
 
 def test_adapter_refuses_missing_identity_claim() -> None:
-    account = SocialAccount(provider="openid_connect", uid="missing", extra_data={"userinfo": {}})
+    account = SocialAccount(
+        provider="openid_connect", uid="missing", extra_data={"userinfo": {}}
+    )
     sociallogin = SocialLogin(account=account)
     request = HttpRequest()
 
@@ -208,4 +214,3 @@ def test_provision_skips_unresolved_permission(settings) -> None:
     provision_designated_groups()
     group = Group.objects.get(name=settings.WAGTAIL_ADMIN_IDP_GROUP)
     assert not group.permissions.filter(codename="access_admin").exists()
-

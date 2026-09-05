@@ -73,13 +73,17 @@ def _flatten_field_values(item: dict[str, object]) -> list[dict[str, object]]:
                 "field_id": field_id,
                 "field_name": field_name,
                 "value_text": text_value if isinstance(text_value, str) else None,
-                "value_option_name": option_value if isinstance(option_value, str) else None,
+                "value_option_name": option_value
+                if isinstance(option_value, str)
+                else None,
             }
         )
     return rows
 
 
-def _flatten_fields(project_id: str, fields: list[dict[str, object]]) -> list[dict[str, object]]:
+def _flatten_fields(
+    project_id: str, fields: list[dict[str, object]]
+) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for field in fields:
         field_id = field.get("id")
@@ -97,15 +101,21 @@ def _flatten_fields(project_id: str, fields: list[dict[str, object]]) -> list[di
             {
                 "project_id": project_id,
                 "field_id": field_id,
-                "field_name": field.get("name") if isinstance(field.get("name"), str) else None,
-                "data_type": field.get("dataType") if isinstance(field.get("dataType"), str) else None,
+                "field_name": field.get("name")
+                if isinstance(field.get("name"), str)
+                else None,
+                "data_type": field.get("dataType")
+                if isinstance(field.get("dataType"), str)
+                else None,
                 "option_names": option_names,
             }
         )
     return rows
 
 
-def _flatten_items(project_id: str, items: list[dict[str, object]]) -> list[dict[str, object]]:
+def _flatten_items(
+    project_id: str, items: list[dict[str, object]]
+) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for item in items:
         item_id = item.get("id")
@@ -169,7 +179,9 @@ def github_projects_source(
     """Custom dlt source — Projects V2 items, fields, and status values."""
     cache = _SnapshotCache()
 
-    @dlt.resource(name="project_v2_fields", write_disposition="replace", primary_key="field_id")
+    @dlt.resource(
+        name="project_v2_fields", write_disposition="replace", primary_key="field_id"
+    )
     def project_v2_fields() -> Iterator[dict[str, object]]:
         for page in _ensure_pages(
             cache,
