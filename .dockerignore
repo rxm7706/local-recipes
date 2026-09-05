@@ -251,6 +251,10 @@ src/platform/deploy/
 # `src/platform/`, so the gap stops being theoretical the moment one does.
 src/platform/.env
 src/platform/.env.*
+# config/local_dev/keys.py's generated JWT signing keypair (a private key) --
+# gitignored, but .dockerignore is a separate list; found uncovered here
+# during retro action item 9 (2026-09-05).
+src/platform/.dev-keys/
 # Build-host-generated app output. .dockerignore is a SEPARATE list from
 # .gitignore, and `COPY src/platform/ /app/` consults only this file. A
 # developer who ran `manage.py collectstatic` locally would otherwise ship
