@@ -3,8 +3,8 @@ doc_type: architecture
 part_id: cf-atlas
 display_name: cf_atlas data pipeline
 project_type_id: data
-date: 2026-07-25
-source_pin: 'conda-forge-expert v8.81.0'
+date: 2026-09-05
+source_pin: 'conda-forge-expert v8.86.1'
 ---
 
 # Architecture: cf_atlas (Part 2)
@@ -31,6 +31,8 @@ Part 2's scripts live inside Part 1's `scripts/` directory by design — the pip
 ## Mission
 
 > **Build and maintain an offline-queryable graph of conda-forge package state, refreshable in single-phase chunks, tolerant to firewalls, network failures, and mid-run interrupts.**
+
+> **Re-grounded 2026-09-05** (`source_pin` v8.81.0 → **conda-forge-expert v8.86.1**; hand pass per SYNC-RUNBOOK row 84 after the `bmad-drift` `pin-behind` warn). Schema **v29** and **22 executable / 23 cataloged** phases re-verified unchanged; the atlas-side deltas are all v8.82.0's path-resolution hardening (`bootstrap_data.py`, `feedstock_context.py`, `feedstock_lookup.py` now resolve through `_paths`) and no pipeline phase, table, or CLI changed. CFE releases in the window: v8.82.0–v8.82.3 (`scripts/_paths.py` shared data-dir/repo-root helper; `_http.py` JFrog credential host-gate + public-host floor + credential-kind gating; G108), v8.83.0 (G109/G110; SelfExplainML publish flow in the cheatsheet), v8.84.0 (`github_updater.py --head` HEAD-advance), v8.84.1 (`bmad_suite_metapackage.py` marker-splice fix + test), v8.85.0 (3.11 floor; 438 recipes lost a redundant `context.python_min`, 47 unparseable recipes repaired; `tests/meta/test_dashboard_renders.py` retired), v8.85.1 (G82 / CI-provider table correction), v8.85.2 (`_paths.get_repo_root` marker walk; both compiled slices back in equivalence), v8.86.0 (G111–G113; HEAD mode increments `build.number`; `config/failure-catalog.yaml` regenerated), v8.86.1 (`tests/meta/test_recipe_maintainers_nonempty.py`; the G26 marker-split extension re-landed from orphaned commit `74bc80fe61`). live `bmad-groundtruth` 2026-09-05: schema **v29**, MCP tools **46**, atlas phases **22 executable / 23 cataloged** — all three unchanged since the 2026-07-29 pass; gotchas now **G1–G113** (v8.82.0 G108 `sys.executable` for internal subprocess calls; v8.83.0 G109 upstream can renumber past a dev snapshot, G110 npm bin maps are release-mutable; v8.86.0 G111 `noarch_platforms` is required for selector-carrying noarch recipes, G112 npm-from-commit-archive build with a clean prod reinstall, G113 same-version content changes bump `build.number`); pixi **28 envs / 31 features / 236 tasks (146 in `local-recipes`)** counted from `pixi.toml` (`[environments]` keys / distinct `[feature.<x>…]` names / `[feature.<x>.tasks.<t>]` headers); SKILL.md **4,287 lines**; **71 `.py` files under `scripts/`** (including the `_`-prefixed shared helpers) and **63 entries in `.claude/scripts/conda-forge-expert/`**; conda-forge's Python floor is **3.11** since 2026-09-02 (v8.85.0 — the generator now reads it from the installed pinning). Body figures below that predate this pass (18 / 20 / 26 envs, 17 features, 152 / 106 tasks, G1–G107 / G1–G110, 3,887 lines, 66 canonical scripts) are historical — read them against the live numbers here.
 
 Operationalized:
 - One SQLite file (`cf_atlas.db`) is the answer to every question.
