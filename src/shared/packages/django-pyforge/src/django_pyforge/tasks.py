@@ -30,6 +30,7 @@ decided here: ``django_pyforge.queues.route_task`` is the routing table.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from celery import shared_task
@@ -44,7 +45,13 @@ from django_pyforge.supervisor import lookup_runner
 from django_pyforge.supervisor import prune_run_state
 from django_pyforge.supervisor import sweep_lost_runs
 
+logger = logging.getLogger(__name__)
+
 SUBJECT_HEADER = "sub"
+
+# How long a truncated sweep waits before its own follow-up. Small on purpose:
+# the point is to yield the worker between batches, not to pace the drain.
+PRUNE_CHAIN_COUNTDOWN_SECONDS = 1
 
 try:
     from django_structlog.celery.signals import bind_extra_task_metadata
@@ -88,6 +95,24 @@ def execute_supervised_run(
     tool: str,
     payload: dict[str, Any],
 ) -> None:
+    if RunState.objects.filter(
+        pk=run_id,
+        status__in=RunState.TERMINAL_STATUSES,
+    ).exists():
+        # The ledger, not the broker, is the record of a revoke. `control.revoke`
+        # is a broadcast held in worker memory: a worker that connected after it
+        # was sent (a restart, a rollout, a scale-up) has never heard of the id
+        # and would run the task in full, with only its final write dropped. A
+        # terminal row means there is nothing left for this task to do.
+        logger.info(
+            "supervisor.run_skipped_terminal",
+            extra={
+                "event": "supervisor.run_skipped_terminal",
+                "run_id": run_id,
+                "station": station,
+            },
+        )
+        return
     if not begin_attempt(run_id, redelivered=redelivered(self.request)):
         return
     try:
@@ -124,9 +149,22 @@ def enqueue_supervised_run(
 
 
 @shared_task
-def prune_run_state_task() -> dict[str, int]:
-    """Retention sweep over ``run_state`` (Story 42.2 / red-team B-7)."""
-    return prune_run_state()
+def prune_run_state_task() -> dict[str, Any]:
+    """Retention sweep over ``run_state`` (Story 42.2 / red-team B-7).
+
+    A sweep is batch-bounded, so one beat tick removes at most
+    ``RUN_STATE_PRUNE_BATCH`` rows; left there, the drain is one batch per
+    interval, which a handful of subjects at the default start rate publish
+    faster than. A truncated sweep that made progress therefore enqueues its
+    own follow-up, and stops the moment a sweep removes nothing -- so the chain
+    terminates whatever ``truncated`` says.
+    """
+    report = prune_run_state()
+    removed = report["aged_out"] + report["over_cap"] + report["expired_handles"]
+    rescheduled = bool(report["truncated"] and removed > 0)
+    if rescheduled:
+        prune_run_state_task.apply_async(countdown=PRUNE_CHAIN_COUNTDOWN_SECONDS)
+    return {**report, "rescheduled": rescheduled}
 
 
 @shared_task

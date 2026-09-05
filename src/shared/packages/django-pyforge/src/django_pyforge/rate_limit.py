@@ -79,6 +79,7 @@ _SCOPE_SETTINGS: dict[str, tuple[tuple[str, int], tuple[str, int]]] = {
 REASON_OK = "ok"
 REASON_RATE_LIMITED = "rate-limited"
 REASON_CACHE_UNAVAILABLE = "cache-unavailable"
+REASON_NO_SUBJECT = "no-subject"
 
 # What a caller waits when the limiter itself could not answer. Short, because
 # the refusal is about the platform's own health rather than the caller's rate.
@@ -235,6 +236,27 @@ def _unavailable(scope: str, subject: str, detail: str) -> Decision:
     )
 
 
+def _unattributable(scope: str) -> Decision:
+    """Refuse a call that names no subject. Loud, but not as a cache failure.
+
+    No ``retry_after``: waiting will not give the call a subject, and a
+    ``Retry-After`` here would tell a caller to keep trying something that
+    cannot succeed.
+    """
+    logger.error(
+        "ratelimit.unattributable",
+        extra={"event": "ratelimit.unattributable", "scope": scope},
+    )
+    return Decision(
+        allowed=False,
+        scope=scope,
+        subject="",
+        reason=REASON_NO_SUBJECT,
+        retry_after=0,
+        remaining=0.0,
+    )
+
+
 def _restore(state: Any, bucket: Bucket, now: float) -> tuple[float, float]:
     """``(tokens, updated_at)`` from stored state; a full bucket when absent.
 
@@ -275,7 +297,10 @@ def consume(
     if not subject:
         # An unattributable call cannot be bounded, so it is refused rather
         # than exempted -- a limiter with an unbounded hole is not a limiter.
-        return _unavailable(scope, subject, "no subject")
+        # Its own reason and event, not `cache_unavailable`: a missing subject
+        # is an attribution fault upstream of this module, and an operator
+        # paging on the cache event must not be woken for it.
+        return _unattributable(scope)
     limits = bucket if bucket is not None else bucket_for(scope)
     store = cache if cache is not None else limiter_cache()
     if store is None:

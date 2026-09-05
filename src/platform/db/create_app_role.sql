@@ -11,7 +11,7 @@ GRANT CONNECT ON DATABASE platform TO platform_app;
 GRANT USAGE ON SCHEMA public TO platform_app;
 GRANT USAGE ON SCHEMA langflow_schema TO platform_app;
 GRANT USAGE ON SCHEMA dbgpt_schema TO platform_app;
--- Story 41.3: scribe's graph relations are governed DDL (pyforge-scribe:1-3);
+-- Story 41.3: scribe's graph relations are governed DDL (pyforge-scribe:1-4);
 -- the app role reads and writes rows there and never creates them.
 GRANT USAGE ON SCHEMA scribe_schema TO platform_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO platform_app;

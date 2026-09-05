@@ -3,7 +3,7 @@ title: "MCP transport authorization and a streaming proxy"
 type: "fix"
 created: "2026-09-02"
 status: "done"
-followup_review_recommended: true
+followup_review_recommended: false
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "f098b49823b297fc62d12f52e8bcc9901a667613"
@@ -101,6 +101,65 @@ deferred:
       the refusal to a working call. The intent specifies the status codes only.
     location: >-
       src/shared/packages/django-pyforge/src/django_pyforge/mcp_auth.py
+    severity: low
+  - summary: >-
+      Every station app is built `json_response=True`, so the keep-alive frame never
+      fires against the real sidecar and the raised budget stays capped by the ~30s
+      ingress idle timeout.
+    evidence: |-
+      `mcp_dual_era.py:55-56` builds every station MCP app with `json_response=True,
+      stateless_http=True`, so the sidecar's body is always `application/json` and
+      never `text/event-stream`. `_keepalive_frame()` returns `None` for anything but
+      an event stream — correctly, since a comment frame injected into JSON corrupts
+      it — which means the keep-alive path is unreachable in production and a JSON
+      tool call still emits no bytes until it completes. T-5 is therefore only
+      partially closed: the 5s cap and the full-response buffering are gone, but a
+      long JSON call still dies at whatever idle timeout sits in front of the pod.
+      Not fixable inside this story: the intent prescribes comment frames, and there
+      is no legal way to keep a JSON body alive. Closing it needs either SSE-shaped
+      sidecar responses or an ingress idle-timeout decision.
+    location: >-
+      src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
+    severity: medium
+  - summary: >-
+      The chart wires `MCP_HOST_SIDECAR_BASE_URL` into worker and migrate-job pods
+      that the new NetworkPolicy then denies.
+    evidence: |-
+      `_helpers.tpl` (`platform.djangoEnv`) injects the sidecar URL into
+      `worker-deployment.yaml` and `migrate-job.yaml`, and
+      `test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service`
+      (`test_chart_invariants.py:1349`) asserts web AND worker carry it — while the
+      new policy admits only `component: web` and the X-5 guard pins the rule to
+      exactly one peer. Nothing breaks today: the only reader is `sidecar_base_url()`,
+      reached solely from `config/asgi.py`'s dispatch, which runs in web. But the two
+      invariants now encode opposite intents, and the first worker-side MCP call will
+      fail at the network layer rather than at the config layer.
+    location: >-
+      src/platform/deploy/charts/platform/templates/mcp-host-networkpolicy.yaml
+    severity: medium
+  - summary: >-
+      No test drives the real ASGI entrypoint; every test builds its own app around
+      `dispatch_station_mcp`.
+    evidence: |-
+      The single production caller is `_dispatch_http` in `src/platform/config/asgi.py`.
+      `test_mcp_transport_auth.py` calls `dispatch_station_mcp` directly with
+      hand-built scope dicts, and the five updated files each wrap it in their own
+      `application`. So the ACs' "Given `POST /stations/atlas/mcp`" is proved against
+      an assembled callable, not the app gunicorn serves — a reordering inside
+      `_dispatch_http` that let a station path bypass the gate would not fail any
+      test. Pre-existing convention across this suite, not introduced here.
+    location: >-
+      src/platform/config/asgi.py
+    severity: medium
+  - summary: >-
+      `MCP_PROXY_TIMEOUT_SECONDS` is documented only in a source comment.
+    evidence: |-
+      The new env var appears in no `values.yaml`, no chart template, and not in
+      `src/platform/deploy/overlays/ocp/cluster-bringup.md`, which already carries an
+      mcp-host readiness checklist. An operator raising the sidecar budget has to read
+      `mcp_http.py` to learn the name exists.
+    location: >-
+      src/platform/deploy/overlays/ocp/cluster-bringup.md
     severity: low
 ---
 
@@ -227,6 +286,65 @@ five `patch` findings it applied are recorded under *Review Triage Log* and
     have passed; and nothing asserted the request body reached upstream, so dropping
     `content=body` would have passed. All three now covered.
 
+### 2026-09-02 — Review pass (follow-up, the single allowed one)
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 3: (high 0, medium 1, low 2)
+- defer: 4: (high 0, medium 3, low 1)
+- reject: 16: (high 0, medium 6, low 10)
+- addressed_findings:
+  - `[medium]` `[patch]` `proxy_station_mcp` caught only `httpx.RequestError`, but httpx's
+    failure surface is not one tree: `StreamError` subclasses `RuntimeError` and
+    `InvalidURL` subclasses `Exception`, so neither is a `RequestError`. A stream
+    teardown failing that way escaped AFTER the head was sent — bypassing the very
+    `started and not closed` branch written to close the body — and a malformed
+    `MCP_HOST_SIDECAR_BASE_URL` became an unhandled ASGI exception instead of the 502
+    every other unreachable-hop case answers. This is the same class error the prior
+    pass fixed one layer down in `_drain_upstream`, left standing one layer up. Now
+    caught as `hop_failures = (RequestError, StreamError, InvalidURL)`, covered by
+    `test_a_teardown_failure_outside_request_error_still_closes_the_body`
+    (parametrized over both branches) and
+    `test_a_sidecar_url_httpx_rejects_answers_502_rather_than_crashing`.
+  - `[low]` `[patch]` The `proxy_station_mcp` docstring claimed "Streamed both ways",
+    which is false — `read_body(receive)` still buffers the whole request before the
+    hop opens, and only the response streams. Reworded to say which direction streams
+    and why the request cannot.
+  - `[low]` `[patch]` `_module_scope_imports` iterated only `tree.body`, so an import
+    nested in a module-scope `try:`/`if:` — which runs on import exactly like an
+    outermost one — was invisible to the Django-free guarantee: `try: import django`
+    in any closure module would have passed. It now walks module-scope compound
+    statements while still excluding function and lambda bodies, because
+    `mcp_auth._settings_public_pem` imports Django inside a function BY DESIGN.
+    Covered by `test_the_django_free_scan_sees_imports_nested_at_module_scope`.
+
+Both code patches were mutation-checked: narrowing the catch back to
+`httpx.RequestError` fails exactly the two new tests (the `request-error`
+parametrization stays green, so they are not trivially passing), and restoring the
+`tree.body`-only scan fails the new companion.
+
+Findings this pass re-raised that were already recorded and stay so: the
+`PYFORGE_ASSERTION_PUBLIC_KEY` 503 (all four layers found it independently — it is the
+dominant residual risk), kubelet probes vs. the NetworkPolicy, the missing
+`http.disconnect` watch, the agent-facing docs that still show a bare POST, the
+helm-gated chart proof, and the missing `WWW-Authenticate` challenge.
+
+Rejected, with the premises re-verified rather than inherited from the prior pass:
+`Mcp-Session-Id`/`Last-Event-Id` are absent from the allowlist and non-POST is 405'd
+before the gate — both correct, because `mcp_dual_era.py:55-56` builds every station
+app `json_response=True, stateless_http=True`, so no session id is ever issued and
+there is no GET SSE stream or DELETE teardown to reach (the in-process path is already
+`DualEraPostOnlyASGI`); `contextlib.suppress(CancelledError, Exception)` around
+`await pump` is the canonical `cancel()`-then-await idiom, not a swallowed
+cancellation; `_settings_public_pem` does catch a bad `DJANGO_SETTINGS_MODULE`, since
+`ModuleNotFoundError` subclasses `ImportError`; the duplicate-header dict collapse and
+the latin-1 header round-trip are both pre-existing shapes the baseline had verbatim;
+`proxy_timeout_seconds()` needs no ceiling because the intent specifies a floor;
+double verification at the supervisor is mandated by the intent ("defence in depth");
+roles-at-transport and an egress rule are outside an intent that names the audience
+check and ingress-from-web only; and the four unaccompanied chart assertions are
+already covered for every X-5 exposure by the eight existing guard-removal companions.
+
 ## Auto Run Result
 
 Status: done
@@ -306,6 +424,54 @@ strict CNIs, and out-of-repo MCP clients now need a header no documentation ment
 Two verification surfaces stay weaker than their ACs — AC 4's chart render is
 `@requires_helm` (skips in CI), and AC 2's streaming is proved against a stubbed
 `httpx.AsyncClient` rather than a live 20s hop.
+
+### Follow-up review pass — 2026-09-02
+
+**Implemented change.** No behavioural change to the story's contract. Three patches
+hardened what shipped: the sidecar hop now catches every branch of httpx's failure
+surface instead of only `RequestError`, so a stream teardown or a malformed sidecar
+URL closes the body / answers 502 rather than escaping as an unhandled ASGI exception;
+the `proxy_station_mcp` docstring no longer claims the request body streams; and the
+AC-5 Django-free scan sees module-scope imports nested in `try:`/`if:`.
+
+**Files changed**
+
+- `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` — `hop_failures`
+  tuple replaces the bare `except httpx.RequestError`; docstring corrected to describe
+  a streamed response over a buffered request.
+- `src/platform/tests/test_mcp_transport_auth.py` — `_StubUpstream` gains
+  `close_failure` / `open_failure` knobs; three new tests (two parametrized teardown
+  branches, the 502-on-InvalidURL case, the AST-scan companion); `_module_scope_imports`
+  walks module-scope compound statements while still excluding function bodies.
+
+**Review findings breakdown.** 3 patches applied (0 high, 1 medium, 2 low); 4 new items
+deferred; 16 rejected. Six earlier findings were re-raised and left recorded as already
+deferred.
+
+**Follow-up review recommended: false (forced).** Patched by severity: high 0, medium 1,
+low 2. Score `3 × 1 + 1 × 2 = 5` (≥ 5), which would set `true` — but this pass WAS the
+single allowed follow-up entered from a `done` spec, so the flag is forced `false` and
+the story does not re-enter review.
+
+**Verification.** Run from `src/platform` under `platform-ci-test`, helm from
+`platform-dev` on `PATH`.
+
+- `test_mcp_transport_auth` + `test_mcp_host_sidecar` + `test_atlas_mcp_host`:
+  **55 passed** (was 51; the four new tests are the delta).
+- `test_chart_invariants` with helm present: **72 passed, no skips** — the helm-gated
+  NetworkPolicy render ran.
+- `test_start_get_survives_disconnect` against an ephemeral PostgreSQL 17: **8 passed,
+  1 error**. The error is the known pre-existing `seed_lane1_homepage` collision during
+  `django_db_setup` (its `post_migrate` receiver adds a second child with slug `home`
+  beside the one wagtailcore's initial-data migration creates); the traceback never
+  reaches test code, and it is an artifact of the local DB bootstrap, not of this story.
+- Both code patches mutation-checked, as recorded in the triage log.
+
+**Residual risks.** Unchanged and still dominated by the `PYFORGE_ASSERTION_PUBLIC_KEY`
+deferral: outside pytest nothing supplies the key, so every station MCP route
+fail-closes to 503 until the AD-19 keypair Secret lands. Newly recorded this pass: the
+keep-alive frame cannot fire against a `json_response=True` sidecar, so a long JSON
+tool call is still bounded by the ingress idle timeout rather than the 300s budget.
 
 ## Source
 

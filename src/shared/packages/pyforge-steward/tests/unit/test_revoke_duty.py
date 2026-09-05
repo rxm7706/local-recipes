@@ -46,6 +46,15 @@ def _ns(sub: str = "agent-7", python: str | None = None):
     return build_parser().parse_args(argv)
 
 
+def _stub_manage_py(monkeypatch, root: Path) -> Path:
+    """A checkout-independent `src/platform/manage.py` for the duty to find."""
+    manage = root / "src" / "platform" / "manage.py"
+    manage.parent.mkdir(parents=True)
+    manage.write_text("# stub\n", encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.revoke.repo_root", lambda: root)
+    return manage
+
+
 def test_revoke_is_a_registered_duty():
     assert "revoke" in DUTIES
     impl = resolve_duty("revoke")
@@ -119,13 +128,19 @@ def test_a_partial_revoke_is_not_reported_as_success(monkeypatch):
 )
 def test_a_broken_command_fails_the_duty_instead_of_crashing(
     monkeypatch,
+    tmp_path: Path,
     stdout: str,
     returncode: int,
 ):
     """AD-8: a duty returns a result. A missing Django, a traceback on stderr
     or a non-zero exit must all land as `ok=False`, never as an exception the
     dispatcher has to project from.
+
+    The stub `manage.py` is what makes this a test of the COMMAND's answer:
+    without it the duty fails earlier, on the missing file, and the assertion
+    passes for the wrong reason anywhere but inside this checkout.
     """
+    _stub_manage_py(monkeypatch, tmp_path)
     monkeypatch.setattr(
         "pyforge.steward.revoke.subprocess.run",
         lambda *a, **k: _completed(stdout, returncode=returncode, stderr="trace"),
@@ -144,3 +159,39 @@ def test_a_missing_manage_py_is_named(monkeypatch, tmp_path: Path):
 
     assert result.ok is False
     assert "manage.py" in result.summary
+
+
+def test_a_hung_command_is_a_failed_duty_not_a_hang(monkeypatch, tmp_path: Path):
+    """Mid-incident is exactly when the database or the broker may not answer.
+    The duty gives the host command a deadline and reports the timeout as a
+    failed revoke rather than waiting on it forever.
+    """
+    _stub_manage_py(monkeypatch, tmp_path)
+    deadlines: list[float | None] = []
+
+    def hang(argv, **kwargs):
+        deadlines.append(kwargs.get("timeout"))
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=kwargs.get("timeout"))
+
+    monkeypatch.setattr("pyforge.steward.revoke.subprocess.run", hang)
+
+    result = RevokeDuty().run(_ns())
+
+    assert result.ok is False
+    assert "timed out" in result.summary
+    assert deadlines and deadlines[0] > 0
+
+
+def test_a_report_without_a_verdict_is_not_a_success(monkeypatch):
+    """`ok` is the command's own verdict. A report that lacks it is a broken
+    contract, and a broken contract must not project as a clean revoke.
+    """
+    unverdicted = {key: value for key, value in REPORT.items() if key != "ok"}
+    monkeypatch.setattr(
+        "pyforge.steward.revoke.run_revoke",
+        lambda sub, **_kwargs: unverdicted,
+    )
+
+    result = RevokeDuty().run(_ns())
+
+    assert result.ok is False

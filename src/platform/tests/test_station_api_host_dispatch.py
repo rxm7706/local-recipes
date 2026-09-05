@@ -63,3 +63,10 @@ def test_unknown_station_api_returns_404_not_500():
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {"detail": "Not Found"}
+
+
+def test_unknown_station_api_version_returns_404_not_500():
+    response = _get("/stations/warden/api/v99/health")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Not Found"}

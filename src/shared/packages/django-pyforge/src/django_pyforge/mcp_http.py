@@ -28,6 +28,8 @@ from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
+from asgiref.sync import sync_to_async
+
 from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_auth import TransportRefusal
@@ -224,7 +226,16 @@ async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -
     if isinstance(authorized, TransportRefusal):
         await _refuse(send, station, authorized)
         return True
-    limited = station_rate_refusal(authorized.claims)
+    # Off the event loop. The bucket is a synchronous round trip to redis-cache
+    # and the cache composition sets no socket timeout, so run ON the loop a
+    # stalled cache would hold this loop -- every in-flight request on the pod,
+    # MCP or not -- for as long as the socket did. A refusal that takes the
+    # platform down with it is the opposite of fail-closed. Not thread-sensitive:
+    # the cache client is thread-safe and must not queue behind Django's ORM
+    # thread, which is exactly the thread a stalled call would otherwise block.
+    limited = await sync_to_async(station_rate_refusal, thread_sensitive=False)(
+        authorized.claims,
+    )
     if limited is not None:
         await _refuse(send, station, limited)
         return True
@@ -416,11 +427,21 @@ async def proxy_station_mcp(
 ) -> None:
     """Stream the request to the mcp-host sidecar. Unreachable → 502 + error log.
 
-    Streamed both ways: the response head goes out as soon as the sidecar sends
-    it and every chunk is relayed as it arrives, so a long tool call reaches the
+    The RESPONSE is streamed: its head goes out as soon as the sidecar sends it
+    and every chunk is relayed as it arrives, so a long tool call reaches the
     client as it runs instead of being buffered to completion (red-team T-5).
+    The request body is still read to completion first -- an ASGI request body
+    has no length until ``more_body`` is false, and the hop needs one.
     """
     import httpx
+
+    # httpx's failure surface is NOT one tree: StreamError subclasses
+    # RuntimeError and InvalidURL subclasses Exception, so neither is a
+    # RequestError. Catching RequestError alone lets a teardown failure escape
+    # AFTER the head was sent -- the exact case the `started` branch below
+    # exists to close -- and turns a malformed sidecar base URL into an
+    # unhandled ASGI exception instead of a 502.
+    hop_failures = (httpx.RequestError, httpx.StreamError, httpx.InvalidURL)
 
     body, _replay = await read_body(receive)
     url = f"{base}/stations/{station}/mcp"
@@ -443,7 +464,7 @@ async def proxy_station_mcp(
             started = True
             await _stream_upstream_body(response, send)
             closed = True
-    except httpx.RequestError as exc:
+    except hop_failures as exc:
         logger.error("mcp-host sidecar unreachable at %s: %s", base, exc)
         if started:
             # A failure raised while unwinding the stream (teardown, not the

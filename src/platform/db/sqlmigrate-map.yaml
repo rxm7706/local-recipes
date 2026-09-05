@@ -27,7 +27,8 @@ distributions:
       warden_fabric.0001_initial: 14
   pyforge-scribe:
     # Scribe's graph store is not a Django app, so this distribution maps no
-    # migrations. It still owns seqs 1-3 in the changelog (pgvector extension,
-    # scribe_schema + graph_nodes, guarded app-role grants) -- the runtime
-    # driver asserts those exist and never creates them (CAP-9 / Story 41.3).
+    # migrations. It still owns seqs 1-4 in the changelog (pgvector extension,
+    # scribe_schema + graph_nodes, guarded app-role grants, and the `stale`
+    # back-fill) -- the runtime driver asserts those exist and never creates
+    # them (CAP-9 / Story 41.3).
     migrations: {}

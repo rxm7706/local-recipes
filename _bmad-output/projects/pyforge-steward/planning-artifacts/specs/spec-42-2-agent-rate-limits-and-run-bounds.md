@@ -6,7 +6,7 @@ status: "done"
 updated: "2026-09-02"
 baseline_commit: "58ee07a0"
 baseline_revision: "629ee8c5ceba96dab31bac0251974880c4e821a1"
-followup_review_recommended: true
+followup_review_recommended: false
 severity: "HIGH"
 context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
@@ -271,6 +271,64 @@ deferred:
     location: >-
       scripts/.spec-surface-baseline.json
     severity: low
+  - summary: >-
+      A RUNNING row whose worker died without reaching `complete_run` counts
+      against both ceilings forever, and nothing reaps it.
+    evidence: |-
+      Found by the 2026-09-02 follow-up pass (two review layers). A hard
+      `CELERY_TASK_TIME_LIMIT` SIGKILL, an OOM kill or a pod eviction ends the
+      task without the `except` in `execute_supervised_run` running, so the row
+      stays RUNNING; retention never touches live rows by design. Before this
+      story such a row was a phantom on the board; with the ceilings in place
+      enough of them lock a subject out (`MAX_RUNNING_PER_SUB`) and then the
+      station (`MAX_QUEUE_DEPTH_PER_STATION`), and the only lever is
+      `revoke --sub` per subject. Not patched because a reaper cannot yet tell
+      a dead worker from a task still waiting on the queue: rows are RUNNING
+      from publish and nothing stamps `heartbeat_at` when a worker picks the
+      task up, so "heartbeat older than the hard limit" also describes a task
+      that has legitimately queued behind a full station for ten minutes. The
+      fix needs a pickup heartbeat (or a PENDING->RUNNING transition at pickup)
+      first; then a `prune_run_state` pass that FAILs live rows whose heartbeat
+      is older than `CELERY_TASK_TIME_LIMIT` plus grace is mechanical, and the
+      worker pre-flight added this pass already makes such a row safe to
+      terminalise (a late pickup skips it).
+    location: >-
+      src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+    severity: high
+  - summary: >-
+      `django_cache_aliases` sets no `SOCKET_CONNECT_TIMEOUT` / `SOCKET_TIMEOUT`,
+      so a partitioned redis-cache stalls each limiter call for the kernel's
+      TCP timeout rather than failing closed quickly.
+    evidence: |-
+      Found by the 2026-09-02 follow-up pass. `IGNORE_EXCEPTIONS` turns a
+      connection *failure* into a fast `None`, but a black-holed host is a
+      hang, not a failure, and django_redis passes no timeout unless the
+      OPTIONS name one. This pass moved the limiter off the event loop
+      (`sync_to_async`, thread-insensitive), so a stall no longer freezes the
+      pod, but each stalled call still holds an executor thread until the socket
+      gives up. Pre-existing (steward 20.2 composed the alias, and sessions and
+      renditions share it) and one setting away: `SOCKET_CONNECT_TIMEOUT` and
+      `SOCKET_TIMEOUT` of a few seconds in the alias OPTIONS, which is also what
+      makes the fail-closed refusal *fast*. Belongs with the cache composition,
+      not this story, because it changes every consumer of the alias.
+    location: >-
+      src/platform/platformapp/front_door/lane1_runtime.py
+    severity: medium
+  - summary: >-
+      No index serves the retention sweep, so both passes scan `run_state` on
+      every tick once the table is large.
+    evidence: |-
+      Found by the 2026-09-02 follow-up pass. The two indexes 0004 adds
+      (`subject, status` and `station, status`) serve the start-path counts and
+      the revoke selection; the age pass filters `status IN (...) AND
+      completed_at < cutoff` and the cap pass orders terminal rows by
+      `completed_at, started_at`, neither of which they cover. Tolerable while
+      `RUN_STATE_MAX_ROWS` holds the table near 100k rows and the sweep runs
+      hourly; a `(status, completed_at)` index is a new migration plus a CAP-9
+      Liquibase changeset, which is why it is not folded into a review pass.
+    location: >-
+      src/shared/packages/django-pyforge/src/django_pyforge/models.py
+    severity: low
 ---
 
 <intent-contract>
@@ -488,6 +546,93 @@ one that decided this pass.
     passes share one budget, and the report carries `truncated` so a bounded
     sweep cannot read as "the table is now in policy".
 
+### 2026-09-02 — Review pass (follow-up)
+
+The single follow-up the first pass recommended (`followup_review_recommended`
+was `true`; it is `false` from here on, whatever this pass's own score says).
+Same four layers, in parallel, over the full diff since `629ee8c5`, *after*
+PR #1026 had merged. The intent-alignment auditor reported no new divergence:
+the surfaces it named (429/409 as fields of an HTTP-200 tool error on the MCP
+face; ledger rows rather than broker depth as "queue depth"; Celery control
+and beat evidenced at the function level) are the first pass's documented
+decisions, not findings. Findings the first pass had already deferred and
+that were raised again unchanged are counted under `reject` below rather
+than re-appended to `deferred`, so the list stays one entry per fact.
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 21: (high 1, medium 4, low 16)
+- defer: 3: (high 1, medium 1, low 1)
+- reject: 25: (high 0, medium 0, low 25)
+- addressed_findings:
+  - `[high]` `[patch]` **The limiter ran on the event loop.** `station_rate_refusal`
+    was called synchronously inside the async `dispatch_station_mcp`, and the
+    cache alias carries no socket timeout, so a stalled redis-cache would have
+    held the pod's event loop -- every in-flight request, MCP or not -- for as
+    long as the socket did: a refusal that took the platform down with it,
+    under exactly the outage the fail-closed clause is for. The call now runs
+    through `sync_to_async(thread_sensitive=False)`; a test pins that the cache
+    round trip happens off the loop thread.
+  - `[medium]` `[patch]` **Revoke could overwrite a run that had just finished.**
+    The CANCELLED write was `filter(pk__in=run_ids).update(...)` with no
+    status guard, the mirror of the race `complete_run` was hardened against
+    in the first pass: a run finishing between the SELECT and the UPDATE lost
+    its `succeeded` and its result. The UPDATE now re-checks `LIVE_STATUSES`,
+    and `cancelled_runs` reports what was actually cancelled. Raised by three
+    layers.
+  - `[medium]` `[patch]` **A worker could still run a revoked task.** `control.revoke`
+    is a broadcast held in worker memory; a worker that connected after it
+    (restart, rollout, scale-up) had never heard of the id and ran the task in
+    full, with only the final write dropped. `execute_supervised_run` now
+    consults the ledger first and skips a terminal row with an INFO event.
+  - `[medium]` `[patch]` **The retention drain was one batch per beat tick.** 5,000
+    rows an hour is below what three subjects at the default start rate
+    publish, so the table would have grown straight through AC 5's bound.
+    `prune_run_state_task` now enqueues its own follow-up while a sweep is
+    truncated *and made progress*, and stops the moment a sweep removes
+    nothing -- the chain terminates whatever `truncated` says.
+  - `[medium]` `[patch]` **`steward revoke` had no deadline.** `subprocess.run` with
+    no `timeout` hangs the operator's command mid-incident, which is exactly
+    when the database or broker may not answer. Bounded at 120s and reported as
+    a failed duty. Raised by two layers.
+  - `[low]` `[patch]` `truncated` was reported whenever `remaining > max_rows`, even
+    when only live rows were over the cap and nothing was prunable -- an
+    operator (or the new chain) sent round forever. It now also requires a
+    terminal row to exist.
+  - `[low]` `[patch]` Terminal rows with a NULL `completed_at` (pre-0003) never aged
+    out and sorted last in the cap pass; they are now treated as older than
+    any window, and the cap pass orders NULLs first.
+  - `[low]` `[patch]` A call with no `sub` was refused under `ratelimit.cache_unavailable`
+    with reason `cache-unavailable`, so an attribution fault paged as a cache
+    outage. It has its own reason (`no-subject`) and event
+    (`ratelimit.unattributable`), with no `Retry-After` because waiting cannot
+    supply a subject. Raised by three layers.
+  - `[low]` `[patch]` `_tool_refusal`'s `ImportError` fallback was silent, so an SDK
+    that moved `ToolError` would have quietly regressed every projected
+    refusal to the withheld-text crash. It logs once.
+  - `[low]` `[patch]` `RevokeDuty` read `report.get("ok", True)`, so a report missing
+    its verdict projected as success. It is `is True` now.
+  - `[low]` `[patch]` `mcp_start_get`'s docstring described the SDK as flattening
+    exceptions to `str(exc)`, contradicting `supervisor._tool_refusal` (which
+    is right); corrected. `Callable` now comes from `collections.abc` like the
+    rest of the package, and `prune_run_state_task`'s return annotation no
+    longer claims every value is an int.
+  - `[low]` `[patch]` The steward "broken command" test only passed because this
+    checkout's `manage.py` exists; it now stubs one under `tmp_path`.
+  - `[low]` `[patch]` Nine verification gaps, each closed with a test in the story's
+    own modules: the atlas `start_run_pipeline` tool under a bound (only the
+    warden twin was driven); the beat entry compared to
+    `prune_run_state_task.name` and the Celery registry instead of a literal;
+    the bucket TTL asserted against the refill time through a recording
+    cache; a read-serving/write-failing store in the fail-closed
+    parametrisation; `int_setting` rejecting `0`/`-1`/text/`None` and a
+    zero ceiling still admitting a start; the `RUN_STATE_PRUNE_INTERVAL_SECONDS
+    <= 0` clamp observed by loading settings in a child with the variable set
+    to `0`; `celery_control()` pinned to `current_app.control`; production's
+    `CACHES["default"]` location pinned to `REDIS_CACHE_URL` and not the broker
+    URL by loading `config.settings.production` in a child; and the 429
+    arriving before the sidecar hop on the proxied path.
+
 ## Auto Run Result
 
 Status: done
@@ -537,7 +682,7 @@ confirmed identical at baseline).
 
 Follow-up review recommended: **true** — 4 of the patched findings were `high`
 severity (score rule: any high ⇒ true; the medium/low score was
-`3 × 3 + 1 × 1 = 10`, itself ≥ 5).
+`3 × 3 + 1 × 1 = 10`, itself ≥ 5). *Consumed by the follow-up pass below.*
 
 **Verification performed.** `src/platform` suite under `platform-ci-test` with
 helm on PATH and an ephemeral PostgreSQL, each run diffed against a detached
@@ -559,6 +704,85 @@ Story 42.4. Both ceilings and the bucket itself are approximate under
 concurrency (count-then-create; non-atomic read-modify-write) — backpressure,
 not a semaphore. Six `spec-surface` scoped stamps and the ledger promotion are
 landing-pass work, deliberately not done from this dirty dispatch worktree.
+
+### Follow-up pass — 2026-09-02
+
+Status: done
+Blocking condition: none
+
+**Implemented change.** Hardening only; no new surface. The MCP-route limiter
+now runs off the ASGI event loop; `revoke_subject` only cancels rows that are
+still live; a worker skips a task whose run is already terminal; the retention
+task chains itself while it is making progress; the steward `revoke` duty has
+a deadline and a strict verdict; and the retention report no longer calls
+unprunable live rows "work remaining".
+
+**Files changed.**
+
+- `django_pyforge/mcp_http.py` — limiter via `sync_to_async(thread_sensitive=False)`.
+- `django_pyforge/supervisor.py` — live-only CANCELLED update; NULL
+  `completed_at` aged out and ordered first; `truncated` requires a prunable
+  row; `_tool_refusal` logs its fallback once.
+- `django_pyforge/tasks.py` — worker pre-flight on a terminal row;
+  `prune_run_state_task` self-chains on truncated-with-progress.
+- `django_pyforge/rate_limit.py` — `REASON_NO_SUBJECT` / `ratelimit.unattributable`.
+- `django_pyforge/mcp_start_get.py` — docstring corrected.
+- `pyforge/steward/revoke.py` — `REVOKE_TIMEOUT_SECONDS`, `TimeoutExpired` →
+  failed duty, `ok is True`, `collections.abc.Callable`.
+- Tests: `test_agent_rate_limits_and_run_bounds.py` (+19 cases),
+  `test_start_get_survives_disconnect.py` (atlas tool at the ceiling),
+  `test_revoke_duty.py` (+2, and the broken-command test made
+  checkout-independent).
+
+**Review findings.** 21 patched (high 1, medium 4, low 16); 3 deferred
+(high 1, medium 1, low 1 — the dead-worker orphan rows, the cache alias's
+missing socket timeouts, the retention index); 25 rejected — 6 were the first
+pass's own deferrals raised again unchanged (non-atomic bucket, token spent
+before the ceilings, `manage.py revoke_subject` exit code, the audit-test row
+leak, beat/tunables/operator docs, `--reason`), and the rest noise or false
+(the `send_http` `extra_headers` kwarg exists; the `.delay` seam is still
+called for real by `test_cloudevents_redis_broker`; no package-level suite
+drives `publish_start`; "revoke is not a ban" is the AC as written).
+
+Follow-up review recommended: **false** — forced, because this pass *was* the
+single allowed follow-up (CAP-11 / steward 41.2). For the record the pass's own
+score would have said `true` (one high patch; medium/low score
+`3 × 4 + 1 × 16 = 28`).
+
+**Verification performed.** `src/platform` suite under `platform-ci-test`
+(helm on PATH, ephemeral PostgreSQL, `--create-db`): **655 passed** / 13
+failed / 5 errors / 7 skipped, against 636 / 13 / 5 / 7 after the first pass —
+the 18-entry failure+error set is byte-identical (`comm`-diffed from the
+short-summary sections, not eyeballed), and all 19 added cases pass, the two
+child-process settings probes included. `pixi run -e pyforge-steward
+pyforge-steward-test`: **1009 passed** (1007 before). `python -m
+db.sqlmigrate_extraction`: ok (15 first-party migrations; no migration
+changed). `ruff`: `src/platform` 116 → 116 (its own config); on the touched
+shared-package files, under the config this worktree resolves, the only
+entries are the pre-existing `I001`/`RUF100`/`RUF046`/`TRY004` ones and the
+pre-existing `UP035` is gone (a detached checkout of `a3127db` resolved a
+different rule set, so it was not usable as the other side of that
+comparison). `scripts/detectors.py --scope repo`: 17 detectors, 13 pass; the
+four with findings are unchanged from the first pass — `spec-surface` shows
+the same 136 drift rows (`comm`-diffed against the first pass's snapshot: no
+row added, none removed, because this pass touched no file the story had not
+already touched), `deferred-work` reports 0 steward rows after
+`scripts/deferred_work_intake.py --fix --project steward` mirrored the three
+new deferrals as `DW-FU-42-2-18`..`20` (its 3 remaining rows are
+pyforge-mason's), and `cfe_rebuild_guard_check` / `pixi_version_check` are
+the same unrelated and environmental findings as before.
+
+**Residual risks.** The dead-worker orphan rows (deferred, high) are the one
+thing this pass found and could not close without a design decision: until a
+pickup heartbeat exists, a leaked RUNNING row is a slow lockout, and the
+operator's lever is `revoke --sub`. The event-loop fix makes a cache stall
+survivable but not fast — each stalled call still occupies an executor thread
+until the socket gives up (deferred, medium). PR #1026 had already merged when
+this pass ran, so its commit sits on `dispatch/pyforge-steward/42.2` ahead of
+`main` and needs its own landing PR; the ledger row is still `backlog` on
+`main` (a merged story with a `backlog` row re-dispatches every tick — the
+`followup_review_recommended: false` written here is what stops the next
+dispatch at step-01).
 
 ## Source
 

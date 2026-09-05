@@ -3,7 +3,7 @@ title: "Station API contract and the /api/v1 collision"
 type: "feature"
 created: "2026-09-02"
 status: "done"
-followup_review_recommended: true
+followup_review_recommended: false
 review_loop_iteration: 1
 updated: "2026-09-03"
 baseline_commit: "58ee07a0"
@@ -21,6 +21,37 @@ context:
 warnings: []
 deferred:
   - "Per-station route inventories (each station adds its own routes under the prefix)."
+  - summary: >-
+      PyForgeStationClient default urllib transport has no executing test.
+    evidence: |-
+      Unit tests inject a mock transport; _urllib path untested in CI.
+    location: >-
+      src/shared/packages/pyforge-core/src/pyforge/core/client.py
+    severity: medium
+  - summary: >-
+      Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
+    evidence: |-
+      test_langflow_mount.py requires langflow package; langflow-free suite covers bare /api/v1 only.
+    location: >-
+      src/platform/tests/test_langflow_mount.py
+    severity: medium
+  - summary: >-
+      Server-side X-PyForge-API-Version header enforcement not implemented.
+    evidence: |-
+      Client sets header; station_api.py never validates it against URL version.
+    location: >-
+      src/platform/config/station_api.py
+    severity: medium
+  - summary: >-
+      django-warden portal has not adopted StationHttpClient for host calls.
+    evidence: |-
+      Contract test proves header parity via mock transport only; no portal wiring in diff.
+    severity: medium
+  - summary: >-
+      OpenAPI documents are not schema-validated beyond path-key presence.
+    evidence: |-
+      Tests assert paths keys exist; no OpenAPI validator or golden document.
+    severity: low
 ---
 
 <intent-contract>
@@ -89,6 +120,16 @@ Ledger key `43-2-station-api-contract`. Host never imports `pyforge.*`. Host nev
   - `[medium]` `[patch]` `contract-probe` station registry entry torn down after prefix-violation test.
   - `[low]` `[patch]` Updated `test_langflow_mount.py` module docstring for Story 43.2 routing.
 
+### 2026-09-03 — Follow-up review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 1, low 1)
+- defer: 5: (high 0, medium 4, low 1)
+- reject: 18
+- addressed_findings:
+  - `[medium]` `[patch]` Regenerated `environment.yaml` without pixi WARN/ANSI banner (maintenance CI sync gate after `pixi.toml` dep changes).
+  - `[low]` `[patch]` Added host dispatch test for unregistered station API version (`/stations/warden/api/v99/health` → JSON 404).
+
 ## Auto Run Result
 
 Status: done
@@ -102,16 +143,18 @@ Status: done
 - `src/shared/packages/django-pyforge/src/django_pyforge/station_client.py` — portal wrapper (AD-7)
 - Platform + kit + core tests; Dream update; pixi env deps for kit contract test
 
-**Review:** 4 patches applied (2 high host-dispatch/404 guards). Deferred: server-side version-header enforcement, django-warden portal adoption, warden stub routes in host, station lifespan wiring, archive Dream example. Rejected: duplicate/noise findings (re-exports, skill docs, ledger checkbox before sync).
+**Review (initial pass):** 4 patches applied (2 high host-dispatch/404 guards). Deferred: server-side version-header enforcement, django-warden portal adoption, warden stub routes in host, station lifespan wiring, archive Dream example. Rejected: duplicate/noise findings (re-exports, skill docs, ledger checkbox before sync).
 
-**Follow-up review recommendation:** true — patched counts: high 2, medium 1, low 1 (score 2×high triggers follow-up).
+**Review (follow-up pass):** 2 patches applied (environment.yaml regeneration, unknown-version 404 test). Deferred: urllib transport test gap, Langflow positive-path CI gate, server-side version header, portal adoption, OpenAPI schema validation. Rejected: 18 duplicate/out-of-scope/noise findings (BS-7 re-ship, httpx-vs-urllib re-litigation, sprint-ledger process, export discoverability).
+
+**Follow-up review recommendation:** false — follow-up pass patched counts: medium 1, low 1 (score 4 < 5; forced false as single allowed follow-up).
 
 **Verification:**
-- `pixi run -e pyforge-core pytest …/test_client.py …/test_leaf_constraint.py` — 33 passed
+- `pixi run -e pyforge-core pytest src/shared/packages/pyforge-core/tests/unit/test_client.py` — 3 passed
 - `pixi run -e pyforge-testing-kit pyforge-testing-kit-test` — 9 passed
-- `platform-ci-test`: station API + host dispatch + validation + no_pyforge_import — 16 passed
+- `pixi run -e platform-ci-test pytest src/platform/tests/test_station_api_host_dispatch.py` — 5 passed
 
-**Residual risks:** Langflow prefix-preserving redirect tests require the `langflow` package (skipped in `platform-ci-test`; covered by langflow-free bare `/api/v1` test). Warden `compliance/check` is a host stub until warden owns its route inventory. `environment.yaml` may need regeneration after `pixi.toml` changes (maintenance CI gate).
+**Residual risks:** Langflow prefix-preserving redirect tests require the `langflow` package (skipped in `platform-ci-test`; bare `/api/v1` isolation covered langflow-free). Warden `compliance/check` is a host stub until warden owns its route inventory. PyForgeStationClient default urllib transport untested end-to-end.
 
 ## Source
 

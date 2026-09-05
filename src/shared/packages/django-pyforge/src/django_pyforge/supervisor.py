@@ -53,6 +53,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from django.db import transaction
+from django.db.models import F
+from django.db.models import Q
 from django.db.utils import DatabaseError
 from django.utils import timezone
 
@@ -109,6 +111,7 @@ DEFAULT_PRUNE_BATCH = 5_000
 logger = logging.getLogger(__name__)
 
 _runners: dict[tuple[str, str], Any] = {}
+_tool_error_fallback_logged = False
 
 
 class HandleRefusedError(Exception):
@@ -216,6 +219,24 @@ def bound_refusal_payload(exc: RunBoundExceeded) -> dict[str, Any]:
     return {"status": int(exc.status), **exc.payload()}
 
 
+def _log_tool_error_fallback() -> None:
+    """Say so, once, when a bound has to cross without the SDK's ``ToolError``.
+
+    Silent, this fallback would hide the exact regression it exists to survive:
+    an SDK release that moved ``ToolError`` would quietly turn every projected
+    refusal back into the withheld-text crash, with nothing in the log to say
+    why agents had stopped seeing ``run_ids``.
+    """
+    global _tool_error_fallback_logged
+    if _tool_error_fallback_logged:
+        return
+    _tool_error_fallback_logged = True
+    logger.warning(
+        "supervisor.tool_error_unavailable",
+        extra={"event": "supervisor.tool_error_unavailable"},
+    )
+
+
 def _tool_refusal(payload: dict[str, Any]) -> Exception:
     """The exception an MCP tool must raise for its message to survive.
 
@@ -232,6 +253,7 @@ def _tool_refusal(payload: dict[str, Any]) -> Exception:
     try:
         from mcp.server.mcpserver.exceptions import ToolError  # noqa: PLC0415
     except ImportError:
+        _log_tool_error_fallback()
         return BoundedStartRefused(payload)
     refusal = ToolError(json.dumps(payload, sort_keys=True))
     refusal.payload = dict(payload)
@@ -807,7 +829,16 @@ def revoke_subject(
     now = timezone.now()
     cancelled = 0
     if run_ids:
-        cancelled = RunState.objects.filter(pk__in=run_ids).update(
+        # Live rows only, re-checked inside the UPDATE itself: a run that
+        # finished between the SELECT above and this write is already terminal,
+        # and the rule `complete_run` enforces holds in this direction too --
+        # terminal wins. A `succeeded` row and its result are not replaced by a
+        # cancellation that arrived too late to mean anything, and
+        # `cancelled_runs` reports what was actually cancelled.
+        cancelled = RunState.objects.filter(
+            pk__in=run_ids,
+            status__in=RunState.LIVE_STATUSES,
+        ).update(
             status=RunState.Status.CANCELLED,
             completed_at=now,
             heartbeat_at=now,
@@ -867,11 +898,14 @@ def prune_run_state(*, now: datetime | None = None) -> dict[str, Any]:
     batch = int_setting(SETTING_PRUNE_BATCH, DEFAULT_PRUNE_BATCH)
     cutoff = moment - timedelta(days=retention_days)
 
+    # A terminal row with no `completed_at` cannot show it is inside the
+    # window, so it is not: `complete_run` and `revoke` always stamp one, and
+    # the rows without it predate the timing columns (0003) -- older than any
+    # retention window, and otherwise exempt from it forever.
     aged_ids = list(
-        RunState.objects.filter(
-            status__in=RunState.TERMINAL_STATUSES,
-            completed_at__lt=cutoff,
-        ).values_list("id", flat=True)[:batch],
+        RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES)
+        .filter(Q(completed_at__lt=cutoff) | Q(completed_at__isnull=True))
+        .values_list("id", flat=True)[:batch],
     )
     aged_out = _delete_by_ids(RunState.objects, aged_ids, RunState)
 
@@ -891,15 +925,23 @@ def prune_run_state(*, now: datetime | None = None) -> dict[str, Any]:
     if surplus > 0 and budget > 0:
         oldest = list(
             RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES)
-            .order_by("completed_at", "started_at")
+            .order_by(
+                F("completed_at").asc(nulls_first=True),
+                F("started_at").asc(nulls_first=True),
+            )
             .values_list("id", flat=True)[: min(surplus, budget)],
         )
         over_cap = _delete_by_ids(RunState.objects, oldest, RunState)
 
     remaining = RunState.objects.count()
-    truncated = (
-        len(aged_ids) >= batch or len(handle_ids) >= batch or remaining > max_rows
+    # Over the cap is only "work remains" while something is still prunable:
+    # live rows alone above `max_rows` are the ceilings' business, and a sweep
+    # reporting `truncated` with nothing it may delete would send an operator
+    # -- or the self-rescheduling task -- round forever.
+    over_cap_left = remaining > max_rows and (
+        RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).exists()
     )
+    truncated = len(aged_ids) >= batch or len(handle_ids) >= batch or over_cap_left
     return {
         "aged_out": int(aged_out),
         "over_cap": int(over_cap),
