@@ -15,6 +15,10 @@ Workflow:
   5. If newer: call recipe_editor.py to update context.version, reset
      build.number to 0, and recalculate the source SHA256.
 
+HEAD mode (--head) never changes context.version, so a HEAD advance is always
+a same-version content change: it INCREMENTS build.number (G113) instead of
+resetting it — two artifacts must never share version + build number.
+
 Pre-releases are skipped by default (pass --pre to include them).
 
 Usage:
@@ -87,6 +91,19 @@ def _get_recipe_context(recipe_path: Path) -> dict[str, Any]:
     with open(recipe_path) as f:
         data = yaml_parser.load(f)
     return {"context": data.get("context") or {}, "source": data.get("source")}
+
+
+def _get_build_number(recipe_path: Path) -> int:
+    """Return the recipe's current ``build.number`` (0 when absent or unreadable)."""
+    if not RUAMEL_AVAILABLE:
+        return 0
+    assert YAML is not None
+    try:
+        with open(recipe_path) as f:
+            data = YAML().load(f)
+        return int((data.get("build") or {}).get("number") or 0)
+    except Exception:
+        return 0
 
 
 def _detect_source_path(recipe_path: Path) -> str:
@@ -294,9 +311,11 @@ def update_recipe_head(
 ) -> dict[str, Any]:
     """Advance a commit-pinned recipe to the default-branch HEAD (CAP-2).
 
-    Updates ``context.commit`` and recalculates the source sha256. Does **not**
-    invent a new ``context.version`` — callers re-derive version of record per
-    G109 when needed. Tag-mode recipes should use :func:`update_recipe` instead.
+    Updates ``context.commit``, recalculates the source sha256 and increments
+    ``build.number`` (the conda version is unchanged, so the new content needs a
+    new build string — G113). Does **not** invent a new ``context.version`` —
+    callers re-derive version of record per G109 when needed. Tag-mode recipes
+    should use :func:`update_recipe` instead.
     """
     if not _CHECKER_AVAILABLE:
         return {
@@ -359,7 +378,7 @@ def update_recipe_head(
     source_path = _detect_source_path(recipe_path)
     actions: list[dict[str, Any]] = [
         {"action": "update", "path": "context.commit", "value": head_sha},
-        {"action": "update", "path": "build.number", "value": 0},
+        {"action": "update", "path": "build.number", "value": _get_build_number(recipe_path) + 1},
         {"action": "calculate_hash", "path": source_path},
     ]
 

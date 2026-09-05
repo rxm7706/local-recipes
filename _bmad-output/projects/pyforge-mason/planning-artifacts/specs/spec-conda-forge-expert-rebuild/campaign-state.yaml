@@ -521,7 +521,11 @@ slices:
                           # only closed CAP-2's success bar; it did not put the replacement in
                           # front of live traffic. Story 12.3 (2026-08-28) flipped `equivalence`
                           # off "green" to "stale" -- see that field's own note below.
-    equivalence: "green"  # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
+    equivalence: "green"  # RE-VERIFIED 2026-09-05 (CFE v8.86.0 retro 4825cc426b, PR #1059):
+                          # github_updater.py (--head increments build.number) and the lagging
+                          # recipe-generator.py docstring re-ported byte-for-byte -- all 5 slice-1
+                          # scripts sha256-identical to live again; Clause 4 harness re-run green.
+                          # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
                           # v8.84.0 --head HEAD-advance was re-ported into the compiled
                           # github_updater.py byte-for-byte (sha256 identical to the live
                           # original again), so Clause 2 holds for all 5 scripts and Clause 4
@@ -608,7 +612,26 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "1da5fd021307ac62a0be55c831dcb43dbbab54b8"
+    brief_mirrored_through: "4825cc426b59e949bb705904a46038f14b07bf71"
+                                    # ADVANCED 2026-09-05 from 1da5fd0213 to the CFE v8.86.0 retro
+                                    # 4825cc426b (bmad-suite 2026.9.5 refresh Rule-2 retro, PR #1059). Its
+                                    # CFE-surface delta: SKILL.md (G111 noarch_platforms required for
+                                    # selector-carrying noarch recipes, G112 npm-from-commit-archive build +
+                                    # clean prod reinstall, G113 same-version change bumps build.number,
+                                    # CFE-metadata registry rule), CHANGELOG.md, MANIFEST.yaml,
+                                    # config/skill-config.yaml (8.86.0), config/failure-catalog.yaml
+                                    # (regenerated), quickref/commands-cheatsheet.md (repo-wide lint aborts
+                                    # at an empty recipe-maintainers), scripts/github_updater.py (--head now
+                                    # INCREMENTS build.number via _get_build_number instead of resetting to
+                                    # 0), tests/unit/test_github_updater.py (G113 regression tests).
+                                    # INTERSECTS slice 1: github_updater.py is slice-1 canonical -> compiled
+                                    # copy re-ported byte-for-byte (sha256 identical to live). Same pass also
+                                    # caught up recipe-generator.py, whose compiled copy had lagged live by a
+                                    # 5-line docstring since the 2026-09-02 python-floor commit f45a9209d1
+                                    # (behavior identical, template test green; a missed mirror, now byte-
+                                    # identical). Brief: scope.amendments retro-mirror entry appended to the
+                                    # Tier-3 skill-brief.yaml on the operator machine (dated 2026-09-05).
+                                    # Mirrored THEN advanced.
                                     # ADVANCED 2026-09-04 from 65678fbe1c to the CFE v8.85.2
                                     # retro 1da5fd0213 (relocation-aware repo root). Its CFE-surface
                                     # delta -- scripts/_paths.py, gen_yml_reference.py, _path_guard.py,
@@ -697,7 +720,11 @@ slices:
                          # cfe.py's _CFE_SCRIPTS and pixi tasks/MCP tools finds zero references
                          # to cfe-recipe-lifecycle), matching slice 1's own precedent that a
                          # clean audit alone does not advance status past "compiled".
-    equivalence: "green"  # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
+    equivalence: "green"  # RE-VERIFIED 2026-09-05 (CFE v8.86.0 retro 4825cc426b, PR #1059): the
+                         # retro touched none of the five audited scripts; the shipped
+                         # github_updater.py + recipe-generator.py copies re-ported byte-for-byte;
+                         # harness re-run green.
+                         # RESTORED 2026-09-04 (CFE v8.85.2 retro 1da5fd0213, PR #1043): the
                          # five-script parents[4] class below is closed at the SOURCE --
                          # `_paths.get_repo_root()` is a marker walk (nearest ancestor with
                          # pixi.toml + .claude/) and `_path_guard.py`, `gen_yml_reference.py`,
@@ -826,7 +853,27 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "1da5fd021307ac62a0be55c831dcb43dbbab54b8"
+    brief_mirrored_through: "4825cc426b59e949bb705904a46038f14b07bf71"
+                                    # ADVANCED 2026-09-05 from 1da5fd0213 to the CFE v8.86.0 retro
+                                    # 4825cc426b (bmad-suite 2026.9.5 refresh Rule-2 retro, PR #1059). Its
+                                    # CFE-surface delta: SKILL.md (G111 noarch_platforms required for
+                                    # selector-carrying noarch recipes, G112 npm-from-commit-archive build +
+                                    # clean prod reinstall, G113 same-version change bumps build.number,
+                                    # CFE-metadata registry rule), CHANGELOG.md, MANIFEST.yaml,
+                                    # config/skill-config.yaml (8.86.0), config/failure-catalog.yaml
+                                    # (regenerated), quickref/commands-cheatsheet.md (repo-wide lint aborts
+                                    # at an empty recipe-maintainers), scripts/github_updater.py (--head now
+                                    # INCREMENTS build.number via _get_build_number instead of resetting to
+                                    # 0), tests/unit/test_github_updater.py (G113 regression tests).
+                                    # INTERSECTS slice 2 only through its shipped copy of github_updater.py
+                                    # (identical to live until this retro) -> re-ported byte-for-byte; the
+                                    # five audited scripts (_paths, gen_yml_reference, _path_guard,
+                                    # mapping_manager, vulnerability_scanner) are untouched by this retro, so
+                                    # the equivalence harness scope is unaffected. recipe-generator.py
+                                    # caught up to live as in slice 1 (docstring-only lag). BRIEF NOT
+                                    # MIRRORED: brief_path is absent on the operator machine (Tier-3 file
+                                    # lost to worktree teardown) -- recorded here; the retro-mirror entry is
+                                    # owed when the slice-2 brief is regenerated. Advanced with that debt named.
                                     # ADVANCED 2026-09-04 from 65678fbe1c to the CFE v8.85.2
                                     # retro 1da5fd0213 (relocation-aware repo root). Its CFE-surface
                                     # delta -- scripts/_paths.py, gen_yml_reference.py, _path_guard.py,

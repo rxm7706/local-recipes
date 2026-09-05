@@ -3810,7 +3810,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "defc2a9a8bc24562ce681d9aa7fe3045380e0d80"
   },
-  "memlog": "49fd1842621c5e3559b33ff46591bea11571bf72"
+  "memlog": "0db5001d92211d35b0751e741053d44578c0e37b"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
@@ -4751,12 +4751,12 @@
  },
  "pyforge-steward/spec-bmad-eval-quality": {
   "files": {
-   "recipes/bmad-eval-quality/build.bat": "ea2765d19f3ff8f67a267ff484313a48c91ae164",
+   "recipes/bmad-eval-quality/build.bat": "05da953224d139be65f3d6b2bf729c0f9345f878",
    "recipes/bmad-eval-quality/build.sh": "03cd71d25f579b60f87d9270edd5f65d5266287c",
    "recipes/bmad-eval-quality/conda-forge.yml": "4afc355ca15688a3c6290afe5776496c6c8b649c",
    "recipes/bmad-eval-quality/recipe.yaml": "9b16270ede71b3b847e8dc11eaf371125d26de53"
   },
-  "memlog": "950d2b62bb2f498fccfab2e3fb233c2837ffa30f"
+  "memlog": "11737662d5ebb381969a524c39c7993780e28168"
  },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
