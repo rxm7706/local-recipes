@@ -336,7 +336,9 @@ graph LR
   the Kedro home. Warden is never re-templated as Kedro (Q8). `kedro-mcp`
   stays wrapped.
 - **Infra kinds.** PostgreSQL + Redis + Kubernetes. DuckDB is a library/face.
-  Vault/ESO stay outside the image. No MinIO as a fourth core kind.
+  Vault/ESO stay outside the image. No MinIO as a fourth core kind
+  (re-affirmed 2026-09-05; Lane 1 media is RWX, and a multi-node target names its
+  RWX-capable storage class — `sprint-change-proposal-2026-09-05-ad-1-reopen`).
 - **Bind installed pins; do not re-pin.** See `stack.md` § Estate leverage.
 
 ## Shared Data Contracts (`pyforge.core.client`)
@@ -545,3 +547,12 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
 - **2026-09-04 (Phase 4 opens)** — First flip: `44-13-memlog-fidelity` `blocked` → `backlog`
   (pre-flight clean; PR #1043). The other fourteen Epic 44 stories stay `blocked` until flipped
   one by one; 44.3 / 44.9 / 44.10 still need explicit confirmation at dispatch.
+- **2026-09-05** — `bmad-correct-course` on parent `pap:AD-1` / canopy `AD-13`, triggered by
+  the seed Dream `foundry-baas-capability-gaps.md` § *Reopening AD-1*. Both of the seed's legs
+  corrected against primary sources: AD-1 never rested on air-gap (that is parent AD-13), and
+  RWX media bound on CRC 2026-08-25 while five Deployments mount the volume, so RWO is not an
+  alternative at any replica count. Operator ruling: **re-affirmed, not excepted** (Option A).
+  Canopy AD-13 gains the RWX storage-class prerequisite; the "formally excepted" procedure is
+  now defined in the canopy spine; parent AD-1 carries a dated re-affirmation. Record:
+  `sprint-change-proposal-2026-09-05-ad-1-reopen.md`. The seed's fold into this Dream is still
+  pending.

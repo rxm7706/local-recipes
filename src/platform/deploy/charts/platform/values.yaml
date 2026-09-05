@@ -248,7 +248,10 @@ redis:
   resources: {}
 
 # Wagtail media (Story 20.2 / canopy AD-13). ReadWriteMany; Django
-# FileSystemStorage. Not an object-store backend.
+# FileSystemStorage. Not an object-store backend. Mounted by every platform
+# Deployment, so the claim needs an RWX-capable StorageClass on a multi-node
+# cluster; an empty storageClassName is the cluster default, which is often
+# RWO-only and leaves the claim Pending. Proven on CRC (hostpath, single-node).
 media:
   mountPath: /media
   persistence:

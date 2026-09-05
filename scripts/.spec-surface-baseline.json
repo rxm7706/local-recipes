@@ -3914,10 +3914,10 @@
    "src/platform/dbgpt_integration/tasks.py": "9ea305002ad6c4256cab6e9f95187f497ca655a9",
    "src/platform/dbgpt_integration/tests.py": "261866755211f88ef6fa0c3d05232eef1459072c",
    "src/platform/deploy/DR.md": "7e5d0ef237e7e8754f914c7559f8be4390bec120",
-   "src/platform/deploy/README.md": "37069e2367e49811819f355aa9168d665c044aac",
+   "src/platform/deploy/README.md": "f226be6ad745329ec11bacddcedd8a55eac3d85f",
    "src/platform/deploy/charts/platform/.helmignore": "f0352cb42e145d9af6703e17d2498c57fc908d2e",
    "src/platform/deploy/charts/platform/Chart.yaml": "d046587d1991b393a8439de61162b5153c2b6413",
-   "src/platform/deploy/charts/platform/templates/NOTES.txt": "9c37780cce380a9c25af30a2f6c3db75edede01f",
+   "src/platform/deploy/charts/platform/templates/NOTES.txt": "25de0f2f316e5d97de89b971fd0cdf877faba703",
    "src/platform/deploy/charts/platform/templates/_helpers.tpl": "833411762c4d49c5cdd5a62952a9d0671dfcd325",
    "src/platform/deploy/charts/platform/templates/beat-deployment.yaml": "913199f71496914040260fd7adc961ecf88719a1",
    "src/platform/deploy/charts/platform/templates/consume-events-deployment.yaml": "abe2ca281f97b707c8fcdd9e3dfadde1f6d4371a",
@@ -3945,7 +3945,7 @@
    "src/platform/deploy/charts/platform/templates/sidecar-service.yaml": "9681c93b9c48a946013a43963763a7459bbb1859",
    "src/platform/deploy/charts/platform/templates/worker-builds-deployment.yaml": "ee21ac41e50f5389403c9c24da213788ba362511",
    "src/platform/deploy/charts/platform/templates/worker-deployment.yaml": "9531c1e6478288162f7c1ef15236d11df33c079b",
-   "src/platform/deploy/charts/platform/values.yaml": "a496fe9bd3b8576be2e58b13e69290a90cf11a49",
+   "src/platform/deploy/charts/platform/values.yaml": "ad4a1ec4379f3f8b5b4c1abd4912c2b278900b3b",
    "src/platform/deploy/overlays/ocp/README.md": "24ca929d9bcd5aa7ff22ddcc75dd249a0b11d166",
    "src/platform/deploy/overlays/ocp/chart/.helmignore": "f0352cb42e145d9af6703e17d2498c57fc908d2e",
    "src/platform/deploy/overlays/ocp/chart/Chart.yaml": "28c9406a0ff8a6e134b6058c28cbc6e387785b22",
@@ -4158,7 +4158,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8"
   },
-  "memlog": "b1f46cb00c0f1e8cc1729875fe4e07f27930357e"
+  "memlog": "90787b320a34ad0c9b3be1945d5a627b05dff4f9"
  },
  "pyforge-mason/spec-fleet-stewardship": {
   "files": {},
@@ -5978,10 +5978,10 @@
    "src/platform/dbgpt_integration/tasks.py": "9ea305002ad6c4256cab6e9f95187f497ca655a9",
    "src/platform/dbgpt_integration/tests.py": "261866755211f88ef6fa0c3d05232eef1459072c",
    "src/platform/deploy/DR.md": "7e5d0ef237e7e8754f914c7559f8be4390bec120",
-   "src/platform/deploy/README.md": "37069e2367e49811819f355aa9168d665c044aac",
+   "src/platform/deploy/README.md": "f226be6ad745329ec11bacddcedd8a55eac3d85f",
    "src/platform/deploy/charts/platform/.helmignore": "f0352cb42e145d9af6703e17d2498c57fc908d2e",
    "src/platform/deploy/charts/platform/Chart.yaml": "d046587d1991b393a8439de61162b5153c2b6413",
-   "src/platform/deploy/charts/platform/templates/NOTES.txt": "9c37780cce380a9c25af30a2f6c3db75edede01f",
+   "src/platform/deploy/charts/platform/templates/NOTES.txt": "25de0f2f316e5d97de89b971fd0cdf877faba703",
    "src/platform/deploy/charts/platform/templates/_helpers.tpl": "833411762c4d49c5cdd5a62952a9d0671dfcd325",
    "src/platform/deploy/charts/platform/templates/beat-deployment.yaml": "913199f71496914040260fd7adc961ecf88719a1",
    "src/platform/deploy/charts/platform/templates/consume-events-deployment.yaml": "abe2ca281f97b707c8fcdd9e3dfadde1f6d4371a",
@@ -6009,7 +6009,7 @@
    "src/platform/deploy/charts/platform/templates/sidecar-service.yaml": "9681c93b9c48a946013a43963763a7459bbb1859",
    "src/platform/deploy/charts/platform/templates/worker-builds-deployment.yaml": "ee21ac41e50f5389403c9c24da213788ba362511",
    "src/platform/deploy/charts/platform/templates/worker-deployment.yaml": "9531c1e6478288162f7c1ef15236d11df33c079b",
-   "src/platform/deploy/charts/platform/values.yaml": "a496fe9bd3b8576be2e58b13e69290a90cf11a49",
+   "src/platform/deploy/charts/platform/values.yaml": "ad4a1ec4379f3f8b5b4c1abd4912c2b278900b3b",
    "src/platform/deploy/overlays/ocp/README.md": "24ca929d9bcd5aa7ff22ddcc75dd249a0b11d166",
    "src/platform/deploy/overlays/ocp/chart/.helmignore": "f0352cb42e145d9af6703e17d2498c57fc908d2e",
    "src/platform/deploy/overlays/ocp/chart/Chart.yaml": "28c9406a0ff8a6e134b6058c28cbc6e387785b22",
@@ -6209,7 +6209,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "765572fe7681f677abb71eb0092fede456cd8723"
+  "memlog": "37b58a0554906817beee4d6430aeb8bb41406b03"
  },
  "pyforge-steward/spec-python-foundry-cutover": {
   "files": {},

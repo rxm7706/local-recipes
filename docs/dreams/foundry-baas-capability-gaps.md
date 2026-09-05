@@ -185,6 +185,21 @@ above.
 
 ## Reopening AD-1: is "no object storage, ever" actually justified?
 
+> **Correction (2026-09-05, `bmad-correct-course` — `pyforge-steward`
+> `sprint-change-proposal-2026-09-05-ad-1-reopen.md`).** Both legs below were re-read against
+> primary sources and corrected; the operator ruled **re-affirm, not except** (Option A).
+> (1) Parent `AD-1` never invokes air-gap — its full text is design-review discipline ("a
+> component that demands a fourth piece of infrastructure has failed its design review"); the
+> air-gap decision is parent `AD-13`, which no canopy artifact cites as AD-1's reason. (2) The
+> RWX claim **did** bind on the target — `platform-media` Bound on CRC 2026-08-25
+> (`crc-csi-hostpath-provisioner`, Story 12.7 verification record) — and RWO cannot substitute
+> at `replicaCount: 1`, because five Deployments (web, worker, worker-builds, beat,
+> consume-events) mount the media volume. **What survives:** CRC is single-node hostpath, no
+> multi-node target exists yet, `storageClassName: ""` defers to a default class that is often
+> RWO-only, and no artifact named that prerequisite — now recorded in canopy `AD-13`, with the
+> "formally excepted" procedure defined in the canopy spine. Read the section below as the
+> pre-correction argument; the fold into `pyforge-unifying-strategy` carries the corrected text.
+
 This started as a routine "confirm the gap is already closed" check and became the most consequential
 finding here — not that a new kind should be added, but that the rule as currently justified has two
 real gaps, found by reading the primary architecture sources directly rather than trusting a summary of
@@ -258,3 +273,9 @@ footprint is exactly warden's domain)
   unaddressed gaps (an over-broad air-gap argument, and an unverified RWX-storage-class assumption at
   `replicaCount: 1`), recommended for formal reopening via `bmad-correct-course`. **Not yet done**:
   folding this into `pyforge-unifying-strategy.md`; running `bmad-correct-course` on the AD-1 finding.
+- **2026-09-05 (later)** — `bmad-correct-course` ran on the AD-1 finding
+  (`pyforge-steward` `sprint-change-proposal-2026-09-05-ad-1-reopen.md`). Both legs corrected
+  against primary sources (see the dated block at the top of § *Reopening AD-1*); operator
+  ruling: AD-1 / canopy AD-13 **re-affirmed**, RWX storage-class prerequisite recorded, exception
+  procedure defined. Recommendation 6 is closed. **Still not done:** the fold into
+  `pyforge-unifying-strategy.md`.
