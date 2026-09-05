@@ -11,7 +11,7 @@ schema_version: 1
 context:
   name: bmad-suite
   # CalVer refresh stamp (unpadded) — bumped by generate-bmad-suite when pins change.
-  version: "2026.9.2"
+  version: "2026.9.5"
 
 package:
   name: ${{ name }}
@@ -28,13 +28,13 @@ build:
 requirements:
   # GENERATED-BEGIN: suite-run-requirements (bmad_suite_metapackage.py — do not edit by hand)
   run:
-    - bmad-method >=6.11.0
+    - bmad-method >=6.12.0
     - bmad-loop >=0.11.1
     - bmad-method-test-architecture-enterprise >=1.24.0
     - bmad-builder >=2.2.2
     - bmad-creative-intelligence-suite >=0.3.2
     - bmad-module-skill-forge >=2.1.0
-    - bmad-method-wds-expansion >=0.4.3
+    - bmad-eval-quality >=0.2.0.dev0
     - bmad-utility-skills >=2.0.0
     - bmad-labs-skills >=1.0.0.dev0
     - bmad-module-template >=0.1.0

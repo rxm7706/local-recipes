@@ -6,7 +6,7 @@ context:
   # Upstream repo (bmad-labs/skills) has no release tags; pinned to the latest
   # main commit. Bump `version` (from .claude-plugin/marketplace.json
   # metadata.version) and `commit` together.
-  commit: 088a427df8b0f7065f5270104933064c2627d63a
+  commit: 81fe19ede7ad5c40191267fe455248eed0a06f97
 
 package:
   name: bmad-labs-skills
@@ -14,10 +14,10 @@ package:
 
 source:
   url: https://github.com/bmad-labs/skills/archive/${{ commit }}.tar.gz
-  sha256: 604747ff3f552ed87ca41f31042f7db67e1e44d14dde31a9c6e925ec30f54822
+  sha256: 3dad733617ae154708409e33ca8e64fa4c884c008ae7648c40f8cc85c1e96982
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:
@@ -45,10 +45,10 @@ about:
   repository: https://github.com/bmad-labs/skills
   license: MIT
   license_file: LICENSE
-  summary: Community BMAD skills marketplace for Claude Code (21 general-purpose skills)
+  summary: Community BMAD skills marketplace for Claude Code (22 general-purpose skills)
   description: |
     bmad-labs-skills packages the bmad-labs/skills community marketplace — a
-    collection of 21 general-purpose Claude Code skills covering TypeScript
+    collection of 22 general-purpose Claude Code skills covering TypeScript
     unit/e2e testing and clean code, MCP server development, slide and
     presentation generation, EPUB/book conversion, Atlassian REST, Gemini
     multimodal, release-please automation, RCA reports, software research,
@@ -73,7 +73,7 @@ extra:
   cfe-upstream-name: bmad-labs/skills
   cfe-purls:
     - pkg:conda/bmad-labs-skills@${{ version }}?channel=conda-forge
-    - "pkg:github/bmad-labs/skills@088a427df8b0f7065f5270104933064c2627d63a"
+    - "pkg:github/bmad-labs/skills@81fe19ede7ad5c40191267fe455248eed0a06f97"
   cfe-upstream-repo: https://github.com/bmad-labs/skills
   cfe-upstream-homepage: https://github.com/bmad-labs/skills
   cfe-import-names: []
@@ -84,11 +84,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T15:10:00Z"
+  cfe-last-checked: "2026-09-05T13:30:10Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T15:10:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T16:00:22Z"
+  cfe-local-build-datetime: "2026-09-05T13:39:50Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -102,6 +102,10 @@ extra:
 #    # installable on demand without endorsing blanket adoption. No
 #    # conda-forge submission planned.
 # context:
+#    # 2026-09-05 HEAD advance 088a427d -> 81fe19ed (+9 commits: jira-to-local skill,
+#    # slide-maker rework; 22 skills now). marketplace.json still 1.0.0, so the conda
+#    # version stays 1.0.0.dev0 and build.number 0 -> 1 distinguishes the new content
+#    # from the published build 0.
 #    # version 1.0.0.dev0 = marketplace.json metadata.version (1.0.0) + .dev0
 #    # snapshot marker, per the bmad-dashboard commit-pin precedent.
 # build:

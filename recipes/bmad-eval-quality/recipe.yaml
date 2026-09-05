@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0.dev0"
+  # Upstream's only tag is v0.1.0 (no `score`); the 0.2.0 line exists only on
+  # main. Bump `version` (from package.json) and `commit` together; flip to the
+  # tag archive the day v0.2.0 lands (0.1.0 < 0.2.0.dev0 < 0.2.0).
+  commit: 3172162fbdc7c4bb70ed11c1367dc3e433797535
+
+package:
+  name: bmad-eval-quality
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-eval-quality/archive/${{ commit }}.tar.gz
+  sha256: a8b1ddfbeeacbdd2c40423cb5a3ab6ac2c92f6158756b9564d33cb8ba33fbc3c
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  host:
+    - nodejs 24.*
+  run:
+    - nodejs >=22.20.0
+    - if: unix
+      then:
+        - __unix
+    - if: win
+      then:
+        - __win
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - test "$(eval-quality --version)" = "0.2.0"
+          - eval-quality --help | grep -q "eval-quality score"
+          - eval-quality compile --in "${PREFIX}/lib/node_modules/eval-quality/corpus/dev/contracts/satisfied-declarations.json" > /dev/null
+        else:
+          - eval-quality.bat --version
+          - eval-quality.bat --help | findstr /C:"eval-quality score"
+          - eval-quality.bat compile --in "%PREFIX%\lib\node_modules\eval-quality\corpus\dev\contracts\satisfied-declarations.json" > NUL
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-eval-quality
+  license: Apache-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - node_modules/zod/LICENSE
+  summary: Compile, seal, preflight and score Behavioral Evaluation Contracts — grades an evaluation by a twin-run (clean vs planted-defect) loop
+  description: |
+    eval-quality compiles and scores Behavioral Evaluation Contracts: versioned
+    JSON declaring which behaviors to probe, what evidence counts, and the
+    pass/fail oracles. Its one idea is the twin-run loop — run the same contract
+    against a clean system and against one with a single planted defect; a
+    strong contract passes clean and fails mutated. The tool executes nothing
+    itself: a harness runs the system under test and hands over observations
+    and a sealed run record; eval-quality grades the evaluation, not the
+    system. Ships the `eval-quality` CLI (compile, seal, preflight, score),
+    the contract JSON schemas and the development corpus of example contracts.
+  repository: https://github.com/bmad-code-org/bmad-eval-quality
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-eval-quality
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-eval-quality
+  cfe-purls:
+    - pkg:conda/bmad-eval-quality@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-eval-quality@3172162fbdc7c4bb70ed11c1367dc3e433797535"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-eval-quality
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-eval-quality
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-09-05T13:29:57Z"
+  cfe-generated-by-version: 8.85.2
+  cfe-generated-at-datetime: "2026-09-05T13:29:57Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-09-05T13:39:50Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Fourteenth bmad-suite member (docs/dreams/bmad-eval-quality.md; Spec
+#    # spec-bmad-eval-quality CAP-1, steward Story 45.1). Conda name carries the
+#    # bmad- prefix after the upstream repo (bmad-labs-skills precedent); the
+#    # bin stays eval-quality. npm 'eval-quality' latest is 0.1.0 = tag v0.1.0
+#    # (compile/seal/preflight only, no score) — the 0.2.0 line with score /
+#    # runScore / ingest is unreleased main, hence the commit pin (operator
+#    # decision 2026-09-05). Nine breaking schema-version bumps sit between the
+#    # two; there is no runtime version check, so an exact pin is load-bearing.
+# build:
+#    # dist/ is gitignored upstream; prepack runs tsc, so the build does
+#    # npm ci (devDependencies) + npm run build, then a clean
+#    # npm ci --omit=dev so the shipped node_modules holds only the one prod
+#    # dep (zod, MIT — hence license 'Apache-2.0 AND MIT' + its LICENSE file).
+#    # Wrappers in bin/ (bash) and Scripts/ (.bat), never npm install -g
+#    # symlinks, per G6/G100 and the bmad-method feedstock pattern.
+# tests:
+#    # --version prints the bare package.json version ('0.2.0', not the conda
+#    # 0.2.0.dev0). compile takes --in <path> (a positional is 'unknown flag').
+#    # Exit codes (AD-21): 0 ok, 1 CONCERNS under --strict, 2 FAIL, 3 invalid.
+####
