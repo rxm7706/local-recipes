@@ -54,7 +54,7 @@
 # in `scripts/pixi_version_registry.py` -- `pixi run -e local-recipes
 # pixi-version-check` fails CI if it ever drifts from the workspace floor
 # again, and `bump-pixi-version` is how you change it.
-FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.78.0 AS builder
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.79.0 AS builder
 
 # WORKDIR /app -- fixed and short, mirrors the repo-root Containerfile's own
 # `/pyforge` rationale (this repo's worktree tooling has a documented

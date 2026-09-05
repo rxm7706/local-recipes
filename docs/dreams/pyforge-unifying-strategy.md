@@ -398,7 +398,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=164908385eea9d51 -->
+<!-- pixi-env-matrix:begin lock-sha256=08fff91201872fc6 -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -406,17 +406,17 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 |---|---|---:|---|
 | ``bmad-suite-full`` | ``3.14.*`` | 80 | ``linux-64`` |
 | ``bmad-ui`` | ``3.14.*`` | 51 | ``linux-64`` |
-| ``build`` | ``3.14.*`` | 241 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``build`` | ``3.14.*`` | 240 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``conda-smithy`` | ``3.14.*`` | 232 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``dbgpt-sidecar`` | ``3.14.*`` | 405 | ``linux-64`` |
-| ``default`` | ``3.14.*`` | 124 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``detectors`` | ``3.14.*`` | 84 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``gcloud`` | ``3.14.*`` | 151 | ``linux-64``, ``osx-arm64-min`` |
-| ``grayskull`` | ``3.14.*`` | 247 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``linux`` | ``3.14.*`` | 150 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``default`` | ``3.14.*`` | 119 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``detectors`` | ``3.14.*`` | 83 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``gcloud`` | ``3.14.*`` | 146 | ``linux-64``, ``osx-arm64-min`` |
+| ``grayskull`` | ``3.14.*`` | 246 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``linux`` | ``3.14.*`` | 145 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``local-recipes`` | ``3.14.*`` | 1,172 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``mcp-host`` | ``3.14.*`` | 67 | ``linux-64`` |
-| ``osx`` | ``3.14.*`` | 240 | ``osx-arm64-min`` |
+| ``mcp-host`` | ``3.14.*`` | 66 | ``linux-64`` |
+| ``osx`` | ``3.14.*`` | 239 | ``osx-arm64-min`` |
 | ``platform-ci-test`` | ``3.14.*`` | 330 | ``linux-64`` |
 | ``platform-dev`` | ``3.14.*`` | 504 | ``linux-64``, ``osx-arm64-min`` |
 | ``pyforge-atlas`` | ``3.14.*`` | 460 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
@@ -430,10 +430,10 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``pyforge-scribe`` | ``3.14.*`` | 63 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-steward`` | ``3.14.*`` | 78 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.12.*`` | 50 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-warden`` | ``3.14.*`` | 164 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-warden`` | ``3.14.*`` | 161 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``python-agent-platform`` | ``3.14.*`` | 499 | ``linux-64``, ``osx-arm64-min`` |
-| ``vuln-db`` | ``3.14.*`` | 246 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``win`` | ``3.14.*`` | 305 | ``win-64`` |
+| ``vuln-db`` | ``3.14.*`` | 244 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``win`` | ``3.14.*`` | 304 | ``win-64`` |
 
 <!-- pixi-env-matrix:end -->
 ## Fleet conventions (one vocabulary)
