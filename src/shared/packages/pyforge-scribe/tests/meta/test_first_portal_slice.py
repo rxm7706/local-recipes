@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import ast
 import importlib.util
-import subprocess
 from pathlib import Path
+
+from pyforge.testing_kit import changed_paths_since, diff_text_since
 
 STATION = "scribe"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
@@ -217,12 +218,7 @@ def test_portal_tree_has_no_raw_http_or_pyforge_or_chrome_copy() -> None:
 
 def test_src_platform_has_no_pyforge_import() -> None:
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = [line for line in named.splitlines() if line.strip()]
+    changed = changed_paths_since(root, pathspec="src/platform")
     offenders: list[str] = []
     for rel in changed:
         path = root / rel
@@ -230,11 +226,7 @@ def test_src_platform_has_no_pyforge_import() -> None:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         offenders.extend(f"{rel}: {hit}" for hit in _pyforge_package_imports(tree))
-    patch = subprocess.check_output(
-        ["git", "diff", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
+    patch = diff_text_since(root, pathspec="src/platform")
     assert "import pyforge" not in patch
     assert "from pyforge" not in patch
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"

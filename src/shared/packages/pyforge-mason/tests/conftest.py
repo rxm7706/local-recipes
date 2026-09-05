@@ -9,15 +9,18 @@ side effects to the test that caused them.
 `exclude_cfe_rebuild_equivalence_tests` (Story 12.7, patched post-review) is a
 shared helper for the "this story must not touch the CFE surface" story-diff
 guards in tests/meta/{test_persona_consults_cfe,test_portal_last_diagnose}.py
--- previously duplicated verbatim in both files."""
+-- previously duplicated verbatim in both files. The underlying git mechanics
+(`_unsanctioned_cfe_commits`, `_existed_at_origin_main`) moved to
+`pyforge.testing_kit.branch_diff_guard` (retro-2026-09-04 action item 11),
+which every station's equivalent guard now shares."""
 from __future__ import annotations
 
 import logging
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit import existed_at_ref
 
 # The mason-owned CFE-rebuild campaign (SPEC-conda-forge-expert-rebuild, Epic 12) adds one
 # equivalence-validation test file per compiled slice under CFE's own tests/integration/
@@ -29,53 +32,6 @@ import pytest
 _CFE_REBUILD_EQUIVALENCE_TEST_RE = re.compile(
     r"^\.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py$"
 )
-
-
-def _existed_at_origin_main(root: Path, path: str) -> bool:
-    """True if `path` was already present in `origin/main`'s tree -- i.e. this
-    diff MODIFIES an existing file rather than ADDING a new one."""
-    result = subprocess.run(
-        ["git", "cat-file", "-e", f"origin/main:{path}"],
-        cwd=root,
-        capture_output=True,
-        check=False,
-    )
-    return result.returncode == 0
-
-
-_CFE_SURFACE = ".claude/skills/conda-forge-expert"
-_CFE_CHANGELOG = f"{_CFE_SURFACE}/CHANGELOG.md"
-
-
-def _unsanctioned_cfe_commits(root: Path) -> list[str]:
-    """Commits on this branch (``origin/main..HEAD``) that touch the CFE surface
-    without being a sanctioned Rule-2 retro -- subject starts ``retro:`` AND the
-    CFE CHANGELOG moves in the same commit, the fleet rule
-    ``scripts/mason_cfe_surface_check.py`` enforces for mason. Merge commits are
-    skipped (they restate their constituents); uncommitted CFE edits count as
-    unsanctioned. A station story never touches the surface; a fleet hygiene
-    branch may carry the one sanctioned retro (2026-09-04, PR #1043)."""
-    shas = subprocess.check_output(
-        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _CFE_SURFACE],
-        cwd=root,
-        text=True,
-    ).split()
-    bad: list[str] = []
-    for sha in shas:
-        subject = subprocess.check_output(
-            ["git", "log", "-1", "--format=%s", sha], cwd=root, text=True
-        ).strip()
-        files = subprocess.check_output(
-            ["git", "show", "--format=", "--name-only", sha], cwd=root, text=True
-        ).split()
-        if not (subject.startswith("retro:") and _CFE_CHANGELOG in files):
-            bad.append(f"{sha[:10]} {subject}")
-    dirty = subprocess.check_output(
-        ["git", "diff", "--name-only", "HEAD", "--", _CFE_SURFACE], cwd=root, text=True
-    ).split()
-    if dirty:
-        bad.append("uncommitted: " + ", ".join(dirty))
-    return bad
 
 
 def exclude_cfe_rebuild_equivalence_tests(root: Path, paths: list[str]) -> list[str]:
@@ -92,7 +48,7 @@ def exclude_cfe_rebuild_equivalence_tests(root: Path, paths: list[str]) -> list[
     """
     kept = []
     for p in paths:
-        if _CFE_REBUILD_EQUIVALENCE_TEST_RE.match(p) and not _existed_at_origin_main(root, p):
+        if _CFE_REBUILD_EQUIVALENCE_TEST_RE.match(p) and not existed_at_ref(root, p):
             continue
         kept.append(p)
     return kept

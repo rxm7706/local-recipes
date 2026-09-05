@@ -9670,6 +9670,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-atlas[d9c5afd2] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[caa53406] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -10095,6 +10096,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-atlas[39ece2ce] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[53d1dee0] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -10513,6 +10515,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-atlas[02a1ee96] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[79f6717e] @ src/shared/packages/pyforge-warden
   pyforge-ci:
     channels:
@@ -13157,6 +13160,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[20e92924] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -13287,6 +13291,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[80e3fd66] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -13420,6 +13425,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-herald[3b2e6167] @ src/shared/packages/pyforge-herald
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
   pyforge-marshal:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -13968,6 +13974,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[21d37c86] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -14083,6 +14090,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[a4239189] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -14199,6 +14207,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-mason[f4cd0539] @ src/shared/packages/pyforge-mason
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
   pyforge-scribe:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -14270,6 +14279,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[f035fabc] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -14329,6 +14339,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[e0fb7563] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -14385,6 +14396,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-scribe[739a4cd5] @ src/shared/packages/pyforge-scribe
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
   pyforge-steward:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -14471,6 +14483,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[2ef1fa83] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/appdirs-1.4.4-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
@@ -14544,6 +14557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[9b5178bc] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/appdirs-1.4.4-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/asgiref-3.12.1-pyhcf101f3_0.conda
@@ -14622,6 +14636,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[172037c0] @ src/shared/packages/pyforge-steward
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
   pyforge-testing-kit:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -14945,6 +14960,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[313c65da] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[831725f6] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[caa53406] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -15116,6 +15132,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[c3bfe1a3] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[da1acf34] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[53d1dee0] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -15276,6 +15293,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[77b950e8] @ src/shared/packages/pyforge-core
+      - conda_source: pyforge-testing-kit[6d07ec37] @ src/shared/packages/pyforge-testing-kit
       - conda_source: pyforge-warden[79f6717e] @ src/shared/packages/pyforge-warden
   python-agent-platform:
     channels:

@@ -460,6 +460,7 @@ cachebox = ">=5.2.3,<6"
 [feature.pyforge-mason.dependencies]
 pyforge-mason = { path = "src/shared/packages/pyforge-mason" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/conftest.py + tests/meta/*.py (test-time only; not a package run-dep)
 pyyaml = ">=6.0.3"                # PyYAML -- Story 4.4's engines/condalock.py::check() metadata.content_hash parser (also a package run-dep; mirrors [feature.pyforge-doctor.dependencies]'s identical line)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
@@ -495,6 +496,7 @@ cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 [feature.pyforge-steward.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: budget.py/keys.py's mandatory run-dep (atomic_write)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -1982,6 +1984,7 @@ cmd = "python -m sentinel.knowledge.crews.review_crew"
 [feature.pyforge-warden.dependencies]
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: feeds.py's mandatory run-dep (atomic_write_text)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -2034,6 +2037,7 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: admission.py/lasuite.py/basilisk.py/migration_status.py/refresh.py's mandatory run-dep (atomic_write)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner (kedro-test)
@@ -2202,6 +2206,7 @@ pytest = ">=9.1.1"                # test runner
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 psycopg = ">=3.3.4"               # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); 3.2+ for PostgreSQL 17 / libpq 17
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
@@ -2220,6 +2225,7 @@ pytest = ">=9.1.1"                # test runner
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # retro-2026-09-04 action item 11: branch_diff_guard.py shared by tests/meta/*.py (test-time only; not a package run-dep)
 mcp = ">=2.1.1"                   # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
 httpx2 = ">=2.12.0"               # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)

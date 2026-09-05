@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import ast
-import subprocess
 from pathlib import Path
+
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 _INGEST_MARKERS = ("supervisor ingest", "bmad-loop ingest")
@@ -72,13 +73,9 @@ def test_marshal_portal_does_not_copy_chrome():
 
 def test_diff_does_not_add_bmad_loop_ingest():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main"],
-        cwd=root,
-        text=True,
-    )
+    changed = changed_paths_since(root)
     offenders: list[str] = []
-    for rel in named.splitlines():
+    for rel in changed:
         path = root / rel
         if not path.is_file() or path.suffix not in {".py", ".md"}:
             continue
@@ -100,23 +97,5 @@ def test_diff_does_not_add_bmad_loop_ingest():
 
 def test_src_platform_diff_has_no_pyforge_import():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    offenders: list[str] = []
-    for rel in named.splitlines():
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
-    assert not offenders
+    changed = changed_paths_since(root, pathspec="src/platform")
+    assert not pyforge_import_offenders(changed, root)
