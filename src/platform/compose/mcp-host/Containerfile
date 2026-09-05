@@ -5,6 +5,10 @@ FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.78.0 AS builder
 
 WORKDIR /app
 COPY . /app
+# .pixi/config.toml is tracked and load-bearing but deliberately NOT reached
+# via the COPY above -- see the root Containerfile's identical comment for
+# the full reasoning (retro action item 9, 2026-09-05).
+RUN mkdir -p .pixi && printf 'run-post-link-scripts = "insecure"\n' > .pixi/config.toml
 RUN pixi install --frozen -e mcp-host
 RUN pixi shell-hook -e mcp-host -s bash > /app/shell-hook.sh
 

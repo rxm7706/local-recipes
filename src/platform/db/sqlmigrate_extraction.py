@@ -113,6 +113,78 @@ def parse_changeset_index(changelog_dir: Path = CHANGELOG_DIR) -> dict[str, str]
     return index
 
 
+def expected_id_from_filename(
+    path: Path,
+    migration_map: MigrationMap,
+) -> str | None:
+    """``<distribution>:<seq>`` this repo's own naming convention
+    (``<distribution>-<seq>-<slug>.sql``) assigns to ``path``, or ``None`` if
+    its filename matches no known distribution prefix (never guessed).
+
+    Distribution names themselves contain hyphens (``python-agent-platform``,
+    ``pyforge-scribe``), so the split can't be a blind regex -- it walks the
+    map's own ``distributions`` keys (longest first, in case one is ever a
+    prefix of another) to find which one the filename starts with.
+    """
+    stem = path.stem
+    for distribution in sorted(migration_map.distributions, key=len, reverse=True):
+        prefix = f"{distribution}-"
+        if not stem.startswith(prefix):
+            continue
+        match = re.match(r"^([1-9][0-9]*)-", stem[len(prefix) :])
+        if match is not None:
+            return f"{distribution}:{match.group(1)}"
+    return None
+
+
+def find_unexpected_changesets(
+    migration_map: MigrationMap,
+    changelog_dir: Path = CHANGELOG_DIR,
+) -> list[str]:
+    """Every changelog file must carry EXACTLY ONE ``--changeset`` line, and
+    it must be the id this repo's own filename convention assigns it.
+
+    Closes the Row 8 gap (2026-09-04): a hand-inserted second
+    ``--changeset python-agent-platform:21-1`` header landed in
+    ``python-agent-platform-21-...-run-state-tenant.sql`` and was invisible
+    to this gate, because ``parse_changeset_index`` only ever inspects the
+    FIRST ``--changeset`` line per file (via ``CHANGESET_LINE.search``) --
+    but Liquibase itself parses every ``--changeset`` comment in a formatted
+    SQL file as its own changeset boundary, so the extra header was a real,
+    silently-accepted second changeset.
+
+    Comparing against the file's OWN filename, not against
+    ``sqlmigrate-map.yaml``'s ``migrations:`` dict, is deliberate: that dict
+    only records changesets backed by a Django migration. Several real,
+    legitimate changesets are not (``python-agent-platform:2`` is DML
+    grants; ``:15``-``:19`` are third-party-app migrations; every
+    ``pyforge-scribe`` id owns no migration at all, per that distribution's
+    own ``migrations: {}`` comment) -- matching against ``migrations:``
+    directly would false-positive on all of them. The filename is this
+    repo's actual source of truth for which id a file owns.
+    """
+    bad: list[str] = []
+    for path in sorted(changelog_dir.glob("*.sql")):
+        expected = expected_id_from_filename(path, migration_map)
+        if expected is None:
+            continue
+        found = CHANGESET_LINE.findall(path.read_text(encoding="utf-8"))
+        if found != [expected]:
+            bad.append(
+                f"{path.name}: expected exactly one changeset "
+                f"({expected!r}), found {found!r}",
+            )
+    return bad
+
+
+def format_unexpected_changesets(bad: list[str]) -> str:
+    lines = [
+        "sqlmigrate extraction failed; unexpected changeset id(s):",
+        *(f"  {item}" for item in bad),
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def load_map(path: Path = MAP_PATH) -> MigrationMap:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     default = str(data.get("default") or DEFAULT_DISTRIBUTION)
@@ -230,6 +302,10 @@ def format_findings(findings: list[Finding]) -> str:
 
 def run_live_check() -> int:
     migration_map = load_map()
+    unexpected = find_unexpected_changesets(migration_map)
+    if unexpected:
+        sys.stderr.write(format_unexpected_changesets(unexpected))
+        return 1
     index = parse_changeset_index()
     keys = production_migration_keys()
     extracted: dict[str, str] = {}
