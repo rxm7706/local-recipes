@@ -44,3 +44,10 @@ build:
 
 tests:
   - script: pixi-build-rattler-build --help
+
+extra:
+  recipe-maintainers:
+    - baszalmstra
+    - ruben-arts
+    - Hofer-Julian
+    - rxm7706

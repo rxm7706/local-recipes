@@ -612,7 +612,16 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "4825cc426b59e949bb705904a46038f14b07bf71"
+    brief_mirrored_through: "879dbebf2fa1a8b961903749cfba1c0aac25ba5a"
+                                    # ADVANCED 2026-09-05 from 4825cc426b to the CFE v8.86.1 retro
+                                    # 879dbebf2f (recipe-maintainers sweep + meta-test; G26 marker-split
+                                    # extension re-landed from orphaned commit 74bc80fe61). CFE-surface
+                                    # delta: SKILL.md (G26 extension, version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.0 -> 8.86.1),
+                                    # tests/meta/test_recipe_maintainers_nonempty.py (new). NO shipped
+                                    # script changed -- nothing to re-port into either compiled slice;
+                                    # the pointer advances only because the guard treats a CHANGELOG-
+                                    # touching CFE commit as the newest retro.
                                     # ADVANCED 2026-09-05 from 1da5fd0213 to the CFE v8.86.0 retro
                                     # 4825cc426b (bmad-suite 2026.9.5 refresh Rule-2 retro, PR #1059). Its
                                     # CFE-surface delta: SKILL.md (G111 noarch_platforms required for
@@ -853,7 +862,16 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "4825cc426b59e949bb705904a46038f14b07bf71"
+    brief_mirrored_through: "879dbebf2fa1a8b961903749cfba1c0aac25ba5a"
+                                    # ADVANCED 2026-09-05 from 4825cc426b to the CFE v8.86.1 retro
+                                    # 879dbebf2f (recipe-maintainers sweep + meta-test; G26 marker-split
+                                    # extension re-landed from orphaned commit 74bc80fe61). CFE-surface
+                                    # delta: SKILL.md (G26 extension, version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.0 -> 8.86.1),
+                                    # tests/meta/test_recipe_maintainers_nonempty.py (new). NO shipped
+                                    # script changed -- nothing to re-port into either compiled slice;
+                                    # the pointer advances only because the guard treats a CHANGELOG-
+                                    # touching CFE commit as the newest retro.
                                     # ADVANCED 2026-09-05 from 1da5fd0213 to the CFE v8.86.0 retro
                                     # 4825cc426b (bmad-suite 2026.9.5 refresh Rule-2 retro, PR #1059). Its
                                     # CFE-surface delta: SKILL.md (G111 noarch_platforms required for

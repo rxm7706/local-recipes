@@ -152,4 +152,4 @@ extra:
 ## WARNING:conda_build.build:Tests failed for doit-python-sdk-1.2.0-py3.tar.bz2 - moving package to /home/rxm/programs/miniconda3/conda-bld/broken
 ## TESTS FAILED: doit-python-sdk-1.2.0-py3.tar.bz2
 
-conda create -n ayx-plugin-cli "python==3.8.5" "typer==0.3.1" "doit==0.36.0" "pydantic==1.8.2" "packaging==20.4" "requests==2.24.0" "xmltodict==0.12.0" "jinja2==2.11.2" "MarkupSafe==1.1.1" "pytest>=5.4.1" 
+# conda create -n ayx-plugin-cli "python==3.8.5" "typer==0.3.1" "doit==0.36.0" "pydantic==1.8.2" "packaging==20.4" "requests==2.24.0" "xmltodict==0.12.0" "jinja2==2.11.2" "MarkupSafe==1.1.1" "pytest>=5.4.1" 
