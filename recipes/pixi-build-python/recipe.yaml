@@ -45,3 +45,10 @@ build:
 
 tests:
   - script: pixi-build-python --help
+
+extra:
+  recipe-maintainers:
+    - Hofer-Julian
+    - baszalmstra
+    - ruben-arts
+    - rxm7706

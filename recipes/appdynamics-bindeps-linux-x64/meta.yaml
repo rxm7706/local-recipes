@@ -68,5 +68,7 @@ about:
     - LICENSE
 
 extra:
+    recipe-maintainers:
+        - rxm7706
     copy_test_source_files: true
     final: true
