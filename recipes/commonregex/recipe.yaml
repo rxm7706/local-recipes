@@ -36,7 +36,6 @@ tests:
 about:
   license: MIT
   summary: Find all dates, times, emails, phone numbers, links, emails, ip addresses, prices, bitcoin address, and street addresses in a string.
-  license: Apache-2.0
   license_file: LICENSE
   homepage: http://www.github.com/madisonmay/CommonRegex
 

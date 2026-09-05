@@ -331,7 +331,7 @@ outputs:
       summary: C++ libraries for Apache Arrow core
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-acero
       version: ${{ version }}
     build:
@@ -385,7 +385,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Acero
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-compute
       version: ${{ version }}
     build:
@@ -439,7 +439,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Compute
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-dataset
       version: ${{ version }}
     build:
@@ -497,7 +497,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Dataset
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-flight
       version: ${{ version }}
     build:
@@ -553,7 +553,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Flight
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-flight-sql
       version: ${{ version }}
     build:
@@ -612,7 +612,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Flight SQL
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-gandiva
       version: ${{ version }}
     build:
@@ -669,7 +669,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Gandiva
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libarrow-substrait
       version: ${{ version }}
     build:
@@ -723,7 +723,7 @@ outputs:
       summary: C++ libraries for Apache Arrow Substrait
       homepage: http://github.com/apache/arrow
     # run-constraints handled by libarrow, since we depend on it with exact=True
-    package:
+  - package:
       name: libparquet
       version: ${{ version }}
     build:

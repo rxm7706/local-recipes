@@ -25,7 +25,7 @@ requirements:
 outputs:
     # Parity with "torch_geometry" pypi package
     # Parity with "pyg::pyg" and "pyg::pytorch-geometric" conda packages
-    package:
+  - package:
       name: pytorch_geometric
     build:
       noarch: python
@@ -58,7 +58,7 @@ outputs:
           pip_check: true
           python_version: ${{ python_min }}
     # Parity with "torch_geometry[graphgym]" pypi package
-    package:
+  - package:
       name: pytorch_geometric-graphgym
     build:
       noarch: python
@@ -84,7 +84,7 @@ outputs:
           pip_check: true
           python_version: ${{ python_min }}
     # Parity with "torch_geometry[modelhub]"
-    package:
+  - package:
       name: pytorch_geometric-modelhub
     build:
       noarch: python

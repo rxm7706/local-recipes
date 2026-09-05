@@ -55,6 +55,51 @@ def test_all_recipe_yaml_parse() -> None:
     assert not failures, "unparseable recipe.yaml (G92/G98/G20 class):\n" + "\n".join(failures)
 
 
+class _DuplicateKey(Exception):
+    pass
+
+
+class _StrictLoader(yaml.SafeLoader):
+    """PyYAML's SafeLoader silently keeps the LAST value of a duplicated mapping
+    key, which is exactly how 31 half-migrated v0->v1 recipes (a v1 `skip:`
+    expression followed by its v0 `skip: true  # [sel]` twin; an output whose
+    `package:` lost its `- ` list marker and merged into the previous output)
+    passed `test_all_recipe_yaml_parse` while ruamel, conda-smithy, and
+    rattler-build all reject them (v8.86.2)."""
+
+
+def _strict_construct_mapping(loader, node, deep=False):
+    seen: dict = {}
+    for key_node, _value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise _DuplicateKey(f"{key!r} at lines {seen[key]} and {key_node.start_mark.line + 1}")
+        seen[key] = key_node.start_mark.line + 1
+    return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+
+_StrictLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _strict_construct_mapping
+)
+
+
+def test_no_duplicate_mapping_keys_anywhere() -> None:
+    offenders = []
+    for p in _recipe_files():
+        try:
+            yaml.load(p.read_text(encoding="utf-8"), Loader=_StrictLoader)
+        except _DuplicateKey as exc:
+            offenders.append(f"{p.relative_to(REPO_ROOT)}: duplicate key {exc}")
+        except Exception:  # noqa: BLE001 -- parse failures belong to test_all_recipe_yaml_parse
+            continue
+    assert not offenders, (
+        "duplicate mapping keys (PyYAML keeps the last value silently; ruamel, "
+        "conda-smithy and rattler-build reject the file -- the v0->v1 half-migration "
+        "class: a v1 `skip:` beside its v0 comment-selector twin, or an output "
+        "missing its `- ` marker):\n" + "\n".join(offenders)
+    )
+
+
 def test_no_duplicate_cfe_identity_keys() -> None:
     offenders = []
     for p in _recipe_files():

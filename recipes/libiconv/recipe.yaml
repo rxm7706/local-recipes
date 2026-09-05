@@ -116,7 +116,7 @@ outputs:
       homepage: https://www.gnu.org/software/libiconv/
     # there is no executable available on windows, see
     # https://github.com/conda-forge/libiconv-feedstock/pull/7#issuecomment-224392000
-    package:
+  - package:
       name: iconv
     build:
       skip: win

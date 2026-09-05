@@ -176,7 +176,7 @@ outputs:
             then: $CONDA_PREFIX/bin/simple_mip_program
   # The python package.
     # Source: https://github.com/google/or-tools/blob/stable/ortools/python/setup.py.in#L44
-    package:
+  - package:
       name: ortools-python
     build:
       script:

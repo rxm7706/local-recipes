@@ -20,9 +20,9 @@ build:
   # py3.14 only supported from v21 onwards
   # py3.14t (free-threaded) only supported from v24 onwards
   number: 0
-  skip: is_freethreading
-  skip: true  # [py>=314]
-  skip: true  # [is_freethreading]
+  skip:
+    - is_freethreading
+    - match(python, ">=3.14")
 
 requirements:
   build:

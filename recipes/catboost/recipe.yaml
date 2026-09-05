@@ -26,7 +26,6 @@ build:
   number: ${{ build_num }}
   string: ${{ 'cpu_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if unix and cuda_compiler_version == "None" else "cuda${{ cuda_compiler_version | replace('.', '') }}_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}" if unix and cuda_compiler_version != "None" else '' }}
   skip: win and cuda_compiler_version != "None"
-  skip: true  # [win and cuda_compiler_version != "None"]
   track_features:  # [cuda_compiler_version == "None"]
     - if: cuda_compiler_version == "None"
       then: catboost_cpu

@@ -18,7 +18,6 @@ source:
 build:
   number: ${{ build_number }}
   skip: use_noarch and not is_python_min
-  skip: true  # [use_noarch and not is_python_min]
   noarch: ${{ 'python' if use_noarch else '' }}
   script:
     - if: use_noarch

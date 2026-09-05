@@ -54,7 +54,6 @@ about:
   summary: Headless chrome/chromium automation library (unofficial port of puppeteer)
   license: MIT
   license_file: LICENSE
-  summary: Headless chrome/chromium automation library (unofficial port of puppeteer)
   homepage: https://github.com/pyppeteer/pyppeteer
   repository: https://github.com/pyppeteer/pyppeteer
   documentation: https://pyppeteer.github.io/pyppeteer

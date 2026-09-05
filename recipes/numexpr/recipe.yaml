@@ -17,7 +17,6 @@ build:
   number: ${{ build }}
   string: ${{ build_string }}py${{ py }}h${{ PKG_HASH }}_${{ build }}
   skip: python_impl == "pypy"
-  skip: true  # [python_impl == "pypy"]
   script: ${{ 'bash ${{ RECIPE_DIR }}/build_with_mkl.sh' if linux64 and mkl_support == 'mkl' else 'bash ${{ RECIPE_DIR }}/build_without_mkl.sh' if unix and not (linux64 and mkl_support == 'mkl') else '' }}
 
 requirements:

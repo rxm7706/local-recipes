@@ -31,7 +31,6 @@ build:
   # something with scikit-build-core; it's ultra-niche, any effort is hard to justify; file a PR to fix if you care
   number: 0
   skip: ppc64le and is_freethreading
-  skip: true  # [ppc64le and is_freethreading]
 
 outputs:
   - package:

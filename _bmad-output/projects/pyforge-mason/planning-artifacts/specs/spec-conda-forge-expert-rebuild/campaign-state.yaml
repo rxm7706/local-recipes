@@ -612,7 +612,13 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "879dbebf2fa1a8b961903749cfba1c0aac25ba5a"
+    brief_mirrored_through: "a5f63c95fb8e733f715900690af692293057ed74"
+                                    # ADVANCED 2026-09-05 from 879dbebf2f to the CFE v8.86.2 retro
+                                    # a5f63c95fb (strict duplicate-key audit meta-test; 31 half-migrated
+                                    # recipes fixed in the companion commit). CFE-surface delta: SKILL.md
+                                    # (version, history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.1 -> 8.86.2), tests/meta/test_recipe_yaml_parse_audit.py. NO shipped
+                                    # script changed -- nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-05 from 4825cc426b to the CFE v8.86.1 retro
                                     # 879dbebf2f (recipe-maintainers sweep + meta-test; G26 marker-split
                                     # extension re-landed from orphaned commit 74bc80fe61). CFE-surface
@@ -862,7 +868,13 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "879dbebf2fa1a8b961903749cfba1c0aac25ba5a"
+    brief_mirrored_through: "a5f63c95fb8e733f715900690af692293057ed74"
+                                    # ADVANCED 2026-09-05 from 879dbebf2f to the CFE v8.86.2 retro
+                                    # a5f63c95fb (strict duplicate-key audit meta-test; 31 half-migrated
+                                    # recipes fixed in the companion commit). CFE-surface delta: SKILL.md
+                                    # (version, history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.1 -> 8.86.2), tests/meta/test_recipe_yaml_parse_audit.py. NO shipped
+                                    # script changed -- nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-05 from 4825cc426b to the CFE v8.86.1 retro
                                     # 879dbebf2f (recipe-maintainers sweep + meta-test; G26 marker-split
                                     # extension re-landed from orphaned commit 74bc80fe61). CFE-surface

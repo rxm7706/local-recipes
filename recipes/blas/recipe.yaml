@@ -306,7 +306,7 @@ outputs:
           - if: win
             then: if not exist %LIBRARY_BIN%/liblapacke.dll exit 1
     # uses lapack {{ version }}, not {{ blas_major }}
-    package:
+  - package:
       name: blas-devel
     build:
       string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}

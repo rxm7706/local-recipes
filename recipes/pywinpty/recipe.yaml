@@ -15,7 +15,6 @@ source:
 build:
   number: 0
   skip: match(python, "<3.10")
-  skip: true  # [py<310]
 
 requirements:
   build:

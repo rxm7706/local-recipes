@@ -92,7 +92,6 @@ build:
   number: ${{ build }}
   string: ${{ 'cpu_${{ blas_impl }}_h${{ PKG_HASH }}_${{ build }}' if cuda_compiler_version == "None" else "cuda${{ cuda_compiler_version | replace('.', '') }}_${{ blas_impl }}_h${{ PKG_HASH }}_${{ build }}" if cuda_compiler_version != "None" else '' }}
   skip: is_rc
-  skip: true  # [is_rc]
   prefix_detection:
     ignore_binary_files: true
   dynamic_linking:
