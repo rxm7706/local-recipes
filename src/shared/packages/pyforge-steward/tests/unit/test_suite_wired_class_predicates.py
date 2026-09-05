@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pyforge.steward.provision import _SKIPPED_MODULES, _SUPPORTED_MODULES
 from pyforge.steward.suite import (
+    INSTALL_CLASS_CLI,
     INSTALL_CLASS_INSTALLER_TREE,
     INSTALL_CLASS_OWN_INSTALLER,
     INSTALL_CLASS_PLUGIN_PATH,
@@ -50,7 +51,7 @@ def test_six_non_module_pieces_declare_playbook_classes():
     for name, install_class in _SIX_CLASSES.items():
         assert roster[name].install_class == install_class, name
     assert roster["mybmad-dashboard"].install_class == INSTALL_CLASS_VSCODE_EXTENSION
-    assert roster["bmad-method-wds-expansion"].install_class == INSTALL_CLASS_SKIP
+    assert roster["bmad-eval-quality"].install_class == INSTALL_CLASS_CLI
 
 
 def test_template_never_reports_wired_even_with_module_census_hits(tmp_path: Path):
@@ -132,7 +133,7 @@ def test_method_installer_tree_present(tmp_path: Path):
     assert probe.value != "wired"
 
 
-def test_cap3_five_and_wds_skip_untouched():
+def test_cap3_five_and_skip_class_untouched():
     assert set(_SUPPORTED_MODULES) == {
         "bmb",
         "tea",
@@ -141,9 +142,25 @@ def test_cap3_five_and_wds_skip_untouched():
         "manticore",
     }
     assert "wds" in _SKIPPED_MODULES
-    wds = _by_name()["bmad-method-wds-expansion"]
-    assert probe_wired(Path("."), wds).value == "skip"
+    # WDS left the roster 2026-09-05 (Story 45.1); the skip class itself stays.
+    assert "bmad-method-wds-expansion" not in _by_name()
+    retired = SuitePackageDef(name="retired-module", install_class=INSTALL_CLASS_SKIP)
+    assert probe_wired(Path("."), retired).value == "skip"
     assert "skf" not in _SUPPORTED_MODULES
+
+
+def test_cli_class_is_runnable_only_when_bin_on_path(tmp_path: Path, monkeypatch):
+    eq = _by_name()["bmad-eval-quality"]
+    monkeypatch.setenv("PATH", str(tmp_path))
+    missing = probe_wired(Path("."), eq)
+    assert missing.value == "missing"
+    assert missing.ok is True
+    exe = tmp_path / "eval-quality"
+    exe.write_text("#!/bin/sh\n", encoding="utf-8")
+    exe.chmod(0o755)
+    runnable = probe_wired(Path("."), eq)
+    assert runnable.value == "runnable"
+    assert str(exe) in runnable.detail
 
 
 def test_report_names_each_of_the_six_by_class(tmp_path: Path):
