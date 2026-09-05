@@ -7,7 +7,7 @@ paradigm: "modular monolith: Django apps as the composition unit; one ASGI proce
 scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..19, FR-1..FR-50 plus FR-9a/9b/21a). CAP-1..18 closeout 2026-08-26 stands. CAP-19 first slice (Epic 34 + Lane 3 estate-cache) shipped 2026-08-26; live residual is the three query-plane OQs."
 status: final
 created: "2026-08-24"
-updated: "2026-09-03"
+updated: "2026-09-05"
 chain: pyforge-unifying-strategy
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10, CAP-11, CAP-12, CAP-13, CAP-14, CAP-15, CAP-16, CAP-17, CAP-18, CAP-19]
 sources:
@@ -95,7 +95,7 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 **Conflict, not override — parent AD-5:** named Django `RunSQL` / data migrations as how `langflow_schema` / `dbgpt_schema` are provisioned. This chain's CAP-9 moves production DDL to Liquibase. Isolation, `search_path`, and "ORM never crosses schemas" remain; only the producer of the SQL changes. Cardinality: parent said three schemas; this chain adds one tracking schema `liquibase`. CAP-4 / CAP-17 stores are **tables in `public`**, not extra schemas.
 
-**Conflict, not override — parent AD-1:** Lane 1 multi-replica media cannot live on ephemeral pod disk (parent AD-6). Object storage (MinIO/S3) would be a fourth *kind*. The compatible path is a Kubernetes `ReadWriteMany` PVC — still Kubernetes-the-kind. An in-cluster object-store Deployment is a review-blocking finding until parent AD-1 is formally excepted.
+**Conflict, not override — parent AD-1:** Lane 1 multi-replica media cannot live on ephemeral pod disk (parent AD-6). Object storage (MinIO/S3) would be a fourth *kind*. The compatible path is a Kubernetes `ReadWriteMany` PVC — still Kubernetes-the-kind. An in-cluster object-store Deployment is a review-blocking finding until parent AD-1 is formally excepted. **Formal exception (defined 2026-09-05):** a dated, bounded paragraph appended under the parent AD in `spec-python-agent-platform/ARCHITECTURE-SPINE.md` in the AD-6 style — what is excepted, why the three kinds cannot carry it, its scope, its cost — preceded by a dated entry in the owner Dream and a correct-course proposal recording the operator ruling. Re-examined 2026-09-05 (`sprint-change-proposal-2026-09-05-ad-1-reopen.md`): **re-affirmed, not excepted.**
 
 **Conflict, not override — parent AD-6:** pods stay disposable. Shared RWX is the replica-safe media store (same *kind* of exception as the dated dbgpt SQLite PVC). Ephemeral pod-local media and MinIO remain forbidden (parent AD-1 / canopy AD-13).
 
@@ -181,7 +181,7 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 - **Binds:** CAP-2, parent AD-6
 - **Prevents:** pod-local media; per-replica rendition caches; Elasticsearch; password Wagtail admin
-- **Rule:** media on a Kubernetes `ReadWriteMany` PVC mounted at a fixed path; Django filesystem storage (default or `django-storages` FileSystemStorage) writes there. Renditions cache on `redis-cache`. Search is PostgreSQL FTS (`django.contrib.postgres`). Wagtail admin login is `WAGTAILADMIN_LOGIN_URL` through allauth/OIDC. IdP groups must map onto the Wagtail-admin permission; an authenticated user with no group is bounced. Password and email management stay off. An in-cluster MinIO/S3 Deployment, or a cloud object-store backend, is a fourth infra kind (parent AD-1) and a review-blocking finding until that parent AD is formally excepted.
+- **Rule:** media on a Kubernetes `ReadWriteMany` PVC mounted at a fixed path; Django filesystem storage (default or `django-storages` FileSystemStorage) writes there. Renditions cache on `redis-cache`. Search is PostgreSQL FTS (`django.contrib.postgres`). Wagtail admin login is `WAGTAILADMIN_LOGIN_URL` through allauth/OIDC. IdP groups must map onto the Wagtail-admin permission; an authenticated user with no group is bounced. Password and email management stay off. An in-cluster MinIO/S3 Deployment, or a cloud object-store backend, is a fourth infra kind (parent AD-1) and a review-blocking finding until that parent AD is formally excepted (procedure: § *Conflict, not override — parent AD-1*). **Prerequisite (2026-09-05, `sprint-change-proposal-2026-09-05-ad-1-reopen`):** the media PVC is mounted by every platform Deployment (web, worker, worker-builds, beat, consume-events), so `ReadWriteMany` is required at any replica count on a multi-node cluster — not only for web replicas. RWX is proven on CRC (`crc-csi-hostpath-provisioner`, single-node; 12.1 verification 2026-08-25). A multi-node target must name an RWX-capable class in `media.persistence.storageClassName` before install; a media PVC left `Pending` is the failing check, not a warning.
 
 ### AD-14 — Five tiers, or the **03** station is not done `[ADOPTED]`
 
