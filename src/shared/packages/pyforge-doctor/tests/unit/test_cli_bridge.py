@@ -12,12 +12,13 @@ test file driving real ``git`` to set up a fixture is fine, mirrors
 from __future__ import annotations
 
 import subprocess
+import sys
 import textwrap
 from pathlib import Path
 
 import pytest
 
-from pyforge.doctor.cli_bridge import CliBridgeError, run_cli_json, run_git
+from pyforge.doctor.cli_bridge import CliBridgeError, run_cli_json, run_git, run_pytest
 
 
 def _write_script(tmp_path: Path, body: str) -> Path:
@@ -181,3 +182,38 @@ def test_run_git_default_ok_exit_codes_is_unchanged(tmp_path: Path) -> None:
 
     with pytest.raises(CliBridgeError, match="exited"):
         run_git(repo, ["rev-parse", "--verify", "--quiet", "HEAD"])
+
+
+# --- run_pytest (retro action item 3, 2026-09-05) --------------------------
+
+
+def test_run_pytest_all_passed_returns_zero(tmp_path: Path) -> None:
+    (tmp_path / "test_ok.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+
+    rc, output = run_pytest(Path(sys.executable), tmp_path, ["-q", "-p", "no:cacheprovider"])
+
+    assert rc == 0
+    assert "1 passed" in output
+
+
+def test_run_pytest_some_failed_returns_one_not_raise(tmp_path: Path) -> None:
+    (tmp_path / "test_fail.py").write_text(
+        "def test_fail():\n    assert False\n", encoding="utf-8"
+    )
+
+    rc, output = run_pytest(Path(sys.executable), tmp_path, ["-q", "-p", "no:cacheprovider"])
+
+    assert rc == 1
+    assert "1 failed" in output
+
+
+def test_run_pytest_usage_error_exit_code_raises_cli_bridge_error(tmp_path: Path) -> None:
+    # No tests collected at all -> pytest's own exit code 5 -- outside {0, 1}.
+    with pytest.raises(CliBridgeError, match="exited 5"):
+        run_pytest(Path(sys.executable), tmp_path, ["-q", "-p", "no:cacheprovider"])
+
+
+def test_run_pytest_launch_failure_raises_cli_bridge_error(tmp_path: Path) -> None:
+    missing = tmp_path / "no-such-python"
+    with pytest.raises(CliBridgeError, match="failed to launch"):
+        run_pytest(missing, tmp_path, ["-q"])

@@ -212,6 +212,13 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     ("deferred-work", "deferred-work-check"),
     ("forward-dependency", "forward-dependency-check"),
     ("bmad-drift", "bmad-drift-check"),
+    # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05):
+    # genuinely NEW (not a retiring scripts/*_check.py origin), added here
+    # like the original ten -- offline, deterministic, no budget concerns
+    # (unlike bmad-method-version-drift/sibling-dreams-drift/due-for-
+    # verification, which stay opt-in-only and are deliberately absent from
+    # this tuple).
+    ("platform-policy-suite", "platform-policy-suite-check"),
 )
 
 

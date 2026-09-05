@@ -43,7 +43,17 @@ from pathlib import Path
 
 from ..models import Finding, Source
 from ..verdict import EXIT_SIGINT, exit_code_for
-from . import bmad_method, board, chain, deps, factory, ledger, marshal, sibling_dreams
+from . import (
+    bmad_method,
+    board,
+    chain,
+    deps,
+    factory,
+    ledger,
+    marshal,
+    platform_policy,
+    sibling_dreams,
+)
 
 __all__ = ("main", "DISPATCH")
 
@@ -78,6 +88,10 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 16.1 (Epic 16/CAP-1) -- sibling Dream title drift; fail-open,
     # warn-only; fleet-picture ATTENTION probes this DISPATCH name.
     Source.SIBLING_DREAMS_DRIFT.value: sibling_dreams.gather,
+    # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
+    # -- another genuinely NEW (non-ported) DISPATCH member, same shape as
+    # DUE_FOR_VERIFICATION/SIBLING_DREAMS_DRIFT above.
+    Source.PLATFORM_POLICY_SUITE.value: platform_policy.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

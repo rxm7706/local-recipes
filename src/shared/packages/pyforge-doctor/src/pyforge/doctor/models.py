@@ -227,6 +227,20 @@ class Source(StrEnum):
     # Distinct from CHAIN_COMPLETENESS INV-A..D and from DREAMS_HYGIENE.
     # Invoked as `chain-completeness --layers --project <slug>`. Warn-only.
     CHAIN_LAYERS_AUDIT = "chain-layers-audit"
+    # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05):
+    # a `pixi.toml` IDE-metadata commit (098f0f0672) silently dropped the
+    # `cachebox <6` / `openfeature-provider-flagd <0.5.1` ceilings
+    # `src/platform/tests/policy` guards, unnoticed because Platform CI --
+    # the only workflow that ran that suite -- was disabled at the time.
+    # Judges `src/platform`'s manifest-only policy suite (the
+    # `not django_db`-marked subset; no live database needed) so this class
+    # of regression is caught even when Platform CI itself is disabled or
+    # never triggered. Subject is steward (spec-python-agent-platform owns
+    # `src/platform`); WARN when the `platform-ci-test` pixi env this needs
+    # is not installed here (never a silent skip, never a confident FAIL
+    # for an absence that is not the repo's fault), FAIL only on an actual
+    # policy-suite failure. See sources/platform_policy.py.
+    PLATFORM_POLICY_SUITE = "platform-policy-suite"
 
 
 class Partition(StrEnum):
