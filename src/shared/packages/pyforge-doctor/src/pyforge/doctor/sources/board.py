@@ -110,6 +110,12 @@ DEFERRED_SPECS: dict[str, str] = {
         "faces and defined no numbers; this Spec exists only so the chain has a link, not to "
         "describe undone work an epic could pick up today. De-register once the operator "
         "publishes the human/agent/team measure set CAP-1 needs",
+    "spec-golden-path-conda-blind-spot":
+        "a `draft` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
+        "its five CAPs sit behind five open questions (selector grammar, provisioning route, "
+        "budget, evidence shape, adoption trigger) that only the operator can answer, so "
+        "decomposing it into warden epics now would manufacture stories from guesses. "
+        "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
