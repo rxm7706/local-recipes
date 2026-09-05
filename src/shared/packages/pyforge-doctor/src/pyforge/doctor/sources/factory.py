@@ -1228,14 +1228,17 @@ def check_dream_vocab(target: Path) -> list[Finding]:
         text = _read_item(f, "check_dream_vocab", target, out)
         if text is None:
             continue
-        m = re.search(r"^status:\s*(\S+)\s*$", text, re.M)
+        # A trailing `# comment` after the value is ordinary YAML (26 Dreams carry
+        # one -- "absorbed into X on <date>" style notes); it must not read as
+        # "no status:" (2026-09-05).
+        m = re.search(r"^status:\s*(\S+)\s*(?:#.*)?$", text, re.M)
         if not m:
             out.append(_finding(DRIFT, "dream-vocab", _rel(f, target), "no status: in frontmatter"))
         elif m.group(1) not in dream_statuses:
             out.append(_finding(DRIFT, "dream-vocab", _rel(f, target),
                        f"status {m.group(1)!r} is not one of "
                        f"{'/'.join(dream_statuses)}"))
-        m = re.search(r"^type:\s*(\S+)\s*$", text, re.M)
+        m = re.search(r"^type:\s*(\S+)\s*(?:#.*)?$", text, re.M)
         if m and m.group(1) not in dream_types:
             out.append(_finding(DRIFT, "dream-vocab", _rel(f, target),
                        f"type {m.group(1)!r} is not one of "

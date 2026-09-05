@@ -828,6 +828,29 @@ def test_dream_vocab_invalid_status_and_type_report_warn(tmp_path: Path) -> None
     assert "status" in messages and "type" in messages
 
 
+def test_dream_status_with_a_trailing_yaml_comment_is_read_not_reported_missing(tmp_path: Path) -> None:
+    """26 live Dreams write `status: realized   # absorbed into X on <date>` -- a
+    trailing comment is ordinary YAML and must neither read as "no status:" nor
+    hide an off-vocabulary value behind it (2026-09-05)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "ok.md").write_text(
+        "---\nstatus: realized   # 2026-08-22 absorbed into foo\ntype: dream   # note\nowner: marshal\n---\n",
+        encoding="utf-8",
+    )
+    (dreams / "bad.md").write_text(
+        "---\nstatus: bogus   # a comment must not launder the value\ntype: dream\nowner: marshal\n---\n",
+        encoding="utf-8",
+    )
+
+    findings = [f for f in factory.gather(repo) if f.check == "dream-vocab"]
+
+    assert [f.evidence["subject"] for f in findings] == ["docs/dreams/bad.md"]
+    assert "bogus" in findings[0].message
+
+
 def test_dream_with_no_status_reports_warn(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
