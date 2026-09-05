@@ -64,8 +64,7 @@ def test_matching_changeset_is_green() -> None:
         },
         extracted_sql={
             "users.0003_add_widget": (
-                "BEGIN;\n-- Create model Widget\n"
-                f"{sql}\nCOMMIT;\n"
+                f"BEGIN;\n-- Create model Widget\n{sql}\nCOMMIT;\n"
             ),
         },
     )

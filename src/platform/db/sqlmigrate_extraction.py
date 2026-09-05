@@ -191,9 +191,7 @@ def load_map(path: Path = MAP_PATH) -> MigrationMap:
     distributions: dict[str, dict[str, int]] = {}
     for name, entry in (data.get("distributions") or {}).items():
         raw = (entry or {}).get("migrations") or {}
-        distributions[str(name)] = {
-            str(key): int(value) for key, value in raw.items()
-        }
+        distributions[str(name)] = {str(key): int(value) for key, value in raw.items()}
     if default not in distributions:
         msg = (
             f"sqlmigrate-map.yaml default distribution {default!r} has no "

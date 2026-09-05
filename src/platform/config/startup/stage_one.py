@@ -147,8 +147,7 @@ def refuse_required_settings() -> None:
             else:
                 kind = "invalid"
             message = (
-                f"{setting.name} is {kind} in a deployed component. "
-                f"{setting.remedy}"
+                f"{setting.name} is {kind} in a deployed component. {setting.remedy}"
             )
             raise ImproperlyConfigured(message)
 

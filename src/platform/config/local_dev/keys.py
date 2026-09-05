@@ -78,7 +78,12 @@ def ensure_keypair() -> DevKeypair:
     private_path.write_bytes(private_pem)
     private_path.chmod(_PRIVATE_KEY_MODE)
 
-    jwks = {"keys": [RSAAlgorithm.to_jwk(public_key, as_dict=True) | {"kid": kid, "use": "sig", "alg": SIGNING_ALGORITHM}]}
+    jwks = {
+        "keys": [
+            RSAAlgorithm.to_jwk(public_key, as_dict=True)
+            | {"kid": kid, "use": "sig", "alg": SIGNING_ALGORITHM}
+        ]
+    }
     jwks_path.write_text(json.dumps(jwks, indent=2))
     jwks_path.chmod(_PRIVATE_KEY_MODE)
 

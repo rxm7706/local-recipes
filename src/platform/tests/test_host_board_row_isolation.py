@@ -121,7 +121,9 @@ def test_board_filter_then_search_never_searches_master(
     monkeypatch.setattr(atlas_board, "filter_by_role", wrapped_filter)
     monkeypatch.setattr(atlas_board, "search", wrapped_search)
 
-    response = _client_with_roles(*_board_roles(prefixed_tenant("east"))).get(BOARD_PATH)
+    response = _client_with_roles(*_board_roles(prefixed_tenant("east"))).get(
+        BOARD_PATH
+    )
     assert response.status_code == HTTPStatus.OK
     assert order == ["get_master_dataset", "filter_by_role", "search"]
 
@@ -214,11 +216,7 @@ def test_atlas_vizro_cli_is_not_mounted_on_host_urlconf() -> None:
     assert "pyforge.atlas.dashboard" not in urlconf
     assert "atlas.dashboard" not in urlconf
     board_source = (
-        SHARED_PACKAGES
-        / "django-atlas"
-        / "src"
-        / "django_atlas_portal"
-        / "board.py"
+        SHARED_PACKAGES / "django-atlas" / "src" / "django_atlas_portal" / "board.py"
     ).read_text(encoding="utf-8")
     tree = ast.parse(board_source)
     imported = _import_modules(tree)

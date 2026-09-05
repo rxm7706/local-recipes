@@ -644,8 +644,7 @@ def _assert_app_does_not_call_secrets_http_api(root: Path) -> None:
         if _SECRETS_HTTP_API_IMPORT.search(text):
             offenders.append(str(path.relative_to(root)))
     assert not offenders, (
-        f"platform app calls a secrets HTTP API (canopy AD-19 forbids it): "
-        f"{offenders}"
+        f"platform app calls a secrets HTTP API (canopy AD-19 forbids it): {offenders}"
     )
 
 
@@ -669,7 +668,9 @@ def _redis_deployments(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for doc in docs
         if doc.get("kind") == "Deployment"
         and str(
-            (doc.get("metadata") or {}).get("labels", {}).get(
+            (doc.get("metadata") or {})
+            .get("labels", {})
+            .get(
                 "app.kubernetes.io/component",
                 "",
             ),
@@ -682,7 +683,9 @@ def _assert_redis_cache_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> 
     cache_deployments = [
         doc
         for doc in _redis_deployments(docs)
-        if (doc.get("metadata") or {}).get("labels", {}).get(
+        if (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "redis-cache"
@@ -702,12 +705,16 @@ def _assert_redis_cache_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> 
         )
 
 
-def _assert_redis_broker_persistence_is_pvc_with_aof(docs: list[dict[str, Any]]) -> None:
+def _assert_redis_broker_persistence_is_pvc_with_aof(
+    docs: list[dict[str, Any]],
+) -> None:
     """Story 40.2: redis-broker mounts a PVC at /data and enables AOF."""
     broker_deployments = [
         doc
         for doc in _redis_deployments(docs)
-        if (doc.get("metadata") or {}).get("labels", {}).get(
+        if (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "redis-broker"
@@ -722,7 +729,9 @@ def _assert_redis_broker_persistence_is_pvc_with_aof(docs: list[dict[str, Any]])
     assert "persistentVolumeClaim" in data_volumes[0], (
         f"redis-broker data volume must be a PVC, got {data_volumes[0]!r}"
     )
-    command = deployment["spec"]["template"]["spec"]["containers"][0].get("command") or []
+    command = (
+        deployment["spec"]["template"]["spec"]["containers"][0].get("command") or []
+    )
     assert "--appendonly" in command and "yes" in command, (
         f"redis-broker missing AOF args: {command!r}"
     )
@@ -771,7 +780,8 @@ def _assert_query_plane_pvcs_are_read_write_once(docs: list[dict[str, Any]]) -> 
         for doc in docs
         if doc.get("kind") == "PersistentVolumeClaim"
         and (
-            (doc.get("metadata") or {}).get("labels", {}).get(_PLANE_PVC_LABEL) == "true"
+            (doc.get("metadata") or {}).get("labels", {}).get(_PLANE_PVC_LABEL)
+            == "true"
             or "query-plane" in str(doc.get("metadata", {}).get("name", "")).lower()
             or "atlas.duckdb" in str(doc.get("metadata", {}).get("name", "")).lower()
         )
@@ -972,8 +982,7 @@ def _assert_mcp_host_network_policy_admits_web_only(
     policies = [
         doc
         for doc in docs
-        if doc.get("kind") == "NetworkPolicy"
-        and doc["metadata"]["name"] == policy_name
+        if doc.get("kind") == "NetworkPolicy" and doc["metadata"]["name"] == policy_name
     ]
     rendered = [
         doc["metadata"]["name"] for doc in docs if doc.get("kind") == "NetworkPolicy"
@@ -1045,9 +1054,7 @@ def _assert_liquibase_then_fake_migrate_jobs(docs: list[dict[str, Any]]) -> None
     for job in jobs:
         labels = (job.get("metadata") or {}).get("labels") or {}
         component = labels.get("app.kubernetes.io/component")
-        assert component not in by_component, (
-            f"duplicate Job component {component!r}"
-        )
+        assert component not in by_component, f"duplicate Job component {component!r}"
         by_component[component] = job
     missing = sorted({"liquibase", "migrate"} - by_component.keys())
     assert not missing, f"expected liquibase and migrate Jobs, missing {missing}"
@@ -1068,9 +1075,7 @@ def _assert_liquibase_then_fake_migrate_jobs(docs: list[dict[str, Any]]) -> None
     for component in ("liquibase", "migrate", "web"):
         assert component in by_pod, f"{component} missing from render"
         inits = by_pod[component].get("initContainers") or []
-        assert not inits, (
-            f"{component} must not use an initContainer (FR-24): {inits}"
-        )
+        assert not inits, f"{component} must not use an initContainer (FR-24): {inits}"
     web_image = by_pod["web"]["containers"][0]["image"]
     assert by_pod["liquibase"]["containers"][0]["image"] == web_image
     assert by_pod["migrate"]["containers"][0]["image"] == web_image
@@ -1108,7 +1113,9 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
         doc
         for doc in docs
         if doc.get("kind") == "CronJob"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "postgres-backup"
@@ -1121,7 +1128,9 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
         doc
         for doc in docs
         if doc.get("kind") == "PersistentVolumeClaim"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "postgres-backup"
@@ -1133,7 +1142,9 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
         doc
         for doc in docs
         if doc.get("kind") == "StatefulSet"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "postgres"
@@ -1166,7 +1177,8 @@ def _assert_postgres_backup_cronjob_present(docs: list[dict[str, Any]]) -> None:
     )
     volumes = pod_spec.get("volumes") or []
     backup_volume = next(
-        (vol for vol in volumes if vol.get("name") == "backup"), None,
+        (vol for vol in volumes if vol.get("name") == "backup"),
+        None,
     )
     assert backup_volume is not None, (
         "postgres pod declares no `backup` volume to back its `backup` "
@@ -1198,7 +1210,9 @@ def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
         doc
         for doc in docs
         if doc.get("kind") == "PersistentVolumeClaim"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "postgres-backup"
@@ -1208,7 +1222,9 @@ def _assert_postgres_backup_disabled(docs: list[dict[str, Any]]) -> None:
         doc
         for doc in docs
         if doc.get("kind") == "StatefulSet"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get(
             "app.kubernetes.io/component",
         )
         == "postgres"
@@ -1895,7 +1911,9 @@ def test_redis_broker_maxmemory_is_required():
 @requires_helm
 def test_redis_broker_memory_limit_is_required():
     """AC (Story 40.2): empty redis.broker.resources.limits.memory fails the render."""
-    with pytest.raises(AssertionError, match="redis.broker.resources.limits.memory is required"):
+    with pytest.raises(
+        AssertionError, match="redis.broker.resources.limits.memory is required"
+    ):
         _render(
             _CORE_CHART,
             "--set",
@@ -1949,7 +1967,10 @@ def test_duckdb_boundary_reader_mount_is_rejected():
                             {
                                 "name": "web",
                                 "volumeMounts": [
-                                    {"name": "plane", "mountPath": "/data/atlas.duckdb"},
+                                    {
+                                        "name": "plane",
+                                        "mountPath": "/data/atlas.duckdb",
+                                    },
                                 ],
                             },
                         ],
@@ -2050,6 +2071,7 @@ def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
     images = _collect_workload_images(docs)
 
     _assert_image_inventory_is_exactly(images, _default_image_references())
+
 
 @requires_helm
 def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
@@ -2792,7 +2814,9 @@ def test_postgres_backup_check_fails_when_archive_mode_missing():
             },
             "spec": {
                 "schedule": "0 2 * * *",
-                "jobTemplate": {"spec": {"template": {"metadata": {"labels": {}}, "spec": {}}}},
+                "jobTemplate": {
+                    "spec": {"template": {"metadata": {"labels": {}}, "spec": {}}}
+                },
             },
         },
         {
@@ -2817,7 +2841,9 @@ def test_postgres_backup_check_fails_when_archive_mode_missing():
                                 "name": "postgres",
                                 "image": "postgres:17",
                                 "args": ["postgres"],
-                                "volumeMounts": [{"name": "backup", "mountPath": "/backup"}],
+                                "volumeMounts": [
+                                    {"name": "backup", "mountPath": "/backup"}
+                                ],
                             },
                         ],
                     },
@@ -2827,7 +2853,6 @@ def test_postgres_backup_check_fails_when_archive_mode_missing():
     ]
     with pytest.raises(AssertionError, match="archive_mode"):
         _assert_postgres_backup_cronjob_present(docs)
-
 
 
 # ---------------------------------------------------------------------------
@@ -2850,7 +2875,9 @@ def _consume_events_pod_specs(docs: list[dict[str, Any]]) -> dict[str, dict[str,
         if not component.startswith(_CONSUME_EVENTS_PREFIX):
             continue
         station = component[len(_CONSUME_EVENTS_PREFIX) :]
-        assert station not in out, f"duplicate consume-events Deployment for {station!r}"
+        assert station not in out, (
+            f"duplicate consume-events Deployment for {station!r}"
+        )
         out[station] = template["spec"]
     return out
 
@@ -2875,7 +2902,9 @@ def _assert_consume_events_deployments_mirror_worker(
     for station, spec in sorted(rendered.items()):
         where = f"{_CONSUME_EVENTS_PREFIX}{station}"
         containers = spec.get("containers") or []
-        assert len(containers) == 1, f"{where}: expected one container, got {len(containers)}"
+        assert len(containers) == 1, (
+            f"{where}: expected one container, got {len(containers)}"
+        )
         container = containers[0]
         assert container.get("args") == [*_CONSUME_EVENTS_ARGS, station], (
             f"{where}: args must run consume_events for {station!r}, got {container.get('args')!r}"
@@ -2886,9 +2915,9 @@ def _assert_consume_events_deployments_mirror_worker(
         assert container.get("env") == worker_container.get("env"), (
             f"{where}: env differs from worker"
         )
-        assert container.get("securityContext") == worker_container.get("securityContext"), (
-            f"{where}: container securityContext differs from worker"
-        )
+        assert container.get("securityContext") == worker_container.get(
+            "securityContext"
+        ), f"{where}: container securityContext differs from worker"
         assert container.get("volumeMounts") == worker_container.get("volumeMounts"), (
             f"{where}: volumeMounts differ from worker"
         )
@@ -2898,7 +2927,9 @@ def _assert_consume_events_deployments_mirror_worker(
         assert spec.get("serviceAccountName") == worker.get("serviceAccountName"), (
             f"{where}: serviceAccountName differs from worker"
         )
-        assert spec.get("volumes") == worker.get("volumes"), f"{where}: volumes differ from worker"
+        assert spec.get("volumes") == worker.get("volumes"), (
+            f"{where}: volumes differ from worker"
+        )
         assert int(spec.get("terminationGracePeriodSeconds") or 0) > 0, (
             f"{where}: needs a terminationGracePeriodSeconds drain budget"
         )
@@ -2927,7 +2958,9 @@ def _synthetic_platform_deployment(
                             "args": args,
                             "env": env,
                             "securityContext": {"allowPrivilegeEscalation": False},
-                            "volumeMounts": [{"name": "flags", "mountPath": "/etc/pyforge"}],
+                            "volumeMounts": [
+                                {"name": "flags", "mountPath": "/etc/pyforge"}
+                            ],
                         },
                     ],
                     "volumes": [{"name": "flags", "configMap": {"name": "flags"}}],
@@ -2970,7 +3003,9 @@ def test_consume_events_follows_values_and_refuses_non_station():
     for policy in policies:
         for rule in policy["spec"].get("ingress") or []:
             for peer in rule.get("from") or []:
-                for expr in (peer.get("podSelector") or {}).get("matchExpressions") or []:
+                for expr in (peer.get("podSelector") or {}).get(
+                    "matchExpressions"
+                ) or []:
                     values = expr.get("values") or []
                     assert len(values) == len(set(values)), (
                         f"{policy['metadata']['name']}: duplicate peers {values!r}"
@@ -3001,25 +3036,35 @@ def test_consume_events_guard_rejects_drift_from_worker():
     """Guard-removed companion (ungated): synthetic docs prove the helper
     raises when a consumer is missing, extra, runs the wrong args, or drifts
     from the worker's env."""
-    worker = _synthetic_platform_deployment("worker", ["celery", "-A", "config", "worker"])
+    worker = _synthetic_platform_deployment(
+        "worker", ["celery", "-A", "config", "worker"]
+    )
     good_args = [*_CONSUME_EVENTS_ARGS, "doctor"]
     doctor = _synthetic_platform_deployment("consume-events-doctor", good_args)
     _assert_consume_events_deployments_mirror_worker([worker, doctor], ["doctor"])
 
     with pytest.raises(AssertionError, match="do not match"):
-        _assert_consume_events_deployments_mirror_worker([worker, doctor], ["doctor", "mason"])
+        _assert_consume_events_deployments_mirror_worker(
+            [worker, doctor], ["doctor", "mason"]
+        )
     with pytest.raises(AssertionError, match="do not match"):
         _assert_consume_events_deployments_mirror_worker([worker, doctor], [])
-    wrong_args = _synthetic_platform_deployment("consume-events-doctor", ["celery", "worker"])
+    wrong_args = _synthetic_platform_deployment(
+        "consume-events-doctor", ["celery", "worker"]
+    )
     with pytest.raises(AssertionError, match="args must run consume_events"):
-        _assert_consume_events_deployments_mirror_worker([worker, wrong_args], ["doctor"])
+        _assert_consume_events_deployments_mirror_worker(
+            [worker, wrong_args], ["doctor"]
+        )
     drifted_env = _synthetic_platform_deployment(
         "consume-events-doctor",
         good_args,
         env=[{"name": "REDIS_URL", "value": "redis://elsewhere"}],
     )
     with pytest.raises(AssertionError, match="env differs"):
-        _assert_consume_events_deployments_mirror_worker([worker, drifted_env], ["doctor"])
+        _assert_consume_events_deployments_mirror_worker(
+            [worker, drifted_env], ["doctor"]
+        )
     with pytest.raises(AssertionError, match="worker Deployment missing"):
         _assert_consume_events_deployments_mirror_worker([doctor], ["doctor"])
 
@@ -3324,7 +3369,12 @@ def test_builds_pool_guard_rejects_drift():
         )
     with pytest.raises(AssertionError, match=_BUILDS_LIMIT_ENV):
         _assert_builds_pool(
-            [worker, _synthetic_builds_pool(env=[{"name": "REDIS_URL", "value": "redis://broker"}])],
+            [
+                worker,
+                _synthetic_builds_pool(
+                    env=[{"name": "REDIS_URL", "value": "redis://broker"}]
+                ),
+            ],
             limit=14400,
             soft_limit=14100,
             slack=60,

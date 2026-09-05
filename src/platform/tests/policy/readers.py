@@ -29,9 +29,7 @@ PLATFORM_TEST_SETUP_ACTION = (
 )
 PRODUCTION_SETTINGS = PLATFORM_ROOT / "config" / "settings" / "production.py"
 ROOT_GITIGNORE = REPO_ROOT / ".gitignore"
-REQUIREMENTS_CHECKER = (
-    REPO_ROOT / "scripts" / "platform_ci_test_requirements_check.py"
-)
+REQUIREMENTS_CHECKER = REPO_ROOT / "scripts" / "platform_ci_test_requirements_check.py"
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -109,9 +107,7 @@ def coverage_report_table(
 ) -> dict[str, Any] | None:
     """Return ``[tool.coverage.report]``, or None when undeclared."""
     doc = pyproject if pyproject is not None else platform_pyproject()
-    table: dict[str, Any] | None = (
-        doc.get("tool", {}).get("coverage", {}).get("report")
-    )
+    table: dict[str, Any] | None = doc.get("tool", {}).get("coverage", {}).get("report")
     return table
 
 

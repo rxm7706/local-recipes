@@ -75,6 +75,8 @@ def test_warden_role_is_forbidden_and_has_no_row() -> None:
 
 @pytest.mark.django_db
 def test_warden_session_get_is_forbidden() -> None:
-    response = _atlas_client(groups=[prefixed_station("warden")]).get("/stations/atlas/")
+    response = _atlas_client(groups=[prefixed_station("warden")]).get(
+        "/stations/atlas/"
+    )
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert b"atlas-inventory-row" not in response.content

@@ -49,7 +49,10 @@ def is_station_api_path(path: str) -> bool:
 
 def iter_station_apps() -> list[tuple[str, int, FastAPI]]:
     """Return ``(station, version, app)`` for every registered sub-app."""
-    return [(station, version, app) for (station, version), app in sorted(_station_apps.items())]
+    return [
+        (station, version, app)
+        for (station, version), app in sorted(_station_apps.items())
+    ]
 
 
 def station_application(station: str, version: int) -> FastAPI:

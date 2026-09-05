@@ -47,7 +47,9 @@ class _DesignatedGroup:
     codenames: tuple[str, ...] = ()
 
 
-def provision_designated_groups(apps: StateApps | Apps | None = None) -> ProvisionResult:
+def provision_designated_groups(
+    apps: StateApps | Apps | None = None,
+) -> ProvisionResult:
     contract = settings.CLAIMS_CONTRACT
     if not contract.is_configured:
         logger.warning(
@@ -117,7 +119,9 @@ def _designated_groups(
     return tuple(by_name.values())
 
 
-def _resolve_permissions(permission_model: Any, designated: _DesignatedGroup) -> list[Any]:
+def _resolve_permissions(
+    permission_model: Any, designated: _DesignatedGroup
+) -> list[Any]:
     resolved: list[Any] = []
     for label in designated.codenames:
         app_label, _, codename = label.partition(".")

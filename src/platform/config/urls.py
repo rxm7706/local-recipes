@@ -141,4 +141,3 @@ urlpatterns += [
     path("", include("platformapp.front_door.urls")),
     path("", include(wagtail_urls)),
 ]
-

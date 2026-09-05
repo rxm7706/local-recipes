@@ -16,7 +16,13 @@ from django_pyforge.roles import IDP_TOKEN_CLAIMS_ATTR
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MASON_PORTAL = (
-    REPO_ROOT / "src" / "shared" / "packages" / "django-mason" / "src" / "django_mason_portal"
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "django-mason"
+    / "src"
+    / "django_mason_portal"
 )
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
@@ -82,7 +88,11 @@ def test_mason_portal_tree_forbids_http_station_import_and_object_store() -> Non
                         offenders.append(f"{path.name}: import {alias.name}")
             elif isinstance(node, ast.ImportFrom) and node.module:
                 top = node.module.split(".")[0]
-                if top in _HTTP_TOPLEVEL or top == "minio" or node.module.startswith("urllib.request"):
+                if (
+                    top in _HTTP_TOPLEVEL
+                    or top == "minio"
+                    or node.module.startswith("urllib.request")
+                ):
                     offenders.append(f"{path.name}: from {node.module}")
                 if node.module == "pyforge" or node.module.startswith("pyforge."):
                     offenders.append(f"{path.name}: from {node.module}")

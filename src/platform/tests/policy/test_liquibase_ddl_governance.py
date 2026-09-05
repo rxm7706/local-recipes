@@ -100,8 +100,7 @@ def _master_includes() -> list[str]:
 
 def _changelog_sql() -> str:
     parts = [
-        path.read_text(encoding="utf-8")
-        for path in sorted(CHANGELOG_DIR.glob("*.sql"))
+        path.read_text(encoding="utf-8") for path in sorted(CHANGELOG_DIR.glob("*.sql"))
     ]
     assert parts, "no Liquibase SQL changesets -- this check would pass vacuously"
     return "\n".join(parts)
@@ -110,7 +109,9 @@ def _changelog_sql() -> str:
 def test_preserve_schema_case_is_disabled() -> None:
     text = PROPERTIES.read_text(encoding="utf-8")
     assert re.search(r"(?i)^preserveSchemaCase:\s*false\s*$", text, re.MULTILINE), text
-    argv = liquibase_update_argv("postgres://platform:x@platform-postgres:5432/platform")
+    argv = liquibase_update_argv(
+        "postgres://platform:x@platform-postgres:5432/platform"
+    )
     assert "--preserve-schema-case=false" in argv
     assert "--liquibase-schema-name=liquibase" in argv
 
