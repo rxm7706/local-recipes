@@ -6307,6 +6307,10 @@
   "files": {},
   "memlog": "da060f4a0063cd4f6e49a7259b365c86d9bb1a13"
  },
+ "pyforge-warden/spec-golden-path-conda-blind-spot": {
+  "files": {},
+  "memlog": "5ba69ae4c3129b593654527262b9abd046f56d49"
+ },
  "pyforge-warden/spec-package-inventory-eligibility": {
   "files": {},
   "memlog": "84ddf6505bd80acb872a54e33915ac3298096722"
