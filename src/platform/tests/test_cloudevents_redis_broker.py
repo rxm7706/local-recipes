@@ -140,11 +140,16 @@ def _envelope(**overrides: object) -> dict:
     return body
 
 
-def _pending(broker: Any, group: str, consumer: str | None = None) -> list[dict[str, Any]]:
+def _pending(
+    broker: Any, group: str, consumer: str | None = None
+) -> list[dict[str, Any]]:
     """XPENDING rows -- the delivery counter and idle time, without
     re-delivering (unlike an XREADGROUP over the history)."""
     kwargs: dict[str, Any] = {"consumername": consumer} if consumer else {}
-    return [dict(row) for row in broker.xpending_range(STREAM, group, "-", "+", 100, **kwargs)]
+    return [
+        dict(row)
+        for row in broker.xpending_range(STREAM, group, "-", "+", 100, **kwargs)
+    ]
 
 
 def _pending_ids(broker: Any, group: str, consumer: str) -> list[str]:
@@ -338,7 +343,7 @@ def test_max_attempts_one_quarantines_after_first_failure(
 
     assert fabric.consume(GROUP, CONSUMER, failing) == 0
     assert calls == [1]
-    (_qid, fields), = list_quarantined(broker)
+    ((_qid, fields),) = list_quarantined(broker)
     assert fields[DLQ_REASON_FIELD] == DLQ_REASON_EXHAUSTED
     assert fields[DLQ_ATTEMPTS_FIELD] == "1"
     assert fields[DLQ_ERROR_FIELD] == "RuntimeError: once is enough"
@@ -366,7 +371,7 @@ def test_entry_already_at_ceiling_is_quarantined_without_a_handler_call(
     calls: list[int] = []
     assert fabric.consume(GROUP, CONSUMER, lambda event: calls.append(1)) == 0
     assert calls == []
-    (_qid, fields), = list_quarantined(broker)
+    ((_qid, fields),) = list_quarantined(broker)
     assert json.loads(fields[EVENT_FIELD])["id"] == event_id
     assert fields[DLQ_REASON_FIELD] == DLQ_REASON_EXHAUSTED
     assert fields[DLQ_ATTEMPTS_FIELD] == str(ceiling)
@@ -442,14 +447,20 @@ def test_retry_delays_follow_documented_backoff_and_consumer_does_not_spin(
     assert len(calls) == 1
     for _ in range(25):
         fabric.consume(GROUP, CONSUMER, handler)
-    assert len(calls) == 1, "a failing event must not be re-attempted before its backoff"
+    assert len(calls) == 1, (
+        "a failing event must not be re-attempted before its backoff"
+    )
     for attempts, delay in enumerate(schedule, start=1):
         broker.advance_ms(delay // 2)
         fabric.consume(GROUP, CONSUMER, handler)
-        assert len(calls) == attempts, f"attempt {attempts + 1} ran before {delay} ms elapsed"
+        assert len(calls) == attempts, (
+            f"attempt {attempts + 1} ran before {delay} ms elapsed"
+        )
         broker.advance_ms(delay - delay // 2)
         fabric.consume(GROUP, CONSUMER, handler)
-        assert len(calls) == attempts + 1, f"attempt {attempts + 1} did not run at {delay} ms"
+        assert len(calls) == attempts + 1, (
+            f"attempt {attempts + 1} did not run at {delay} ms"
+        )
     assert len(list_quarantined(broker)) == 1
 
 
@@ -464,7 +475,9 @@ def test_knob_floors_never_reach_zero(monkeypatch: pytest.MonkeyPatch) -> None:
     assert handler_timeout_ms() == 1
 
 
-def test_harvest_claims_only_entries_idle_past_threshold(default_delivery_env: None) -> None:
+def test_harvest_claims_only_entries_idle_past_threshold(
+    default_delivery_env: None,
+) -> None:
     broker = CountingRedis()
     fabric = EventFabric(broker)
     fabric.ensure_group(GROUP)
@@ -478,7 +491,9 @@ def test_harvest_claims_only_entries_idle_past_threshold(default_delivery_env: N
     assert threshold == 5 * 60 * 1000
     assert fabric.harvest_poison(GROUP, CONSUMER) == 0
     assert broker.xautoclaim_calls == [(STREAM, GROUP, CONSUMER, threshold)]
-    assert len(_pending_ids(broker, GROUP, "dead-1")) == 3, "harvest stole live messages"
+    assert len(_pending_ids(broker, GROUP, "dead-1")) == 3, (
+        "harvest stole live messages"
+    )
     assert list_quarantined(broker) == []
 
     broker.advance_ms(threshold - 1_000)
@@ -488,7 +503,7 @@ def test_harvest_claims_only_entries_idle_past_threshold(default_delivery_env: N
     broker.advance_ms(1_000)
     assert fabric.harvest_poison(GROUP, CONSUMER) == 1
     assert _pending_ids(broker, GROUP, "dead-1") == []
-    (_qid, qfields), = list_quarantined(broker)
+    ((_qid, qfields),) = list_quarantined(broker)
     assert qfields[EVENT_FIELD] == "not-cloudevents-json"
     assert qfields[DLQ_REASON_FIELD] == DLQ_REASON_UNPARSEABLE
     assert qfields[DLQ_ERROR_FIELD]
@@ -523,7 +538,7 @@ def test_harvest_quarantines_exhausted_entry_with_recorded_error(
     assert len(_pending_ids(broker, GROUP, "dead-1")) == 1
     broker.advance_ms(handler_timeout_ms() + 1)
     assert fabric.harvest_poison(GROUP, CONSUMER) == 1
-    (_qid, fields), = list_quarantined(broker)
+    ((_qid, fields),) = list_quarantined(broker)
     assert json.loads(fields[EVENT_FIELD])["id"] == event_id
     assert fields[DLQ_REASON_FIELD] == DLQ_REASON_EXHAUSTED
     assert fields[DLQ_ERROR_FIELD] == "RuntimeError: doctor handler crashed"
@@ -538,7 +553,10 @@ def test_recorded_error_redacts_url_userinfo(monkeypatch: pytest.MonkeyPatch) ->
         == "redis://***@host:6379/0 and https://***@x/y"
     )
     assert redact_secrets("KeyError: 'reason'") == "KeyError: 'reason'"
-    assert redact_secrets("see https://example.org/no-userinfo") == "see https://example.org/no-userinfo"
+    assert (
+        redact_secrets("see https://example.org/no-userinfo")
+        == "see https://example.org/no-userinfo"
+    )
     monkeypatch.setenv("DJANGO_PYFORGE_EVENT_MAX_ATTEMPTS", "1")
     broker = MemoryRedis()
     fabric = EventFabric(broker)
@@ -550,7 +568,7 @@ def test_recorded_error_redacts_url_userinfo(monkeypatch: pytest.MonkeyPatch) ->
         raise ConnectionError(msg)
 
     fabric.consume(GROUP, CONSUMER, failing)
-    (_qid, fields), = list_quarantined(broker)
+    ((_qid, fields),) = list_quarantined(broker)
     assert fields[DLQ_ERROR_FIELD] == (
         "ConnectionError: could not connect to postgres://***@db:5432/platform"
     )
@@ -594,7 +612,10 @@ def test_event_vocabulary_registered_with_dataschemas() -> None:
     fabric = EventFabric(broker)
     for event_type in chain:
         fabric.publish(_envelope(type=event_type, dataschema=EVENT_SCHEMAS[event_type]))
-    landed = [json.loads(row[1][EVENT_FIELD])["type"] for row in broker.xrange(STREAM, "-", "+")]
+    landed = [
+        json.loads(row[1][EVENT_FIELD])["type"]
+        for row in broker.xrange(STREAM, "-", "+")
+    ]
     assert landed == list(chain)
 
 
@@ -620,13 +641,31 @@ def test_station_handler_routes_subscribed_types_only() -> None:
     register_adapter(SpyAudit())
     try:
         doctor = station_handler("doctor")
-        doctor({"type": "recipe.audit.failed", "id": "a", "data": {"package": "p", "reason": "r"}})
-        doctor({"type": "remedy.requested", "id": "b", "data": {"package": "p", "remedy": "x"}})
+        doctor(
+            {
+                "type": "recipe.audit.failed",
+                "id": "a",
+                "data": {"package": "p", "reason": "r"},
+            }
+        )
+        doctor(
+            {
+                "type": "remedy.requested",
+                "id": "b",
+                "data": {"package": "p", "remedy": "x"},
+            }
+        )
         assert seen == ["a"]
         with pytest.raises(PayloadShapeError):
             doctor({"type": "recipe.audit.failed", "id": "c", "data": {"package": "p"}})
         mason = station_handler("mason")
-        mason({"type": "recipe.audit.failed", "id": "d", "data": {"package": "p", "reason": "r"}})
+        mason(
+            {
+                "type": "recipe.audit.failed",
+                "id": "d",
+                "data": {"package": "p", "reason": "r"},
+            }
+        )
         assert seen == ["a"]
         with pytest.raises(PayloadShapeError):
             mason({"type": "remedy.requested", "id": "e", "data": {}})
@@ -642,7 +681,9 @@ def test_consume_events_command_runs_one_pass_for_station() -> None:
     fabric = EventFabric(broker)
     fabric.ensure_group("doctor")
     fabric.publish(_envelope(data={"package": "demo", "reason": "cve"}))
-    fabric.publish(_envelope(type="remedy.requested", data={"package": "demo", "remedy": "bump"}))
+    fabric.publish(
+        _envelope(type="remedy.requested", data={"package": "demo", "remedy": "bump"})
+    )
     broker.xadd(STREAM, {EVENT_FIELD: "garbage"})
     out = StringIO()
     call_command(
@@ -662,9 +703,21 @@ def test_consume_events_command_runs_one_pass_for_station() -> None:
     # A station outside the tokens, or one that subscribes to nothing (review
     # P7), is refused before any Redis call.
     with pytest.raises(CommandError, match="station token"):
-        call_command("consume_events", station="nope", client=broker, once=True, stdout=StringIO())
+        call_command(
+            "consume_events",
+            station="nope",
+            client=broker,
+            once=True,
+            stdout=StringIO(),
+        )
     with pytest.raises(CommandError, match="subscribes to no event type"):
-        call_command("consume_events", station="atlas", client=broker, once=True, stdout=StringIO())
+        call_command(
+            "consume_events",
+            station="atlas",
+            client=broker,
+            once=True,
+            stdout=StringIO(),
+        )
     # Retries go through the same command: a failing handler keeps the entry
     # pending, and a later pass after the backoff quarantines it.
     fabric.publish(_envelope(data={"package": "demo", "reason": "cve"}))
@@ -723,7 +776,9 @@ class _RecordingStop(StopFlag):
         return False
 
 
-def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_idle() -> None:
+def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_idle() -> (
+    None
+):
     """Review P3: a stop requested mid-pass ends the loop after that pass
     (no further entry claimed/read, the in-flight handler finishes);
     harvest runs on pass N of ``harvest_every``; the idle wait is taken only
@@ -732,7 +787,10 @@ def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_id
     broker = MemoryRedis()
     fabric = _TracingFabric(broker)
     fabric.ensure_group("doctor")
-    ids = [fabric.publish(_envelope(data={"package": f"p{i}", "reason": "r"})) for i in range(3)]
+    ids = [
+        fabric.publish(_envelope(data={"package": f"p{i}", "reason": "r"}))
+        for i in range(3)
+    ]
     stop = _RecordingStop(fabric)
     handled_ids: list[str] = []
 
@@ -742,7 +800,14 @@ def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_id
             stop.request()
 
     result = run_passes(
-        fabric, "doctor", "doctor-1", stopping_handler, interval=0.5, harvest_every=2, once=False, stop=stop,
+        fabric,
+        "doctor",
+        "doctor-1",
+        stopping_handler,
+        interval=0.5,
+        harvest_every=2,
+        once=False,
+        stop=stop,
     )
     assert result == (1, 2, 0)
     assert handled_ids == ids[:2]
@@ -750,7 +815,9 @@ def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_id
     assert stop.waits == 0
     # The third entry was delivered by the batch read but never attempted:
     # still pending under this consumer, for the next pass or a harvest.
-    assert _pending_ids(broker, "doctor", "doctor-1") == [_pending_ids(broker, "doctor", "doctor-1")[0]]
+    assert _pending_ids(broker, "doctor", "doctor-1") == [
+        _pending_ids(broker, "doctor", "doctor-1")[0]
+    ]
     assert len(_pending(broker, "doctor")) == 1
 
     # (b) an idle loop: harvest on passes 2 and 4, waits only after idle passes.
@@ -760,7 +827,14 @@ def test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_id
     fabric.publish(_envelope(data={"package": "p", "reason": "r"}))
     stop = _RecordingStop(fabric, stop_on_wait=2)
     result = run_passes(
-        fabric, "doctor", "doctor-1", lambda event: None, interval=0.5, harvest_every=2, once=False, stop=stop,
+        fabric,
+        "doctor",
+        "doctor-1",
+        lambda event: None,
+        interval=0.5,
+        harvest_every=2,
+        once=False,
+        stop=stop,
     )
     assert result == (4, 1, 0)
     assert fabric.trace == [
@@ -841,8 +915,14 @@ def test_traceparent_from_task_request_reads_both_shapes() -> None:
     assert traceparent_from_task_request(attribute_form) == TRACEPARENT
     assert traceparent_from_task_request(headers_form) == TRACEPARENT
     assert traceparent_from_task_request(SimpleNamespace(headers=None)) is None
-    assert traceparent_from_task_request(SimpleNamespace(headers={"traceparent": "bad"})) is None
-    assert traceparent_from_task_request(SimpleNamespace(traceparent="bad", headers=None)) is None
+    assert (
+        traceparent_from_task_request(SimpleNamespace(headers={"traceparent": "bad"}))
+        is None
+    )
+    assert (
+        traceparent_from_task_request(SimpleNamespace(traceparent="bad", headers=None))
+        is None
+    )
     assert traceparent_from_task_request(None) is None
 
 
@@ -905,7 +985,9 @@ def _react(event_id: str) -> str:
 
 
 @pytest.mark.django_db
-def test_trace_id_from_request_reaches_celery_headers_and_structlog(client, settings) -> None:
+def test_trace_id_from_request_reaches_celery_headers_and_structlog(
+    client, settings
+) -> None:
     """AC: an event published from a request with a ``traceparent``, handled by
     a consumer that enqueues Celery work, carries the same trace id into the
     task headers and the structlog context.
@@ -937,7 +1019,9 @@ def test_trace_id_from_request_reaches_celery_headers_and_structlog(client, sett
     assert _PROBE["task_context"].get("trace_id") == TRACE_ID
 
 
-def test_enqueue_supervised_run_carries_traceparent_header(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_enqueue_supervised_run_carries_traceparent_header(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from django_pyforge import tasks
 
     captured: dict[str, Any] = {}
@@ -949,11 +1033,15 @@ def test_enqueue_supervised_run_carries_traceparent_header(monkeypatch: pytest.M
     monkeypatch.setattr(tasks.execute_supervised_run, "apply_async", fake_apply_async)
 
     with bound_trace(TRACEPARENT):
-        enqueue_supervised_run("run-1", "warden", "audit", {}, subject="agent-1", task_id="task-1")
+        enqueue_supervised_run(
+            "run-1", "warden", "audit", {}, subject="agent-1", task_id="task-1"
+        )
     assert captured["headers"][SUBJECT_HEADER] == "agent-1"
     assert trace_id_of(captured["headers"]["traceparent"]) == TRACE_ID
     captured.clear()
-    enqueue_supervised_run("run-2", "warden", "audit", {}, subject="agent-1", task_id="task-2")
+    enqueue_supervised_run(
+        "run-2", "warden", "audit", {}, subject="agent-1", task_id="task-2"
+    )
     # Outside the bound trace the header is whatever trace (if any) this test
     # process runs under -- never the one from the previous enqueue.
     assert captured["headers"][SUBJECT_HEADER] == "agent-1"
@@ -1196,7 +1284,9 @@ def _stop_redis(proc: subprocess.Popen) -> None:
         proc.wait(timeout=5)
 
 
-def test_real_redis_retry_backoff_dlq_and_harvest(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_redis_retry_backoff_dlq_and_harvest(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The delivery semantics against a real redis-server (platform-dev env):
     XPENDING/XCLAIM/XAUTOCLAIM as Redis actually answers them, not the
     in-memory model."""
@@ -1214,7 +1304,9 @@ def test_real_redis_retry_backoff_dlq_and_harvest(tmp_path, monkeypatch: pytest.
     port = _free_port()
     proc = _start_redis(data_dir, appendonly=False, port=port)
     try:
-        client = redis.Redis.from_url(f"redis://127.0.0.1:{port}/0", decode_responses=True)
+        client = redis.Redis.from_url(
+            f"redis://127.0.0.1:{port}/0", decode_responses=True
+        )
         fabric = EventFabric(client)
         fabric.ensure_group(GROUP)
         event_id = fabric.publish(_envelope(traceparent=TRACEPARENT))
@@ -1232,7 +1324,7 @@ def test_real_redis_retry_backoff_dlq_and_harvest(tmp_path, monkeypatch: pytest.
         assert len(calls) == 3, calls
         assert calls[1] - calls[0] >= 0.1
         assert calls[2] - calls[1] >= 0.2
-        (_qid, fields), = list_quarantined(client)
+        ((_qid, fields),) = list_quarantined(client)
         assert json.loads(fields[EVENT_FIELD])["id"] == event_id
         assert fields[DLQ_REASON_FIELD] == DLQ_REASON_EXHAUSTED
         assert fields[DLQ_ERROR_FIELD] == "RuntimeError: real redis boom"

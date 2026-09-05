@@ -123,7 +123,9 @@ def _idp_verifier_settings(
     if not settings.configured:
         django.setup()
     reset_jwks_cache()
-    monkeypatch.setattr(settings, "OIDC_JWKS_URL", idp_test_keys["jwks_url"], raising=False)
+    monkeypatch.setattr(
+        settings, "OIDC_JWKS_URL", idp_test_keys["jwks_url"], raising=False
+    )
     monkeypatch.setattr(settings, "OIDC_ISSUER", _TEST_ISSUER, raising=False)
     monkeypatch.setattr(settings, "OIDC_AUDIENCE", _TEST_AUDIENCE, raising=False)
     monkeypatch.setattr(settings, "OIDC_ALGORITHMS", ["RS256"], raising=False)
@@ -528,24 +530,34 @@ def test_bearer_signed_with_wrong_key_is_refused(
 
 def test_idp_bearer_alg_none_is_refused(idp_test_keys: dict[str, object]) -> None:
     now = int(datetime.now(tz=UTC).timestamp())
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "none", "kid": idp_test_keys["kid"]}, separators=(",", ":")).encode(
-            "utf-8",
-        ),
-    ).rstrip(b"=").decode("ascii")
-    payload = base64.urlsafe_b64encode(
-        json.dumps(
-            {
-                "sub": _SUB,
-                "groups": _ROLES,
-                "iss": _TEST_ISSUER,
-                "aud": _TEST_AUDIENCE,
-                "iat": now,
-                "exp": now + 300,
-            },
-            separators=(",", ":"),
-        ).encode("utf-8"),
-    ).rstrip(b"=").decode("ascii")
+    header = (
+        base64.urlsafe_b64encode(
+            json.dumps(
+                {"alg": "none", "kid": idp_test_keys["kid"]}, separators=(",", ":")
+            ).encode(
+                "utf-8",
+            ),
+        )
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+    payload = (
+        base64.urlsafe_b64encode(
+            json.dumps(
+                {
+                    "sub": _SUB,
+                    "groups": _ROLES,
+                    "iss": _TEST_ISSUER,
+                    "aud": _TEST_AUDIENCE,
+                    "iat": now,
+                    "exp": now + 300,
+                },
+                separators=(",", ":"),
+            ).encode("utf-8"),
+        )
+        .rstrip(b"=")
+        .decode("ascii")
+    )
     bearer = f"{header}.{payload}."
     assert _mint_request(bearer).status_code == HTTPStatus.UNAUTHORIZED
 

@@ -91,7 +91,9 @@ def test_mcp_host_modern_header_accepted(mcp_client: TestClient) -> None:
     )
     assert response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
     body = response.json()
-    assert "error" not in body or body["error"].get("code") != UNSUPPORTED_PROTOCOL_VERSION
+    assert (
+        "error" not in body or body["error"].get("code") != UNSUPPORTED_PROTOCOL_VERSION
+    )
 
 
 def test_mcp_host_unsupported_revision(mcp_client: TestClient) -> None:
@@ -129,7 +131,9 @@ def _atlas_scope(assertion: str) -> dict:
 
 def test_dispatch_proxies_when_url_set(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://mcp-host:8090")
-    assertion = mint_assertion(sub="agent-sidecar", roles=["pyforge:station:atlas"], station="atlas")
+    assertion = mint_assertion(
+        sub="agent-sidecar", roles=["pyforge:station:atlas"], station="atlas"
+    )
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
@@ -179,7 +183,9 @@ def test_dispatch_proxies_when_url_set(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_dispatch_502_when_sidecar_down(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:1")
-    assertion = mint_assertion(sub="agent-sidecar", roles=["pyforge:station:atlas"], station="atlas")
+    assertion = mint_assertion(
+        sub="agent-sidecar", roles=["pyforge:station:atlas"], station="atlas"
+    )
     sent: list[dict] = []
 
     async def receive():

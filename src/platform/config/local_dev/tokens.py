@@ -32,7 +32,9 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 DEFAULT_LIFETIME_SECONDS: Final[int] = 900
 
 
-def mint_token(persona_key: str, *, lifetime_seconds: int = DEFAULT_LIFETIME_SECONDS) -> str:
+def mint_token(
+    persona_key: str, *, lifetime_seconds: int = DEFAULT_LIFETIME_SECONDS
+) -> str:
     if not is_local():
         raise ImproperlyConfigured(
             f"a development token is never minted in a deployed environment. "

@@ -19,9 +19,7 @@ def _resolve_view(qualified: str):
 def test_listed_view_is_non_atomic(qualified: str) -> None:
     view = _resolve_view(qualified)
     marker = getattr(view, "_non_atomic_requests", False)
-    assert marker, (
-        f"{qualified} must be wrapped with transaction.non_atomic_requests"
-    )
+    assert marker, f"{qualified} must be wrapped with transaction.non_atomic_requests"
 
 
 def test_registry_matches_transaction_helper() -> None:

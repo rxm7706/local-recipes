@@ -35,8 +35,7 @@ def _assert_closed_run_surface(pyproject: dict[str, Any]) -> None:
 def _assert_fail_under(pyproject: dict[str, Any]) -> None:
     value = readers.declared_fail_under(pyproject)
     assert value == CLOSED_FAIL_UNDER, (
-        f"coverage fail_under drifted: expected {CLOSED_FAIL_UNDER!r}, "
-        f"got {value!r}"
+        f"coverage fail_under drifted: expected {CLOSED_FAIL_UNDER!r}, got {value!r}"
     )
 
 
@@ -53,9 +52,7 @@ def test_coverage_fail_under_matches_measured_floor() -> None:
 def test_fail_under_declared_exactly_once() -> None:
     """fail_under must appear exactly once in platform pyproject.toml."""
     count = readers.count_fail_under_declarations()
-    assert count == 1, (
-        f"fail_under must be declared exactly once; found {count}"
-    )
+    assert count == 1, f"fail_under must be declared exactly once; found {count}"
 
 
 def test_no_competing_coveragerc() -> None:
@@ -81,9 +78,7 @@ def test_deliberate_omit_drift_reds() -> None:
             "coverage": {
                 "run": run,
                 "report": dict(
-                    drifted.get("tool", {})
-                    .get("coverage", {})
-                    .get("report", {}),
+                    drifted.get("tool", {}).get("coverage", {}).get("report", {}),
                 ),
             },
         },
@@ -131,6 +126,4 @@ def test_deliberate_duplicate_fail_under_reds() -> None:
     drifted = text + "\nfail_under = 50\n"
     count = readers.count_fail_under_declarations(drifted)
     with pytest.raises(AssertionError, match="exactly once"):
-        assert count == 1, (
-            f"fail_under must be declared exactly once; found {count}"
-        )
+        assert count == 1, f"fail_under must be declared exactly once; found {count}"

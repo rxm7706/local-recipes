@@ -3,8 +3,9 @@
 # Platform change is proven before it is pushed and no Actions minutes are
 # spent finding out. Four stages, each one of the workflow's jobs:
 #
-#   test        the `test` job, step for step: manage.py check, ruff, mypy, the
-#               policy suite, sqlmigrate extraction, the full pytest suite
+#   test        the `test` job, step for step: manage.py check, ruff, ruff
+#               format, mypy, the policy suite, sqlmigrate extraction, the
+#               full pytest suite
 #   images      the three image builds (platform, DB-GPT sidecar, mcp-host)
 #   container   the `container` job's runtime smokes against the built image:
 #               migrate, start, /ht/, /admin/login/, /, every static asset the
@@ -111,6 +112,7 @@ stage_test() {
   ( cd src/platform || exit 2
     step test "Django system checks (PostgreSQL + Redis, no other backing service)" "${py[@]}" manage.py check &&
     step test "Ruff" "$CIT/ruff" check . &&
+    step test "Ruff format" "$CIT/ruff" format --check . &&
     step test "Mypy" env -u PYTHONSAFEPATH "$CIT/mypy" platformapp config tests &&
     step test "Policy suite" "${py[@]}" -m pytest tests/policy -q -p no:cacheprovider &&
     step test "sqlmigrate extraction" "${py[@]}" -m db.sqlmigrate_extraction &&

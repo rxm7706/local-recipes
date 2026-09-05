@@ -41,13 +41,9 @@ def _assert_only_migrations_ignore_errors(mypy: dict[str, Any]) -> None:
     overrides = mypy.get("overrides", [])
     assert isinstance(overrides, list), "mypy overrides must be a list"
     ignoring = [
-        override
-        for override in overrides
-        if override.get("ignore_errors") is True
+        override for override in overrides if override.get("ignore_errors") is True
     ]
-    assert ignoring, (
-        "expected a migrations ignore_errors override; found none"
-    )
+    assert ignoring, "expected a migrations ignore_errors override; found none"
     modules: list[str] = []
     for override in ignoring:
         module = override.get("module")
@@ -59,8 +55,7 @@ def _assert_only_migrations_ignore_errors(mypy: dict[str, Any]) -> None:
             modules.append(repr(module))
     offenders = [m for m in modules if m != MIGRATIONS_MODULE]
     assert offenders == [], (
-        f"only {MIGRATIONS_MODULE!r} may set ignore_errors=true; "
-        f"found {offenders}"
+        f"only {MIGRATIONS_MODULE!r} may set ignore_errors=true; found {offenders}"
     )
 
 
@@ -101,9 +96,7 @@ def test_platform_ci_mypy_step_targets_required_packages() -> None:
     )
     args = match.group("args").split()
     for target in MYPY_TARGETS:
-        assert target in args, (
-            f"Mypy step must include {target!r}; got {args!r}"
-        )
+        assert target in args, f"Mypy step must include {target!r}; got {args!r}"
 
 
 def test_deliberate_mypy_step_removal_reds() -> None:
@@ -135,9 +128,7 @@ def _require_policy_suite_step(workflow_text: str) -> None:
         "pytest tests/policy"
     )
     command = match.group("command")
-    assert "pytest" in command, (
-        f"Policy suite step must invoke pytest; got {command!r}"
-    )
+    assert "pytest" in command, f"Policy suite step must invoke pytest; got {command!r}"
     assert "tests/policy" in command, (
         f"Policy suite step must target tests/policy; got {command!r}"
     )

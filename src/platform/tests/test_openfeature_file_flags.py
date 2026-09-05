@@ -95,9 +95,7 @@ def _looks_like_flagd(path: Path) -> bool:
         return False
     sample = next(iter(flags.values()))
     return (
-        isinstance(sample, dict)
-        and "variants" in sample
-        and "defaultVariant" in sample
+        isinstance(sample, dict) and "variants" in sample and "defaultVariant" in sample
     )
 
 

@@ -38,8 +38,12 @@ _REFUSAL_BODY = "Sign-in was refused."
 
 
 def claims_from(sociallogin: SocialLogin) -> Mapping[str, Any]:
-    extra_data: Mapping[str, Any] = getattr(sociallogin.account, "extra_data", None) or {}
-    envelopes = [extra_data.get(name) for name in (_ID_TOKEN_ENVELOPE, _USERINFO_ENVELOPE)]
+    extra_data: Mapping[str, Any] = (
+        getattr(sociallogin.account, "extra_data", None) or {}
+    )
+    envelopes = [
+        extra_data.get(name) for name in (_ID_TOKEN_ENVELOPE, _USERINFO_ENVELOPE)
+    ]
     present = [envelope for envelope in envelopes if isinstance(envelope, dict)]
     if not present:
         return extra_data
@@ -69,7 +73,9 @@ class OIDCSocialAccountAdapter(DefaultSocialAccountAdapter):
             user = resolve_user(claims)
             sync_for_interactive(user, claims)
         except ClaimsRejected as refusal:
-            logger.warning("authorization.interactive_login_refused", reason=refusal.reason)
+            logger.warning(
+                "authorization.interactive_login_refused", reason=refusal.reason
+            )
             raise ImmediateHttpResponse(self.refusal_response(request)) from refusal
         sociallogin.connect(request, user)
         # Story 18.2: persist group-claim names for continuity. Story 26.1:

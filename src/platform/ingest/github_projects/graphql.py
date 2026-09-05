@@ -201,7 +201,10 @@ def iter_project_snapshot_pages(
 
         yield page
 
-        if page.rate_limit.remaining is not None and page.rate_limit.remaining < min_remaining_points:
+        if (
+            page.rate_limit.remaining is not None
+            and page.rate_limit.remaining < min_remaining_points
+        ):
             break
         if not page.has_next_page:
             break

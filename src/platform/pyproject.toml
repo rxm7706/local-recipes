@@ -204,6 +204,13 @@ ignore = [
           # of types for comparison.
           # Deactivated because it can make the code slow:
           # https://github.com/astral-sh/ruff/issues/7871
+  "COM812", # missing-trailing-comma -- conflicts with ruff's own formatter
+            # (ruff's own warning: "may cause conflicts when used with the
+            # formatter"), which now gates this project (retro action item
+            # 4, 2026-09-05): `ruff format .` removed trailing commas in 53
+            # spots COM812 wants back, so the two rules disagree on the same
+            # code. The formatter's placement is authoritative once it's
+            # gated.
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.
@@ -220,11 +227,11 @@ force-single-line = true
 # steward 13.1) are not blocked. Tighten/remove as 12.x follow-ups land.
 [tool.ruff.lint.per-file-ignores]
 "ingest/github_projects/**" = [
-  "COM812", "E501", "EM101", "EM102", "F402", "I001", "PLR0913", "T201",
+  "E501", "EM101", "EM102", "F402", "I001", "PLR0913", "T201",
   "TC002", "TC003", "TRY003", "TRY004", "UP035",
 ]
 "ingest/github_projects/test_github_metrics_dlt.py" = [
-  "COM812", "E501", "E402", "I001", "PLR2004",
+  "E501", "E402", "I001", "PLR2004",
 ]
 
 # Epics 40-43 (2026-08-31 -> 2026-09-03) landed while GitHub Actions was disabled

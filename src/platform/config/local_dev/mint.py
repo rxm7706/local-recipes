@@ -40,7 +40,9 @@ def main(argv: list[str] | None = None) -> str:
             f"Declared personas: {', '.join(persona_keys())}"
         )
         raise SystemExit(message) from unknown
-    logger.info("local_dev.minting_complete", persona=persona_key, kid=keypair.kid, token=token)
+    logger.info(
+        "local_dev.minting_complete", persona=persona_key, kid=keypair.kid, token=token
+    )
     return token
 
 

@@ -56,8 +56,7 @@ def _secret_key_env_args(production_text: str) -> str:
 def _assert_secret_key_has_no_default(production_text: str) -> None:
     args = _secret_key_env_args(production_text)
     assert "default" not in args, (
-        "production SECRET_KEY must not pass default=... to env(); "
-        f"got env({args})"
+        f"production SECRET_KEY must not pass default=... to env(); got env({args})"
     )
     # Positional default: env("KEY", "fallback") or env('KEY', 'fallback')
     parts = [p.strip() for p in args.split(",")]
@@ -110,9 +109,7 @@ def test_production_secret_key_has_no_default() -> None:
 
 def test_deliberate_secret_key_default_reds() -> None:
     """Drift: a default on SECRET_KEY must fail the same assertion."""
-    drifted = (
-        'SECRET_KEY = env("DJANGO_SECRET_KEY", default="not-a-real-secret")\n'
-    )
+    drifted = 'SECRET_KEY = env("DJANGO_SECRET_KEY", default="not-a-real-secret")\n'
     with pytest.raises(AssertionError, match="must not pass default"):
         _assert_secret_key_has_no_default(drifted)
 

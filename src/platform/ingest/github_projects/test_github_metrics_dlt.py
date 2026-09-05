@@ -21,7 +21,11 @@ from github_projects.source import github_projects_source
 def _graphql_response(project_id: str, *, has_next: bool = False) -> bytes:
     payload = {
         "data": {
-            "rateLimit": {"cost": 1, "remaining": 4999, "resetAt": "2030-01-01T00:00:00Z"},
+            "rateLimit": {
+                "cost": 1,
+                "remaining": 4999,
+                "resetAt": "2030-01-01T00:00:00Z",
+            },
             "node": {
                 "id": project_id,
                 "title": "PyForge Board",
@@ -44,18 +48,27 @@ def _graphql_response(project_id: str, *, has_next: bool = False) -> bytes:
                                 "nodes": [
                                     {
                                         "name": "In Progress",
-                                        "field": {"id": "FIELD_STATUS", "name": "Status"},
+                                        "field": {
+                                            "id": "FIELD_STATUS",
+                                            "name": "Status",
+                                        },
                                     },
                                     {
                                         "text": "PROJ-1",
-                                        "field": {"id": "FIELD_LINK", "name": "Jira Link"},
+                                        "field": {
+                                            "id": "FIELD_LINK",
+                                            "name": "Jira Link",
+                                        },
                                     },
                                 ]
                             },
                             "content": {
                                 "number": 42,
                                 "title": "Example issue",
-                                "repository": {"owner": {"login": "rxm7706"}, "name": "local-recipes"},
+                                "repository": {
+                                    "owner": {"login": "rxm7706"},
+                                    "name": "local-recipes",
+                                },
                             },
                         }
                     ],
@@ -73,7 +86,9 @@ def _fake_transport(project_id: str):
         assert body["variables"]["projectId"] == project_id
         page_size = body["variables"].get("pageSize", DEFAULT_PAGE_SIZE)
         assert 1 <= page_size <= DEFAULT_PAGE_SIZE
-        return TransportResponse(status=200, body=_graphql_response(project_id, has_next=False))
+        return TransportResponse(
+            status=200, body=_graphql_response(project_id, has_next=False)
+        )
 
     return transport
 
