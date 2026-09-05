@@ -78,6 +78,16 @@ FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.78.0 AS builder
 WORKDIR /pyforge
 COPY . /pyforge
 
+# .pixi/config.toml is tracked and load-bearing (below) but is deliberately
+# NOT reached via the COPY above: .dockerignore excludes `.pixi/*` wholesale,
+# and re-including just this one file needs a negation pattern that forces
+# the builder to walk the whole multi-GB `.pixi/` tree to resolve it --
+# retro action item 9 (2026-09-05), the reason a raw `docker build .` from a
+# real checkout crawls. Reproducing its one setting directly here removes
+# the need for that negation entirely. Keep this in sync by hand if
+# `.pixi/config.toml`'s content ever changes.
+RUN mkdir -p .pixi && printf 'run-post-link-scripts = "insecure"\n' > .pixi/config.toml
+
 # --frozen: install EXACTLY what pixi.lock says and never re-solve inside the
 # build, so the image is a function of the committed lock alone. Note what it
 # does NOT do: per `pixi install --help`, `--frozen` "doesn't update lock file

@@ -18,10 +18,10 @@
 # reports it -- the same failure class `.gitignore` hit on 2026-08-09, where
 # a blanket `*.log` emptied `tests/fixtures/error_logs/` and turned the
 # failure-analyzer's two unmatched-log cases into false greens. `.gitignore`
-# fixed that with a narrow negation rather than by weakening `*.log`; all four
+# fixed that with a narrow negation rather than by weakening `*.log`; the
 # negations below are that same fix, one per broad rule that would otherwise
-# take a tracked file (`.pixi/config.toml`, `.bmad-loop/bmad_loop_hook.py`,
-# the two `conf/local/.gitkeep`s, `error_logs/unmatched.log`). Audit any new
+# take a tracked file (`.bmad-loop/bmad_loop_hook.py`, the two
+# `conf/local/.gitkeep`s, `error_logs/unmatched.log`). Audit any new
 # broad rule with: git ls-files | <match against this file>.
 #
 # UNTRACKED FILES ARE THE OTHER HALF, and only for one class: anything
@@ -32,17 +32,21 @@
 
 .git/
 
-# The root `.pixi/` env is multi-GB and the builder stage materializes its
-# own -- but `.pixi/config.toml` is GIT-TRACKED and load-bearing: it carries
+# The root `.pixi/` env is multi-GB and every builder stage materializes its
+# own. `.pixi/config.toml` is GIT-TRACKED and load-bearing (it carries
 # `run-post-link-scripts = "insecure"`, without which `pixi install` skips
 # the post-link scripts that gdk-pixbuf (loaders.cache), gtk3, librsvg and
-# graphviz all ship. Stripping it makes the image's install silently unlike
-# every host install (verified: the host's pyforge-container env has
+# graphviz all ship -- verified: the host's pyforge-container env has
 # `lib/gdk-pixbuf-2.0/2.10.0/loaders.cache`; a post-link-less install does
-# not). `.pixi/*` rather than `.pixi/` so Docker drops each child wholesale
-# instead of walking the whole env to honour the exception.
+# not), but is deliberately NOT re-included here with a negation: a plain
+# `.pixi/*` exclusion prunes cleanly, while a negation into an otherwise-
+# excluded directory forces the builder to walk the WHOLE multi-GB tree to
+# resolve it -- retro action item 9 (2026-09-05), the reason a raw
+# `docker build .` from a real checkout crawled for an hour. Every
+# Containerfile that runs `pixi install` now reproduces this one setting
+# directly instead (see each one's own comment beside its `pixi install`
+# step) -- keep them in sync by hand if this file's content ever changes.
 .pixi/*
-!.pixi/config.toml
 # Nested pixi workspaces materialize their own envs (recipes/insightforge/
 # and each src/shared/packages/* member declares its own manifest).
 recipes/*/.pixi/

@@ -121,11 +121,16 @@ stage_test() {
 
 export_context() {
   # The build context is the git-tracked tree (plus untracked, non-ignored
-  # files), exported to a scratch dir -- the local twin of a CI checkout. A
-  # raw `docker build .` here walks the whole working tree: .dockerignore
-  # excludes `.pixi/*` but re-includes `.pixi/config.toml`, so BuildKit cannot
-  # prune the 32 GB of environments and the context transfer crawls for an
-  # hour. The recipe universe is left out too; no Containerfile reads it.
+  # files), exported to a scratch dir -- the local twin of a CI checkout.
+  # `.dockerignore`'s own `.pixi/*` exclusion prunes the multi-GB `.pixi/`
+  # tree cleanly on its own now (retro action item 9, 2026-09-05 -- it used
+  # to carry a `!.pixi/config.toml` negation that forced a full walk of that
+  # tree instead; every Containerfile now reproduces that one setting
+  # directly rather than relying on the negation). This export still earns
+  # its keep for what `.dockerignore` alone does not cover: the recipe
+  # universe (7,800+ files; no Containerfile reads `recipes/`, and
+  # `.dockerignore` never excludes it) and a git-index-speed listing instead
+  # of a raw filesystem walk of the whole checkout.
   local ctx="$WORK/context"
   rm -rf "$ctx"; mkdir -p "$ctx"
   git ls-files -z --cached --others --exclude-standard -- . ':!recipes' \
