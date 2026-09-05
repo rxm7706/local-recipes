@@ -158,7 +158,7 @@ development_status:
   44-7-the-factory-island: blocked
   44-8-the-working-set: blocked
   44-9-mason-submits-to-conda-forge: blocked
-  45-1-eval-quality-joins-the-suite: in-progress
+  45-1-eval-quality-joins-the-suite: done
   45-2-the-reviewer-is-measured-against-a-planted-defect: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done

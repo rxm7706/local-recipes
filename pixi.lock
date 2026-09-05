@@ -4148,11 +4148,11 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-0.2.0.dev0-h42f10ed_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.24.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
@@ -5320,11 +5320,11 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-0.2.0.dev0-h42f10ed_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.24.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
@@ -6412,7 +6412,6 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-test-architecture-enterprise-1.24.0-ha7a566d_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-method-wds-expansion-0.4.3-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-module-template-0.1.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-utility-skills-2.0.0-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/fastmcp-4.0.0b5-pyhcba1bba_0.conda
@@ -17391,6 +17390,15 @@ packages:
   license: MIT
   size: 4002813
   timestamp: 1784397641319
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-0.2.0.dev0-h42f10ed_0.conda
+  sha256: c2080d82386c5f0d1918c7206c8392837000a42bafd3abea7fe1be32369e5f5a
+  md5: bcfd27ab140bc8bed15039ee226577ab
+  depends:
+  - nodejs >=22.20.0
+  - __unix
+  license: Apache-2.0 AND MIT
+  size: 757188
+  timestamp: 1788615283555
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_0.conda
   sha256: 19a8161962ae1d9eab13ee2951caf0208b45bff18820ce5ef58a3b6cd864f344
   md5: 61046e39c452291e1ffc3f63685f6f64
