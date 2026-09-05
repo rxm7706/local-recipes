@@ -10,6 +10,16 @@ is a shared namespace across stations.
 from __future__ import annotations
 
 from pyforge.testing_kit.auth_http_time import FrozenClock, MockGitHubAPI
+from pyforge.testing_kit.branch_diff_guard import (
+    changed_paths_since,
+    commit_files,
+    commit_subject,
+    commits_since,
+    diff_text_since,
+    existed_at_ref,
+    pyforge_import_offenders,
+    unsanctioned_commits,
+)
 from pyforge.testing_kit.cli_runner import CliRunner, MockRunner
 from pyforge.testing_kit.db_factory import (
     LoopHome,
@@ -34,5 +44,13 @@ __all__ = [
     "RunJournal",
     "RunStateFactory",
     "WorktreePage",
+    "changed_paths_since",
+    "commit_files",
+    "commit_subject",
+    "commits_since",
+    "diff_text_since",
+    "existed_at_ref",
+    "pyforge_import_offenders",
     "record_factory",
+    "unsanctioned_commits",
 ]
