@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 from types import MappingProxyType
 from types import ModuleType
+from typing import Any
+from typing import cast
 
 import pytest
 import redis.connection as redis_connection
@@ -113,6 +115,7 @@ def _observability_call_probe(entrypoint: str) -> str:
         f"{indented}\n"
         "print('CALLS', len(calls))\n"
     )
+
 
 #: Every env key a child process must not inherit from the developer/CI shell.
 #: ``DJANGO_READ_DOT_ENV_FILE`` matters as much as the broker keys: with it on,
@@ -356,7 +359,7 @@ def test_redis_py_accepts_the_kwargs_we_compose(
     options = broker_tls.broker_use_ssl(TLS_BROKER_URL)
 
     assert options is not None
-    connection = redis_connection.SSLConnection(**options)
+    connection = redis_connection.SSLConnection(**cast("dict[str, Any]", options))
     assert connection.ca_certs == str(corporate_bundle)
     assert connection.ca_path == str(corporate_ca_dir)
     assert connection.cert_reqs == ssl.CERT_REQUIRED
@@ -378,7 +381,7 @@ def test_redis_py_accepts_the_unverified_kwargs_too(
     options = broker_tls.broker_use_ssl(TLS_BROKER_URL)
 
     assert options is not None
-    connection = redis_connection.SSLConnection(**options)
+    connection = redis_connection.SSLConnection(**cast("dict[str, Any]", options))
     assert connection.cert_reqs == ssl.CERT_NONE
     assert connection.check_hostname is False
 

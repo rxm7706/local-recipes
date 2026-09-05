@@ -379,7 +379,10 @@ def test_widening_grant_gate_catches_the_natural_spellings() -> None:
         assert WIDENING_GRANT.findall(widening), widening
     for benign in (
         "GRANT USAGE ON SCHEMA S TO PLATFORM_APP;",
-        "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA S TO PLATFORM_APP;",
+        (
+            "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA S "
+            "TO PLATFORM_APP;"
+        ),
         "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA S TO PLATFORM_APP;",
         "GRANT CONNECT ON DATABASE PLATFORM TO PLATFORM_APP;",
     ):
