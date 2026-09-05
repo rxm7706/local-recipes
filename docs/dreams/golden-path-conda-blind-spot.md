@@ -2,7 +2,7 @@
 title: A promotion gate that has never seen what it ships
 type: dream
 owner: warden
-status: dreamt
+status: specified
 ---
 
 # A promotion gate that has never seen what it ships
@@ -135,3 +135,11 @@ check against, and its one consumer never asked what it said.
   (`spec-2-1-conda-pypi-map`, the Story 1.4 OSV-DB decision record) were both
   already accepted before this Dream existed — verified by reading them, not
   assumed from their titles.
+- **2026-09-05** — Spec distilled (`bmad-spec`, express mode) at
+  `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot/`
+  — five capabilities, four constraints, five open questions for the operator;
+  status `draft`. **Correction to § What is real:**
+  `scripts/platform-deploy-verify-promotion.py` has refused any verdict that is
+  not `clean` since `1016f4e763` (2026-09-04, after this Dream's measurement),
+  so the third gap is closed and the gate is fail-closed today — nothing
+  promotes until the verdict is real. Preserved in the Spec as CAP-5.

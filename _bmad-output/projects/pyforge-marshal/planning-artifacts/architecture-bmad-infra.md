@@ -3,8 +3,8 @@ doc_type: architecture
 part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
-date: 2026-08-24
-source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
+date: 2026-09-05
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.86.1'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -46,6 +46,8 @@ skill**. The hand that builds is never the gate that judges.
 > loop harness, and the detectors that bind every tracked file to a Spec — so any of the 8 active
 > Smith-station projects can be specced, planned, built, reviewed and retro'd without
 > cross-contamination.**
+
+> **Re-grounded 2026-09-05** (`source_pin` v8.84.0 → **conda-forge-expert v8.86.1**; hand pass per SYNC-RUNBOOK row 84 after the `bmad-drift` `pin-behind` warn). BMAD core stays **6.11.0** in `_bmad/` (the 6.12.0 core upgrade is planned, not applied), while the 2026-09-05 pixi upgrade sweep moves the `bmad-method` pin to **>=6.12.0** in `pixi.toml` / `environment.yaml` — the pin-fan-out step of that upgrade landing early. bmad-suite metapackage **2026.9.5** (v8.86.0 retro: `bmad-eval-quality` joined as the 14th recipe, `bmad-method-wds-expansion` retired). Live factory pin row (2026-09-05): schema **v29** · MCP **46** · atlas phases **22** · gotchas **G1–G113** · pixi envs **28** · CFE **v8.86.1**. CFE releases in the window: v8.82.0–v8.82.3 (`scripts/_paths.py` shared data-dir/repo-root helper; `_http.py` JFrog credential host-gate + public-host floor + credential-kind gating; G108), v8.83.0 (G109/G110; SelfExplainML publish flow in the cheatsheet), v8.84.0 (`github_updater.py --head` HEAD-advance), v8.84.1 (`bmad_suite_metapackage.py` marker-splice fix + test), v8.85.0 (3.11 floor; 438 recipes lost a redundant `context.python_min`, 47 unparseable recipes repaired; `tests/meta/test_dashboard_renders.py` retired), v8.85.1 (G82 / CI-provider table correction), v8.85.2 (`_paths.get_repo_root` marker walk; both compiled slices back in equivalence), v8.86.0 (G111–G113; HEAD mode increments `build.number`; `config/failure-catalog.yaml` regenerated), v8.86.1 (`tests/meta/test_recipe_maintainers_nonempty.py`; the G26 marker-split extension re-landed from orphaned commit `74bc80fe61`). live `bmad-groundtruth` 2026-09-05: schema **v29**, MCP tools **46**, atlas phases **22 executable / 23 cataloged** — all three unchanged since the 2026-07-29 pass; gotchas now **G1–G113** (v8.82.0 G108 `sys.executable` for internal subprocess calls; v8.83.0 G109 upstream can renumber past a dev snapshot, G110 npm bin maps are release-mutable; v8.86.0 G111 `noarch_platforms` is required for selector-carrying noarch recipes, G112 npm-from-commit-archive build with a clean prod reinstall, G113 same-version content changes bump `build.number`); pixi **28 envs / 31 features / 236 tasks (146 in `local-recipes`)** counted from `pixi.toml` (`[environments]` keys / distinct `[feature.<x>…]` names / `[feature.<x>.tasks.<t>]` headers); SKILL.md **4,287 lines**; **71 `.py` files under `scripts/`** (including the `_`-prefixed shared helpers) and **63 entries in `.claude/scripts/conda-forge-expert/`**; conda-forge's Python floor is **3.11** since 2026-09-02 (v8.85.0 — the generator now reads it from the installed pinning). Body figures below that predate this pass (18 / 20 / 26 envs, 17 features, 152 / 106 tasks, G1–G107 / G1–G110, 3,887 lines, 66 canonical scripts) are historical — read them against the live numbers here.
 
 Operationalized:
 - Six-layer TOML config merge (installer team/user → custom team/user → project team/user) resolved
