@@ -191,8 +191,13 @@ everyone (proven live 2026-08-21, the bmad-suite refresh).
 # Lint single recipe (MANDATORY before submission)
 conda-smithy recipe-lint recipes/my-package
 
-# Lint all recipes
+# Lint all recipes — NOTE (2026-09-05): this run (= the `pixi run -e conda-smithy lint` task)
+# ABORTS at the first recipe whose `extra.recipe-maintainers:` is empty (TypeError in
+# run_conda_forge_specific; today recipes/Flake8-pyproject, 16 recipes share the defect),
+# so every recipe alphabetically after it is silently unlinted. Until that sweep lands,
+# lint the recipes you touched by name (next line) and read the whole output, not `tail`.
 conda-smithy recipe-lint --conda-forge recipes/*
+conda-smithy recipe-lint --conda-forge recipes/<touched-a> recipes/<touched-b>
 
 # Lint with specific checks
 conda-smithy recipe-lint recipes/my-package --pedantic
