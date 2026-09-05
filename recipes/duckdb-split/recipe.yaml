@@ -103,7 +103,7 @@ outputs:
           - ${{ RECIPE_DIR }}/test-builtin-extensions.sh
     # Empty placeholder package as this now built-in
     # We need to use the same dependencies as in the main build to make it work in cross-compilation
-    package:
+  - package:
       name: duckdb-extension-json
     build:
       script:
@@ -152,7 +152,7 @@ outputs:
           - ${{ RECIPE_DIR }}/test-extension.sh
     # Empty placeholder package as this now built-in
     # We need to use the same dependencies as in the main build to make it work in cross-compilation
-    package:
+  - package:
       name: duckdb-extension-autocomplete
     build:
       script:

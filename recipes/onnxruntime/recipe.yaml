@@ -40,9 +40,9 @@ build:
   # https://github.com/microsoft/onnxruntime/blob/main/setup.py#L735
   number: ${{ build }}
   string: py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}_${{ build_ext }}
-  skip: osx and x86_64
-  skip: true  # [ppc64le]
-  skip: true  # [osx and x86_64]
+  skip:
+    - osx and x86_64
+    - ppc64le
   python:
     entry_points:
       - onnxruntime_test = onnxruntime.tools.onnxruntime_test:main

@@ -57,8 +57,10 @@ outputs:
       - script: client/test.sh
     about:
       license: Apache-2.0
-      license_file: ${{ 'LICENSES/' if win else '' }}
-      license_file: LICENSES/  # [win]
+      license_file:
+        - if: win
+          then: LICENSES/
+          else: LICENSE
       summary: Kubernetes client binaries
   - package:
       name: ${{ name }}-node
@@ -89,8 +91,10 @@ outputs:
       - script: node/test.sh
     about:
       license: Apache-2.0
-      license_file: ${{ 'LICENSES/' if win else '' }}
-      license_file: LICENSES/  # [win]
+      license_file:
+        - if: win
+          then: LICENSES/
+          else: LICENSE
       summary: Kubernetes node binaries
   - package:
       name: ${{ name }}-server
