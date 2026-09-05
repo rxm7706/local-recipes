@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import ast
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 STATION = "herald"
 SKILL_NAME = f"pyforge-{STATION}"
@@ -201,12 +202,8 @@ def test_context_files_not_hand_edited():
         )
         if result["has_managed_section"]:
             assert result["markers_valid"], f"{name}: malformed SKF managed section"
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "CLAUDE.md", "AGENTS.md"],
-        cwd=root,
-        text=True,
-    )
-    assert not named.strip(), f"CLAUDE.md/AGENTS.md changed: {named}"
+    named = changed_paths_since(root, pathspec=("CLAUDE.md", "AGENTS.md"))
+    assert not named, f"CLAUDE.md/AGENTS.md changed: {named}"
 
 
 def test_conda_forge_expert_not_replaced():
@@ -355,12 +352,7 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
 
 def test_does_not_implement_wave_b_or_cms():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main"],
-        cwd=root,
-        text=True,
-    )
-    changed = named.splitlines()
+    changed = changed_paths_since(root)
     assert not any("django-herald" in line for line in changed)
     persona = (_persona_dir(root) / "SKILL.md").read_text(encoding="utf-8")
     assert "Lane 1 CMS stays steward" in persona
@@ -368,24 +360,6 @@ def test_does_not_implement_wave_b_or_cms():
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = [line for line in named.splitlines() if line.strip()]
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    changed = changed_paths_since(root, pathspec="src/platform")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"

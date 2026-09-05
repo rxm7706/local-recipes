@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
-import ast
 import json
 import re
 import subprocess
 from pathlib import Path
 
-from conftest import _unsanctioned_cfe_commits, exclude_cfe_rebuild_equivalence_tests
+from conftest import exclude_cfe_rebuild_equivalence_tests
+from pyforge.testing_kit import (
+    changed_paths_since,
+    commit_files,
+    commits_since,
+    pyforge_import_offenders,
+    unsanctioned_commits,
+)
+
+_CFE_CHANGELOG = ".claude/skills/conda-forge-expert/CHANGELOG.md"
 
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
@@ -103,16 +111,6 @@ def assert_skill_forbids_freelance(text: str) -> None:
         raise PersonaContractError("persona skill does not forbid direct filesystem")
     if not re.search(r"(?i)no ad-hoc HTTP", forbidden):
         raise PersonaContractError("persona skill does not forbid ad-hoc HTTP")
-
-
-def _git_diff_names(*paths: str) -> list[str]:
-    root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", *paths],
-        cwd=root,
-        text=True,
-    )
-    return [line for line in named.splitlines() if line.strip()]
 
 
 def _git_dirty_under(*prefixes: str) -> list[str]:
@@ -313,7 +311,9 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
             text = path.read_text(encoding="utf-8", errors="replace")
             assert "generated_by: create-skill" not in text
             assert '"generated_by": "create-skill"' not in text
-    unsanctioned = _unsanctioned_cfe_commits(root)
+    unsanctioned = unsanctioned_commits(
+        root, pathspec=".claude/skills/conda-forge-expert", changelog_path=_CFE_CHANGELOG
+    )
     dirty = exclude_cfe_rebuild_equivalence_tests(
         root, _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
     )
@@ -336,17 +336,13 @@ def _mason_commits_touching(*paths: str) -> list[str]:
     so they are checked per commit, not as a whole-branch diff: a fleet branch
     that also carries platform or context-file work is not a mason story
     editing the platform (2026-09-04, PR #1043)."""
+    def _under(rel: str) -> bool:
+        return any(rel == p or rel.startswith(f"{p}/") for p in paths)
+
     root = _repo_root()
-    shas = subprocess.check_output(
-        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _MASON_SOURCE],
-        cwd=root,
-        text=True,
-    ).split()
     hits: list[str] = []
-    for sha in shas:
-        files = subprocess.check_output(
-            ["git", "show", "--format=", "--name-only", sha, "--", *paths], cwd=root, text=True
-        ).split()
+    for sha in commits_since(root, pathspec=_MASON_SOURCE, no_merges=True):
+        files = [f for f in commit_files(root, sha) if _under(f)]
         hits.extend(f"{sha[:10]} {f}" for f in files)
     return hits
 
@@ -371,19 +367,6 @@ def test_does_not_mint_01_portal_mcp_or_persona():
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    changed = _git_diff_names("src/platform")
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".", maxsplit=1)[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".", maxsplit=1)[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    changed = changed_paths_since(root, pathspec="src/platform")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"

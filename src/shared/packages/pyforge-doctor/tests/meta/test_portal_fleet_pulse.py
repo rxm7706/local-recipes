@@ -7,6 +7,8 @@ import importlib.util
 import subprocess
 from pathlib import Path
 
+from pyforge.testing_kit import changed_paths_since
+
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
 
@@ -149,12 +151,7 @@ def test_home_extends_shared_chrome_not_a_copy():
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = [line for line in named.splitlines() if line.strip()]
+    changed = changed_paths_since(root, pathspec="src/platform")
     offenders: list[str] = []
     for rel in changed:
         path = root / rel

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import ast
 import re
-import subprocess
 from pathlib import Path
+
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 STATION = "warden"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
@@ -179,34 +180,11 @@ def test_no_chrome_copy_in_warden_portal():
 
 def test_src_platform_has_no_pyforge_import():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
+    changed = changed_paths_since(
+        root,
+        pathspec="src/platform",
+        include_untracked=True,
+        always_include=("src/platform/tests/test_warden_portal_audit_start_get.py",),
     )
-    extra = subprocess.check_output(
-        ["git", "ls-files", "--others", "--exclude-standard", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = {
-        line
-        for line in f"{named}\n{extra}".splitlines()
-        if line.strip()
-    }
-    changed.add("src/platform/tests/test_warden_portal_audit_start_get.py")
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"

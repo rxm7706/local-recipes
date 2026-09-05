@@ -413,6 +413,13 @@ def test_mcp_start_at_the_station_ceiling_projects_the_429_and_retry_after(
 
 
 def _platform_python_rels() -> list[str]:
+    # NOTE (retro-2026-09-04 action item 11): this file deliberately does NOT
+    # import `pyforge.testing_kit` for this mechanism, unlike every other
+    # station's copy of this guard -- `src/platform` is the one tree these
+    # guards exist to keep `pyforge.*`-import-free (the `pap:AD-2` boundary),
+    # so importing a `pyforge.*` package here, even a test-only one, would
+    # trip this very guard (self-referentially, since this file lives under
+    # `src/platform/tests/`). The git mechanics stay duplicated on purpose.
     has_base = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "origin/main^{commit}"],
         cwd=REPO_ROOT,

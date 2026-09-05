@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import ast
-import subprocess
 from pathlib import Path
 
-from conftest import _unsanctioned_cfe_commits
+from pyforge.testing_kit import (
+    changed_paths_since,
+    commit_files,
+    commits_since,
+    pyforge_import_offenders,
+    unsanctioned_commits,
+)
+
+_CFE_CHANGELOG = ".claude/skills/conda-forge-expert/CHANGELOG.md"
 
 STATION = "mason"
 PORTAL_PKG = "django-mason"
@@ -32,16 +39,6 @@ def _portal_root(root: Path) -> Path:
 
 def _iter_py(tree: Path) -> list[Path]:
     return sorted(path for path in tree.rglob("*.py") if path.is_file())
-
-
-def _git_diff_names(*paths: str) -> list[str]:
-    root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", *paths],
-        cwd=root,
-        text=True,
-    )
-    return [line for line in named.splitlines() if line.strip()]
 
 
 def _raw_http_imports(tree: ast.AST) -> list[str]:
@@ -139,41 +136,23 @@ def test_cfe_not_replaced_and_claude_agents_untouched():
     # fleet branch's own context-file work are not this story replacing CFE
     # or editing CLAUDE.md/AGENTS.md (2026-09-04, PR #1043).
     root = _repo_root()
-    unsanctioned = _unsanctioned_cfe_commits(root)
+    unsanctioned = unsanctioned_commits(
+        root, pathspec=".claude/skills/conda-forge-expert", changelog_path=_CFE_CHANGELOG
+    )
     assert not unsanctioned, f"must not replace CFE: {unsanctioned}"
     mason_source = "src/shared/packages/pyforge-mason/src"
-    shas = subprocess.check_output(
-        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", mason_source],
-        cwd=root,
-        text=True,
-    ).split()
+    docs = ("CLAUDE.md", "AGENTS.md")
     named_docs = [
         f"{sha[:10]} {f}"
-        for sha in shas
-        for f in subprocess.check_output(
-            ["git", "show", "--format=", "--name-only", sha, "--", "CLAUDE.md", "AGENTS.md"],
-            cwd=root,
-            text=True,
-        ).split()
+        for sha in commits_since(root, pathspec=mason_source, no_merges=True)
+        for f in commit_files(root, sha)
+        if f in docs
     ]
     assert not named_docs, f"must not edit CLAUDE.md/AGENTS.md: {named_docs}"
 
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    changed = _git_diff_names("src/platform")
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".", maxsplit=1)[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".", maxsplit=1)[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    changed = changed_paths_since(root, pathspec="src/platform")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports: {changed} {offenders}"

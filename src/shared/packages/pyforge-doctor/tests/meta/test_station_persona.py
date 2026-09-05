@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import ast
 import json
 import re
-import subprocess
 from pathlib import Path
+
+from pyforge.testing_kit import changed_paths_since, pyforge_import_offenders
 
 STATION = "doctor"
 PERSONA = "bmad-agent-doctor"
@@ -265,24 +265,6 @@ def test_conda_forge_expert_not_replaced():
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = [line for line in named.splitlines() if line.strip()]
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    changed = changed_paths_since(root, pathspec="src/platform")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"

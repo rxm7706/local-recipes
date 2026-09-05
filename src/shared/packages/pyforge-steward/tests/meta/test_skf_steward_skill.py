@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-import ast
 import json
 import subprocess
 import sys
 from pathlib import Path
+
+from pyforge.testing_kit import (
+    changed_paths_since,
+    diff_text_since,
+    pyforge_import_offenders,
+    unsanctioned_commits,
+)
 
 STATION = "steward"
 SKILL_NAME = f"pyforge-{STATION}"
@@ -107,47 +113,12 @@ def test_context_files_not_hand_edited():
     """Wave A prefers skip export; CLAUDE.md/AGENTS.md must not be hand-edited."""
     root = _repo_root()
     for name in ("CLAUDE.md", "AGENTS.md"):
-        diff = subprocess.check_output(
-            ["git", "diff", "origin/main...HEAD", "--", name],
-            cwd=root,
-            text=True,
-        )
+        diff = diff_text_since(root, base="origin/main...HEAD", pathspec=name, require="origin/main")
         assert not diff.strip(), f"{name} changed without skf-export-skill"
 
 
 _CFE_SURFACE = ".claude/skills/conda-forge-expert"
 _CFE_CHANGELOG = f"{_CFE_SURFACE}/CHANGELOG.md"
-
-
-def _unsanctioned_cfe_commits(root: Path) -> list[str]:
-    """Commits on this branch (``origin/main..HEAD``) that touch the CFE surface
-    without being a sanctioned Rule-2 retro -- subject starts ``retro:`` AND the
-    CFE CHANGELOG moves in the same commit, the fleet rule
-    ``scripts/mason_cfe_surface_check.py`` enforces for mason. Merge commits are
-    skipped (they restate their constituents); uncommitted CFE edits count as
-    unsanctioned. A station story never touches the surface; a fleet hygiene
-    branch may carry the one sanctioned retro (2026-09-04, PR #1043)."""
-    shas = subprocess.check_output(
-        ["git", "log", "--no-merges", "--format=%H", "origin/main..HEAD", "--", _CFE_SURFACE],
-        cwd=root,
-        text=True,
-    ).split()
-    bad: list[str] = []
-    for sha in shas:
-        subject = subprocess.check_output(
-            ["git", "log", "-1", "--format=%s", sha], cwd=root, text=True
-        ).strip()
-        files = subprocess.check_output(
-            ["git", "show", "--format=", "--name-only", sha], cwd=root, text=True
-        ).split()
-        if not (subject.startswith("retro:") and _CFE_CHANGELOG in files):
-            bad.append(f"{sha[:10]} {subject}")
-    dirty = subprocess.check_output(
-        ["git", "diff", "--name-only", "HEAD", "--", _CFE_SURFACE], cwd=root, text=True
-    ).split()
-    if dirty:
-        bad.append("uncommitted: " + ", ".join(dirty))
-    return bad
 
 
 def test_conda_forge_expert_not_replaced():
@@ -158,7 +129,12 @@ def test_conda_forge_expert_not_replaced():
     assert not (cfe / "active").exists()
     skill = (cfe / "SKILL.md").read_text(encoding="utf-8")
     assert "conda-forge" in skill.lower()
-    bad = _unsanctioned_cfe_commits(root)
+    # Sanctioned Rule-2 retro -- subject starts `retro:` AND the CFE CHANGELOG
+    # moves in the same commit, the fleet rule
+    # `scripts/mason_cfe_surface_check.py` enforces for mason. A station story
+    # never touches the surface; a fleet hygiene branch may carry the one
+    # sanctioned retro (2026-09-04, PR #1043).
+    bad = unsanctioned_commits(root, pathspec=_CFE_SURFACE, changelog_path=_CFE_CHANGELOG)
     assert not bad, (
         "conda-forge-expert must not be replaced in this story -- only a sanctioned "
         f"`retro:` commit that moves its CHANGELOG may touch it: {bad}"
@@ -167,31 +143,14 @@ def test_conda_forge_expert_not_replaced():
 
 def test_story_does_not_add_pyforge_under_src_platform():
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main...HEAD", "--", "src/platform"],
-        cwd=root,
-        text=True,
+    changed = changed_paths_since(
+        root,
+        base="origin/main...HEAD",
+        require="origin/main",
+        pathspec="src/platform",
+        include_untracked=True,
     )
-    untracked = subprocess.check_output(
-        ["git", "ls-files", "--others", "--exclude-standard", "--", "src/platform"],
-        cwd=root,
-        text=True,
-    )
-    changed = [line for line in (named + untracked).splitlines() if line.strip()]
-    offenders: list[str] = []
-    for rel in changed:
-        path = root / rel
-        if path.suffix != ".py" or not path.is_file():
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name.split(".")[0] for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module.split(".")[0]]
-            if "pyforge" in names:
-                offenders.append(f"{rel}:{node.lineno}")
+    offenders = pyforge_import_offenders(changed, root)
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"
 
 
