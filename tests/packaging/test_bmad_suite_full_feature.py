@@ -61,7 +61,7 @@ def test_bmad_suite_full_feature_declares_selfexplainml_and_a_calver_floor() -> 
     assert "conda-forge" in feat["channels"]
 
     deps = feat["dependencies"]
-    assert deps["bmad-suite"] == ">=2026.9.1"
+    assert deps["bmad-suite"] == ">=2026.9.5"
 
 
 def test_bmad_suite_full_feature_is_linux_64_only_and_does_not_duplicate_member_pins() -> None:

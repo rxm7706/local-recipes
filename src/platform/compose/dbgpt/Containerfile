@@ -47,7 +47,7 @@
 # here. Now registered in `scripts/pixi_version_registry.py`:
 # `pixi run -e local-recipes pixi-version-check` fails CI if this drifts
 # again, and `bump-pixi-version` is how you change it.
-FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.78.0 AS builder
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.79.0 AS builder
 
 # WORKDIR /app -- same short, fixed path as both existing Containerfiles in
 # this repo (worktree tooling has a documented path-length panic in
