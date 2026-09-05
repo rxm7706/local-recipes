@@ -27,8 +27,9 @@ demands a fourth piece of infrastructure has failed its design review. pgvector 
 the same PostgreSQL instance (AD-5) and Redis carries both cache and Celery-broker duty —
 neither is a licence for a fourth piece.
 
-**Re-affirmed, 2026-09-05.** Re-examined against
-`docs/dreams/foundry-baas-capability-gaps.md` § *Reopening AD-1* (`pyforge-steward`
+**Re-affirmed, 2026-09-05.** Re-examined against the 2026-09-05 BaaS capability review (seed
+Dream `foundry-baas-capability-gaps` § *Reopening AD-1*, folded into
+`docs/dreams/pyforge-unifying-strategy.md` the same day; record: `pyforge-steward`
 `sprint-change-proposal-2026-09-05-ad-1-reopen.md`). This rule is design-review discipline — a
 bound on operational surface — and has never rested on air-gap parity (that is AD-13). Lane 1
 media stays on a `ReadWriteMany` PVC (canopy AD-13, storage-class prerequisite added the same

@@ -314,6 +314,42 @@ graph LR
 3. **`boring-semantic-layer` (BSL) $\rightarrow$ `pyforge-atlas`:** Certified metrics over the query plane (DuckDB) — `package_download_velocity`, `ecosystem_cve_risk_score`, and CAP-19 relations — for Vizro and agents **without raw SQL** (UJ-6).
    3a. **Kedro family $\rightarrow$ `pyforge-atlas` (home):** `kedro` / `kedro-datasets` / `kedro-dagster` write and schedule derived layers. `kedro-skills` + `kedro-mcp` author them. Other stations may add extract *nodes*, not new Kedro projects (AD-21).
    3b. **Vizro family $\rightarrow$ Lane 3:** `vizro` is the runtime. `vizro-mcp` + `vizro-e2e-flow` author boards after 34.2. `vizro-ai` 0.4.2 is deprecated — no new work.
+
+### Capability checklist from the BaaS comparison (2026-09-05)
+
+InsForge's feature list was used as a **checklist, not a shopping list** — every row was
+first tested against what Foundry had already decided or shipped (seed Dream
+`foundry-baas-capability-gaps`, folded here; AD-1 ruling in
+`sprint-change-proposal-2026-09-05-ad-1-reopen`).
+
+1. **Object storage for media — closed.** Parent AD-1 / canopy AD-13 re-affirmed
+   2026-09-05: Lane 1 media stays on the RWX PVC (mounted by all five platform
+   Deployments; bound on CRC 2026-08-25). The only real gap was the unstated RWX
+   storage-class prerequisite, now in canopy AD-13.
+2. **Realtime push — already answered.** `architecture-secure-live-dashboards-2026-08-09`:
+   Django + Channels + Daphne + `channels_redis` as the optional extra
+   `pyforge-steward[dashboard]`, on the `redis-broker` / `redis-cache` split (Story 20.2).
+   Open: whether it is wired to live station data yet, or is plumbing only.
+3. **Baseline MCP tools per station — real work, not a generator.** Portals carry no
+   domain models, so InsForge's schema-introspection premise does not transfer. Atlas is
+   the proven official-SDK server (13 tools, Story 21.2); **porting Marshal's FastMCP
+   server (7 tools) to the official SDK is the smallest next slice** (FastMCP is forbidden
+   in the `mcp-host` sidecar); the other six stations have no tool server and get one
+   only as per-station engineering. Human double-check owed: two research passes
+   disagreed on whether the 2026-09-02 red-team HIGHs on this surface (anonymous
+   `tools/list` / `initialize`; no rate limiting) are shipped — the code-level pass says
+   yes.
+4. **Django Admin as the generic "browse any table" console — open, unscoped.** Nothing
+   in the estate uses Admin as a designed data-browsing capability; it is the
+   zero-new-dependency answer to InsForge's React dashboard.
+5. **Read-only human SQL console over the query plane — future.** Sits on the plane's
+   optional HTTP/Arrow face once that face exists (`query-plane-face`); the "no raw SQL"
+   rule binds agents, not an operator's ad-hoc query.
+
+**Deliberately excluded:** a raw-schema auto-generated REST API (the curated, versioned
+station contract is the design), payments, third-party edge-function deploys, and any new
+self-run storage server as an in-cluster workload.
+
 ## Constraints / Non-goals
 
 - **Not a fragile monolithic SPA.** Server-driven Django + HTMX + Wagtail +
@@ -339,6 +375,17 @@ graph LR
   Vault/ESO stay outside the image. No MinIO as a fourth core kind
   (re-affirmed 2026-09-05; Lane 1 media is RWX, and a multi-node target names its
   RWX-capable storage class — `sprint-change-proposal-2026-09-05-ad-1-reopen`).
+- **No bundled BaaS inside Foundry; no Vercel-shaped hosting.** Checked 2026-09-05
+  (InsForge, with Supabase / PocketBase / Appwrite as controls): each duplicates the
+  PostgreSQL, identity and MCP hosting the host already ships while breaking the
+  infra-kinds lock, the single identity engine, the no-SPA rule and air-gap parity at
+  once; Vercel runs Python only as short-lived functions (no Django / ASGI / Celery) and
+  its platform is not self-hostable. Two shapes fit: a bounded standalone-station demo
+  outside `src/platform/` (Scope B — InsForge for agent-nativeness, PocketBase for
+  footprint), or a separate project that consumes `/stations/<name>/mcp` as tools
+  (Scope C). Neither appears in the Foundry image, chart or infra-kinds list. InsForge's
+  own footprint (bundled Stripe + Razorpay, a hardcoded OpenAI SDK, `posthog-js`
+  telemetry, a custom Postgres image) is warden's lens if Scope B is ever piloted.
 - **Bind installed pins; do not re-pin.** See `stack.md` § Estate leverage.
 
 ## Shared Data Contracts (`pyforge.core.client`)
@@ -556,3 +603,10 @@ Entries through 2026-08-31: [archive § Realization log (historical)](archive/py
   now defined in the canopy spine; parent AD-1 carries a dated re-affirmation. Record:
   `sprint-change-proposal-2026-09-05-ad-1-reopen.md`. The seed's fold into this Dream is still
   pending.
+- **2026-09-05** — Folded `foundry-baas-capability-gaps` (the InsForge / Vercel review, its
+  five-item capability checklist, and the AD-1 reopening — corrected and re-affirmed the
+  same day via `sprint-change-proposal-2026-09-05-ad-1-reopen`) **into this Dream**
+  § Constraints / Non-goals and § Station Opportunity Matrix, and deleted the file. Object
+  storage is closed; realtime push is the secure-live-dashboards extra; Marshal's
+  FastMCP → official-SDK port is the smallest MCP slice; Django Admin as browse console and
+  a read-only SQL console over the plane's HTTP/Arrow face stay open, unscoped.
