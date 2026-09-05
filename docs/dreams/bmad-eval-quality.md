@@ -159,3 +159,12 @@ or driver code.
   0.1.0. CAP-1 is being built in the same PR as the Spec, in the SelfExplainML packaging pass that
   also retires `bmad-method-wds-expansion` (deprecated in the 6.12.0 core module registry; `bmad-ux`
   absorbs it) — the suite stays at 13 active members.
+- **2026-09-05 (packaging)** — CAP-1 landed in PR #1059 (branch `suite/bmad-suite-refresh-2026-09-05`):
+  `recipes/bmad-eval-quality/` authored in the bmad-method npm-CLI wrapper class (commit pin
+  `3172162f` as `0.2.0.dev0`, `noarch: generic`, clean `npm ci --omit=dev`, license
+  `Apache-2.0 AND MIT`, `conda-forge.yml` `noarch_platforms`), built and tested green locally;
+  `suite-members.yaml` seats it in place of the retired `bmad-method-wds-expansion`; the
+  metapackage regenerated to `2026.9.5`; steward's roster gained `INSTALL_CLASS_CLI`. Story 45.1
+  stays `in-progress` until the operator uploads to SelfExplainML and the pixi pin lands (follow-up
+  PR). CAP-2 (Story 45.2, the twin-run pilot) is still blocked on a first contract — status stays
+  `specified`.
