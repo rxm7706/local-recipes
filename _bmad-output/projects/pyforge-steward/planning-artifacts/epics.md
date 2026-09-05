@@ -2675,3 +2675,31 @@ unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retireme
 already reflected by Epic 30's own text. No epic or story required correction.
 
 **2026-09-04 addendum (foundry cutover, solutioning iteration 4):** 44 epics / 168 `### Story` headings (this file; the 2026-09-04 iteration-3 figure of 210 was not reproduced). Epic 44's stories are `blocked` by design until the operator flips each — 44.13 flipped to `backlog` 2026-09-04 (the first flip; Phase 4 opens), the other fourteen `blocked` (solutioning under operator review, `fnd:AD-9`); the 2026-08-26 count above is historical.
+
+## Epic 45: eval-quality joins the suite and the reviewer gets measured (spec-bmad-eval-quality CAP-1 CAP-2)
+
+`eval-quality` (bmad-code-org) becomes a `bmad-suite` member the suite's way, and one Behavioral Evaluation Contract proves — with a planted `file:line` defect and a catch rate — that the review layer bmad-loop relies on actually looks. Dream: `docs/dreams/bmad-eval-quality.md`; Spec: `spec-bmad-eval-quality` (`packaging.md`, `pilot-contract.md`). Story 45.2 is `blocked` until the operator flips it: every trial spends Claude budget (`--max-budget-usd`), and the pilot is a measurement of the reviewer, never a PR gate.
+
+### Story 45.1: eval-quality joins the suite
+
+As a fleet operator,
+I want `bmad-eval-quality` packaged, enrolled and pinned like every other suite member,
+So that every consumer of the suite gets the 0.2.0-line binary that has `score`, and the fourteenth member costs one manifest line, not a parallel list.
+
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-bmad-eval-quality CAP-1 • `packaging.md` • CFE Rule 1 + Rule 2 • overrides spec-bmad-suite-channel-product § Non-goals for this one member (operator 2026-09-05)
+**Given** `recipes/bmad-eval-quality/recipe.yaml` commit-pinned `0.2.0.dev0 @ 3172162fbdc7c4bb70ed11c1367dc3e433797535` (sha256 `a8b1ddfb…`), built through `conda-forge-expert` in the `bmad-method` npm-CLI class **When** `recipe-build` runs **Then** it is green and `eval-quality --version` prints `0.2.0`, `--help` lists `score`, and `compile` on a shipped corpus contract exits 0
+**And** enrolment is ONE line in `recipes/bmad-suite/suite-members.yaml`; `generate-bmad-suite` regenerates the metapackage run deps and CalVer (the same pass retires `bmad-method-wds-expansion` — deprecated in the 6.12.0 core module registry, absorbed by `bmad-ux` — so the suite stays at 13 active members)
+**And** `pixi.toml` pins `bmad-eval-quality = ">=0.2.0.dev0"`, `environment.yaml` is regenerated, `tests/packaging/test_bmad_suite_full_feature.py`'s baseline set, steward's `suite.py` `SuitePackageDef` + pipeline-truth fixture, `install-matrix.md`, `install-class-playbook.md` and `library-llms-full.md` each carry the member; `llms-full-check` is green; the PR carries `maintenance`
+**And** publishing to SelfExplainML (`anaconda upload`) is the operator's step and is not claimed by this story
+
+### Story 45.2: The reviewer is measured against a planted defect
+
+As a fleet operator,
+I want one twin-run contract that runs the `edge-case-hunter` review layer against a clean diff and a diff with one planted boundary flip at `pkg/discount.py:17`,
+So that the last line of defence under `gate_mode = "none"` has a catch rate the fleet can read instead of a feeling.
+
+**Type:** feature • **Effort:** L • **Deps:** S-45.1 • **FR/AD:** spec-bmad-eval-quality CAP-2 • `pilot-contract.md` • operator flip required (`blocked`)
+**Given** `evals/review-catches-planted-defect/` with the fixture package, `arms/clean.diff`, `arms/mutated.diff`, the contract (interface `review-api`, operation `review-diff`, kind `api`, 21 required fields modelled on `corpus/dev/contracts/satisfied-declarations.json`), probes, scoring policy, isolation manifest, evaluator configuration and a findings JSON schema **When** `eval-quality-smoke` runs **Then** the shipped corpus compiles and the pilot contract compiles
+**And** the ~150-line `subprocess`-only driver runs the layer headlessly (`claude -p --output-format json --json-schema … --max-budget-usd 2 --no-session-persistence`, model pinned to the station's `[adapter.review].model`), maps exit code + parsed findings to an observation and emits the sealed run record; the one strong oracle is `covers-by-key` over `referenceSets.planted-defects` (`["file","line"]`) — "the review ran" never passes alone
+**And** a one-trial `eval-quality-review-twin-run` preflights both arms; the mutated arm's review cites `pkg/discount.py:17` and the clean arm does not; `-- --trials 3` yields a policy-comparable strength vector with a catch rate; `eval-quality-review-replay` replays a sealed record
+**And** none of the three pixi tasks joins `detectors` / `detectors-ci`; Warden stays the sole PR verdict

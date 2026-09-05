@@ -4749,6 +4749,10 @@
   "files": {},
   "memlog": "681e59d917f62053a67097069fa2a69d9bc59f23"
  },
+ "pyforge-steward/spec-bmad-eval-quality": {
+  "files": {},
+  "memlog": "a6b8eab39e1912d9961b7026825e6390c8dca8eb"
+ },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
   "memlog": "eae851184a8a502902960b694fb453f8d2ded5e7"

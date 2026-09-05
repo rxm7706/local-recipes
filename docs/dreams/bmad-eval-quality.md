@@ -2,7 +2,7 @@
 title: bmad-eval-quality — prove the reviewer catches the planted bug
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # bmad-eval-quality — prove the reviewer catches the planted bug
@@ -153,3 +153,9 @@ or driver code.
   [bmad-code-org/bmad-eval-quality](https://github.com/bmad-code-org/bmad-eval-quality). Operator
   locked the conda name (`bmad-eval-quality`) and the source (main, commit-pinned
   `0.2.0.dev0 @ 3172162f`). Next: `bmad-spec` under pyforge-steward.
+- **2026-09-05 (later)** — `bmad-spec` derived `spec-bmad-eval-quality` under pyforge-steward
+  (SPEC.md + `packaging.md` + `pilot-contract.md`; CAP-1 suite membership, CAP-2 pilot contract;
+  status `ready`). Grounding re-verified same day: HEAD still `3172162f`, only `v0.1.0` tagged, npm
+  0.1.0. CAP-1 is being built in the same PR as the Spec, in the SelfExplainML packaging pass that
+  also retires `bmad-method-wds-expansion` (deprecated in the 6.12.0 core module registry; `bmad-ux`
+  absorbs it) — the suite stays at 13 active members.
