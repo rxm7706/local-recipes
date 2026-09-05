@@ -3251,7 +3251,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py": "a6ac8d887f5cd3c7e2509270dee7d3fe9ea3d2e8",
    "src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py": "730029f3a28f1445ef18d2a4d0aac4d25098fdb2",
    "src/shared/packages/pyforge-marshal/tests/unit/test_gate.py": "3e199f906ea5524096cb7b657e2ded9bcc63be81",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadbuild.py": "08797914e9cf8ccc335edcfdeb70acb6428db8e7",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadbuild.py": "b521dc93dae7136a5be1854e0bedd0a0f4a1449c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_engine_liveness.py": "b0aef61e7478edec0bbce5ddbfcbc834435995aa",
    "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_preflight.py": "942d95966c6c7149096fd71d15fe5ee3e380e363",
    "src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_probe.py": "6c0f98dd02de0db993b7e575cd4a9c87312856ff",
@@ -3341,7 +3341,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "b267344fe5ea1802971c7876603bb87756c48ae3",
    "src/shared/packages/pyforge-marshal/tests/unit/test_wave_scheduler.py": "ee92600544d54e358dc02829b81f157c1ad81895"
   },
-  "memlog": "daea35108c450263ffec01bf7cac29aef57acc42"
+  "memlog": "61c2ccf2e175e39a606161bd3fcfc58353d24422"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

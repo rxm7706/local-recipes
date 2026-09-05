@@ -712,6 +712,7 @@ def test_dispatch_child_survives_via_new_session(
     resolution = BmadBuildHarness().binary_present(("sleeper",), repo_root=tmp_path)
     worktree = tmp_path / "wt"
     worktree.mkdir()
+    log_path = tmp_path / "log"
     result = BmadBuildHarness().dispatch(
         worktree,
         resolution=resolution,
@@ -720,9 +721,21 @@ def test_dispatch_child_survives_via_new_session(
         spec_path=worktree / "spec.md",
         model=None,
         budget_env={},
-        log_path=tmp_path / "log",
+        log_path=log_path,
     )
-    # pid alive and in its own session (detached from this test process)
-    os.kill(result.pid, 0)
+    # pid alive and in its own session (detached from this test process).
+    # Seen reaped once in ~9 CI runs (retro-pyforge-steward-2026-09-04.md
+    # action item 6) with no diagnostic beyond the bare ProcessLookupError --
+    # the dispatch log (child stdout+stderr, per dispatch()'s log_file
+    # redirect) is captured into the failure message so a repeat is
+    # debuggable instead of a second blind traceback.
+    try:
+        os.kill(result.pid, 0)
+    except ProcessLookupError:
+        log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else "<no log file>"
+        pytest.fail(
+            f"dispatched pid {result.pid} was already gone when probed "
+            f"(reaped before the liveness check) -- dispatch log:\n{log_text}"
+        )
     assert os.getsid(result.pid) != os.getsid(0)
     os.kill(result.pid, 15)
