@@ -59,6 +59,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # tests/scripts is the detectors' own test suite (scripts/detectors.py's
+  # Doctor-registry integration, the spec-surface / deferred-work / mirror /
+  # bmad-switch scripts). Until 2026-09-05 no workflow ran it and 24 stale
+  # tests had rotted on main unnoticed. It runs in the pure-stdlib
+  # `pyforge-ci` env the `pyforge-doctor-scripts-test` task was written for.
+  scripts-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-ci
+          cache: true
+      - name: tests/scripts (pyforge-doctor-scripts-test)
+        run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
+
   detectors:
     runs-on: ubuntu-latest
     timeout-minutes: 12

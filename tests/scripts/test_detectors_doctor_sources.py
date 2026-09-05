@@ -114,7 +114,7 @@ def test_run_doctor_sources_returns_ten_unknown_rows_when_unimportable(monkeypat
 
     rows = detectors._run_doctor_sources("all")
 
-    assert len(rows) == 10
+    assert len(rows) == len(detectors._DOCTOR_SOURCE_TASKS)
     assert all(row["status"] == "unknown" for row in rows)
     assert all(row["rc"] == 2 for row in rows)
     assert all("pyforge.doctor is not importable" in row["summary"] for row in rows)
@@ -125,8 +125,8 @@ def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
     repo_rows = detectors._run_doctor_sources("repo")
     all_rows = detectors._run_doctor_sources("all")
 
-    assert len(all_rows) == 10
-    assert len(repo_rows) == 10
+    assert len(all_rows) == len(detectors._DOCTOR_SOURCE_TASKS)
+    assert len(repo_rows) == len(detectors._DOCTOR_SOURCE_TASKS)
     assert "dashboard-drift" in {row["name"] for row in repo_rows}
     assert "dashboard-drift" in {row["name"] for row in all_rows}
 
@@ -162,7 +162,7 @@ def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unim
     assert exit_code == 2
     out = capsys.readouterr().out
     unknown_lines = [ln for ln in out.splitlines() if "unknown" in ln and ln.strip().startswith("?")]
-    assert len(unknown_lines) == 10, out
+    assert len(unknown_lines) == len(detectors._DOCTOR_SOURCE_TASKS), out
 
 
 def test_discover_reports_zero_registry_findings_against_the_real_scripts_tree():

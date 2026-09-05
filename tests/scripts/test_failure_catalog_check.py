@@ -110,14 +110,15 @@ def _install_generator(root: Path) -> None:
     """Copy the REAL failure_catalog_generator.py + its _paths.py sibling
     into `root`'s fixture .claude/skills/conda-forge-expert/scripts/ tree,
     so check_drift()'s subprocess call has something real to invoke.
-    _paths.py's get_repo_root() is a pure parent-count walk (parents[4]
-    from its own file), so copied four levels under `root` it resolves
-    `root` itself as the repo root -- no other fixture markers needed."""
+    Since CFE v8.85.2 `_paths.get_repo_root()` is a marker walk -- the nearest
+    ancestor carrying BOTH `pixi.toml` and `.claude/` -- so the fixture root
+    needs a `pixi.toml` marker next to the `.claude/` tree the copy creates."""
     for rel_parts in (GENERATOR_REL_PARTS, PATHS_HELPER_REL_PARTS):
         src = REPO_ROOT.joinpath(*rel_parts)
         dst = root.joinpath(*rel_parts)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+    (root / "pixi.toml").touch()
 
 
 def _write_synced_catalog(root: Path, skill_md_text: str, optimizer_text: str) -> None:

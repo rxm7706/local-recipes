@@ -48,9 +48,16 @@ def _load_verify_scope(root: Path):
         from pyforge.marshal.scope import ScopeDrift, verify_scope
         return verify_scope, ScopeDrift
     except ImportError:
-        src = root / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
-        if src.is_dir() and str(src) not in sys.path:
-            sys.path.insert(0, str(src))
+        # The primitive lives in THIS repo's marshal source tree. `root` may be a
+        # fixture tree (the Story 20.7 tests point it at tmp_path), so fall back
+        # to the checkout this script sits in before giving up.
+        here = Path(__file__).resolve().parent.parent
+        for base in (root, here):
+            src = base / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
+            if src.is_dir():
+                if str(src) not in sys.path:
+                    sys.path.insert(0, str(src))
+                break
         from pyforge.marshal.scope import ScopeDrift, verify_scope
         return verify_scope, ScopeDrift
 

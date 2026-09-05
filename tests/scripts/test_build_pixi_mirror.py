@@ -3,7 +3,7 @@ spec-12-3-air-gap-parity-is-a-failing-check).
 
 Only the two pieces of PURE logic the story's own Tasks & Acceptance names
 are covered here: URL-to-mirror-path derivation (`parse_mirror_targets`)
-and sha256 verification (`_sha256_of`/`_download_one`). No real network is
+and digest verification (`_md5_of` warm-cache pre-check, `_sha256_of` post-download gate, `_download_one`). No real network is
 used -- `_http_session().get` is monkeypatched wherever a download is exercised,
 matching the story's own "a small fixture lockfile, no real network needed
 for the test itself" instruction. The CI job's own live mirror-then-block
@@ -50,6 +50,7 @@ bpm = _import_build_pixi_mirror()
 # feature comment documents (slowapi from SelfExplainML alongside
 # conda-forge packages).
 GOOD_SHA = "a" * 64
+GOOD_MD5 = "c" * 32
 _FIXTURE_LOCKFILE = {
     "environments": {
         "fixture-env": {
@@ -65,10 +66,12 @@ _FIXTURE_LOCKFILE = {
         {
             "conda": "https://conda.anaconda.org/conda-forge/linux-64/foo-1.0-0.conda",
             "sha256": GOOD_SHA,
+            "md5": GOOD_MD5,
         },
         {
             "conda": "https://conda.anaconda.org/SelfExplainML/noarch/bar-2.0-pyh_0.conda",
             "sha256": "b" * 64,
+            "md5": "d" * 32,
         },
     ],
 }
@@ -132,13 +135,22 @@ class TestParseMirrorTargets:
         with pytest.raises(bpm.MirrorBuildError, match="no sha256"):
             bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
 
+    def test_catalog_entry_missing_md5_raises_mirror_build_error(self):
+        """0d672b646e made md5 the warm-cache fast-skip digest; a catalog
+        entry without one cannot be skipped safely, so it is a hard stop
+        exactly like a missing sha256."""
+        lockfile = _fixture_lockfile()
+        lockfile["packages"][0].pop("md5")
+        with pytest.raises(bpm.MirrorBuildError, match="no md5"):
+            bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
+
     def test_malformed_url_raises_mirror_build_error(self):
         lockfile = _fixture_lockfile()
         lockfile["environments"]["fixture-env"]["packages"]["linux-64"] = [
             {"conda": "https://conda.anaconda.org/too-short.conda"}
         ]
         lockfile["packages"].append(
-            {"conda": "https://conda.anaconda.org/too-short.conda", "sha256": GOOD_SHA}
+            {"conda": "https://conda.anaconda.org/too-short.conda", "sha256": GOOD_SHA, "md5": GOOD_MD5}
         )
         with pytest.raises(bpm.MirrorBuildError, match="does not look like a conda package URL"):
             bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
@@ -170,8 +182,9 @@ class TestParseMirrorTargets:
 def _make_target(url: str = "https://conda.anaconda.org/conda-forge/linux-64/foo-1.0-0.conda"):
     content = b"pretend-conda-package-bytes"
     sha256 = hashlib.sha256(content).hexdigest()
+    md5 = hashlib.md5(content).hexdigest()
     target = bpm.MirrorTarget(
-        url=url, sha256=sha256, channel="conda-forge", subdir="linux-64", filename="foo-1.0-0.conda"
+        url=url, sha256=sha256, md5=md5, channel="conda-forge", subdir="linux-64", filename="foo-1.0-0.conda"
     )
     return target, content
 
@@ -256,25 +269,23 @@ class TestDownloadAndVerify:
         self, tmp_path, monkeypatch
     ):
         """A stale directory, a permission error, or anything else that
-        stops `_sha256_of` from READING an existing dest_path must not
-        crash `_download_one` -- it should be treated as "not valid yet"
-        and fall through to a normal download. Only the pre-check call (on
-        `dest_path`) is made to raise; the real hashing function still runs
-        for the post-download verification call (on `tmp_path`), so this
-        isolates exactly the guarded code path."""
+        stops `_md5_of` (the warm-cache pre-check digest since 0d672b646e)
+        from READING an existing dest_path must not crash `_download_one`
+        -- it should be treated as "not valid yet" and fall through to a
+        normal download. Only the pre-check is made to raise; the sha256
+        post-download verification still runs for real, so this isolates
+        exactly the guarded code path."""
         target, content = _make_target()
         dest_path = tmp_path / target.dest_relpath
         dest_path.parent.mkdir(parents=True)
         dest_path.write_bytes(b"irrelevant -- the precheck raises before reading this")
 
-        real_sha256_of = bpm._sha256_of
-
-        def _flaky_sha256_of(path):
+        def _flaky_md5_of(path):
             if path == dest_path:
                 raise OSError("simulated permission error")
-            return real_sha256_of(path)
+            return hashlib.md5(path.read_bytes()).hexdigest()
 
-        monkeypatch.setattr(bpm, "_sha256_of", _flaky_sha256_of)
+        monkeypatch.setattr(bpm, "_md5_of", _flaky_md5_of)
         _patch_session_get(monkeypatch, lambda *a, **k: _FakeResponse(content))
 
         result = bpm._download_one(target, tmp_path, timeout=5)
@@ -293,6 +304,7 @@ class TestBuildMirrorDedupAndProgress:
         duplicate = bpm.MirrorTarget(
             url=target.url,
             sha256=target.sha256,
+            md5=target.md5,
             channel=target.channel,
             subdir=target.subdir,
             filename=target.filename,
@@ -327,6 +339,7 @@ class TestBuildMirrorDedupAndProgress:
                 bpm.MirrorTarget(
                     url=f"https://conda.anaconda.org/conda-forge/noarch/pkg{i}-1.0-0.conda",
                     sha256=sha256,
+                    md5=hashlib.md5(content).hexdigest(),
                     channel="conda-forge",
                     subdir="noarch",
                     filename=f"pkg{i}-1.0-0.conda",

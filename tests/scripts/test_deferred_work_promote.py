@@ -236,9 +236,23 @@ def _patched_promoter(repo: Path) -> Path:
     return dst
 
 
+def _subprocess_env() -> dict[str, str]:
+    """The patched promoter's `REPO_ROOT` is the FIXTURE repo, so its own
+    best-effort `sys.path` insertion (`<REPO_ROOT>/src/shared/packages/
+    pyforge-{doctor,core}/src`) finds nothing there. Point the child at the
+    real source trees instead -- the `pyforge-ci` env that runs this suite
+    in CI installs neither package (pure-stdlib by design), and the
+    `local-recipes` env only passes because it has them in site-packages."""
+    env = dict(os.environ)
+    srcs = [str(REPO_ROOT / "src" / "shared" / "packages" / pkg / "src") for pkg in ("pyforge-doctor", "pyforge-core")]
+    env["PYTHONPATH"] = os.pathsep.join(srcs + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+    return env
+
+
 def _run(promoter: Path, repo: Path, *extra_args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(promoter), "--fix", *extra_args],
+        env=_subprocess_env(),
         capture_output=True, text=True, cwd=repo,
     )
 
@@ -823,6 +837,7 @@ def test_project_given_without_fix_is_a_usage_error(tmp_path: Path):
 
     r = subprocess.run(
         [sys.executable, str(promoter), "--project", "mason"],
+        env=_subprocess_env(),
         capture_output=True, text=True, cwd=repo,
     )
     assert r.returncode == 2
@@ -834,7 +849,7 @@ def test_bare_invocation_explains_purpose_and_does_not_write(tmp_path: Path):
     repo = _fixture_repo(tmp_path)
     promoter = _patched_promoter(repo)
 
-    r = subprocess.run([sys.executable, str(promoter)], capture_output=True, text=True, cwd=repo)
+    r = subprocess.run([sys.executable, str(promoter)], capture_output=True, text=True, cwd=repo, env=_subprocess_env())
     assert r.returncode == 2
     assert "--fix" in r.stderr
     assert _tracked_text(repo, "pyforge-mason") == _MASON_EXISTING_TRACKED
