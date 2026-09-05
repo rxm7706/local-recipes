@@ -13,7 +13,7 @@ per class is spot-checked by the upgrade verification gate.
 | bmad-builder | SelfExplainML 2.2.1 | `npx bmad-method install` → select "BMad Builder" | npm STALE (1.1.0, 2026-03) — GitHub canonical |
 | creative-intelligence-suite | SelfExplainML 0.3.1 | `npx bmad-method install` → select CIS (README § Installation) | npm STALE (0.1.9) — GitHub canonical |
 | bmad-module-skill-forge | SelfExplainML 2.1.0 — **pixi pin to add** (the one gap) | `npx bmad-module-skill-forge install` (README § Install; needs Node ≥22, Python ≥3.10, uv) | npm current |
-| wds-expansion | SelfExplainML 0.4.3 | via `npx bmad-method install` (README: installer places `_bmad/wds/`) | npm names stale (`bmad-wds` 0.3.1 / `whiteport-design-studio` 0.3.4); DEPRECATED upstream — skip wiring |
+| bmad-eval-quality | SelfExplainML 0.2.0.dev0 @ 3172162f (joined 2026-09-05, Story 45.1) | `npm i -g eval-quality` (README § Install) — but npm latest is 0.1.0 without `score`; the conda recipe pins the 0.2.0 line from `main` | bare CLI, nothing wires into `_bmad`; exact commit pin is load-bearing (nine breaking schema-version bumps between v0.1.0 and main) |
 | bmad-utility-skills | SelfExplainML 2.0.0 @ HEAD | Claude plugin: `/plugin marketplace add https://github.com/bmad-code-org/bmad-utility-skills` → enable → `/reload-plugins` (README § Install) | npm-invisible; no tags ever |
 | bmad-labs-skills | SelfExplainML 1.0.0.dev0 @ HEAD | `npx skills add bmad-labs/skills` (README "Recommended") or plugin marketplace | npm-invisible; `bmad-skills` on npm is UNRELATED (bacoco) |
 | bmad-module-template | SelfExplainML 0.1.0 @ HEAD | GitHub **template repo** — "Use this template"; not an installable package | npm-invisible; dormant since 2026-04 |
@@ -21,6 +21,8 @@ per class is spot-checked by the upgrade verification gate.
 | bmad-dashboard | SelfExplainML 1.2.2.dev0 (bmad-ui env) | build from source: Node 22+, `corepack prepare pnpm@10.26.2`, `pnpm install && pnpm build` (README) | npm `bmad-dashboard` (1.0.19) is UNRELATED (caionormando) |
 | mybmad-dashboard | SelfExplainML 0.1.0.dev0 (bmad-ui env) | self-host: `cd web && pnpm install`, `scripts/setup.sh`, PostgreSQL + migrations (web/README) | npm-invisible (`my-bmad` 404) |
 
+
+**Retired from the matrix 2026-09-05:** `wds-expansion` (SelfExplainML 0.4.3; via `npx bmad-method install` → `_bmad/wds/`) — upstream `bmad-modules.yaml` marks it `deprecated: true`, folded into BMM as the `bmad-ux` skill; `--module wds` stays skip-decided in `steward provision`. Its recipe remains in-repo under `suite-members.yaml` `deprecated: true`; it is no longer a metapackage run dep. The roster stays at 13 — `bmad-eval-quality` took the seat.
 **Greenfield one-pin (CAP-4).** The row-by-row table above is the per-package
 reference; a fresh install of the *whole* suite does not need it. This repo's
 `pixi.toml` carries an opt-in `feature.bmad-suite-full` that depends on the

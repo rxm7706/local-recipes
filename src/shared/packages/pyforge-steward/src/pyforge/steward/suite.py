@@ -21,6 +21,7 @@ import argparse
 import http.client
 import json
 import re
+import shutil
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -72,6 +73,8 @@ INSTALL_CLASS_OWN_INSTALLER = "own-installer"
 INSTALL_CLASS_PLUGIN_PATH = "plugin-path"
 INSTALL_CLASS_VSCODE_EXTENSION = "vscode-extension"
 INSTALL_CLASS_SCAFFOLD_NA = "scaffold-n/a"
+# Story 45.1 — a bare CLI with nothing to wire into _bmad (eval-quality).
+INSTALL_CLASS_CLI = "cli"
 
 INSTALL_CLASS_PLAYBOOK_REL = (
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
@@ -110,6 +113,7 @@ class SuitePackageDef:
     wire_bmad_config_keys: tuple[str, ...] = ()
     install_class: str = INSTALL_CLASS_MODULE
     wire_pixi_task: str | None = None  # vscode-extension class: pixi task name
+    cli_bin: str | None = None  # cli class: executable expected on PATH (default: name)
 
 
 # install-matrix.md + Dream grounding (2026-08-22) — package class → probes.
@@ -155,12 +159,15 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         wire_skill_prefixes=("skf-",),
         install_class=INSTALL_CLASS_OWN_INSTALLER,
     ),
+    # 2026-09-05 (Story 45.1): bmad-method-wds-expansion retired from the roster —
+    # upstream deprecated (folded into bmm as the bmad-ux skill); provision still
+    # refuses `--module wds`. bmad-eval-quality took its seat.
     SuitePackageDef(
-        name="bmad-method-wds-expansion",
-        npm_name="bmad-wds",  # install-matrix: npm name ≠ recipe name
-        github_repo="bmad-code-org/bmad-method-wds-expansion",
-        wire_policy="skip",
-        install_class=INSTALL_CLASS_SKIP,
+        name="bmad-eval-quality",
+        npm_name="eval-quality",  # npm 0.1.0 lags the commit-pinned 0.2.0 line
+        github_repo="bmad-code-org/bmad-eval-quality",
+        install_class=INSTALL_CLASS_CLI,
+        cli_bin="eval-quality",
     ),
     SuitePackageDef(
         name="bmad-utility-skills",
@@ -566,6 +573,16 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 ok=True,
                 detail="plugin path not documented in playbook/matrix",
             )
+        if pkg.install_class == INSTALL_CLASS_CLI:
+            exe_name = pkg.cli_bin or pkg.name
+            exe = shutil.which(exe_name)
+            if exe:
+                return StageProbe(value="runnable", ok=True, detail=f"cli: {exe}")
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail=f"cli: {exe_name} not on PATH (no pixi pin yet?)",
+            )
         if pkg.install_class == INSTALL_CLASS_VSCODE_EXTENSION:
             task = pkg.wire_pixi_task
             if task and _pixi_task_declared(repo, task):
@@ -822,13 +839,16 @@ BASELINE_2026_08_22: dict[str, dict[str, str | None]] = {
         "installed": None,
         "wired": "wired",
     },
-    "bmad-method-wds-expansion": {
-        "upstream_npm": "0.3.1",
-        "upstream_github": "0.4.3",
-        "recipe": "0.4.3",
-        "channel": "0.4.3",
-        "installed": "0.4.3",
-        "wired": "skip",
+    # Joined 2026-09-05 (Story 45.1) in WDS's seat — this row is recorded
+    # 2026-09-05, not 2026-08-22: upstream tag/npm still v0.1.0, recipe on the
+    # commit-pinned 0.2.0 line, not yet on the channel or pinned in pixi.
+    "bmad-eval-quality": {
+        "upstream_npm": "0.1.0",
+        "upstream_github": "0.1.0",
+        "recipe": "0.2.0.dev0",
+        "channel": None,
+        "installed": None,
+        "wired": "missing",
     },
     "bmad-utility-skills": {
         "upstream_npm": None,

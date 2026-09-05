@@ -3,7 +3,8 @@
 #   - pyforge-doctor bmad_method suite watched set (Story 19.1 — all members w/ recipes)
 #   - steward suite pipeline-truth cross-check
 #
-# Active members match SelfExplainML channel + install-matrix.md (13 products).
+# Active members match SelfExplainML channel + install-matrix.md (13 products;
+# 2026-09-05: bmad-method-wds-expansion retired -> deprecated, bmad-eval-quality joined).
 # Deprecated members: local recipes kept in-repo but removed from the channel /
 # metapackage (parked or superseded). They stay listed here for drift/catalog
 # completeness — never written into recipe.yaml run deps.
@@ -20,8 +21,8 @@ members:
   - name: bmad-builder
   - name: bmad-creative-intelligence-suite
   - name: bmad-module-skill-forge
-  - name: bmad-method-wds-expansion
-    notes: published on channel; wiring skip per install-matrix (deprecated upstream)
+  - name: bmad-eval-quality
+    notes: eval-quality CLI (compile/seal/preflight/score); commit-pinned 0.2.0.dev0 — Dream docs/dreams/bmad-eval-quality.md, Story 45.1
   - name: bmad-utility-skills
   - name: bmad-labs-skills
   - name: bmad-module-template
@@ -32,6 +33,9 @@ members:
     notes: bmad-ui feature; linux/osx per upstream
 
   # --- Deprecated / removed from SelfExplainML (manifest only, not metapackage) ---
+  - name: bmad-method-wds-expansion
+    deprecated: true
+    notes: upstream deprecated (bmad-modules.yaml deprecated=true; folded into bmm as the bmad-ux skill) — retired from the metapackage 2026-09-05, recipe kept for catalog completeness
   - name: bmad-autopilot
     deprecated: true
     notes: community precursor loop; unix-only; parked — superseded by bmad-loop

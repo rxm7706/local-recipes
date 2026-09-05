@@ -1,9 +1,9 @@
 ---
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-09-02"
+updated: "2026-09-05"
 status: final
-currency_review: Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
+currency_review: Reviewed 2026-09-05 — chain-currency (spec→prd) — spec-pyforge-steward's .memlog.md moved twice on 2026-09-05 (the post-merge follow-up-review landing, PR #1056, and the bmad-suite 2026.9.5 roster change) and spec-bmad-eval-quality was created the same day (CAP-1 suite membership, CAP-2 pilot contract → Epic 45); neither adds an FR here — suite membership is governed by spec-bmad-suite-channel-product / -metapackage and eval-quality decomposes from its own owned Spec; deltas in § Currency reconciliation — 2026-09-05. Reviewed 2026-09-02 — chain-currency: spec-pyforge-steward's 2026-09-01 git touch (de24e396, the 23-1 merge) is the Spec landing at its sharded path `specs/spec-pyforge-steward/SPEC.md`; CAP-1..4, AD-1..9, non-goals and success signal are unchanged against this PRD, so no FR changes. Same day the red-team correct-courses minted Epics 40–43 on the unifying chain; those bind spec-pyforge-unifying-strategy, not this PRD. Reviewed 2026-08-29 — reconciled against spec-pyforge-steward's spec-surface drift catch-up and the retroactive Epic 38 decomposition; FR-1..31 unchanged, zero new capability; deltas recorded in § Currency reconciliation — 2026-08-29 (previously 2026-08-26).
 ---
 
 # PRD: Steward (`pyforge-steward`)
@@ -445,3 +445,33 @@ paragraph for the same completeness reason Epic 37 was.
 **No FR text altered.** As of 2026-08-29 the station ledger reads 38/38 epics, 132/132
 stories `done`.
 
+## Currency reconciliation — 2026-09-05
+
+Fired by the `spec→prd` staleness edge a third time: `spec-pyforge-steward`'s `.memlog.md`
+moved to 2026-09-05 (twice) while this PRD's stamp sat at 2026-09-02. Both motions, plus one
+new Spec, checked against FR-1..31 and the `owner: steward` decomposition rule above —
+nothing adds or changes an FR here:
+
+**Post-merge follow-up-review landing (PR #1056).** bmad-loop's follow-up-review pass had
+committed into the dispatch worktrees of Stories 41.3, 41.4, 42.1, 42.2 and 43.2 *after* each
+story PR merged, so five review-driven tightenings (governance gates, broker TLS
+verification, MCP transport auth, rate limits / run bounds, station API contract) and 21
+`deferred:` findings never reached `main`. Landed as one batched PR with a lint / mypy /
+deferred-work / spec-surface reconcile commit. Code-level hardening of already-decomposed,
+already-`done` stories — zero new capability against FR-1..31.
+
+**bmad-suite 2026.9.5 refresh (Story 45.1).** `suite.py`'s roster swapped
+`bmad-method-wds-expansion` (upstream `deprecated: true`, folded into BMM as `bmad-ux`) for
+`bmad-eval-quality`, seated under a new install class `cli` (a bare CLI with nothing to wire
+into `_bmad`; PATH-presence predicate). The install-class taxonomy is
+`spec-bmad-suite-install-class-wiring`'s contract and the metapackage roster is
+`spec-bmad-suite-metapackage`'s; this PRD's FR list is untouched.
+
+**Epic 45 — a new Spec decomposed the day it was written.** `spec-bmad-eval-quality`
+(Dream `docs/dreams/bmad-eval-quality.md`, `owner: steward`; CAP-1 suite membership, CAP-2
+the review-catches-a-planted-defect pilot) became Epic 45 / Stories 45.1 (in-progress —
+recipe built and tested green locally, channel upload + pixi pin pending) and 45.2 (blocked
+on the twin-run pilot). Per the boundary rule it decomposes from its own owned Spec, not
+from this FR list — named here for completeness exactly as Epics 37 and 38 were.
+
+**No FR text altered.** As of 2026-09-05 the station ledger reads 45 epics; 170 stories — 153 done, 15 blocked, 1 backlog, 1 in-progress.

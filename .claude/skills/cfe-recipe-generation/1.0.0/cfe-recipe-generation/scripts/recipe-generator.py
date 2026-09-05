@@ -254,8 +254,9 @@ _CONDA_FORGE_PYTHON_FLOOR = _read_conda_forge_python_floor()
 def _resolve_python_min(python_requires: str) -> str:
     """Parse ``python_requires`` and clamp to the conda-forge floor.
 
-    Returns the higher of the parsed ``>=X.Y`` and ``3.10``. Defaults to
-    ``3.10`` when ``python_requires`` is empty or unparseable.
+    Returns the higher of the parsed ``>=X.Y`` and the live conda-forge
+    floor. Defaults to that floor when ``python_requires`` is empty or
+    unparseable.
     """
     match = re.search(r">=\s*(\d+)\.(\d+)", python_requires or "")
     if not match:

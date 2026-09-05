@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "814c7718c11fb9a43a49ea458b2539a01a02c1af92a8911225cb57b235d9549d"
+source_sha256: "19c1dc0327f506badca303d7a9df40a00b617c644e6fbd44bb36171a3300ca2d"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -886,4 +886,37 @@ rows:
       - "\"bin\": {}"
       - "version"
       - "sha256"
+    enforced_by: null
+  - id: G111
+    title: "A `noarch` recipe whose host/run deps carry `if: unix` / `if: win` selectors NEEDS a per-recipe `conda-forge.yml` with `noarch_platforms` — the lint \"`noarch` packages can't have selectors\" is asking for the yml, not for the selectors to go"
+    symptom_signature:
+      - "conda-smithy recipe-lint --conda-forge"
+      - "`noarch` packages can't have selectors. If the selectors are necessary, please remove `noarch: generic`"
+      - "__unix"
+      - "__win"
+      - "requirements:"
+      - "in fine form"
+    enforced_by: null
+  - id: G112
+    title: "npm CLI packaged from a GitHub commit archive (no `dist/`): build with devDependencies, then reinstall production deps CLEAN — never `npm prune`"
+    symptom_signature:
+      - "dist/"
+      - "tsc"
+      - "prepack"
+      - "npm install --omit=dev"
+      - "npm ci"
+      - "npm run build"
+      - "npm prune --omit=dev"
+      - "node_modules/"
+    enforced_by: null
+  - id: G113
+    title: "A same-version content change (HEAD advance of a commit-pinned recipe, a build-script fix) must BUMP `build.number`, never reset it — `github_updater.py --head` now increments"
+    symptom_signature:
+      - "github_updater.py --head"
+      - "bmad-labs-skills"
+      - "088a427d"
+      - "81fe19ed"
+      - "build.number: 0"
+      - "1.0.0.dev0"
+      - "0"
     enforced_by: null

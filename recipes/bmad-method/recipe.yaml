@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method
-  version: "6.11.0"
+  version: "6.12.0"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/BMAD-METHOD/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 7da9e7d6a6d3b09c535e2262a00fd097ca7a9f35d90ff87dea3e557e0f58e707
+  sha256: d605368a901345e1cee9106fed688c1891f61680efc7112e281452062b055e98
 
 build:
   number: 0
@@ -60,11 +60,11 @@ extra:
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: bmad-method
-  cfe-upstream-registry: pypi
+  cfe-upstream-registry: npm
   cfe-upstream-name: bmad-method
   cfe-purls:
     - pkg:conda/bmad-method@${{ version }}?channel=conda-forge
-    - pkg:pypi/bmad-method@${{ version }}
+    - pkg:npm/bmad-method@${{ version }}
   cfe-upstream-repo: https://github.com/bmad-code-org/BMAD-METHOD
   cfe-upstream-homepage: https://github.com/bmad-code-org/BMAD-METHOD
   cfe-import-names: []
@@ -75,16 +75,20 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bmad-method-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T08:22:37Z
+  cfe-last-checked: "2026-09-05T13:30:10Z"
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:22:37Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T08:22:37Z
+  cfe-local-build-datetime: "2026-09-05T13:39:50Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-09-05: mirror synced to the conda-forge feedstock at 6.12.0 (sha256
+#    # identical; build.sh/build.bat byte-identical). cfe-upstream-registry corrected
+#    # pypi -> npm: BMAD-METHOD publishes to npm ('bmad-method'), never to PyPI — the
+#    # pypi lookup below always 404'd, which is why the generator failed.
 #    # generate failed rc=1: Fetching info for bmad-method...
 #    # Error: Failed to fetch PyPI metadata for 'bmad-method' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/bmad-method/json
 

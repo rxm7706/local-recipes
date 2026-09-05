@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 256
+# stories: 260
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -158,6 +158,8 @@ development_status:
   44-7-the-factory-island: blocked
   44-8-the-working-set: blocked
   44-9-mason-submits-to-conda-forge: blocked
+  45-1-eval-quality-joins-the-suite: in-progress
+  45-2-the-reviewer-is-measured-against-a-planted-defect: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
@@ -260,6 +262,8 @@ development_status:
   epic-43-retrospective: done
   epic-44: backlog
   epic-44-retrospective: optional
+  epic-45: backlog
+  epic-45-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done
