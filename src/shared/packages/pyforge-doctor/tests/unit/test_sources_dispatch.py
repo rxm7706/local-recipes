@@ -32,6 +32,7 @@ from pyforge.doctor.sources import (
     factory,
     ledger,
     marshal,
+    platform_policy,
     sibling_dreams,
 )
 
@@ -52,6 +53,7 @@ _EXPECTED_DISPATCH = {
     "due-for-verification": chain.gather_due_for_verification,
     "bmad-method-version-drift": bmad_method.gather,
     "sibling-dreams-drift": sibling_dreams.gather,
+    "platform-policy-suite": platform_policy.gather,
 }
 
 

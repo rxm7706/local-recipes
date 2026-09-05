@@ -140,3 +140,54 @@ def run_git(
             f"{result.stderr.strip()}"
         )
     return result.stdout
+
+
+def run_pytest(
+    interpreter: Path,
+    cwd: Path,
+    args: list[str],
+    *,
+    timeout: float = 120.0,
+) -> tuple[int, str]:
+    """Run ``interpreter -m pytest *args`` in ``cwd``; return
+    ``(returncode, combined stdout+stderr)``.
+
+    Added for ``sources/platform_policy.py`` (retro action item 3,
+    2026-09-05), which judges ``src/platform``'s manifest-only policy suite —
+    a Django/pytest-django surface Doctor's own lean env does not carry, so
+    ``interpreter`` names a DIFFERENT pixi env's python (``platform-ci-test``)
+    the caller has already confirmed exists on disk.
+
+    Unlike :func:`run_git`, pytest's own exit codes 0 (all passed) and 1
+    (some failed) are BOTH a completed, meaningful run — the caller decides
+    what a Finding looks like for either. Only {2, 3, 4, 5} (usage error,
+    internal error, usage error, no tests collected) mean the run itself
+    could not be trusted, so those still raise :class:`CliBridgeError` —
+    mirrors ``run_git``'s ``ok_exit_codes`` mechanism (Story 9.2), fixed here
+    rather than parameterized since every caller wants the identical split.
+    """
+    env = dict(os.environ)
+    env["NO_COLOR"] = "1"
+    argv = [str(interpreter), "-m", "pytest", *args]
+
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise CliBridgeError(f"pytest timed out after {timeout}s") from exc
+    except OSError as exc:
+        raise CliBridgeError(f"pytest failed to launch: {exc!r}") from exc
+
+    if result.returncode not in (0, 1):
+        raise CliBridgeError(
+            f"pytest exited {result.returncode} (not a pass/fail result): "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
+    return result.returncode, result.stdout + result.stderr

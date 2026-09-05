@@ -168,6 +168,10 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 17.3 (Epic 17 / FR-150 residual + FR-152) added
     # CHAIN_LAYERS_AUDIT: per-project layer presence
     # (`chain-completeness --layers --project <slug>`).
+    # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
+    # added PLATFORM_POLICY_SUITE: src/platform's manifest-only tests/policy
+    # subset, so a pixi.toml regression is caught even when Platform CI is
+    # disabled.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -196,6 +200,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "sibling-dreams-drift",
         "dreams-hygiene",
         "chain-layers-audit",
+        "platform-policy-suite",
     }
 
 

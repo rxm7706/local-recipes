@@ -927,6 +927,10 @@ cmd = "python scripts/seed_claude_consent.py"
 description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive). Contract: spec-regenerable-factory CAP-3."
 cmd = "python -m pyforge.doctor.sources spec-surface"
 
+[feature.local-recipes.tasks.platform-policy-suite-check]
+description = "Detector: src/platform's manifest-only tests/policy subset (retro action item 3, 2026-09-04) — catches a pixi.toml regression like the openfeature-provider-flagd/cachebox ceiling drop even when Platform CI itself is disabled. Shells out to the platform-ci-test pixi env's own interpreter (WARN, not FAIL, if that env is not installed here — install it with `pixi install -e platform-ci-test` to make this a real gate). Exits non-zero only on an actual policy-suite failure."
+cmd = "python -m pyforge.doctor.sources platform-policy-suite"
+
 [feature.local-recipes.tasks.dream-chain-check]
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources dream-chain"

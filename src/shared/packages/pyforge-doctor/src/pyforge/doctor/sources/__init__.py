@@ -404,6 +404,19 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # board.gather_chain_layers_audit. CAP-3 pass/fail per checkpoint for one
     # named project, seeded from pyforge.doctor.sources.fleet_scan + dream-chain.
     # Not a DISPATCH name: invoked as `chain-completeness --layers --project <slug>`.
+    SourceRegistration(
+        source=Source.PLATFORM_POLICY_SUITE,
+        scope="repo",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
+    # -- sources/platform_policy.py. Judges src/platform's manifest-only
+    # tests/policy subset (spec-python-agent-platform's surface, steward-
+    # owned); shells out to the platform-ci-test env's own interpreter
+    # (AD-5, cli_bridge.run_pytest), WARN when that env is not installed,
+    # FAIL only on an actual policy-suite failure. A DISPATCH member
+    # (Callable[[Path], tuple[Finding, ...]]), unlike BACKLOG_INTAKE/
+    # DREAMS_HYGIENE/CHAIN_LAYERS_AUDIT above.
 )
 
 
