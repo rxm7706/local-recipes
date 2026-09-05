@@ -22,10 +22,6 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - numpy <2.0
-    - 3.9
-    - 3.13
-    - 3.14
-    - 3.12
   run:
     - python >=${{ python_min }}
     - numpy <2.0
