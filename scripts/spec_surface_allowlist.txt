@@ -73,8 +73,7 @@ LICENSE*                 # license
 .azure-pipelines/**      # inherited staged-recipes CI legs (upstream-owned)
 .ci_support/**           # inherited staged-recipes CI support (upstream-owned)
 .appveyor.yml.notused    # inherited staged-recipes remnant (upstream-owned)
-.idea/**                 # IDE metadata
-.vscode/**               # IDE metadata (same class as .idea/**; settings.json is tracked)
+.vscode/**               # IDE metadata (settings.json is tracked); .idea/** removed 2026-09-05, untracked entirely (gitignored) rather than allowlisted
 .junie/**                # per-tool pointer (AGENTS.md family)
 .cursorrules             # per-tool pointer (AGENTS.md family)
 .prettierignore          # repo plumbing

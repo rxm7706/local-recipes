@@ -186,7 +186,16 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# Adopted 2026-09-05: 1936 auto-generated .iml files (one per pixi/conda
+# dependency) plus jsLibraryMappings.xml (embeds this machine's absolute
+# worktree paths, so it diffs on every worktree create/destroy) were pure
+# noise with zero shared-config value in this solo-maintainer repo -- and
+# the "iml files" commit (55107c2cd2) is the one the 2026-09-04 retro found
+# had silently carried a real dependency-ceiling regression (retro action
+# items 3/4) alongside the noise, exactly the failure class a noisy diff
+# enables. Untracked via `git rm -r --cached .idea/`; still present on disk
+# per-machine, IDE-managed.
+.idea/
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
