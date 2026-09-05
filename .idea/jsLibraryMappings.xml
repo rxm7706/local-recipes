@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="JavaScriptLibraryMappings">
-    <excludedPredefinedLibrary name="local-recipes/.worktrees/dispatch-pyforge-mason-12.8/.pixi/envs/local-recipes/lib/node_modules" />
-    <excludedPredefinedLibrary name="local-recipes/.worktrees/dispatch-pyforge-mason-12.8/.pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise/node_modules" />
-    <excludedPredefinedLibrary name="local-recipes/.worktrees/marshal-20-4-intent-gap-attempts-are-preserved/.pixi/envs/local-recipes/lib/node_modules" />
-    <excludedPredefinedLibrary name="local-recipes/.worktrees/marshal-20-4-intent-gap-attempts-are-preserved/.pixi/envs/local-recipes/share/bmad-method-test-architecture-enterprise/node_modules" />
-  </component>
-</project>
