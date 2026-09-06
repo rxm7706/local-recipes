@@ -155,9 +155,9 @@ def test_catalog_ships_612_custom_modules():
     assert skf.name == "skf"
     assert skf.own_installer == ("bmad-module-skill-forge", "update")
     assert skf.config_paths == ("_bmad/skf/config.yaml",)
-    # The --pin skf=v2.1.0 question stays open — the catalog ships pin: null.
-    assert raw[0]["pin"] is None
-    assert skf.pin is None
+    # Story 46.7: the --pin skf=v2.1.0 question is closed — the catalog pins it.
+    assert raw[0]["pin"] == "v2.1.0"
+    assert skf.pin == "v2.1.0"
     assert skf.packaged_source == (
         ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
     )

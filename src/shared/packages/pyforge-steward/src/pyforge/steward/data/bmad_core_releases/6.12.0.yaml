@@ -124,10 +124,12 @@ custom_modules:
     own_installer: [bmad-module-skill-forge, update]
     config_paths:
       - _bmad/skf/config.yaml
-    # The `--pin skf=v2.1.0` question stays open (customization-inventory.md
-    # § 4: is the conda-packaged 2.1.0 == cached `main` == tag v2.1.0?). When
-    # set, the core argv gains `--pin skf=<pin>`.
-    pin: null
+    # Story 46.7 (2026-09-06): pinned. customization-inventory.md § 4's question
+    # (is the conda-packaged 2.1.0 == cached `main` == tag v2.1.0?) is answered
+    # yes -- npm 2.1.0 tarball `src/` == GitHub tag `v2.1.0`, 337 files,
+    # `diff -rq` empty (core-upgrade memlog, 2026-09-06). The core argv now
+    # gains `--pin skf=v2.1.0`.
+    pin: v2.1.0
     packaged_source: .pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src
     notes: >-
       Trap 13 — `--action update -y` deselects and DELETES a cached custom module

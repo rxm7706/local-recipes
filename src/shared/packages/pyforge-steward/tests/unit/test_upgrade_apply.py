@@ -48,6 +48,7 @@ from pyforge.steward.upgrade import (
     format_apply,
     format_preflight,
     load_custom_modules,
+    load_release_catalog,
     read_installed_module_sources,
     read_installed_modules,
     reapply_local_customizations,
@@ -1108,6 +1109,21 @@ def test_apply_custom_module_catalog_pin_lands_on_core_argv(tmp_path):
     assert report.custom_modules[0].pin == "v2.1.0"
     assert any("skf=v2.1.0" in n for n in report.notes)
     assert report.custom_modules_ok is True
+
+
+def test_real_catalog_pins_skf_v2_1_0():
+    """Story 46.7: the REAL packaged 6.12.0 catalog carries the skf pin (CAP-7).
+
+    ``test_apply_custom_module_catalog_pin_lands_on_core_argv`` above proves the
+    generic pin-to-argv mechanism works once a pin exists, but it only ever
+    reads a synthetic fixture catalog. This test loads the actual packaged
+    ``bmad_core_releases/6.12.0.yaml`` so an accidental revert of the pin back
+    to ``null`` is caught here, not just in the mechanism test.
+    """
+    catalog = load_release_catalog("6.12.0")
+    (skf,) = load_custom_modules(catalog)
+    assert skf.name == "skf"
+    assert skf.pin == "v2.1.0"
 
 
 def test_apply_custom_module_own_installer_binary_missing_is_reported(tmp_path):
