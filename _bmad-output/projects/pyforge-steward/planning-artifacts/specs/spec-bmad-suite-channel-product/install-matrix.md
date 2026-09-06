@@ -1,19 +1,23 @@
 # Dual-path install matrix — the tracked contract (CAP-4)
 
 Verified 2026-08-22 against upstream READMEs (citations = the repo README
-section named). Pixi path: `pixi add <name>` / the existing pixi.toml pin,
-resolving from SelfExplainML (bmad-method from conda-forge). One native path
-per class is spot-checked by the upgrade verification gate.
+section named); **re-verified 2026-09-05** against
+`pixi run -e pyforge-steward pyforge steward suite pipeline-truth --json`
+(13/13 recipe = channel = installed). The version columns are a dated
+snapshot — that command is the live source. Pixi path: `pixi add <name>` /
+the existing pixi.toml pin, resolving from SelfExplainML (bmad-method from
+conda-forge). One native path per class is spot-checked by the upgrade
+verification gate.
 
 | Package | Pixi (channel) | Native method (cited) | Hazards |
 |---|---|---|---|
-| bmad-method | conda-forge (canonical); SelfExplainML refresh-parity | `npx bmad-method install` (README L16; bins `bmad`, `bmad-method`) | npm current |
-| bmad-loop | SelfExplainML 0.11.0 | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"` (README) — NOT on PyPI | npm-invisible |
-| TEA | SelfExplainML 1.23.2 | `npx bmad-method install` → select "Test Architect (TEA)" (README § Install); headless bin `tea-test-review` | v1.23.3 tagged-unreleased (watch) |
-| bmad-builder | SelfExplainML 2.2.1 | `npx bmad-method install` → select "BMad Builder" | npm STALE (1.1.0, 2026-03) — GitHub canonical |
-| creative-intelligence-suite | SelfExplainML 0.3.1 | `npx bmad-method install` → select CIS (README § Installation) | npm STALE (0.1.9) — GitHub canonical |
-| bmad-module-skill-forge | SelfExplainML 2.1.0 — **pixi pin to add** (the one gap) | `npx bmad-module-skill-forge install` (README § Install; needs Node ≥22, Python ≥3.10, uv) | npm current |
-| bmad-eval-quality | SelfExplainML 0.2.0.dev0 @ 3172162f (joined 2026-09-05, Story 45.1) | `npm i -g eval-quality` (README § Install) — but npm latest is 0.1.0 without `score`; the conda recipe pins the 0.2.0 line from `main` | bare CLI, nothing wires into `_bmad`; exact commit pin is load-bearing (nine breaking schema-version bumps between v0.1.0 and main) |
+| bmad-method | conda-forge (canonical) 6.12.0; SelfExplainML refresh-parity 6.12.0 | `npx bmad-method install` (README L16; bins `bmad`, `bmad-method`) | npm current. **Installed-stage caveat:** pipeline-truth reads the pixi env's conda-meta (6.12.0), not the applied `_bmad/_config/manifest.yaml` (6.11.0 until steward Epic 14 applies) — doctor's core drift is the signal for that gap |
+| bmad-loop | SelfExplainML 0.11.1 | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"` (README) — NOT on PyPI | npm-invisible |
+| TEA | SelfExplainML 1.24.0 | `npx bmad-method install` → select "Test Architect (TEA)" (README § Install); headless bin `tea-test-review` | npm current (the v1.23.3 tagged-unreleased watch closed 2026-09-05: 1.24.0 released) |
+| bmad-builder | SelfExplainML 2.2.2 | `npx bmad-method install` → select "BMad Builder" | npm STALE (1.1.0, 2026-03) — GitHub canonical |
+| creative-intelligence-suite | SelfExplainML 0.3.2 | `npx bmad-method install` → select CIS (README § Installation) | npm STALE (0.1.9) — GitHub canonical |
+| bmad-module-skill-forge | SelfExplainML 2.1.0 (pixi pin landed 2026-08-22, linux-64 only — the one gap, closed) | `npx bmad-module-skill-forge install` (README § Install; needs Node ≥22, Python ≥3.10, uv) | npm current |
+| bmad-eval-quality | SelfExplainML 0.2.0.dev0 @ 3172162f (joined 2026-09-05, Story 45.1; class `cli`) | `npm i -g eval-quality` (README § Install) — but npm latest is 0.1.0 without `score`; the conda recipe pins the 0.2.0 line from `main` | bare CLI, nothing wires into `_bmad`; npm STALE (0.1.0) — GitHub `main` canonical; exact commit pin is load-bearing (nine breaking schema-version bumps between v0.1.0 and main) |
 | bmad-utility-skills | SelfExplainML 2.0.0 @ HEAD | Claude plugin: `/plugin marketplace add https://github.com/bmad-code-org/bmad-utility-skills` → enable → `/reload-plugins` (README § Install) | npm-invisible; no tags ever |
 | bmad-labs-skills | SelfExplainML 1.0.0.dev0 @ HEAD | `npx skills add bmad-labs/skills` (README "Recommended") or plugin marketplace | npm-invisible; `bmad-skills` on npm is UNRELATED (bacoco) |
 | bmad-module-template | SelfExplainML 0.1.0 @ HEAD | GitHub **template repo** — "Use this template"; not an installable package | npm-invisible; dormant since 2026-04 |
@@ -38,7 +42,7 @@ pixi add --feature bmad-suite-full bmad-suite
 
 `bmad-method` stays **conda-forge canonical** (see the table's first row)
 even inside the bundle — it is not a separate pixi pin when installing via
-`feature.bmad-suite-full`; the metapackage's own `bmad-method >=6.11.0` run
+`feature.bmad-suite-full`; the metapackage's own `bmad-method >=6.12.0` run
 dependency resolves it from conda-forge. `feature.bmad-ui`'s own install
 surfaces (the VS Code extension registration via `bmad-dashboard-install`,
 and the self-hosted MyBMAD web app via `mybmad`) remain a separate opt-in
@@ -54,7 +58,8 @@ table above for pipeline-truth / doctor drift granularity and does **not**
 compose `bmad-suite-full`.
 
 **Class → gate spot-check candidates (one per class):** npm CLI → `npx
-bmad-method --version`; own-npx → `npx bmad-module-skill-forge --help`;
+bmad-method --version`; bare npm CLI (`cli`, eval-quality) → `eval-quality --help`;
+own-npx → `npx bmad-module-skill-forge --help`;
 installer-selection → TEA via `bmad-tea-install` (conda parity of the same
 flow); custom-source → manticore dry-run; plugin-marketplace → labs
 `npx skills add --help`; uv-from-git → `uv tool install --dry-run bmad-loop@git+…`;
