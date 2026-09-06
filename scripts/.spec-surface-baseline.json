@@ -549,10 +549,10 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "f539182c862f8f957ca7c60b634e9a289ac63721",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py": "2aa283d69d7fa33da15dfd3fe52755610a7caf92",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "7f1e19132bce95640d6714ee7c36ce5a3b6b0e72",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "00fe8640e253a2086b9347daaf7587f2dd9ac8c3",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "f2f4703dc7bacab60d425cc2b32ce6ea1df65f5c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "f07dfb05e8152a68f21eea81f3a68861f317c5fe",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "23162ade3b7f65e2a631a4ed44ae43840c8cb172",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "3bba72cf83e3d2bae966ef7001007974c4924939",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "a2f345dda29fabecb348e5547328a7c121e0b5eb",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "b3bc95ce6af94149e261a06064d3a725ed1fe5b5",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "1bc56c08905ba95dc64602f5d49d6812bde9acf8"
+  "memlog": "c60df4c9597d6d881ae7cf8e45343399f0edcdab"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -4827,6 +4827,10 @@
  "pyforge-steward/spec-htap-query-plane": {
   "files": {},
   "memlog": "e4f570f606021143a0b41dbd57c30e5d7fb204dc"
+ },
+ "pyforge-steward/spec-intelligence-hub": {
+  "files": {},
+  "memlog": "befa11366f7d77929af1568c25e3394c968ffc79"
  },
  "pyforge-steward/spec-jira-github-projects-sync": {
   "files": {},

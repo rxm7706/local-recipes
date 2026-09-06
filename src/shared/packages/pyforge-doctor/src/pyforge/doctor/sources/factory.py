@@ -1124,6 +1124,17 @@ def classify(path: Path, target: Path) -> str:
     # stays covered. A dated one-off record, so it archives (no pin gating).
     if re.fullmatch(r"planning-artifacts/[a-z0-9-]+-readiness-assessment\.md", rel):
         return "archive:readiness-assessment"
+    # The sweep-verdicts shape (2026-09-05): the fifth instance of the spike-report
+    # lesson. `scripts/worktree_sweep.py --format json` is the repeatable worktree-
+    # hygiene tool (settled in the 2026-09-05 shutdown sweep; marshal-native home
+    # `marshal retire`, tracked ledger DW-HYGIENE-2026-09-05-1); the operator saves
+    # its per-worktree verdict table as a dated JSON record at marshal's
+    # implementation-artifacts root (`worktree-verdicts-<date>.json`), and the first
+    # such file fell through to UNKNOWN and tripped `uncovered`. Generalized over the
+    # date so every later sweep's record stays covered. Tier-3, gitignored,
+    # machine-written, never hand-edited, never pin-gated.
+    if re.fullmatch(r"implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json", rel):
+        return "local:sweep-verdicts"
     return "UNKNOWN"
 
 

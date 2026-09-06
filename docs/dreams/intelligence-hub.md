@@ -667,7 +667,9 @@ paper says matters most, but it should be stated, not assumed.
 
 ## What is real
 
-Nothing in the repo yet; only the whitepaper and this seed. By the paper's own status table, Cogs
+Nothing in the repo yet beyond the whitepaper, this seed and — since 2026-09-05 (evening) — a
+`draft` Spec at `spec-intelligence-hub` under pyforge-steward that is the chain link, not the
+contract (its five CAPs are the candidate shapes below, none chosen). By the paper's own status table, Cogs
 and Ops as installable objects and the Op manifest are "in active development", the Frame protocol
 is a milestone not yet published, and the accountability-plane runtime and the marketplace are
 "thesis". Dream-first applies: `bmad-spec` under `pyforge-steward` produces the contract, and the
@@ -770,3 +772,9 @@ updating the open question it answers. **Neither has been run yet.**
 - **2026-09-05 (later)** — Research backlog added at the operator's request: RB-1 (is the Frame
   protocol published?) and RB-2 (are Nebari, `nebari-infrastructure-core` and Nebi on conda-forge /
   PyPI?). Neither has been run; both precede the Spec.
+- **2026-09-05 (evening)** — `bmad-spec` (headless/express) seeded `spec-intelligence-hub` under
+  pyforge-steward as a **`draft`**: the five candidate shapes are CAP-1..5 (none chosen), the six
+  open questions incl. RB-1/RB-2 ride the Spec's `open_questions`, and `vocabulary-map.md` carries
+  the table above. Registered in doctor's `DEFERRED_SPECS` so chain-completeness does not demand
+  epics for unchosen shapes; dream-chain INV-1 clears. Status stays `dreamt` — README: `specified`
+  needs a Spec at `ready` or beyond, and RB-1/RB-2 still precede the contract.

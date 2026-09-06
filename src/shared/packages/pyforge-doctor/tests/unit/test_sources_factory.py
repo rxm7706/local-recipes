@@ -689,6 +689,28 @@ def test_fleet_drain_run_records_are_classified_and_not_flagged_uncovered(
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_worktree_sweep_verdicts_are_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-05 shape: the dated per-worktree verdict table that
+    `scripts/worktree_sweep.py --format json` emits, saved by the operator at
+    marshal's implementation-artifacts root (`worktree-verdicts-<date>.json`)
+    -- must be classified rather than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "worktree-verdicts-2026-09-05.json").write_text(
+        '{"generated": "2026-09-05", "items": []}\n', encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
