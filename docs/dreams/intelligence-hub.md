@@ -23,6 +23,10 @@ status: dreamt
 - **Integrity:** sha256 `5dabf2bec9cde59e5cc5bfa38eb08d3cd536daf20a6e6d7e815d76cd401dbe41`, captured
   2026-09-05. The PDF is **not** checked in (third-party copyright, 1 MB); re-fetch by URL and
   compare the hash before trusting a later revision against this text.
+- **Canonical source repository** (found 2026-09-06 during RB-1):
+  https://github.com/openteams-ai/inthub-whitepaper — `whitepaper.md`, `GLOSSARY.md`, `SOURCES.md`,
+  `MESSAGING.md`; Revision 9 is tag `v9` (2026-08-17, commit `9c2856923b`), Revision 8 is `v8`
+  (2026-08-06); no licence file. Cite later revisions by tag from this repository, not by PDF URL.
 - **Evidence base:** 34 cited sources — McKinsey (×4), PwC (×2), Deloitte (×3), Stanford HAI
   AI Index 2025 + 2026, Brookings, OSI/OpenLogic State of Open Source 2026, Financial Times,
   Nadella at WEF Davos 2026, Hugging Face, NBER (×2), PEX Network, Dataversity, AlixPartners,
@@ -651,7 +655,8 @@ paper says matters most, but it should be stated, not assumed.
    Frames/Cogs/Ops/Guards/Gates/Tracks, recorded once in [`pyforge-charter.md`](pyforge-charter.md)
    or the Unifying Strategy — the cheapest possible realisation; no code.
 2. **Frames as first-class.** Once the Frame protocol is published (a Phase 1 milestone in the paper,
-   not yet observed), publish the repo's own context — the `AGENTS.md` block, station personas,
+   not yet observed when seeded; **published 2026-08-18 as Frame Spec v0.2.0** — RB-1 below),
+   publish the repo's own context — the `AGENTS.md` block, station personas,
    the recipe-authoring conventions — as Frame-shaped artifacts with named owners; a Community
    Frame for local-recipes would be the paper's use case 3 applied to ourselves.
 3. **A declared validation strategy per run.** A bmad-loop run or `marshal factory spin` declares its
@@ -663,7 +668,9 @@ paper says matters most, but it should be stated, not assumed.
 5. **Package the Nebari/Nebi lineage where missing.** A Mason/CFE lane: verify with `lookup_feedstock`
    and `pypi_intelligence` whether `nebari`, `nebari-infrastructure-core` and `nebi` exist on
    conda-forge or PyPI, and build local recipes if not — a green local build ends the task, no
-   external PR without an ask.
+   external PR without an ask. *(RB-2, 2026-09-06: `nebari` and `nebi` are already on
+   conda-forge; only `nebari-infrastructure-core` is missing — the lane narrows to that Go CLI,
+   plus the `frames` registry client if wanted.)*
 
 ## What is real
 
@@ -671,7 +678,8 @@ Nothing in the repo yet beyond the whitepaper, this seed and — since 2026-09-0
 `draft` Spec at `spec-intelligence-hub` under pyforge-steward that is the chain link, not the
 contract (its five CAPs are the candidate shapes below, none chosen). By the paper's own status table, Cogs
 and Ops as installable objects and the Op manifest are "in active development", the Frame protocol
-is a milestone not yet published, and the accountability-plane runtime and the marketplace are
+is a milestone not yet published (Revision 9's view; **it shipped 2026-08-18 as Frame Spec
+v0.2.0** — RB-1), and the accountability-plane runtime and the marketplace are
 "thesis". Dream-first applies: `bmad-spec` under `pyforge-steward` produces the contract, and the
 contract chooses among the candidates above before any code.
 
@@ -704,10 +712,14 @@ contract chooses among the candidates above before any code.
 - **Owner.** Seeded under `steward` because the Hub is the estate and Steward already owns the
   Unifying Strategy, eval-quality and the channel product. Marshal (Ops, Gates) and Scribe (Frames,
   memory) are the plausible alternatives; owning is the post, not the product.
-- Is the **Frame protocol** published yet, and where? Nothing Frame-shaped should be specified before
-  the open specification exists. → research backlog **RB-1**.
+- Is the **Frame protocol** published yet, and where? **Answered 2026-09-06 (RB-1): yes** — Frame
+  Spec v0.2.0, released 2026-08-18 at `openteams-ai/frame-spec` (single-file Markdown + YAML
+  frontmatter; registries, identity and provenance out of scope; no git tag, no LICENSE file);
+  reference registry `nebari-dev/nebari-frames` v0.1.7, beta. The gate on shape 2 is lifted.
 - Are **Nebari, `nebari-infrastructure-core`, Nebi** on conda-forge or PyPI, and under what licence?
-  → research backlog **RB-2**.
+  **Answered 2026-09-06 (RB-2):** `nebari` yes (2025.10.1, BSD-3-Clause, PyPI-stable parity),
+  `nebi` yes and current (0.15, Apache-2.0, four subdirs), `nebari-infrastructure-core` no on
+  both (Go, Apache-2.0, GitHub binaries + Homebrew). rxm7706 maintains neither feedstock.
 - Which of the **seven Guard categories** does the repo lack entirely, and is source-grounding of LLM
   output the first to add?
 - Does a **bmad-loop run** already emit enough to constitute a Track, and what retention would the
@@ -718,7 +730,7 @@ contract chooses among the candidates above before any code.
 
 Two research items queued 2026-09-05 at the operator's request. They are prerequisites for the
 Spec, not stories; each closes by appending its finding here (dated, with the evidence) and by
-updating the open question it answers. **Neither has been run yet.**
+updating the open question it answers. **Both ran on 2026-09-06; findings are recorded inline.**
 
 - **RB-1 — Has the Frame protocol been published?** The paper lists "Frame protocol published" as a
   Phase 1 (now–6 months) milestone and calls the protocol the standard that makes Frame exchange
@@ -728,6 +740,40 @@ updating the open question it answers. **Neither has been run yet.**
   URL, version, licence and the file/folder structure it prescribes — or record "not published as of
   <date>". Gates candidate shape 2 (Frames as first-class): nothing Frame-shaped is specified before
   an open specification exists.
+
+  **RB-1 finding — 2026-09-06: published.** Frame Spec **v0.2.0** is public at
+  <https://github.com/openteams-ai/frame-spec> (repository created 2026-05-18, made public by
+  PR #23 "cleanup/public-release" on 2026-08-19; `CHANGELOG.md` dates the release **2026-08-18**;
+  the frozen normative text is `spec/v0.2.md`, 297 lines; `spec/frame-spec.md` is the working
+  draft). What it prescribes: a **single Markdown file with YAML frontmatter**; required fields
+  `type` (`frame` or `frame [0.2]`), `name`, `description`, `visibility`; recommended `version`,
+  `scope`, `maintainer`, `inherits`; the body is ordinary Markdown loaded as system context;
+  inheritance is explicit via `inherits`, child over parents, parents read in order, transitive
+  resolution optional. Deliberately **not** defined in v0.2: package manifests, canonical
+  identity, provenance, review workflows, registries, runtime management; the directory form
+  (`frame.md` + assets) is deferred. In-repo tooling: `tools/validate_frames.py` (a v0.2 field
+  preflight, also run as a GitHub Action), `tools/frame-builder.html`, two authoring prompts, and
+  `examples/` (minimal, complete, meeting-notes inheritance, and a future-facing
+  `nebi-frame-package/` with `frame/package.yaml`). Caveats: the README's `releases/tag/v0.2.0`
+  link returns 404 — **no git tag or release object exists**, the release is the changelog entry
+  plus the frozen file — and the repository has **no LICENSE file** (GitHub reports none), so the
+  spec text's reuse terms are unstated. Reference implementation:
+  <https://github.com/nebari-dev/nebari-frames> (Go, Apache-2.0, **v0.1.7** on 2026-08-19,
+  self-declared *beta*: backend + `frames` CLI + web app + MCP endpoint; Helm chart
+  `oci://quay.io/nebari/charts/nebari-frames`; release binaries for linux / darwin / windows on
+  amd64 + arm64 and a `frames.rb` formula in `nebari-dev/homebrew-tap`; successor of `skillsctl`).
+  It stores Frames in a richer ten-slot YAML schema (terminology, rules, skills, prompts,
+  tool_specs, goals, style, norms, architecture, business_process) with `extends` inheritance and
+  RBAC, and round-trips a conformant `.frame.md` (`type: frame [0.2]`, one `##` section per slot)
+  that passes the spec's validator; `visibility` there is declared intent, not access control.
+  Ecosystem status per the spec's own `docs/ecosystem.md`: **no Cog spec exists**; Ops were
+  renamed from "Progs"; Collab (openteams.com/collab) is the desktop client, its hub (formerly
+  "Nexus") private-invitation only; **Nebi does not define or ship Frame support**
+  (`docs/nebi-integration.md` is exploratory). The ownyourintelligence.ai field guide (July 2026,
+  Revision 7) that reported "no published specification" predates the release. The whitepaper's
+  source repository is <https://github.com/openteams-ai/inthub-whitepaper> (tag `v9` = Revision 9,
+  2026-08-17). **Effect:** the gate on candidate shape 2 is lifted; what remains is the operator's
+  choice.
 - **RB-2 — Are Nebari, `nebari-infrastructure-core` and Nebi on conda-forge (and PyPI)?** Verify each
   name — plus the hyphen/underscore, `-py` and `-python` spellings the PyPI→conda mapping rule
   requires — with `lookup_feedstock`, `get_conda_name` and `pypi_intelligence` from the conda-forge
@@ -736,6 +782,37 @@ updating the open question it answers. **Neither has been run yet.**
   the feedstock. Gates candidate shape 5 (package the lineage where missing); this is a Mason /
   `conda-forge-expert` lane — a green local build ends the task, and no external PR is opened
   without an ask.
+
+  **RB-2 finding — 2026-09-06: two of the three are already on conda-forge.** Checked against live
+  `channeldata.json`, `lookup_feedstock` and PyPI's JSON API, four spellings each (bare,
+  hyphen↔underscore, `-py`, `-python`) plus the `python-` prefix:
+  - **`nebari`** — conda-forge **yes**: `conda-forge/nebari-feedstock` (v0 `meta.yaml`,
+    `noarch: python`, `__unix`-only run), **2025.10.1**, BSD-3-Clause, maintainers marcelovilla /
+    dcmcand / viniciusdc — **rxm7706 is not a maintainer**; last pushed 2026-04-22, no open PRs.
+    PyPI **yes**: latest stable **2025.10.1** (2025-11-04); `2026.3.1rc1` / `rc2` are pre-releases
+    and the GitHub release `2026.3.1` (2026-07-17) was **never uploaded to PyPI**, so the feedstock
+    sits at PyPI-stable parity, not GitHub parity. nebari.dev now labels this "Nebari classic
+    (sunsetting)"; the successor is "Nebari core" (NIC, early access). `nebari-dask` 2025.6.1 is a
+    sibling noarch package.
+  - **`nebari-infrastructure-core`** (NIC) — conda-forge **no** (all spellings; no feedstock),
+    PyPI **no** (404). Go CLI, Apache-2.0, **v0.14.0** (2026-08-25); distributed as GitHub-release
+    tarballs for linux / darwin (x86_64 + arm64) and windows (x86_64 + arm64) with a source
+    tarball, per-asset SBOMs and sigstore-signed checksums, plus a `nic` Homebrew cask. It downloads
+    and manages its own OpenTofu binary at runtime (`NIC_TOFU_PATH` or `tofu` on PATH overrides;
+    conda-forge ships `opentofu` 1.12.6). A conda recipe would be a Go source build with
+    `go-licenses` — the shape `nebi-feedstock` already uses.
+  - **`nebi`** — conda-forge **yes and current**: `conda-forge/nebi-feedstock` (v1 `recipe.yaml`,
+    multi-output `nebi-cli` / `nebi-desktop` / `nebi`), **0.15** = upstream v0.15 (2026-08-27),
+    Apache-2.0, linux-64 / osx-64 / osx-arm64 / win-64, Go + nodejs build, maintainers viniciusdc /
+    Adam-D-Lewis / aktech / pmeier — **rxm7706 is not a maintainer**. PyPI **no** (Go; never
+    published there). `nb-nebi-kernels` (a Jupyter KernelSpecManager for nebi workspaces) is not
+    packaged anywhere.
+  - Also absent from conda-forge: the `frames` registry client (`nebari-frames`) and `skillsctl`.
+  Tool notes: `get_conda_name` returned the identity name for all three via the metadata API —
+  a fall-through, not evidence of existence; `pypi_intelligence` is a ranked-candidate listing
+  with no per-name filter, so it does not apply to a named lookup. **Effect:** candidate shape 5
+  narrows to one Go CLI (NIC), plus the `frames` client if the operator wants the registry
+  consumable from pixi; no external PR is implied — a green local build ends that lane.
 
 ## Kinships
 
@@ -778,3 +855,12 @@ updating the open question it answers. **Neither has been run yet.**
   the table above. Registered in doctor's `DEFERRED_SPECS` so chain-completeness does not demand
   epics for unchosen shapes; dream-chain INV-1 clears. Status stays `dreamt` — README: `specified`
   needs a Spec at `ready` or beyond, and RB-1/RB-2 still precede the contract.
+- **2026-09-06** — RB-1 and RB-2 run and closed above. RB-1: the Frame protocol **is** published —
+  Frame Spec v0.2.0 (2026-08-18, `openteams-ai/frame-spec`; no tag, no LICENSE file) with
+  `nebari-dev/nebari-frames` v0.1.7 as a beta reference registry; the field guide's "not
+  published" claim predates it. RB-2: `nebari` (2025.10.1) and `nebi` (0.15, current) are on
+  conda-forge; `nebari-infrastructure-core` is absent from conda-forge and PyPI (Go; GitHub
+  binaries + Homebrew). The whitepaper's canonical repository (`openteams-ai/inthub-whitepaper`,
+  tag `v9`) is recorded under § Source. The Spec's two research questions closed and two derived
+  ones took their place (package NIC + `frames`? author the first conformant Frame now?). Status
+  stays `dreamt`: the shape decision is still the operator's.
