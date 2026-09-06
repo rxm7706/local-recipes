@@ -1,8 +1,8 @@
 ---
-title: PyForge's artifacts, patterns, and station code stay aligned to the installed BMAD era — 6.11 today, v7-ready tomorrow
+title: PyForge's artifacts, patterns, and station code stay aligned to the installed BMAD era — 6.12 today, v7-ready tomorrow
 type: dream
 owner: marshal
-status: specified   # 2026-08-22 — spec-bmad-611-era-alignment under pyforge-marshal (7 CAPs, 2 companions), decomposed as marshal Epic 25 (7 stories, all independent)
+status: realized   # 2026-08-24 — the 6.11 round shipped (marshal Epic 25, 7/7 done). Perpetual: every BMAD-era shift reopens a round under the same Spec — 6.12.0 (released 2026-09-04) minted CAP-8..11 on 2026-09-05, awaiting decomposition
 ---
 
 # PyForge's artifacts, patterns, and station code stay aligned to the installed BMAD era
@@ -80,6 +80,60 @@ holds, guarded by tests, until the next era.
   line; Paige's replacement, the "explain this system" capability, and
   bmad-ux/WDS absorption all have zero implementation signal.
 
+### The 6.12.0 era shift — verified 2026-09-05 (tagged tree + CHANGELOG + local diff, not the release page)
+
+BMAD-METHOD **6.12.0** shipped 2026-09-03 (GitHub release 2026-09-04). The
+`_bmad/` install is still 6.11.0 — the apply is steward Epic 14's
+(`steward upgrade`, operator-gated) — but the era of record has moved, and
+the residue this Dream owns is already visible:
+
+1. **Shim roster: still 20, one seat swapped.** `bmad-checkpoint-preview` is
+   a new shim forwarding to the new `bmad-walkthrough` (`CK` → `WT`);
+   `bmad-generate-project-context` (a 6.11 shim) ships as neither a shim nor
+   a `removals.txt` entry, so an update leaves its 6.11 directory orphaned in
+   `.claude/skills/`. Shims are now **opt-in on fresh installs** (`--shims`);
+   existing installs keep them by default. CAP-1's guard list and the two
+   living docs naming `bmad-checkpoint-preview` (`architecture-bmad-infra.md`,
+   `development-guide.md`) are behind.
+2. **`persistent_facts` ships empty** (`bmad-build-auto/customize.toml`: the
+   `file:**/project-context.md` glob is gone). The eight station
+   `project-context.md` rulebooks — CAP-7's premise, "still consumed by
+   build-auto" — lose their only runtime consumer. The 2026-09-05 upgrade
+   planning session decided **D1: accept the empty default**; the AGENTS.md
+   `bmad:context` block is the project-context surface. Consumers to
+   migrate: doctor `sources/factory.py` (+ its `pin-behind (context)` row),
+   `scripts/fleet_scan.py`, `scripts/bmad_drift_check.py`, and SYNC-RUNBOOK's
+   living-doc cadence.
+3. **The AGENTS.md HOLD is moot.** The managed `bmad:context` block was set up
+   2026-09-04 (verified against `bd37dfd607`), and 6.12's
+   `bmad-project-context` gains an `adopt` intent with a
+   retain/rewrite/relocate/delete ledger — the rework this Dream was waiting
+   out has landed.
+4. **`llms.txt` / `llms-full.txt` are no longer published.** CLAUDE.md's
+   "live source" pointer is dead; `.claude/docs/bmad-method-llms-full.txt`
+   (generated 2026-08-17) is the last snapshot there will be.
+5. **`{diff_output}` → `{diff_file}`** in review-layer overrides: no
+   `_bmad/custom/` override and no bmad-loop reference uses it — no action.
+6. **Build-auto spec-template drift fired** (a horizon-watch trigger): the
+   "Block If" tier is gone (two tiers, Always/Never), the review log records
+   a verdict + evidence per finding, and `followup_review_recommended` no
+   longer HALTs on `false`. The frontmatter keys our readers consume
+   (`status`, `deferred`, "blocking condition") are unchanged, and
+   `bmad-spec`'s template and `memlog.py` are byte-identical at 6.12 — marshal
+   `core/status.py`, `scripts/deferred_work_intake.py` and CAP-3 need nothing.
+7. **Not shipped in 6.12:** the bmad-ticket tree (no `ticket` / `.bmad-obeya`
+   path in the tag) and the config.yaml→TOML cutover (the installer still
+   generates `_bmad/{bmm,core}/config.yaml`; no cutover language in the
+   CHANGELOG). Both watches stay watches.
+8. **bmad-loop 0.11.1** (2026-08-24) is installed; the repo copy of
+   `bmad-loop-setup` is one line behind (`module_version: 0.11.0`) — CAP-2's
+   recurrence. 0.11.1 adds no policy key (CAP-4 holds); it adds a git ≥ 2.34
+   floor (`git.version` in `validate`), a hard-stop mode on
+   `stop-request.json`, and a mode-exact `graceful_stop_pending` — no marshal
+   surface reads stop state today, so there is no CAP-5 gap yet.
+9. **The v7 signal is unchanged:** no date, no milestone; the only committed
+   breakage is still the shim removal at the v7 cut.
+
 ## Whose job this is
 
 **Marshal.** The misaligned surfaces are overwhelmingly marshal's own orbit:
@@ -114,26 +168,41 @@ the *post-upgrade alignment* half — kin, not overlap.
 
 ## What is real
 
-Nothing of the alignment itself. The upgrade landed (PRs #606/#607), the
-canary proved the stack runs, DW-BL011-1/-2 name two of the gaps, and the
-retired-name sweep of CLAUDE.md/SYNC-RUNBOOK happened during the upgrade —
-but every item above is otherwise open, and nothing guards against regression.
+**The 6.11 round — all of it (marshal Epic 25, 7/7 done 2026-08-24).** The
+retired-ID guard (`test_no_retired_bmad_skill_ids.py`) reds a planted ID; the
+three bmad-loop skills were refreshed to 0.11.0; all 22 spec folders accept a
+6.11 `bmad-spec` update; the five 0.10/0.11 policy knobs flow through the
+AD-16 chain; `marshal status` / fleet-picture speak `awaiting-operator` /
+`preserve_ref` / `sweeps_refused` (PR #612); hand-driven deferrals reach the
+tracked ledger (PR #721); the living docs were re-grounded with marshal as
+the named owner (PR #722). DW-BL011-1/-2 closed with it.
+
+**The 6.12 round — nothing yet.** Every item in § *The 6.12.0 era shift* is
+open: the guard still lists the 6.11 shim roster, the rulebooks still have
+consumers, CLAUDE.md still points at the dead URL, and the apply itself
+waits on the operator (steward Epic 14).
 
 ## Constraints
 
 - **Do not adopt what upstream is removing**: no `stories.yaml`, no folder+id
   dispatch, no `{spec-folder}/stories/` migration — the epic-story path is the
   surviving v6 route and v7's build-auto keeps it (V7-10).
-- **HOLD on the AGENTS.md managed block / project-context ledger** — upstream
-  is actively reworking it (#2715/#2733/#2750/#2754); re-ground the existing
-  rulebooks instead, and revisit when upstream stabilizes.
+- **The AGENTS.md HOLD is lifted (2026-09-05).** The managed `bmad:context`
+  block has been live since 2026-09-04 and 6.12's `adopt` intent is the
+  rework this Dream waited out; `bmad-project-context audit` is the
+  post-upgrade step, and the eight station `project-context.md` rulebooks
+  follow D1 — retire, with every consumer migrated first; never leave a file
+  nothing loads.
 - **Watch, don't build, for the unscheduled**: the TOML cutover and the
   bmad-ticket tree get named triggers (below), not code.
 - Retired-name sweeps annotate historical/narrative text with the new name
   rather than rewriting history (a shipped spec's story text may keep its
   original wording with a gloss).
-- Shims stay installed until the sweep completes and the guard is green —
-  never answer "remove shims" to the installer before then.
+- Shims stay installed through the v7 cut (upstream's own rule). The guard is
+  green, so the pre-sweep bar is met, but every apply still passes `--shims`
+  explicitly — 6.12 made them opt-in on fresh installs; clones of this repo
+  inherit the tracked `.claude/skills/`, so that default bites only a NEW
+  repo's `npx bmad-method install`.
 
 ## Non-goals
 
@@ -148,8 +217,10 @@ but every item above is otherwise open, and nothing guards against regression.
   alignment; the repo-custom `bmad_tea_playwright.py` generator stays.
 - Upgrading bmad-method/suite versions themselves (steward Epic 14) and
   detecting they're behind (doctor Epic 14 — both shipped or in chain).
-- Paige replacement, "explain this system", bmad-ux/WDS — zero upstream
-  implementation signal; nothing to align to.
+- Paige replacement, "explain this system" — zero upstream implementation
+  signal; nothing to align to. (The bmad-ux/WDS half resolved: 6.12's module
+  registry marks WDS deprecated, folded into `bmad-ux`, and the suite retired
+  it 2026-09-05 — see [[bmad-suite-channel-product]].)
 
 ## Kinships
 
@@ -159,10 +230,20 @@ detection half, incl. CAP-4 suite coverage) · marshal DW-BL011-1/-2 (the two
 pre-filed gaps this Dream's chain absorbs) · [[bmad-loop-liveness-footgun]] /
 marshal Epic 24 (status-truthfulness kin — the 0.11 vocabulary work sits beside
 it) · `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` (the reconciler
-loop whose 6.11 gaps item 5 closes).
+loop whose 6.11 gaps item 5 closes) · [[bmad-suite-channel-product]] (steward —
+the suite side of the same era shift; its roster moved 2026-09-05).
 
 ## Realization log
 
 - **2026-08-22** — Dream, Spec and decomposition landed in one commit (`2dc63365fb`):
   `spec-bmad-611-era-alignment` under pyforge-marshal (7 CAPs, 2 companions, status `ready`),
   decomposed as marshal Epic 25 (7 independent stories).
+- **2026-08-24** — Epic 25 done, 7/7: 25.1 guard + sweep, 25.2 skill refresh, 25.3 memlog
+  migration, 25.4 policy knobs, 25.5 status vocabulary (PR #612), 25.6 deferral intake
+  (PR #721), 25.7 living docs + SYNC-RUNBOOK owner (PR #722). Status → `realized` (recorded
+  2026-09-05; the flip was owed at the time).
+- **2026-09-05** — BMAD-METHOD 6.12.0 re-check (released 2026-09-04): § *The 6.12.0 era shift*
+  added; the Spec's memlog gained CAP-8..11 (6.12 retired-ID roster, project-context surface
+  follows D1, documentation pointers, bmad-loop 0.11.1 parity) and lifted the AGENTS.md HOLD;
+  `horizon-watches.md` re-checked row by row; `alignment-inventory.md` gained the 6.12 table.
+  Next: decomposition as a new marshal epic, and the apply itself (steward Epic 14).

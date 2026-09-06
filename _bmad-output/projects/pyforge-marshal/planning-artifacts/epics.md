@@ -11,8 +11,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 28  # 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
-storyCount: 181  # 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
+epicCount: 30  # 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
+storyCount: 187  # 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
 updated: "2026-09-05"  # arch→epics currency: validated against architecture.md's 2026-09-05 re-ground (PR #1063 — source_pin v8.86.1 + live gotcha/env counts only; no AD added, changed, or removed), so no epic or story moves. Prior stamp 2026-09-01: Stories 28.18–28.23 (drain self-resolution, Dream addendum F).
 status: complete
 mode: headless
@@ -4500,3 +4500,69 @@ because the ledger on `main` is still `backlog`.
 **And** a 41.2-shaped DIRTY PR or a 13.2-shaped branch with no PR produces
 zero additional harness launches
 **Status:** done
+
+---
+
+## Epic 30: Aligned to BMAD 6.12 — the second era round
+
+**Goal:** decomposes `spec-bmad-611-era-alignment` CAP-8..11 — the 6.12 round minted
+2026-09-05 from § *The 6.12.0 era shift* of `docs/dreams/bmad-611-era-alignment.md`
+(`alignment-inventory.md` rows #9–#14 carry the evidence each story closes;
+`horizon-watches.md` records the re-verdicted watches). BMAD-METHOD 6.12.0 (released
+2026-09-04) swapped one seat in the shim roster, emptied `persistent_facts`, discontinued
+`llms-full.txt`, and bmad-loop 0.11.1 outran the repo skill copy. **HARD boundaries carried
+from the Spec:** the apply itself is steward Epic 14's (operator-gated) — every story here
+must be correct both before and after it lands; never adopt what upstream is removing;
+watch-don't-build the TOML cutover and the bmad-ticket tree (neither shipped in 6.12);
+every apply passes `--shims` explicitly and `[dev] skill = "bmad-dev-auto"` stays (the shims' adapter discriminator);
+D1 — the AGENTS.md `bmad:context` block is the project-context surface — is decided,
+not re-opened.
+
+### Story 30.1: The retired-ID guard follows the 6.12 shim roster
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-8
+**Surface:** `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py`, `architecture-bmad-infra.md`, `development-guide.md`
+**Given** the `v6.12.0` shim roster (14 bmm + 6 core) **Then** `bmad-checkpoint-preview`
+(the new shim forwarding to `bmad-walkthrough`) joins the guarded tuple;
+`bmad-generate-project-context` (the retired 6.11 shim) stays guarded with a dated note that
+6.12 ships it as neither a shim nor a `removals.txt` entry — the apply must delete the
+orphaned 6.11 directory; the two living docs rename or gloss their bare mention; and the
+guard passes on the swept tree while failing on a planted `bmad-checkpoint-preview`. The
+Spec's open question — derive the tuple from steward's `data/bmad_core_releases/<ver>.yaml`
+(`skill_renames` + `removals`) — is answered here: derive once the 6.12.0 catalog exists,
+otherwise keep the hand tuple with a dated comment.
+
+### Story 30.2: The project-context surface follows 6.12 (D1)
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-9
+**Surface:** `_bmad-output/projects/*/project-context.md` (×8), `pyforge-doctor/.../sources/factory.py`, `scripts/bmad_drift_check.py`, `scripts/fleet_scan.py`, `SYNC-RUNBOOK.md`
+**Given** `persistent_facts = []` at 6.12 and D1 **Then** every consumer of the eight
+station `project-context.md` rulebooks is migrated first — doctor's factory classification
+and its `pin-behind (context)` row, `fleet_scan`'s context group, `bmad_drift_check`'s rule,
+SYNC-RUNBOOK rows 7–9 / 45–49 / 83–85 — then the rulebooks retire (anything still needed
+moves into the AGENTS.md block through `bmad-project-context adopt` / `audit`, the
+post-upgrade step), `bmad-drift-check` and `detectors-ci` are green with zero
+`project-context.md` rows and no `pin-missing` HARD finding, and SYNC-RUNBOOK's living-doc
+cadence names `architecture-bmad-infra.md` + the AGENTS.md block only.
+
+### Story 30.3: Documentation pointers follow 6.12
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-10 (+ the CAP-7 cadence)
+**Surface:** `CLAUDE.md` § BMAD Method Documentation, `.claude/docs/bmad-method-llms-full.txt` (header note only), `architecture-bmad-infra.md`, `development-guide.md`
+**Given** `llms.txt` / `llms-full.txt` are discontinued upstream **Then** CLAUDE.md
+re-points (local copy = the last snapshot, generated 2026-08-17, 6.11-era, frozen; live =
+the task-organized docs site + the package CHANGELOG), no live doc cites the dead URL,
+`bmad-checkpoint-preview` reads `bmad-walkthrough` in living docs, and — after steward's
+apply — `architecture-bmad-infra.md` is re-grounded with `source_pin` reading BMAD 6.12.0
+(the CAP-7 once-per-core-minor cadence; it also clears the `pin-behind` warnings against
+CFE v8.86.x already firing on marshal's living docs).
+
+### Story 30.4: bmad-loop's repo skills match the installed package — by test
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-11
+**Surface:** `.claude/skills/bmad-loop-setup/assets/module.yaml`, one new meta-test under `.claude/skills/conda-forge-expert/tests/meta/`
+**Given** bmad-loop 0.11.1 installed and `bmad_loop/data/skills/` as canon **Then**
+`bmad-loop-setup` reads `module_version: 0.11.1` (the one-line drift; `-resolve` and
+`-sweep` are already identical), a meta-test diffs the three repo skills against the
+installed package and reds a planted one-line divergence, and `bmad-loop validate` stays
+clean across all 8 loop homes.
+
+**Epic 30 clears to dispatch in full — the four stories are independent of each other.
+30.1's orphan-directory check and 30.3's re-ground half land after steward's 6.12 apply
+(Epic 14), which this epic never performs.**
