@@ -79,9 +79,11 @@ _INSTALL_MATRIX_REL = Path(
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
     "spec-bmad-suite-channel-product/install-matrix.md"
 )
-# Matrix table native URL for bmad-loop (uv-from-git class).
+# Matrix table native URL for bmad-loop (uv-from-git class). Mirrors the
+# install-matrix.md `bmad-loop` row verbatim — the two move together
+# (DW-FU-15-4-3 closed 2026-09-06: v0.11.0 sat here while the matrix said v0.11.1).
 _BMAD_LOOP_UV_GIT_SPEC = (
-    "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"
+    "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"
 )
 # Matrix table custom-source URL for bmad-manticore.
 _MANTICORE_CUSTOM_SOURCE_URL = (
@@ -1932,16 +1934,15 @@ NATIVE_PATH_SPOT_CHECK_CATALOG: tuple[NativePathClassDef, ...] = (
     NativePathClassDef(
         class_id="uv-from-git",
         mode="executable",
-        argv=(
-            "uv",
-            "tool",
-            "install",
-            "--dry-run",
-            _BMAD_LOOP_UV_GIT_SPEC,
-        ),
+        # `uv tool install` has no --dry-run (uv 0.12.10: "unexpected argument"),
+        # and the real install resolves a git URL over the network — so the
+        # executable probe is the command family itself; the native spec is
+        # carried in the citation (and asserted against the matrix by tests).
+        argv=("uv", "tool", "install", "--help"),
         citation=(
             "install-matrix.md Class → gate: uv-from-git → "
-            "uv tool install --dry-run bmad-loop@git+…"
+            "uv tool install --help (native: uv tool install "
+            f'"{_BMAD_LOOP_UV_GIT_SPEC}" — network; not spot-checked)'
         ),
     ),
     NativePathClassDef(
@@ -2187,17 +2188,71 @@ GateRunner = Callable[[], GateResult]
 LoopHomeRunner = Callable[[Path, bool], GateResult]
 
 
-def run_bmad_drift_integrity(repo: Path) -> GateResult:
-    """HARD/FAIL findings from ``factory.gather`` (= bmad-drift-check integrity)."""
+# The repo task that IS the integrity verdict when pyforge.doctor is not
+# importable from the steward env (it is a local-recipes-env module; the
+# 2026-09-06 prove-landed FAILed on the import alone — failure-modes trap 15).
+_BMAD_DRIFT_TASK_ARGV: tuple[str, ...] = (
+    "pixi",
+    "run",
+    "-e",
+    "local-recipes",
+    "bmad-drift-check",
+)
+
+
+def _import_drift_factory() -> tuple[Any, Any]:
+    """Import seam for tests; raises ImportError outside the local-recipes env."""
+    from pyforge.doctor.models import DoctorStatus
+    from pyforge.doctor.sources import factory as bmad_drift_factory
+
+    return DoctorStatus, bmad_drift_factory
+
+
+def _run_bmad_drift_task(
+    repo: Path,
+    runner: CommandRunner | None = None,
+) -> GateResult:
+    """Fallback: the documented pixi task, exit 0 pass / 1 findings / 2 could-not-run."""
+    run = runner or _default_command_runner
     try:
-        from pyforge.doctor.models import DoctorStatus
-        from pyforge.doctor.sources import factory as bmad_drift_factory
-    except ImportError as exc:
+        proc = run(_BMAD_DRIFT_TASK_ARGV, repo)
+    except (OSError, subprocess.SubprocessError) as exc:
         return GateResult(
             name="bmad-drift-integrity",
             ok=False,
-            detail=f"pyforge.doctor unavailable: {exc}",
+            detail=f"pyforge.doctor not importable here and the pixi task failed to launch: {exc}",
         )
+    tail = ((proc.stdout or "") + (proc.stderr or "")).strip().splitlines()
+    preview = "; ".join(line.strip() for line in tail[-3:]) if tail else "(no output)"
+    if proc.returncode == 0:
+        return GateResult(
+            name="bmad-drift-integrity",
+            ok=True,
+            detail="no HARD/FAIL integrity findings (via `pixi run -e local-recipes bmad-drift-check`)",
+        )
+    kind = "findings" if proc.returncode == 1 else "could-not-run"
+    return GateResult(
+        name="bmad-drift-integrity",
+        ok=False,
+        detail=f"bmad-drift-check {kind} (exit {proc.returncode}) via pixi task: {preview[:300]}",
+    )
+
+
+def run_bmad_drift_integrity(
+    repo: Path,
+    *,
+    fallback_runner: CommandRunner | None = None,
+) -> GateResult:
+    """HARD/FAIL findings from ``factory.gather`` (= bmad-drift-check integrity).
+
+    When ``pyforge.doctor`` is not importable (the steward env does not ship
+    it), the same verdict is taken from the repo's own pixi task instead of
+    failing on the import.
+    """
+    try:
+        DoctorStatus, bmad_drift_factory = _import_drift_factory()
+    except ImportError:
+        return _run_bmad_drift_task(repo, fallback_runner)
     try:
         findings = bmad_drift_factory.gather(repo)
     except Exception as exc:  # noqa: BLE001 — surface as gate failure

@@ -38,7 +38,8 @@ def _seed_matrix(repo: Path) -> Path:
         "installer-selection → TEA via bmad-tea-install\n"
         "custom-source → manticore dry-run\n"
         "plugin-marketplace → labs npx skills add --help\n"
-        "uv-from-git → uv tool install --dry-run bmad-loop@git+\n"
+        "uv-from-git → uv tool install --help (native: uv tool install "
+        "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1)\n"
         "build-from-source → dashboards excluded from the gate (build cost), "
         "listed check-by-doc.\n",
         encoding="utf-8",
@@ -105,13 +106,9 @@ def test_catalog_covers_seven_matrix_classes_with_cited_argv():
         "https://github.com/bmad-code-org/bmad-manticore"
     )
     assert by_id["plugin-marketplace"].argv == ("npx", "skills", "add", "--help")
-    assert by_id["uv-from-git"].argv == (
-        "uv",
-        "tool",
-        "install",
-        "--dry-run",
-        _BMAD_LOOP_UV_GIT_SPEC,
-    )
+    assert by_id["uv-from-git"].argv == ("uv", "tool", "install", "--help")
+    assert _BMAD_LOOP_UV_GIT_SPEC in by_id["uv-from-git"].citation
+    assert "@v0.11.1" in _BMAD_LOOP_UV_GIT_SPEC
     assert "bmad-loop" in _BMAD_LOOP_UV_GIT_SPEC
     assert "git+https://github.com/bmad-code-org/bmad-loop.git" in _BMAD_LOOP_UV_GIT_SPEC
     assert by_id["build-from-source"].mode == "check-by-doc"
@@ -224,7 +221,9 @@ def test_catalog_argv_cited_in_tracked_install_matrix():
     assert "bmad-tea-install" in compact
     assert "manticore" in compact.lower() or "custom-source" in compact
     assert "npx skills add --help" in compact
-    assert "uv tool install --dry-run" in compact
+    assert "uv tool install --help" in compact
+    # The constant mirrors the matrix's bmad-loop row verbatim (DW-FU-15-4-3).
+    assert _BMAD_LOOP_UV_GIT_SPEC in compact
     assert "check-by-doc" in compact
     assert "dashboard" in compact.lower()
     # Executable catalog argv pieces must not invent packages absent from matrix.

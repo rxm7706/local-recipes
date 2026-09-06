@@ -62,7 +62,7 @@ bmad-method --version`; bare npm CLI (`cli`, eval-quality) → `eval-quality --h
 own-npx → `npx bmad-module-skill-forge --help`;
 installer-selection → TEA via `bmad-tea-install` (conda parity of the same
 flow); custom-source → manticore dry-run; plugin-marketplace → labs
-`npx skills add --help`; uv-from-git → `uv tool install --dry-run bmad-loop@git+…`;
+`npx skills add --help`; uv-from-git → `uv tool install --help` (the native `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"` resolves over the network and `uv tool install` has no `--dry-run`, so the executable probe is the command family; 2026-09-06);
 build-from-source → dashboards excluded from the gate (build cost), listed
 check-by-doc.
 
