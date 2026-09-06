@@ -2819,6 +2819,7 @@
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
+   ".claude/skills/bmad-build-auto/spec-template.md": "8ad38537954548bcb4040e0cd8dbfe350a4a527a",
    ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md": "1fb7bb823731f4b33f639be7223d1602e03089f0",
    ".claude/skills/bmad-build-auto/step-04-review.md": "41b272817045771cf7e1288dcc2e2b140697323e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "0177191dd318f0399da99aead2a2e9d2d9e955bb",
@@ -2826,7 +2827,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "0a550a1a42abc91915ba5a40c1ba0d9d3e2969aa",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "ac50e702427c8102d5a359233c174b6ba000eac8"
   },
-  "memlog": "59d39302d7e2866377dfe0daabe4fe1c5d059045"
+  "memlog": "5aa106e3bc5e32a1b0f8796dcbf9d282e2e11735"
  },
  "pyforge-marshal/spec-marshal-status-harness-run-id-poisoning": {
   "files": {},
@@ -2834,6 +2835,7 @@
  },
  "pyforge-marshal/spec-marshal-token-economy": {
   "files": {
+   ".claude/skills/bmad-build-auto/compile-epic-context.md": "105647b8fed1712e79cca965f3b9d03e02c7c16c",
    "scripts/index_freshness_check.py": "e966a3c91aac3e88803ccf5757eed0d30d68b159",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py": "49ab9617e415d387e81b7ca02ef88bc7d3b49819",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py": "aea6770d7627cc1caaed02e96447514285ceba1b",
@@ -2906,7 +2908,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/durability.py": "215cccd6f62ef3b43c2bb6e3e4d3075dfaded444",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/intent_gap_preserve.py": "bf4f8926a5d78b15b9a9466c856f185b00304ed5"
   },
-  "memlog": "42da70308ae4ff6e3275b6120b1f481cd7c9977f"
+  "memlog": "12ca53d00ef5940dcfbcaa3a5ee4d4458c994350"
  },
  "pyforge-marshal/spec-marshal-verify-fail-terminalization": {
   "files": {

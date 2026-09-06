@@ -1099,6 +1099,44 @@ bmad-drift-check integrity, CFE skill meta-tests, per-loop-home `bmad-loop init`
 refresh + `validate` — and reports a single verdict; the 2026-08-21 checklist (8/8 homes
 validate clean, zero warnings) is the reproduced worked example.
 
+### Story 14.6: The installer is driven on purpose, and a no-op apply is a refusal
+**Type:** feature • **Effort:** M • **Deps:** 14.2 • **FR/AD:** spec-bmad-method-core-upgrade CAP-6
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py` (apply path), release catalogs
+**Given** a clean tree and a target release **When** `steward upgrade bmad-core --apply`
+runs **Then** the installer is invoked with `--directory <repo>`, `--modules <every module
+`_bmad/_config/manifest.yaml` lists>` (core, bmm and each `source: custom` module) and a
+closed stdin, with `node` / `bmad-method` resolved from the repo's pixi env when they are
+not on PATH — no wrapper script — **And** an installer exit 0 that left zero changed paths
+is reported `ok=False` with failure-modes.md trap 12 named (the 2026-09-06 first apply was
+exactly that silent no-op), never a green.
+
+### Story 14.7: Custom modules survive the core apply
+**Type:** feature • **Effort:** M • **Deps:** 14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-7
+**Surface:** `upgrade.py` (apply + reconcile), release-catalog schema (`custom_modules:`), steward CLI
+**Given** the installed manifest lists a `source: custom` module (skf) and the release
+catalog names its own installer, config files and optional pin **When** the apply runs
+**Then** the module is selected for the core apply, its config files are snapshotted before
+and restored after, its own installer (`bmad-module-skill-forge update`) runs after the core
+apply from the repo root, and the report names each restored file — **And** the fixture
+replaying 2026-09-06 (skf deselected and deleted by `-y`; `skf-campaign` undeclared in
+`marketplace.json`; `_bmad/skf/config.yaml` regenerated with a literal
+`{project-root}/{value}`) ends with the module's skill dirs equal to its packaged source and
+its config equal to the pre-apply bytes plus the installer's own appended keys
+(failure-modes.md traps 13–14).
+
+### Story 14.8: Local edits to installer-owned files are found before and re-applied after
+**Type:** feature • **Effort:** L • **Deps:** 14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-8
+**Surface:** `upgrade.py` (pre-flight + reconcile), steward CLI (`--installed-package-root`)
+**Given** the cached package of the installed version (`~/.cache/rattler/cache/pkgs/bmad-method-<v>-*/lib/node_modules/bmad-method/src`, or `--installed-package-root`) **When** the
+pre-flight runs **Then** every installer-owned file (`.claude/skills/<manifest skill>/**`,
+`_bmad/scripts/*`) that differs from its packaged copy is listed as a local customization in
+the CAP-1 report **And** after the apply each one is re-applied by three-way merge (ours =
+pre-apply bytes, base = old upstream, theirs = new upstream): clean merges written,
+conflicts flagged with the hunk saved beside the report, never resolved by taking upstream;
+`resolve_config.py` gets the old→new upstream delta replayed on the restored copy instead of
+a bare `.bak` restore — **And** the fixture replaying 2026-09-06's seven files ends with six
+clean merges and one flagged conflict (step-01 `done` routing) (failure-modes.md trap 16).
+
 ## Epic 15: The bmad-suite channel is a governed product
 
 **Spec binding.** Decomposes `spec-bmad-suite-channel-product` CAP-1..4 (Spec landed

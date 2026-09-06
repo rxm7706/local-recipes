@@ -13,6 +13,7 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
   - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
   - .claude/skills/bmad-build-auto/step-04-review.md
+  - .claude/skills/bmad-build-auto/spec-template.md
 companions:
   - fleet-drain-playbook.md
 sources:

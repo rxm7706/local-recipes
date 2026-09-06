@@ -6,11 +6,11 @@ It is intentionally tool-agnostic: **everything starts with a Dream; BMAD turns 
 spec; the spec drives the build — the agent/framework is interchangeable.**
 
 <!-- bmad:context -->
-<!-- Verified 2026-09-04 against bd37dfd607. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-09-06 against 99e595cc6a. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
-A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) and the PyForge estate: a Django + Wagtail host at `src/platform/` plus eight `pyforge-<station>` packages and their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). Planning is BMAD: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`. The lasting root is `python-foundry`; that cutover is under contract in PR #1041 (`spec-python-foundry-cutover`, Epic 44, every story `blocked`) and not started.
+A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) and the PyForge estate: a Django + Wagtail host at `src/platform/` plus eight `pyforge-<station>` packages and their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). Planning is BMAD: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`. The lasting root is `python-foundry`; that cutover is under contract (`spec-python-foundry-cutover`, Epic 44; PR #1043 merged the solutioning, story 44.13 is `backlog`, every other 44.x story `blocked`) and not started.
 
 ## Policy
 
@@ -39,7 +39,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 ## Running and verifying
 
-- The merge gate is `detectors-ci` measured as no new findings against `main`. It is red at `main` today (pre-existing pin drift and three ungoverned scripts), so diff against `main`; do not expect green.
+- The merge gate is `detectors-ci` measured as no new findings against `main`; it has been green at `main` since PR #1072 (2026-09-06), so a red run is yours.
 - Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit.
 - Before any ledger write: `sprint-ledger-sync -- --project <station> --repair-feed`, then `story-status-check`; a Tier-3 feed behind its tracked twin makes a bare sync refuse.
 - Lint and types are per package (`[tool.ruff]`, `[tool.mypy]` in each `pyproject.toml`); `src/platform` still targets py312 while the interpreter is 3.14. TODO (decided 2026-09-04, not landed): repo-level `ruff` and `mypy` pixi tasks, a `.pre-commit-config.yaml`, mypy strict for `pyforge-core`, py314 targets, and a target-version registry check like `pixi-version-check`. Do not invent these invocations.
@@ -54,6 +54,9 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Squash subjects break merge detection; `git merge-base --is-ancestor` is the proof a story landed.
 - `.cmd` shims in `build.bat` need `call`, or the parent script exits.
 - Marshal's `Deps:` parser is station-local; a cross-project gate is a ledger `blocked` row the operator flips.
+- Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under `.claude/skills/` (1,269), so it removes all 121 skill dirs, not the 16 skf ones (read 2026-09-06).
+- A config pin in `_bmad/custom/config.toml` must sit at the installer's own key path (`[core] communication_language`, `[modules.bmm] user_skill_level`); the same key at a second path makes `render_skill.py` HALT with "ambiguous config value" and every rendering skill stops (caught 2026-09-06 after the 6.12 apply).
+- `bmad-method install --action update -y` is not idempotent here: pass `--directory <repo>` (else a closed stdin exits 0 having written nothing) and `--modules core,bmm,skf` (else the cached custom module skf is deleted); re-apply local skill edits from the cached package diff (failure-modes.md traps 12-16).
 
 <!-- /bmad:context -->
 
