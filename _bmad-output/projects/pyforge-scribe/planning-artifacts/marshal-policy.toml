@@ -77,3 +77,17 @@ verify_commands = [
   "src/shared/packages/pyforge-scribe/tests/unit/test_extras_*.py",
   "src/shared/packages/pyforge-scribe/tests/unit/test_recall.py",
 ]
+
+"7" = [  # three utility skills routed (spec-bmad-suite-lifecycle scribe relay), added 2026-09-06
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-agent-scribe/**",
+  "docs/reference/**",
+  "AGENTS.md",
+]

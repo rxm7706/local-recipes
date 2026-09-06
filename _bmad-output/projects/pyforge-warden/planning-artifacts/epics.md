@@ -14,8 +14,8 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
+updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+currency_review: "Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -741,6 +741,25 @@ So that the portal uses the host MCP face instead of only local ORM lists.
 **Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-10, FR-12 • canopy AD-7
 **Given** an authenticated warden-role session **When** the operator starts an audit from HTMX **Then** `start`/`get` go through PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+
+## Epic 11: Two advisory lenses beside the gate
+
+**Spec binding.** The warden-side relays of `spec-bmad-suite-lifecycle` (Dream
+`docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): `bmad-os-review-pr` / `bmad-os-findings-triage`
+(CAP-3) and TEA's `tea-test-review` (CAP-4) as advisory findings. **HARD boundaries:** Warden's
+gate stays the sole PR verdict — a lens produces `warn`-severity findings and never moves the exit
+code or the seven-rung status (lifecycle spine AD-4; `spec-pyforge-warden` no-competing-verdict
+invariant, test-enforced by 9.3); steward 46.2 / 46.3 install the tools first.
+
+### Story 11.1: `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses
+**Type:** feature • **Effort:** S • **Deps:** steward:S-46.2 • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2, AD-4
+**Surface:** `.claude/skills/bmad-agent-warden/SKILL.md` (routing), `AGENTS.md` managed block (via `bmad-project-context`), `adoption-register.md` § 2 rows, one hook-book test asserting the lens cannot alter the composed status
+**Given** the two skills installed **When** the warden persona routes PR review depth to `bmad-os-review-pr` and finding consolidation to `bmad-os-findings-triage` **Then** their outputs surface as advisory findings only, a test proves `compose()` ignores them for the verdict, the register names warden as sole wielder, and CLAUDE.md is untouched
+
+### Story 11.2: `tea-test-review` is a warden advisory finding
+**Type:** feature • **Effort:** S • **Deps:** steward:S-46.3 • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-4
+**Surface:** warden hook book (`pyforge.core.hooks` plugin bundle: one advisory scanner wrapping the `tea-test-review` pixi task), `tests/`, `--doctor` output
+**Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the score, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open when TEA is absent
 
 ## Currency validation — 2026-08-26
 

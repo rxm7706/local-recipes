@@ -8,8 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-09-04'   # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet hygiene pass, PR #1043; validated against the re-stamped spine — no epic or story added, changed, or removed.
-currency_review: "Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
+updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+currency_review: "Reviewed 2026-09-06 (Epic 20 added: spec-bmad-suite-lifecycle doctor relays — suite drift 7→13, render-HALT + frozen-path-changed detectors, RCA routing, version-drift write-back; Stories 20.1–20.5). Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -1522,6 +1522,42 @@ So that GitHub-canonical packages warn when recipe or install lags upstream — 
 **Then** builder/CIS/TEA recipe-upstream drift WARNs when behind GitHub/npm truth respectively
 **And** `mybmad-dashboard` is in the watched set when manifest-present
 **And** findings stay warn-only, never gating
+
+## Epic 20: Doctor reads the whole suite and guards the estate's two blind spots
+
+**Spec binding.** The doctor-side relays of `spec-bmad-suite-lifecycle` (Dream
+`docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): CAP-9's two missing detectors (G7 render-HALT,
+G11 `frozen-path-changed`), the suite-drift residual the core-upgrade Spec relayed as its open
+question Q1 (7 of 13 members mapped), the `bmad-os-root-cause-analysis` routing (CAP-3), and the
+version-drift Spec's open-question write-back. **HARD boundaries:** every finding stays advisory —
+`warn` at most, never a second PR verdict (lifecycle spine AD-4; doctor Charter § 6); sources are
+read-only gathers; the detectors join `detectors` only after their fixtures prove fail-open.
+
+### Story 20.1: Suite drift maps every active member, derived from the roster
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-method-version-drift CAP-4 (residual) • spec-bmad-suite-lifecycle CAP-8 • `DW-FU-14-1-2` kin
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py` (`_manifest_suite_members`, `_pixi_suite_package_names`, the registry-class fetchers), `tests/unit/test_sources_bmad_method.py`, `recipes/bmad-suite/suite-members.yaml` (read, never edited)
+**Given** `bmad-suite-upstream-drift` checks 7 of 13 members because commit-pinned and npm-invisible members have no mapped upstream probe **When** the member set is derived from `suite-members.yaml` registry classes (tag → GitHub releases/tags, commit-pinned → GitHub default-branch HEAD with the `X.Y.Z.dev0 @ sha` encoding, npm → npm) **Then** `packages_checked` reads 13, each member names its probe class in the finding evidence, the fail-open budget is unchanged, and a fixture of the 2026-08-21 bmad-loop lag (0.9.0 vs 0.11.0) fires `warn`
+
+### Story 20.2: The render-HALT class has a detector
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (G7, P8) • customization-inventory C2
+**Surface:** `sources/bmad_method.py` (or a sibling `bmad_config.py` source), `tests/unit/`, `pixi.toml` (`detectors` membership after fail-open proof; six blanket-glob specs → memlog + scoped stamps)
+**Given** `render_skill.py` HALTs with "ambiguous config value" when the same key sits at two paths across the four `_bmad/config*.toml` + `_bmad/custom/config*.toml` layers (seen live 2026-09-06) **When** the detector merges the layers the way `load_central_config()` does and scans for a key present at two different paths **Then** it reports `warn` naming the key and both paths, `ok` on today's tree, a fixture with a planted `[core] user_skill_level` beside `[modules.bmm] user_skill_level` fires, and a missing layer file is fail-open
+
+### Story 20.3: `frozen-path-changed` exists
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (G11) • cutover spine `fnd:AD-11`, `AD-22`
+**Surface:** a new source under `sources/` (reads `docs/foundry/manifest.*` capability ledger states when present; `ok` with "no ledger" otherwise), `tests/unit/`, `pixi.toml` (`detectors-ci` membership), cutover memlog relay note
+**Given** `fnd:AD-22` freezes a capability's source paths once it enters `rebuilding` or `moving`, and the spine names a `frozen-path-changed` detector nothing built **When** the detector reads the capability ledger's frozen path sets and diffs `origin/main..HEAD` against them **Then** a change under a frozen path is a `fail` naming the capability and the path, an absent ledger is `ok` (pre-cutover), and the fixture plants one frozen-path edit; `cutover-readiness.md` G11 flips to landed by steward memlog relay
+
+### Story 20.4: `bmad-os-root-cause-analysis` is doctor-wielded
+**Type:** docs • **Effort:** XS • **Deps:** steward:S-46.2 • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • lifecycle spine AD-2
+**Surface:** `.claude/skills/bmad-agent-doctor/SKILL.md` (routing line), `AGENTS.md` managed block (via `bmad-project-context`), `adoption-register.md` § 2 row
+**Given** the skill installed by steward 46.2 **When** the doctor persona gains "reach for `bmad-os-root-cause-analysis` when a detector finding needs a cause, never to change a verdict" **Then** the register names doctor as its sole wielder, the AGENTS block cites it, and CLAUDE.md is untouched
+
+### Story 20.5: The version-drift Spec's open questions are written back
+**Type:** docs • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-method-version-drift (body § Open Questions) • memlog entry of 2026-09-06
+**Surface:** `specs/spec-bmad-method-version-drift/SPEC.md` (via `bmad-spec` update from the memlog), its `.memlog.md`
+**Given** the two Open Questions (CAP-2's data source; registry placement) answered in practice by Epic 10 and recorded in the memlog on 2026-09-06 **When** `bmad-spec` update re-derives the SPEC **Then** § Open Questions is empty, the answers appear as constraints or assumptions, `status: shipped` survives the derive, and `dream-chain-check` / `spec-surface-check` stay ok
+
 
 ## Currency validation — 2026-09-01
 

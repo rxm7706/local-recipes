@@ -33,20 +33,14 @@ assumptions:
 open_questions:
   - "Should doctor's ambient drift extend to the SelfExplainML bmad-suite
     packages? bmad-loop lagged 0.9.0→0.11.0 with zero ambient signal until a
-    human checked (2026-08-21). Doctor-side scope — relay at decomposition
-    (doctor maps 7 of 13 members today)."
-  - "Prerelease/@next channel support in scope, or stable-only first cut? The
-    Dream names @next; nothing has exercised it."
-  - "Which skf revision is the truth for CAP-7: the conda-packaged 2.1.0 (equal to
-    the cached `main` today), the `v2.1.0` tag, or `next`? `--pin skf=<tag>` exists
-    at module-selection time; whether the tag matches the packaged source is
-    unverified."
+    human checked (2026-08-21). Doctor-side scope — relayed 2026-09-06 to doctor
+    Story 20.1 (spec-bmad-suite-lifecycle); doctor maps 7 of 13 members today."
   - "Where does bmad-method read remembered `[modules.skf]` answers from —
-    `_bmad/config.toml` or the module `config.yaml`? The next apply answers it;
-    the custom-layer pins cover toml consumers either way, not the yaml skf reads."
-  - "Should skf stay registered as a bmad-method custom module at all, given the
-    install-class playbook classes it own-installer? Dropping the registration
-    loses `bmad-help` routing for 15 skills; keeping it is what CAP-7 costs."
+    `_bmad/config.toml` or the module `config.yaml`? Empirical at the next apply;
+    the custom-layer pins exist in `_bmad/custom/config.toml` (C7/C17 done)."
+  # Answered 2026-09-06 (memlog): Q2 @next → report-only rehearsal (steward 46.10);
+  # Q3 skf truth = conda-packaged 2.1.0 == tag v2.1.0 (pin, 46.7); Q5 skf stays a
+  # registered custom module (bmad-help routing for 15 skills).
 ---
 
 # SPEC — The installed BMAD-METHOD core upgrades repeatably, not by heroics
@@ -127,6 +121,17 @@ what CAP-6..8 close.
   old→new upstream delta is replayed on the restored copy, not discarded.
   *Success:* the 2026-09-06 seven-file case re-applies with six clean merges
   and one flagged conflict (step-01 `done` routing).
+
+- **CAP-9 — Deliberate shim retirement (`--no-shims`)** *(added 2026-09-06,
+  spec-bmad-suite-lifecycle CAP-10)*. *Intent:* the apply can retire every
+  deprecation shim on purpose — `--no-shims` on the installer argv after
+  `--modules`, the pre-flight names each shim to retire (21 at 6.12.0), a
+  same-version run is accepted as a retirement run, and the flag is refused
+  while a legacy-name custom file exists or the marshal harness / any rendered
+  loop-home policy still emits `bmad-dev-auto` (reported, never edited).
+  *Success:* the manifest reads `installShims: false`, the shim rows leave
+  `skill-manifest.csv`, CAP-7 and CAP-8 run on the same apply, `prove-landed`
+  validates 8/8 (Story 14.9).
 
 ## Constraints
 

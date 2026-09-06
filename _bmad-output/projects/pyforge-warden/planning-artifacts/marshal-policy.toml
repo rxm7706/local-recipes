@@ -143,3 +143,16 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+
+"11" = [  # two advisory lenses (spec-bmad-suite-lifecycle warden relays), added 2026-09-06
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-agent-warden/**",
+  "AGENTS.md",
+]

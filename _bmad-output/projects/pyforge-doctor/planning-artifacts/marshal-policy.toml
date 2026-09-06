@@ -223,3 +223,16 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+
+"20" = [  # whole-suite drift + two detectors + RCA routing (spec-bmad-suite-lifecycle doctor relays), added 2026-09-06
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-agent-doctor/**",
+  "AGENTS.md",
+]

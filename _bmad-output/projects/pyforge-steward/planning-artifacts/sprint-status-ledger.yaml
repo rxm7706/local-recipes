@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 263
+# stories: 283
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -51,6 +51,7 @@ development_status:
   14-6-the-installer-is-driven-on-purpose-and-a-no-op-apply-is-a-refusal: done
   14-7-custom-modules-survive-the-core-apply: done
   14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done
+  14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: backlog
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
@@ -146,23 +147,38 @@ development_status:
   43-4-golden-path-cd-by-digest: done
   43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: done
-  44-1-the-move-list-manifest: blocked
-  44-10-archive-local-recipes: blocked
-  44-11-windows-native-estate: blocked
-  44-12-cutover-flag-and-replay-harness: blocked
+  44-1-the-move-list-manifest: backlog
+  44-10-archive-local-recipes: backlog
+  44-11-windows-native-estate: backlog
+  44-12-cutover-flag-and-replay-harness: backlog
   44-13-memlog-fidelity: backlog
-  44-14-rebuild-harness-and-oracle-gate: blocked
-  44-15-actions-minutes-metering: blocked
-  44-2-the-red-team-document-fixes: blocked
-  44-3-open-the-foundry: blocked
-  44-4-fold-the-packages: blocked
-  44-5-move-the-estate: blocked
-  44-6-cfe-comes-home: blocked
-  44-7-the-factory-island: blocked
-  44-8-the-working-set: blocked
-  44-9-mason-submits-to-conda-forge: blocked
+  44-14-rebuild-harness-and-oracle-gate: backlog
+  44-15-actions-minutes-metering: backlog
+  44-2-the-red-team-document-fixes: backlog
+  44-3-open-the-foundry: backlog
+  44-4-fold-the-packages: backlog
+  44-5-move-the-estate: backlog
+  44-6-cfe-comes-home: backlog
+  44-7-the-factory-island: backlog
+  44-8-the-working-set: backlog
+  44-9-mason-submits-to-conda-forge: backlog
   45-1-eval-quality-joins-the-suite: done
-  45-2-the-reviewer-is-measured-against-a-planted-defect: blocked
+  45-2-the-reviewer-is-measured-against-a-planted-defect: backlog
+  46-1-the-adoption-register-governs-wiring: backlog
+  46-10-the-release-cadence-is-one-runbook-and-the-next-rehearsal-has-run-once: backlog
+  46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders: backlog
+  46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task: backlog
+  46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven: backlog
+  46-5-labs-skills-arrive-by-name-and-by-consent: backlog
+  46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path: backlog
+  46-7-skf-is-pinned-to-v2-1-0-and-cap-7-is-exercised-live: backlog
+  46-8-cis-is-re-provisioned-to-the-packaged-revision: backlog
+  46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env: backlog
+  47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal: backlog
+  47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: backlog
+  47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: backlog
+  47-4-the-foundry-stack-carries-a-bmad-floor-row: backlog
+  47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: backlog
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
@@ -267,6 +283,10 @@ development_status:
   epic-44-retrospective: optional
   epic-45: backlog
   epic-45-retrospective: optional
+  epic-46: backlog
+  epic-46-retrospective: optional
+  epic-47: backlog
+  epic-47-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 106
+# stories: 113
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -46,6 +46,11 @@ development_status:
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
+  20-1-suite-drift-maps-every-active-member-derived-from-the-roster: backlog
+  20-2-the-render-halt-class-has-a-detector: backlog
+  20-3-frozen-path-changed-exists: backlog
+  20-4-bmad-os-root-cause-analysis-is-doctor-wielded: backlog
+  20-5-the-version-drift-spec-s-open-questions-are-written-back: backlog
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done
   3-3-root-cause-naming: done
@@ -106,6 +111,8 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
+  epic-20: backlog
+  epic-20-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done
