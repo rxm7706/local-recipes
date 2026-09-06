@@ -2013,8 +2013,8 @@ face (`POST /stations/atlas/mcp`, spec-21-4). **HARD boundaries:** installed by 
 (lifecycle spine AD-1, AD-2).
 
 ### Story 24.1: `mcp-builder` is atlas-wielded for the MCP face
-**Type:** docs • **Effort:** XS • **Deps:** steward:S-46.5 • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • spec-21-4 (MCP faces)
-**Surface:** `.claude/skills/bmad-agent-atlas/SKILL.md` (routing line), `AGENTS.md` block (via `bmad-project-context`), `adoption-register.md` § 2 row
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • spec-21-4 (MCP faces)
+**Surface:** `.claude/skills/bmad-agent-atlas/SKILL.md` (routing line), the register § 2 row (one AGENTS.md pointer line only, AD-2/AD-11), `adoption-register.md` § 2 row
 **Given** the labs skill installed by name **When** the atlas persona routes new MCP tool scaffolding to `mcp-builder` with the constraint that generated tools call `pyforge atlas …` verbs only **Then** the register names atlas as sole wielder, the routing line states the grammar constraint, and CLAUDE.md is untouched
 
 ## Validation note — 2026-08-26 (chain-currency sweep)

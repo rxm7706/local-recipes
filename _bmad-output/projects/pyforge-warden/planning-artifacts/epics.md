@@ -752,12 +752,12 @@ code or the seven-rung status (lifecycle spine AD-4; `spec-pyforge-warden` no-co
 invariant, test-enforced by 9.3); steward 46.2 / 46.3 install the tools first.
 
 ### Story 11.1: `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses
-**Type:** feature • **Effort:** S • **Deps:** steward:S-46.2 • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2, AD-4
-**Surface:** `.claude/skills/bmad-agent-warden/SKILL.md` (routing), `AGENTS.md` managed block (via `bmad-project-context`), `adoption-register.md` § 2 rows, one hook-book test asserting the lens cannot alter the composed status
-**Given** the two skills installed **When** the warden persona routes PR review depth to `bmad-os-review-pr` and finding consolidation to `bmad-os-findings-triage` **Then** their outputs surface as advisory findings only, a test proves `compose()` ignores them for the verdict, the register names warden as sole wielder, and CLAUDE.md is untouched
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2, AD-4
+**Surface:** `.claude/skills/bmad-agent-warden/SKILL.md` (routing), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows, one hook-book test asserting the lens cannot alter the composed status
+**Given** the two skills installed **When** the warden persona routes PR review depth to `bmad-os-review-pr` and finding consolidation to `bmad-os-findings-triage` **Then** their outputs surface as non-`Finding` advisory notes (no schema bump to the frozen five families — AD-4; a versioned `advisory:<tool>:<subject>` family only if the note proves insufficient), a test proves `compose()` never sees them, the register names warden as sole wielder, and CLAUDE.md is untouched
 
 ### Story 11.2: `tea-test-review` is a warden advisory finding
-**Type:** feature • **Effort:** S • **Deps:** steward:S-46.3 • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-4
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the AD-9 roster lacks `tea`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-4
 **Surface:** warden hook book (`pyforge.core.hooks` plugin bundle: one advisory scanner wrapping the `tea-test-review` pixi task), `tests/`, `--doctor` output
 **Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the score, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open when TEA is absent
 

@@ -173,8 +173,11 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
-"14" = [
+"14" = [  # 2026-09-06: + the surfaces the core apply writes (14.9 --no-shims deletes 21 skill dirs, rewrites _bmad/_config/*) — AD-11 of the lifecycle spine: surface ownership follows the writer class
   "src/shared/packages/pyforge-steward/**",
+  ".claude/skills/**",
+  "_bmad/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
   ".gitignore",

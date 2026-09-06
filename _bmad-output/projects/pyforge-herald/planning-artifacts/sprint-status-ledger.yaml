@@ -48,9 +48,9 @@ development_status:
   16-1-extract-deck-export-format-plugins: done
   17-1-skf-skill-and-persona-for-herald: done
   17-2-first-portal-slice-deck-status: done
-  18-1-the-first-station-video-renders-from-herald-s-studio: backlog
-  18-2-release-comms-go-through-bmad-os-changelog-and-social: backlog
-  18-3-slides-generator-is-herald-wielded: backlog
+  18-1-the-first-station-video-renders-from-herald-s-studio: blocked
+  18-2-release-comms-go-through-bmad-os-changelog-and-social: blocked
+  18-3-slides-generator-is-herald-wielded: blocked
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done

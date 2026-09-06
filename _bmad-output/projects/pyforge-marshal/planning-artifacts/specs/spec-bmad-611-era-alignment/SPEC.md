@@ -1,6 +1,6 @@
 ---
 spec: bmad-611-era-alignment
-status: ready   # CAP-1..7 shipped (marshal Epic 25, 7/7 done 2026-08-24); CAP-8..11 — the 6.12 round, minted 2026-09-05 — await decomposition as a new marshal epic
+status: ready   # CAP-1..7 shipped (marshal Epic 25, 7/7 done 2026-08-24); CAP-8..11 (2026-09-05) + CAP-12..13 (2026-09-06) decomposed as marshal Epic 30 (30.1–30.5) + Epic 31 (31.1–31.6), not started
 owner-dream: docs/dreams/bmad-611-era-alignment.md
 surface: []   # none claimed: the story surfaces (policy.py, status surfaces, DW scripts, guard test) are measured by fleet-level spec-surface coverage, not double-governed here
 companions:
@@ -97,7 +97,7 @@ of CAPs per shift, IDs never reused.
   SYNC-RUNBOOK names the owner and cadence. *(Owner decided 2026-08-24:
   marshal; the 6.12 round moves the rulebook half to CAP-9.)*
 
-**Round 6.12 — CAP-8..11, added 2026-09-05, awaiting decomposition.**
+**Round 6.12 — CAP-8..11 added 2026-09-05 (marshal Epic 30, Stories 30.1–30.4); CAP-12..13 added 2026-09-06 (Story 30.5, Epic 31).**
 
 - **CAP-8 — 6.12 retired-ID roster.** *Intent:* the guard follows the
   installed era's shim list: `bmad-checkpoint-preview` (a new shim forwarding
@@ -134,6 +134,24 @@ of CAPs per shift, IDs never reused.
   validate` is clean across all 8 homes; the test reds a planted one-line
   divergence.
 
+- **CAP-12 — Shim retirement follows the harness** *(added 2026-09-06,
+  spec-bmad-suite-lifecycle CAP-10)*. *Intent:* the marshal harness template
+  and all 8 rendered loop-home policies name `bmad-build-auto`, every live
+  caller leads with the live skill id (history glossed, never rewritten), and
+  the retired-ID guard scans the harness template. *Success:*
+  `test_harness_policy_render` asserts `bmad-build-auto`; `bmad-loop validate`
+  8/8 after re-render; the guard reds a reintroduced `bmad-dev-auto` in
+  `harness_bmadloop.py`; steward 14.9's pre-flight refusal reads green
+  (Story 30.5).
+- **CAP-13 — TEA adoption is marshal Epic 31 (relay)** *(added 2026-09-06,
+  spec-bmad-suite-lifecycle CAP-4)*. *Intent:* TEA's `bmad-testarch-*`
+  workflows produce every station's `test-architecture.md`, `tea-test-review`
+  is a review lens, the generator + its two meta-tests + two pixi tasks retire
+  behind an equivalence check whose predicate survives as a meta-test, and the
+  seven in-place-edited installer-owned files are governed. *Success:* Stories
+  31.1–31.4 done; the equivalence report on disk; spec-surface reports zero
+  `uncovered` for the seven.
+
 ## Constraints
 
 - **Do not adopt what upstream is removing**: no `stories.yaml`, no folder+id
@@ -149,14 +167,17 @@ of CAPs per shift, IDs never reused.
   code in this chain (6.12 shipped neither).
 - Retired-name sweeps gloss historical/narrative text with the new name
   rather than rewriting shipped history.
-- Shims stay installed through the v7 cut (upstream's own rule). The guard is
-  green, so the pre-sweep bar is met, but every apply passes `--shims`
-  explicitly — 6.12 made shims opt-in on fresh installs; clones of this repo
-  inherit the tracked `.claude/skills/`, so that default bites only a NEW
-  repo's `npx bmad-method install`.
-- Policy work emits exact TOML scalar types and keeps
-  `[dev] skill = "bmad-dev-auto"` (the adapter discriminator; bmad-loop
-  resolves the invoked skill on disk).
+- Shims retire now, not at the v7 cut (operator, 2026-09-06 — supersedes the
+  2026-09-05 "stay through v7 / every apply passes `--shims`" constraint): v7
+  has no date, the python-foundry cutover assumes an estate with no shims
+  (`cutover-readiness.md` P11), and bmad-loop 0.11.1 resolves whichever skill
+  the policy names. The retirement is one `--no-shims` apply (steward 14.9)
+  after the harness flip (CAP-12, Story 30.5); the guard tuple stays until
+  upstream removes the ids.
+- Policy work emits exact TOML scalar types and names
+  `[dev] skill = "bmad-build-auto"` (superseded 2026-09-06: `bmad-dev-auto`
+  was the discriminator while the shims were kept; bmad-loop resolves the
+  invoked skill on disk).
 
 ## Non-goals
 
@@ -165,8 +186,10 @@ of CAPs per shift, IDs never reused.
   status/fleet/dashboard machinery stays as-is until then; not in 6.12).
 - The **TOML-cutover symlink migration** — steward Epic 14's watch; the named
   consequence rides that spec's failure-modes (not in 6.12).
-- **TEA adoption** (module install, `tea-test-review` CI gate) — optional,
-  not alignment; the repo-custom `bmad_tea_playwright.py` generator stays.
+- ~~**TEA adoption** — optional, not alignment; the generator stays.~~ Retired
+  2026-09-06: TEA is fully adopted under `spec-bmad-suite-lifecycle` CAP-4;
+  the marshal half is CAP-13 / Epic 31, and the generator retires only behind
+  a recorded equivalence check.
 - Upgrade-apply (steward Epic 14, incl. the 6.12.0 catalog and the apply
   itself) and version-drift detection (doctor Epic 14) — kin chains, already
   owned.

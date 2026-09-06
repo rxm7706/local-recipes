@@ -49,7 +49,7 @@ development_status:
   20-1-suite-drift-maps-every-active-member-derived-from-the-roster: backlog
   20-2-the-render-halt-class-has-a-detector: backlog
   20-3-frozen-path-changed-exists: backlog
-  20-4-bmad-os-root-cause-analysis-is-doctor-wielded: backlog
+  20-4-bmad-os-root-cause-analysis-is-doctor-wielded: blocked
   20-5-the-version-drift-spec-s-open-questions-are-written-back: backlog
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done

@@ -1144,12 +1144,18 @@ a bare `.bak` restore — **And** the fixture replaying 2026-09-06's seven files
 clean merges and one flagged conflict (step-01 `done` routing) (failure-modes.md trap 16).
 
 ### Story 14.9: The apply retires deprecation shims on purpose (`--no-shims`)
-**Type:** feature • **Effort:** S • **Deps:** S-14.6, marshal:S-30.5 • **FR/AD:** spec-bmad-method-core-upgrade CAP-9 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
+**Type:** feature • **Effort:** S • **Deps:** S-14.6 (after marshal 30.5 — cross-station: ledger `blocked` + the refusal check, AD-10) • **FR/AD:** spec-bmad-method-core-upgrade CAP-9 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
 **Surface:** `upgrade.py` (apply argv + pre-flight report), steward CLI (`--no-shims`), `tests/unit/test_upgrade_apply.py`, `tests/unit/test_upgrade_preflight.py`
 **Given** an installed core whose manifest reads `installShims: true` **When** `steward upgrade bmad-core --target <installed-or-newer> --apply --no-shims --branch <name>` runs **Then** the installer argv carries `--no-shims` after `--modules …`, the pre-flight report lists every shim the manifest names as "to retire" (21 at 6.12.0: the 20 `v6-shims` plus `bmad-generate-project-context`), and a same-version run is accepted as a retirement run — the removed dirs are a real diff, not a trap-12 zero-diff refusal
 **And** after the run `_bmad/_config/manifest.yaml` reads `installShims: false`, the shim rows are gone from `skill-manifest.csv`, CAP-7 restored skf's config and ran its own installer (`--pin skf=v2.1.0` once Story 46.7 pins the catalog), CAP-8 re-applied every listed local customization by three-way merge with no `.customization-conflict` sibling left, and `prove-landed` validates 8/8 loop homes whose policy already names `bmad-build-auto`
 **And** the flag is refused with a named reason when any `_bmad/custom/<legacy-name>.toml` exists (trap 2) or when the marshal harness template or any rendered loop-home policy still emits `bmad-dev-auto` (reported, never edited — foreign surface), so a retirement can never strand a loop home
 **And** the argv assertion, the refusal, and the 21-row report each have a unit test with an injected runner; the live run is Session 2's step 9 (`open-items-register.md`)
+
+### Story 14.10: The `@next` rehearsal exercises CAP-6's fallback and CAP-8's conflict path, report-only
+**Type:** chore • **Effort:** S • **Deps:** S-14.9 • **FR/AD:** spec-bmad-method-core-upgrade CAP-6, CAP-8 (+ answered Q2) • spec-bmad-suite-lifecycle CAP-8 • lifecycle spine AD-7
+**Surface:** a throwaway worktree (never merged), the core-upgrade memlog (findings), `release-cadence.md` § The `@next` rehearsal (the recipe, verified verbatim by 46.10)
+**Given** npm's `next` dist-tag (`6.12.1-next.0` on 2026-09-06) **When** the rehearsal runs in a throwaway worktree with `--installer` pointed at `npx bmad-method@next`, `--package-root` at the unpacked next tarball, `--installed-package-root` at the cached 6.12.0, one planted conflicting local edit in an installer-owned skill file, and `PATH` without `node` **Then** the report shows CAP-6's pixi-bin fallback resolving `node`, CAP-8 flagging exactly one conflict with its `.customization-conflict` sibling, and CAP-7 restoring skf; findings are appended to the core-upgrade memlog and the worktree is deleted
+**And** the rehearsal never counts as the live proof that flips the Spec to `shipped` (a real future release through CAP-6..8 does)
 
 
 ## Epic 15: The bmad-suite channel is a governed product
@@ -2776,40 +2782,42 @@ mason 14.1) and are named in each story's acceptance, never restated here.
 **Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-1 • AD-6 • PRD FR-1
 **Surface:** `specs/spec-bmad-suite-lifecycle/adoption-register.md`, memlogs of `spec-bmad-suite-channel-product` / `spec-bmad-611-era-alignment`, `bmad-agent-steward` skill (routing-note home decision)
 **Given** the thirteen-row register **When** any member's verdict, wielder or provisioning path changes **Then** the row changes first and `steward suite pipeline-truth`'s `wired` column agrees with the register for 13/13 (disagreement is a finding on the register)
-**And** the channel-product "never wire-everything" constraint and the one-front-door row-6 triage are recorded as superseded/closed by memlog (landed 2026-09-06 in the planning PR; this story verifies and closes the Spec's routing-note open question: persona skill + AGENTS block, or block only)
+**And** the channel-product "never wire-everything" constraint and the one-front-door row-6 triage are recorded as superseded/closed by memlog (landed 2026-09-06 in the planning PR); this story verifies — not decides — the spine's settled calls: routing home = the persona skill with one AGENTS pointer line (AD-2), studio root = `$PYFORGE_STUDIO_ROOT` defaulting to `~/pyforge-studio/` (AD-3), provisioned-module roster = `_bmad/custom/config.toml [modules.<code>]` (AD-9)
+**And** it ships the AD-2 meta-test: every register § 2 skill dir is named by exactly one `bmad-agent-<station>` persona skill and by CLAUDE.md never; the register's status cells hold story keys only (AD-6)
 
 ### Story 46.2: utility-skills is provisioned and its ten skills have wielders
 **Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** CAP-2, CAP-3 • AD-1, AD-2 • PRD FR-2/FR-3
 **Surface:** `steward provision --module utility-skills` (existing backend), `.claude/skills/bmad-os-*`, `_bmad/config.yaml` manifest section, `bmad-agent-steward` (routes `bmad-os-skill-to-bundle`)
 **Given** `bmad-utility-skills` 2.0.0 in the pixi env **When** `steward provision --module utility-skills --json` runs **Then** ten `bmad-os-*` dirs land, `--list-modules` reports the module installed, the retired-ID guard and integrity meta-tests stay green, and `DW-FU-15-3-4` (the `_CIS_SKILL_NAMES`-style allowlist unasserted) gains a live-tree assertion for this module
+**And** provision's roster writer moves from `_bmad/config.yaml` (a file 6.12 does not ship) to `_bmad/custom/config.toml [modules.utility-skills]` carrying `provisioned_by`, `installer`, `skills` and the module's `module.yaml` answers at the installer's key paths (AD-9); `--list-modules` reads that roster; the CAP-8 pre-flight scan compares conda-module skills against `share/bmad-utility-skills/skills` (AD-9)
 **And** the register § 2 rows for the ten skills carry their story keys: herald 18.2 (`changelog`, `changelog-social`), doctor 20.4 (`root-cause-analysis`), warden 11.1 (`review-pr`, `findings-triage`), scribe 7.1 (`diataxis`, `audit-file-refs`, `editorial-review-translation`), marshal 31.6 (`gh-triage`), steward (`skill-to-bundle`, this story)
 
 ### Story 46.3: TEA is provisioned and `tea-test-review` is a pixi task
 **Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** CAP-2, CAP-4 • AD-1, AD-4 • PRD FR-4
 **Surface:** `steward provision --module tea` (existing backend), `.claude/skills/bmad-testarch-*`, `pixi.toml` (one task `tea-test-review`, feature `local-recipes`), `environment.yaml`
-**Given** TEA 1.24.0 in the pixi env **When** `steward provision --module tea --json` runs **Then** the nine `bmad-testarch-*` workflows and the Murat agent land, `--list-modules` reports TEA installed, and a pixi task `tea-test-review` wraps `tea-test-review --base origin/main --min-score <N>` with `N` read from a policy value marshal 31.3 owns (default upstream's 80 until calibrated)
+**Given** TEA 1.24.0 in the pixi env **When** `steward provision --module tea --json` runs **Then** the nine `bmad-testarch-*` workflows and the Murat agent land, the AD-9 roster gains `[modules.tea]` with TEA's `module.yaml` answers — `test_artifacts` (84 references) pointed at each station's `planning-artifacts/` per its `.bmad-config.toml` — so `render_skill.py` renders `bmad-testarch-test-design` on the first try (the acceptance test), `--list-modules` reports TEA installed, and a pixi task `tea-test-review` wraps `tea-test-review --base origin/main --min-score <N>` taking `N` as an argument (default 80; marshal 31.3 supplies the calibrated value — AD-4 argument/value split)
 **And** the task is NOT a member of `detectors` / `detectors-ci`; Warden's gate exit code is unchanged by it (AD-4); the six blanket-glob specs governing `pixi.toml` each get a memlog line and a scoped `spec_surface_check.py --write-baseline --spec`
 **And** the marshal-side migration (31.1–31.3) and the warden advisory (11.2) depend on this story, not the reverse
 
 ### Story 46.4: bmad-builder is provisioned beside skf, with the cleanup-legacy guard proven
 **Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** CAP-2 • AD-1 • PRD FR-2 • addendum § Rejected alternatives
 **Surface:** `steward provision --module bmb` (existing `SetupSkillBackend`), `.claude/skills/bmad-bmb-setup` + the four builder skills, `provision.py`, `tests/unit/test_provision*.py`, `bmad-agent-steward` (routing)
-**Given** `bmad-builder` 2.2.2 in the pixi env **When** `steward provision --module bmb --json` runs **Then** `bmad-bmb-setup`, `bmad-agent-builder`, `bmad-workflow-builder`, `bmad-module-builder`, `bmad-eval-runner` land, the wire-time skill-name collision check passes against the sixteen `skf-*` dirs, and `_bmad/config.yaml` gains the `bmb` section
+**Given** `bmad-builder` 2.2.2 in the pixi env and the existing `SetupSkillBackend` (which drives `bmad-bmb-setup`'s config merge but copies no skills — adversarial review F-5) **When** `steward provision --module bmb --json` runs with the backend extended to copy `share/bmad-builder/skills/*` **Then** `bmad-bmb-setup`, `bmad-agent-builder`, `bmad-workflow-builder`, `bmad-module-builder`, `bmad-eval-runner` land, the wire-time skill-name collision check passes against the sixteen `skf-*` dirs, and `_bmad/config.yaml` gains the `bmb` section
 **And** a unit test proves the backend never passes `--legacy-dir` and never invokes `cleanup-legacy.py` (it would `rmtree` this repo's `_bmad/core/config.yaml`), so the hazard is held by a test, not a comment
 **And** `bmad-agent-steward` routes persona/workflow authoring to the builder skills and domain-skill compilation to `skf-*` — two pipelines, one register row each
 
 ### Story 46.5: labs-skills arrive by name and by consent
 **Type:** feature • **Effort:** S • **Deps:** S-46.1 • **FR/AD:** CAP-6 • AD-1, AD-6 • PRD FR-6
-**Surface:** `.claude/skills/{mcp-builder,slides-generator,multi-repo-git-ops,release-please}` (installed via `npx skills add bmad-labs/skills --skill <name>`), `adoption-register.md` § 2, `bmad-agent-steward` (routes `release-please`), one meta-test asserting no other labs skill is present
-**Given** the operator's consent list of 2026-09-06 (exactly four skills) **When** each is installed by name **Then** the four dirs exist, each has a register row naming its wielder (atlas 24.1, herald 18.3, marshal 31.6, steward), and a meta-test reds any additional `bmad-labs` skill dir
+**Surface:** `steward provision --plugin labs --skill <name>` (new: the one wrapped writer for the plugin-path class, AD-1 — copies the named skill from the conda member's share tree pinned to the recipe's commit, or calls `npx skills add` pinned to that commit; never both), `.claude/skills/{mcp-builder,slides-generator,multi-repo-git-ops,release-please}`, the AD-9 roster (`[modules.labs]` listing each installed skill), `adoption-register.md` § 2, `bmad-agent-steward` (routes `release-please`), one meta-test asserting no other labs skill is present
+**Given** the operator's consent list of 2026-09-06 (exactly four skills) **When** each is installed by name through the wrapper **Then** the four dirs exist, the register's provisioning-path cell equals the wrapper invocation, each has a register row naming its wielder (atlas 24.1, herald 18.3, marshal 31.6, steward), and a meta-test reds any additional `bmad-labs` skill dir
 **And** the install-class playbook row for `bmad-labs-skills` records the consent list and the by-name command as the documented native path
 
 ### Story 46.6: Herald's manticore studio has a root and a proven native path
 **Type:** feature • **Effort:** M • **Deps:** S-46.1 • **FR/AD:** CAP-5 • AD-3 • PRD FR-5 • Spec open question 1 (studio root)
 **Surface:** `install-class-playbook.md` (manticore row → studio path), `.gitignore` (studio artifacts if in-repo), `adoption-register.md` row 9 (studio path cell), a steward doc `docs/reference/manticore-studio.md` (or the playbook section) with the exact `--custom-source` procedure
-**Given** the operator's answer to the studio-root question (in-repo `presentations/_studio/` gitignored, or `~/pyforge-studio/`) **When** the native path `npx bmad-method install --custom-source https://github.com/bmad-code-org/bmad-manticore` is run once in that root with `mc-setup` writing `[modules.manticore]` into the studio's own `_bmad/custom/config.toml` **Then** the fifteen `mc-*` skills exist in the studio, this repo's `_bmad/` and `_bmad-output/` are byte-identical before and after (a checksum recorded in the story), and the register row carries the root
+**Given** the studio root declared once per machine by `PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, AD-3 — the register cell and herald's CLI cite it, never restate it) **When** the native path `npx bmad-method install --custom-source https://github.com/bmad-code-org/bmad-manticore` is run once in that root with `mc-setup` writing `[modules.manticore]` into the studio's own `_bmad/custom/config.toml` **Then** the fifteen `mc-*` skills exist in the studio, this repo's `_bmad/` and `_bmad-output/` are byte-identical before and after (a checksum recorded in the story), and the register row carries the root
 **And** the prerequisites (uv, ffmpeg, node, git) are asserted by a `steward provision --module manticore --dry-run`-style check or documented as the studio's own check; Herald's first render is herald 18.1, not this story
-**And** a `--studio <dir>` flag on `steward provision --module manticore` is minted only if this native path proves clumsy (spine Deferred)
+**And** the stale `[modules.manticore]` block in the gitignored `_bmad/custom/config.user.toml` is removed; pipeline-truth's manticore probe reads the declaration and the studio's `mc-*` census (AD-6); a `--studio <dir>` flag on `steward provision --module manticore` is minted only if this native path proves clumsy (spine Deferred)
 
 ### Story 46.7: skf is pinned to `v2.1.0` and CAP-7 is exercised live
 **Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-7 (+ answered Q3/Q5) • spec-bmad-suite-lifecycle CAP-2
@@ -2823,17 +2831,17 @@ mason 14.1) and are named in each story's acceptance, never restated here.
 **Given** the packaged `bmad-creative-intelligence-suite` 0.3.2 passes `--project-root {project-root}` on every `resolve_customization` call and the installed copies do not (15 lines across 10 files) **When** `PATH="$PWD/.pixi/envs/local-recipes/bin:$PATH" pixi run -e pyforge-steward steward provision --module cis --json` runs **Then** `git diff --stat -- '.claude/skills/bmad-cis-*'` shows exactly those 10 files / 15 lines, nothing else moves, and the retired-ID guard stays green
 **And** atlas `DW-FU-20-4-3` (the `{{project_name}}` placeholder in `bmad-cis-design-thinking/template.md`) is re-checked against the refreshed copy and closed or re-verified in the atlas ledger
 
-### Story 46.9: pipeline-truth's installed stage reads the applied core, not the pixi env
+### Story 46.9: pipeline-truth's installed stage reads the applied core, and `wired` is a declared per-class predicate
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-1 (relayed hole #1, 2026-09-05) • spec-bmad-suite-lifecycle CAP-8
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py` (installer-tree class `installed` probe), `tests/unit/test_suite*.py`, `install-matrix.md` (installed-stage caveat retired)
 **Given** the installer-tree member `bmad-method` **When** pipeline-truth computes its `installed` value **Then** it reads `_bmad/_config/manifest.yaml` `installation.version` (the applied core), falls back to the pixi env's conda-meta only when the manifest is absent, and reports both when they differ (`applied 6.11.0 / env 6.12.0`) as a named drift
 **And** the fixture that replays 2026-09-05's false green (env 6.12.0 while `_bmad/` was 6.11.0) now fires the drift; doctor's core-drift check stays the loud signal and is not duplicated
+**And** each `SUITE_PACKAGES` row carries the expected `wired` probe value for verdict `wield` in its class, each class probe observes the provisioning path the register names (labs: the named skill dirs and no other; manticore: the AD-3 declaration + `mc-*` census; bmb: the five dirs; module class: the AD-9 roster), and the register's `Wired` column is regenerated from `pipeline-truth --json` (AD-6)
 
-### Story 46.10: The release cadence is one runbook and the `@next` rehearsal has run once
-**Type:** chore • **Effort:** S • **Deps:** S-14.9 • **FR/AD:** CAP-8 • AD-7 • PRD FR-8 • core-upgrade open question Q2
-**Surface:** `specs/spec-bmad-suite-lifecycle/release-cadence.md` (verified against a live pass), core-upgrade memlog (rehearsal findings), a throwaway worktree (never merged)
-**Given** `release-cadence.md` and npm's `next` dist-tag (`6.12.1-next.0` on 2026-09-06) **When** the rehearsal runs in a throwaway worktree with `--installer` pointed at `npx bmad-method@next`, `--package-root` at the unpacked next tarball, `--installed-package-root` at the cached 6.12.0, one planted conflicting local edit in an installer-owned skill file, and `PATH` without `node` **Then** the report shows CAP-6's pixi-bin fallback resolving `node`, CAP-8 flagging exactly one conflict with its `.customization-conflict` sibling, and CAP-7 restoring skf; findings are appended to the core-upgrade memlog and the worktree is deleted
-**And** the runbook's nine steps are annotated with the command that actually ran and its exit; the rehearsal never counts as the live proof that flips `spec-bmad-method-core-upgrade` to `shipped`
+### Story 46.10: The release cadence is one verified runbook
+**Type:** chore • **Effort:** S • **Deps:** S-14.10 • **FR/AD:** CAP-8 • AD-7 • PRD FR-8
+**Surface:** `specs/spec-bmad-suite-lifecycle/release-cadence.md` (verified against the 14.9 apply and the 14.10 rehearsal)
+**Given** `release-cadence.md` and the two live passes core-upgrade owns (the `--no-shims` apply, 14.9; the `@next` rehearsal, 14.10) **When** each of the nine runbook steps is annotated with the command that actually ran, its exit, and its owner **Then** no step reads "improvised"; the `@next` rehearsal recipe in the runbook matches 14.10's recorded invocation verbatim; the runbook never claims the rehearsal as the live proof that flips `spec-bmad-method-core-upgrade` to `shipped` (AD-7: the mechanism and its findings live in core-upgrade's chain)
 
 ## Epic 47: The BMAD estate is cutover-ready (spec-bmad-suite-lifecycle CAP-9)
 
@@ -2855,7 +2863,7 @@ detectors) — this epic proves and relays (AD-7).
 **Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** CAP-9 (G5, P10) • `fnd:AD-5`
 **Surface:** `_bmad/skf/config.yaml` (`skills_output_folder`, `snippet_skill_root_override` — exercised in a scratch copy, never edited in place), a scratch worktree, `cutover-readiness.md` G5/P10
 **Given** the cutover spine's claim that SKF export writes to `skills/stations/<x>/` **When** `skf-export-skill` runs in a scratch worktree with `skills_output_folder: skills/stations` **Then** the export lands there with a working adapter under `.claude/skills/<x>` generated by the link step's shape, or the story records precisely which key/option skf lacks — a finding for `spec-python-foundry-cutover` by memlog, never a silent assumption
-**And** P10's "hand-set keys survive an apply" half is re-verified against CAP-7's restore on the same run
+**And** P10's "hand-set keys survive an apply" half is re-verified against CAP-7's restore on the same run, and the story records the single declaring key (`_bmad/custom/config.toml [modules.skf].skills_output_folder`, AD-12) from which `_bmad/skf/config.yaml` is re-rendered — never restored from git
 
 ### Story 47.3: `_bmad/**` joins Epic 44's surface and `PROJECTS.md` carries the cutover layout
 **Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** CAP-9 (G1, G8) • `fnd:AD-12`
@@ -2868,9 +2876,9 @@ detectors) — this epic proves and relays (AD-7).
 **Given** the spine memlog decision of 2026-09-06 **When** `bmad-architecture` update re-distills the cutover spine **Then** § Stack gains one row: `bmad-method >=6.12.0, bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only), bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise, bmad-eval-quality, bmad-utility-skills, bmad-builder` with the note that win-64 (44.11) excludes skf and eval-quality; AD ids unchanged
 
 ### Story 47.5: Epic 44 depends on the era tail, and 44.13's scope names the spines
-**Type:** docs • **Effort:** XS • **Deps:** S-14.9, marshal:S-30.5, marshal:S-30.2 • **FR/AD:** CAP-9 (G2, G3, G6) • AD-7
+**Type:** docs • **Effort:** XS • **Deps:** S-14.9 (after marshal 30.5 and 30.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** CAP-9 (G2, G3, G6) • AD-7
 **Surface:** `epics.md` Epic 44 stories 44.5 / 44.12 / 44.13 (`Deps:` lines only), cutover memlog, `sprint-status-ledger.yaml` (via generate + sync)
-**Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: … , S-14.9, marshal:S-30.5, marshal:S-30.2` and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
+**Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: …, S-14.9` with the trailing prose "after marshal 30.5 and 30.2" plus a `blocked` ledger row and an in-story check (AD-10 — never a foreign-station token), and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
 
 
 ## Currency validation note — 2026-09-05

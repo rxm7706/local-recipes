@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 283
+# stories: 284
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -44,6 +44,7 @@ development_status:
   13-3-a-repo-set-opens-as-one-workspace: done
   13-4-the-set-reports-and-tears-down-safely: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
+  14-10-the-next-rehearsal-exercises-cap-6-s-fallback-and-cap-8-s-conflict-path-report-only: backlog
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
   14-3-clobbered-custom-surfaces-are-caught-and-re-applied: done
   14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests: done
@@ -51,7 +52,7 @@ development_status:
   14-6-the-installer-is-driven-on-purpose-and-a-no-op-apply-is-a-refusal: done
   14-7-custom-modules-survive-the-core-apply: done
   14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done
-  14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: backlog
+  14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: blocked
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
@@ -178,7 +179,7 @@ development_status:
   47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: backlog
   47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: backlog
   47-4-the-foundry-stack-carries-a-bmad-floor-row: backlog
-  47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: backlog
+  47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done

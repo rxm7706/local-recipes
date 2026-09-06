@@ -463,8 +463,8 @@ routing in the persona + AGENTS block, never CLAUDE.md (lifecycle spine AD-2); s
 installs first; recall stays grounded (`spec-pyforge-scribe`).
 
 ### Story 7.1: Three docs skills are scribe-wielded
-**Type:** docs • **Effort:** XS • **Deps:** steward:S-46.2 • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
-**Surface:** `.claude/skills/bmad-agent-scribe/SKILL.md` (routing lines), `AGENTS.md` managed block (via `bmad-project-context`), `adoption-register.md` § 2 rows
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
+**Surface:** `.claude/skills/bmad-agent-scribe/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
 **Given** the three skills installed **When** the scribe persona routes doc structure to `bmad-os-diataxis`, stale-reference sweeps to `bmad-os-audit-file-refs`, and translated prose review to `bmad-os-editorial-review-translation` **Then** one `audit-file-refs` pass runs against `docs/reference/` and its findings land as a scribe capture, the register names scribe as sole wielder for all three, and CLAUDE.md is untouched
 
 ## Currency validation — 2026-08-26

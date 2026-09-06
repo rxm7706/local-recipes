@@ -1549,9 +1549,9 @@ read-only gathers; the detectors join `detectors` only after their fixtures prov
 **Given** `fnd:AD-22` freezes a capability's source paths once it enters `rebuilding` or `moving`, and the spine names a `frozen-path-changed` detector nothing built **When** the detector reads the capability ledger's frozen path sets and diffs `origin/main..HEAD` against them **Then** a change under a frozen path is a `fail` naming the capability and the path, an absent ledger is `ok` (pre-cutover), and the fixture plants one frozen-path edit; `cutover-readiness.md` G11 flips to landed by steward memlog relay
 
 ### Story 20.4: `bmad-os-root-cause-analysis` is doctor-wielded
-**Type:** docs • **Effort:** XS • **Deps:** steward:S-46.2 • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • lifecycle spine AD-2
-**Surface:** `.claude/skills/bmad-agent-doctor/SKILL.md` (routing line), `AGENTS.md` managed block (via `bmad-project-context`), `adoption-register.md` § 2 row
-**Given** the skill installed by steward 46.2 **When** the doctor persona gains "reach for `bmad-os-root-cause-analysis` when a detector finding needs a cause, never to change a verdict" **Then** the register names doctor as its sole wielder, the AGENTS block cites it, and CLAUDE.md is untouched
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • lifecycle spine AD-2
+**Surface:** `.claude/skills/bmad-agent-doctor/SKILL.md` (routing line), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 row
+**Given** the skill installed by steward 46.2 **When** the doctor persona gains "reach for `bmad-os-root-cause-analysis` when a detector finding needs a cause, never to change a verdict" **Then** the register names doctor as its sole wielder, the register row names it and the AD-2 meta-test passes, and CLAUDE.md is untouched
 
 ### Story 20.5: The version-drift Spec's open questions are written back
 **Type:** docs • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-method-version-drift (body § Open Questions) • memlog entry of 2026-09-06

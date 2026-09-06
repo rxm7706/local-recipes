@@ -26,6 +26,7 @@ chain. The gate: every P line green before Story 44.3 opens the foundry. Owners 
 | P15 | `bmad-module-skill-forge uninstall` never run | inventory C20; AGENTS pitfall | recorded | — |
 | P16 | No loop running at the flip; 8 homes re-provisioned attended | `fnd:AD-12`, `AD-17`; 44.12 | mechanism = 44.12 (not built); readiness undefined | marshal 31.5 defines; steward 44.12 builds |
 | P17 | `gh` can create a private repo; paid plan persists | cutover SPEC :185-187 | assumption | steward 44.3 |
+| P18 | Every register row with verdict `wield` is re-provisioned in foundry by its provisioning-path cell (the replay list): module class via `steward provision`, skf via its own installer, labs by name; nothing re-creates the installer-written dirs otherwise (`fnd:AD-5` keeps them real dirs but 44.11's link step generates only estate adapters) | adversarial review F-12 (2026-09-06); `fnd:AD-5`, `AD-12` | not defined until the register has a `wield` verdict per row (46.1) | steward 47.1 (checklist) + 44.5 (replay) |
 
 ## G — gaps the cutover texts assume but nothing tracked (relayed 2026-09-06)
 

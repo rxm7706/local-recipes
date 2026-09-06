@@ -22,13 +22,8 @@ assumptions:
   - "bmad-builder's five skills and skf's sixteen coexist without a name collision
     (`bmad-bmb-*` / `bmad-agent-builder` vs `skf-*`); steward's wire-time collision check decides."
 open_questions:
-  - "Where does Herald's manticore studio live — `presentations/_studio/` (in-repo, gitignored)
-    or `~/pyforge-studio/` (outside)? CAP-5 needs one root; the studio's own `_bmad/` must not
-    sit under this repo's `_bmad/`."
   - "`tea-test-review --min-score` for the Marshal lens / Warden advisory — upstream's example 80,
     or calibrate on the first ten PRs?"
-  - "CAP-3 routing notes: persona skill AND the AGENTS.md block, or the block only (AGENTS.md is
-    rewritten by `skf-export` at cutover, fnd:AD-6)?"
   - "eval-quality trial cost accounting: steward budget (Story 44.15 metering) or a local ledger
     under `evals/` — carried from spec-bmad-eval-quality."
 ---
@@ -66,9 +61,10 @@ cutover chain, so it owns closing all three.
   reports the four installed; the retired-ID guard and integrity meta-tests stay green; the ten
   CIS `SKILL.md` carry `--project-root`; a test proves bmb's `cleanup-legacy.py` is never invoked.
 - **CAP-3 — Station routing.** *Intent:* each adopted skill has exactly one wielding station,
-  recorded in that station's persona skill and the AGENTS.md managed block. *Success:* the
-  routing table in `adoption-register.md` maps every adopted skill to one station and each
-  persona skill cites it; CLAUDE.md carries none of it.
+  recorded in that station's persona skill (the one durable home); AGENTS.md carries one pointer
+  line to the register, never per-skill lines. *Success:* the routing table in
+  `adoption-register.md` maps every adopted skill to one station, each persona skill cites it, a
+  meta-test proves one persona per skill dir, and CLAUDE.md carries none of it.
 - **CAP-4 — TEA full adoption.** *Intent:* TEA's `bmad-testarch-*` workflows produce every
   station's `planning-artifacts/test-architecture.md`; `tea-test-review` runs as a Marshal review
   lens and a Warden advisory finding; the repo generator, its two meta-tests and two pixi tasks
@@ -83,8 +79,9 @@ cutover chain, so it owns closing all three.
   gitignored; this repo's `_bmad/` is byte-identical before and after.
 - **CAP-6 — labs-skills by consent.** *Intent:* exactly the consented skills — `mcp-builder`
   (Atlas), `slides-generator` (Herald), `multi-repo-git-ops` (Marshal), `release-please`
-  (Steward) — are installed by name. *Success:* each has a register row and lands via
-  `npx skills add bmad-labs/skills --skill <name>`; no other labs skill is present.
+  (Steward) — are installed by name. *Success:* each has a register row and lands via the
+  one steward-wrapped, pinned writer (`steward provision --plugin labs --skill <name>`); no other
+  labs skill is present.
 - **CAP-7 — eval-quality pilot runs.** *Intent:* the designed twin-run contract measures the
   `edge-case-hunter` reviewer against a planted `file:line` defect under a per-trial budget
   ceiling. *Success:* `eval-quality-smoke`, `eval-quality-review-twin-run`,
@@ -98,7 +95,7 @@ cutover chain, so it owns closing all three.
 - **CAP-9 — BMAD-estate cutover readiness.** *Intent:* every prerequisite the cutover assumes
   about `_bmad/`, `.claude/skills/`, `_bmad-output/` and the loop homes is listed with an owner in
   `cutover-readiness.md`; untracked gaps are relayed to the cutover chain by memlog; the gate is
-  every line green before Story 44.3 opens the foundry. *Success:* P1–P17 read green; G1–G11 each
+  every line green before Story 44.3 opens the foundry. *Success:* P1–P18 read green; G1–G11 each
   name a story; `steward upgrade bmad-core` pre-flight reports zero ungoverned local customizations.
 - **CAP-10 — Shim retirement (relay).** *Intent:* the 21 deprecated shims and every live caller
   are gone before the foundry opens. *Success:* the harness policy names `bmad-build-auto`, the 8
@@ -111,8 +108,10 @@ cutover chain, so it owns closing all three.
 - Provision by install class only: no hand copies into `.claude/skills/`; never `cleanup-legacy.py`
   (it would `rmtree` `_bmad/core/config.yaml`); never `bmad-module-skill-forge uninstall` (it would
   delete every skill dir).
-- The manticore studio is a separate root; its upgrade ritual (wipe the studio's `_bmad/` +
-  `_bmad-output/`) never touches this repo's `_bmad/`.
+- The manticore studio is a separate root outside the repo, declared once per machine by
+  `PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`; decided 2026-09-06); its upgrade ritual
+  (wipe the studio's `_bmad/` + `_bmad-output/`) never touches this repo's `_bmad/`; `mc-*` are
+  never provisioned into the repo tree.
 - TEA and eval-quality verdicts are advisory (Warden) or review lenses (Marshal); Warden's gate
   stays the sole PR verdict.
 - Customizations live in `_bmad/custom/**` or are re-applied by core-upgrade CAP-8; every in-place
