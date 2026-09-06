@@ -612,7 +612,16 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "647fda3ed3701936a9a83b182b09e83a4b93a5aa"
+    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+                                    # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
+                                    # a10a8c7d00 (bmad-loop repo skills proven to match the
+                                    # installed package, by test; landed via pyforge-marshal
+                                    # Story 30.4, the "fleet hygiene branch" sanctioned-exception).
+                                    # CFE-surface delta: SKILL.md (version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.3 -> 8.86.4),
+                                    # tests/meta/test_bmad_loop_skills_match_installed.py (new).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-06 from a5f63c95fb to the CFE v8.86.3 retro
                                     # 647fda3ed3 (fleet-hygiene retro -- retired-BMAD-skill-ID guard
                                     # gains bmad-checkpoint-preview as the 21st id + a one-directional
@@ -878,7 +887,16 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "647fda3ed3701936a9a83b182b09e83a4b93a5aa"
+    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+                                    # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
+                                    # a10a8c7d00 (bmad-loop repo skills proven to match the
+                                    # installed package, by test; landed via pyforge-marshal
+                                    # Story 30.4, the "fleet hygiene branch" sanctioned-exception).
+                                    # CFE-surface delta: SKILL.md (version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.3 -> 8.86.4),
+                                    # tests/meta/test_bmad_loop_skills_match_installed.py (new).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-06 from a5f63c95fb to the CFE v8.86.3 retro
                                     # 647fda3ed3 (fleet-hygiene retro -- retired-BMAD-skill-ID guard
                                     # gains bmad-checkpoint-preview as the 21st id + a one-directional
