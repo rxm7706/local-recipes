@@ -487,7 +487,7 @@ recipe's own `cfe-on-conda-forge-status`:
 
 | Area | Packages | Status |
 |---|---|---|
-| BMAD suite tooling | `bmad-builder`, `bmad-creative-intelligence-suite`, `bmad-dashboard`, `bmad-method-test-architecture-enterprise`, `bmad-method-wds-expansion`, `bmad-module-skill-forge`, `bmad-module-template`, `bmad-utility-skills`, `mybmad-dashboard` | `pending-approval-on-conda-forge` |
+| BMAD suite tooling | `bmad-builder`, `bmad-creative-intelligence-suite`, `bmad-dashboard`, `bmad-method-test-architecture-enterprise`, `bmad-module-skill-forge`, `bmad-module-template`, `bmad-utility-skills`, `mybmad-dashboard` (WDS retired 2026-09-05) | `pending-approval-on-conda-forge` |
 | BMAD suite tooling | `bmad-labs-skills`, `bmad-loop`, `bmad-manticore` | `pending-submission-to-conda-forge` |
 | Token-economy instruments (§ see "What is real" above / [[marshal-token-economy]]) | `caveman` | `pending-submission-to-conda-forge` |
 | Token-economy instruments | `codegraph` | `pending-approval-on-conda-forge` |

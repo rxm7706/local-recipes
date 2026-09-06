@@ -11,8 +11,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet hygiene pass, PR #1043; validated against the re-stamped spine — no epic or story added, changed, or removed. Previously 2026-08-31: Epic 6 added (compile_surface extras: graphify + cocoindex behind the CAP-18 ports; unifying-strategy stack.md "bind now" rows + Grounding 2026-08-30; consumers: foundry-cutover move-list and marshal Epic 28 Stories 28.8/28.9). Story 6.3 added 2026-08-31 (graph-node staleness flag, spec-marshal-token-economy CAP-13 -- closes the gap found comparing Mem0's consolidation model against Story 2.3's author-declared-only supersession; marshal Story 28.9 carries the consumer half as its fifth AC).
-currency_review: "Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+currency_review: "Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -453,6 +453,19 @@ So that consumers like marshal's planning-graph retrieval (Story 28.9) never sil
 **And** given an unchanged source, or a node with a declared `supersedes:` edge pointing at it **When** compile runs **Then** the node is never flagged stale
 **And** given a retrieval that resolves to a stale-flagged node **When** the answer is served **Then** the consumer falls back to its non-graph path rather than serving the stale node silently
 **And** the check is a git-timestamp comparison only — no LLM call, no new external dependency, and Story 2.3's existing `supersedes:` mechanism is unchanged
+
+## Epic 7: Scribe keeps the docs with three utility skills
+
+**Spec binding.** The scribe-side relay of `spec-bmad-suite-lifecycle` (Dream
+`docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): `bmad-os-diataxis`, `bmad-os-audit-file-refs`,
+`bmad-os-editorial-review-translation` (CAP-3). **HARD boundaries:** one wielding station per skill,
+routing in the persona + AGENTS block, never CLAUDE.md (lifecycle spine AD-2); steward 46.2
+installs first; recall stays grounded (`spec-pyforge-scribe`).
+
+### Story 7.1: Three docs skills are scribe-wielded
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
+**Surface:** `.claude/skills/bmad-agent-scribe/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
+**Given** the three skills installed **When** the scribe persona routes doc structure to `bmad-os-diataxis`, stale-reference sweeps to `bmad-os-audit-file-refs`, and translated prose review to `bmad-os-editorial-review-translation` **Then** one `audit-file-refs` pass runs against `docs/reference/` and its findings land as a scribe capture, the register names scribe as sole wielder for all three, and CLAUDE.md is untouched
 
 ## Currency validation — 2026-08-26
 

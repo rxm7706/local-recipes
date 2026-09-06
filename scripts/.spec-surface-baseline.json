@@ -2411,13 +2411,13 @@
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
-   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "58200b6ade45dfd74349a2f7c51a55cea9d68125",
+   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "a205f399d1bae622c8aed3e694caf384a1fd0701",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "6e5d0231dd444d466ffcc7745de977af9a9ba8d8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "d48e26c2d40d7ac0d2a669c7b5f8d80d6177883d",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "c612e16b95cda7f9be59a416dfe158b02bd5a509",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_difficulty.py": "7fbb350bc85ed3ad41696bbc0b855522e5265d14"
   },
-  "memlog": "de175a596828a189e5cc0dbe66ec0fb7647da082"
+  "memlog": "75cc51b0c67801ed397d1cdfce6075d5324a0065"
  },
  "pyforge-marshal/spec-agent-portability": {
   "files": {},
@@ -2800,14 +2800,14 @@
  },
  "pyforge-marshal/spec-marshal-parallel-dispatch-fanout": {
   "files": {
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml": "fe556c3193273fd03ed49affba500fe5658b4e24",
-   "_bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml": "0fb798e3926b5f57dbf6f6e63e7db58efb441bf1",
-   "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml": "791f6f65ea948e842cfc156fad13a6a04dd63eaf",
-   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "58200b6ade45dfd74349a2f7c51a55cea9d68125",
-   "_bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml": "800edeb44cd031883735ca3825a11673d20c4754",
-   "_bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml": "9d0fbf0e0e8d376d2710cf99044ec3344b0e1fce",
-   "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml": "780232501ab1b014cc1ee6b0a9031c22f44c4cdb",
-   "_bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml": "fb660a99998425e9bed7c5322b3ce9d7658bc1db",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml": "790b43c0bcf529837680263cf4b8734bea51767e",
+   "_bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml": "b8261ffd53072feb39439e28dd2c0f4bc118d866",
+   "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml": "8c7db40a34bd93ea692a1b6d98e054852bfb4952",
+   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "a205f399d1bae622c8aed3e694caf384a1fd0701",
+   "_bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml": "bfa8e8835ad49d1286ff399273302203b3f3c794",
+   "_bmad-output/projects/pyforge-scribe/planning-artifacts/marshal-policy.toml": "a1d47d32f02c55ed1dcce98b200c5696c0c86f0a",
+   "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml": "1d89e18fe82cfd311161acde8fef08596d6c7d98",
+   "_bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml": "7c49b2f3e6ecfd5721e7518114bd2736c992219c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py": "aea6770d7627cc1caaed02e96447514285ceba1b",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py": "5bc9dc48af134f83ea37010c1aeb80e4bbd4f9fa",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "0a550a1a42abc91915ba5a40c1ba0d9d3e2969aa",
@@ -2815,7 +2815,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__init__.py": "f9b68a9ff5fdbbe326318c42a250002fc77fb8df",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py": "8ab81b837d96803d2646023a0242d3f5d8cae9c3"
   },
-  "memlog": "8ac55edda3cf1970de71d21765c455bf3eec8f49"
+  "memlog": "8968791e83d30e9e2692fe528f5c0598258ca3f1"
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
@@ -4793,6 +4793,10 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e4078969ba96a3ee78303d0f19b9270609b3aa67"
   },
   "memlog": "d853131368c0ae5aa0ae792b2e5a930dd3a12742"
+ },
+ "pyforge-steward/spec-bmad-suite-lifecycle": {
+  "files": {},
+  "memlog": "598659dba43dbed06f0ba0089ab4b06296d6a89d"
  },
  "pyforge-steward/spec-bmad-suite-metapackage": {
   "files": {

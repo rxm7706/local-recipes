@@ -1,6 +1,6 @@
 ---
 spec: bmad-suite-install-class-wiring
-status: ready
+status: shipped   # 2026-09-06 — CAP-1..3 as steward Epic 31 (3/3 done 2026-08-24); recorded late
 owner-dream: docs/dreams/bmad-suite-install-class-wiring.md
 surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py

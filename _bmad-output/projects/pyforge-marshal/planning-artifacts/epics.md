@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 30  # 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
-storyCount: 187  # 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-09-05"  # arch→epics currency: validated against architecture.md's 2026-09-05 re-ground (PR #1063 — source_pin v8.86.1 + live gotcha/env counts only; no AD added, changed, or removed), so no epic or story moves. Prior stamp 2026-09-01: Stories 28.18–28.23 (drain self-resolution, Dream addendum F).
+epicCount: 31  # 2026-09-06: Epic 31 added (TEA replaces the generator + estate cutover-readiness, spec-bmad-suite-lifecycle CAP-3/4/9 marshal relays). 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
+storyCount: 194  # 2026-09-06: 187 + Story 30.5 (shim retirement, era-alignment CAP-12) + Stories 31.1–31.6 (spec-bmad-suite-lifecycle marshal relays). 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
+updated: "2026-09-06"  # 2026-09-06: Story 30.5 + Epic 31 added from spec-bmad-suite-lifecycle (Dream 2026-09-06); the era-alignment shim constraint and TEA non-goal were superseded by memlog the same day. Prior: arch→epics currency: validated against architecture.md's 2026-09-05 re-ground (PR #1063 — source_pin v8.86.1 + live gotcha/env counts only; no AD added, changed, or removed), so no epic or story moves. Prior stamp 2026-09-01: Stories 28.18–28.23 (drain self-resolution, Dream addendum F).
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4563,6 +4563,64 @@ CFE v8.86.x already firing on marshal's living docs).
 installed package and reds a planted one-line divergence, and `bmad-loop validate` stays
 clean across all 8 loop homes.
 
-**Epic 30 clears to dispatch in full — the four stories are independent of each other.
-30.1's orphan-directory check and 30.3's re-ground half land after steward's 6.12 apply
-(Epic 14), which this epic never performs.**
+### Story 30.5: The harness and every live caller follow the shim retirement
+**Type:** feature • **Effort:** S • **Deps:** S-30.1 • **FR/AD:** spec-bmad-611-era-alignment CAP-12 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`[dev] skill`), `tests/unit/test_harness_policy_render.py`, the 8 rendered `~/.bmad-loops/pyforge-*/.bmad-loop/policy.toml` (re-rendered, machine-local), `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py` (`SCAN_GLOBS`), callers: `CLAUDE.md` rows 119/126/135-137/201, doctor `sources/chain.py:2338`, warden `__init__.py:8`, marshal docstrings (`promotion.py`, `status.py`, `cli/deploy.py`, `cli/spin.py`, `seed/templates/manifest.yaml`), `planning-artifacts/marshal-policy.toml:27-28`, `docs/dreams/README.md:30`
+**Given** the operator's 2026-09-06 decision that shims retire now (era-alignment constraint superseded by memlog) and bmad-loop 0.11.1 resolving whichever skill the policy names **When** the vendored template emits `skill = "bmad-build-auto"`, the render test asserts it, and every listed caller leads with the live name (`bmad-build-auto` / `bmad-build` / `bmad-walkthrough` …) with a "retired 2026-09" gloss where history is cited **Then** `bmad-loop list --json` shows no run in flight, `marshal config --write-harness-policy <home>` re-renders all 8 homes, `bmad-loop validate` is clean 8/8, and the guard's `SCAN_GLOBS` gains the harness template so a reintroduced `bmad-dev-auto` reds the meta suite
+**And** decks (`presentations/**`), `docs/specs/**` and `pixi.toml` comments are glossed, never rewritten (shipped history); the pre-flight refusal in steward 14.9 reads green against this story's output, which precedes the `--no-shims` apply
+**And** after the apply lands, `bmad-project-context` records the pitfall "the 21 shims are gone — never author `_bmad/custom/<old-name>.toml`; old ids do not resolve" in the AGENTS.md block (recorded by the skill, not by hand)
+
+
+**Epic 30 clears to dispatch in full — 30.1–30.4 are independent of each other; 30.5 (added
+2026-09-06, spec-bmad-suite-lifecycle CAP-10 / era-alignment CAP-12) lands after 30.1 and before
+steward 14.9's `--no-shims` apply. 30.1's "orphan directory" premise was corrected 2026-09-06
+(`bmad-generate-project-context` is a plan-tree `lifecycle: shim`, not orphaned); 30.3's
+re-ground half lands after steward's 6.12 apply (Epic 14, done 2026-09-06), which this epic
+never performs.**
+
+## Epic 31: TEA replaces the generator, and marshal's own estate is cutover-ready
+
+**Goal:** the marshal-side half of `spec-bmad-suite-lifecycle` — TEA's workflows produce every
+station's test architecture and `tea-test-review` becomes a review lens (CAP-4; era-alignment
+CAP-13, the retired "TEA is optional" non-goal), the seven in-place-edited installer-owned files
+are governed (CAP-9 P13), loop-home readiness is defined for the cutover flip (CAP-9 G10), and
+two adopted skills get their marshal routing (CAP-3). Dream `docs/dreams/bmad-suite-lifecycle.md`;
+PRD `prd-bmad-suite-lifecycle-2026-09-06` FR-3/FR-4/FR-9; lifecycle spine AD-2, AD-4, AD-5.
+**HARD boundaries:** the generator, its two meta-tests and its pixi tasks are deleted only in
+the same story that records a passing equivalence check (AD-5) — a failing check narrows CAP-4 to
+the review lens and keeps the generator; `tea-test-review` never joins `detectors` and never
+changes Warden's verdict (AD-4); steward 46.3 provisions TEA first — this epic never provisions.
+
+### Story 31.1: TEA's workflows produce every station's test architecture
+**Type:** feature • **Effort:** L • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the AD-9 roster lacks `tea`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-5, AD-9, AD-10 • spec-bmad-611-era-alignment CAP-13
+**Surface:** `_bmad-output/projects/*/planning-artifacts/test-architecture.md` (×8, regenerated), `.claude/skills/bmad-testarch-test-design` / `-framework` (invoked, never edited), a recorded equivalence report under `planning-artifacts/reviews/tea-equivalence-2026-xx-xx.md`
+**Given** TEA provisioned and the generator's last outputs kept (`python _bmad/scripts/bmad_tea_playwright.py --all` run once more first) **When** `bmad-testarch-test-design` / `-framework` run per station **Then** eight documents regenerate, and the equivalence report shows every story id and every live test path the generator emitted present in the TEA output, with the `TBD`-free invariant held
+**And** a failing equivalence for any station keeps that station's generator output, records the gap, and narrows CAP-4 for it — the story still completes with the report; 31.2 depends on a full pass
+
+### Story 31.2: The generator, its meta-tests and its pixi tasks retire behind the equivalence check
+**Type:** chore • **Effort:** S • **Deps:** S-31.1 • **FR/AD:** CAP-4 • AD-5
+**Surface:** `_bmad/scripts/bmad_tea_playwright.py`, `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py`, `test_tea_architecture_generator.py`, `pixi.toml` tasks at `:854-859` (`--all`, `--all --check`), `environment.yaml`, the six blanket-glob specs governing `pixi.toml` (memlog + scoped stamps), marshal `architecture-bmad-infra.md` (FR-129/FR-132 gloss)
+**Given** 31.1's equivalence report passes 8/8 **When** the generator and both pixi tasks are deleted in this story, and the drift meta-test's predicate (story-id coverage, test-inventory rows, the `TBD`-free invariant) is re-pointed at TEA's output and KEPT as the oracle (AD-5 — deleted only by a later memlog decision) **Then** `pyforge-marshal-test` is green, `detectors-ci` is green, `architecture-bmad-infra.md` glosses FR-129/FR-132 as "retired 2026-xx-xx behind TEA (Story 31.2)", and the CAP-5 story-id drift the `--check` task guarded is re-expressed as a TEA `bmad-testarch-trace` run or an explicit accepted loss recorded in the era-alignment memlog
+**And** if 31.1 narrowed CAP-4 for any station, this story is refused for that station's artifacts and the generator stays (the refusal is recorded, not silent)
+
+### Story 31.3: `tea-test-review` is a marshal review lens
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** CAP-4 • AD-4, AD-10 • Spec open question 2 (`--min-score`)
+**Surface:** `_bmad/custom/bmad-review.toml` (the lens as a `bmad-review` customize override — never a harness-policy key, never an in-place skill edit, AD-4), `core/policy.py` + `policy.json` (`review.min_score` knob, exact TOML scalar type — the value 46.3's task takes as its argument), `tests/unit/test_harness_policy_render.py`, the 8 loop homes (re-render), `planning-artifacts/marshal-policy.toml`
+**Given** the pixi task from steward 46.3 **When** the review step's `bmad-review` override runs `tea-test-review --base origin/main --min-score {review.min_score}` as a lens beside `edge-case-hunter` (refused while the AD-9 roster lacks `tea`, AD-10) **Then** its findings are appended to the review output as `warn`-severity observations, the run's `done`/`review` routing is unchanged by the score, `bmad-loop validate` is 8/8 after re-render, and the knob defaults to 80 with the calibration plan (first ten PRs) recorded in the era-alignment memlog
+
+### Story 31.4: Every in-place-edited installer-owned file is governed by a marshal spec surface
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (P13) • customization-inventory C5 / §2 item 5
+**Surface:** `spec-marshal-single-story-dispatch/SPEC.md` and `spec-marshal-token-economy/SPEC.md` `surface:` lists (via memlog + `bmad-spec` update), `scripts/.spec-surface-baseline.json` (scoped stamps), the seven files: `.claude/skills/bmad-build-auto/{step-01-clarify-and-route,step-04-review,spec-template,compile-epic-context}.md`, `.claude/skills/bmad-sprint-planning/{references/generate-tracking.md,scripts/sprint_plan.py,scripts/tests/test_sprint_plan.py}`
+**Given** only two of the seven were governed at the 6.12 apply **When** the owning marshal specs claim all seven in `surface:` (the sprint-plan N.M fix under the spec that owns the ledger contract) **Then** `spec-surface-check` reports zero `uncovered` for them, a planted edit to any of the seven without a memlog line reds `drift`, and steward's pre-flight (47.1) lists them as governed local customizations
+**And** the same governed `sprint_plan.py` gains the one-argument fix for the wrap found 2026-09-06 — `yaml.dump(doc, buf, width=<wide>)` so a `key: value` pair past 80 columns is never split onto an indented second line that `promote_sprint_status.py`'s line-based parser reads as absent — with a regression test writing a 100-char key and re-reading it through the promoter; the upstream-PR candidate is recorded, not opened
+
+### Story 31.5: Loop-home readiness is defined for the cutover flip
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (G10, P16) • `fnd:AD-12`, `AD-17`
+**Surface:** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/` (or the governing loop-home spec — memlog note), `architecture-bmad-infra.md` § loop homes, `cutover-readiness.md` G10/P16 (via steward memlog relay), `marshal homes` output contract
+**Given** the eight `~/.bmad-loops/pyforge-*` homes are full worktrees with their own `pixi.toml`, `pyforge.toml` (`name = "local-recipes"`), `_bmad/` and `_bmad-output/` **When** this story writes the readiness definition **Then** it names what a re-provisioned home must contain after the flip (remote, `pyforge.toml` name, rendered policy naming `bmad-build-auto`, relays refreshed, no in-flight run), the check that proves it (`marshal homes --json` fields or `bmad-loop validate`), and who runs it (attended, steward 44.12's flip); `DW-CC-2026-09-04-1`'s "residue to retire" wording is reconciled with it
+
+### Story 31.6: `bmad-os-gh-triage` and `multi-repo-git-ops` are marshal-wielded
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 and 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
+**Surface:** `.claude/skills/bmad-agent-marshal/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
+**Given** the two skills installed by steward **When** the marshal persona gains "reach for `bmad-os-gh-triage` for PR/issue triage and `multi-repo-git-ops` for cross-repo landings (never for a `marshal land` the harness owns)" **Then** each skill has exactly one wielding station in the register, the register rows name both and the AD-2 meta-test passes, CLAUDE.md is untouched, and `DW-HYGIENE-2026-09-05-1`'s `marshal sweep` wish notes whether `multi-repo-git-ops` covers it
+

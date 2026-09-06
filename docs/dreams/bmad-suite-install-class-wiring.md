@@ -2,7 +2,7 @@
 title: Non-module bmad-suite pieces are provisioned by install class — not forced through --module
 type: dream
 owner: steward
-status: specified   # 2026-08-24 — spec-bmad-suite-install-class-wiring (CAP-1..3 + install-class-playbook.md); decomposed as steward Epic 31 (3 stories). --module skf refused.
+status: realized   # 2026-09-06 — spec-bmad-suite-install-class-wiring shipped: steward Epic 31 (3/3 done 2026-08-24); recorded late. --module skf refusal stands; remaining module wiring now driven by spec-bmad-suite-lifecycle.
 ---
 
 # Non-module bmad-suite pieces are provisioned by install class
@@ -121,3 +121,11 @@ modules; skf optional extension lives there if Spec says yes) ·
   fresh-clone path). Companion `install-class-playbook.md` cites parent
   `install-matrix.md`. Decomposed as steward Epic 31 (15 stays done).
   `--module skf` refused as a non-goal.
+- **2026-09-06** — Realized. Steward Epic 31 shipped 3/3 (31.1 class-keyed
+  playbook, 31.2 class-correct wired-or-not, 31.3 fresh-clone class path) on
+  2026-08-24; Spec `spec-bmad-suite-install-class-wiring` re-derived
+  `ready → shipped` and this Dream flipped `specified → realized` on 2026-09-06
+  (recorded late). The `--module skf` refusal stands (skf stays own-installer,
+  custom-module registered). The remaining module wiring is now driven by
+  `spec-bmad-suite-lifecycle` (new, 2026-09-06) — its adoption register, not
+  this Dream, decides what else gets wired.

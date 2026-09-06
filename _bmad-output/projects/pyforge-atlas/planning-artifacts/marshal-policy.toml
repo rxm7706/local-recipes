@@ -148,6 +148,19 @@ harness_preference = ["cursor"]
   "scripts/.spec-surface-baseline.json",
 ]
 
+"24" = [  # mcp-builder for the MCP face (spec-bmad-suite-lifecycle atlas relay), added 2026-09-06
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-agent-atlas/**",
+  "AGENTS.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 

@@ -8,8 +8,8 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-09-02'   # RE-STAMPED 2026-09-02: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet hygiene pass, PR #1009; no epic or story added, changed, or removed.
-currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
+updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -2003,6 +2003,19 @@ a pointer, and `grep openpyxl|load_workbook|XlsxReader scripts/` is empty. *(Min
 course correction.)*
 
 ---
+
+## Epic 24: Atlas builds its MCP face with `mcp-builder`
+
+**Spec binding.** The atlas-side relay of `spec-bmad-suite-lifecycle` (Dream
+`docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): labs' `mcp-builder` (CAP-6) for the atlas MCP
+face (`POST /stations/atlas/mcp`, spec-21-4). **HARD boundaries:** installed by name under consent
+(steward 46.5), never the marketplace; the face's contract stays `pyforge atlas …` grammar
+(lifecycle spine AD-1, AD-2).
+
+### Story 24.1: `mcp-builder` is atlas-wielded for the MCP face
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • spec-21-4 (MCP faces)
+**Surface:** `.claude/skills/bmad-agent-atlas/SKILL.md` (routing line), the register § 2 row (one AGENTS.md pointer line only, AD-2/AD-11), `adoption-register.md` § 2 row
+**Given** the labs skill installed by name **When** the atlas persona routes new MCP tool scaffolding to `mcp-builder` with the constraint that generated tools call `pyforge atlas …` verbs only **Then** the register names atlas as sole wielder, the routing line states the grammar constraint, and CLAUDE.md is untouched
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

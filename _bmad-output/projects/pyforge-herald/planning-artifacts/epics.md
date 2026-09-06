@@ -3,8 +3,8 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (AD-72).
 project_name: pyforge-herald
-epicCount: 12
-storyCount: 47
+epicCount: 18  # 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
+storyCount: 50  # 2026-09-06: 47 + Stories 18.1–18.3 (dated snapshot; the ledger enumerates).
 status: complete
 ---
 
@@ -549,3 +549,27 @@ So that stale-mirror state is visible in HTMX without leaving the host.
 **Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated herald-role session **When** the operator opens `/stations/herald/` **Then** one slug's status renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+
+## Epic 18: Herald renders, announces and slides with the suite
+
+**Spec binding.** The herald-side relays of `spec-bmad-suite-lifecycle` (Dream
+`docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): the manticore studio (CAP-5), the
+`bmad-os-changelog` / `-social` release comms and labs' `slides-generator` (CAP-3, CAP-6).
+**HARD boundaries:** the studio is a separate root — this repo's `_bmad/` is never touched by a
+render (lifecycle spine AD-3); `.mp4` and render intermediates are gitignored build artifacts;
+steward 46.6 / 46.2 / 46.5 provision first; Path B grammar stays `pyforge herald …`.
+
+### Story 18.1: The first station video renders from Herald's studio
+**Type:** feature • **Effort:** M • **Deps:** — (after steward 46.6 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-5 • AD-3 • `docs/dreams/herald-pitch.md` (narration scenes)
+**Surface:** the studio root read from `PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`, AD-3 — the register cell cites it), `presentations/<station>/` speaker notes (read), `bmad-agent-herald` (a hand-off note: "open a session in `$PYFORGE_STUDIO_ROOT`; run `mc-*` there" — never a route, `mc-*` never live in the repo tree), a `herald deck …` verb or documented studio invocation
+**Given** the provisioned studio **When** one station deck's speaker notes are handed to `mc-braindump → mc-script → mc-cut → mc-package` **Then** one `<station>.mp4` renders in the studio, is gitignored, this repo's `_bmad/` checksum is unchanged, and the register row records the render date and the four approval gates walked
+
+### Story 18.2: Release comms go through `bmad-os-changelog` and `-social`
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
+**Surface:** `.claude/skills/bmad-agent-herald/SKILL.md` (routing), the register § 2 row (one AGENTS.md pointer line only, AD-2/AD-11), `herald notice` / `success` inputs, `adoption-register.md` § 2 rows
+**Given** the two skills installed **When** the herald persona routes release notes to `bmad-os-changelog` and the social variant to `bmad-os-changelog-social` feeding `herald notice` **Then** one release (the next suite refresh) has its note produced through them, the register names herald as sole wielder, and CLAUDE.md is untouched
+
+### Story 18.3: `slides-generator` is herald-wielded
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • `docs/specs/presentation-deck.md` (the deck pipeline it must not fork)
+**Surface:** `.claude/skills/bmad-agent-herald/SKILL.md`, `adoption-register.md` § 2 row, `AGENTS.md` block
+**Given** the labs skill installed by name **When** the herald persona routes quick slide drafts to `slides-generator` while the Claude-Design deck pipeline stays the deck source of record **Then** the register names herald as sole wielder and the routing line states the boundary (draft only; never a deck head)

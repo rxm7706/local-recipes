@@ -173,8 +173,11 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
-"14" = [
+"14" = [  # 2026-09-06: + the surfaces the core apply writes (14.9 --no-shims deletes 21 skill dirs, rewrites _bmad/_config/*) — AD-11 of the lifecycle spine: surface ownership follows the writer class
   "src/shared/packages/pyforge-steward/**",
+  ".claude/skills/**",
+  "_bmad/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
   ".gitignore",
@@ -548,4 +551,51 @@ verify_commands = [
   "src/platform/Containerfile",
   "var/**",
   "src/platform/config/flags.json",
+]
+
+"45" = [  # eval-quality pilot (spec-bmad-eval-quality); entry added 2026-09-06 — was missing
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "recipes/bmad-eval-quality/**",
+  "recipes/bmad-suite/**",
+  "evals/**",
+]
+
+"46" = [  # bmad-suite wielded (spec-bmad-suite-lifecycle CAP-1..8), added 2026-09-06
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/**",
+  "_bmad/**",
+  "docs/reference/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+]
+
+"47" = [  # BMAD estate cutover-ready (spec-bmad-suite-lifecycle CAP-9), added 2026-09-06
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/PROJECTS.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad/skf/**",
 ]

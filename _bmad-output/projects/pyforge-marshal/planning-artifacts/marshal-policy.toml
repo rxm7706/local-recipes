@@ -215,6 +215,60 @@ verify_commands = [
   "src/shared/packages/pyforge-marshal/tests/unit/test_scribe_cli.py",
 ]
 
+"29" = [  # single-story dispatch done-spec HALT (spec-marshal-single-story-dispatch CAP-11); entry added 2026-09-06 — was missing
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-build-auto/**",
+]
+
+"30" = [  # BMAD 6.12 era round (spec-bmad-611-era-alignment CAP-8..12); entry added 2026-09-06 — was missing
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/**",
+  "_bmad-output/projects/*/project-context.md",
+  "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/development-guide.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py",
+  "src/shared/packages/pyforge-doctor/tests/**",
+  "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py",
+  "scripts/fleet_scan.py",
+  "scripts/bmad_drift_check.py",
+  "CLAUDE.md",
+  "docs/dreams/README.md",
+  ".claude/docs/bmad-method-llms-full.txt",
+]
+
+"31" = [  # TEA replaces the generator + estate readiness (spec-bmad-suite-lifecycle marshal relays), added 2026-09-06
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/**",
+  "_bmad/scripts/bmad_tea_playwright.py",
+  "_bmad-output/projects/*/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/**",
+  "AGENTS.md",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.

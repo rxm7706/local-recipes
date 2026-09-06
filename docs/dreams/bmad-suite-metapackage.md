@@ -2,7 +2,7 @@
 title: One conda metapackage installs the whole SelfExplainML bmad-suite at latest
 type: dream
 owner: steward
-status: dreamt
+status: realized   # 2026-09-06 — spec-bmad-suite-metapackage shipped: steward Epic 39 (4/4 done 2026-09-01); bmad-suite 2026.9.5 on the channel; recorded late
 parent: docs/dreams/bmad-suite-channel-product.md
 ---
 
@@ -62,3 +62,19 @@ metapackage is the **product boundary** — the thing that says "this fleet snap
 `steward suite pipeline-truth --json` upstream-latest column; doctor's suite drift is quiet
 after a metapackage refresh PR merges; the manifest and metapackage version bump in one
 reviewable commit.
+
+## Realization log
+
+- **2026-09-01** — Realized in code. Steward Epic 39 shipped the metapackage:
+  `recipes/bmad-suite/{recipe.yaml,suite-members.yaml}`, the CFE generator
+  (`bmad_suite_metapackage.py` + `build_bmad_suite.py`), pixi tasks
+  `generate-bmad-suite` / `build-bmad-suite`, and `bmad-suite 2026.9.1`
+  published to the channel (main `e177de648e`; 39.4 CAP-4 pixi feature bundle
+  followed).
+- **2026-09-05** — First governed refresh: `bmad-suite 2026.9.5` (PRs
+  #1059/#1060) — `bmad-eval-quality` seated as a member, `bmad-method
+  >=6.12.0`, and `bmad-method-wds-expansion` retired (deprecated upstream,
+  absorbed into `bmad-ux`; kept as a catalog row only).
+- **2026-09-06** — Status flipped `dreamt → realized` (owed since Epic 39
+  closed 4/4 on 2026-09-01); Spec `spec-bmad-suite-metapackage` re-derived
+  `in-progress → shipped` the same day.

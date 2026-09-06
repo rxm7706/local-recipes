@@ -12,14 +12,14 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
-epicCount: 12
-storyCount: 58
+epicCount: 14  # 2026-09-06: Epic 14 added (spec-bmad-suite-lifecycle mason relay); Epic 13 (2026-09-03) had not bumped this from 12.
+storyCount: 59  # 2026-09-06: 58 + Story 14.1 (dated snapshot; the ledger enumerates).
 frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet CI health pass, PR #1043; validated against the memlog entries -- nothing moved in substance
-currency_review: "Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
+updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+currency_review: "Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -1796,3 +1796,17 @@ Steward **43.6** (the image flip) is gated on both. **Approved by the operator 2
 **Given** `dbgpt-client` pins `sqlalchemy >=2.0.25,<2.0.29` (no `cp314` in range)
 **When** the cap becomes `<2.1` with the METADATA patch
 **Then** `python=3.14.* + dbgpt + dbgpt-serve + dbgpt-app + django` solves and the sidecar REST round-trip passes on 3.14.
+
+## Epic 14: The eval-quality Windows variant (spec-bmad-suite-lifecycle CAP-7 relay)
+
+**Spec binding.** The mason-side relay of `spec-bmad-suite-lifecycle` CAP-7 / the channel-product
+hole #2 (2026-09-05): `bmad-eval-quality` ships only the `__unix` noarch variant, so win-64 is
+excluded and the pixi pin sits in the linux-64 / osx-arm64 target tables. **HARD boundaries:**
+the recipe goes through `conda-forge-expert` (Rule 1) and the effort ends with a CFE retro
+(Rule 2); the commit pin `0.2.0.dev0 @ 3172162f` does not move here; `anaconda upload` is the
+operator's step.
+
+### Story 14.1: `bmad-eval-quality` builds a `__win` variant
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-7 • spec-bmad-suite-channel-product (relayed hole #2) • CFE Rule 1 + Rule 2
+**Surface:** `recipes/bmad-eval-quality/recipe.yaml` (+ `bld.bat` / `build.bat` per the `.cmd`-shim rule), `recipes/bmad-suite/suite-members.yaml` (unchanged row), `pixi.toml` (pin moves back to the shared table once solvable on win-64; `environment.yaml` regenerated), `install-matrix.md` hazard cell
+**Given** the unix-only variant on the channel **When** the recipe gains the Windows build (`call` for `.cmd` shims, `noarch_platforms` carrying win-64, `build.number` bumped for the same version) and builds green locally via `recipe-build` **Then** the pixi pin can leave the target tables, `steward suite pipeline-truth` reads the member current on all three platforms after the operator uploads, and the CFE CHANGELOG carries the retro entry

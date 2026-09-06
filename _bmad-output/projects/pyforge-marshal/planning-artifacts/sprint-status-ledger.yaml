@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 261
+# stories: 270
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -164,6 +164,13 @@ development_status:
   30-2-the-project-context-surface-follows-6-12-d1: backlog
   30-3-documentation-pointers-follow-6-12: backlog
   30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test: backlog
+  30-5-the-harness-and-every-live-caller-follow-the-shim-retirement: backlog
+  31-1-tea-s-workflows-produce-every-station-s-test-architecture: blocked
+  31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check: backlog
+  31-3-tea-test-review-is-a-marshal-review-lens: blocked
+  31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface: backlog
+  31-5-loop-home-readiness-is-defined-for-the-cutover-flip: backlog
+  31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded: blocked
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
@@ -263,6 +270,8 @@ development_status:
   epic-3-retrospective: done
   epic-30: backlog
   epic-30-retrospective: optional
+  epic-31: backlog
+  epic-31-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
   epic-5: done

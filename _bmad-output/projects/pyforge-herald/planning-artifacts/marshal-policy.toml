@@ -213,3 +213,17 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
 ]
+
+"18" = [  # manticore studio, changelog, slides (spec-bmad-suite-lifecycle herald relays), added 2026-09-06
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/bmad-agent-herald/**",
+  "presentations/**",
+  "AGENTS.md",
+]
