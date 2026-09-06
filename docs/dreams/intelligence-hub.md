@@ -703,13 +703,37 @@ contract chooses among the candidates above before any code.
   Unifying Strategy, eval-quality and the channel product. Marshal (Ops, Gates) and Scribe (Frames,
   memory) are the plausible alternatives; owning is the post, not the product.
 - Is the **Frame protocol** published yet, and where? Nothing Frame-shaped should be specified before
-  the open specification exists.
+  the open specification exists. → research backlog **RB-1**.
 - Are **Nebari, `nebari-infrastructure-core`, Nebi** on conda-forge or PyPI, and under what licence?
+  → research backlog **RB-2**.
 - Which of the **seven Guard categories** does the repo lack entirely, and is source-grounding of LLM
   output the first to add?
 - Does a **bmad-loop run** already emit enough to constitute a Track, and what retention would the
   operator want?
 - Do we want the repo's **own context published as Frames** (a Community Frame for local-recipes)?
+
+## Research backlog (pre-Spec)
+
+Two research items queued 2026-09-05 at the operator's request. They are prerequisites for the
+Spec, not stories; each closes by appending its finding here (dated, with the evidence) and by
+updating the open question it answers. **Neither has been run yet.**
+
+- **RB-1 — Has the Frame protocol been published?** The paper lists "Frame protocol published" as a
+  Phase 1 (now–6 months) milestone and calls the protocol the standard that makes Frame exchange
+  possible. Verify: search nebari.dev, the `nebari-dev` GitHub organisation (`gh api
+  /orgs/nebari-dev/repos`, `gh search repos --owner nebari-dev frame`), ownyourintelligence.ai and
+  OpenTeams' public repositories for a specification, schema or reference implementation. Record the
+  URL, version, licence and the file/folder structure it prescribes — or record "not published as of
+  <date>". Gates candidate shape 2 (Frames as first-class): nothing Frame-shaped is specified before
+  an open specification exists.
+- **RB-2 — Are Nebari, `nebari-infrastructure-core` and Nebi on conda-forge (and PyPI)?** Verify each
+  name — plus the hyphen/underscore, `-py` and `-python` spellings the PyPI→conda mapping rule
+  requires — with `lookup_feedstock`, `get_conda_name` and `pypi_intelligence` from the conda-forge
+  MCP server, and cross-check the `nebari-dev` GitHub organisation for the source repositories.
+  Record feedstock / PyPI name, latest version, licence, maintainers and whether rxm7706 can modify
+  the feedstock. Gates candidate shape 5 (package the lineage where missing); this is a Mason /
+  `conda-forge-expert` lane — a green local build ends the task, and no external PR is opened
+  without an ask.
 
 ## Kinships
 
@@ -743,3 +767,6 @@ contract chooses among the candidates above before any code.
   section-complete distillation with the vocabulary map, candidate shapes and open questions above.
   No adoption decided; owner `steward` as the post. Next: `bmad-spec` under `pyforge-steward`
   (dream-chain INV-1 names the expected Spec path) to choose which shape PyForge takes up.
+- **2026-09-05 (later)** — Research backlog added at the operator's request: RB-1 (is the Frame
+  protocol published?) and RB-2 (are Nebari, `nebari-infrastructure-core` and Nebi on conda-forge /
+  PyPI?). Neither has been run; both precede the Spec.
