@@ -35,6 +35,20 @@ run that changed nothing is a refusal (``ApplyReport.zero_diff``, trap 12),
 never a green; a manifest that names no modules stops the apply before the
 review branch exists (trap 13). No wrapper script.
 
+Story 14.7 / CAP-7: custom modules survive the core apply. The release catalog's
+``custom_modules:`` list annotates each ``source: custom`` manifest module (own
+installer argv, config paths, optional pin, optional packaged source); selection
+still comes from the manifest. The pre-flight lists catalog vs manifest (mismatch
+= trap 13 finding). The apply asserts every custom module is selected, adds
+``--pin <name>=<pin>`` when the catalog sets one, snapshots each config path's
+bytes before the core installer and restores them verbatim afterwards, runs the
+module's own installer from the repo root through an injectable runner, verifies
+``.claude/skills/<name>-*`` against the packaged source (a finding, never a
+gate), reports the regenerated ``[modules.<name>]`` block of ``_bmad/config.toml``
+as a diff (never edited), and gates ``custom_modules_ok`` on own-installer exit 0
+plus every config path restored. ``zero_diff`` keeps its CAP-6 meaning — judged
+on the core installer's own diff, before this phase runs (trap 14).
+
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
 share this surface and must not crowd Epic 3's provisioning flags.
@@ -47,6 +61,7 @@ and apply surface an operator runs.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import inspect
 import json
@@ -67,6 +82,11 @@ from .interfaces import DutyResult
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
 _CUSTOM_RELATIVE_PATH = Path("_bmad/custom")
+# CAP-7: where a custom module's IDE skill dirs land (verified, never written by
+# steward) and the installer-generated TOML whose `[modules.<name>]` block is
+# reported as a diff, never edited.
+_IDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
+_CONFIG_TOML_RELATIVE_PATH = Path("_bmad/config.toml")
 _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
 # CAP-6: where the installer's `node` / `bmad-method` live when they are not on
 # PATH — always derived from the repo path, never a machine path.
@@ -85,6 +105,9 @@ TRAP_CONFIG_MIGRATION = 11
 # CAP-6 (Story 14.6) apply traps from the 2026-09-06 first 6.12 apply.
 TRAP_SILENT_NOOP_APPLY = 12  # exit 0, nothing written (cancelled directory prompt)
 TRAP_CUSTOM_MODULE_DESELECTED = 13  # `-y` deletes an unselected cached custom module
+# CAP-7 (Story 14.7): the installer regenerates a custom module's config.yaml
+# from module.yaml defaults and honours its marketplace.json skill list.
+TRAP_CUSTOM_MODULE_CONFIG_REGENERATED = 14
 
 # 2026-08-21 worked example: eight loop homes validate clean, zero warnings.
 WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
@@ -208,6 +231,26 @@ class ConfigMigrationFinding:
 
 
 @dataclass(frozen=True)
+class CustomModuleFinding:
+    """CAP-7 pre-flight row: one catalog ``custom_modules`` entry vs the installed manifest.
+
+    ``matched`` is True only when the catalog names the module AND the manifest
+    lists it with ``source: custom``. Any other combination is a trap-13
+    finding (catalog stale, module deleted, or an installed custom module the
+    catalog does not know — which the apply could not restore, trap 14).
+    """
+
+    name: str
+    in_catalog: bool
+    manifest_source: str | None
+    matched: bool
+    own_installer: tuple[str, ...]
+    pin: str | None
+    detail: str
+    trap_id: int = TRAP_CUSTOM_MODULE_DESELECTED
+
+
+@dataclass(frozen=True)
 class PreflightReport:
     """Report-only upgrade pre-flight — never applied."""
 
@@ -222,6 +265,9 @@ class PreflightReport:
     config_migration: ConfigMigrationFinding | None
     trap_ids: tuple[int, ...]
     notes: tuple[str, ...] = ()
+    # CAP-7 (Story 14.7) — appended after ``notes`` so positional constructors
+    # written before it stay valid.
+    custom_modules: tuple[CustomModuleFinding, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -274,6 +320,83 @@ class ReconcileReport:
 
 
 @dataclass(frozen=True)
+class ConfigRestore:
+    """One catalog ``config_paths`` entry after the core installer ran (CAP-7)."""
+
+    path: str
+    status: str  # restored | unchanged | missing
+    detail: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"path": self.path, "status": self.status, "detail": self.detail}
+
+
+@dataclass(frozen=True)
+class SkillDirVerification:
+    """``.claude/skills/<name>-*`` compared against the catalog's packaged source (CAP-7).
+
+    A finding, never a gate: a missing pixi env or a deliberately patched skill
+    must not turn a coherent apply red.
+    """
+
+    packaged_source: str
+    expected: int
+    equal: int
+    mismatched: tuple[str, ...]
+    missing: tuple[str, ...]
+    ok: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "packaged_source": self.packaged_source,
+            "expected": self.expected,
+            "equal": self.equal,
+            "mismatched": list(self.mismatched),
+            "missing": list(self.missing),
+            "ok": self.ok,
+        }
+
+
+@dataclass(frozen=True)
+class CustomModuleReport:
+    """CAP-7 outcome for one catalog custom module during the apply.
+
+    ``ok`` is own-installer exit 0 AND every config path restored/unchanged; an
+    unselected module (catalog names it, manifest does not list it as custom)
+    reports ``selected=False`` and never gates ``custom_modules_ok``.
+    """
+
+    name: str
+    selected: bool
+    pin: str | None
+    config_paths: tuple[ConfigRestore, ...]
+    own_installer_cmd: tuple[str, ...]
+    own_installer_exit: int | None
+    own_installer_error: str | None
+    verification: SkillDirVerification | None
+    config_toml_block_changed: bool
+    config_toml_block_diff: str
+    ok: bool
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "selected": self.selected,
+            "pin": self.pin,
+            "config_paths": [c.to_dict() for c in self.config_paths],
+            "own_installer_cmd": list(self.own_installer_cmd),
+            "own_installer_exit": self.own_installer_exit,
+            "own_installer_error": self.own_installer_error,
+            "verification": self.verification.to_dict() if self.verification else None,
+            "config_toml_block_changed": self.config_toml_block_changed,
+            "config_toml_block_diff": self.config_toml_block_diff,
+            "ok": self.ok,
+            "notes": list(self.notes),
+        }
+
+
+@dataclass(frozen=True)
 class ApplyReport:
     """Outcome of a deliberate CAP-2 apply (review branch + custom check)."""
 
@@ -290,8 +413,13 @@ class ApplyReport:
     notes: tuple[str, ...] = ()
     # CAP-6: strictly ``installer_exit == 0 and not changed_paths`` — the trap-12
     # shape (a cancelled prompt or a no-op). A non-zero exit is already a failure
-    # through the exit gate and is never double-reported here.
+    # through the exit gate and is never double-reported here. Judged on the
+    # CORE installer's diff, before the CAP-7 custom-module phase runs.
     zero_diff: bool = False
+    # CAP-7 (Story 14.7): one report per catalog custom module; the gate is
+    # ``all(m.ok for m in custom_modules if m.selected)``.
+    custom_modules: tuple[CustomModuleReport, ...] = ()
+    custom_modules_ok: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -307,6 +435,8 @@ class ApplyReport:
             "reconcile": self.reconcile.to_dict() if self.reconcile else None,
             "notes": list(self.notes),
             "zero_diff": self.zero_diff,
+            "custom_modules": [m.to_dict() for m in self.custom_modules],
+            "custom_modules_ok": self.custom_modules_ok,
         }
 
 
@@ -362,6 +492,83 @@ def load_release_catalog(version: str, *, directory: Path | None = None) -> dict
     return data
 
 
+@dataclass(frozen=True)
+class CustomModuleDef:
+    """One release-catalog ``custom_modules`` entry (CAP-7, Story 14.7).
+
+    The catalog only ANNOTATES: selection comes from the installed manifest.
+    ``own_installer`` is the argv steward runs from the repo root after the
+    core apply; ``config_paths`` are the module-owned files steward snapshots
+    before and restores verbatim after; ``pin`` (optional) lands on the core
+    argv as ``--pin <name>=<pin>``; ``packaged_source`` (optional, repo-relative)
+    is used only to verify ``.claude/skills/<name>-*`` afterwards.
+    """
+
+    name: str
+    own_installer: tuple[str, ...]
+    config_paths: tuple[str, ...]
+    pin: str | None
+    packaged_source: str | None
+    notes: str
+
+
+def load_custom_modules(catalog: Mapping[str, Any]) -> tuple[CustomModuleDef, ...]:
+    """Parse ``custom_modules`` from a loaded catalog (tolerant of a missing key).
+
+    Raises ``UpgradeError`` naming the catalog key on a non-list value, a
+    non-mapping entry, an empty ``name``, or an ``own_installer`` that is not a
+    non-empty list of strings. ``pin`` is ``None`` unless a non-empty string.
+    """
+    raw = catalog.get("custom_modules") or []
+    if not isinstance(raw, list):
+        raise UpgradeError(
+            f"release catalog key `custom_modules` must be a list, got {type(raw).__name__}"
+        )
+    out: list[CustomModuleDef] = []
+    for index, entry in enumerate(raw):
+        key = f"custom_modules[{index}]"
+        if not isinstance(entry, Mapping):
+            raise UpgradeError(f"release catalog key `{key}` is not a mapping")
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise UpgradeError(f"release catalog key `{key}.name` must be a non-empty string")
+        own = entry.get("own_installer")
+        if (
+            not isinstance(own, list)
+            or not own
+            or not all(isinstance(part, str) and part.strip() for part in own)
+        ):
+            raise UpgradeError(
+                f"release catalog key `{key}.own_installer` must be a non-empty list "
+                "of argv strings (e.g. [bmad-module-skill-forge, update])"
+            )
+        config_paths_raw = entry.get("config_paths") or []
+        if not isinstance(config_paths_raw, list):
+            raise UpgradeError(f"release catalog key `{key}.config_paths` must be a list")
+        config_paths = tuple(
+            str(p).replace("\\", "/") for p in config_paths_raw if str(p).strip()
+        )
+        pin_raw = entry.get("pin")
+        pin = pin_raw.strip() if isinstance(pin_raw, str) and pin_raw.strip() else None
+        source_raw = entry.get("packaged_source")
+        packaged_source = (
+            str(source_raw).replace("\\", "/")
+            if isinstance(source_raw, str) and source_raw.strip()
+            else None
+        )
+        out.append(
+            CustomModuleDef(
+                name=name.strip(),
+                own_installer=tuple(part.strip() for part in own),
+                config_paths=config_paths,
+                pin=pin,
+                packaged_source=packaged_source,
+                notes=str(entry.get("notes") or "").strip(),
+            )
+        )
+    return tuple(out)
+
+
 def read_installed_version(repo: Path) -> str:
     """``installation.version`` from ``_bmad/_config/manifest.yaml``."""
     manifest = repo / _MANIFEST_RELATIVE_PATH
@@ -387,16 +594,7 @@ def read_installed_modules(repo: Path) -> tuple[str, ...]:
     if not manifest.is_file():
         raise UpgradeError(f"missing installed manifest: {manifest}")
     data = yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}
-    raw = data.get("modules") or []
-    names: list[str] = []
-    if isinstance(raw, list):
-        for entry in raw:
-            name = entry.get("name") if isinstance(entry, Mapping) else entry
-            if not isinstance(name, str) or not name.strip():
-                continue
-            name = name.strip()
-            if name not in names:
-                names.append(name)
+    names = [name for name, _source in _manifest_module_entries(data)]
     if not names:
         raise UpgradeError(
             f"manifest lists no modules ({manifest}) — refuse to apply: "
@@ -408,6 +606,55 @@ def read_installed_modules(repo: Path) -> tuple[str, ...]:
         names.remove("core")
         names.insert(0, "core")
     return tuple(names)
+
+
+def _manifest_module_entries(data: Any) -> list[tuple[str, str | None]]:
+    """``(name, source)`` pairs from a parsed manifest's ``modules:`` list.
+
+    Manifest order, de-duplicated on name (first occurrence wins). A bare
+    string entry (``- bmm``) carries no ``source`` → ``None``; a missing or
+    empty ``modules:`` yields ``[]``. Shared by ``read_installed_modules`` and
+    ``read_installed_module_sources`` so the two never disagree.
+    """
+    raw = data.get("modules") or [] if isinstance(data, Mapping) else []
+    out: list[tuple[str, str | None]] = []
+    seen: set[str] = set()
+    if not isinstance(raw, list):
+        return out
+    for entry in raw:
+        if isinstance(entry, Mapping):
+            name = entry.get("name")
+            source_raw = entry.get("source")
+        else:
+            name = entry
+            source_raw = None
+        if not isinstance(name, str) or not name.strip():
+            continue
+        name = name.strip()
+        if name in seen:
+            continue
+        seen.add(name)
+        source = (
+            source_raw.strip()
+            if isinstance(source_raw, str) and source_raw.strip()
+            else None
+        )
+        out.append((name, source))
+    return out
+
+
+def read_installed_module_sources(repo: Path) -> dict[str, str | None]:
+    """``{module name: source}`` from ``_bmad/_config/manifest.yaml`` (CAP-7).
+
+    Never raises for a missing manifest or a missing/empty ``modules:`` —
+    both yield ``{}``; the pre-flight is report-only and the apply already
+    refused through ``read_installed_modules`` in that shape.
+    """
+    manifest = repo / _MANIFEST_RELATIVE_PATH
+    if not manifest.is_file():
+        return {}
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}
+    return dict(_manifest_module_entries(data))
 
 
 def _read_installed_skill_names(repo: Path) -> set[str]:
@@ -623,6 +870,78 @@ def _config_migration_finding(catalog: dict[str, Any]) -> ConfigMigrationFinding
     )
 
 
+def _custom_module_findings(
+    repo: Path, catalog: Mapping[str, Any]
+) -> list[CustomModuleFinding]:
+    """CAP-7 pre-flight: each catalog ``custom_modules`` entry vs the installed manifest.
+
+    Four shapes: matched (catalog + manifest ``source: custom``); catalog names
+    a module the manifest does not list; catalog names a module the manifest
+    lists with another source; an installed ``source: custom`` module absent
+    from the catalog (nothing would restore its config — trap 14). Malformed
+    catalog entries raise ``UpgradeError`` here, before any review branch.
+    """
+    definitions = load_custom_modules(catalog)
+    sources = read_installed_module_sources(repo)
+    findings: list[CustomModuleFinding] = []
+    for module in definitions:
+        source = sources.get(module.name)
+        if module.name not in sources:
+            matched = False
+            detail = (
+                "catalog names it as a custom module but the installed manifest does "
+                "not list it — nothing for the apply to select; stale catalog entry "
+                f"or an already-deleted module (trap {TRAP_CUSTOM_MODULE_DESELECTED})"
+            )
+        elif source == "custom":
+            matched = True
+            detail = (
+                "installed source: custom; own installer: "
+                f"{' '.join(module.own_installer)}; config paths: "
+                f"{', '.join(module.config_paths) or '(none)'}; "
+                f"pin: {module.pin or '(none)'}"
+            )
+        else:
+            matched = False
+            detail = (
+                f"installed with source {source!r}, not custom — the catalog's "
+                "own-installer / config-restore handling does not apply; reconcile "
+                f"the catalog or the manifest (trap {TRAP_CUSTOM_MODULE_DESELECTED})"
+            )
+        findings.append(
+            CustomModuleFinding(
+                name=module.name,
+                in_catalog=True,
+                manifest_source=source,
+                matched=matched,
+                own_installer=module.own_installer,
+                pin=module.pin,
+                detail=detail,
+            )
+        )
+    catalog_names = {module.name for module in definitions}
+    for name, source in sources.items():
+        if source != "custom" or name in catalog_names:
+            continue
+        findings.append(
+            CustomModuleFinding(
+                name=name,
+                in_catalog=False,
+                manifest_source=source,
+                matched=False,
+                own_installer=(),
+                pin=None,
+                detail=(
+                    "installed source: custom but absent from the release catalog's "
+                    "custom_modules — the core apply would regenerate its config with "
+                    "nothing to restore it and never run its own installer "
+                    f"(trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED}); add a catalog entry"
+                ),
+            )
+        )
+    return findings
+
+
 def build_preflight_report(
     *,
     repo: Path,
@@ -649,6 +968,7 @@ def build_preflight_report(
     hard_prerequisites = _prerequisite_findings(catalog)
     forwarder_changes = _forwarder_findings(catalog)
     config_migration = _config_migration_finding(catalog)
+    custom_modules = _custom_module_findings(repo, catalog)
 
     trap_ids: list[int] = []
     if locally_modified:
@@ -663,6 +983,8 @@ def build_preflight_report(
         trap_ids.append(TRAP_FORWARDER)
     if config_migration is not None:
         trap_ids.append(TRAP_CONFIG_MIGRATION)
+    if any(not finding.matched for finding in custom_modules):
+        trap_ids.append(TRAP_CUSTOM_MODULE_DESELECTED)
 
     notes: list[str] = [
         "report-only — no apply / no mutation of _bmad/ or _bmad/custom/**",
@@ -703,6 +1025,7 @@ def build_preflight_report(
         config_migration=config_migration,
         trap_ids=tuple(sorted(set(trap_ids))),
         notes=tuple(notes),
+        custom_modules=tuple(custom_modules),
     )
 
 
@@ -711,7 +1034,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         return json.dumps(report.to_dict(), indent=2, sort_keys=True)
 
     lines: list[str] = [
-        f"steward upgrade bmad-core — pre-flight (report-only)",
+        "steward upgrade bmad-core — pre-flight (report-only)",
         f"installed: {report.installed_version}",
         f"target:    {report.target_version}",
         f"traps:     {', '.join(str(t) for t in report.trap_ids) or '(none)'}",
@@ -779,6 +1102,17 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         cm = report.config_migration
         lines.append(f"- [trap {cm.trap_id}] status={cm.status}: {cm.notes}")
 
+    lines.extend(["", "## Custom modules (catalog vs installed manifest)"])
+    if not report.custom_modules:
+        lines.append("(none in catalog or manifest)")
+    for custom in report.custom_modules:
+        if custom.matched:
+            lines.append(f"- [ok] {custom.name}: {custom.detail}")
+        else:
+            lines.append(
+                f"- [MISMATCH] [trap {custom.trap_id}] {custom.name}: {custom.detail}"
+            )
+
     if report.notes:
         lines.extend(["", "## Notes"])
         for note in report.notes:
@@ -827,19 +1161,27 @@ def assert_clean_tree(repo: Path) -> None:
         )
 
 
-def fingerprint_custom_tree(repo: Path) -> dict[str, str]:
-    """Return ``{relative_path: sha256-hex}`` for every file under ``_bmad/custom/**``."""
-    custom = repo / _CUSTOM_RELATIVE_PATH
-    if not custom.is_dir():
+def _fingerprint_tree(repo: Path, root: Path) -> dict[str, str]:
+    """``{path relative to repo: sha256-hex}`` for every file under *root*.
+
+    Pass ``root`` as *repo* too to key a tree by its own root (CAP-7 compares an
+    installed skill dir against the packaged copy that way).
+    """
+    if not root.is_dir():
         return {}
     out: dict[str, str] = {}
-    for path in sorted(custom.rglob("*")):
+    for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
         rel = str(path.relative_to(repo)).replace("\\", "/")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         out[rel] = digest
     return out
+
+
+def fingerprint_custom_tree(repo: Path) -> dict[str, str]:
+    """Return ``{relative_path: sha256-hex}`` for every file under ``_bmad/custom/**``."""
+    return _fingerprint_tree(repo, repo / _CUSTOM_RELATIVE_PATH)
 
 
 def compare_custom_fingerprints(
@@ -996,6 +1338,345 @@ def _call_installer_runner(
     if _runner_accepts_env(runner):
         return runner(repo, cmd, env=env)  # type: ignore[call-arg]
     return runner(repo, cmd)  # type: ignore[call-arg]
+
+
+# ── Story 14.7 / CAP-7 — custom modules survive the core apply ─────────────
+
+# Cap on the reported `[modules.<name>]` unified diff (report payload hygiene).
+_CONFIG_TOML_DIFF_CAP = 4000
+
+
+def _snapshot_custom_module_configs(
+    repo: Path, modules: Sequence[CustomModuleDef]
+) -> dict[str, dict[str, bytes | None]]:
+    """Pre-installer bytes of every catalog ``config_paths`` entry (``None`` = absent)."""
+    out: dict[str, dict[str, bytes | None]] = {}
+    for module in modules:
+        per_path: dict[str, bytes | None] = {}
+        for rel in module.config_paths:
+            path = repo / rel
+            per_path[rel] = path.read_bytes() if path.is_file() else None
+        out[module.name] = per_path
+    return out
+
+
+def _read_config_toml_text(repo: Path) -> str:
+    path = repo / _CONFIG_TOML_RELATIVE_PATH
+    return path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
+
+
+def _config_toml_module_block(text: str, name: str) -> str:
+    """Lines of the ``[modules.<name>]`` table (header through the next table header)."""
+    header = f"[modules.{name}]"
+    block: list[str] = []
+    inside = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == header:
+            inside = True
+            block.append(line)
+            continue
+        if inside:
+            if stripped.startswith("[") and stripped.endswith("]"):
+                break
+            block.append(line)
+    return "\n".join(block).rstrip() + "\n" if block else ""
+
+
+def _config_toml_block_diff(before: str, after: str, name: str) -> str:
+    diff = "".join(
+        difflib.unified_diff(
+            before.splitlines(keepends=True),
+            after.splitlines(keepends=True),
+            fromfile=f"{_CONFIG_TOML_RELATIVE_PATH} [modules.{name}] (pre-apply)",
+            tofile=f"{_CONFIG_TOML_RELATIVE_PATH} [modules.{name}] (post-apply)",
+        )
+    )
+    if len(diff) > _CONFIG_TOML_DIFF_CAP:
+        diff = diff[:_CONFIG_TOML_DIFF_CAP] + "\n… (diff truncated)\n"
+    return diff
+
+
+def _restore_custom_module_configs(
+    repo: Path,
+    snapshots: Mapping[str, bytes | None],
+) -> tuple[ConfigRestore, ...]:
+    """Write each snapshotted path back verbatim; report restored / unchanged / missing."""
+    restores: list[ConfigRestore] = []
+    for rel, before in snapshots.items():
+        path = repo / rel
+        if before is None:
+            restores.append(
+                ConfigRestore(
+                    path=rel,
+                    status="missing",
+                    detail="absent before apply — nothing to restore",
+                )
+            )
+            continue
+        after = path.read_bytes() if path.is_file() else None
+        if after == before:
+            restores.append(
+                ConfigRestore(
+                    path=rel,
+                    status="unchanged",
+                    detail="the core installer left it unchanged",
+                )
+            )
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(before)
+        what = "regenerated" if after is not None else "deleted"
+        restores.append(
+            ConfigRestore(
+                path=rel,
+                status="restored",
+                detail=(
+                    f"pre-apply bytes restored verbatim ({len(before)} bytes) — the core "
+                    f"installer {what} it (trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED})"
+                ),
+            )
+        )
+    return tuple(restores)
+
+
+def _run_own_installer(
+    repo: Path,
+    module: CustomModuleDef,
+    runner: InstallerRunner | LegacyInstallerRunner,
+    *,
+    spawned_by_steward: bool,
+) -> tuple[int | None, str | None, tuple[str, ...]]:
+    """Run the module's own installer from the repo root; never raise.
+
+    Returns ``(exit_code, error, notes)``: an unresolvable binary (default
+    runner only) or an ``OSError`` from the spawn yields ``(None, <error>, …)``.
+    """
+    binary = module.own_installer[0]
+    env, env_note = resolve_installer_environment(repo, binary)
+    notes = [f"{module.name} own installer: {env_note}"]
+    if spawned_by_steward and shutil.which(binary, path=env["PATH"]) is None:
+        return (
+            None,
+            (
+                f"own installer binary {binary!r} not found on PATH (searched including "
+                f"{repo / _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH}) — module tree not rebuilt"
+            ),
+            tuple(notes),
+        )
+    try:
+        result = _call_installer_runner(runner, repo, module.own_installer, env=env)
+    except OSError as exc:
+        return (
+            None,
+            f"own installer {' '.join(module.own_installer)} could not be spawned: {exc}",
+            tuple(notes),
+        )
+    if result.stdout and result.stdout.strip():
+        notes.append(
+            f"{module.name} own installer stdout (truncated): {result.stdout.strip()[:500]}"
+        )
+    if result.stderr and result.stderr.strip():
+        notes.append(
+            f"{module.name} own installer stderr (truncated): {result.stderr.strip()[:500]}"
+        )
+    return int(result.returncode), None, tuple(notes)
+
+
+def _verify_custom_module_skill_dirs(
+    repo: Path, module: CustomModuleDef
+) -> tuple[SkillDirVerification | None, tuple[str, ...]]:
+    """Compare every packaged ``<name>-*`` dir with ``.claude/skills/<dir>`` (finding only)."""
+    if not module.packaged_source:
+        return None, (
+            f"{module.name}: no packaged_source in the catalog — skill-dir verification skipped",
+        )
+    source = repo / module.packaged_source
+    if not source.is_dir():
+        return None, (
+            f"{module.name}: packaged source {module.packaged_source} absent — "
+            "skill-dir verification skipped",
+        )
+    prefix = f"{module.name}-"
+    installed_root = repo / _IDE_SKILLS_RELATIVE_PATH
+    names = sorted(p.name for p in source.iterdir() if p.is_dir() and p.name.startswith(prefix))
+    equal = 0
+    mismatched: list[str] = []
+    missing: list[str] = []
+    for name in names:
+        installed = installed_root / name
+        if not installed.is_dir():
+            missing.append(name)
+            continue
+        packaged = source / name
+        if _fingerprint_tree(installed, installed) == _fingerprint_tree(packaged, packaged):
+            equal += 1
+        else:
+            mismatched.append(name)
+    verification = SkillDirVerification(
+        packaged_source=module.packaged_source,
+        expected=len(names),
+        equal=equal,
+        mismatched=tuple(mismatched),
+        missing=tuple(missing),
+        ok=not mismatched and not missing,
+    )
+    if verification.ok:
+        return verification, ()
+    return verification, (
+        f"{module.name}: {_IDE_SKILLS_RELATIVE_PATH}/{prefix}* differs from the packaged "
+        f"source {module.packaged_source} — mismatched: {', '.join(mismatched) or '(none)'}; "
+        f"missing: {', '.join(missing) or '(none)'} (finding only — does not gate ok)",
+    )
+
+
+def _run_custom_module_phase(
+    repo: Path,
+    *,
+    definitions: Sequence[CustomModuleDef],
+    module_sources: Mapping[str, str | None],
+    selected_modules: Sequence[str],
+    config_snapshots: Mapping[str, Mapping[str, bytes | None]],
+    config_toml_before: str,
+    core_exit: int,
+    core_changed: bool,
+    runner: InstallerRunner | LegacyInstallerRunner,
+    spawned_by_steward: bool,
+) -> tuple[tuple[CustomModuleReport, ...], tuple[str, ...]]:
+    """CAP-7 after the core installer: restore configs, own installer, verify, diff.
+
+    Order matters: the config restore runs FIRST because the own installer
+    preserves an existing config file verbatim and only appends its own keys
+    (the 2026-09-06 live recovery order). The own installer runs only when the
+    core installer exited 0 and changed something — a zero-diff core run stays
+    the trap-12 refusal it already is, and a failed core apply is not rebuilt on.
+    """
+    reports: list[CustomModuleReport] = []
+    phase_notes: list[str] = []
+    config_toml_after = _read_config_toml_text(repo)
+
+    for module in definitions:
+        source = module_sources.get(module.name)
+        selected = module.name in selected_modules and source == "custom"
+        if not selected:
+            why = (
+                "does not list it"
+                if module.name not in module_sources
+                else f"lists it with source {source!r}, not custom"
+            )
+            reports.append(
+                CustomModuleReport(
+                    name=module.name,
+                    selected=False,
+                    pin=module.pin,
+                    config_paths=(),
+                    own_installer_cmd=module.own_installer,
+                    own_installer_exit=None,
+                    own_installer_error=None,
+                    verification=None,
+                    config_toml_block_changed=False,
+                    config_toml_block_diff="",
+                    ok=True,
+                    notes=(
+                        f"catalog names {module.name} but the installed manifest {why} — "
+                        "not selected; nothing snapshotted, restored or run "
+                        f"(trap {TRAP_CUSTOM_MODULE_DESELECTED} finding in the pre-flight)",
+                    ),
+                )
+            )
+            continue
+
+        module_notes: list[str] = []
+        restores = _restore_custom_module_configs(
+            repo, config_snapshots.get(module.name, {})
+        )
+
+        exit_code: int | None
+        error: str | None
+        if core_exit != 0:
+            exit_code, error = None, (
+                f"skipped — core installer exited {core_exit}; the module tree is not "
+                "rebuilt on a failed core apply"
+            )
+        elif not core_changed:
+            exit_code, error = None, (
+                "skipped — core installer exited 0 but changed nothing "
+                f"(trap {TRAP_SILENT_NOOP_APPLY}); refuse to run the own installer on a "
+                "no-op apply"
+            )
+        else:
+            exit_code, error, run_notes = _run_own_installer(
+                repo, module, runner, spawned_by_steward=spawned_by_steward
+            )
+            module_notes.extend(run_notes)
+
+        verification, verify_notes = _verify_custom_module_skill_dirs(repo, module)
+        module_notes.extend(verify_notes)
+        if verification is not None and not verification.ok:
+            phase_notes.append(
+                f"custom module {module.name}: skill dirs differ from the packaged source "
+                f"({module.packaged_source}) — mismatched: "
+                f"{', '.join(verification.mismatched) or '(none)'}; missing: "
+                f"{', '.join(verification.missing) or '(none)'} (finding, not a gate)"
+            )
+
+        block_before = _config_toml_module_block(config_toml_before, module.name)
+        block_after = _config_toml_module_block(config_toml_after, module.name)
+        block_changed = block_before != block_after
+        block_diff = (
+            _config_toml_block_diff(block_before, block_after, module.name)
+            if block_changed
+            else ""
+        )
+        if block_changed:
+            module_notes.append(
+                f"the core installer regenerated the [modules.{module.name}] block of "
+                f"{_CONFIG_TOML_RELATIVE_PATH} (trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED}) "
+                "— reported as a diff, never edited by steward; durable answers belong "
+                "in _bmad/custom/config.toml"
+            )
+
+        ok = exit_code == 0 and all(r.status in ("restored", "unchanged") for r in restores)
+        reports.append(
+            CustomModuleReport(
+                name=module.name,
+                selected=True,
+                pin=module.pin,
+                config_paths=restores,
+                own_installer_cmd=module.own_installer,
+                own_installer_exit=exit_code,
+                own_installer_error=error,
+                verification=verification,
+                config_toml_block_changed=block_changed,
+                config_toml_block_diff=block_diff,
+                ok=ok,
+                notes=tuple(module_notes),
+            )
+        )
+        restored = [r.path for r in restores if r.status == "restored"]
+        summary = "; ".join(f"{r.path}: {r.status}" for r in restores) or "(no config paths)"
+        exit_text = f"exit {exit_code}" if exit_code is not None else f"not run ({error})"
+        phase_notes.append(
+            f"custom module {module.name}: {'ok' if ok else 'NOT ok'} — config paths "
+            f"{summary}; own installer {' '.join(module.own_installer)} {exit_text}"
+            + (
+                f"; restored {', '.join(restored)} after the core installer regenerated "
+                f"it (trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED})"
+                if restored
+                else ""
+            )
+        )
+
+    catalog_names = {module.name for module in definitions}
+    for name, source in module_sources.items():
+        if source == "custom" and name not in catalog_names:
+            phase_notes.append(
+                f"installed custom module {name} is absent from the release catalog's "
+                "custom_modules — its config was not snapshotted or restored and its own "
+                f"installer did not run (trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED}); "
+                "add a catalog entry"
+            )
+    return tuple(reports), tuple(phase_notes)
 
 
 
@@ -1280,14 +1961,23 @@ def apply_bmad_core_upgrade(
     package_root: Path | None = None,
     installer_bin: str = "bmad-method",
     installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
+    custom_installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
 ) -> ApplyReport:
-    """CAP-2+3+6 deliberate apply: preflight → branch → installer → custom check → CAP-3 reconcile.
+    """CAP-2+3+6+7 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
 
     The installer command is always ``bmad-method install --action update -y
-    --directory <repo> --modules <every module the manifest lists, core first>``
-    (or *installer_bin* override). Steward never reimplements writing
-    ``_bmad/bmm/**`` or ``_bmad/core/**``. An exit-0 run that changed nothing
-    is reported as ``zero_diff`` — a refusal, never a green (trap 12).
+    --directory <repo> --modules <every module the manifest lists, core first>
+    [--pin <name>=<pin> …]`` (or *installer_bin* override). Steward never
+    reimplements writing ``_bmad/bmm/**`` or ``_bmad/core/**``. An exit-0 run
+    that changed nothing is reported as ``zero_diff`` — a refusal, never a
+    green (trap 12), judged on the core installer's diff alone.
+
+    CAP-7: each catalog ``custom_modules`` entry the manifest lists with
+    ``source: custom`` has its config paths snapshotted before the core
+    installer and restored verbatim after, then its own installer runs from
+    the repo root through *custom_installer_runner* (default:
+    ``default_installer_runner``); the only bytes steward itself writes in
+    that phase are the restored config paths.
     """
     assert_clean_tree(repo)
 
@@ -1301,6 +1991,20 @@ def apply_bmad_core_upgrade(
     refuse_legacy_custom(preflight)
     # CAP-6: refuse before any branch exists when the manifest names no modules.
     modules = read_installed_modules(repo)
+    # CAP-7: one source of truth for `--modules` — the manifest. Assert every
+    # `source: custom` module is on it rather than adding a second selection path.
+    module_sources = read_installed_module_sources(repo)
+    unselected_custom = [
+        name for name, source in module_sources.items()
+        if source == "custom" and name not in modules
+    ]
+    if unselected_custom:
+        raise UpgradeError(
+            f"installed custom module(s) {', '.join(unselected_custom)} would not be "
+            "selected on the installer argv — `--action update -y` deletes an unselected "
+            f"cached custom module (trap {TRAP_CUSTOM_MODULE_DESELECTED}); refuse to apply "
+            "before any review branch exists"
+        )
     # CAP-6: resolve the installer environment before any branch exists. When
     # steward itself will spawn the installer, an unresolvable binary is a
     # refusal here — not a FileNotFoundError on a freshly switched checkout.
@@ -1317,10 +2021,20 @@ def apply_bmad_core_upgrade(
     catalog = load_release_catalog(
         target_version, directory=catalog_directory
     )
+    # CAP-7: the catalog annotates; the manifest selects. Validated in the
+    # pre-flight already (a malformed entry raised there, before any branch).
+    custom_module_defs = load_custom_modules(catalog)
+    installed_custom_defs = [
+        module for module in custom_module_defs
+        if module.name in modules and module_sources.get(module.name) == "custom"
+    ]
     surface_snapshots = snapshot_repo_custom_surfaces(repo, catalog)
+    config_snapshots = _snapshot_custom_module_configs(repo, installed_custom_defs)
+    config_toml_before = _read_config_toml_text(repo)
     snapshot_sha = create_review_branch(repo, review_branch)
 
     modules_csv = ",".join(modules)
+    pins = [f"{module.name}={module.pin}" for module in installed_custom_defs if module.pin]
     installer_cmd = (
         installer_bin,
         "install",
@@ -1331,6 +2045,7 @@ def apply_bmad_core_upgrade(
         str(repo.resolve()),
         "--modules",
         modules_csv,
+        *(part for pin in pins for part in ("--pin", pin)),
     )
     runner = installer_runner or default_installer_runner
     result = _call_installer_runner(runner, repo, installer_cmd, env=env)
@@ -1347,6 +2062,11 @@ def apply_bmad_core_upgrade(
         ),
         env_note,
     ]
+    if pins:
+        notes.append(
+            f"catalog pins on the installer argv: {', '.join(pins)} — stops the "
+            "channel-cache drift for those custom modules at module-selection time"
+        )
     if result.stdout and result.stdout.strip():
         notes.append(f"installer stdout (truncated): {result.stdout.strip()[:500]}")
     if result.stderr and result.stderr.strip():
@@ -1358,6 +2078,36 @@ def apply_bmad_core_upgrade(
             "still holds any partial diff; custom check follows"
         )
 
+    # CAP-6: zero-diff is judged on the CORE installer's diff, before the CAP-7
+    # phase — the own installer must never mask a trap-12 no-op as a "diff".
+    core_changed = list_changed_paths(repo)
+    zero_diff = result.returncode == 0 and not core_changed
+    if zero_diff:
+        notes.append(
+            "installer exited 0 but changed nothing — a cancelled prompt or a no-op; "
+            f"refuse to call this green (trap {TRAP_SILENT_NOOP_APPLY}); the checkout "
+            f"was switched to review branch {review_branch} and is left there for the "
+            "operator to inspect or delete"
+        )
+
+    # CAP-7: restore each custom module's config, run its own installer, verify.
+    custom_modules, phase_notes = _run_custom_module_phase(
+        repo,
+        definitions=custom_module_defs,
+        module_sources=module_sources,
+        selected_modules=modules,
+        config_snapshots=config_snapshots,
+        config_toml_before=config_toml_before,
+        core_exit=int(result.returncode),
+        core_changed=bool(core_changed),
+        runner=custom_installer_runner or default_installer_runner,
+        spawned_by_steward=custom_installer_runner is None,
+    )
+    notes.extend(phase_notes)
+    custom_modules_ok = all(module.ok for module in custom_modules if module.selected)
+
+    # Recomputed AFTER the custom-module phase so the custom check and the
+    # review surface cover the own installer's output too.
     custom_after = fingerprint_custom_tree(repo)
     identical, differs, reason = compare_custom_fingerprints(custom_before, custom_after)
     if identical:
@@ -1366,20 +2116,12 @@ def apply_bmad_core_upgrade(
         notes.append(reason)
 
     changed = list_changed_paths(repo)
-    zero_diff = result.returncode == 0 and not changed
     if changed:
         notes.append(
             f"installer diff on branch {review_branch} ({len(changed)} path(s)) — "
             "review before merge"
         )
-    elif zero_diff:
-        notes.append(
-            "installer exited 0 but changed nothing — a cancelled prompt or a no-op; "
-            f"refuse to call this green (trap {TRAP_SILENT_NOOP_APPLY}); the checkout "
-            f"was switched to review branch {review_branch} and is left there for the "
-            "operator to inspect or delete"
-        )
-    else:
+    elif not zero_diff:
         notes.append("installer produced no working-tree changes")
 
     reconcile = reconcile_clobbered_custom_surfaces(
@@ -1400,6 +2142,8 @@ def apply_bmad_core_upgrade(
         reconcile=reconcile,
         notes=tuple(notes),
         zero_diff=zero_diff,
+        custom_modules=custom_modules,
+        custom_modules_ok=custom_modules_ok,
     )
 
 
@@ -1457,6 +2201,53 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
             lines.append(
                 "bak accounted: " + ", ".join(rec.bak_files_accounted)
             )
+
+    lines.extend(["", "## CAP-7 custom modules"])
+    if not report.custom_modules:
+        lines.append("(none in catalog)")
+    else:
+        lines.append(f"custom_modules_ok={report.custom_modules_ok}")
+    for module in report.custom_modules:
+        lines.append(
+            f"- {module.name}: selected={module.selected} "
+            f"pin={module.pin or '(none)'} ok={module.ok}"
+        )
+        for restore in module.config_paths:
+            lines.append(f"  - config {restore.path}: {restore.status} — {restore.detail}")
+        if module.selected:
+            exit_text = (
+                f"exit {module.own_installer_exit}"
+                if module.own_installer_exit is not None
+                else f"not run — {module.own_installer_error}"
+            )
+            lines.append(
+                f"  - own installer: {' '.join(module.own_installer_cmd)} ({exit_text})"
+            )
+            verification = module.verification
+            if verification is None:
+                lines.append("  - skill-dir verification: skipped")
+            else:
+                extra = ""
+                if verification.mismatched:
+                    extra += f"; mismatched: {', '.join(verification.mismatched)}"
+                if verification.missing:
+                    extra += f"; missing: {', '.join(verification.missing)}"
+                lines.append(
+                    f"  - skill-dir verification: {verification.equal}/{verification.expected} "
+                    f"equal to {verification.packaged_source} ok={verification.ok}{extra}"
+                )
+            block_state = (
+                "CHANGED by the installer (reported, never edited)"
+                if module.config_toml_block_changed
+                else "unchanged"
+            )
+            lines.append(
+                f"  - {_CONFIG_TOML_RELATIVE_PATH} [modules.{module.name}]: {block_state}"
+            )
+            for diff_line in module.config_toml_block_diff.rstrip("\n").splitlines():
+                lines.append(f"    {diff_line}")
+        for note in module.notes:
+            lines.append(f"  - note: {note}")
 
     if report.notes:
         lines.extend(["", "## Notes"])
@@ -2867,6 +3658,8 @@ class UpgradeDuty:
             and not apply_report.zero_diff
             and apply_report.custom_identical
             and reconcile_ok
+            # CAP-7: own installer exit 0 + every config path restored, per module.
+            and apply_report.custom_modules_ok
         )
         return DutyResult(
             ok=ok,

@@ -1,11 +1,15 @@
-"""Story 14.1 — CAP-1 pre-flight retrodicts the 6.10.0→6.11.0 upgrade traps."""
+"""Story 14.1 — CAP-1 pre-flight retrodicts the 6.10.0→6.11.0 upgrade traps.
+
+Story 14.7 — CAP-7: the packaged 6.12.0 catalog names skf under
+``custom_modules`` and a manifest without ``modules:`` yields no custom-module
+findings.
+"""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import pytest
 import yaml
 
 from pyforge.steward.cli import EXIT_OK, main
@@ -19,8 +23,9 @@ from pyforge.steward.upgrade import (
     build_preflight_report,
     catalog_dir,
     format_preflight,
+    load_custom_modules,
+    read_installed_module_sources,
 )
-
 
 _EXPECTED_TRAPS = (
     TRAP_LOCAL_MOD,
@@ -100,6 +105,49 @@ def test_catalog_ships_611():
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert data["version"] == "6.11.0"
     assert data["baseline_pair_from"] == "6.10.0"
+    # 6.11.0 predates CAP-7: no custom_modules, and the loader tolerates that.
+    assert "custom_modules" not in data
+    assert load_custom_modules(data) == ()
+
+
+def test_catalog_ships_612_custom_modules():
+    """Story 14.7: the shipped 6.12.0 catalog's skf entry parses with exactly these keys."""
+    path = catalog_dir() / "6.12.0.yaml"
+    assert path.is_file()
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert data["version"] == "6.12.0"
+    raw = data["custom_modules"]
+    assert [entry["name"] for entry in raw] == ["skf"]
+    assert set(raw[0]) == {
+        "name",
+        "own_installer",
+        "config_paths",
+        "pin",
+        "packaged_source",
+        "notes",
+    }
+    (skf,) = load_custom_modules(data)
+    assert skf.name == "skf"
+    assert skf.own_installer == ("bmad-module-skill-forge", "update")
+    assert skf.config_paths == ("_bmad/skf/config.yaml",)
+    # The --pin skf=v2.1.0 question stays open — the catalog ships pin: null.
+    assert raw[0]["pin"] is None
+    assert skf.pin is None
+    assert skf.packaged_source == (
+        ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
+    )
+    assert "Trap 13" in skf.notes and "Trap 14" in skf.notes
+    assert "skf-campaign" in skf.notes
+
+
+def test_preflight_610_manifest_without_modules_yields_no_custom_module_findings(
+    tmp_path,
+):
+    repo = _write_610_repo(tmp_path / "repo")
+    assert read_installed_module_sources(repo) == {}
+    report = build_preflight_report(repo=repo, target_version="6.11.0")
+    assert report.custom_modules == ()
+    assert "(none in catalog or manifest)" in format_preflight(report, as_json=False)
 
 
 def test_preflight_611_retrodicts_failure_mode_traps(tmp_path):

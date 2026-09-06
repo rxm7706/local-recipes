@@ -629,9 +629,13 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--apply",
         action="store_true",
         help=(
-            "CAP-2 deliberate apply: require clean tree, consume CAP-1 pre-flight, "
-            "create review branch, run `bmad-method install --action update -y`, "
-            "verify _bmad/custom/** byte-identical (or report why not)"
+            "CAP-2/6/7 deliberate apply: require a clean tree, consume the CAP-1 "
+            "pre-flight, create the review branch, run `bmad-method install --action "
+            "update -y --directory <repo> --modules <every manifest module, core "
+            "first> [--pin <name>=<pin>]` with stdin closed, then for each catalog "
+            "custom module restore its config paths and run its own installer "
+            "(e.g. `bmad-module-skill-forge update`); verify _bmad/custom/** "
+            "byte-identical (or report why not)"
         ),
     )
     bmad_core.add_argument(

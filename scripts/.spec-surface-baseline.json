@@ -4786,13 +4786,13 @@
  "pyforge-steward/spec-bmad-suite-install-class-wiring": {
   "files": {
    ".github/workflows/pyforge-steward-fresh-clone.yml": "aa9978d00386fa47a354722a8db5664181374e8d",
-   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md": "c88240c5fbde7cdc6d3c7c6081443075a1064226",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "81b5946b11bb4c5ac1884d8e515a9ca0cade0369",
+   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md": "3f3a0a47102cefe8e1219a8e08530555f2af6aae",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py": "0395bc32babb361379a34e377f30a247f2a54559",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "2c0acf9a99fb4d917176783370ae58cb77cc1cad",
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e4078969ba96a3ee78303d0f19b9270609b3aa67"
   },
-  "memlog": "10c58cad5357e4fe92ebf6d8a521383413eec948"
+  "memlog": "f4fa466a0756b0d91d2cac3bb3910e9b1fe7cd13"
  },
  "pyforge-steward/spec-bmad-suite-metapackage": {
   "files": {
@@ -4900,7 +4900,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "8b373b348d5f2032d6717213c7688610b989f859",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "d45124ee19ee64f810e4d210a21565f0c91d42eb",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "81b5946b11bb4c5ac1884d8e515a9ca0cade0369",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py": "9779e650eb45204ca8bd06dbf6457976c71868b2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/apps.py": "aa8e2bfb83c84e87da8216761d6ecf1be363b8e5",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py": "cddba4da79f24c1fad5344a17b949a69200189cb",
@@ -4916,7 +4916,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/__init__.py": "7ce65c1e058f72ad74a949fdaf8c110a5a8e984c",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.11.0.yaml": "4ca1c3a065543a25b92498e4ec364c14c0caec20",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml": "4efd773fd3fb9d2b30a75fc6ed86319398eec133",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml": "51d017e75f32fb003a70aae75cf3921332e67275",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/__init__.py": "6c0153dca42c04949c6ec1f2d15802f348f58456",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py": "52f773e78754580d788aec657f4f1a6e2ede8fbf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py": "53fa3e9ed5133c72e7798718268af8dcfab750ec",
@@ -4930,7 +4930,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py": "207dbd504ae9e61d6b147ca0a412b15986f31ec1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "10a41c1cf58a5368362bf782948092123ce4bb41",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "5e0bfc4326eafe5af1ad39e88c74a4db32c88d79",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "318eed8c3acb08390cee07ad64b330d87fe3e56d",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "d78cb514474ee9ac99327632f35edc05d3b3f116",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py": "cf6abdd3b6404f31b7a975e0d83126995e884197",
@@ -4991,17 +4991,17 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py": "676f8a31c83739b88010172b0df2d6fc126040be",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py": "7aa53921bd01eef03a756964b8a84a52063e816b",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": "3b641642decaf3df605960c543777b419e4a176c",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "9dc32988a3f1d557de77bc8a390e481d05eb49a0",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "4cab2a0ec38da0d1fc1014c6ea3aded5ed2cd16f",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py": "3425bb96f846fe740ccab0c1a36c51c08abf7951",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py": "173c5e2f3dcb6deb6e1fed8ad62b1751cfbf7ef4",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "9aa40e28bbcd78bc5cfd1cd5f1f4d6bf3e309622",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "108b7f7de12a4bbe22323ef2eec5b5f5cd10cf94",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "fcb3fdce98f1a0b9f3bf24c7bb137aa739a90dbd",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "6f84f2a445589fa24b2381ea748d69ef17c549cb",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "5e6cab7c1d867e773ddae89668ff4ee56798bf25",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "04b42304e9ad6915405db5e4edc368243df4c5e2"
+  "memlog": "b7edf5b918fb0be75c7172319faa00fcece75abb"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -6292,10 +6292,10 @@
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "81b5946b11bb4c5ac1884d8e515a9ca0cade0369",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8"
   },
-  "memlog": "7d41e6db85a151b9924ac4cebcd359aa99ad28ae"
+  "memlog": "4a26a22e7ff7a7e927fb651203be13341fa5fcd9"
  },
  "pyforge-steward/spec-secure-live-dashboards": {
   "files": {},
