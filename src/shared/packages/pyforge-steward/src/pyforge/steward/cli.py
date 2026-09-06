@@ -668,6 +668,18 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         ),
     )
     bmad_core.add_argument(
+        "--installed-package-root",
+        default=None,
+        metavar="DIR",
+        help=(
+            "optional path to the CACHED INSTALLED version's unpacked bmad-method "
+            "package (compares every installer-owned skill/script file for local "
+            "edits, pre-flight and --apply re-apply); default: best-effort "
+            "~/.cache/rattler/cache/pkgs/bmad-method-<installed>-*/lib/node_modules/"
+            "bmad-method glob, report-only, never required"
+        ),
+    )
+    bmad_core.add_argument(
         "--catalog-dir",
         default=None,
         metavar="DIR",

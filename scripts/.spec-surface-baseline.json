@@ -4771,7 +4771,7 @@
  },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
-  "memlog": "eae851184a8a502902960b694fb453f8d2ded5e7"
+  "memlog": "b5629f66015d64c2522eaa424e35b798bf2eeecb"
  },
  "pyforge-steward/spec-bmad-module-provisioning": {
   "files": {
@@ -4787,12 +4787,12 @@
   "files": {
    ".github/workflows/pyforge-steward-fresh-clone.yml": "aa9978d00386fa47a354722a8db5664181374e8d",
    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md": "3f3a0a47102cefe8e1219a8e08530555f2af6aae",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "7072e76a57273bf55b152fdcf62c185784fe554b",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py": "0395bc32babb361379a34e377f30a247f2a54559",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "2c0acf9a99fb4d917176783370ae58cb77cc1cad",
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e4078969ba96a3ee78303d0f19b9270609b3aa67"
   },
-  "memlog": "f4fa466a0756b0d91d2cac3bb3910e9b1fe7cd13"
+  "memlog": "9982a0ccf6590be1e9acfd33f47d7eb50591f2e1"
  },
  "pyforge-steward/spec-bmad-suite-metapackage": {
   "files": {
@@ -4900,7 +4900,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "8b373b348d5f2032d6717213c7688610b989f859",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "d45124ee19ee64f810e4d210a21565f0c91d42eb",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "7072e76a57273bf55b152fdcf62c185784fe554b",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py": "9779e650eb45204ca8bd06dbf6457976c71868b2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/apps.py": "aa8e2bfb83c84e87da8216761d6ecf1be363b8e5",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py": "cddba4da79f24c1fad5344a17b949a69200189cb",
@@ -4930,7 +4930,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py": "207dbd504ae9e61d6b147ca0a412b15986f31ec1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "10a41c1cf58a5368362bf782948092123ce4bb41",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "5e0bfc4326eafe5af1ad39e88c74a4db32c88d79",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "fb29fe5ca79dd96d4b5e6aa4ee0d9fb5578548bc",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "dbee94f0a528941b05379730329d2a1ec6a535b7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py": "cf6abdd3b6404f31b7a975e0d83126995e884197",
@@ -4991,17 +4991,17 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py": "676f8a31c83739b88010172b0df2d6fc126040be",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py": "7aa53921bd01eef03a756964b8a84a52063e816b",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": "3b641642decaf3df605960c543777b419e4a176c",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "5dbfd000741bbe4e4c64400bed687ea90a3c9a7f",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "6c502dc1f3f8509edabf7ff42d86ed2fe5fe36e5",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py": "3425bb96f846fe740ccab0c1a36c51c08abf7951",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py": "173c5e2f3dcb6deb6e1fed8ad62b1751cfbf7ef4",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "108b7f7de12a4bbe22323ef2eec5b5f5cd10cf94",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "b302f48eeb6dc2b35e032bb0d528d5bf766aac3e",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "fcb3fdce98f1a0b9f3bf24c7bb137aa739a90dbd",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "6f84f2a445589fa24b2381ea748d69ef17c549cb",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "711fa8fcc84717e8640ab32c1b5d73ac15159189",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "5e6cab7c1d867e773ddae89668ff4ee56798bf25",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "932cd213aeb9a4da25922e9c1348559b00cf3abc"
+  "memlog": "d2283ff68c6a387798aa5e582418338a327e78cf"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -6292,10 +6292,10 @@
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "00bedf427cfe0b54001281250a767972d4965534",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "7072e76a57273bf55b152fdcf62c185784fe554b",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8"
   },
-  "memlog": "4a26a22e7ff7a7e927fb651203be13341fa5fcd9"
+  "memlog": "59995d630d27595dda2fefd4368702f63f6824c0"
  },
  "pyforge-steward/spec-secure-live-dashboards": {
   "files": {},

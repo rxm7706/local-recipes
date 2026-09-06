@@ -3,6 +3,10 @@
 Story 14.7 — CAP-7: the packaged 6.12.0 catalog names skf under
 ``custom_modules`` and a manifest without ``modules:`` yields no custom-module
 findings.
+
+Story 14.8 — CAP-8: a marker-free byte-diff scan of installer-owned skill
+files and ``_bmad/scripts/*.py`` finds local edits the marker-based trap-1
+mechanism misses (trap 16).
 """
 
 from __future__ import annotations
@@ -17,11 +21,14 @@ from pyforge.steward.upgrade import (
     TRAP_CONFIG_MIGRATION,
     TRAP_FORWARDER,
     TRAP_LEGACY_CUSTOM,
+    TRAP_LOCAL_CUSTOMIZATION,
     TRAP_LOCAL_MOD,
     TRAP_PREREQUISITES,
     TRAP_REMOVALS,
+    _local_customization_findings,
     build_preflight_report,
     catalog_dir,
+    default_installed_package_root,
     format_preflight,
     load_custom_modules,
     read_installed_module_sources,
@@ -280,6 +287,189 @@ def test_cli_refuses_unknown_target(tmp_path, capsys):
     err = capsys.readouterr()
     combined = err.out + err.err
     assert "no release catalog" in combined
+
+
+# ── Story 14.8 / CAP-8 fixtures ────────────────────────────────────────────
+
+
+def _write_package_root(
+    root: Path,
+    *,
+    skill_body: str = "# bmad-dev-auto (packaged)\n",
+    script_body: str = "print('packaged helper')\n",
+    v6_shim_only: bool = False,
+) -> Path:
+    """Minimal installed/target package tree: one bmm-skills skill + two scripts."""
+    root.mkdir(parents=True, exist_ok=True)
+    skills_root = root / "src" / "bmm-skills"
+    skill_dir = (
+        (skills_root / "v6-shims" / "bmad-dev-auto")
+        if v6_shim_only
+        else (skills_root / "bmad-dev-auto")
+    )
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(skill_body, encoding="utf-8")
+    scripts_root = root / "src" / "scripts"
+    scripts_root.mkdir(parents=True)
+    (scripts_root / "helper.py").write_text(script_body, encoding="utf-8")
+    (scripts_root / "resolve_config.py").write_text(
+        '"""upstream four-layer resolve_config — no multi-project marker."""\n'
+        "def main():\n    pass\n",
+        encoding="utf-8",
+    )
+    return root
+
+
+def _add_skill_and_script(
+    repo: Path,
+    *,
+    skill_body: str = "# bmad-dev-auto (repo copy)\n",
+    script_body: str = "print('repo helper')\n",
+    script_name: str = "helper.py",
+) -> None:
+    skill_dir = repo / ".claude" / "skills" / "bmad-dev-auto"
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    (skill_dir / "SKILL.md").write_text(skill_body, encoding="utf-8")
+    (repo / "_bmad" / "scripts" / script_name).write_text(script_body, encoding="utf-8")
+
+
+def test_default_installed_package_root_no_cache_dir_returns_none(tmp_path):
+    assert default_installed_package_root("6.10.0", cache_root=tmp_path / "no-such-dir") is None
+
+
+def test_default_installed_package_root_no_matching_version_returns_none(tmp_path):
+    cache = tmp_path / "cache"
+    other = cache / "bmad-method-6.99.0-abc123" / "lib" / "node_modules" / "bmad-method"
+    other.mkdir(parents=True)
+    assert default_installed_package_root("6.10.0", cache_root=cache) is None
+
+
+def test_default_installed_package_root_matches_glob(tmp_path):
+    cache = tmp_path / "cache"
+    pkg = cache / "bmad-method-6.10.0-abc123" / "lib" / "node_modules" / "bmad-method"
+    pkg.mkdir(parents=True)
+    assert default_installed_package_root("6.10.0", cache_root=cache) == pkg
+
+
+def test_preflight_no_installed_package_root_and_no_cache_match_is_report_only(
+    tmp_path, monkeypatch
+):
+    # Deterministic regardless of the real machine's rattler cache contents.
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home")
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    report = build_preflight_report(repo=repo, target_version="6.11.0")
+    assert report.local_customizations == ()
+    assert TRAP_LOCAL_CUSTOMIZATION not in report.trap_ids
+    assert any("local-customization scan skipped" in n for n in report.notes)
+
+
+def test_scan_finds_skill_file_edited_in_place(tmp_path):
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo, skill_body="# bmad-dev-auto (LOCALLY EDITED)\n")
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert TRAP_LOCAL_CUSTOMIZATION in report.trap_ids
+    paths = {f.path for f in report.local_customizations}
+    assert ".claude/skills/bmad-dev-auto/SKILL.md" in paths
+    assert "Local customizations" in format_preflight(report, as_json=False)
+
+
+def test_scan_skips_v6_shims_skill_dir(tmp_path):
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo, skill_body="# bmad-dev-auto (LOCALLY EDITED)\n")
+    package = _write_package_root(tmp_path / "pkg", v6_shim_only=True)
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert not any(
+        f.path == ".claude/skills/bmad-dev-auto/SKILL.md"
+        for f in report.local_customizations
+    )
+
+
+def test_scan_finds_script_edited_in_place(tmp_path):
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo, script_body="print('LOCALLY EDITED')\n")
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert any(f.path == "_bmad/scripts/helper.py" for f in report.local_customizations)
+
+
+def test_scan_script_with_no_packaged_counterpart_is_not_a_finding(tmp_path):
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    (repo / "_bmad" / "scripts" / "bmad_tea_playwright.py").write_text(
+        "print('repo-only TEA helper')\n", encoding="utf-8"
+    )
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert not any(
+        f.path == "_bmad/scripts/bmad_tea_playwright.py"
+        for f in report.local_customizations
+    )
+
+
+def test_scan_excludes_upstream_touched_paths(tmp_path):
+    # resolve_config.py is `_write_610_repo`'s trap-1 marker file AND a catalog
+    # `upstream_touched_paths` entry — CAP-8 must not double-report it.
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert not any(
+        f.path == "_bmad/scripts/resolve_config.py" for f in report.local_customizations
+    )
+    # Still governed by trap 1 (the pre-existing marker-based mechanism).
+    assert any(m.path == "_bmad/scripts/resolve_config.py" for m in report.locally_modified)
+
+
+def test_scan_excludes_skill_shaped_upstream_touched_path(tmp_path):
+    """The skill scan honors `exclude` the same way the scripts scan already does."""
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo, skill_body="# bmad-dev-auto (LOCALLY EDITED)\n")
+    package = _write_package_root(tmp_path / "pkg")
+    catalog = {"upstream_touched_paths": [".claude/skills/bmad-dev-auto/SKILL.md"]}
+    findings = _local_customization_findings(repo, package, catalog)
+    assert not any(
+        f.path == ".claude/skills/bmad-dev-auto/SKILL.md" for f in findings
+    )
+    # The script-side finding (not named in upstream_touched_paths) still surfaces.
+    assert any(f.path == "_bmad/scripts/helper.py" for f in findings)
+
+
+def test_scan_skips_pycache_noise(tmp_path):
+    """CAP-8 trap 16 false-positive fix: __pycache__/*.pyc never fingerprints as a finding."""
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo)
+    pycache_dir = repo / ".claude" / "skills" / "bmad-dev-auto" / "__pycache__"
+    pycache_dir.mkdir(parents=True)
+    (pycache_dir / "helper.cpython-311.pyc").write_bytes(b"repo-only compiled noise")
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert not any("__pycache__" in f.path for f in report.local_customizations)
+    assert not any(f.path.endswith((".pyc", ".pyo")) for f in report.local_customizations)
+
+
+def test_preflight_installed_package_root_bad_path_notes_scan_skipped(tmp_path):
+    """An explicit --installed-package-root that isn't a directory must not go silent."""
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    bad_root = tmp_path / "does-not-exist"
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=bad_root
+    )
+    assert report.local_customizations == ()
+    assert TRAP_LOCAL_CUSTOMIZATION not in report.trap_ids
+    notes = " ".join(report.notes)
+    assert "local-customization scan skipped" in notes
+    assert "is not a directory" in notes
 
 
 def test_preflight_never_mutates_tree(tmp_path):

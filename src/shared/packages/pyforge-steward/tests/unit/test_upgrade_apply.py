@@ -9,6 +9,12 @@ core apply — catalog-annotated config paths are snapshotted and restored, the
 module's own installer runs from the repo root, skill dirs are verified against
 the packaged source (finding only), and the regenerated ``[modules.<name>]``
 block is reported as a diff (traps 13/14 replayed with fake installers only).
+
+Story 14.8 — CAP-8: a marker-free byte-diff scan finds installer-owned skill
+files and ``_bmad/scripts/*.py`` edited in place (trap 16); after the core
+installer regenerates them, a real ``git merge-file`` three-way merge lands
+the clean ones and flags genuine conflicts with a ``.customization-conflict``
+sibling, repo bytes left exactly as the installer wrote them.
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.upgrade import (
     TRAP_CUSTOM_MODULE_CONFIG_REGENERATED,
     TRAP_CUSTOM_MODULE_DESELECTED,
+    TRAP_LOCAL_CUSTOMIZATION,
     UpgradeError,
     apply_bmad_core_upgrade,
     assert_clean_tree,
@@ -43,6 +50,7 @@ from pyforge.steward.upgrade import (
     load_custom_modules,
     read_installed_module_sources,
     read_installed_modules,
+    reapply_local_customizations,
     resolve_installer_environment,
 )
 
@@ -1709,4 +1717,332 @@ def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
     assert "--modules" in text
     assert "--pin" in text
     assert "bmad-module-skill-forge update" in text
+
+
+# ── Story 14.8 / CAP-8 — local customizations found & re-applied ───────────
+
+_CAP8_SKILL_NAME = "bmad-dev-auto"
+_CAP8_SCRIPT_NAME = "helper.py"
+
+# File A: `_bmad/scripts/helper.py` — clean auto-merge (repo edit + upstream's
+# own old→new edit sit on different, non-adjacent lines; `MID_A` is the
+# unchanged context line git's diff3 needs to keep the two hunks separate).
+_CAP8_SCRIPT_BASE = 'A = "same"\nMID_A = "x"\nB = "same"\nTRAIL = "same"\n'
+_CAP8_SCRIPT_OURS = 'A = "custom"\nMID_A = "x"\nB = "same"\nTRAIL = "same"\n'
+_CAP8_SCRIPT_NEW = 'A = "same"\nMID_A = "x"\nB = "new"\nTRAIL = "same"\n'
+_CAP8_SCRIPT_MERGED = 'A = "custom"\nMID_A = "x"\nB = "new"\nTRAIL = "same"\n'
+
+# File B: `.claude/skills/bmad-dev-auto/step-01.md` — clean auto-merge.
+_CAP8_SKILL1_BASE = "# step-01\nC = same\nMID_B = x\nD = same\n"
+_CAP8_SKILL1_OURS = "# step-01\nC = custom\nMID_B = x\nD = same\n"
+_CAP8_SKILL1_NEW = "# step-01\nC = same\nMID_B = x\nD = new\n"
+_CAP8_SKILL1_MERGED = "# step-01\nC = custom\nMID_B = x\nD = new\n"
+
+# File C: `.claude/skills/bmad-dev-auto/step-02.md` — a real conflict: ours,
+# base, and theirs are three genuinely different values at the same line.
+_CAP8_SKILL2_BASE = "ROUTE = old\nMID_C = x\nTAIL = same\n"
+_CAP8_SKILL2_OURS = "ROUTE = old  # kept by repo\nMID_C = x\nTAIL = same\n"
+_CAP8_SKILL2_NEW = "ROUTE = new\nMID_C = x\nTAIL = same\n"
+
+
+def _write_cap8_package(
+    root: Path, *, script_body: str, skill1_body: str, skill2_body: str
+) -> Path:
+    """Minimal package tree: one bmm-skills skill dir (2 files) + one script."""
+    scripts = root / "src" / "scripts"
+    scripts.mkdir(parents=True)
+    (scripts / _CAP8_SCRIPT_NAME).write_text(script_body, encoding="utf-8")
+    skill_dir = root / "src" / "bmm-skills" / _CAP8_SKILL_NAME
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "step-01.md").write_text(skill1_body, encoding="utf-8")
+    (skill_dir / "step-02.md").write_text(skill2_body, encoding="utf-8")
+    return root
+
+
+def _write_cap8_repo(root: Path) -> Path:
+    """`_write_repo` (no skf) plus the three CAP-8-flagged files, committed."""
+    repo = _write_repo(
+        root, modules=("core", "bmm"), custom=(), with_legacy_custom=False
+    )
+    skill_dir = repo / ".claude" / "skills" / _CAP8_SKILL_NAME
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "step-01.md").write_text(_CAP8_SKILL1_OURS, encoding="utf-8")
+    (skill_dir / "step-02.md").write_text(_CAP8_SKILL2_OURS, encoding="utf-8")
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
+        _CAP8_SCRIPT_OURS, encoding="utf-8"
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "cap8 fixture: three installer-owned files edited in place")
+    return repo
+
+
+def _fake_cap8_installer_script(path: Path, *, target_package_root: Path) -> Path:
+    """Fake ``bmad-method`` that regenerates the three CAP-8 files from *target_package_root*.
+
+    Mirrors trap 16 live: the installer rewrites every installer-owned file it
+    ships with the target release's content, dropping the repo's edits.
+    """
+    body = textwrap.dedent(
+        f"""\
+        #!/usr/bin/env python3
+        import pathlib, shutil, sys
+        repo = pathlib.Path.cwd()
+        assert sys.argv[1:4] == ["install", "--action", "update"], sys.argv
+        assert "-y" in sys.argv
+        directory = pathlib.Path(sys.argv[sys.argv.index("--directory") + 1])
+        assert directory.resolve() == repo.resolve(), sys.argv
+        assert sys.argv[sys.argv.index("--modules") + 1], sys.argv
+        (repo / "_bmad" / "bmm" / "updated.txt").write_text("from-installer\\n", encoding="utf-8")
+        (repo / "_bmad" / "core" / "updated.txt").write_text("from-installer\\n", encoding="utf-8")
+        pkg = pathlib.Path({str(target_package_root)!r})
+        shutil.copy(
+            pkg / "src" / "scripts" / {_CAP8_SCRIPT_NAME!r},
+            repo / "_bmad" / "scripts" / {_CAP8_SCRIPT_NAME!r},
+        )
+        skills = repo / ".claude" / "skills" / {_CAP8_SKILL_NAME!r}
+        shutil.copy(pkg / "src" / "bmm-skills" / {_CAP8_SKILL_NAME!r} / "step-01.md", skills / "step-01.md")
+        shutil.copy(pkg / "src" / "bmm-skills" / {_CAP8_SKILL_NAME!r} / "step-02.md", skills / "step-02.md")
+        sys.exit(0)
+        """
+    )
+    path.write_text(body, encoding="utf-8")
+    path.chmod(0o755)
+    return path
+
+
+def _cap8_fixture(tmp_path: Path) -> dict[str, Path]:
+    repo = _write_cap8_repo(tmp_path / "repo")
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = _write_cap8_package(
+        tmp_path / "target-pkg",
+        script_body=_CAP8_SCRIPT_NEW,
+        skill1_body=_CAP8_SKILL1_NEW,
+        skill2_body=_CAP8_SKILL2_NEW,
+    )
+    installer = _fake_cap8_installer_script(
+        tmp_path / "fake-bmad-method", target_package_root=target_pkg
+    )
+    return {
+        "repo": repo,
+        "installed_pkg": installed_pkg,
+        "target_pkg": target_pkg,
+        "installer": installer,
+    }
+
+
+def test_preflight_finds_all_three_cap8_local_customizations(tmp_path):
+    paths = _cap8_fixture(tmp_path)
+    report = build_preflight_report(
+        repo=paths["repo"],
+        target_version="6.11.0",
+        installed_package_root=paths["installed_pkg"],
+    )
+    assert TRAP_LOCAL_CUSTOMIZATION in report.trap_ids
+    flagged = {f.path for f in report.local_customizations}
+    assert flagged == {
+        "_bmad/scripts/helper.py",
+        ".claude/skills/bmad-dev-auto/step-01.md",
+        ".claude/skills/bmad-dev-auto/step-02.md",
+    }
+
+
+def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
+    paths = _cap8_fixture(tmp_path)
+    report = apply_bmad_core_upgrade(
+        repo=paths["repo"],
+        target_version="6.11.0",
+        installer_bin=str(paths["installer"]),
+        installed_package_root=paths["installed_pkg"],
+        package_root=paths["target_pkg"],
+        branch="review/cap8",
+    )
+    assert report.installer_exit == 0
+    reapply = report.local_customizations_reapply
+    assert reapply is not None
+    by_path = {f.path: f for f in reapply.findings}
+    assert set(by_path) == {
+        "_bmad/scripts/helper.py",
+        ".claude/skills/bmad-dev-auto/step-01.md",
+        ".claude/skills/bmad-dev-auto/step-02.md",
+    }
+
+    script_finding = by_path["_bmad/scripts/helper.py"]
+    assert script_finding.action == "merged_clean"
+    assert (paths["repo"] / "_bmad" / "scripts" / "helper.py").read_text(
+        encoding="utf-8"
+    ) == _CAP8_SCRIPT_MERGED
+
+    skill1_finding = by_path[".claude/skills/bmad-dev-auto/step-01.md"]
+    assert skill1_finding.action == "merged_clean"
+    assert (
+        paths["repo"] / ".claude" / "skills" / "bmad-dev-auto" / "step-01.md"
+    ).read_text(encoding="utf-8") == _CAP8_SKILL1_MERGED
+
+    skill2_finding = by_path[".claude/skills/bmad-dev-auto/step-02.md"]
+    assert skill2_finding.action == "conflict_needs_manual_merge"
+    skill2_path = paths["repo"] / ".claude" / "skills" / "bmad-dev-auto" / "step-02.md"
+    # Repo bytes are left EXACTLY as the (fake) installer wrote them — untouched.
+    assert skill2_path.read_text(encoding="utf-8") == _CAP8_SKILL2_NEW
+    conflict_path = paths["repo"] / ".claude" / "skills" / "bmad-dev-auto" / "step-02.md.customization-conflict"
+    assert skill2_finding.conflict_path == ".claude/skills/bmad-dev-auto/step-02.md.customization-conflict"
+    conflict_text = conflict_path.read_text(encoding="utf-8")
+    assert "<<<<<<<" in conflict_text
+    assert "=======" in conflict_text
+    assert ">>>>>>>" in conflict_text
+
+    assert reapply.all_clean is False
+    assert report.local_customizations_ok is False
+
+    text = format_apply(report, as_json=False)
+    assert "## CAP-8 local customizations re-applied" in text
+    assert "[merged_clean] _bmad/scripts/helper.py" in text
+    assert "[conflict_needs_manual_merge] .claude/skills/bmad-dev-auto/step-02.md" in text
+    assert (
+        "conflict file: .claude/skills/bmad-dev-auto/step-02.md.customization-conflict"
+        in text
+    )
+
+
+def test_cli_apply_cap8_conflict_gates_ok_false(tmp_path):
+    paths = _cap8_fixture(tmp_path)
+    out = io.StringIO()
+    err = io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        rc = main(
+            [
+                "upgrade",
+                "bmad-core",
+                "--target",
+                "6.11.0",
+                "--apply",
+                "--repo-root",
+                str(paths["repo"]),
+                "--installer",
+                str(paths["installer"]),
+                "--installed-package-root",
+                str(paths["installed_pkg"]),
+                "--package-root",
+                str(paths["target_pkg"]),
+                "--branch",
+                "review/cli-cap8",
+                "--json",
+            ]
+        )
+    assert rc == EXIT_FAILED
+    # ok=False routes the summary to stderr.
+    payload = json.loads(err.getvalue())
+    assert payload["local_customizations_ok"] is False
+    actions = {f["action"] for f in payload["local_customizations_reapply"]["findings"]}
+    assert actions == {"merged_clean", "conflict_needs_manual_merge"}
+
+
+def test_reapply_local_customizations_unchanged_when_installer_leaves_file_alone(
+    tmp_path,
+):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = _write_cap8_package(
+        tmp_path / "target-pkg",
+        script_body=_CAP8_SCRIPT_NEW,
+        skill1_body=_CAP8_SKILL1_NEW,
+        skill2_body=_CAP8_SKILL2_NEW,
+    )
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
+        _CAP8_SCRIPT_OURS, encoding="utf-8"
+    )
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "unchanged"
+    assert (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).read_text(
+        encoding="utf-8"
+    ) == _CAP8_SCRIPT_OURS
+
+
+def test_reapply_local_customizations_skipped_no_package_match(tmp_path):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = _write_cap8_package(
+        tmp_path / "target-pkg",
+        script_body=_CAP8_SCRIPT_NEW,
+        skill1_body=_CAP8_SKILL1_NEW,
+        skill2_body=_CAP8_SKILL2_NEW,
+    )
+    ghost = repo / "_bmad" / "scripts" / "ghost.py"
+    ghost.write_text("print('repo-only, no packaged counterpart')\n", encoding="utf-8")
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/ghost.py": ghost.read_bytes()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "skipped_no_package_match"
+    assert report.all_clean is True
+
+
+def test_reapply_local_customizations_skipped_installer_removed_file(tmp_path):
+    """The installer deleted the flagged file outright — a clean merge must not recreate it."""
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = _write_cap8_package(
+        tmp_path / "target-pkg",
+        script_body=_CAP8_SCRIPT_NEW,
+        skill1_body=_CAP8_SKILL1_NEW,
+        skill2_body=_CAP8_SKILL2_NEW,
+    )
+    # No `_bmad/scripts/helper.py` in the repo at all — unlike the "unchanged"
+    # case, the installer removed it rather than leaving it in place.
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "skipped_installer_removed_file"
+    assert not (repo / "_bmad" / "scripts" / "helper.py").exists()
+    assert report.all_clean is True
+
+
+def test_reapply_local_customizations_no_roots_is_a_noop(tmp_path):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/helper.py": b"anything"},
+        installed_package_root=None,
+        package_root=None,
+    )
+    assert report.findings == ()
+    assert report.all_clean is True
+    assert any("unavailable" in n for n in report.notes)
+
+
+def test_cli_apply_help_names_installed_package_root_flag(capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "400")
+    rc = main(["upgrade", "bmad-core", "--help"])
+    assert rc == EXIT_OK
+    text = " ".join(capsys.readouterr().out.split())
+    assert "--installed-package-root" in text
     assert "run `bmad-method install --action update -y`," not in text
