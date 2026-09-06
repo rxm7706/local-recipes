@@ -1,5 +1,6 @@
 ---
 id: SPEC-bmad-method-version-drift
+status: shipped   # 2026-09-06 — Epic 10 + Epic 14 done; Dream realized
 owner-dream: docs/dreams/bmad-method-version-drift.md
 companions: []
 sources:

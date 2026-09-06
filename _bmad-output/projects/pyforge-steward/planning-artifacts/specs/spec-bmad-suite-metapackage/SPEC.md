@@ -1,6 +1,6 @@
 ---
 spec: bmad-suite-metapackage
-status: in-progress
+status: shipped   # 2026-09-06 — CAP-1..4 as steward Epic 39 (4/4 done 2026-09-01); recorded late
 owner-dream: docs/dreams/bmad-suite-metapackage.md
 surface:
   - recipes/bmad-suite/recipe.yaml
@@ -13,8 +13,10 @@ sources:
   - ../../../../../../docs/dreams/bmad-suite-metapackage.md
   - ../spec-bmad-suite-channel-product/install-matrix.md
 assumptions:
-  - "The 13-package install-matrix remains the authoritative population; WDS stays published
-    but skip-wired per parent spec."
+  - "The 13-package install-matrix remains the authoritative population. Superseded 2026-09-06:
+    `bmad-method-wds-expansion` was retired 2026-09-05 (deprecated upstream in the 6.12.0 module
+    registry, absorbed into `bmad-ux`; recipe kept as a catalog row only) — it is no longer a
+    published-but-skip-wired member; `bmad-eval-quality` is seated in its place."
   - "Member upstream resolution uses each recipe's cfe-upstream-registry (github/npm/pypi),
     matching doctor Story 19.1 — not npm-first globally."
 open_questions:

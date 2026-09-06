@@ -99,7 +99,9 @@ new capabilities.
 - conda-forge stays canonical for `bmad-method` (its feedstock is current);
   the channel copy is refresh-parity, never a fork; no other suite package
   goes to conda-forge.
-- Wiring is deliberate per-module triage — never wire-everything.
+- Wiring follows the adoption register (`spec-bmad-suite-lifecycle` CAP-1,
+  2026-09-06) — the 2026-08-22 'never wire-everything' posture is superseded;
+  a member's wiring changes only by changing its register row.
 - Publishing stays credential-gated via steward's key discipline;
   publish-before-floor-bump ordering holds.
 - Commit-pinned dev recipes keep the `X.Y.Z.dev0 @ <sha>` encoding and the

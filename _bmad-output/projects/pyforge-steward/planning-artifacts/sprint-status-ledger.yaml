@@ -48,9 +48,9 @@ development_status:
   14-3-clobbered-custom-surfaces-are-caught-and-re-applied: done
   14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests: done
   14-5-one-command-proves-the-upgrade-landed: done
-  14-6-the-installer-is-driven-on-purpose-and-a-no-op-apply-is-a-refusal: backlog
-  14-7-custom-modules-survive-the-core-apply: backlog
-  14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: backlog
+  14-6-the-installer-is-driven-on-purpose-and-a-no-op-apply-is-a-refusal: done
+  14-7-custom-modules-survive-the-core-apply: done
+  14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
