@@ -1,4 +1,5 @@
 ---
+title: Deferred-work resolution sweep
 status: dreamt
 owner: doctor
 date: 2026-08-15

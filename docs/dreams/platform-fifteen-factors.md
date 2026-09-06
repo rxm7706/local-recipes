@@ -37,3 +37,9 @@ re-platforming: AD-4/AD-17 topology untouched; OIDC lands beside the OCP
 chain (Keycloak locally via devinfra patterns, real IdP later). Kin:
 `local-ocp-hybrid-environment` (12.4's workstation substrate),
 `developer-machine-bootstrap`.
+
+## Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-platform-fifteen-factors` derived under pyforge-steward and decomposed into the station
+  backlog the same day (`a20192dd84`). Spec status `ready`.

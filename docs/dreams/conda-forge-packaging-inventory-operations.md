@@ -466,3 +466,11 @@ Count parsed from OpenTeams-style portion:
 ## Kinships
 
 [[packaging-factory]] · [[upstream-discovery]] · [[pyforge-atlas]] · [[pyforge-mason]]
+
+## Realization log
+
+- **2026-08-16** — Seeded (`0f0b75232e`).
+- **2026-08-22** — `spec-conda-forge-packaging-inventory-operations` derived under pyforge-atlas and
+  decomposed into the station backlog (`a20192dd84`). The Spec now reads `in-progress`: CAP-1
+  (Story 17.1) chartered; CAP-2 (Story 17.2) code landed, live-execution verification deferred
+  pending an attended, credentialed run.

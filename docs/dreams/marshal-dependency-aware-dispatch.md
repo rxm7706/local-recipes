@@ -280,3 +280,14 @@ habit. Locked v1 (open questions closed for implementation):
 
 Spec: `spec-marshal-drain-self-resolution/SPEC.md`. Dream file
 `marshal-drain-self-resolution.md` is an archive pointer only.
+
+## Realization log
+
+- **2026-08-31** — Seeded from a live dispatch-ordering/retry incident and folded into
+  `spec-marshal-token-economy` as CAP-14..CAP-17 → marshal Epic 28 Stories 28.12–28.15
+  (`5c947eebec`; that Spec's `sources` names this Dream).
+- **2026-09-01** — The addenda were contracted in `spec-marshal-drain-self-resolution`
+  (`e5e31c228d`: CAP-1..6 / Stories 28.18–28.23, the drain self-heal residue; `14ac9ed408`: CAP-7 /
+  Story 28.24, supervisor finalizes when the harness cannot run shell), with
+  [`marshal-drain-self-resolution.md`](marshal-drain-self-resolution.md) archived in place as a
+  pointer. `spec-marshal-verify-fail-terminalization` (status `ready`) also references this Dream.

@@ -158,3 +158,13 @@ GitHub fallback + the new per-stage drift checks extend it) ·
 CAP-5 gate consume this pipeline's output) · [[bmad-611-era-alignment]]
 (marshal Epic 25; the era-alignment this pipeline keeps from regressing) ·
 CFE skill (autotick machinery; Rule 1/2 govern the recipe-side stories).
+
+## Realization log
+
+- **2026-08-22** — Seeded and specified in one commit (`24c4dce923`): `spec-bmad-suite-channel-product`
+  under pyforge-steward (5 CAPs + `install-matrix.md`, status `ready`); decomposed as steward Epic 15
+  (4 stories) + doctor Epic 15 (2 stories, the CAP-5 relay); channel `bmad-method` refreshed to
+  6.11.0 the same day.
+- **2026-09-05** — The channel machinery this Dream specified carried the suite refresh: PR #1059
+  regenerated the metapackage to `2026.9.5`, seating `bmad-eval-quality` in place of the retired
+  `bmad-method-wds-expansion` (see [`bmad-eval-quality.md`](bmad-eval-quality.md) § Realization log).

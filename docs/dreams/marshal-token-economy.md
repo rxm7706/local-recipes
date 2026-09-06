@@ -286,3 +286,13 @@ beyond the consumer side). Landing: the staleness field ships as a new scribe Ep
 story (sibling to 6.1's graphify extra); Story 28.9 gains a fifth AC consuming it — a graph
 answer whose backing node is flagged stale falls back to the epic-context file path (Story
 28.8's proven fallback), never served silently. Landed as CAP-13 in the spec.
+
+## Realization log
+
+- **2026-08-30** — Seeded already `specified` (`da458df364`): `spec-marshal-token-economy` `ready`,
+  decomposed as marshal Epic 28 (28.1–28.9, backlog). Same-day addendum — the price sheet becomes an
+  instrument (CAP-11/CAP-12 → Stories 28.10/28.11).
+- **2026-08-31** — Addendum: Layer 4 retrieval is only as good as the graph's freshness — landed as
+  CAP-13; the live dispatch-ordering incident added CAP-14..CAP-17 (Stories 28.12–28.15) through
+  [`marshal-dependency-aware-dispatch.md`](marshal-dependency-aware-dispatch.md).
+- **2026-09-01** — Dispatch-autonomy hotfixes + Epic 28 artifact catch-up (`90c5a28bd6`).
