@@ -200,3 +200,11 @@ is the same story re-entered as a “fresh review.”
 `marshal-dependency-aware-dispatch` (Deps: / SIGTERM).
 
 Lands as CAP-11 in `spec-marshal-single-story-dispatch`, Epic 29.
+
+## Realization log
+
+- **2026-08-21** — Seeded `dreamt` (`a17626226b`); `spec-marshal-single-story-dispatch` derived under
+  pyforge-marshal the same day (`8add322204`).
+- **2026-08-31** — Addendum: station-scoped and sequence-scoped dispatch.
+- **2026-09-02** — Addendum: a `done` spec must not review-loop — contracted as CAP-11 in the Spec
+  (`1763820bee`), Epic 29. Spec status `in-progress`.

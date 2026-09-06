@@ -160,3 +160,9 @@ pre-filed gaps this Dream's chain absorbs) · [[bmad-loop-liveness-footgun]] /
 marshal Epic 24 (status-truthfulness kin — the 0.11 vocabulary work sits beside
 it) · `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` (the reconciler
 loop whose 6.11 gaps item 5 closes).
+
+## Realization log
+
+- **2026-08-22** — Dream, Spec and decomposition landed in one commit (`2dc63365fb`):
+  `spec-bmad-611-era-alignment` under pyforge-marshal (7 CAPs, 2 companions, status `ready`),
+  decomposed as marshal Epic 25 (7 independent stories).

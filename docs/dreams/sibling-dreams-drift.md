@@ -25,3 +25,9 @@ the sibling is private — access via the operator's token, degrade silently
 without it; no content is copied across (their prose is unlicensed).
 Kin: `bmad-method-version-drift` (the ambient-signal shape),
 the 2026-08-22 intake report (the demonstrated drift).
+
+## Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-sibling-dreams-drift` derived under pyforge-doctor and decomposed into the station backlog
+  the same day (`a20192dd84`). Spec status `ready`.

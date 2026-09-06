@@ -418,3 +418,9 @@ and `identity_complete_export.parquet` exist; priority + candidate status + gist
 markdown parity on frozen fixture; Epic 22 Vizro reads complete export only;
 quartet scripts are thin actuators (gist edit, optional `--create-issues`) with
 no verification/ranking merge logic. Excel workbook never required.
+
+## Realization log
+
+- **2026-08-29** — Seeded (`78ccbe4468`, the atlas bootstrap-chain fix) and specified the same day:
+  `spec-atlas-kedro-catalog-expansion` under pyforge-atlas (status `ready`) with the Epics 21–23
+  planning chain (`9a0cb475f9`).

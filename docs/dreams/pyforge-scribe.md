@@ -70,3 +70,13 @@ stories backlog. 3 of 9 stories complete overall. Spec: `spec-pyforge-scribe`
 (CAP-1..CAP-4, AD-1..AD-9). `.claude/memory/` itself is already live in this
 repo today — `feedback/`, `project/`, `reference/` subdirectories, a
 `MEMORY.md` index, a `README.md` documenting the schema.
+
+## Realization log
+
+- **2026-07-23** — Seeded when the crew grew 6 → 8 (Scribe + Steward adopted; `3a50eebfc9`).
+- **2026-07-25** — `spec-pyforge-scribe` derived under pyforge-scribe (`83ee5527c0`); it now reads
+  `shipped`. The legacy `docs/specs/claude-team-memory.md` intake was superseded into this chain the
+  same day.
+- **2026-08-08** — Status flipped to `realized` in the stale-status hygiene pass (`bfa9fd688d`); the
+  station's planning chain is complete — read `sprint-status-ledger.yaml` under pyforge-scribe or
+  `fleet-picture` for what, if anything, is left.

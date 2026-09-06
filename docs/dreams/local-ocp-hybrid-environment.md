@@ -122,3 +122,9 @@ chart this deploys and finally live-verifies) · [[asgi-multiplexer-monolith]]
 consumed) · `spec-jira-github-projects-sync` (tracker kin) ·
 `docs/specs/langflow-conda-forge.md` (1.10.1 suite; the 1.11.x bump
 question) · DB-GPT G58 consume-not-submit lineage.
+
+## Realization log
+
+- **2026-08-22** — Seeded (`24c4dce923`) and specified the same day: `spec-local-ocp-hybrid-environment`
+  under pyforge-steward (5 CAPs, 2 companions, status `ready`), decomposed as the steward Epic 12
+  extension S-12.4..12.8, operator-locked (`6bcedf41ab`).

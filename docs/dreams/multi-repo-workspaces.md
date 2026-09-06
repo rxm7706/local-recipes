@@ -33,3 +33,9 @@ building two worktree systems.
 Single-repo verbs stay 13.1/13.2's contract; this layers coordination above
 them. Not a monorepo migration; not bmad-switch scope (kin:
 `bmad-switch-scope-enforcement`).
+
+## Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-multi-repo-workspaces` derived under pyforge-steward and decomposed into the station backlog
+  the same day (`a20192dd84`). Spec status `ready`.

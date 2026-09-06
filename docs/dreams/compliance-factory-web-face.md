@@ -30,3 +30,9 @@ The engines stay canonical — the face calls warden/atlas, never reimplements
 them (FABRIC's analyzers are NOT imported). Herald adjacency for UI. Not
 multi-tenant SaaS on day one. Kin: `spec-pyforge-warden-compliance-gates`,
 `package-inventory-eligibility`, cyclonedx-universe-inventory (shipped).
+
+## Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-compliance-factory-web-face` derived under pyforge-warden and decomposed into the station
+  backlog the same day (`a20192dd84`). Spec status `ready`.

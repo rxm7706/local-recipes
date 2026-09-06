@@ -48,3 +48,9 @@ derives. Rule 1/2 apply (CFE surface).
 
 CFE SKILL.md G-corpus · bmad-drift-check (the detector philosophy) ·
 `spec-conda-forge-expert-rebuild` (mason's CFE campaign) · the intake report.
+
+## Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-machine-checked-recipe-knowledge` derived under pyforge-mason and decomposed into the
+  station backlog the same day (`a20192dd84`). Spec status `ready`.

@@ -1,4 +1,5 @@
 ---
+title: Deferred-work audit completeness
 status: specified
 owner: doctor
 date: 2026-08-15
@@ -146,3 +147,9 @@ are not at the same acute loss risk as atlas's flat-append format was
 they are real deferred findings sitting in gitignored Tier-3 storage.
 Whoever implements this capability should promote them as its first real
 run.
+
+## Realization log
+
+- **2026-08-15** — Seeded (`8fdcb0b15a`) and specified the same day by extending
+  `spec-deferred-work-visibility` rather than opening a new Spec (`2ffa858b5d`, CAP-4..10 across the
+  three 2026-08-15 doctor seeds; this Dream's share is CAP-4..7 per `specified-by`).
