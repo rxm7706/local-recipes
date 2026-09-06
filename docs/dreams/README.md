@@ -125,7 +125,7 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-130 Dream files as of 2026-09-06 (README excluded), of which 69 are mapped below — the 61
+131 Dream files as of 2026-09-06 (README excluded), of which 70 are mapped below — the 61
 omitted are the archived per-station satellites folded into their parent Dream on 2026-08-08
 (see **Dream-level-only consolidation**) plus later-seeded Dreams not yet given a row (as of
 this count: 18 archived, 34 specified, 7 realized, 2 dreamt). The **frontmatter is the source
@@ -174,6 +174,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | Dream | Status | What it is |
 |---|---|---|
 | [`agent-portability.md`](agent-portability.md) | archived | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
+| [`bmad-cursor-interactive-routing.md`](bmad-cursor-interactive-routing.md) | dreamt | Headless Cursor dispatch (`cursor-agent -p`, Story 22.8/CAP-6) is already live; this Dream is the narrower, unverified gap — routing BMAD skills from Cursor's own interactive chat, and confirming that surface can spawn the context-free subagents `bmad-build-auto`'s review mandates. |
 | [`team-memory.md`](team-memory.md) | archived | Shared, version-controlled team memory — what the team knows, every agent knows. |
 | [`enterprise-airgap.md`](enterprise-airgap.md) | realized | The factory behind the firewall — JFrog routing + air-gap-by-design; frontier: presenton, deckcraft, warden's registry perimeter. |
 | [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | specified | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
