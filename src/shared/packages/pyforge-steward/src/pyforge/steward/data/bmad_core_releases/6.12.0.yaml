@@ -141,13 +141,17 @@ custom_modules:
 
 # ---------------------------------------------------------------------------
 # Apply-time findings (live 2026-09-06, branch steward/bmad-core-upgrade-6.12.0;
-# failure-modes.md traps 12-15). Modelled since Stories 14.6/14.7:
+# failure-modes.md traps 12-14; trap 15 was already closed separately by
+# CAP-5, `ca005c9c57`, unrelated to 14.6/14.7). Modelled since Stories 14.6/14.7:
 # - `-y` does not skip the directory prompt; a closed stdin makes the installer
 #   exit 0 with NO changes. The apply passes `--directory <repo>` natively and
 #   refuses an exit-0 zero-diff run (CAP-6).
 # - `--action update -y` DELETES an unselected cached custom module; the apply
-#   selects every manifest module (CAP-6) and `custom_modules:` above carries
-#   the config restore + own installer that make the tree coherent (CAP-7).
+#   selects every manifest module (CAP-6), which structurally guarantees every
+#   `source: custom` module already sits on `--modules` (CAP-7's own
+#   selected-module assertion is defense-in-depth, not a live catch), and
+#   `custom_modules:` above carries the config restore + own installer that
+#   make the tree coherent (CAP-7).
 # - resolve_customization.py is rewritten upstream (no local edits: accept).
 # ---------------------------------------------------------------------------
 # - Seven installer-owned skill files carried in-repo edits at 6.11 (marshal

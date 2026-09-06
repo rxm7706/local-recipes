@@ -38,8 +38,11 @@ review branch exists (trap 13). No wrapper script.
 Story 14.7 / CAP-7: custom modules survive the core apply. The release catalog's
 ``custom_modules:`` list annotates each ``source: custom`` manifest module (own
 installer argv, config paths, optional pin, optional packaged source); selection
-still comes from the manifest. The pre-flight lists catalog vs manifest (mismatch
-= trap 13 finding). The apply asserts every custom module is selected, adds
+still comes from the manifest — Story 14.6's design already guarantees every
+``source: custom`` module is on ``--modules`` (it selects the manifest's full
+module list), so the apply's own custom-module-selected check is a structural
+invariant / defense-in-depth assertion, not a live catch. The pre-flight lists
+catalog vs manifest (mismatch = trap 13 finding). The apply adds
 ``--pin <name>=<pin>`` when the catalog sets one, snapshots each config path's
 bytes before the core installer and restores them verbatim afterwards, runs the
 module's own installer from the repo root through an injectable runner, verifies
@@ -47,7 +50,8 @@ module's own installer from the repo root through an injectable runner, verifies
 gate), reports the regenerated ``[modules.<name>]`` block of ``_bmad/config.toml``
 as a diff (never edited), and gates ``custom_modules_ok`` on own-installer exit 0
 plus every config path restored. ``zero_diff`` keeps its CAP-6 meaning — judged
-on the core installer's own diff, before this phase runs (trap 14).
+on the core installer's own diff, before this phase runs; the CAP-7 phase itself
+(config restore + own installer) is what addresses trap 14.
 
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
@@ -248,6 +252,9 @@ class CustomModuleFinding:
     pin: str | None
     detail: str
     trap_id: int = TRAP_CUSTOM_MODULE_DESELECTED
+    # The catalog's own authored narrative (``CustomModuleDef.notes``) — empty
+    # when the module is not in the catalog at all.
+    notes: str = ""
 
 
 @dataclass(frozen=True)
@@ -886,6 +893,7 @@ def _custom_module_findings(
     findings: list[CustomModuleFinding] = []
     for module in definitions:
         source = sources.get(module.name)
+        trap_id = TRAP_CUSTOM_MODULE_DESELECTED
         if module.name not in sources:
             matched = False
             detail = (
@@ -917,6 +925,8 @@ def _custom_module_findings(
                 own_installer=module.own_installer,
                 pin=module.pin,
                 detail=detail,
+                trap_id=trap_id,
+                notes=module.notes,
             )
         )
     catalog_names = {module.name for module in definitions}
@@ -937,6 +947,7 @@ def _custom_module_findings(
                     "nothing to restore it and never run its own installer "
                     f"(trap {TRAP_CUSTOM_MODULE_CONFIG_REGENERATED}); add a catalog entry"
                 ),
+                trap_id=TRAP_CUSTOM_MODULE_CONFIG_REGENERATED,
             )
         )
     return findings
@@ -983,8 +994,9 @@ def build_preflight_report(
         trap_ids.append(TRAP_FORWARDER)
     if config_migration is not None:
         trap_ids.append(TRAP_CONFIG_MIGRATION)
-    if any(not finding.matched for finding in custom_modules):
-        trap_ids.append(TRAP_CUSTOM_MODULE_DESELECTED)
+    for finding in custom_modules:
+        if not finding.matched:
+            trap_ids.append(finding.trap_id)
 
     notes: list[str] = [
         "report-only — no apply / no mutation of _bmad/ or _bmad/custom/**",
@@ -1112,6 +1124,8 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
             lines.append(
                 f"- [MISMATCH] [trap {custom.trap_id}] {custom.name}: {custom.detail}"
             )
+        if custom.notes:
+            lines.append(f"  - catalog notes: {custom.notes}")
 
     if report.notes:
         lines.extend(["", "## Notes"])
@@ -1500,6 +1514,11 @@ def _verify_custom_module_skill_dirs(
     prefix = f"{module.name}-"
     installed_root = repo / _IDE_SKILLS_RELATIVE_PATH
     names = sorted(p.name for p in source.iterdir() if p.is_dir() and p.name.startswith(prefix))
+    if not names:
+        return None, (
+            f"{module.name}: packaged source {module.packaged_source} holds no "
+            f"{prefix}* dirs — skill-dir verification skipped",
+        )
     equal = 0
     mismatched: list[str] = []
     missing: list[str] = []

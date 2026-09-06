@@ -29,6 +29,7 @@ import yaml
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.upgrade import (
+    TRAP_CUSTOM_MODULE_CONFIG_REGENERATED,
     TRAP_CUSTOM_MODULE_DESELECTED,
     UpgradeError,
     apply_bmad_core_upgrade,
@@ -278,6 +279,7 @@ def _fake_own_installer_script(
     exit_code: int = 0,
     record: Path | None = None,
     corrupt_skill: str | None = None,
+    clobber_custom: bool = False,
 ) -> Path:
     """Write a 'bmad-module-skill-forge' stand-in (argv: ``<bin> update``).
 
@@ -286,6 +288,9 @@ def _fake_own_installer_script(
     dir from the packaged source, preserves an existing ``config.yaml`` verbatim
     and only appends its own key. ``corrupt_skill`` drops an extra file into
     that installed skill dir (a packaged-source mismatch for verification).
+    ``clobber_custom`` writes into ``_bmad/custom/config.toml`` — simulates the
+    own installer touching the repo's top-priority preserved surface (never
+    exercised by the real installer, but the fingerprint must still catch it).
     """
     record_str = str(record) if record is not None else ""
     corrupt = corrupt_skill or ""
@@ -324,6 +329,10 @@ def _fake_own_installer_script(
         config.write_text(existing + {_OWN_INSTALLER_APPENDED!r}, encoding="utf-8")
         if {corrupt!r}:
             (skills / {corrupt!r} / "EXTRA.md").write_text("not packaged\\n", encoding="utf-8")
+        if {clobber_custom!r}:
+            custom = repo / "_bmad" / "custom" / "config.toml"
+            if custom.is_file():
+                custom.write_text("# CLOBBERED\\n", encoding="utf-8")
         sys.exit({exit_code})
         """
     )
@@ -391,6 +400,7 @@ def _custom_module_fixture(
     core_no_changes: bool = False,
     own_exit: int = 0,
     corrupt_skill: str | None = None,
+    own_clobber_custom: bool = False,
     pin: str | None = None,
     config_paths: Sequence[str] = (_SKF_CONFIG_REL,),
     packaged_source: str | None = _PACKAGED_SOURCE_REL,
@@ -415,6 +425,7 @@ def _custom_module_fixture(
         exit_code=own_exit,
         record=own_record,
         corrupt_skill=corrupt_skill,
+        clobber_custom=own_clobber_custom,
     )
     catalog = _write_custom_catalog(
         tmp_path / "catalog",
@@ -1305,6 +1316,12 @@ def test_apply_custom_module_core_non_zero_exit_restores_config_skips_own_instal
     assert module.ok is False
     assert report.custom_modules_ok is False
     assert not fx["own_record"].exists()
+    # The core fake's clobber_custom_module=True (fixture default) deletes the
+    # undeclared skf-campaign skill dir; the own installer never runs to
+    # rebuild it, so verification must surface it as missing (a finding).
+    assert module.verification.missing == ("skf-campaign",)
+    assert module.verification.ok is False
+    assert any("missing: skf-campaign" in n for n in report.notes)
 
 
 def test_apply_custom_module_config_path_absent_before_apply_is_missing(tmp_path):
@@ -1377,8 +1394,9 @@ def test_installed_custom_module_absent_from_catalog_is_a_finding_not_a_gate(tmp
     assert finding.manifest_source == "custom"
     assert finding.matched is False
     assert "trap 14" in finding.detail
-    assert TRAP_CUSTOM_MODULE_DESELECTED in preflight.trap_ids
-    assert "[MISMATCH] [trap 13] skf" in format_preflight(preflight, as_json=False)
+    assert finding.trap_id == TRAP_CUSTOM_MODULE_CONFIG_REGENERATED
+    assert TRAP_CUSTOM_MODULE_CONFIG_REGENERATED in preflight.trap_ids
+    assert "[MISMATCH] [trap 14] skf" in format_preflight(preflight, as_json=False)
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -1530,6 +1548,153 @@ def test_cli_apply_custom_module_ok_json(tmp_path, capsys):
         assert _tree_digest(repo / ".claude" / "skills" / name) == _tree_digest(
             packaged / name
         )
+
+
+def test_apply_custom_module_own_installer_clobbers_custom_is_reported(tmp_path):
+    """The own installer touching _bmad/custom/** (never real, but must still be caught)."""
+    fx = _custom_module_fixture(tmp_path, own_clobber_custom=True)
+
+    report = apply_bmad_core_upgrade(
+        repo=fx["repo"],
+        target_version="6.11.0",
+        installer_bin=str(fx["core"]),
+        catalog_directory=fx["catalog"],
+        branch="review/cap7-own-clobbers-custom",
+    )
+
+    assert report.custom_identical is False
+    assert any("config.toml" in d for d in report.custom_differs)
+    assert report.custom_failure_reason is not None
+    assert "NOT byte-identical" in report.custom_failure_reason
+    # The custom-module phase itself is otherwise unaffected — this is purely
+    # the post-phase _bmad/custom/** fingerprint doing its job.
+    assert report.custom_modules[0].ok is True
+
+
+def test_cli_apply_custom_module_own_installer_clobbers_custom_returns_failed(tmp_path):
+    fx = _custom_module_fixture(tmp_path, own_clobber_custom=True)
+    out = io.StringIO()
+    err = io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        rc = main(
+            [
+                "upgrade",
+                "bmad-core",
+                "--target",
+                "6.11.0",
+                "--apply",
+                "--repo-root",
+                str(fx["repo"]),
+                "--installer",
+                str(fx["core"]),
+                "--catalog-dir",
+                str(fx["catalog"]),
+                "--branch",
+                "review/cli-cap7-own-clobbers-custom",
+                "--json",
+            ]
+        )
+    assert rc == EXIT_FAILED
+    payload = json.loads(err.getvalue())
+    assert payload["custom_identical"] is False
+    assert any("config.toml" in d for d in payload["custom_differs"])
+
+
+def test_apply_custom_module_own_installer_oserror_is_reported(tmp_path):
+    """An own-installer binary that resolves on PATH but cannot be exec'd (ENOEXEC)."""
+    fx = _custom_module_fixture(tmp_path)
+    unexecutable = tmp_path / "not-executable-skf-installer"
+    unexecutable.write_bytes(b"")  # empty file, executable bit set, no shebang
+    unexecutable.chmod(0o755)
+    catalog = _write_custom_catalog(
+        tmp_path / "catalog-oserror", own_installer=(str(unexecutable), "update")
+    )
+
+    report = apply_bmad_core_upgrade(
+        repo=fx["repo"],
+        target_version="6.11.0",
+        installer_bin=str(fx["core"]),
+        catalog_directory=catalog,
+        branch="review/cap7-oserror",
+    )
+
+    module = report.custom_modules[0]
+    assert module.own_installer_exit is None
+    assert module.own_installer_error is not None
+    assert "could not be spawned" in module.own_installer_error
+    assert module.ok is False
+    assert report.custom_modules_ok is False
+
+
+def test_apply_custom_installer_runner_is_injected_and_receives_env(tmp_path):
+    """An injected custom_installer_runner (mirrors 14.6's installer_runner pattern)."""
+    fx = _custom_module_fixture(tmp_path)
+    repo = fx["repo"]
+    seen: dict[str, object] = {}
+
+    def runner(cwd: Path, cmd, *, env=None):
+        seen["cwd"] = cwd
+        seen["cmd"] = tuple(cmd)
+        seen["env"] = env
+        (repo / _SKF_CONFIG_REL).write_text(
+            _SKF_CONFIG_TEXT + "injected: true\n", encoding="utf-8"
+        )
+        return subprocess.CompletedProcess(list(cmd), 0, "", "")
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(fx["core"]),
+        catalog_directory=fx["catalog"],
+        branch="review/cap7-injected-runner",
+        custom_installer_runner=runner,
+    )
+
+    assert seen["cwd"] == repo
+    assert seen["cmd"] == (str(fx["own"]), "update")
+    assert isinstance(seen["env"], dict)
+    module = report.custom_modules[0]
+    assert module.own_installer_exit == 0
+    assert module.ok is True
+    # The injected runner's return value is what steward acted on — not the
+    # (never-invoked) real fake own-installer script.
+    assert not fx["own_record"].exists()
+    assert (repo / _SKF_CONFIG_REL).read_text(encoding="utf-8").endswith("injected: true\n")
+
+
+def test_apply_custom_module_config_path_deleted_by_core_installer(tmp_path):
+    """Config existed pre-apply, core installer deletes it outright (not regenerates)."""
+    fx = _custom_module_fixture(tmp_path, clobber=False)
+    repo = fx["repo"]
+    # Overwrite the fixture's core fake: this one deletes config.yaml outright.
+    core = tmp_path / "fake-bmad-method-deletes"
+    core.write_text(
+        "#!/usr/bin/env python3\n"
+        "import pathlib, sys\n"
+        "repo = pathlib.Path.cwd()\n"
+        "(repo / '_bmad' / 'bmm' / 'updated.txt').write_text('x', encoding='utf-8')\n"
+        "(repo / '_bmad' / 'core' / 'updated.txt').write_text('x', encoding='utf-8')\n"
+        "(repo / '_bmad' / 'skf' / 'config.yaml').unlink()\n"
+        "sys.exit(0)\n",
+        encoding="utf-8",
+    )
+    core.chmod(0o755)
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(core),
+        catalog_directory=fx["catalog"],
+        branch="review/cap7-config-deleted",
+    )
+
+    module = report.custom_modules[0]
+    assert module.config_paths[0].status == "restored"
+    assert "deleted" in module.config_paths[0].detail
+    # Own installer still runs (core changed, exit 0): restored bytes + its append.
+    assert (repo / _SKF_CONFIG_REL).read_bytes() == (
+        _SKF_CONFIG_TEXT.encode() + _OWN_INSTALLER_APPENDED.encode()
+    )
 
 
 def test_cli_apply_help_names_real_argv_shape(capsys, monkeypatch):
