@@ -13,6 +13,8 @@ import subprocess
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from pyforge.steward.upgrade import (
     apply_bmad_core_upgrade,
     list_installer_bak_files,
@@ -20,6 +22,23 @@ from pyforge.steward.upgrade import (
     snapshot_repo_custom_surfaces,
     verify_six_layer_resolution,
 )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_home(monkeypatch, tmp_path):
+    """Never resolve to the REAL machine's home dir.
+
+    Every ``apply_bmad_core_upgrade`` call that does not pass
+    ``installed_package_root=`` falls through to
+    ``default_installed_package_root``'s live ``~/.cache/rattler/cache/pkgs``
+    glob. Fixtures in this file are deterministic today only by accident of
+    which fake installed-version strings happen to (not) have a real cached
+    package on the machine running the tests. A test that deliberately wants
+    the real glob passes ``cache_root=`` explicitly (bypassing ``Path.home()``
+    entirely) or re-patches ``Path.home`` itself after this fixture runs —
+    both keep working since a later ``monkeypatch.setattr`` simply overrides.
+    """
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home-never-real")
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:

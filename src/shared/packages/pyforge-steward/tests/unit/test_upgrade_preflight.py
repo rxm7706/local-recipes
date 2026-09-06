@@ -486,6 +486,26 @@ def test_scan_skips_pycache_noise(tmp_path):
     assert not any(f.path.endswith((".pyc", ".pyo")) for f in report.local_customizations)
 
 
+def test_scan_skips_own_customization_conflict_sibling(tmp_path):
+    """A `.customization-conflict` left by a prior conflicted re-apply must not
+    self-pollute the next pre-flight scan as a "new" local customization —
+    it has no packaged counterpart either, same noise class as __pycache__.
+    """
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_skill_and_script(repo)
+    conflict_sibling = (
+        repo / ".claude" / "skills" / "bmad-dev-auto" / "SKILL.md.customization-conflict"
+    )
+    conflict_sibling.write_text("<<<<<<< ours\n=======\n>>>>>>> theirs\n", encoding="utf-8")
+    package = _write_package_root(tmp_path / "pkg")
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=package
+    )
+    assert not any(
+        f.path.endswith(".customization-conflict") for f in report.local_customizations
+    )
+
+
 def test_preflight_installed_package_root_bad_path_notes_scan_skipped(tmp_path):
     """An explicit --installed-package-root that isn't a directory must not go silent."""
     repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)

@@ -676,7 +676,10 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
             "package (compares every installer-owned skill/script file for local "
             "edits, pre-flight and --apply re-apply); default: best-effort "
             "~/.cache/rattler/cache/pkgs/bmad-method-<installed>-*/lib/node_modules/"
-            "bmad-method glob, report-only, never required"
+            "bmad-method glob, report-only, never required. At --apply time, "
+            "--package-root is ALSO required for the three-way re-apply to run — "
+            "with only --installed-package-root set, --apply still finds and "
+            "reports local customizations but silently skips re-applying them"
         ),
     )
     bmad_core.add_argument(
