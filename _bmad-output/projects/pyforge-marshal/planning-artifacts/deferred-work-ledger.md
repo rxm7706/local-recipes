@@ -5813,3 +5813,10 @@ status: open
   status: open
 
   verified: 2026-09-05 — STANDS — `MRS-DISP-039` appears only in the findings registry test and the finalize-helper unit test; no end-to-end `dispatch_once` test.
+
+### DW-HYGIENE-2026-09-05-1: worktree/branch hygiene lives in an operator script, not in `marshal retire`
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md`
+  summary: `scripts/worktree_sweep.py` (2026-09-05, dry-run default, `--execute`) classifies every registered git worktree into KEEP / PRUNE / DELETE / PRESERVE-THEN-DELETE / DELETE-WORKTREE-KEEP-BRANCH / INSPECT from four inputs -- clean-and-ancestor-of-main, the owning station's sprint-ledger status for the branch's story key, whether the branch is on origin, and whether a live process has its cwd inside -- and applies the safe verdicts (patches exported under `~/.local/state/pyforge-marshal/worktree-preserve/` first). `marshal retire` (Story 4.10) proposes only branches named by the most recent bmad-loop run of an attached loop home, so it proposed nothing across a fleet that carried 262 registered worktrees and ~600 merged branches. The sweep's rule set belongs behind the marshal verb (`marshal retire --worktrees`, or a `marshal sweep` verb) so the fleet has ONE retirement authority with journaled evidence; the script is the interim home and its rules are pinned by `tests/scripts/test_worktree_sweep.py`.
+  evidence: 2026-09-05 shutdown sweep, hand-verified per item: registered worktrees 262 -> 12 (primary, 8 loop homes, 3 INSPECT), local merged branches 360 + 226 deleted, origin merged branches 227 + 178 deleted in explicit-name batches (the 8 `loop/<station>` heads and every `attempt-preserve/*` kept by policy), 29 GB reclaimed; `marshal retire` dry-run reported `proposals: 0` throughout. Never delete `loop/*` on origin: the station heads read as merged into main whenever the homes are idle.
+  status: open
