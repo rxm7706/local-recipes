@@ -138,6 +138,89 @@ def test_merge_preserves_and_never_downgrades(tmp_path, capsys):
     assert data["last_updated"] == DATE
     assert result["dropped_orphans"] == [{"key": "9-9-ghost-story", "status": "done"}]
     assert "9-9-ghost-story" not in data["development_status"]
+    assert result["kept_keys"] == []
+
+
+def test_generate_keeps_existing_key_when_slugger_would_change_the_tail(tmp_path, capsys):
+    """Identity is N.M. A longer tail (pre-truncation mint) or a retitled
+    heading must not orphan a done row — steward's 13-key regenerate bug."""
+    long_title = (
+        "Credentials never attach outside their declared host "
+        "and the jfrog leak can never recur silently"
+    )
+    epics = (
+        f"## Epic 1: Foundation\n"
+        f"### Story 1.1: User Authentication\n"
+        f"### Story 1.2: {long_title}\n"
+        f"### Story 1.3: Renamed later\n"
+    )
+    existing_long = (
+        "1-2-credentials-never-attach-outside-their-declared-host-and-the"
+    )
+    existing_renamed = "1-3-original-title-that-no-longer-matches"
+    existing = f"""\
+generated: 01-01-2026 09:00
+last_updated: 01-01-2026 09:00
+project: My Project
+project_key: NOKEY
+tracking_system: file-system
+story_location: impl
+
+development_status:
+  epic-1: in-progress
+  1-1-user-authentication: done
+  {existing_long}: done
+  {existing_renamed}: done
+  epic-1-retrospective: optional
+"""
+    status_file = run_generate(tmp_path, epics_text=epics, existing=existing)
+    result = out_json(capsys)
+    data = load(status_file)
+    keys = list(data["development_status"].keys())
+    assert existing_long in keys
+    assert existing_renamed in keys
+    assert data["development_status"][existing_long] == "done"
+    assert data["development_status"][existing_renamed] == "done"
+    kept = {row["key"]: row["would_mint"] for row in result["kept_keys"]}
+    assert existing_long in kept
+    assert existing_renamed in kept
+    assert existing_long not in result.get("new_entries", [])
+    assert result["dropped_orphans"] == []
+
+
+def test_fresh_remints_from_current_title(tmp_path, capsys):
+    epics = "## Epic 1: Foundation\n### Story 1.1: New Title Entirely\n"
+    existing = """\
+generated: 01-01-2026 09:00
+last_updated: 01-01-2026 09:00
+project: P
+project_key: NOKEY
+tracking_system: file-system
+story_location: impl
+
+development_status:
+  epic-1: done
+  1-1-old-title: done
+  epic-1-retrospective: optional
+"""
+    status_file = run_generate(tmp_path, epics_text=epics, existing=existing, extra=("--fresh",))
+    result = out_json(capsys)
+    data = load(status_file)
+    assert "1-1-new-title-entirely" in data["development_status"]
+    assert "1-1-old-title" not in data["development_status"]
+    assert data["development_status"]["1-1-new-title-entirely"] == "backlog"
+    assert result["kept_keys"] == []
+
+
+def test_long_title_is_not_truncated_on_first_mint(tmp_path, capsys):
+    title = "The operator can see every credential steward knows about never a secret value"
+    epics = f"## Epic 1: Foundation\n### Story 1.1: {title}\n"
+    status_file = run_generate(tmp_path, epics_text=epics)
+    out_json(capsys)
+    keys = list(load(status_file)["development_status"].keys())
+    expected = "1-1-" + mod._slug(title)
+    assert expected in keys
+    assert len(expected.split("-", 2)[-1]) > 60
 
 
 def test_legacy_statuses_merge_by_meaning_not_reset(tmp_path, capsys):

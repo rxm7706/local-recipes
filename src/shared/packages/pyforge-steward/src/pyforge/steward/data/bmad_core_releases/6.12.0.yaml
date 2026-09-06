@@ -114,3 +114,7 @@ config_migration:
 #   _bmad/skf/config.yaml (ides / skills_output_folder / snippet_skill_root_override).
 # - resolve_customization.py is rewritten upstream (no local edits: accept).
 # ---------------------------------------------------------------------------
+# - Seven installer-owned skill files carried in-repo edits at 6.11 (marshal
+#   28.8/29.1 in bmad-build-auto; the sprint-plan N.M-key fix) and were
+#   regenerated away; re-applied by 3-way merge against the cached 6.11 package
+#   (failure-modes.md trap 16). Diff installed-vs-package BEFORE the next apply.

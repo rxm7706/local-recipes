@@ -2819,14 +2819,14 @@
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
-   ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md": "0b4d7500bfd65c6c905c2fcec0f45b9913dc1266",
-   ".claude/skills/bmad-build-auto/step-04-review.md": "1affbaced2eab27c70bd2c11c535bb4a3966e157",
+   ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md": "1fb7bb823731f4b33f639be7223d1602e03089f0",
+   ".claude/skills/bmad-build-auto/step-04-review.md": "41b272817045771cf7e1288dcc2e2b140697323e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "0177191dd318f0399da99aead2a2e9d2d9e955bb",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "d48e26c2d40d7ac0d2a669c7b5f8d80d6177883d",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "0a550a1a42abc91915ba5a40c1ba0d9d3e2969aa",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "ac50e702427c8102d5a359233c174b6ba000eac8"
   },
-  "memlog": "46e67e88249ea5b3058b80e3c044c71dea2cca22"
+  "memlog": "59d39302d7e2866377dfe0daabe4fe1c5d059045"
  },
  "pyforge-marshal/spec-marshal-status-harness-run-id-poisoning": {
   "files": {},
@@ -4914,6 +4914,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/__init__.py": "7ce65c1e058f72ad74a949fdaf8c110a5a8e984c",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.11.0.yaml": "4ca1c3a065543a25b92498e4ec364c14c0caec20",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml": "4efd773fd3fb9d2b30a75fc6ed86319398eec133",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/__init__.py": "6c0153dca42c04949c6ec1f2d15802f348f58456",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py": "52f773e78754580d788aec657f4f1a6e2ede8fbf",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py": "53fa3e9ed5133c72e7798718268af8dcfab750ec",
@@ -4998,7 +4999,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "b3ce9dd295d8979949c3673f202d9ac824fcbb3f"
+  "memlog": "e58e0a68e8ebf7a6ef6d2d887d70ecce71c45491"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

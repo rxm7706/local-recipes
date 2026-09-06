@@ -22,7 +22,9 @@ If the invocation prompt explicitly points to an existing spec file with recogni
 - `ready-for-dev` or `in-progress` → `[[bmad-snapshot:step-03-implement.md]]`
 - `in-review` → `[[bmad-snapshot:step-04-review.md]]`
 - `blocked` → HALT with status `blocked` and blocking condition `blocked spec supplied`.
-- `done` → set `review_loop_iteration` to `0` in the frontmatter and set `followup_pass` to `true`, then **EARLY EXIT** to `[[bmad-snapshot:step-04-review.md]]` for a fresh review pass. (A `done` spec is a completed run, so this starts a follow-up review, not a resumption.)
+- `done` → read `{spec_file}` frontmatter `followup_review_recommended` (missing means `false`).
+  - `false` → **HALT** with status `done` and blocking condition `done spec — follow-up not recommended`. Do not reset `review_loop_iteration`. Do not set `followup_pass`. Do not edit the spec. Do not commit. This is not a resumption and not a fresh review (CAP-11 / steward 41.2, mason 13.2).
+  - `true` → write `followup_review_recommended: false` now (this invocation is the single allowed follow-up), set `review_loop_iteration` to `0` in the frontmatter and set `followup_pass` to `true`, then **EARLY EXIT** to `[[bmad-snapshot:step-04-review.md]]` for a fresh review pass. (A `done` spec is a completed run, so this starts a follow-up review, not a resumption.) Step-04 must leave the flag `false` at HALT even if its patch-score would have set `true`.
 
 If the invocation prompt instead supplies a spec folder and a story id, with no specific spec file path, this is a **folder+id dispatch**: set `spec_folder` (a `{project-root}`-relative or absolute path) and `story_id` from the prompt. Any further prompt text (e.g. `invoke_dev_with` guidance the caller appended) is additional planning context to carry into step-02 — not a competing description of what to implement.
 
@@ -32,7 +34,7 @@ Look for files matching `{spec_folder}/stories/{story_id}-*.md` (id-prefix match
 - **If more than one matches**, HALT with status `blocked` and blocking condition `ambiguous story file match`.
 - **If exactly one matches**, set `spec_file` to that path.
   - `draft` (planning was interrupted mid-flight): accumulate cross-story context before resuming — load every other file matching `{spec_folder}/stories/*.md` (every match except `{spec_file}` itself), regardless of `status`, and carry forward each one's **Code Map**, **Design Notes**, **Spec Change Log**, **Tasks & Acceptance** checklist state, and **Auto Run Result** details, where present, as additional planning context for step-02. Then **EARLY EXIT** to `[[bmad-snapshot:step-02-plan.md]]`.
-  - Any other recognized `status`: **EARLY EXIT** using the same routing as above, including the `review_loop_iteration` reset and `followup_pass` for `done`. One difference: a `blocked` story HALTs with blocking condition `story already blocked`, not `blocked spec supplied` — the caller did not supply this file; build-auto found it by id.
+  - Any other recognized `status`: **EARLY EXIT** using the same routing as above, including the `done` + `followup_review_recommended` HALT-or-one-follow-up rule (the `review_loop_iteration` reset and `followup_pass` apply only on the allowed follow-up, never unconditionally). One difference: a `blocked` story HALTs with blocking condition `story already blocked`, not `blocked spec supplied` — the caller did not supply this file; build-auto found it by id.
   - `status` missing or unrecognized: HALT with status `blocked` and blocking condition `unrecognized status in existing story file`.
 - **If none matches**, this is the first dispatch for `{story_id}`. The entry's `title` and `description` are the resolved intent. If `{spec_folder}/SPEC.md` does not exist, HALT with status `blocked` and blocking condition `no epic spec found`. Otherwise load it and the files listed in its `companions:` frontmatter as planning context, then accumulate cross-story context the same way as the `draft` case above — load every file matching `{spec_folder}/stories/*.md` (none yet exists for `{story_id}` at this point, so nothing is excluded), regardless of `status`, carrying forward the same fields, where present, as additional planning context for step-02. Then continue to INSTRUCTIONS item 3 below — not `step-03-implement.md`, item 3 of the numbered list in this file (items 1 and 2 do not apply — context and intent are already resolved; item 1.A.5's previous-story continuity scan in particular never runs here, since folder+id dispatch already skips items 1 and 2 entirely — the cross-story accumulation above is its replacement for this dispatch mode).
 
@@ -52,7 +54,21 @@ If the invocation prompt does not contain enough intent to identify what to impl
 
      1. Identify the epic number `{epic_num}` and (if present) the story number `{story_num}`. If you can't identify an epic number, use path B.
 
-     2. **Check for a valid cached epic context.** Look for `{{.implementation_artifacts}}/epic-<N>-context.md` (where `<N>` is the epic number). A file is **valid** when it exists, is non-empty, starts with `# Epic <N> Context:` (with the correct epic number), and no file in `{{.planning_artifacts}}` is newer.
+     1a. **Planning-graph retrieval (Story 28.9).** When `{story_num}` is known, run, from the repo root, `marshal context retrieve --project <slug> --epic <N> --story <M> --format json` (omit `--story` when unknown; add `--root <path>` when you are not in the main checkout), and read `data.mode`:
+        - `graph` — the Scribe recall seam answered with a grounded, non-stale hit. Use `data.text` as the primary planning context. Do **not** load `epics.md`, `prd.md`, or any other wholesale planning document, and skip items 2–4 below (the epic-context distill is unnecessary this iteration). The story contract spec the invocation names must still be read verbatim — retrieval scopes planning context, never the contract.
+        - `epic-context-fallback` — the `planning-graph` layer is declared off (the default), the grammar degraded (`MRS-PLAN-*` finding), or recall returned no grounded answer (including stale-only candidates). Continue to item 2 and follow Story 28.8's epic-context path unchanged.
+        - The command not existing, not running, or printing anything you cannot parse as that envelope is the same as `epic-context-fallback`. Read `data.mode`, never the exit code: advisory findings exit clean while still reporting the fallback mode.
+
+        A `MRS-PLAN-*` finding is advisory: report it and continue. Never HALT on it — the fallback always produces an answer.
+
+     2. **Check for a valid cached epic context.** Look for `{{.implementation_artifacts}}/epic-<N>-context.md` (where `<N>` is the epic number). A file is **valid** when it exists, is non-empty, starts with `# Epic <N> Context:` (with the correct epic number), and its declared planning sources have not changed since it was compiled.
+
+        Answer that last clause with the **derived-context freshness check** rather than by guessing. Run, from the repo root, `marshal context refresh --project <slug> --epic <N> --format json` (add `--root <path>` when you are not in the main checkout), and read `data.mode`:
+        - `incremental` — the declared sources were checked. Find the `data.artifacts` entry whose `name` ends `:epic-<N>-context`. `state: fresh` means its declared sources are unchanged, so the cached file is valid; `state: stale` or `state: unknown` means recompile.
+        - `compile-on-hunch` — the `derived-context` layer is declared off (the default), or it degraded and said so in a `MRS-CTX-*` finding. Fall back to the previous rule verbatim: the file is valid when no file in `{{.planning_artifacts}}` is newer.
+        - The command not existing, not running, or printing anything you cannot parse as that envelope is the same as `compile-on-hunch`. Read `data.mode`, never the exit code: `MRS-CTX-001` exits `1` while still reporting `compile-on-hunch`, which is a usable answer, not a failure.
+
+        A `MRS-CTX-*` finding is advisory: report it and continue. Never HALT on it — freshness is an optimization, and the fallback always produces an answer.
         - **If valid:** load it as the primary planning context. Do not load raw planning docs (PRD, architecture, UX, etc.).
         - **If missing, empty, or invalid:** compile it in the next bullet.
 
@@ -61,6 +77,10 @@ If the invocation prompt does not contain enough intent to identify what to impl
      4. **Verify if compiled.** If epic context was compiled, verify the output file exists, is non-empty, and starts with `# Epic <N> Context:`. If valid, load it. If verification fails, HALT with status `blocked` and blocking condition `context compilation verification failed`.
 
      5. **Previous story continuity.** Regardless of which context source succeeded above, scan `{{.implementation_artifacts}}` for specs from the same epic with `status: done` and a lower story number. Load the most recent one (highest story number below current). Extract its **Code Map**, **Design Notes**, **Spec Change Log**, and **task list** as continuity context for step-02 planning. If no `done` spec is found but an `in-review` spec exists for the same epic with a lower story number, HALT with status `blocked` and blocking condition `missing previous-story continuity decision`.
+
+        Under `mode: incremental` only (item 2's check), this extract is kept between iterations: find the `data.artifacts` entry whose `name` ends `:epic-<N>-continuity`. When it reports `state: fresh` and the file at its `output` exists and is non-empty, load that file as the continuity context instead of re-reading the previous story's spec body. Otherwise extract as above and write the result to that `output` path. Under `compile-on-hunch` write nothing at all and extract exactly as before — the previous behavior is unchanged when the layer is off.
+
+        The `status`/story-number scan that decides WHICH spec is the predecessor — and therefore the HALT condition above — always runs, in every mode: it reads statuses from the listing, not spec bodies, and a cached extract must never let a blocking `in-review` predecessor go unnoticed.
 
      **B) Freeform path** — if the intent is not an epic story:
      - Planning artifacts are the output of BMAD phases 1-3. Typical files include:

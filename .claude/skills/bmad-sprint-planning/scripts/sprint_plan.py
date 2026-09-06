@@ -23,7 +23,9 @@ Subcommands:
 
 The LLM decides *which* files are epics (discovery is judgment); this script
 owns everything after that decision: parsing, key derivation, ordering, status
-preservation, story-file detection, action-item carry-over, and validation.
+preservation (story identity is N.M — an existing key for that number is kept
+when the current title would mint a different slug), story-file detection,
+action-item carry-over, and validation.
 Legacy v6 statuses (drafted, contexted) are normalized on read everywhere, so
 they merge and count by their modern meaning and are reported, never reset.
 """
@@ -130,16 +132,77 @@ class JsonArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def _slug(text, maxlen=60):
+def _slug(text):
     # Unicode-aware: a non-Latin title must keep its own characters in the key
     # rather than every such story collapsing onto one shared placeholder.
+    # Do not truncate: a 60-char cap mid-word minted a different key on the
+    # next generate and dropped the old row (steward: 13 done keys orphaned).
+    # Identity across regenerates is N.M via _bind_existing_story_keys; the
+    # slug is a sticky suffix, not a rename trigger.
     slug = re.sub(r"[^\w]+", "-", str(text).lower(), flags=re.UNICODE).strip("-")
-    slug = slug[:maxlen].strip("-")
     if not slug:
         # Nothing sluggable (punctuation/emoji only): a short content hash keeps
         # the key deterministic and distinct instead of a bare "untitled".
         slug = hashlib.sha256(str(text).encode("utf-8")).hexdigest()[:8]
     return slug
+
+
+def _story_ident(key):
+    """Return (epic_num, story_num) for a story key, else None.
+
+    story_num includes a split suffix when present (``6a``). This is the
+    stable identity: the descriptive slug after the third hyphen may change
+    when a title is edited or when the slugger's rules change.
+    """
+    m = STORY_KEY_RE.match(key)
+    if not m:
+        return None
+    return int(m.group(1)), f"{m.group(2)}{m.group(3)}"
+
+
+def _bind_existing_story_keys(entries, existing_status):
+    """Keep the ledger's key for story N.M when one already exists.
+
+    parse_epics always mints from the current heading. Without this bind,
+    a title edit or a slugger change looks like a delete+add: the old key
+    becomes dropped_orphans (taking its status with it) and the new key
+    lands as backlog. --fresh skips this because merge_source is empty.
+    """
+    index = {}
+    warnings = []
+    for existing_key in existing_status:
+        ident = _story_ident(existing_key)
+        if ident is None:
+            continue
+        if ident in index and index[ident] != existing_key:
+            warnings.append(
+                f"multiple existing keys for story {ident[0]}.{ident[1]}: "
+                f"keeping '{index[ident]}', '{existing_key}' will orphan"
+            )
+            continue
+        index[ident] = existing_key
+    bound = []
+    seen = set()
+    kept_keys = []
+    for key, kind, epic_num in entries:
+        if kind != "story":
+            bound.append((key, kind, epic_num))
+            continue
+        ident = _story_ident(key)
+        if ident in seen:
+            warnings.append(
+                f"duplicate story heading for {ident[0]}.{ident[1]}; "
+                f"keeping first key '{index.get(ident, key)}'"
+            )
+            continue
+        seen.add(ident)
+        existing_key = index.get(ident)
+        if existing_key and existing_key != key:
+            kept_keys.append({"key": existing_key, "would_mint": key})
+            bound.append((existing_key, kind, epic_num))
+        else:
+            bound.append((key, kind, epic_num))
+    return bound, kept_keys, warnings
 
 
 def classify_key(key):
@@ -267,7 +330,14 @@ def build_status(entries, existing_data, stories_dir, warnings):
         "dropped_orphans": [],
         "legacy_mapped": [],
         "illegal": [],
+        "kept_keys": [],
     }
+    if existing_status:
+        entries, kept_keys, bind_warnings = _bind_existing_story_keys(
+            entries, existing_status
+        )
+        warnings.extend(bind_warnings)
+        report["kept_keys"] = kept_keys
     # One directory scan instead of a stat() per story.
     story_files = set()
     if stories_dir and Path(stories_dir).is_dir():
