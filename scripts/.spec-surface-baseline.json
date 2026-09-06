@@ -549,7 +549,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/backlog_intake.py": "f539182c862f8f957ca7c60b634e9a289ac63721",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py": "2aa283d69d7fa33da15dfd3fe52755610a7caf92",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "00fe8640e253a2086b9347daaf7587f2dd9ac8c3",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "81cfc9ff0781e1138a2b4b2f58792ee0ed0abe88",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "f2f4703dc7bacab60d425cc2b32ce6ea1df65f5c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "23162ade3b7f65e2a631a4ed44ae43840c8cb172",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "c60df4c9597d6d881ae7cf8e45343399f0edcdab"
+  "memlog": "79560b221f8817e663b328121b1877d1428d05d8"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -4830,7 +4830,7 @@
  },
  "pyforge-steward/spec-intelligence-hub": {
   "files": {},
-  "memlog": "befa11366f7d77929af1568c25e3394c968ffc79"
+  "memlog": "54ea959eaf7fe4f79cd6389780fac86fa080bb3c"
  },
  "pyforge-steward/spec-jira-github-projects-sync": {
   "files": {},

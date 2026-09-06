@@ -118,12 +118,13 @@ DEFERRED_SPECS: dict[str, str] = {
         "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
     "spec-intelligence-hub":
         "a `draft` Spec seeded 2026-09-05 so the Dream's chain link is durable (dream-chain "
-        "INV-1); its five CAPs are the Dream's CANDIDATE shapes — none chosen — and sit behind six "
-        "open questions, two of them the operator-queued pre-Spec research backlog (RB-1: is the "
-        "Frame protocol published? RB-2: are nebari / nebari-infrastructure-core / nebi on "
-        "conda-forge?) that only research and the operator can answer, so decomposing it into "
-        "steward epics now would manufacture stories from guesses. De-register once RB-1/RB-2 close "
-        "in the Dream, the operator picks the shape(s), and steward's epics carry the chosen CAPs",
+        "INV-1); its five CAPs are the Dream's CANDIDATE shapes — none chosen. The 2026-09-06 "
+        "research pass closed RB-1 (Frame Spec v0.2.0 is published) and RB-2 (nebari + nebi are on "
+        "conda-forge; only nebari-infrastructure-core is absent); what remains — owner, Guard "
+        "categories, Track shape, own Frames, and the two derived questions (package NIC / the "
+        "frames client? author the first conformant Frame now?) — only the operator can answer, "
+        "so decomposing it into steward epics now would manufacture stories from guesses. "
+        "De-register once the operator picks the shape(s) and steward's epics carry the chosen CAPs",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
