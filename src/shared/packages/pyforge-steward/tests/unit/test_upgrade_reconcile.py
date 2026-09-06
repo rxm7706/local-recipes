@@ -107,8 +107,15 @@ def _write_repo(root: Path, *, resolve_body: str = _CUSTOM_RESOLVE) -> Path:
 
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
+    # CAP-6 (Story 14.6): apply selects every module the manifest lists; an
+    # empty list is a refusal, so the fixture names the real trio.
     (manifest_dir / "manifest.yaml").write_text(
-        "installation:\n  version: 6.10.0\n", encoding="utf-8"
+        "installation:\n  version: 6.10.0\n"
+        "modules:\n"
+        "  - name: core\n    version: 6.10.0\n    source: built-in\n"
+        "  - name: bmm\n    version: 6.10.0\n    source: built-in\n"
+        "  - name: skf\n    version: main\n    source: custom\n",
+        encoding="utf-8",
     )
     (manifest_dir / "skill-manifest.csv").write_text(
         'canonicalId,name\n"bmad-dev-auto","bmad-dev-auto"\n',

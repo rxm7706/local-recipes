@@ -4930,7 +4930,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py": "207dbd504ae9e61d6b147ca0a412b15986f31ec1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "10a41c1cf58a5368362bf782948092123ce4bb41",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "5e0bfc4326eafe5af1ad39e88c74a4db32c88d79",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "d11656a46dcc2eeadd99f56deb62160dc92255ff",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "318eed8c3acb08390cee07ad64b330d87fe3e56d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py": "cf6abdd3b6404f31b7a975e0d83126995e884197",
@@ -4991,17 +4991,17 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py": "676f8a31c83739b88010172b0df2d6fc126040be",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py": "7aa53921bd01eef03a756964b8a84a52063e816b",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": "3b641642decaf3df605960c543777b419e4a176c",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "14d59196a09c9ad6b55ace1d156118031deab5bc",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py": "396a358944b56565e5f4972f25b8e8b2e3d2eb13",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "9dc32988a3f1d557de77bc8a390e481d05eb49a0",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py": "3425bb96f846fe740ccab0c1a36c51c08abf7951",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py": "173c5e2f3dcb6deb6e1fed8ad62b1751cfbf7ef4",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "9aa40e28bbcd78bc5cfd1cd5f1f4d6bf3e309622",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "ca40a6b11b7c5225b5412874fd59b336d92fa456",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "f211ae02a9b0b60518c0b2c99af8abf55f001e91",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py": "fcb3fdce98f1a0b9f3bf24c7bb137aa739a90dbd",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py": "6f84f2a445589fa24b2381ea748d69ef17c549cb",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace.py": "5e6cab7c1d867e773ddae89668ff4ee56798bf25",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "e58e0a68e8ebf7a6ef6d2d887d70ecce71c45491"
+  "memlog": "04b42304e9ad6915405db5e4edc368243df4c5e2"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

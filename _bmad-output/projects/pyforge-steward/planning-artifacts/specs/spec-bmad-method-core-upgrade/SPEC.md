@@ -1,6 +1,6 @@
 ---
 spec: bmad-method-core-upgrade
-status: ready
+status: in-progress
 owner-dream: docs/dreams/bmad-method-core-upgrade.md
 surface: []   # upgrade.py + data/bmad_core_releases/ are governed by spec-pyforge-steward's surface; not double-governed here
 companions:

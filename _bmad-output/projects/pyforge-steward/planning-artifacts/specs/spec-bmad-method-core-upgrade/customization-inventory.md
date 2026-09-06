@@ -56,7 +56,7 @@ file, repo-authored, package copy), whether the 6.12 `install --action update
 ## 3. The upgrade recipe until CAP-6..8 ship
 
 1. `git diff` the installed `.claude/skills/bmad-*` tree against the cached package of the **installed** version; keep the list (C5).
-2. `steward upgrade bmad-core --target X --apply --installer <wrapper>` where the wrapper prepends `.pixi/envs/local-recipes/bin` and appends `--directory <repo> --modules core,bmm,skf </dev/null`.
+2. `steward upgrade bmad-core --target X --apply` — since Story 14.6 (CAP-6, 2026-09-06) the apply itself passes `--directory <repo> --modules <every module the manifest lists, core first>` with stdin closed and resolves `node` / `bmad-method` from `.pixi/envs/local-recipes/bin` when they are off PATH; the `--installer <wrapper>` of the first 6.12 apply is retired. An exit-0 run that changed nothing is refused (`zero_diff`, trap 12).
 3. Confirm the review branch has a non-empty diff (trap 12), `_bmad/custom/**` byte-identical, CAP-3 clear.
 4. Restore `_bmad/skf/config.yaml` from git (bump the header), then `bmad-module-skill-forge update`; correct `[modules.skf]`.
 5. Re-diff against the cached package of the **new** version; 3-way merge the step-1 list with `git merge-file`.

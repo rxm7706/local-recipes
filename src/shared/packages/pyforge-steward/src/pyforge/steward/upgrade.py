@@ -27,6 +27,14 @@ Story 15.4 / CAP-4 dual-path orbit: prove-landed also advisory-spot-checks one
 cited native command per install-matrix class (dashboards = check-by-doc).
 Spot-check failures never flip CAP-5 ``verdict`` / ``DutyResult.ok``.
 
+Story 14.6 / CAP-6: the installer is driven on purpose — the argv carries
+``--directory <repo> --modules <every module the installed manifest lists,
+core first>``, stdin is closed, and ``node`` / ``bmad-method`` resolve from the
+repo's ``.pixi/envs/local-recipes/bin`` only when absent from PATH. An exit-0
+run that changed nothing is a refusal (``ApplyReport.zero_diff``, trap 12),
+never a green; a manifest that names no modules stops the apply before the
+review branch exists (trap 13). No wrapper script.
+
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
 share this surface and must not crowd Epic 3's provisioning flags.
@@ -39,16 +47,18 @@ and apply surface an operator runs.
 from __future__ import annotations
 
 import argparse
-import os
 import hashlib
+import inspect
 import json
+import os
 import re
+import shutil
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import yaml
 
@@ -58,6 +68,9 @@ _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
 _CUSTOM_RELATIVE_PATH = Path("_bmad/custom")
 _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
+# CAP-6: where the installer's `node` / `bmad-method` live when they are not on
+# PATH — always derived from the repo path, never a machine path.
+_PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/local-recipes/bin")
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
 # Trap IDs from failure-modes.md that CAP-1 must retrodict for 6.10→6.11.
@@ -69,6 +82,9 @@ TRAP_PIN_FANOUT = 5  # CAP-4 report surface (not a CAP-1 preflight trap)
 TRAP_LOOP_RELAY = 7  # CAP-5: stale hook relays → init + validate
 TRAP_FORWARDER = 9
 TRAP_CONFIG_MIGRATION = 11
+# CAP-6 (Story 14.6) apply traps from the 2026-09-06 first 6.12 apply.
+TRAP_SILENT_NOOP_APPLY = 12  # exit 0, nothing written (cancelled directory prompt)
+TRAP_CUSTOM_MODULE_DESELECTED = 13  # `-y` deletes an unselected cached custom module
 
 # 2026-08-21 worked example: eight loop homes validate clean, zero warnings.
 WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
@@ -272,6 +288,10 @@ class ApplyReport:
     changed_paths: tuple[str, ...]
     reconcile: ReconcileReport | None = None
     notes: tuple[str, ...] = ()
+    # CAP-6: strictly ``installer_exit == 0 and not changed_paths`` — the trap-12
+    # shape (a cancelled prompt or a no-op). A non-zero exit is already a failure
+    # through the exit gate and is never double-reported here.
+    zero_diff: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -286,10 +306,25 @@ class ApplyReport:
             "changed_paths": list(self.changed_paths),
             "reconcile": self.reconcile.to_dict() if self.reconcile else None,
             "notes": list(self.notes),
+            "zero_diff": self.zero_diff,
         }
 
 
-InstallerRunner = Callable[[Path, Sequence[str]], subprocess.CompletedProcess[str]]
+class InstallerRunner(Protocol):
+    """Runs the installer argv in *repo*; ``env`` is the CAP-6 resolved environment."""
+
+    def __call__(
+        self,
+        repo: Path,
+        cmd: Sequence[str],
+        *,
+        env: Mapping[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]: ...
+
+
+# Pre-14.6 injected runners take only ``(repo, cmd)``; they stay accepted and are
+# called without ``env`` (see ``_call_installer_runner``).
+LegacyInstallerRunner = Callable[[Path, Sequence[str]], subprocess.CompletedProcess[str]]
 
 
 def catalog_dir() -> Path:
@@ -337,6 +372,42 @@ def read_installed_version(repo: Path) -> str:
     if not version or not isinstance(version, str):
         raise UpgradeError(f"manifest lacks installation.version: {manifest}")
     return version.strip()
+
+
+def read_installed_modules(repo: Path) -> tuple[str, ...]:
+    """Module names from ``modules:`` in ``_bmad/_config/manifest.yaml``.
+
+    ``core`` first, manifest order otherwise, de-duplicated. Never hardcoded:
+    every listed module (built-in and ``source: custom``) must be selected on
+    the installer argv, because ``--action update -y`` deletes an installed
+    custom module it is not told to keep (trap 13). An empty list is therefore
+    a refusal, not a fallback — raised before any review branch exists.
+    """
+    manifest = repo / _MANIFEST_RELATIVE_PATH
+    if not manifest.is_file():
+        raise UpgradeError(f"missing installed manifest: {manifest}")
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}
+    raw = data.get("modules") or []
+    names: list[str] = []
+    if isinstance(raw, list):
+        for entry in raw:
+            name = entry.get("name") if isinstance(entry, Mapping) else entry
+            if not isinstance(name, str) or not name.strip():
+                continue
+            name = name.strip()
+            if name not in names:
+                names.append(name)
+    if not names:
+        raise UpgradeError(
+            f"manifest lists no modules ({manifest}) — refuse to apply: "
+            "`bmad-method install --action update -y` deletes every installed "
+            "module it is not told to select, so an apply that cannot name the "
+            f"installed modules is the trap {TRAP_CUSTOM_MODULE_DESELECTED} shape"
+        )
+    if "core" in names:
+        names.remove("core")
+        names.insert(0, "core")
+    return tuple(names)
 
 
 def _read_installed_skill_names(repo: Path) -> set[str]:
@@ -851,16 +922,80 @@ def list_changed_paths(repo: Path) -> tuple[str, ...]:
 
 
 def default_installer_runner(
-    repo: Path, cmd: Sequence[str]
+    repo: Path,
+    cmd: Sequence[str],
+    *,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Invoke the real installer; steward never writes ``_bmad/bmm/**`` / ``_bmad/core/**``."""
+    """Invoke the real installer; steward never writes ``_bmad/bmm/**`` / ``_bmad/core/**``.
+
+    CAP-6: stdin is closed (``DEVNULL``) so the installer can never sit on a
+    prompt, and *env* is the environment ``resolve_installer_environment`` built.
+    """
     return subprocess.run(
         list(cmd),
         cwd=repo,
         check=False,
         capture_output=True,
         text=True,
+        stdin=subprocess.DEVNULL,
+        env=env,
     )
+
+
+def resolve_installer_environment(
+    repo: Path, installer_bin: str
+) -> tuple[dict[str, str], str]:
+    """Environment for the installer run plus a human note on how it resolved.
+
+    ``<repo>/.pixi/envs/local-recipes/bin`` is prepended to ``PATH`` only when
+    *installer_bin* and/or ``node`` are absent from the current ``PATH``; the
+    directory is derived from *repo*, never a machine path.
+    """
+    env = dict(os.environ)
+    wanted = (installer_bin, "node")
+    missing = [name for name in wanted if shutil.which(name) is None]
+    if not missing:
+        return env, f"installer binaries resolved from PATH: {', '.join(wanted)}"
+    pixi_bin = repo / _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH
+    current = env.get("PATH", "")
+    env["PATH"] = (
+        f"{pixi_bin}{os.pathsep}{current}" if current else str(pixi_bin)
+    )
+    return env, (
+        f"installer binaries not on PATH ({', '.join(missing)}) — "
+        f"prepended {pixi_bin} to PATH for the installer run"
+    )
+
+
+def _runner_accepts_env(runner: Callable[..., Any]) -> bool:
+    """True when *runner* declares an ``env`` parameter or ``**kwargs``."""
+    try:
+        params = inspect.signature(runner).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    for param in params:
+        if param.kind is inspect.Parameter.VAR_KEYWORD:
+            return True
+        if param.name == "env" and param.kind in (
+            inspect.Parameter.KEYWORD_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        ):
+            return True
+    return False
+
+
+def _call_installer_runner(
+    runner: InstallerRunner | LegacyInstallerRunner,
+    repo: Path,
+    cmd: Sequence[str],
+    *,
+    env: Mapping[str, str],
+) -> subprocess.CompletedProcess[str]:
+    """Pass ``env`` only to runners that accept it — two-positional fakes stay accepted."""
+    if _runner_accepts_env(runner):
+        return runner(repo, cmd, env=env)  # type: ignore[call-arg]
+    return runner(repo, cmd)  # type: ignore[call-arg]
 
 
 
@@ -1144,13 +1279,15 @@ def apply_bmad_core_upgrade(
     catalog_directory: Path | None = None,
     package_root: Path | None = None,
     installer_bin: str = "bmad-method",
-    installer_runner: InstallerRunner | None = None,
+    installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
 ) -> ApplyReport:
-    """CAP-2+3 deliberate apply: preflight → branch → installer → custom check → CAP-3 reconcile.
+    """CAP-2+3+6 deliberate apply: preflight → branch → installer → custom check → CAP-3 reconcile.
 
-    The installer command is always ``bmad-method install --action update -y``
+    The installer command is always ``bmad-method install --action update -y
+    --directory <repo> --modules <every module the manifest lists, core first>``
     (or *installer_bin* override). Steward never reimplements writing
-    ``_bmad/bmm/**`` or ``_bmad/core/**``.
+    ``_bmad/bmm/**`` or ``_bmad/core/**``. An exit-0 run that changed nothing
+    is reported as ``zero_diff`` — a refusal, never a green (trap 12).
     """
     assert_clean_tree(repo)
 
@@ -1162,6 +1299,18 @@ def apply_bmad_core_upgrade(
         package_root=package_root,
     )
     refuse_legacy_custom(preflight)
+    # CAP-6: refuse before any branch exists when the manifest names no modules.
+    modules = read_installed_modules(repo)
+    # CAP-6: resolve the installer environment before any branch exists. When
+    # steward itself will spawn the installer, an unresolvable binary is a
+    # refusal here — not a FileNotFoundError on a freshly switched checkout.
+    env, env_note = resolve_installer_environment(repo, installer_bin)
+    if installer_runner is None and shutil.which(installer_bin, path=env["PATH"]) is None:
+        raise UpgradeError(
+            f"installer binary {installer_bin!r} not found on PATH (searched "
+            f"including {repo / _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH}) — "
+            "refuse to apply before any review branch exists"
+        )
 
     review_branch = branch or default_apply_branch(target_version)
     custom_before = fingerprint_custom_tree(repo)
@@ -1171,14 +1320,32 @@ def apply_bmad_core_upgrade(
     surface_snapshots = snapshot_repo_custom_surfaces(repo, catalog)
     snapshot_sha = create_review_branch(repo, review_branch)
 
-    installer_cmd = (installer_bin, "install", "--action", "update", "-y")
+    modules_csv = ",".join(modules)
+    installer_cmd = (
+        installer_bin,
+        "install",
+        "--action",
+        "update",
+        "-y",
+        "--directory",
+        str(repo.resolve()),
+        "--modules",
+        modules_csv,
+    )
     runner = installer_runner or default_installer_runner
-    result = runner(repo, installer_cmd)
+    result = _call_installer_runner(runner, repo, installer_cmd, env=env)
 
     notes: list[str] = [
         "deliberate apply — installer diff left on review branch for human review "
         "(never merged/applied blind)",
         "steward did not write _bmad/bmm/** or _bmad/core/** — installer is sole writer",
+        f"installer argv: {' '.join(installer_cmd)}",
+        (
+            "installer modules selected from the installed manifest (core first): "
+            f"{modules_csv} — every listed module is selected so `--action update -y` "
+            f"cannot deselect a cached custom module (trap {TRAP_CUSTOM_MODULE_DESELECTED})"
+        ),
+        env_note,
     ]
     if result.stdout and result.stdout.strip():
         notes.append(f"installer stdout (truncated): {result.stdout.strip()[:500]}")
@@ -1199,10 +1366,18 @@ def apply_bmad_core_upgrade(
         notes.append(reason)
 
     changed = list_changed_paths(repo)
+    zero_diff = result.returncode == 0 and not changed
     if changed:
         notes.append(
             f"installer diff on branch {review_branch} ({len(changed)} path(s)) — "
             "review before merge"
+        )
+    elif zero_diff:
+        notes.append(
+            "installer exited 0 but changed nothing — a cancelled prompt or a no-op; "
+            f"refuse to call this green (trap {TRAP_SILENT_NOOP_APPLY}); the checkout "
+            f"was switched to review branch {review_branch} and is left there for the "
+            "operator to inspect or delete"
         )
     else:
         notes.append("installer produced no working-tree changes")
@@ -1224,6 +1399,7 @@ def apply_bmad_core_upgrade(
         changed_paths=changed,
         reconcile=reconcile,
         notes=tuple(notes),
+        zero_diff=zero_diff,
     )
 
 
@@ -1239,9 +1415,16 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
         f"snapshot:  {report.snapshot_sha}",
         f"installer: {' '.join(report.installer_cmd)} (exit {report.installer_exit})",
         f"custom:    {'byte-identical' if report.custom_identical else 'CHANGED — see below'}",
+    ]
+    if report.zero_diff:
+        lines.append(
+            "zero-diff: REFUSED — installer exited 0 and changed nothing "
+            f"(trap {TRAP_SILENT_NOOP_APPLY}); branch {report.branch} left in place"
+        )
+    lines.extend([
         "",
         "## Review surface (installer diff paths)",
-    ]
+    ])
     if not report.changed_paths:
         lines.append("(none)")
     for path in report.changed_paths:
@@ -2681,6 +2864,7 @@ class UpgradeDuty:
         )
         ok = (
             apply_report.installer_exit == 0
+            and not apply_report.zero_diff
             and apply_report.custom_identical
             and reconcile_ok
         )
