@@ -52,10 +52,10 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 
 The BMAD Method is an AI-driven software development framework used in this project.
 
-- **Local copy** (offline): `.claude/docs/bmad-method-llms-full.txt`
-- **Live source**: https://docs.bmad-method.org/llms-full.txt
+- **Local snapshot** (offline, last of its kind): `.claude/docs/bmad-method-llms-full.txt` — captured 2026-08-21 from the 6.11-era docs. BMAD-METHOD 6.12.0 (2026-09-03) **discontinued** `llms.txt` / `llms-full.txt`; there is no live source to fetch any more.
+- **Live docs**: https://docs.bmad-method.org/ (task-organised since 6.12) and the installed skills themselves under `.claude/skills/bmad-*/` — the skill files are the authoritative 6.12 behaviour, the snapshot is historical.
 
-Fetch the live source for the latest version, or reference the local copy with `@.claude/docs/bmad-method-llms-full.txt` when working offline.
+Reference the snapshot with `@.claude/docs/bmad-method-llms-full.txt` only for pre-6.12 background; check the installed skill first.
 
 ### Multi-Project Pattern (this repo hosts multiple BMAD projects)
 

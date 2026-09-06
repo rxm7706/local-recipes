@@ -102,16 +102,56 @@ config_migration:
     generateConfigFiles), which the planning-artifacts symlink pattern depends
     on. The cutover release must still be flagged loudly.
 
+# Custom modules (CAP-7, Story 14.7; failure-modes.md traps 13/14). SELECTION
+# still comes from the installed manifest (Story 14.6 puts every `modules:`
+# entry on `--modules`); this list only annotates each `source: custom` module:
+# - own_installer: argv steward runs from the repo root AFTER the core apply
+#   (stdin closed, env resolved like the core installer's) so the module tree,
+#   undeclared skills and knowledge/shared land coherently.
+# - config_paths: module-owned files steward snapshots BEFORE the core installer
+#   and restores verbatim AFTER it (the installer regenerates them from
+#   module.yaml defaults). The only bytes steward writes in this phase.
+# - pin: when set, the core argv gains `--pin <name>=<pin>` (stops the
+#   channel-`next` cache drift at module-selection time).
+# - packaged_source: repo-relative tree used ONLY to verify that every
+#   .claude/skills/<name>-* dir equals the packaged copy afterwards (a finding,
+#   never a gate — a missing pixi env or a deliberately patched skill must not
+#   turn a coherent apply red).
+# The pre-flight (CAP-1) lists each entry against the installed manifest; a
+# catalog/manifest mismatch either way is a trap-13 finding.
+custom_modules:
+  - name: skf
+    own_installer: [bmad-module-skill-forge, update]
+    config_paths:
+      - _bmad/skf/config.yaml
+    # The `--pin skf=v2.1.0` question stays open (customization-inventory.md
+    # § 4: is the conda-packaged 2.1.0 == cached `main` == tag v2.1.0?). When
+    # set, the core argv gains `--pin skf=<pin>`.
+    pin: null
+    packaged_source: .pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src
+    notes: >-
+      Trap 13 — `--action update -y` deselects and DELETES a cached custom module
+      (335 _bmad/skf/** files + 16 skill dirs on 2026-09-06); closed by Story
+      14.6's manifest-driven `--modules`. Trap 14 — the module's marketplace.json
+      is authoritative (skf-campaign is undeclared and dropped) and its
+      config.yaml is regenerated from module.yaml defaults with a literal
+      `{project-root}/{value}` sidecar_path; closed here by the config restore
+      + the own installer (`bmad-module-skill-forge update` preserves an
+      existing config.yaml and only appends its own keys).
+
 # ---------------------------------------------------------------------------
 # Apply-time findings (live 2026-09-06, branch steward/bmad-core-upgrade-6.12.0;
-# failure-modes.md traps 12-15). Not yet modelled by the catalog schema:
+# failure-modes.md traps 12-14; trap 15 was already closed separately by
+# CAP-5, `ca005c9c57`, unrelated to 14.6/14.7). Modelled since Stories 14.6/14.7:
 # - `-y` does not skip the directory prompt; a closed stdin makes the installer
-#   exit 0 with NO changes. Drive it with `--directory <repo>`.
-# - `--action update -y` DELETES the installed custom module `skf` (source cached
-#   under ~/.bmad/cache/custom-modules); select it: `--modules core,bmm,skf`.
-# - skf's marketplace.json omits skf-campaign, and its config.yaml is regenerated
-#   from defaults; run `bmad-module-skill-forge update` afterwards and restore
-#   _bmad/skf/config.yaml (ides / skills_output_folder / snippet_skill_root_override).
+#   exit 0 with NO changes. The apply passes `--directory <repo>` natively and
+#   refuses an exit-0 zero-diff run (CAP-6).
+# - `--action update -y` DELETES an unselected cached custom module; the apply
+#   selects every manifest module (CAP-6), which structurally guarantees every
+#   `source: custom` module already sits on `--modules` (CAP-7's own
+#   selected-module assertion is defense-in-depth, not a live catch), and
+#   `custom_modules:` above carries the config restore + own installer that
+#   make the tree coherent (CAP-7).
 # - resolve_customization.py is rewritten upstream (no local edits: accept).
 # ---------------------------------------------------------------------------
 # - Seven installer-owned skill files carried in-repo edits at 6.11 (marshal

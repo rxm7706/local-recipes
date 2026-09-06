@@ -1,4 +1,10 @@
-"""Story 14.3 — CAP-3: clobbered custom surfaces detected and re-applied/flagged."""
+"""Story 14.3 — CAP-3: clobbered custom surfaces detected and re-applied/flagged.
+
+Story 14.8 — CAP-8 amendment: the CAP-3 restore additionally replays the
+old→new upstream delta onto the restored bytes (clean merge or conflict-noted
+plain restore), gated on both package roots being available; roots missing
+stays byte-identical to pre-14.8 behavior.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +13,8 @@ import subprocess
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from pyforge.steward.upgrade import (
     apply_bmad_core_upgrade,
     list_installer_bak_files,
@@ -14,6 +22,23 @@ from pyforge.steward.upgrade import (
     snapshot_repo_custom_surfaces,
     verify_six_layer_resolution,
 )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_home(monkeypatch, tmp_path):
+    """Never resolve to the REAL machine's home dir.
+
+    Every ``apply_bmad_core_upgrade`` call that does not pass
+    ``installed_package_root=`` falls through to
+    ``default_installed_package_root``'s live ``~/.cache/rattler/cache/pkgs``
+    glob. Fixtures in this file are deterministic today only by accident of
+    which fake installed-version strings happen to (not) have a real cached
+    package on the machine running the tests. A test that deliberately wants
+    the real glob passes ``cache_root=`` explicitly (bypassing ``Path.home()``
+    entirely) or re-patches ``Path.home`` itself after this fixture runs —
+    both keep working since a later ``monkeypatch.setattr`` simply overrides.
+    """
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home-never-real")
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -107,8 +132,15 @@ def _write_repo(root: Path, *, resolve_body: str = _CUSTOM_RESOLVE) -> Path:
 
     manifest_dir = root / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
+    # CAP-6 (Story 14.6): apply selects every module the manifest lists; an
+    # empty list is a refusal, so the fixture names the real trio.
     (manifest_dir / "manifest.yaml").write_text(
-        "installation:\n  version: 6.10.0\n", encoding="utf-8"
+        "installation:\n  version: 6.10.0\n"
+        "modules:\n"
+        "  - name: core\n    version: 6.10.0\n    source: built-in\n"
+        "  - name: bmm\n    version: 6.10.0\n    source: built-in\n"
+        "  - name: skf\n    version: main\n    source: custom\n",
+        encoding="utf-8",
     )
     (manifest_dir / "skill-manifest.csv").write_text(
         'canonicalId,name\n"bmad-dev-auto","bmad-dev-auto"\n',
@@ -141,6 +173,7 @@ def _fake_installer(
     *,
     clobber_resolve: bool = False,
     leave_bak: bool = False,
+    clobber_body: str = _UPSTREAM_RESOLVE,
 ) -> Path:
     body = textwrap.dedent(
         f"""\
@@ -155,7 +188,7 @@ def _fake_installer(
                 (repo / "_bmad" / "scripts" / "resolve_config.py.bak").write_bytes(
                     resolve.read_bytes()
                 )
-            resolve.write_text({_UPSTREAM_RESOLVE!r})
+            resolve.write_text({clobber_body!r})
         sys.exit(0)
         """
     )
@@ -258,6 +291,183 @@ def test_apply_clobber_resolve_restores_and_accounts_bak(tmp_path):
     body = (repo / "_bmad" / "scripts" / "resolve_config.py").read_text(encoding="utf-8")
     assert "BMAD_ACTIVE_PROJECT" in body
     assert "_bmad-output/projects" in body
+
+
+# ── Story 14.8 / CAP-8 amendment: delta-replay onto the CAP-3 restore ──────
+
+# Base/theirs carry NO markers (pristine upstream shape) so the clobber is
+# actually detected (``after`` markers-present must be False); only the
+# repo's own pre-apply snapshot (``ours``) carries them, appended at the end.
+# ``MID`` is an unchanged context line between LINE1/LINE2 so git's diff3
+# treats their edits as two independent, non-adjacent hunks (adjacent-line
+# edits on both sides collapse into one overlapping — conflicting — hunk).
+_DELTA_BASE = 'LINE1 = "same"\nMID = "same"\nLINE2 = "same"\nTRAILER = "same"\n'
+_DELTA_OURS = (
+    'LINE1 = "custom"\n'
+    'MID = "same"\n'
+    'LINE2 = "same"\n'
+    'TRAILER = "same"\n'
+    "BMAD_ACTIVE_PROJECT = True\n"
+    'MARKER = ".active-project"\n'
+)
+_DELTA_THEIRS_CLEAN = 'LINE1 = "same"\nMID = "same"\nLINE2 = "new"\nTRAILER = "same"\n'
+_DELTA_THEIRS_CONFLICT = (
+    'LINE1 = "new-upstream"\nMID = "same"\nLINE2 = "same"\nTRAILER = "same"\n'
+)
+
+
+def _write_scripts_package(root: Path, *, resolve_body: str) -> Path:
+    """Minimal package tree with just ``src/scripts/resolve_config.py``."""
+    scripts = root / "src" / "scripts"
+    scripts.mkdir(parents=True)
+    (scripts / "resolve_config.py").write_text(resolve_body, encoding="utf-8")
+    return root
+
+
+def test_reconcile_delta_replay_clean(tmp_path):
+    repo = _write_repo(tmp_path / "repo", resolve_body=_DELTA_OURS)
+    snaps = {"_bmad/scripts/resolve_config.py": _DELTA_OURS}
+    resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
+    # Simulate the core installer clobbering it back to the pristine base shape.
+    resolve.write_text(_DELTA_BASE, encoding="utf-8")
+
+    installed_root = _write_scripts_package(
+        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
+    )
+    target_root = _write_scripts_package(
+        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CLEAN
+    )
+
+    report = reconcile_clobbered_custom_surfaces(
+        repo,
+        _CATALOG,
+        pre_apply_snapshots=snaps,
+        installed_package_root=installed_root,
+        package_root=target_root,
+    )
+    finding = report.findings[0]
+    assert finding.action == "restored_from_snapshot"
+    assert "upstream delta replayed" in finding.detail
+    body = resolve.read_text(encoding="utf-8")
+    assert 'LINE1 = "custom"' in body
+    assert 'LINE2 = "new"' in body
+    assert report.all_clear is True
+
+
+def test_reconcile_delta_replay_conflict_keeps_plain_restore(tmp_path):
+    repo = _write_repo(tmp_path / "repo", resolve_body=_DELTA_OURS)
+    snaps = {"_bmad/scripts/resolve_config.py": _DELTA_OURS}
+    resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
+    resolve.write_text(_DELTA_BASE, encoding="utf-8")
+
+    installed_root = _write_scripts_package(
+        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
+    )
+    target_root = _write_scripts_package(
+        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT
+    )
+
+    report = reconcile_clobbered_custom_surfaces(
+        repo,
+        _CATALOG,
+        pre_apply_snapshots=snaps,
+        installed_package_root=installed_root,
+        package_root=target_root,
+    )
+    finding = report.findings[0]
+    assert finding.action == "restored_from_snapshot"
+    assert "upstream delta conflict (see notes)" in finding.detail
+    assert any("upstream delta conflict for" in n for n in report.notes)
+    # Plain restore kept — no merge bytes written, no conflict sibling either.
+    assert resolve.read_text(encoding="utf-8") == _DELTA_OURS
+    conflict_sibling = (
+        repo / "_bmad" / "scripts" / "resolve_config.py.customization-conflict"
+    )
+    assert not conflict_sibling.exists()
+    # An unresolved upstream-delta conflict must not report as clear even
+    # though the plain-restored bytes still carry the repo-custom markers.
+    assert report.all_clear is False
+
+
+def test_apply_clobber_resolve_delta_replay_conflict_gates_all_clear_false(tmp_path):
+    """The delta-replay conflict gate must hold through the real apply path.
+
+    `test_reconcile_delta_replay_conflict_keeps_plain_restore` above proves
+    the gate by calling `reconcile_clobbered_custom_surfaces` directly; this
+    proves the wiring that threads `installed_package_root`/`package_root`
+    from `apply_bmad_core_upgrade` into that call (and its `all_clear` up
+    into `UpgradeDuty`'s `ok`) is itself intact end-to-end.
+    """
+    repo = _write_repo(tmp_path / "repo", resolve_body=_DELTA_OURS)
+    installer = _fake_installer(
+        tmp_path / "fake-bmad-method",
+        clobber_resolve=True,
+        clobber_body=_DELTA_BASE,
+    )
+    installed_root = _write_scripts_package(
+        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
+    )
+    target_root = _write_scripts_package(
+        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT
+    )
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(installer),
+        branch="review/cap3-cap8-wiring",
+        installed_package_root=installed_root,
+        package_root=target_root,
+    )
+    assert report.installer_exit == 0
+    assert report.reconcile is not None
+    finding = report.reconcile.findings[0]
+    assert "upstream delta conflict" in finding.detail
+    assert report.reconcile.all_clear is False
+
+
+def test_reconcile_delta_replay_skipped_when_package_missing_match(tmp_path):
+    """Both roots supplied, but neither ships a matching resolve_config.py — noted, not silent."""
+    repo = _write_repo(tmp_path / "repo")
+    snaps = snapshot_repo_custom_surfaces(repo, _CATALOG)
+    resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
+    resolve.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
+
+    installed_root = tmp_path / "installed-pkg-empty"
+    (installed_root / "src" / "scripts").mkdir(parents=True)
+    target_root = tmp_path / "target-pkg-empty"
+    (target_root / "src" / "scripts").mkdir(parents=True)
+
+    report = reconcile_clobbered_custom_surfaces(
+        repo,
+        _CATALOG,
+        pre_apply_snapshots=snaps,
+        installed_package_root=installed_root,
+        package_root=target_root,
+    )
+    finding = report.findings[0]
+    assert finding.action == "restored_from_snapshot"
+    assert "upstream delta" not in finding.detail
+    assert any("delta-replay skipped for" in n for n in report.notes)
+    assert "BMAD_ACTIVE_PROJECT" in resolve.read_text(encoding="utf-8")
+    assert report.all_clear is True
+
+
+def test_reconcile_roots_absent_is_byte_identical_to_pre_14_8(tmp_path):
+    """Regression guard: no roots passed anywhere behaves exactly as before 14.8."""
+    repo = _write_repo(tmp_path / "repo")
+    snaps = snapshot_repo_custom_surfaces(repo, _CATALOG)
+    resolve = repo / "_bmad" / "scripts" / "resolve_config.py"
+    bak = repo / "_bmad" / "scripts" / "resolve_config.py.bak"
+    bak.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
+    resolve.write_text(_UPSTREAM_RESOLVE, encoding="utf-8")
+
+    report = reconcile_clobbered_custom_surfaces(repo, _CATALOG, pre_apply_snapshots=snaps)
+    finding = report.findings[0]
+    assert finding.action == "restored_from_snapshot"
+    assert "upstream delta" not in finding.detail
+    assert "BMAD_ACTIVE_PROJECT" in resolve.read_text(encoding="utf-8")
+    assert report.all_clear is True
 
 
 def test_apply_json_includes_reconcile(tmp_path):

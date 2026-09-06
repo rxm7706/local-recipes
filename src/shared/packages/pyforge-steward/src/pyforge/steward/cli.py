@@ -629,9 +629,13 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         "--apply",
         action="store_true",
         help=(
-            "CAP-2 deliberate apply: require clean tree, consume CAP-1 pre-flight, "
-            "create review branch, run `bmad-method install --action update -y`, "
-            "verify _bmad/custom/** byte-identical (or report why not)"
+            "CAP-2/6/7 deliberate apply: require a clean tree, consume the CAP-1 "
+            "pre-flight, create the review branch, run `bmad-method install --action "
+            "update -y --directory <repo> --modules <every manifest module, core "
+            "first> [--pin <name>=<pin>]` with stdin closed, then for each catalog "
+            "custom module restore its config paths and run its own installer "
+            "(e.g. `bmad-module-skill-forge update`); verify _bmad/custom/** "
+            "byte-identical (or report why not)"
         ),
     )
     bmad_core.add_argument(
@@ -661,6 +665,21 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         help=(
             "optional path to an unpacked bmad-method package "
             "(reads removals.txt + upstream file copies; never installs from it)"
+        ),
+    )
+    bmad_core.add_argument(
+        "--installed-package-root",
+        default=None,
+        metavar="DIR",
+        help=(
+            "optional path to the CACHED INSTALLED version's unpacked bmad-method "
+            "package (compares every installer-owned skill/script file for local "
+            "edits, pre-flight and --apply re-apply); default: best-effort "
+            "~/.cache/rattler/cache/pkgs/bmad-method-<installed>-*/lib/node_modules/"
+            "bmad-method glob, report-only, never required. At --apply time, "
+            "--package-root is ALSO required for the three-way re-apply to run — "
+            "with only --installed-package-root set, --apply still finds and "
+            "reports local customizations but silently skips re-applying them"
         ),
     )
     bmad_core.add_argument(

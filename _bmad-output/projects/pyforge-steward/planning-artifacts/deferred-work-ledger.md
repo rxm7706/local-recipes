@@ -1206,7 +1206,9 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   origin: spec-deferred 9d95aae537b3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolution: RESOLVED 2026-09-06 (steward/bmad-core-upgrade-6.12.0-followups). `_BMAD_LOOP_UV_GIT_SPEC` now reads `@v0.11.1` and its comment names the matrix row as the thing it mirrors; the spot-check test asserts the constant appears verbatim in install-matrix.md, so the next matrix bump reds the test instead of drifting silently. Found live: the 2026-09-06 prove-landed advisory named `@v0.11.0` while the matrix said `@v0.11.1`.
+  residual: The uv-from-git executable probe is now `uv tool install --help` (the flag `--dry-run` never existed on `uv tool install`; the native install resolves a git URL over the network) — the class is exercised, the spec string is only asserted against the matrix, not resolved.
+  status: resolved
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 

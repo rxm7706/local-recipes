@@ -147,3 +147,20 @@ mechanism an upgrade must not break).
   [[bmad-method-version-drift]] (owner: doctor), rather than co-owning one Dream across two
   stations — no precedent exists for a Dream naming more than one owner, checked against all
   100 Dreams at the time.
+
+- **2026-09-06 — first live steward-driven apply (6.11.0 → 6.12.0, PR #1074).**
+  CAP-1..5 ran end to end for the first time; the installer stayed sole writer,
+  `_bmad/custom/**` came out byte-identical, CAP-3 restored the multi-project
+  `resolve_config.py`. The run also falsified the Spec's first assumption
+  ("`--action update -y` is idempotent and safe to re-run"): with a closed stdin
+  the installer exits 0 having written nothing; `-y` deletes the cached custom
+  module skf; skf's marketplace list and config regeneration drop a skill and
+  hand-set answers; seven installer-owned skill files carrying marshal edits were
+  regenerated away — and the regenerated user layer made every rendering skill
+  HALT on an ambiguous config key. All recovered by hand on the branch. The
+  bullet "skill files this repo has locally modified that upstream also touched"
+  in *What it looks like when real* was never implemented — CAP-1 narrowed it to
+  marker-carrying scripts. Direction: widen the Spec (CAP-6 installer drive,
+  CAP-7 custom modules, CAP-8 local-customization scan and re-apply) and
+  decompose into Epic 14 stories 14.6–14.8; the customization inventory lives in
+  `spec-bmad-method-core-upgrade/customization-inventory.md`.

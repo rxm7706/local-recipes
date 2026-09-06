@@ -794,6 +794,12 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # `bmad-loop run` refuses to start on a dirty worktree (found live 2026-08-13,
 # pyforge-steward, after a routine `bmad-loop clean`).
 .bmad-loop/archive/
+# marshal writes its model-cost catalog sidecar beside the loop policy in every
+# loop home (harness_bmadloop.py: _MODEL_COST_CATALOG_SIDECAR) and never
+# removes it; untracked + not ignored it made `bmad-loop validate` report
+# "git worktree is not clean" on the marshal home (steward prove-landed,
+# 2026-09-06, 7/8 homes clean).
+.bmad-loop/marshal-model-cost-catalog.json
 # bmad-loop writes the story's HEAD commit hash to this file at the run-worktree
 # root and never removes it. It has no in-repo producer or consumer (`grep -rn
 # claude_hash` across scripts, hooks, .bmad-loop/ and settings finds neither), and

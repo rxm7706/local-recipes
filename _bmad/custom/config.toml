@@ -27,3 +27,16 @@ communication_language = "English"
 
 [modules.bmm]
 user_skill_level = "intermediate"
+
+# skf (bmad-module-skill-forge) install answers, pinned. The 6.12 core update
+# regenerated `_bmad/config.toml`'s [modules.skf] block from module.yaml
+# defaults (and a literal "{project-root}/{value}" for the prompt:false
+# sidecar key); base/user tomls are "regenerated on every install", this file
+# is the pin layer. The skf skills themselves read `_bmad/skf/config.yaml`,
+# which the steward CAP-7 reconcile restores from git after every apply —
+# keep the two in step. Recorded answers: _bmad/_config/skf-manifest.yaml
+# (forge_data_folder, 2026-07-17) and commit d9017e368c (export targets).
+[modules.skf]
+sidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"
+skills_output_folder = "{project-root}/.claude/skills"
+forge_data_folder = "{project-root}/_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data"

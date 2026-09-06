@@ -260,3 +260,41 @@ def test_cli_fail_exit(tmp_path: Path, capsys, monkeypatch):
     # Duty failures print the summary on stderr (AD-8 projection).
     payload = json.loads(capsys.readouterr().err)
     assert payload["verdict"] == "fail"
+
+
+def test_drift_gate_falls_back_to_pixi_task_when_doctor_missing(tmp_path: Path, monkeypatch):
+    """Trap 15 (2026-09-06): the steward env has no pyforge.doctor — the gate
+    must take the verdict from `pixi run -e local-recipes bmad-drift-check`,
+    not fail on the import."""
+    import subprocess
+
+    from pyforge.steward import upgrade as upgrade_mod
+
+    def _no_doctor():
+        raise ImportError("No module named 'pyforge.doctor'")
+
+    monkeypatch.setattr(upgrade_mod, "_import_drift_factory", _no_doctor)
+    seen: list[tuple[tuple[str, ...], Path]] = []
+
+    def runner(argv, cwd):
+        seen.append((tuple(argv), Path(cwd)))
+        return subprocess.CompletedProcess(list(argv), 0, stdout="[bmad-drift] ok\n", stderr="")
+
+    result = upgrade_mod.run_bmad_drift_integrity(tmp_path, fallback_runner=runner)
+    assert result.ok is True
+    assert "pixi run -e local-recipes bmad-drift-check" in result.detail
+    assert seen and seen[0][0] == upgrade_mod._BMAD_DRIFT_TASK_ARGV
+    assert seen[0][1] == tmp_path
+
+    def findings(argv, cwd):
+        return subprocess.CompletedProcess(list(argv), 1, stdout="[bmad-drift] x: fail -- boom\n", stderr="")
+
+    failed = upgrade_mod.run_bmad_drift_integrity(tmp_path, fallback_runner=findings)
+    assert failed.ok is False
+    assert "findings" in failed.detail and "boom" in failed.detail
+
+    def could_not_run(argv, cwd):
+        return subprocess.CompletedProcess(list(argv), 2, stdout="", stderr="no pixi env")
+
+    cnr = upgrade_mod.run_bmad_drift_integrity(tmp_path, fallback_runner=could_not_run)
+    assert cnr.ok is False and "could-not-run" in cnr.detail

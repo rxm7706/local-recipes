@@ -19,6 +19,7 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - scripts/index_freshness_check.py
+  - .claude/skills/bmad-build-auto/compile-epic-context.md
 sources:
   - ../../../../../../docs/dreams/marshal-token-economy.md
   - ../../../../../../docs/dreams/marshal-dependency-aware-dispatch.md
