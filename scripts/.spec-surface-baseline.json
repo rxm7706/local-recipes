@@ -3211,7 +3211,7 @@
    "src/shared/packages/pyforge-marshal/tests/meta/test_sc08_never_write_update_proof.py": "5cec93db8df7e84a38310812158a1b1bb3219053",
    "src/shared/packages/pyforge-marshal/tests/meta/test_seed_layer_import_rules.py": "8401f85b4b987ba6a8318d2705160046315b2e5a",
    "src/shared/packages/pyforge-marshal/tests/meta/test_seed_no_bare_exception.py": "1baec164ad35d4009c03a6bed67405147651b197",
-   "src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py": "cfd531578a1744f7626715bc7e1445c409609cca",
+   "src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py": "dd70d28e0f41f9a64e464ca1e59f2cb1bb5d2712",
    "src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py": "51604a9dc587a8fe2b1fa1246a7668b2c2d0476b",
    "src/shared/packages/pyforge-marshal/tests/meta/test_station_persona.py": "c700319883971ffc0d2e89e54072b10b5de9e3fe",
    "src/shared/packages/pyforge-marshal/tests/meta/test_supervisor_run_path_agreement.py": "77c5167aff6fc774b692a507d5b30e443899b8d8",
@@ -3350,7 +3350,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "b267344fe5ea1802971c7876603bb87756c48ae3",
    "src/shared/packages/pyforge-marshal/tests/unit/test_wave_scheduler.py": "ee92600544d54e358dc02829b81f157c1ad81895"
   },
-  "memlog": "61c2ccf2e175e39a606161bd3fcfc58353d24422"
+  "memlog": "9596fb09359f7cf53dff7561246a19cfbc72c2e0"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
