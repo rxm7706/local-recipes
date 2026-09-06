@@ -202,8 +202,20 @@ def test_context_files_not_hand_edited():
         )
         if result["has_managed_section"]:
             assert result["markers_valid"], f"{name}: malformed SKF managed section"
-    named = changed_paths_since(root, pathspec=("CLAUDE.md", "AGENTS.md"))
-    assert not named, f"CLAUDE.md/AGENTS.md changed: {named}"
+        # A second managed marker, `bmad:context`, is the sanctioned surface for
+        # content moved by `bmad-project-context adopt`/`audit` (Story 30.2,
+        # 2026-09-06, D1). A well-formed bmad:context block is legitimate,
+        # tool-mediated content the same way an SKF managed section is; the
+        # unconditional "must not change" assertion this test used to carry is
+        # retired in favor of checking both markers stay well-formed. CLAUDE.md
+        # carries no bmad:context marker, so this check applies to AGENTS.md
+        # only -- checking it against CLAUDE.md would be a vacuous 0==0 pass.
+        if name == "AGENTS.md":
+            text = (root / name).read_text(encoding="utf-8")
+            opens = text.count("<!-- bmad:context -->")
+            closes = text.count("<!-- /bmad:context -->")
+            assert opens == closes, f"{name}: unbalanced bmad:context markers"
+            assert opens <= 1, f"{name}: more than one bmad:context block"
 
 
 def test_conda_forge_expert_not_replaced():

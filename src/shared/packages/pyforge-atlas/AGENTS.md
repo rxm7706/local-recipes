@@ -60,10 +60,13 @@ rulebook; content confirmed still true against the live tree, not carried over u
   pure Ibis (`ibis.Expr`), never pandas or raw SQL — reads go through Ibis table objects
   (`con.read_parquet(...)` returns an Ibis table, not a DataFrame); orchestration nodes stay
   `DataFrame→DataFrame` at the boundary only.
-- **Pandera is hard-capped at v1.18.2** (no 1.19+ features) for data-quality contracts before bad
-  data lands; **Great Expectations stays ≤1.18.2**, behind a validator-agnostic hook, never
-  load-bearing. Neither cap is recorded in `pixi.toml`'s own pin comment — this is the only
-  tracked place either constraint is stated.
+- **Pandera is the shipped default validator** for data-quality contracts before bad data lands.
+  **Great Expectations participates only at conda-forge 1.18.2 semantics** (`validation.py`,
+  AD-9) — the in-env GX is 1.19.0, which cannot be statically guaranteed to stay within
+  1.18.2-only features, so GX sits behind a validator-agnostic hook and is never load-bearing
+  until conda-forge's own GX pin catches up to 1.19. (An earlier draft of this note
+  mis-attributed the 1.18.2 cap to Pandera too; corrected 2026-09-06 against `validation.py`'s
+  own docstring, the only tracked place either constraint is stated.)
 - Pixi-first, Python 3.14 floor, conda-forge-only toolchain; no pip-installed packages outside pixi.
 - Any story touching recipe code or atlas tooling invokes `conda-forge-expert` first (CLAUDE.md
   Rule 1); a closed conda-forge effort ends with the Rule-2 retro.
