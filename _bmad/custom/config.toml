@@ -7,21 +7,23 @@
 # description = "Prefers short, bulleted PRDs over narrative drafts."
 
 # BMAD 6.11 upgrade (a7547d7c03) dropped `communication_language` and
-# `user_skill_level` from `_bmad/config.toml`'s [core] table (they now only
-# live in the bmm-module `_bmad/bmm/config.yaml`, which render_skill.py's
-# load_central_config() does not read — it merges only the four
-# `_bmad/config*.toml` / `_bmad/custom/config*.toml` layers). Skills that
-# render via render_skill.py (e.g. bmad-build-auto's workflow.md) HALT with
-# "missing config value `communication_language`" / `user_skill_level`
-# without this pin. Values mirror `_bmad/bmm/config.yaml`.
+# `user_skill_level` from `_bmad/config.toml`'s [core] table; render_skill.py's
+# load_central_config() merges only the four `_bmad/config*.toml` /
+# `_bmad/custom/config*.toml` layers, so skills that render (bmad-build,
+# bmad-build-auto, ...) HALT with "missing config value" without a tracked pin
+# (the installer's `_bmad/config.user.toml` is gitignored — a fresh clone has
+# no user layer at all).
 #
-# NOTE: render_skill.py's `_find_config_values()` does a recursive scan for
-# the bare key name anywhere in the merged config tree and raises "ambiguous
-# config value" if it finds more than one match -- so `user_skill_level`
-# (or any of these keys) must be defined in exactly ONE place across all
-# six config layers. Keep both keys in this single [core] block; do not
-# also add a [modules.bmm] table defining user_skill_level here or in any
-# other layer.
+# NOTE: render_skill.py's `_find_config_values()` scans the merged tree for the
+# bare key and raises "ambiguous config value" when the SAME key sits at two
+# different paths. The 6.12 installer writes `user_skill_level` under
+# [modules.bmm] and `communication_language` under [core] in its regenerated
+# `_bmad/config.user.toml` — so these pins MUST sit at those exact paths
+# (same path = merge; a different path = HALT, seen live 2026-09-06 when the
+# 6.11-era `[core] user_skill_level` pin collided with the regenerated user
+# layer). Values mirror `_bmad/bmm/config.yaml`.
 [core]
 communication_language = "English"
+
+[modules.bmm]
 user_skill_level = "intermediate"

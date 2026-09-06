@@ -1,0 +1,120 @@
+# Target-release catalog for CAP-1 pre-flight (Story 14.1 shape).
+# Grounded in the unpacked conda package `bmad-method 6.12.0`
+# (.pixi/envs/local-recipes/lib/node_modules/bmad-method, package.json 6.12.0,
+# CHANGELOG "v6.12.0 - 2026-09-03") diffed against the installed 6.11.0 tree on
+# 2026-09-06 — never from the release page.
+version: "6.12.0"
+baseline_pair_from: "6.11.0"
+
+skill_renames:
+  # CHANGELOG: "bmad-checkpoint-preview is now bmad-walkthrough (CK -> WT). The
+  # old ID still forwards." The shim ships under src/bmm-skills/v6-shims and
+  # HALTs when _bmad/custom/bmad-checkpoint-preview[.user].toml exists.
+  - from: bmad-checkpoint-preview
+    to: bmad-walkthrough
+    shim_disposition: forward-with-legacy-custom-halt
+
+# removals.txt gained NO new ids since 6.11.0 (49 ids; every one already
+# absent from the installed skill manifest). Trap 3 is empty at this release.
+removals: []
+
+# bmad-walkthrough is the rename target above, so it is NOT repeated here.
+# Package skill set (bmm + core, incl. v6-shims) minus installed = exactly
+# {bmad-walkthrough}; installed minus package = {} (bmad-generate-project-context
+# still ships as a lifecycle:shim under src/bmm-skills/plan/ — not orphaned).
+skill_adds: []
+
+# Upstream installer rewrites these; repo-local edits are conflict surfaces (trap 1).
+# resolve_config.py: package 82 lines (four-layer) vs installed 168 (multi-project
+#   layers 5/6 via BMAD_ACTIVE_PROJECT / .active-project) -> CAP-3 re-applies.
+# resolve_customization.py: package 164 lines vs installed 99; git history shows
+#   only installer commits touched it (no repo-custom edits) -> take upstream.
+#   Listed so the reviewer sees the rewrite; it carries no repo_custom_markers.
+upstream_touched_paths:
+  - _bmad/scripts/resolve_config.py
+  - _bmad/scripts/resolve_customization.py
+
+# Local markers that prove resolve_config.py carries repo-custom layers 5/6.
+repo_custom_markers:
+  - BMAD_ACTIVE_PROJECT
+  - .active-project
+
+# Legacy customization basenames (without .toml) that halt deprecation shims (trap 2).
+# The 6.11 shims still ship at 6.12 (all 13 bmm + 6 core), so their legacy
+# names stay live; the new walkthrough shim adds two more.
+legacy_custom_names:
+  - bmad-dev-auto
+  - bmad-dev-auto.user
+  - bmad-quick-dev
+  - bmad-quick-dev.user
+  - bmad-checkpoint-preview
+  - bmad-checkpoint-preview.user
+
+# Hard prerequisites at this release (trap 4). None are NEW versus 6.11.0 —
+# recorded so the report keeps naming what a bare PATH must satisfy.
+hard_prerequisites:
+  - name: node
+    min_version: "20.12.0"
+    severity: hard
+    notes: "package.json engines floor (unchanged since 6.11); pixi env ships node 24.x"
+  - name: uv
+    severity: hard
+    notes: "bmad-build / bmad-build-auto still halt if uv is unavailable (6.11 contract)"
+  - name: python
+    min_version: "3.11"
+    severity: hard
+    notes: "rendered skills require Python >= 3.11 via uv (6.11 contract)"
+
+# Forwarder / orchestrator contract changes (trap 9).
+forwarder_contract_changes:
+  - skill: bmad-checkpoint-preview
+    forwards_to: bmad-walkthrough
+    notes: >-
+      CK -> WT rename; the shim halts on legacy-name custom files. No repo
+      orchestrator hardcodes the old id (bmad-loop 0.11.1 names it only in
+      data/plugins/example/plugin.toml); marshal living docs still name it
+      (re-ground = marshal Story 30.3).
+    suite_min_versions:
+      bmad-loop: "0.11.1"
+  - skill: bmad-code-review
+    forwards_to: null
+    notes: >-
+      Breaking template variable rename {diff_output} -> {diff_file} in
+      bmad-code-review / bmad-build / bmad-build-auto review steps. Only custom
+      review overrides are affected; the repo has none (_bmad/custom/** and
+      .bmad-loop/** carry zero diff_output references).
+    suite_min_versions: {}
+  - skill: bmad-project-context
+    forwards_to: null
+    notes: >-
+      persistent_facts ships EMPTY: core/bmm skills drop the file:**/project-context.md
+      auto-load. Decided D1 = accept (AGENTS.md bmad:context block is the surface;
+      bmad-project-context now adopts a handwritten AGENTS.md). Post-apply step:
+      bmad-project-context audit. Station project-context.md retirement = marshal 30.2.
+    suite_min_versions: {}
+
+# Config-format migration staging (trap 11).
+config_migration:
+  status: migration-not-cutover
+  notes: >-
+    6.12.0 CHANGELOG carries no TOML-cutover language; the installer still
+    regenerates _bmad/bmm/config.yaml on every install/update (installer.js
+    generateConfigFiles), which the planning-artifacts symlink pattern depends
+    on. The cutover release must still be flagged loudly.
+
+# ---------------------------------------------------------------------------
+# Apply-time findings (live 2026-09-06, branch steward/bmad-core-upgrade-6.12.0;
+# failure-modes.md traps 12-15). Not yet modelled by the catalog schema:
+# - `-y` does not skip the directory prompt; a closed stdin makes the installer
+#   exit 0 with NO changes. Drive it with `--directory <repo>`.
+# - `--action update -y` DELETES the installed custom module `skf` (source cached
+#   under ~/.bmad/cache/custom-modules); select it: `--modules core,bmm,skf`.
+# - skf's marketplace.json omits skf-campaign, and its config.yaml is regenerated
+#   from defaults; run `bmad-module-skill-forge update` afterwards and restore
+#   _bmad/skf/config.yaml (ides / skills_output_folder / snippet_skill_root_override).
+# - resolve_customization.py is rewritten upstream (no local edits: accept).
+# ---------------------------------------------------------------------------
+# - Seven installer-owned skill files carried in-repo edits at 6.11 (marshal
+#   28.8/29.1 in bmad-build-auto; the sprint-plan N.M-key fix) and were
+#   regenerated away; re-applied by 3-way merge against the cached 6.11 package
+#   (failure-modes.md trap 16). Diff installed-vs-package BEFORE the next apply.

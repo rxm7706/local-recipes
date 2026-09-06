@@ -23,7 +23,7 @@ For background on GitHub rulesets vs legacy branch protection, see the [GitHub r
 | `code_quality`           | Blocks merge on `severity: errors` from GitHub code-quality checks.                                                        |
 | `required_status_checks` | Merge blocked until all seven `quality.yaml` checks pass (names below).                                                    |
 
-**Required status checks (7):** sourced from `.github/workflows/quality.yaml` job keys. Matrix jobs expand to `jobname (matrix-value)`:
+**Required status checks (8):** sourced from `.github/workflows/quality.yaml` job keys. Matrix jobs expand to `jobname (matrix-value)`:
 
 - `prettier`
 - `eslint`
@@ -32,6 +32,7 @@ For background on GitHub rulesets vs legacy branch protection, see the [GitHub r
 - `validate (windows-latest)`
 - `python (ubuntu-latest)`
 - `python (windows-latest)`
+- `docs-links`
 
 **Coupling with `quality.yaml`:** if that workflow renames a job or changes the `strategy.matrix.os` for `validate` or `python`, the ruleset's `required_status_checks` list must be updated in lock-step — otherwise merges to `main` will either block on a check name that no longer reports, or silently pass without the renamed check. Update both in the same PR.
 
@@ -581,7 +582,7 @@ For the `release` environment, a deletion+restore similarly uses the two-call pa
   The workflow pauses at **two** gates that the maintainer must clear in the browser. Gate 1 requires explicit approval; gate 2 accepts either approval or admin-bypass-merge:
 
   1. The `release` environment deployment gate (at job start). Approve via "Review deployments" → "Approve and deploy" on the run page.
-  2. The bot PR review-decision gate (after the 7 required status checks pass). EITHER approve the bot PR via the review UI, OR admin-bypass-merge via the PR merge button — both paths are accepted by `release.yaml`'s `Wait for PR approval or admin-bypass merge` step. Admin-bypass-merge is the observed pattern for prior cuts (PRs #209 and #213).
+  2. The bot PR review-decision gate (after the 8 required status checks pass). EITHER approve the bot PR via the review UI, OR admin-bypass-merge via the PR merge button — both paths are accepted by `release.yaml`'s `Wait for PR approval or admin-bypass merge` step. Admin-bypass-merge is the observed pattern for prior cuts (PRs #209 and #213).
 
   Expected wall-clock: ~5–8 minutes end-to-end when both gates are approved promptly.
 
@@ -633,10 +634,12 @@ For the `release` environment, a deletion+restore similarly uses the two-call pa
 
 #### Post-publish verification (NFR9)
 
-Cross-platform install verification for any cut is performed by the [`install-smoke.yaml`](../.github/workflows/install-smoke.yaml) workflow, not by `release.yaml` itself. Dispatch it within 1 hour of publish per NFR9:
+Cross-platform install verification for any cut is performed by the [`install-smoke.yaml`](/.github/workflows/install-smoke.yaml) workflow, not by `release.yaml` itself. Dispatch it within 1 hour of publish per NFR9:
 
 ```bash
 gh workflow run install-smoke.yaml -f version=latest --ref main
 ```
 
-The workflow fans a `workflow_dispatch` input over `ubuntu-latest`, `windows-latest`, and `macos-latest`, running `npx --yes bmad-module-skill-forge@<version> --version` on each runner. A clean three-leg run is the canonical post-publish evidence — its run URL + matrix table belong in the release audit artifact's `## Story <N> Post-Publish Verification` section. Any failing leg routes through the `Rollback Playbook § Scenario B` (deprecate + ship `vX.Y.Z+1`).
+The workflow fans a `workflow_dispatch` input over `ubuntu-latest`, `windows-latest`, and `macos-latest`, running `npx --yes bmad-module-skill-forge@<version> --version` on each runner. A clean three-leg run is the canonical post-publish evidence. Any failing leg routes through the `Rollback Playbook § Scenario B` (deprecate + ship `vX.Y.Z+1`).
+
+**Where the evidence lives.** For a routine release the workflow run **is** the record — the dispatch satisfies NFR9 on its own and no audit artifact is written. Launch cuts additionally transcribe the run URL and matrix table into a per-launch audit artifact under `release-audits/`; `v1.0.0-launch-audit.md § Story 5.4 Post-Publish Verification` is the worked example and remains the only such artifact. Do not append routine releases to it — each audit file is a forensic record scoped to the launch that produced it.
