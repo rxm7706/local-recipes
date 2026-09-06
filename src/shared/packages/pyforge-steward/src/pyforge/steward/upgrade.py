@@ -1027,14 +1027,21 @@ def default_installed_package_root(
     Never raises. Returns ``None`` when *cache_root* (default: the machine's
     rattler package cache) is not a directory or no matching package is found.
     """
-    root = cache_root if cache_root is not None else Path.home() / _RATTLER_PKGS_CACHE_RELATIVE_PATH
-    if not root.is_dir():
+    try:
+        root = (
+            cache_root if cache_root is not None else Path.home() / _RATTLER_PKGS_CACHE_RELATIVE_PATH
+        )
+        if not root.is_dir():
+            return None
+        for candidate in sorted(root.glob(f"bmad-method-{installed_version}-*")):
+            pkg = candidate / "lib" / "node_modules" / "bmad-method"
+            if pkg.is_dir():
+                return pkg
         return None
-    for candidate in sorted(root.glob(f"bmad-method-{installed_version}-*")):
-        pkg = candidate / "lib" / "node_modules" / "bmad-method"
-        if pkg.is_dir():
-            return pkg
-    return None
+    except (OSError, RuntimeError):
+        # e.g. Path.home() cannot resolve a home directory — best-effort,
+        # never an error (this scan is always optional).
+        return None
 
 
 def _find_packaged_skill_dir(package_root: Path, name: str) -> Path | None:
@@ -1058,13 +1065,16 @@ def _scripts_package_path(package_root: Path, script_name: str) -> Path:
 
 
 def _is_pycache_noise(relpath: str) -> bool:
-    """True when *relpath* is compiled-bytecode cache noise (trap 16 false positive).
+    """True when *relpath* is scan noise CAP-8 itself would otherwise re-flag.
 
     ``__pycache__`` dirs and ``.pyc``/``.pyo`` files churn on every interpreter
-    run and are never a genuine in-place edit — CAP-8's byte-diff scan must
-    not fingerprint or report them.
+    run and are never a genuine in-place edit. A ``.customization-conflict``
+    sibling is CAP-8's OWN prior-run output artifact — left behind by a
+    conflicted re-apply, it has no packaged counterpart either, so without
+    this exclusion it would self-pollute the next pre-flight scan as a "new"
+    local customization. Neither is a genuine in-place edit.
     """
-    if relpath.endswith((".pyc", ".pyo")):
+    if relpath.endswith((".pyc", ".pyo", ".customization-conflict")):
         return True
     return "__pycache__" in relpath.split("/")
 
@@ -1140,6 +1150,20 @@ def _scripts_customization_findings(
     return findings
 
 
+def _looks_like_bmad_method_package(root: Path) -> bool:
+    """True when *root* contains at least one expected bmad-method subtree.
+
+    A real, existing directory that lacks all three of ``src/bmm-skills``,
+    ``src/core-skills``, and ``src/scripts`` is not a bmad-method package —
+    it would otherwise silently scan to zero findings, indistinguishable
+    from a genuinely clean repo (the exact trap-16 false-confidence CAP-8
+    exists to prevent).
+    """
+    return any(
+        (root / "src" / sub).is_dir() for sub in ("bmm-skills", "core-skills", "scripts")
+    )
+
+
 def _local_customization_findings(
     repo: Path, installed_package_root: Path | None, catalog: Mapping[str, Any]
 ) -> list[LocalCustomizationFinding]:
@@ -1149,6 +1173,8 @@ def _local_customization_findings(
     — the scan is always optional.
     """
     if installed_package_root is None or not installed_package_root.is_dir():
+        return []
+    if not _looks_like_bmad_method_package(installed_package_root):
         return []
     exclude = frozenset(
         str(p).replace("\\", "/") for p in (catalog.get("upstream_touched_paths") or [])
@@ -1228,6 +1254,14 @@ def build_preflight_report(
             reason = f"--installed-package-root {resolved_installed_root} is not a directory"
         notes.append(
             f"local-customization scan skipped — {reason} (report-only, never required)"
+        )
+    elif not _looks_like_bmad_method_package(resolved_installed_root):
+        notes.append(
+            "local-customization scan skipped — --installed-package-root "
+            f"{resolved_installed_root} exists but does not look like a bmad-method "
+            "package (missing src/bmm-skills, src/core-skills, and src/scripts); "
+            "'(none detected)' below reflects this skip, not a verified-clean scan "
+            "(report-only, never required)"
         )
     pair_from = catalog.get("baseline_pair_from")
     if pair_from:
@@ -1358,7 +1392,7 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
 
     lines.extend(["", "## Local customizations (installer-owned files edited in place)"])
     if not report.local_customizations:
-        lines.append("(none detected)")
+        lines.append("(none detected — see Notes below if the scan was skipped)")
     for entry in report.local_customizations:
         lines.append(f"- [trap {entry.trap_id}] {entry.path}: {entry.reason}")
 
@@ -2094,6 +2128,12 @@ def _three_way_merge(*, ours: bytes, base: bytes, theirs: bytes) -> tuple[bool, 
                 "git",
                 "merge-file",
                 "-p",
+                "-L",
+                "repo customization",
+                "-L",
+                "old upstream (installed)",
+                "-L",
+                "new upstream (target)",
                 str(tmp / "ours"),
                 str(tmp / "base"),
                 str(tmp / "theirs"),
@@ -2173,12 +2213,39 @@ def reapply_local_customizations(
 
     findings: list[CustomizationReapplyFinding] = []
     for rel, ours in pre_apply_snapshots.items():
+        # Clear any stale sibling left by a prior apply attempt; the conflict
+        # branch below re-writes it fresh if THIS run's outcome is itself a
+        # conflict — a customization that is no longer conflicted must never
+        # keep looking conflicted.
+        stale_conflict = repo / f"{rel}.customization-conflict"
+        if stale_conflict.is_file():
+            stale_conflict.unlink()
+
         if ours is None:
             findings.append(
                 CustomizationReapplyFinding(
                     path=rel,
                     action="skipped_no_snapshot",
                     detail="file absent before apply — nothing to re-apply",
+                )
+            )
+            continue
+
+        target = repo / rel
+
+        # Checked before the package-match lookup below: a more specific
+        # diagnostic than `skipped_no_package_match` when both conditions
+        # hold (e.g. a retired/renamed file the installer deleted AND that
+        # has no packaged counterpart on one or both sides).
+        if not target.is_file():
+            findings.append(
+                CustomizationReapplyFinding(
+                    path=rel,
+                    action="skipped_installer_removed_file",
+                    detail=(
+                        "installer removed this file outright — not re-created; "
+                        "the pre-apply snapshot is not merged back"
+                    ),
                 )
             )
             continue
@@ -2199,26 +2266,12 @@ def reapply_local_customizations(
             )
             continue
 
-        target = repo / rel
-        if target.is_file() and target.read_bytes() == ours:
+        if target.read_bytes() == ours:
             findings.append(
                 CustomizationReapplyFinding(
                     path=rel,
                     action="unchanged",
                     detail="installer left this flagged file untouched",
-                )
-            )
-            continue
-
-        if not target.is_file():
-            findings.append(
-                CustomizationReapplyFinding(
-                    path=rel,
-                    action="skipped_installer_removed_file",
-                    detail=(
-                        "installer removed this file outright — not re-created; "
-                        "the pre-apply snapshot is not merged back"
-                    ),
                 )
             )
             continue

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from pyforge.steward.cli import EXIT_OK, main
@@ -42,6 +43,23 @@ _EXPECTED_TRAPS = (
     TRAP_FORWARDER,
     TRAP_CONFIG_MIGRATION,
 )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_home(monkeypatch, tmp_path):
+    """Never resolve to the REAL machine's home dir.
+
+    Every ``build_preflight_report``/``apply_bmad_core_upgrade`` call that does
+    not pass ``installed_package_root=`` falls through to
+    ``default_installed_package_root``'s live ``~/.cache/rattler/cache/pkgs``
+    glob. Fixtures in this file are deterministic today only by accident of
+    which fake installed-version strings happen to (not) have a real cached
+    package on the machine running the tests. A test that deliberately wants
+    the real glob passes ``cache_root=`` explicitly (bypassing ``Path.home()``
+    entirely) or re-patches ``Path.home`` itself after this fixture runs —
+    both keep working since a later ``monkeypatch.setattr`` simply overrides.
+    """
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home-never-real")
 
 
 def _write_610_repo(root: Path, *, with_legacy_custom: bool = True) -> Path:
@@ -351,6 +369,16 @@ def test_default_installed_package_root_matches_glob(tmp_path):
     assert default_installed_package_root("6.10.0", cache_root=cache) == pkg
 
 
+def test_default_installed_package_root_home_unresolvable_returns_none(monkeypatch):
+    """No HOME / no passwd entry raises RuntimeError from Path.home() — never surfaced."""
+
+    def _raise() -> Path:
+        raise RuntimeError("Could not determine home directory")
+
+    monkeypatch.setattr(Path, "home", _raise)
+    assert default_installed_package_root("6.10.0") is None
+
+
 def test_preflight_no_installed_package_root_and_no_cache_match_is_report_only(
     tmp_path, monkeypatch
 ):
@@ -470,6 +498,23 @@ def test_preflight_installed_package_root_bad_path_notes_scan_skipped(tmp_path):
     notes = " ".join(report.notes)
     assert "local-customization scan skipped" in notes
     assert "is not a directory" in notes
+
+
+def test_preflight_installed_package_root_wrong_shape_notes_scan_skipped(tmp_path):
+    """A real directory that isn't a bmad-method package must not read as verified-clean."""
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    wrong_root = tmp_path / "wrong-shape-root"
+    (wrong_root / "some-other-tool").mkdir(parents=True)
+    report = build_preflight_report(
+        repo=repo, target_version="6.11.0", installed_package_root=wrong_root
+    )
+    assert report.local_customizations == ()
+    assert TRAP_LOCAL_CUSTOMIZATION not in report.trap_ids
+    notes = " ".join(report.notes)
+    assert "local-customization scan skipped" in notes
+    assert "does not look like a bmad-method package" in notes
+    text = format_preflight(report, as_json=False)
+    assert "(none detected — see Notes below if the scan was skipped)" in text
 
 
 def test_preflight_never_mutates_tree(tmp_path):

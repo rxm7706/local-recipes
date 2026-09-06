@@ -154,6 +154,7 @@ def _fake_installer(
     *,
     clobber_resolve: bool = False,
     leave_bak: bool = False,
+    clobber_body: str = _UPSTREAM_RESOLVE,
 ) -> Path:
     body = textwrap.dedent(
         f"""\
@@ -168,7 +169,7 @@ def _fake_installer(
                 (repo / "_bmad" / "scripts" / "resolve_config.py.bak").write_bytes(
                     resolve.read_bytes()
                 )
-            resolve.write_text({_UPSTREAM_RESOLVE!r})
+            resolve.write_text({clobber_body!r})
         sys.exit(0)
         """
     )
@@ -369,6 +370,43 @@ def test_reconcile_delta_replay_conflict_keeps_plain_restore(tmp_path):
     assert report.all_clear is False
 
 
+def test_apply_clobber_resolve_delta_replay_conflict_gates_all_clear_false(tmp_path):
+    """The delta-replay conflict gate must hold through the real apply path.
+
+    `test_reconcile_delta_replay_conflict_keeps_plain_restore` above proves
+    the gate by calling `reconcile_clobbered_custom_surfaces` directly; this
+    proves the wiring that threads `installed_package_root`/`package_root`
+    from `apply_bmad_core_upgrade` into that call (and its `all_clear` up
+    into `UpgradeDuty`'s `ok`) is itself intact end-to-end.
+    """
+    repo = _write_repo(tmp_path / "repo", resolve_body=_DELTA_OURS)
+    installer = _fake_installer(
+        tmp_path / "fake-bmad-method",
+        clobber_resolve=True,
+        clobber_body=_DELTA_BASE,
+    )
+    installed_root = _write_scripts_package(
+        tmp_path / "installed-pkg", resolve_body=_DELTA_BASE
+    )
+    target_root = _write_scripts_package(
+        tmp_path / "target-pkg", resolve_body=_DELTA_THEIRS_CONFLICT
+    )
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(installer),
+        branch="review/cap3-cap8-wiring",
+        installed_package_root=installed_root,
+        package_root=target_root,
+    )
+    assert report.installer_exit == 0
+    assert report.reconcile is not None
+    finding = report.reconcile.findings[0]
+    assert "upstream delta conflict" in finding.detail
+    assert report.reconcile.all_clear is False
+
+
 def test_reconcile_delta_replay_skipped_when_package_missing_match(tmp_path):
     """Both roots supplied, but neither ships a matching resolve_config.py — noted, not silent."""
     repo = _write_repo(tmp_path / "repo")
@@ -393,6 +431,7 @@ def test_reconcile_delta_replay_skipped_when_package_missing_match(tmp_path):
     assert "upstream delta" not in finding.detail
     assert any("delta-replay skipped for" in n for n in report.notes)
     assert "BMAD_ACTIVE_PROJECT" in resolve.read_text(encoding="utf-8")
+    assert report.all_clear is True
 
 
 def test_reconcile_roots_absent_is_byte_identical_to_pre_14_8(tmp_path):
@@ -409,6 +448,7 @@ def test_reconcile_roots_absent_is_byte_identical_to_pre_14_8(tmp_path):
     assert finding.action == "restored_from_snapshot"
     assert "upstream delta" not in finding.detail
     assert "BMAD_ACTIVE_PROJECT" in resolve.read_text(encoding="utf-8")
+    assert report.all_clear is True
 
 
 def test_apply_json_includes_reconcile(tmp_path):

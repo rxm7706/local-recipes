@@ -56,6 +56,23 @@ from pyforge.steward.upgrade import (
 
 _DEFAULT_MODULES: tuple[str, ...] = ("core", "bmm", "skf")
 
+
+@pytest.fixture(autouse=True)
+def _no_real_home(monkeypatch, tmp_path):
+    """Never resolve to the REAL machine's home dir.
+
+    Every ``apply_bmad_core_upgrade``/``build_preflight_report`` call that does
+    not pass ``installed_package_root=`` falls through to
+    ``default_installed_package_root``'s live ``~/.cache/rattler/cache/pkgs``
+    glob. Fixtures in this file are deterministic today only by accident of
+    which fake installed-version strings happen to (not) have a real cached
+    package on the machine running the tests. A test that deliberately wants
+    the real glob passes ``cache_root=`` explicitly (bypassing ``Path.home()``
+    entirely) or re-patches ``Path.home`` itself after this fixture runs —
+    both keep working since a later ``monkeypatch.setattr`` simply overrides.
+    """
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "fake-home-never-real")
+
 # ── Story 14.7 fixture shapes (mirror the live repo layout) ────────────────
 _PACKAGED_SOURCE_REL = (
     ".pixi/envs/local-recipes/lib/node_modules/bmad-module-skill-forge/src"
@@ -1894,6 +1911,10 @@ def test_apply_cap8_three_files_two_clean_one_conflict(tmp_path):
     assert "<<<<<<<" in conflict_text
     assert "=======" in conflict_text
     assert ">>>>>>>" in conflict_text
+    # Meaningful labels, not the ephemeral temp-dir paths git defaults to —
+    # the tempdir is gone by the time a human opens this file to resolve it.
+    assert "repo customization" in conflict_text
+    assert "new upstream (target)" in conflict_text
 
     assert reapply.all_clean is False
     assert report.local_customizations_ok is False
@@ -1998,6 +2019,118 @@ def test_reapply_local_customizations_skipped_no_package_match(tmp_path):
     assert report.all_clean is True
 
 
+def test_reapply_local_customizations_new_side_missing_is_the_realistic_shape(tmp_path):
+    """The only way a file gets flagged at all is a match on the OLD (installed)
+    side (that is how the pre-flight scan found it) — so the realistic trigger
+    for `skipped_no_package_match` in real operation is the NEW (target) side
+    lacking a match (e.g. upstream renamed/retired the file), not neither side
+    matching at all.
+    """
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = tmp_path / "target-pkg"
+    (target_pkg / "src" / "scripts").mkdir(parents=True)
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
+        _CAP8_SCRIPT_OURS, encoding="utf-8"
+    )
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "skipped_no_package_match"
+    assert "new (--package-root)" in report.findings[0].detail
+    assert report.all_clean is True
+
+
+def test_reapply_local_customizations_nested_skill_file_merges_cleanly(tmp_path):
+    """The real trap-16 incident's flagged files sit 2+ dirs deep in the skill
+    (e.g. `scripts/tests/test_sprint_plan.py`) — the three-way-merge path must
+    resolve nested `rest` paths correctly, not just flat top-level files.
+    """
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    nested = Path("scripts") / "tests" / "test_helper.py"
+
+    installed_pkg = tmp_path / "installed-pkg"
+    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(
+        parents=True
+    )
+    (installed_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(
+        _CAP8_SKILL1_BASE, encoding="utf-8"
+    )
+
+    target_pkg = tmp_path / "target-pkg"
+    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested.parent).mkdir(
+        parents=True
+    )
+    (target_pkg / "src" / "bmm-skills" / _CAP8_SKILL_NAME / nested).write_text(
+        _CAP8_SKILL1_NEW, encoding="utf-8"
+    )
+
+    repo_file = repo / ".claude" / "skills" / _CAP8_SKILL_NAME / nested
+    repo_file.parent.mkdir(parents=True)
+    # The core installer already regenerated this path with the new upstream
+    # content, as if it had just run.
+    repo_file.write_text(_CAP8_SKILL1_NEW, encoding="utf-8")
+
+    rel = str(repo_file.relative_to(repo)).replace("\\", "/")
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={rel: _CAP8_SKILL1_OURS.encode()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "merged_clean"
+    assert repo_file.read_text(encoding="utf-8") == _CAP8_SKILL1_MERGED
+    assert report.all_clean is True
+
+
+def test_reapply_local_customizations_clears_stale_conflict_sibling_on_clean_merge(
+    tmp_path,
+):
+    """A `.customization-conflict` sibling left by an earlier failed apply must
+    not keep looking conflicted once a later run merges the same file cleanly.
+    """
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = _write_cap8_package(
+        tmp_path / "installed-pkg",
+        script_body=_CAP8_SCRIPT_BASE,
+        skill1_body=_CAP8_SKILL1_BASE,
+        skill2_body=_CAP8_SKILL2_BASE,
+    )
+    target_pkg = _write_cap8_package(
+        tmp_path / "target-pkg",
+        script_body=_CAP8_SCRIPT_NEW,
+        skill1_body=_CAP8_SKILL1_NEW,
+        skill2_body=_CAP8_SKILL2_NEW,
+    )
+    # The core installer already regenerated this file with the new upstream
+    # content, as if it had just run (required for a merge to be attempted at
+    # all — matching bytes would short-circuit to "unchanged" instead).
+    (repo / "_bmad" / "scripts" / _CAP8_SCRIPT_NAME).write_text(
+        _CAP8_SCRIPT_NEW, encoding="utf-8"
+    )
+    stale_conflict = (
+        repo / "_bmad" / "scripts" / f"{_CAP8_SCRIPT_NAME}.customization-conflict"
+    )
+    stale_conflict.write_text("<<<<<<< stale from an earlier failed apply\n", encoding="utf-8")
+
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/helper.py": _CAP8_SCRIPT_OURS.encode()},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "merged_clean"
+    assert not stale_conflict.exists()
+
+
 def test_reapply_local_customizations_skipped_installer_removed_file(tmp_path):
     """The installer deleted the flagged file outright — a clean merge must not recreate it."""
     repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
@@ -2023,6 +2156,30 @@ def test_reapply_local_customizations_skipped_installer_removed_file(tmp_path):
     )
     assert report.findings[0].action == "skipped_installer_removed_file"
     assert not (repo / "_bmad" / "scripts" / "helper.py").exists()
+    assert report.all_clean is True
+
+
+def test_reapply_local_customizations_removed_file_wins_over_no_package_match(tmp_path):
+    """Both conditions hold: the installer deleted the file outright AND neither
+    package root has a matching counterpart (e.g. a retired/renamed file). The
+    more specific `skipped_installer_removed_file` must win, not the generic
+    `skipped_no_package_match` — this is why the installer-removed check runs
+    before the package-match lookup.
+    """
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    installed_pkg = tmp_path / "installed-pkg"
+    (installed_pkg / "src" / "scripts").mkdir(parents=True)
+    target_pkg = tmp_path / "target-pkg"
+    (target_pkg / "src" / "scripts").mkdir(parents=True)
+    # No `_bmad/scripts/retired.py` in the repo, and neither package root has
+    # a `src/scripts/retired.py` either.
+    report = reapply_local_customizations(
+        repo,
+        pre_apply_snapshots={"_bmad/scripts/retired.py": b"old repo customization\n"},
+        installed_package_root=installed_pkg,
+        package_root=target_pkg,
+    )
+    assert report.findings[0].action == "skipped_installer_removed_file"
     assert report.all_clean is True
 
 

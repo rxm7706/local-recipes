@@ -1,6 +1,18 @@
 ---
 spec: bmad-method-core-upgrade
-status: in-progress
+# Flipped in-progress -> shipped 2026-09-06: all 8 CAPs are now implemented.
+# CAP-1..5 were exercised live in the first steward-driven apply the same day
+# (6.11.0->6.12.0, branch steward/bmad-core-upgrade-6.12.0); CAP-6 (Story
+# 14.6, 0286066638), CAP-7 (Story 14.7, 196b8a8d2a + review-fix d7935753fc)
+# and CAP-8 (Story 14.8, 297689f8d6) landed unit-tested + a live CAP-8
+# pre-flight re-run against this repo's own install (finds the real
+# customization-inventory.md row C5 files with zero noise). CAP-6..8's own
+# "next release, zero improvised recoveries" success signal is a full
+# apply-time re-run against a FUTURE bmad-method release, which by
+# definition cannot happen before that release ships — recorded as a
+# pending operator action on Stories 14.6/14.7/14.8, not a blocker to
+# calling the implementation done (same convention as spec-mcp-era-isolation).
+status: shipped
 owner-dream: docs/dreams/bmad-method-core-upgrade.md
 surface: []   # upgrade.py + data/bmad_core_releases/ are governed by spec-pyforge-steward's surface; not double-governed here
 companions:
