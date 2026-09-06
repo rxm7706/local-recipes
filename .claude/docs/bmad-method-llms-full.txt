@@ -4,6 +4,13 @@
 > Generated: 2026-08-17
 > Repository: https://github.com/bmad-code-org/BMAD-METHOD
 
+> **Frozen historical snapshot.** BMAD-METHOD 6.12.0 (released 2026-09-03) discontinued
+> `llms.txt` / `llms-full.txt` upstream — there is no live source left to re-fetch this from, so
+> the body below stays exactly as generated on 2026-08-17 (6.11-era) and is not regenerated or
+> deleted. For live BMAD-METHOD documentation, see the task-organized docs site
+> (https://docs.bmad-method.org/) and the installed skills under `.claude/skills/bmad-*/`; see
+> `CLAUDE.md` § "BMAD Method Documentation" for the full pointer.
+
 <document path="index.md">
 BMad works with supported AI coding tools to carry a software request through
 clarification, an approved plan, implementation, and review. You keep control
