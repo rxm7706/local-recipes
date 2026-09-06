@@ -4524,12 +4524,14 @@ not re-opened.
 **Given** the `v6.12.0` shim roster (14 bmm + 6 core) **Then** `bmad-checkpoint-preview`
 (the new shim forwarding to `bmad-walkthrough`) joins the guarded tuple;
 `bmad-generate-project-context` (the retired 6.11 shim) stays guarded with a dated note that
-6.12 ships it as neither a shim nor a `removals.txt` entry — the apply must delete the
-orphaned 6.11 directory; the two living docs rename or gloss their bare mention; and the
-guard passes on the swept tree while failing on a planted `bmad-checkpoint-preview`. The
-Spec's open question — derive the tuple from steward's `data/bmad_core_releases/<ver>.yaml`
-(`skill_renames` + `removals`) — is answered here: derive once the 6.12.0 catalog exists,
-otherwise keep the hand tuple with a dated comment.
+6.12 ships it as neither a new `skill_renames` entry nor a `removals` catalog entry — it is
+NOT orphaned (it still ships a live `lifecycle: shim` skill directory; no directory deletion
+applies, correcting an earlier "delete the orphaned directory" premise); the two living docs
+rename or gloss their bare mention; and the
+guard passes on the swept tree while failing on a planted `bmad-checkpoint-preview` (the shim).
+The Spec's open question — derive the tuple from steward's
+`data/bmad_core_releases/<ver>.yaml` (`skill_renames` + `removals`) — is answered here: derive
+once the 6.12.0 catalog exists, otherwise keep the hand tuple with a dated comment.
 
 ### Story 30.2: The project-context surface follows 6.12 (D1)
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-9
@@ -4549,7 +4551,7 @@ cadence names `architecture-bmad-infra.md` + the AGENTS.md block only.
 **Given** `llms.txt` / `llms-full.txt` are discontinued upstream **Then** CLAUDE.md
 re-points (local copy = the last snapshot, generated 2026-08-17, 6.11-era, frozen; live =
 the task-organized docs site + the package CHANGELOG), no live doc cites the dead URL,
-`bmad-checkpoint-preview` reads `bmad-walkthrough` in living docs, and — after steward's
+the retired `bmad-checkpoint-preview` reads `bmad-walkthrough` in living docs, and — after steward's
 apply — `architecture-bmad-infra.md` is re-grounded with `source_pin` reading BMAD 6.12.0
 (the CAP-7 once-per-core-minor cadence; it also clears the `pin-behind` warnings against
 CFE v8.86.x already firing on marshal's living docs).

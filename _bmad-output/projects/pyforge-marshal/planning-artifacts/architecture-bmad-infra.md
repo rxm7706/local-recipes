@@ -490,12 +490,12 @@ workflow. The former standalone lens / editorial skill IDs are deprecated forwar
 
 ### Process / facilitation
 
-`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-checkpoint-preview`, `bmad-help`,
+`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-walkthrough`, `bmad-help`,
 `bmad-party-mode`, `bmad-qa-generate-e2e-tests`. (**6.11 removed `bmad-index-docs`** with no
 replacement — maintain `index.md` by hand. **`bmad-shard-doc` is also gone** — no skill directory
 and no deprecated forwarder; do not invoke it.)
 
-### Deprecated `bmad-*` skills (20 — committed v7 removal list)
+### Deprecated `bmad-*` skills (21 — committed v7 removal list)
 
 These are the IDs the CAP-1 regression guard tracks. Each ships a stub `SKILL.md` that forwards to
 its 6.11 successor. They still occupy skill directories and count toward the 52.
@@ -522,6 +522,7 @@ its 6.11 successor. They still occupy skill directories and count toward the 52.
 | `bmad-editorial-review` | `bmad-review` |
 | `bmad-editorial-review-prose` | `bmad-review` |
 | `bmad-editorial-review-structure` | `bmad-review` |
+| `bmad-checkpoint-preview` | `bmad-walkthrough` |
 
 Shims stay installed until the v7 cut; live instruction text must use the 6.11 names (historical
 mentions keep a same-line gloss).
