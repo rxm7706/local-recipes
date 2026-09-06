@@ -1,8 +1,9 @@
-# Failure modes — the two live BMAD core upgrades
+# Failure modes — the three live BMAD core upgrades
 
-Trap catalog from the only two upgrades ever performed: 6.6.0→6.10.0
+Trap catalog from the three upgrades performed so far: 6.6.0→6.10.0
 (bmad-loop-adoption W1, 2026-07-12) and 6.10.0→6.11.0 (2026-08-21, branch
-`bmad-method-v6.11.0-update`). Every row was hit live. CAP-1 must detect the
+`bmad-method-v6.11.0-update`) and 6.11.0→6.12.0 (2026-09-06, the first
+steward-driven apply, branch `steward/bmad-core-upgrade-6.12.0`). Every row was hit live. CAP-1 must detect the
 detectable ones; CAP-3/CAP-5 must catch the rest.
 
 ## Traps
@@ -20,6 +21,10 @@ detectable ones; CAP-3/CAP-5 must catch the rest.
 | 9 | Upstream behavior changes ride the forwarders — old orchestrators break subtly | 6.11 | The `bmad-dev-auto` shim forwards to the NEW build-auto contract (`final_revision` gone, Tier-3 `deferred-work.md` gone, halt strings changed); bmad-loop 0.9.0 hardcoded `/bmad-dev-auto` and would stall unattended — its 0.9.1 was an emergency hotfix for exactly this. Coordinated suite waves followed (uv-run conversion, `persistent_facts` emptied for AGENTS.md) | CAP-1 (min-version report) |
 | 10 | Per-module `--set` keys not declared in `module.yaml` are dropped on the next install | 6.11 (latent) | "The manifest writer's schema-strict partition" — undeclared keys land once in config.toml, then vanish on the next install | CAP-3 |
 | 11 | Config-format migration is staged across releases | 6.11 (latent) | Four-layer TOML is "the migration, not the cutover"; `_bmad/bmm/config.yaml` (which the planning-artifacts symlink pattern depends on) still ships but is slated to go — the cutover release must be flagged loudly | CAP-1 |
+| 12 | `-y` does not skip the installer's **directory prompt**; with stdin closed (any non-TTY driver, incl. steward's `subprocess.run`) clack cancels and the installer exits **0 having written nothing** — a silent no-op apply | 6.12 | First steward `--apply` reported exit 0 / "installer produced no working-tree changes"; the truncated stdout hid the `Installation directory:` prompt. Fix: pass `--directory <repo>` (via the `--installer` wrapper) | CAP-2 (apply must refuse a zero-diff exit 0) |
+| 13 | `--action update -y` **deletes an installed custom module** whose source is cached under `~/.bmad/cache/custom-modules`: `getDefaultModules` never selects it and `_retainUnavailableInstalledModules` only preserves modules with NO source, so it lands in `_removeDeselectedModules` | 6.12 | skf (skill-forge) vanished: 335 `_bmad/skf/**` files + 16 `.claude/skills/skf-*` dirs + its manifest rows; the installer even refreshed the skf cache to `main` first. 6.11's `-y` reinstalled it instead. Fix: select explicitly (`--modules core,bmm,skf`) | CAP-1 (catalog must name installed custom modules) / CAP-2 |
+| 14 | A custom module's **`marketplace.json` skill list is now authoritative**: skill dirs it does not declare are not installed to the IDE, and the module's `config.yaml` is regenerated from `module.yaml` defaults (hand-set keys dropped; `prompt: false` keys render a literal `{project-root}/{value}`) | 6.12 | `skf-campaign` (shipped in `src/`, undeclared) dropped; `_bmad/skf/config.yaml` lost `ides` / `skills_output_folder: .claude/skills` / `snippet_skill_root_override` and gained `sidecar_path: "{project-root}/{value}"`; `_bmad/config.toml` grew a `[modules.skf]` block of defaults. Recovery: the module's OWN installer (`bmad-module-skill-forge update`) rebuilds a coherent tree with all 16 skills and preserves config.yaml verbatim — restore config.yaml first | CAP-3 (extend "clobbered custom surfaces" beyond resolve_config.py) |
+| 15 | CAP-5 runs in the `pyforge-steward` env, which has **no `pyforge.doctor`** — the bmad-drift-integrity gate FAILs on import even when `bmad-drift-check` (local-recipes env) is all-ok; the uv-from-git spot-check hardcodes `uv tool install --dry-run` (no such flag in uv 0.12.10) and cites `@v0.11.0` while the matrix says `@v0.11.1` | 6.12 | prove-landed verdict FAIL for env reasons only; 8/8 relays refreshed, 7/8 homes clean (marshal home dirty from a pre-existing untracked `marshal-model-cost-catalog.json`, 2026-09-02) | CAP-5 |
 
 ## The 2026-08-21 verification worked example (CAP-5's target)
 

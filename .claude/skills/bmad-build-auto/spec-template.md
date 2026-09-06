@@ -4,7 +4,7 @@ type: 'feature' # feature | bugfix | refactor | chore
 created: '{date}'
 status: 'draft' # draft | ready-for-dev | in-progress | in-review | done | blocked
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
-followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
+followup_review_recommended: false # set by step-04 on status: done — true if the LLM decided another review pass is worthwhile
 context: [] # optional: `{project-root}/`-prefixed paths to project-wide standards/docs the implementation agent should load. Keep short — only what isn't already distilled into the spec body.
 warnings: [] # optional: machine-readable warnings for orchestration, e.g. oversized, multiple-goals
 deferred: [] # append-only machine-readable deferred review findings; each item carries summary/evidence and optional location/severity
@@ -27,12 +27,9 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 
 ## Boundaries & Constraints
 
-<!-- Three tiers: Always = invariant rules. Block If = decisions that cannot be made unattended. Never = out of scope + forbidden approaches. -->
+<!-- Two tiers: Always = invariant rules. Never = out of scope + forbidden approaches. -->
 
 **Always:** INVARIANT_RULES
-
-**Block If:** DECISIONS_REQUIRING_HUMAN_INPUT
-<!-- Agent: if any of these trigger during execution, HALT with status blocked and the blocking condition. -->
 
 **Never:** NON_GOALS_AND_FORBIDDEN_APPROACHES
 
@@ -76,9 +73,9 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 ## Review Triage Log
 
 <!-- Append-only. Populated by step-04 on EVERY review pass, including loopbacks and blocked exits.
-     Each entry records triage decision counts for intent_gap, bad_spec, patch, defer, and reject,
-     with per-category severity breakdowns using low/medium/high, plus the findings addressed in
-     that pass. Empty until the first review pass. -->
+     Each entry records verdict counts (high/medium/low/false/maybe-false) and one row per
+     reviewer finding: verdict, route, and evidence — the refutation for false, what would settle
+     it for maybe-false, the action taken for patches. Empty until the first review pass. -->
 
 ## Design Notes
 

@@ -101,3 +101,16 @@ config_migration:
     regenerates _bmad/bmm/config.yaml on every install/update (installer.js
     generateConfigFiles), which the planning-artifacts symlink pattern depends
     on. The cutover release must still be flagged loudly.
+
+# ---------------------------------------------------------------------------
+# Apply-time findings (live 2026-09-06, branch steward/bmad-core-upgrade-6.12.0;
+# failure-modes.md traps 12-15). Not yet modelled by the catalog schema:
+# - `-y` does not skip the directory prompt; a closed stdin makes the installer
+#   exit 0 with NO changes. Drive it with `--directory <repo>`.
+# - `--action update -y` DELETES the installed custom module `skf` (source cached
+#   under ~/.bmad/cache/custom-modules); select it: `--modules core,bmm,skf`.
+# - skf's marketplace.json omits skf-campaign, and its config.yaml is regenerated
+#   from defaults; run `bmad-module-skill-forge update` afterwards and restore
+#   _bmad/skf/config.yaml (ides / skills_output_folder / snippet_skill_root_override).
+# - resolve_customization.py is rewritten upstream (no local edits: accept).
+# ---------------------------------------------------------------------------

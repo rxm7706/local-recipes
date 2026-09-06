@@ -3,9 +3,9 @@ title: Workflows
 description: All 15 SKF workflows with commands, steps, and connection diagram
 ---
 
-Trigger workflows by typing commands to [Ferris](../agents/). See [Concepts](../concepts/) for definitions.
+Trigger workflows by typing commands to [Ferris](/docs/agents.md). See [Concepts](/docs/concepts.md) for definitions.
 
-> Already using BMAD? See [BMAD Synergy](../bmad-synergy/) for when to invoke each SKF workflow during BMM phases and alongside TEA, BMB, and GDS.
+> Already using BMAD? See [BMAD Synergy](/docs/bmad-synergy.md) for when to invoke each SKF workflow during BMM phases and alongside TEA, BMB, and GDS.
 
 ---
 
@@ -83,7 +83,7 @@ Trigger workflows by typing commands to [Ferris](../agents/). See [Concepts](../
 
 **Purpose:** Brief-less fast skill with package-to-repo resolution.
 
-**Note:** QS is **tier-unaware** — it always runs at community tier and does not use ast-grep, CCC, or QMD even when your forge is configured at Forge+/Deep. For tier-aware compilation, use `BS → CS`, `forge`, or `forge-auto`. See [Skill Model](../skill-model/).
+**Note:** QS is **tier-unaware** — it always runs at community tier and does not use ast-grep, CCC, or QMD even when your forge is configured at Forge+/Deep. For tier-aware compilation, use `BS → CS`, `forge`, or `forge-auto`. See [Skill Model](/docs/skill-model.md).
 
 **When to Use:** When you need a skill quickly — no brief needed. Accepts package names or GitHub URLs. Append `@version` to target a specific version (e.g., `@Ferris QS cognee@1.0.0`).
 
@@ -164,7 +164,7 @@ Trigger workflows by typing commands to [Ferris](../agents/). See [Concepts](../
 
 **Key Steps:** Load skill → Detect mode → Coverage check → Coherence check → External validation (skill-check, tessl) → Hard gate → Score → Gap report
 
-**Scored Categories:** Export Coverage (36%), Signature Accuracy (22%), Type Coverage (14%), Coherence (18%), External Validation (10%). Default pass threshold: **80%** (per-pipeline defaults: forge-auto 90%, forge 80%). Pass routes to Export Skill; fail routes to Update Skill with a gap report. See [Completeness Scoring](../verifying-a-skill/#how-the-score-is-computed) for the full formula and tier adjustments.
+**Scored Categories:** Export Coverage (36%), Signature Accuracy (22%), Type Coverage (14%), Coherence (18%), External Validation (10%). Default pass threshold: **80%** (per-pipeline defaults: forge-auto 90%, forge 80%). Pass routes to Export Skill; fail routes to Update Skill with a gap report. See [Completeness Scoring](/docs/verifying-a-skill.md#how-the-score-is-computed) for the full formula and tier adjustments.
 
 **Agent:** Ferris (Audit mode)
 
@@ -315,7 +315,7 @@ flowchart TD
     EXPORT --> MAINT[Maintenance + Campaign Report]
 ```
 
-> **One workflow per session** (unless using pipeline mode or campaign). Each arrow in the standard and compose-mode diagrams represents a new conversation session. Campaign manages its own multi-session orchestration internally — see [Campaign Orchestration](../campaign/). Clear your context between workflows for best results — or use pipeline mode to chain them automatically. See [Pipeline Mode](#pipeline-mode) below.
+> **One workflow per session** (unless using pipeline mode or campaign). Each arrow in the standard and compose-mode diagrams represents a new conversation session. Campaign manages its own multi-session orchestration internally — see [Campaign Orchestration](/docs/campaign.md). Clear your context between workflows for best results — or use pipeline mode to chain them automatically. See [Pipeline Mode](#pipeline-mode) below.
 
 ---
 
@@ -474,7 +474,7 @@ If the answer to all of these is "no", the health check exits in one line (`Clea
 
 - **Severity gate.** Only `bug` findings submit live as GitHub issues by default. `friction` and `gap` findings — the most subjective categories — go to a **local queue** at `{forge_data_folder}/improvement-queue/` unless you explicitly opt in to submit them live during the review gate. This keeps the high-signal reports (real defects) flowing to maintainers while the softer observations sit safely on your disk for you to batch or revisit.
 - **Fingerprint dedup.** Every finding gets a deterministic 7-hex fingerprint computed from `sha1(severity|workflow|step_file|section)` — no LLM similarity judgment, just a tuple hash. Before Ferris opens a new issue, it searches the repo for an existing open issue with the same `fp-*` label. If one exists, you're offered a choice: add a 👍 reaction (silent upvote), react + post a one-sentence environment delta, open a new issue anyway (if you're certain it's distinct), or skip. Re-reporting the same fingerprint is safe — it just adds to the signal-count on the canonical issue.
-- **Global seen-cache.** Once you've submitted or reacted for a given fingerprint, it's recorded at `~/.skf/health-check-seen.json` so the same user never re-reports the same defect across sessions or across different projects on the same machine.
+- **Global seen-cache.** Once you've submitted or reacted for a given fingerprint, it's recorded at `~/.skf/health-check-seen.json` so the same user doesn't re-report the same defect across sessions or across different projects on the same machine, for as long as the issue it points at stays open. Once that issue is closed as completed, the suppression lifts on purpose: a fresh sighting of a fixed defect is a regression, and it gets reported and linked back to the original.
 - **Server-side safety net.** If two users race past the client-side search and both open issues with the same fingerprint, a GitHub Action on this repo catches it: the later issue is auto-closed as a duplicate, linked to the canonical (lowest-numbered) issue, and a 👍 is added there to preserve the signal-count. Manual filers using the [issue template](https://github.com/armelhbobdad/bmad-module-skill-forge/issues/new/choose) feed the same pipeline.
 
 **Net effect:** 1,000 users hitting the same bug produce **one canonical issue** with a reaction-count of roughly 1,000 — not 1,000 duplicate issues or a 1,000-comment thread. The maintainer sees population impact at a glance, and your report is never lost.

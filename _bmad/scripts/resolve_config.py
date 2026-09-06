@@ -50,6 +50,14 @@ _MISSING = object()
 _SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 
+def write_json_stdout(output) -> None:
+    """Pin stdout to UTF-8 — a Windows cp1252 default cannot encode emoji icons."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8")
+    sys.stdout.write(json.dumps(output, indent=2, ensure_ascii=False) + "\n")
+
+
 def extract_key(data, dotted_key: str):
     current = data
     for part in dotted_key.split("."):
@@ -160,7 +168,7 @@ def main() -> int:
             value = extract_key(merged, key)
             if value is not _MISSING:
                 output[key] = value
-    sys.stdout.write(json.dumps(output, indent=2, ensure_ascii=False) + "\n")
+    write_json_stdout(output)
     return 0
 
 
