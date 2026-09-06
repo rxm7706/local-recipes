@@ -36,6 +36,9 @@ that are ancestors of main, excluding `attempt-preserve/*` and `loop/*`),
 Usage:
   python scripts/worktree_sweep.py                 # dry run, text table
   python scripts/worktree_sweep.py --format json   # machine-readable
+  python scripts/worktree_sweep.py --format json \
+      > _bmad-output/projects/pyforge-marshal/implementation-artifacts/worktree-verdicts-$(date +%F).json
+      # the dated Tier-3 record of a sweep (bmad-drift classifies it `local:sweep-verdicts`)
   python scripts/worktree_sweep.py --execute       # apply DELETE / PRESERVE-THEN-DELETE / D-W-K-B
   python scripts/worktree_sweep.py --execute --delete-merged-local-branches --prune-home-remotes
 """
