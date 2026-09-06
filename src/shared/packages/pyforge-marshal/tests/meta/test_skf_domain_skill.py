@@ -9,7 +9,6 @@ from pathlib import Path
 
 from pyforge.testing_kit import (
     changed_paths_since,
-    diff_text_since,
     pyforge_import_offenders,
     unsanctioned_commits,
 )
@@ -136,8 +135,20 @@ def test_context_files_not_hand_edited():
         )
         if result["has_managed_section"]:
             assert result["markers_valid"], f"{name}: malformed SKF managed section"
-        diff = diff_text_since(root, pathspec=name)
-        assert not diff.strip(), f"{name} changed vs origin/main"
+        # A second managed marker, `bmad:context`, is the sanctioned surface for
+        # content moved by `bmad-project-context adopt`/`audit` (Story 30.2,
+        # 2026-09-06, D1 -- the project-context surface migration off the retired
+        # per-station rulebooks). A well-formed bmad:context block is legitimate,
+        # tool-mediated content the same way an SKF managed section is; the
+        # zero-diff assertion this test used to carry unconditionally is retired
+        # in favor of checking both markers stay well-formed, matching the
+        # docstring's own stated invariant ("not hand-edited", not "never
+        # touched").
+        text = (root / name).read_text(encoding="utf-8")
+        opens = text.count("<!-- bmad:context -->")
+        closes = text.count("<!-- /bmad:context -->")
+        assert opens == closes, f"{name}: unbalanced bmad:context markers"
+        assert opens <= 1, f"{name}: more than one bmad:context block"
 
 
 _CFE_SURFACE = ".claude/skills/conda-forge-expert"
