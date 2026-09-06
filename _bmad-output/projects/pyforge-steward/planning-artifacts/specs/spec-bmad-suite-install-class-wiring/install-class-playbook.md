@@ -17,7 +17,7 @@ not a boolean only `--module` targets can satisfy.
 | Piece | Install class | Pixi / PATH | Native wire (cited) | Steward surface | wired-or-not predicate |
 |---|---|---|---|---|---|
 | **bmad-method** | Core / npm CLI installer | conda-forge canonical; SelfExplainML refresh-parity | `npx bmad-method install` (matrix: README L16; bins `bmad`, `bmad-method`) | Epic 14 upgrade + prove-landed; **not** `--module` | installer tree: `_bmad/core` + BMM present; Genesis must never write there |
-| **bmad-loop** | uv-from-git tool / orchestrator | pixi pin (+ optional `uv tool install …@git`) | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"` (matrix: README) — not on PyPI | existing `steward provision --runner bmad-loop --env …`; **not** `--module` | runner home / worktree provisionable |
+| **bmad-loop** | uv-from-git tool / orchestrator | pixi pin (+ optional `uv tool install …@git`) | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"` (matrix: README) — not on PyPI | existing `steward provision --runner bmad-loop --env …`; **not** `--module` | runner home / worktree provisionable |
 | **bmad-module-skill-forge** (skf) | Own npx installer (+ module into `_bmad`) | pixi pin (suite pixi gap closed 2026-08-22) | `npx bmad-module-skill-forge install` (matrix: README § Install; Node ≥22, Python ≥3.10, uv) | channel pin + native install; **`--module skf` refused** (Spec non-goal) | skf skills present via its own installer |
 | **bmad-labs-skills** | Claude plugin / `skills add` marketplace | optional pixi package | `npx skills add bmad-labs/skills` (matrix: README "Recommended") or `/plugin marketplace add …` | channel pin + CAP-4 matrix spot-check; **not** `--module` | plugin path documented; enabled only with operator consent |
 | **bmad-dashboard** / **mybmad-dashboard** | Build / self-host app | pixi `bmad-ui` feature | dashboard: Node 22+, `corepack prepare pnpm@10.26.2`, `pnpm install && pnpm build` (matrix: README); mybmad: `cd web && pnpm install`, `scripts/setup.sh` (web/README) | Kedro-Viz via `steward deploy dashboard` (operator console is Lane 1 `/console/`; Guildhall generator retired). VS Code extension remains `pixi run bmad-dashboard-install` (bmad-ui, not Guildhall). **not** `--module` | install task runnable (Kedro-Viz / `steward deploy dashboard`; VS Code extension / web build still 31.2) |
@@ -54,7 +54,7 @@ check / drift-check) are deleted — do not resurrect them.
 1. **bmad-method** — installer tree `_bmad/core` + `_bmad/bmm` (present on
    clone). First-install native (not steward): `npx bmad-method install`.
    Steward Epic 14 only upgrades an already-installed core.
-2. **bmad-loop** — native `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"`.
+2. **bmad-loop** — native `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"`.
    Steward wrap is `steward provision --runner bmad-loop` (flag stays; Story
    5.1 reports rather than materializes). Provisionable predicate: runner
    home `scripts/bmad-loop-worktree`.
