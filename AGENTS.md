@@ -33,9 +33,11 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 - Recipe lifecycle: `.claude/skills/conda-forge-expert/SKILL.md`. Invoke the skill before any conda work; every conda-forge effort closes with a retro that edits that skill and its `CHANGELOG.md`.
 - Station code: read `.claude/skills/pyforge-<station>/SKILL.md` before touching `src/shared/packages/pyforge-<station>/`; use the CLI grammar, never `pyforge.<station>` internals.
+- **Workspace-package conventions** (`src/shared/packages/pyforge-*/`): tests live in the package's own `tests/{unit,meta,conformance,integration}/` — never under `_bmad-output/projects/<slug>/tests/`, which holds only planning-scaffold mocks/fixtures. Each package's exit-code projection has a single-owner module (`verdict.py`) and its report contract is a shipped, frozen JSON Schema under `src/pyforge/<name>/data/report-schema.json` (`$id: urn:local-recipes:pyforge-<name>:report-schema`) — additive changes only.
 - Architecture invariants and naming (station token, `python-<role>-<class>`, id prefixes, ledger keys): `planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` under `pyforge-steward`; cite `canopy AD-n`, `pap:AD-n` for the host, and `fnd:AD-n` for the cutover spine once PR #1041 merges.
 - Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
 - Governance: `docs/governance/`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
+- pyforge-atlas subtree-exclusive rules (Kedro/Dagster/DuckDB internals — testing contract, AD-1 import boundaries, exit-code convention, code-grounded patterns): `src/shared/packages/pyforge-atlas/AGENTS.md`.
 
 ## Running and verifying
 

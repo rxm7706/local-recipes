@@ -134,14 +134,14 @@ The `_bmad-output/projects/pyforge-marshal/` artifacts (PRD, architecture set, e
 | `conda-forge-expert` | Full conda-forge recipe lifecycle (generate → validate → build → submit) | Creating/updating recipes, fixing build failures, any conda packaging |
 | `bmad-build` (6.11 name of `bmad-quick-dev`; `bmad-build-auto` = `bmad-dev-auto`) | Implement story / feature / fix from a spec — "the one official way BMad implements code" | Direct implementation requests when the story spec exists |
 | `bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories` | BMAD planning chain (deprecated forwarders — `bmad-create-prd` / `bmad-create-architecture` / `bmad-create-story` / `bmad-dev-story` — removed in v7) | Starting a new product or feature in `_bmad-output/projects/<slug>/` |
-| `bmad-project-context` | Verified agent-instructions block in `AGENTS.md` (6.11 replacement for `bmad-document-project` + `bmad-generate-project-context`; does NOT produce brownfield docs) | "Set up / refresh / audit agent instructions"; record observed agent mistakes |
+| `bmad-project-context` | Verified agent-instructions block in `AGENTS.md`, or a subtree-scoped "child" `AGENTS.md` (own Children rule: subtree-exclusive, substantial, user-approved — e.g. `src/shared/packages/pyforge-atlas/AGENTS.md`) (6.11 replacement for `bmad-document-project` + `bmad-generate-project-context`; does NOT produce brownfield docs) | "Set up / refresh / audit agent instructions"; record observed agent mistakes |
 | `bmad-agent-*` (analyst/architect/dev/pm/ux-designer; tech-writer retired in 6.11) | Persona-led workflows | "Talk to John/Mary/Winston/…" requests |
 
 For full skill list and disambiguation defaults (which review skill, simplify-vs-code-simplification, schedule-vs-loop, etc.) see auto-memory entry `feedback_skill_disambiguation.md`.
 
 ## BMAD ↔ conda-forge-expert integration
 
-These two rules govern any BMAD-driven effort that touches conda-forge work in this repo. They apply to every BMAD skill (`bmad-build`, `bmad-agent-dev`, persona agents, planning agents, code-review agents — everything). They are **always-on**; no opt-in.
+These three rules govern any BMAD-driven effort that touches conda-forge work in this repo. They apply to every BMAD skill (`bmad-build`, `bmad-agent-dev`, persona agents, planning agents, code-review agents — everything). They are **always-on**; no opt-in.
 
 ### Rule 1 — BMAD must invoke `conda-forge-expert` for any conda-forge work
 
@@ -178,6 +178,16 @@ When a BMAD effort that did conda-forge work reaches its closeout (final story c
 The retro is not optional and not deferrable. An effort is not "done" until the retro lands.
 
 If the effort produced no novel findings (rare — almost every effort surfaces at least one refinement), the retro still runs and produces a CHANGELOG entry stating "no skill changes; verified existing guidance held for: <summary of effort>".
+
+### Rule 3 — Planner constraints for conda-forge stories
+
+These rules reshape **story scope** for `bmad-prd`, `bmad-create-epics-and-stories`, and `bmad-build`/persona planning whenever the work being scoped is conda-forge recipe work (recovered 2026-09-06 from the retired `pyforge-marshal/project-context.md` rulebook, Story 30.2):
+
+- **`noarch: python` recipes have no per-platform test matrix.** A story that splits test coverage by OS for a noarch package is invalid. Either commit to per-platform builds (drop `noarch:`) or write a single test matrix.
+- **The submission-ready gate is non-negotiable.** A story that targets "submit PR" cannot complete until `validate_recipe` + `optimize_recipe` + `scan_for_vulnerabilities` + a green linux-64 build are all green. Plan the four checks as explicit acceptance criteria, not implicit "tests pass."
+- **Step 8b is a story boundary.** `prepare_submission_branch` is the natural "done for now" point for a recipe-authoring story; `submit_pr` belongs to a separate, human-authorized "publish recipe" story. Don't bundle them.
+- **`python_min` floor moves.** When planning a story that pins a Python floor, reference the **current** `conda-forge-pinning-feedstock` value at implementation time, not a snapshot recorded at planning time.
+- **Cross-platform stories require a named build host.** A story authoring a recipe that ships on `win-64` must name the build host (Windows host, Windows VM, or "rely on conda-forge CI") in the acceptance criteria — a Linux host cannot validate win-64 binaries.
 
 ## Project Documentation Reference
 
@@ -252,6 +262,8 @@ Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/scripts/conda-forge-expert/`** — public CLI entrypoint layer (~30 thin subprocess wrappers). What `pixi run` calls.
 - **`.claude/data/conda-forge-expert/`** — mutable runtime state (cf_atlas.db, vdb/, cve/, mappings, caches). Gitignored.
 - **`.claude/tools/conda_forge_server.py`** — FastMCP server exposing 30+ tools across recipe-authoring + atlas-intelligence + project-scanning surfaces. Started by Claude Code at session boot; tool schemas surface at call time.
+
+**Three-place rule for a new CI script:** (1) canonical implementation at `.claude/skills/conda-forge-expert/scripts/<name>.py`; (2) thin CLI wrapper at `.claude/scripts/conda-forge-expert/<name>.py`; (3) a pixi task (`[feature.local-recipes.tasks.<name>]` in `pixi.toml`) plus an entry in the `SCRIPTS` list in `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py`. Missing any one breaks that meta-test.
 
 **Atlas intelligence (v7.0+)** — `cf_atlas.db` ships 16 schema versions, 15 pipeline phases (B → N), and 17 CLIs. Daily-use entrypoints: `detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`, `scan-project`. All read-side CLIs are offline-safe. See `.claude/skills/conda-forge-expert/SKILL.md` § "Atlas Intelligence Layer" for the persona-mapped guide.
 

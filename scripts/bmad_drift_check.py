@@ -75,7 +75,9 @@ SKILL = REPO_ROOT / ".claude" / "skills" / "conda-forge-expert"
 # The factory document set moved local-recipes -> pyforge-marshal on 2026-07-28: the
 # placeholder project dissolved under Charter §5, and this doc set IS the factory rebuild
 # spec, owned by Marshal via the regenerable-factory practice. TRACKED below uses paths
-# RELATIVE to PROJ, so retargeting this one constant carried all 18 of them.
+# RELATIVE to PROJ, so retargeting this one constant carried all of them (16
+# today; was 17 before Story 30.2, 2026-09-06, retired the `project-context.md`
+# row -- see `factory.py`'s mirrored `TRACKED`, this file's sync-of-record).
 PROJ = REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
 PLAN = PROJ / "planning-artifacts"
 IMPL = PROJ / "implementation-artifacts"
@@ -99,7 +101,6 @@ TRACKED: list[tuple[str, str]] = [
     ("planning-artifacts/source-tree-analysis.md", "living"),
     ("planning-artifacts/project-overview.md", "living"),
     ("planning-artifacts/project-parts.json", "living"),
-    ("project-context.md", "context"),
     ("planning-artifacts/PRD.md", "plan"),
     ("planning-artifacts/epics-regenerable-factory.md", "plan"),  # renamed on the move: marshal keeps its own epics.md
     ("planning-artifacts/implementation-readiness-report.md", "snapshot"),  # dated gate output, regenerated not pinned
@@ -255,8 +256,6 @@ def classify(path: Path) -> str:
         return "baseline"
     if rel == "SYNC-RUNBOOK.md":
         return "runbook"
-    if rel == "project-context.md":
-        return "tracked:context"
     if rel in TRACKED_REL:
         return f"tracked:{TRACKED_CAT[rel]}"
     if rel.startswith("planning-artifacts/change-history/"):

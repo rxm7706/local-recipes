@@ -125,7 +125,7 @@
    "src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/SKILL.md": "e01b922ba4544f4cbc20614e36534c9c686aac09",
    "src/shared/packages/pyforge-atlas/.gitignore": "8b9e0d2cf2c060de6f13a5e80225b558449040d8",
    "src/shared/packages/pyforge-atlas/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
-   "src/shared/packages/pyforge-atlas/AGENTS.md": "c19df5f8d41cd5b3f4c5020f0d4ead7a825c2e87",
+   "src/shared/packages/pyforge-atlas/AGENTS.md": "9fe85802f3fd366c4d5ac5b8a1b80aa572283fc3",
    "src/shared/packages/pyforge-atlas/README.md": "8b196b705a4f4e910bc081592a7aa28fda24aec0",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "cc950947eea01299f83eb05b084fcabe2a0a3ad9",
@@ -477,7 +477,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "c541299cdee14b817e0efa4df584d71d2de0b6ca"
+  "memlog": "08de07e66799809d521f7a5c744bee1512b2a488"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -552,7 +552,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "81cfc9ff0781e1138a2b4b2f58792ee0ed0abe88",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "f2f4703dc7bacab60d425cc2b32ce6ea1df65f5c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "23162ade3b7f65e2a631a4ed44ae43840c8cb172",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "229b3e070f09ea6a40bf7f98d85e048fd6147f9f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "3bba72cf83e3d2bae966ef7001007974c4924939",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "a2f345dda29fabecb348e5547328a7c121e0b5eb",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "b3bc95ce6af94149e261a06064d3a725ed1fe5b5",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "79560b221f8817e663b328121b1877d1428d05d8"
+  "memlog": "146bb7d87292e95b5feeac4897a4b2f9f2e6879f"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -2730,9 +2730,9 @@
    "docs/dashboard/kedro-viz/favicon.ico": "76fc39fae24f8b2148f44e4d151967f7b7fa5c62",
    "docs/dashboard/kedro-viz/index.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081",
-   "scripts/fleet_scan.py": "a1082ca13b12d56cc880d110a467f9bfb457b6d1"
+   "scripts/fleet_scan.py": "cb5366130f00d03b640bd198c4009f76bb533195"
   },
-  "memlog": "f3636969c0bf938f70ef538c331e5b81f8ca03f2"
+  "memlog": "44b835c9b5589d5a2113cd06aea695dc2ed3f207"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},
@@ -5527,7 +5527,7 @@
    "src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/SKILL.md": "e01b922ba4544f4cbc20614e36534c9c686aac09",
    "src/shared/packages/pyforge-atlas/.gitignore": "8b9e0d2cf2c060de6f13a5e80225b558449040d8",
    "src/shared/packages/pyforge-atlas/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
-   "src/shared/packages/pyforge-atlas/AGENTS.md": "c19df5f8d41cd5b3f4c5020f0d4ead7a825c2e87",
+   "src/shared/packages/pyforge-atlas/AGENTS.md": "9fe85802f3fd366c4d5ac5b8a1b80aa572283fc3",
    "src/shared/packages/pyforge-atlas/README.md": "8b196b705a4f4e910bc081592a7aa28fda24aec0",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "cc950947eea01299f83eb05b084fcabe2a0a3ad9",
@@ -5957,7 +5957,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "13adaac3a4f0b230990bffc63fdd339f2928c5fe",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "e156ed1a53ea55514af6a07f2c787771e929f5b0"
+  "memlog": "72bf289e65b3c94fea48f6ba9b0f6d8aeaeb5b5c"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {

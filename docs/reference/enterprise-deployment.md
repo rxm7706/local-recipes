@@ -238,7 +238,7 @@ The skill's HTTP helper at `.claude/skills/conda-forge-expert/scripts/_http.py` 
 - `atlas-phase F` or `bootstrap-data` in `auto` mode without `S3_PARQUET_BASE_URL` override — AWS S3
 - `atlas-phase H` in `cf-graph` mode — `github.com` tarball
 
-Mirrored as a Critical Constraint in `_bmad-output/projects/local-recipes/project-context.md` § Air-Gapped / Enterprise.
+This document is the canonical source for the leak and its mitigations; the retired per-station `project-context.md` rulebooks (Story 30.2, 2026-09-06) used to mirror an older, less complete copy of it.
 
 ---
 
