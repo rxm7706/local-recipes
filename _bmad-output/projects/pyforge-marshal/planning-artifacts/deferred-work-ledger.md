@@ -5874,7 +5874,20 @@ status: open
   origin: spec-deferred ca5c219fe4b2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: RESOLVED 2026-09-06 (same PR #1078). Full re-audit performed: live tree re-counted
+    directory-by-directory (not spot-checked) at the post-shim-retirement state — 100 dirs = 88
+    real (top-level SKILL.md) skills + 12 nonskill/support dirs. Note the evidence line's 121/109/71
+    figures were themselves accurate only transiently: they were measured mid-run, before this same
+    session's later `--no-shims` apply removed 21 shim directories, which is why they don't match
+    the 100 figure re-verified after that apply landed -- not a measurement error, a timing
+    difference within one session. "Installed Skills" section rewritten: family table, BMAD agent
+    personas (13, was 5), new Creative Intelligence Suite subsection (10), deprecated-shims section
+    marked retired (0 remain, was "committed for removal"), nonskill directories expanded 4 -> 12
+    with a new "SKF-forged versioned skill store" sub-classification (cf-atlas-legacy,
+    cfe-recipe-lifecycle, 7 pyforge-<station>) explaining why they don't count toward the 88 despite
+    containing a real, versioned SKILL.md one directory level down. test_no_retired_bmad_skill_ids
+    (9 passed) and test_bmad_artifacts_in_sync (1 passed) both re-verified green after the rewrite.
 
 ### DW-FU-30-3-2: test_bmad_artifacts_in_sync.py (the only test touching architecture-bmad-infra.md's source_pin) checks structural pin parseability only, never semantic pin-behind currency at patch-version granularity -- a stale-but-parseable source_pin never fails this test.
 
