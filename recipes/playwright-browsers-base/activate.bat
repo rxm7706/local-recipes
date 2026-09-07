@@ -1,0 +1,5 @@
+@echo off
+if "%PLAYWRIGHT_BROWSERS_PATH%"=="" (
+    set "PLAYWRIGHT_BROWSERS_PATH=%CONDA_PREFIX%\share\ms-playwright"
+    set "PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA=1"
+)

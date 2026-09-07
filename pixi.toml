@@ -866,6 +866,10 @@ cmd = "python -m pyforge.doctor.sources bmad-drift"
 description = "Print the live ground-truth factory facts (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) as JSON — the source of truth the BMAD docs must portray."
 cmd = "python -m pyforge.doctor.sources bmad-drift --groundtruth"
 
+[feature.local-recipes.tasks.playwright-cli-integrity-check]
+description = "Detector (runtime): catch the Playwright CLI clobber. playwright-python DEPENDS on the Node playwright package and both claim bin/playwright; when the Python console script is written while the Node symlink is still there, the write follows the symlink into lib/node_modules/playwright/cli.js — and because conda hardlinks from the shared package cache, that one write poisons the cache and every env linking the same build. Observed 2026-09-07: 9 poisoned copies, both CLIs broken, silent for months. Exit 0 clean, 1 findings, 2 could-not-run."
+cmd = "python scripts/playwright_cli_integrity_check.py"
+
 [feature.local-recipes.tasks.llms-full-check]
 description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
