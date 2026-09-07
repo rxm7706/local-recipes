@@ -4,3 +4,14 @@ output_folder = "_bmad-output/projects/pyforge-marshal"
 slug = "pyforge-marshal"
 description = "Marshal — orchestration CLI productizing the bmad-loop capability (init, factory spin, gates, deploy); wrap-vs-build resolved in PRD. dist pyforge-marshal / module pyforge.marshal / CLI marshal"
 status = "active"
+
+[tea]
+# Story 31.1 (spec-bmad-suite-lifecycle CAP-4, AD-9 "one path pinned"):
+# test-architecture.md's canonical writer for this station. TEA's
+# bmad-testarch-test-design ran for real (system-level) 2026-09-07 and its
+# equivalence against the generator's Story Coverage Matrix narrowed --
+# TEA's risk-tiered template names 0 of 208 story ids / 0 of 181 test
+# paths verbatim (it samples ~13 P0-P3 risks, not an exhaustive matrix).
+# See planning-artifacts/reviews/tea-equivalence-2026-09-07.md.
+test_architecture_path = "planning-artifacts/test-architecture.md"
+test_architecture_writer = "generator"

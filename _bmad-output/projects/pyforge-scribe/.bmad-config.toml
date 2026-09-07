@@ -4,3 +4,14 @@ output_folder = "_bmad-output/projects/pyforge-scribe"
 slug = "pyforge-scribe"
 description = "Scribe — team knowledge CLI (capture, curate, graph compile, recall); adopts team-memory + sentinel knowledge-graph core. dist pyforge-scribe / module pyforge.scribe / CLI scribe"
 status = "active"
+
+[tea]
+# Story 31.1 (spec-bmad-suite-lifecycle CAP-4, AD-9 "one path pinned"):
+# test-architecture.md's canonical writer for this station. TEA's
+# bmad-testarch-test-design ran for real (system-level) 2026-09-07 and its
+# equivalence against the generator's Story Coverage Matrix narrowed --
+# TEA's risk-tiered template names ~5 of 19 story ids / 0 of the baseline's
+# test paths verbatim (it samples P0-P3 risks, not an exhaustive matrix).
+# Report: _bmad-output/projects/pyforge-marshal/planning-artifacts/reviews/tea-equivalence-2026-09-07.md
+test_architecture_path = "planning-artifacts/test-architecture.md"
+test_architecture_writer = "generator"

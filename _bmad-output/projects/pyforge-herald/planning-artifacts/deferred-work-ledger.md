@@ -944,3 +944,24 @@ deployment.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-18-1: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
+
+- source_spec: `planning-artifacts/specs/spec-18-1-the-first-station-video-renders-from-herald-s-studio.md`
+  summary: Never-caught false-done risk: the ledger-direction detector that would flag a done-but-unmerged sprint-ledger flip is not wired into detectors/detectors-ci.
+  evidence: pyforge.doctor.sources.ledger::gather_direction exists and is unit-tested for exactly this shape (a tracked ledger done key with no matching merge subject and no Tier-3 feed), but scripts/detectors.py's _DOCTOR_SOURCE_TASKS omits it and no pixi task exposes it, so neither detectors nor detectors-ci ever runs it. Pre-existing gap, not introduced by this story; wiring it in is a repo-wide fix beyond this story's scope.
+  location: scripts/detectors.py (_DOCTOR_SOURCE_TASKS)
+  origin: spec-deferred 8eb37210007a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-3: Story 18.2 (sibling branch herald-r2a, not present in this branch's history) already rewrites the same "Utility skill routing (AD-2)" section this story appends to, into a numbered procedure -- landing both branches will need manual re-threading, not a mechanical git merge.
+
+- source_spec: `planning-artifacts/specs/spec-18-3-slides-generator-is-herald-wielded.md`
+  summary: Story 18.2 (sibling branch herald-r2a, not present in this branch's history) already rewrites the same "Utility skill routing (AD-2)" section this story appends to, into a numbered procedure -- landing both branches will need manual re-threading, not a mechanical git merge.
+  evidence: Confirmed via `git show --stat` / `git log` against `origin/bmad/adoption-readiness-2026-09-06-herald-r2a` commit de771710fa (Story 18.2), which is not an ancestor of this branch: it replaces the pre-existing one-line "Herald wields `bmad-os-changelog`..." sentence in `.claude/skills/bmad-agent-herald/SKILL.md` with a multi-paragraph explanation plus a 4-step numbered procedure. This story's diff instead appends its new `slides-generator` paragraph directly after that soon-to-be-replaced one-liner. Out of this dispatch's own explicit scope (instructed not to touch herald-r2a) -- the orchestrating session that merges both branches into the integration branch needs to manually re-thread the slides-generator paragraph into 18.2's rewritten section rather than relying on a mechanical merge/rebase.
+  location: .claude/skills/bmad-agent-herald/SKILL.md (## Utility skill routing (AD-2) section)
+  origin: spec-deferred ffcb6aa1b4fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

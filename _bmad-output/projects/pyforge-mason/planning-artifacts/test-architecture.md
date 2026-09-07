@@ -2,29 +2,29 @@
 title: "Test Architecture — pyforge-mason"
 type: test-architecture
 generator: bmad_tea_playwright.py
-generator_version: 2.0.0
+generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: c05b86b0e45dadac
-story_count: 47
-test_file_count: 34
+source_fingerprint: 6cbe711cb553db9a
+story_count: 61
+test_file_count: 39
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
 
 # Test Architecture — PyForge Mason
 
-This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do not hand-edit; re-run the generator after epics or tests change.
+This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do not hand-edit; re-run the generator after epics or tests change.
 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 47
-- **Epics parsed:** 14
-- **Test files inventoried:** 34 under `src/shared/packages/pyforge-mason/tests/`
+- **Stories parsed:** 61
+- **Epics parsed:** 19
+- **Test files inventoried:** 39 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c05b86b0e45dadac`
+- **Source fingerprint:** `6cbe711cb553db9a`
 
 ## Risk Assessment
 
@@ -43,6 +43,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 - Epic 7: Machine-checked recipe knowledge
 - Epic 8: One pixi base-layer discipline across the Containerfiles
 - Epic 9: External integration seams
+- Epic 10: Build-engine hook spec
+- Epic 11: Mason persona and one portal job (CFE stays)
+- Epic 12: The CFE rebuild continues — gate closure and slice 2
+- Epic 13: Two feedstock pins admit Python 3.14 (steward 43.5 hybrid decision)
+- Epic 14: The eval-quality Windows variant (spec-bmad-suite-lifecycle CAP-7 relay)
 - Epic 1: Install, run, and diagnose Mason
 - Epic 3: Ship a library to both ecosystems
 - Epic 4: Bind environments into lockfiles
@@ -69,9 +74,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_recipe_knowledge.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_airgap_contract.py` | unit | none observed |
+| `src/shared/packages/pyforge-mason/tests/unit/test_boot_reconcile.py` | unit | none observed |
+| `src/shared/packages/pyforge-mason/tests/unit/test_build_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_cfe.py` | unit | none observed |
+| `src/shared/packages/pyforge-mason/tests/unit/test_cfe_rebuild_guard_merges.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_doctor.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_engines.py` | unit | none observed |
@@ -142,6 +152,20 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | 8.1 | The convention is written and guarded | none observed |
 | 9.1 | The repo's CI is consumable via workflow_call | none observed |
 | 9.2 | The air-gap distribution contract has a socket | none observed |
+| 10.1 | Extract the build-engine hook | none observed |
+| 11.1 | BMAD persona consults conda-forge-expert | none observed |
+| 11.2 | First portal slice — last diagnose | none observed |
+| 12.1 | Landed retros are mirrored into the pilot brief | none observed |
+| 12.2 | CI enforcement for the guard and the equivalence net | none observed |
+| 12.3 | The real audit tool backs the pilot zero-drift claim | none observed |
+| 12.4 | The re-scope gate is machine-enforced | none observed |
+| 12.5 | The ownership decision is recorded | none observed |
+| 12.6 | Slice 2 brief — cross-slice dependencies re-derived first | none observed |
+| 12.7 | Slice 2 compiled and equivalence-validated | none observed |
+| 12.8 | The slice-2 re-scope checkpoint | none observed |
+| 13.1 | langflow-base onnxruntime pin admits Python 3.14 | none observed |
+| 13.2 | dbgpt-client sqlalchemy cap admits Python 3.14 | none observed |
+| 14.1 | `bmad-eval-quality` builds a `__win` variant | none observed |
 
 ## Quality Gates
 
@@ -151,10 +175,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
 | Idempotent regen | byte-identical on unchanged tree | FR-132 |
+| Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration
 
 ```bash
 python _bmad/scripts/bmad_tea_playwright.py --project pyforge-mason
 python _bmad/scripts/bmad_tea_playwright.py --all
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-mason --check
+python _bmad/scripts/bmad_tea_playwright.py --all --check
 ```

@@ -2,29 +2,29 @@
 title: "Test Architecture — pyforge-warden"
 type: test-architecture
 generator: bmad_tea_playwright.py
-generator_version: 2.0.0
+generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 1515525a10ce4fc1
-story_count: 36
-test_file_count: 57
+source_fingerprint: 61db49da7af356c3
+story_count: 43
+test_file_count: 64
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
 
 # Test Architecture — PyForge Warden
 
-This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do not hand-edit; re-run the generator after epics or tests change.
+This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do not hand-edit; re-run the generator after epics or tests change.
 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 36
-- **Epics parsed:** 14
-- **Test files inventoried:** 57 under `src/shared/packages/pyforge-warden/tests/`
+- **Stories parsed:** 43
+- **Epics parsed:** 17
+- **Test files inventoried:** 64 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1515525a10ce4fc1`
+- **Source fingerprint:** `61db49da7af356c3`
 
 ## Risk Assessment
 
@@ -42,6 +42,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 - Epic 6: Multi-axis expansion — license, currency, KEV/EPSS & adoption (added 2026-07-15; re-baselined 2026-07-16, D12)
 - Epic 7: One provenance trail, one eligibility answer
 - Epic 8: A web face for the compliance factory
+- Epic 9: PR-gate hook specs; scanners are plugins
+- Epic 10: Warden owns its skill, persona, and one portal job
+- Epic 11: Two advisory lenses beside the gate
 - Epic 1: Spine + PyPI engine (walking skeleton)
 - Epic 2: The conda/pixi source-manifest wedge
 - Epic 3: Policy control + auditable waivers + warn-only
@@ -78,7 +81,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-warden/tests/conformance/test_scan_harness.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_extract_no_execution.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_pr_gate_plugin_registration.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_socket_deny_alive.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
@@ -87,12 +94,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_currency.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_discovery_extract_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_eligibility_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_engine_env_deptry.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_environment_yml_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_feeds.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_interfaces_and_null_engine.py` | unit | none observed |
@@ -110,6 +119,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_refresh_kev_feed.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_report.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_sbom.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_verdict.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_vuln.py` | unit | none observed |
@@ -155,6 +165,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | 7.3 | CycloneDX out, the corpus in | none observed |
 | 8.1 | Upload runs the real engines, async | none observed |
 | 8.2 | Results render with derived progress | none observed |
+| 9.1 | Warden publishes the PR-gate hook book | none observed |
+| 9.2 | Current scanners become optional plugins | none observed |
+| 9.3 | Default Warden stays green without Checkmarx | none observed |
+| 10.1 | SKF domain skill and BMAD persona for warden | none observed |
+| 10.2 | First portal slice — start/get one audit | none observed |
+| 11.1 | `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses | none observed |
+| 11.2 | `tea-test-review` is a warden advisory finding | none observed |
 
 ## Quality Gates
 
@@ -164,10 +181,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
 | Idempotent regen | byte-identical on unchanged tree | FR-132 |
+| Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration
 
 ```bash
 python _bmad/scripts/bmad_tea_playwright.py --project pyforge-warden
 python _bmad/scripts/bmad_tea_playwright.py --all
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-warden --check
+python _bmad/scripts/bmad_tea_playwright.py --all --check
 ```

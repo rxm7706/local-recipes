@@ -417,6 +417,29 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # FAIL only on an actual policy-suite failure. A DISPATCH member
     # (Callable[[Path], tuple[Finding, ...]]), unlike BACKLOG_INTAKE/
     # DREAMS_HYGIENE/CHAIN_LAYERS_AUDIT above.
+    SourceRegistration(
+        source=Source.BMAD_RENDER_CONFIG_AMBIGUITY,
+        scope="repo",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 20.2 -- sources/bmad_config.py. subject_station="steward":
+    # `_bmad/custom/config*.toml` customizations are steward's territory
+    # (spec-bmad-method-core-upgrade's own customization-inventory.md C2
+    # row, "steward | Sanctioned custom layer"). A DISPATCH member
+    # (Callable[[Path], tuple[Finding, ...]]), same shape as
+    # PLATFORM_POLICY_SUITE above.
+    SourceRegistration(
+        source=Source.FROZEN_PATH_CHANGED,
+        scope="repo",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 20.3 -- sources/frozen_path.py. subject_station="steward":
+    # steward owns the cutover plan / capability ledger (AD-22's own
+    # "steward cutover plan --append" ownership). A DISPATCH member
+    # (Callable[[Path], tuple[Finding, ...]]), same shape as
+    # BMAD_RENDER_CONFIG_AMBIGUITY/PLATFORM_POLICY_SUITE above -- unlike
+    # both of those, this one CAN report FAIL (see models.Source's own
+    # comment for why).
 )
 
 

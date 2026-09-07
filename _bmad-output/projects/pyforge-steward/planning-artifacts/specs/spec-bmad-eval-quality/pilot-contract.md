@@ -11,9 +11,12 @@ evaluator configuration; a findings JSON schema.
 `claude -p --output-format json --json-schema <findings-schema> --max-budget-usd 2
 --no-session-persistence`, model pinned to the station's `[adapter.review].model` — maps exit code
 + parsed findings (`location` = `file:line`) to an observation, emits the sealed run record. The
-layer prompt is `.claude/skills/bmad-build-auto/review-prompts/edge-case-hunter.md` (byte-identical
-to the `bmad-code-review` copy); "Return ONLY a valid JSON array" is why this layer is measurable
-and the prose review is not.
+layer prompt is `.claude/skills/bmad-build-auto/review-prompts/edge-case-hunter.md`. **Correction
+(Story 45.2, 2026-09-07):** this copy is NOT byte-identical to the `bmad-code-review` copy as
+originally claimed here — `diff` finds 5 hunks differ, including a materially different
+`claims_file` contract (optional vs. mandatory, and a differently-worded description of what it
+contains); use the `bmad-build-auto` copy per the epics AC, never the `bmad-code-review` one.
+"Return ONLY a valid JSON array" is why this layer is measurable and the prose review is not.
 
 **Oracle** one strong oracle: `covers-by-key` over `referenceSets.planted-defects`
 (`["file","line"]`) against the review's cited locations. "The review ran" never passes on its own.

@@ -202,3 +202,11 @@ of the core-upgrade Spec are on main, unit-tested; the suite is 13/13 current on
   by the PRD, the epic-altitude spine, and hand-authored epics across eight stations (steward 46/47
   + Story 14.9, marshal 30.5 + Epic 31, doctor 20, warden 11, herald 18, scribe 7, atlas 24, mason 14).
   Implementation begins next session with the era tail (Epic 30, 14.9, 30.5, the `--no-shims` apply).
+- **2026-09-07** — Story 47.1 re-ran the live `steward upgrade bmad-core --json`
+  pre-flight against this repo's own state and corrected `cutover-readiness.md`'s
+  P7/P13 rows: the P7 evidence pool grew from the epic's assumed seven files to a
+  live **nine** (eight `local_customizations` + one `locally_modified`, one
+  additional skill-file edit having landed 2026-09-06→09-07); P13's "5
+  ungoverned" claim was independently re-derived against all nine and held
+  exactly, even as the total pool grew — recorded as two separate, dated facts.
+  Governing the five ungoverned files remains marshal Story 31.4's job.

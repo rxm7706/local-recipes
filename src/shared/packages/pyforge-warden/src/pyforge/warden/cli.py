@@ -1346,6 +1346,13 @@ def _run_scan(args: argparse.Namespace) -> int:
     plugin_context: dict[str, object] = {
         "plugin_findings": [],
         "enabled_optional": enabled_optional,
+        # Story 11.2: TeaAdvisoryScanPlugin needs the scan target (to shell
+        # out to tea-test-review against it) and its own note channel,
+        # separate from plugin_findings -- an advisory note is never a
+        # Finding, so it must never be picked up by
+        # findings_from_plugin_context below.
+        "target": target,
+        "advisory_notes": [],
     }
     # The engine seam runs only when a manifest actually parsed: with nothing
     # extractable (empty dir, or a manifest that failed to parse) there is no
@@ -1399,6 +1406,17 @@ def _run_scan(args: argparse.Namespace) -> int:
                     _record_error(errors, rungs, **error_args)
     invoke_pr_gate(
         PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry
+    )
+    # Story 11.2: TeaAdvisoryScanPlugin (the only PR_GATE_SCAN plugin that
+    # writes here) already ran above -- read its notes now, before
+    # plugin_context sees any further use. Coerced to None when empty so
+    # ComplianceReport.advisory/render_text's guard stay "None means no
+    # optional advisory scanner ran", exactly like actuation_payload below.
+    advisory_notes = plugin_context.get("advisory_notes")
+    advisory_payload: list[dict[str, object]] | None = (
+        list(advisory_notes)
+        if isinstance(advisory_notes, list) and advisory_notes
+        else None
     )
     for result in engine_results:
         errors.extend(result.errors)
@@ -1722,6 +1740,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         currency_gating=config.currency_gating,
         warn_as_error=config.warn_as_error,
         actuation=actuation_payload,
+        advisory=advisory_payload,
     )
     # Story 9.2: only Warden publishes the PR-gate verdict. Plugins may
     # grow ``plugin_findings``; they must not set the exit code.
@@ -1802,6 +1821,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     warn_only=args.warn_only,
                     warn_only_downgraded=warn_only_downgraded,
                     actuation=actuation_payload,
+                    advisory=advisory_payload,
                     manifest_locations=manifest_locations,
                     fixed_versions=fixed_versions,
                 )

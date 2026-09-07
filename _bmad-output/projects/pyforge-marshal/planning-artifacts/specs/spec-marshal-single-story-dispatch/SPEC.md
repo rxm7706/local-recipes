@@ -14,6 +14,9 @@ surface:
   - .claude/skills/bmad-build-auto/step-01-clarify-and-route.md
   - .claude/skills/bmad-build-auto/step-04-review.md
   - .claude/skills/bmad-build-auto/spec-template.md
+  - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
+  - .claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py
+  - .claude/skills/bmad-sprint-planning/references/generate-tracking.md
 companions:
   - fleet-drain-playbook.md
 sources:

@@ -1583,3 +1583,45 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-10-3-the-drift-surfaces-ambiently-never-gates.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-20-1: epics.md Story 20.1's Surface line (naming suite-members.yaml and _manifest_suite_members/_pixi_suite_package_names) and its AC's 'packages_checked reads 13' wording do not precisely match the shipped implementation (per-recipe.yaml cfe-source-kind derivation; suite evidence reads 12, core excluded).
+
+- source_spec: `planning-artifacts/specs/spec-20-1-suite-drift-maps-every-active-member-derived-from-the-roster.md`
+  summary: epics.md Story 20.1's Surface line (naming suite-members.yaml and _manifest_suite_members/_pixi_suite_package_names) and its AC's 'packages_checked reads 13' wording do not precisely match the shipped implementation (per-recipe.yaml cfe-source-kind derivation; suite evidence reads 12, core excluded).
+  evidence: suite-members.yaml carries no registry/probe-class field on any entry, so the literal Surface reading has no data to read; the recipe.yaml-based approach is the only functionally coherent one (matches Story 19.1 and steward's spec-bmad-suite-metapackage precedent) and is fully justified in this spec's own Design Notes ('Why 12, not 13'). Pre-existing imprecision in the epics.md text, not introduced by this diff.
+  location: _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md (Story 20.1, Surface + AC lines)
+  origin: spec-deferred 1ca276296ece — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-2: pyforge-marshal/spec-pyforge-core's own declared surface glob (pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}/src/**) never matches any real path, so changes under seven of the eight stations' src/** silently evade that spec's drift detection.
+
+- source_spec: `planning-artifacts/specs/spec-20-2-the-render-halt-class-has-a-detector.md`
+  summary: pyforge-marshal/spec-pyforge-core's own declared surface glob (pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}/src/**) never matches any real path, so changes under seven of the eight stations' src/** silently evade that spec's drift detection.
+  evidence: chain.py::_glob_to_re treats brace characters as literal regex-escaped text (verified directly against the glob-compiling code, no {a,b,c} expansion support exists), so the literal substring "pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}" can never appear in any real file path. Discovered incidentally while reconciling this story's own pixi.toml touch against pyforge-marshal/spec-pyforge-core (a foreign spec); the fix (a real glob per station, or a spec-owned decision to only watch specific stations) is marshal's own spec-authoring call, not this story's to make.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md (surface: list)
+  origin: spec-deferred 7e5ceba0b980 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-3: _changed_paths splits the diff --name-only output on newlines rather than using NUL-delimited (-z) output, so a changed path containing a literal embedded newline byte would be mis-split.
+
+- source_spec: `planning-artifacts/specs/spec-20-3-frozen-path-changed-exists.md`
+  summary: _changed_paths splits the diff --name-only output on newlines rather than using NUL-delimited (-z) output, so a changed path containing a literal embedded newline byte would be mis-split.
+  evidence: This is the SAME pre-existing pattern already used in sources/ledger.py (unmodified by this story) -- not a new defect Story 20.3 introduces. Fixing it here without also fixing the inherited sibling would create inconsistency; fixing both is outside this story's own surface.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py (_changed_paths); sources/ledger.py has the same pattern
+  origin: spec-deferred aae0417acab3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-4: No `## Allowed actions (CAP-16)` entry names the mechanism by which a doctor station task may consult `bmad-os-root-cause-analysis`.
+
+- source_spec: `planning-artifacts/specs/spec-20-4-bmad-os-root-cause-analysis-is-doctor-wielded.md`
+  summary: No `## Allowed actions (CAP-16)` entry names the mechanism by which a doctor station task may consult `bmad-os-root-cause-analysis`.
+  evidence: Verified identical across all six wielding stations' persona files (warden, marshal, herald, steward, scribe, doctor) -- none of their `## Allowed actions (CAP-16)` sections name a mechanism for consulting their own routed `bmad-os-*` utility skill either; this is steward 46.2's own pre-existing pattern, not something this story introduces or worsens.
+  origin: spec-deferred 70d56e4ced32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

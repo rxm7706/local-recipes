@@ -241,6 +241,53 @@ class Source(StrEnum):
     # for an absence that is not the repo's fault), FAIL only on an actual
     # policy-suite failure. See sources/platform_policy.py.
     PLATFORM_POLICY_SUITE = "platform-policy-suite"
+    # Story 20.2 (Epic 20): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on whether `_bmad/scripts/render_skill.py`'s own central-config
+    # merge (`load_central_config()`'s four `_bmad/config*.toml` /
+    # `_bmad/custom/config*.toml` layers) contains an AMBIGUOUS bare key --
+    # the same key name occurring at two different dotted paths, which HALTs
+    # every rendering skill (bmad-build, bmad-build-auto, ...) with
+    # `RenderError: ambiguous config value` the moment a `{{.key}}` short
+    # token tries to resolve it (live 2026-09-06: `[core] user_skill_level`
+    # colliding with a regenerated `[modules.bmm] user_skill_level`, fixed by
+    # commit `99e595cc6a`). This source independently REPRODUCES the
+    # renderer's own merge and scan logic (never imports
+    # `_bmad/scripts/config_utils.py`/`render_skill.py` -- Boundaries), one
+    # WARN per ambiguous key naming it and every colliding path, one OK
+    # naming the checked-key count when none collide. Never gates (`ok`/
+    # `warn` only, mirroring BMAD_METHOD_VERSION_DRIFT's own always-informs
+    # discipline). subject_station="steward" (sources/__init__.py's own
+    # REGISTRY entry): the scanned config spans an installer-managed base
+    # layer (`_bmad/config*.toml`, regenerated wholesale on every install,
+    # never hand-edited) and a steward-owned custom layer
+    # (`_bmad/custom/config*.toml`) -- a human can only ever resolve a
+    # collision by moving the CUSTOM-layer pin, since the base layer isn't a
+    # hand-edit surface at all. Mirrors spec-bmad-method-core-upgrade's own
+    # `customization-inventory.md` C2 row ("steward | Sanctioned custom
+    # layer") and its remediation record for the live 2026-09-06 incident
+    # this source detects, which fixed the collision by moving
+    # `_bmad/custom/config.toml`'s own pins (commit `99e595cc6a`), not the
+    # installer-managed base file. See sources/bmad_config.py for the
+    # independence rationale.
+    BMAD_RENDER_CONFIG_AMBIGUITY = "bmad-render-config-ambiguity"
+    # Story 20.3 (Epic 20): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on whether a capability currently `rebuilding`/`moving` in the
+    # tracked capability ledger (`docs/foundry/manifest.{yaml,yml,json}`, an
+    # `[ASSUMPTION: schema]` synthesis -- no ledger exists at all until the
+    # real python-foundry cutover begins) had one of its own frozen source
+    # paths touched by `origin/main..HEAD` anyway (AD-22's own freeze rule;
+    # `cutover-readiness.md` G11: "never built" before this story). Unlike
+    # BMAD_RENDER_CONFIG_AMBIGUITY/BMAD_METHOD_VERSION_DRIFT above, this
+    # member CAN FAIL -- the story's own AC is explicit ("a change under a
+    # frozen path is a fail naming the capability and the path"), a
+    # deliberate departure from Epic 20's general "warn at most" framing,
+    # governed by this specific AC (mirrors LEDGER_REGRESSION/SPEC_SURFACE/
+    # PLATFORM_POLICY_SUITE's own FAIL-capable precedent). subject_station=
+    # "steward" (sources/__init__.py's own REGISTRY entry): steward owns the
+    # cutover plan / capability ledger (AD-22's own "steward cutover plan
+    # --append" ownership). See sources/frozen_path.py for the independence
+    # rationale.
+    FROZEN_PATH_CHANGED = "frozen-path-changed"
 
 
 class Partition(StrEnum):

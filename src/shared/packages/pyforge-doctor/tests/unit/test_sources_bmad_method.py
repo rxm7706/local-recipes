@@ -792,6 +792,7 @@ def test_2026_08_21_pre_update_fixture_names_bmad_loop_and_tea(
     assert "0.11.0" in loop_finding.message
     assert loop_finding.evidence == {
         "package": "bmad-loop",
+        "probe_class": "tag",
         "installed": "0.9.0",
         "latest_upstream": "0.11.0",
     }
@@ -800,6 +801,7 @@ def test_2026_08_21_pre_update_fixture_names_bmad_loop_and_tea(
     assert "1.23.2" in tea_finding.message
     assert tea_finding.evidence == {
         "package": _TEA,
+        "probe_class": "tag",
         "installed": "1.19.1",
         "latest_upstream": "1.23.2",
     }
@@ -856,6 +858,7 @@ def test_mixed_suite_one_behind_one_current_reports_only_the_warn(
     assert [f.status for f in suite] == [DoctorStatus.WARN]
     assert suite[0].evidence == {
         "package": "bmad-loop",
+        "probe_class": "tag",
         "installed": "0.9.0",
         "latest_upstream": "0.11.0",
     }
@@ -1331,6 +1334,246 @@ def test_github_owner_repo_returns_none_when_extra_block_is_missing(
     assert bmad_method._github_owner_repo(tmp_path, "bmad-loop") is None
 
 
+# --- _source_kind (Story 20.1) ----------------------------------------------------
+
+
+_RECIPE_COMMIT_PINNED = """
+context:
+  version: "0.2.0.dev0"
+  commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-eval-quality
+  cfe-source-kind: github-commit
+"""
+
+_RECIPE_NPM_REGISTRY = """
+extra:
+  cfe-upstream-registry: npm
+  cfe-upstream-name: bmad-module-skill-forge
+  cfe-source-kind: npm-registry
+"""
+
+
+def test_source_kind_returns_the_value_on_a_hit(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    assert bmad_method._source_kind(tmp_path, "bmad-eval-quality") == "github-commit"
+
+
+def test_source_kind_returns_none_when_recipe_yaml_is_missing(tmp_path: Path) -> None:
+    assert bmad_method._source_kind(tmp_path, "bmad-eval-quality") is None
+
+
+def test_source_kind_returns_none_on_malformed_yaml(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_MALFORMED_YAML)
+    assert bmad_method._source_kind(tmp_path, "bmad-eval-quality") is None
+
+
+def test_source_kind_returns_none_when_extra_block_is_missing(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_MISSING_EXTRA)
+    assert bmad_method._source_kind(tmp_path, "bmad-eval-quality") is None
+
+
+# --- _probe_class (Story 20.1) ------------------------------------------------------
+
+
+def test_probe_class_github_commit_source_kind_is_commit_pinned() -> None:
+    assert bmad_method._probe_class("github-commit", "github") == "commit-pinned"
+
+
+def test_probe_class_npm_registry_by_registry_field() -> None:
+    assert bmad_method._probe_class(None, "npm") == "npm"
+
+
+def test_probe_class_npm_registry_by_source_kind_field() -> None:
+    assert bmad_method._probe_class("npm-registry", None) == "npm"
+
+
+def test_probe_class_pypi_registry() -> None:
+    assert bmad_method._probe_class(None, "pypi") == "pypi"
+
+
+def test_probe_class_defaults_to_tag() -> None:
+    assert bmad_method._probe_class(None, "github") == "tag"
+    assert bmad_method._probe_class(None, None) == "tag"
+    assert bmad_method._probe_class("github-tag", "github") == "tag"
+
+
+def test_probe_class_commit_pinned_takes_priority_over_npm_registry() -> None:
+    # A package with BOTH a github-commit source_kind AND an npm registry
+    # (no real roster member hits this today) must still resolve to
+    # "commit-pinned" -- that check runs FIRST (Boundaries: the fallback
+    # ordering is load-bearing).
+    assert bmad_method._probe_class("github-commit", "npm") == "commit-pinned"
+
+
+# --- _recipe_pinned_commit (Story 20.1) ---------------------------------------------
+
+
+_RECIPE_PINNED_COMMIT_MISSING_COMMIT = """
+context:
+  version: "0.2.0.dev0"
+"""
+
+_RECIPE_PINNED_COMMIT_MISSING_VERSION = """
+context:
+  commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+"""
+
+
+def test_recipe_pinned_commit_returns_the_raw_dev0_string_and_full_sha_on_a_hit(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    assert bmad_method._recipe_pinned_commit(tmp_path, "bmad-eval-quality") == (
+        "0.2.0.dev0",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    )
+
+
+def test_recipe_pinned_commit_returns_none_when_context_commit_is_missing(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(
+        tmp_path, "bmad-eval-quality", _RECIPE_PINNED_COMMIT_MISSING_COMMIT
+    )
+    assert bmad_method._recipe_pinned_commit(tmp_path, "bmad-eval-quality") is None
+
+
+def test_recipe_pinned_commit_returns_none_when_context_version_is_missing(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(
+        tmp_path, "bmad-eval-quality", _RECIPE_PINNED_COMMIT_MISSING_VERSION
+    )
+    assert bmad_method._recipe_pinned_commit(tmp_path, "bmad-eval-quality") is None
+
+
+def test_recipe_pinned_commit_returns_none_when_recipe_yaml_is_missing(
+    tmp_path: Path,
+) -> None:
+    assert bmad_method._recipe_pinned_commit(tmp_path, "bmad-eval-quality") is None
+
+
+def test_recipe_pinned_commit_returns_none_on_malformed_yaml(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_CONTEXT_MALFORMED_YAML)
+    assert bmad_method._recipe_pinned_commit(tmp_path, "bmad-eval-quality") is None
+
+
+# --- _fetch_default_branch_head_sha (Story 20.1) ------------------------------------
+
+
+def test_fetch_default_branch_head_sha_returns_the_sha_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, json.dumps([{"sha": "b" * 40}]).encode())
+    assert (
+        bmad_method._fetch_default_branch_head_sha(
+            owner_repo="bmad-code-org/bmad-eval-quality"
+        )
+        == "b" * 40
+    )
+
+
+def test_fetch_default_branch_head_sha_builds_the_commits_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, str] = {}
+
+    def _urlopen(url: str, timeout: float | None = None) -> _FakeUrlopenResponse:
+        seen["url"] = url
+        return _FakeUrlopenResponse(json.dumps([{"sha": "b" * 40}]).encode())
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+    bmad_method._fetch_default_branch_head_sha(
+        owner_repo="bmad-code-org/bmad-eval-quality"
+    )
+    assert seen["url"] == (
+        "https://api.github.com/repos/bmad-code-org/bmad-eval-quality/commits"
+        "?per_page=1"
+    )
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        urllib.error.HTTPError(
+            "https://api.github.com", 404, "Not Found", email.message.Message(), None
+        ),
+        urllib.error.URLError("no route to host"),
+        http.client.BadStatusLine("garbage"),
+        OSError("connection refused"),
+        TimeoutError("timed out"),
+    ],
+)
+def test_fetch_default_branch_head_sha_folds_every_network_failure_mode_to_none(
+    monkeypatch: pytest.MonkeyPatch, exc: BaseException
+) -> None:
+    def _raise(*args, **kwargs):
+        raise exc
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert (
+        bmad_method._fetch_default_branch_head_sha(
+            owner_repo="bmad-code-org/bmad-eval-quality"
+        )
+        is None
+    )
+
+
+def test_fetch_default_branch_head_sha_folds_malformed_json_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, b"not json")
+    assert (
+        bmad_method._fetch_default_branch_head_sha(
+            owner_repo="bmad-code-org/bmad-eval-quality"
+        )
+        is None
+    )
+
+
+def test_fetch_default_branch_head_sha_folds_empty_array_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, json.dumps([]).encode())
+    assert (
+        bmad_method._fetch_default_branch_head_sha(
+            owner_repo="bmad-code-org/bmad-eval-quality"
+        )
+        is None
+    )
+
+
+def test_fetch_default_branch_head_sha_folds_missing_sha_key_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, json.dumps([{"commit": "no sha field here"}]).encode())
+    assert (
+        bmad_method._fetch_default_branch_head_sha(
+            owner_repo="bmad-code-org/bmad-eval-quality"
+        )
+        is None
+    )
+
+
+def test_fetch_default_branch_head_sha_passes_through_a_custom_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, float] = {}
+
+    def _urlopen(url: str, timeout: float | None = None):
+        seen["timeout"] = timeout
+        return _FakeUrlopenResponse(json.dumps([{"sha": "b" * 40}]).encode())
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+    bmad_method._fetch_default_branch_head_sha(
+        owner_repo="bmad-code-org/bmad-eval-quality", timeout=1.5
+    )
+    assert seen["timeout"] == 1.5
+
+
 # --- _fetch_latest_github_release --------------------------------------------------
 
 
@@ -1609,6 +1852,7 @@ def test_dw_14_1_1_bmad_loop_npm_invisible_resolves_via_github(
     assert "0.11.0" in finding.message
     assert finding.evidence == {
         "package": "bmad-loop",
+        "probe_class": "tag",
         "installed": "0.9.0",
         "latest_upstream": "0.11.0",
     }
@@ -2431,3 +2675,326 @@ bmad-loop = ">=0.11.0"
     assert latest == (0, 11, 0)
     assert npm_calls == 1
     assert github_calls == 1
+
+
+# --- Story 20.1: probe-class-aware suite gather-level scenarios --------------------
+
+
+_PIXI_SUITE_NPM_ONLY = """
+[feature.python.dependencies]
+bmad-method = ">=6.11.0"
+
+[feature.local-recipes.dependencies]
+bmad-module-skill-forge = ">=2.1.0"
+"""
+
+_PIXI_SUITE_COMMIT_PINNED_ONLY = """
+[feature.python.dependencies]
+bmad-method = ">=6.11.0"
+
+[feature.local-recipes.dependencies]
+bmad-eval-quality = ">=0.2.0"
+"""
+
+_RECIPE_COMMIT_PINNED_MISSING_COMMIT = """
+context:
+  version: "0.2.0.dev0"
+
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-eval-quality
+  cfe-source-kind: github-commit
+"""
+
+_RECIPE_COMMIT_PINNED_MISSING_GITHUB_MAPPING = """
+context:
+  version: "0.2.0.dev0"
+  commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+extra:
+  cfe-source-kind: github-commit
+"""
+
+
+def test_npm_class_suite_package_warn_names_probe_class_npm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_NPM_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-module-skill-forge", "2.1.0")
+    _write_recipe_yaml(tmp_path, "bmad-module-skill-forge", _RECIPE_NPM_REGISTRY)
+    _stub_fetch_by_package(
+        monkeypatch,
+        {"bmad-method": (6, 11, 0), "bmad-module-skill-forge": (2, 2, 0)},
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    finding = suite[0]
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence == {
+        "package": "bmad-module-skill-forge",
+        "probe_class": "npm",
+        "installed": "2.1.0",
+        "latest_upstream": "2.2.0",
+    }
+
+
+def test_commit_pinned_warn_encodes_the_full_version_at_sha_message_and_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # THE Matrix fixture: context.version "0.2.0.dev0", context.commit
+    # aaaa...(40 hex), stubbed HEAD sha bbbb...(40 hex) differs.
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+    monkeypatch.setattr(
+        bmad_method, "_fetch_default_branch_head_sha", lambda **_: "b" * 40
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    finding = suite[0]
+    assert finding.status is DoctorStatus.WARN
+    assert finding.message == (
+        "bmad-eval-quality 0.2.0.dev0 @ aaaaaaaaaaaa is behind the "
+        "default-branch HEAD bbbbbbbbbbbb"
+    )
+    assert finding.evidence == {
+        "package": "bmad-eval-quality",
+        "probe_class": "commit-pinned",
+        "installed": "0.2.0.dev0 @ aaaaaaaaaaaa",
+        "latest_upstream": "bbbbbbbbbbbb",
+    }
+
+
+def test_commit_pinned_branch_never_falls_through_to_the_tag_npm_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Review finding: every other commit-pinned test's `_stub_fetch_by_
+    # package` simply omits the package from `versions`, so
+    # `_resolve_upstream_latest` would return None regardless of whether it
+    # was ever CALLED -- none of them prove the commit-pinned branch's
+    # `continue` actually blocks fallthrough. Here `_resolve_upstream_latest`
+    # is stubbed to return a resolvable (but WRONG) triple for
+    # bmad-eval-quality -- if the tag/npm path were ever reached for this
+    # package, it would produce a second/different Finding instead of being
+    # skipped entirely.
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    calls: list[str] = []
+    _stub_fetch_by_package(
+        monkeypatch,
+        {"bmad-method": (6, 11, 0), "bmad-eval-quality": (99, 0, 0)},
+        calls=calls,
+    )
+    monkeypatch.setattr(
+        bmad_method, "_fetch_default_branch_head_sha", lambda **_: "b" * 40
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert "bmad-eval-quality" not in calls
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].evidence["probe_class"] == "commit-pinned"
+
+
+def test_commit_pinned_current_no_warn_but_still_counted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+    monkeypatch.setattr(
+        bmad_method, "_fetch_default_branch_head_sha",
+        lambda **_: "a" * 40,  # matches the pinned commit exactly
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].status is DoctorStatus.OK
+    assert suite[0].evidence == {"packages_checked": 1, "packages_watched": 1}
+
+
+def test_commit_pinned_missing_recipe_commit_is_unchecked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(
+        tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED_MISSING_COMMIT
+    )
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_default_branch_head_sha must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_default_branch_head_sha", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+    ]
+
+
+def test_commit_pinned_missing_github_mapping_is_unchecked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(
+        tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED_MISSING_GITHUB_MAPPING
+    )
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_default_branch_head_sha must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_default_branch_head_sha", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+    ]
+
+
+def test_commit_pinned_head_fetch_failure_is_unchecked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_COMMIT_PINNED_ONLY)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-eval-quality", "0.2.0.dev0")
+    _write_recipe_yaml(tmp_path, "bmad-eval-quality", _RECIPE_COMMIT_PINNED)
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+    monkeypatch.setattr(bmad_method, "_fetch_default_branch_head_sha", lambda **_: None)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+    ]
+
+
+# --- Story 20.1: the real-roster registry-class mix, all current -------------------
+
+
+def test_full_roster_probe_class_mix_all_current_reports_12_checked_of_12(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Mirrors recipes/bmad-suite/suite-members.yaml's real registry-class
+    # mix: 4 github-tag, 7 github-commit, 1 npm-registry (12 non-core
+    # members) -- the aggregate evidence must read exactly 12/12. The
+    # core's own separate bmad-method-upstream-drift Finding accounts for
+    # the roster's 13th entry (Design Notes: "Why 12, not 13").
+    tag_names = (
+        "bmad-loop",
+        "bmad-method-test-architecture-enterprise",
+        "bmad-builder",
+        "bmad-creative-intelligence-suite",
+    )
+    commit_names = (
+        "bmad-eval-quality",
+        "bmad-utility-skills",
+        "bmad-labs-skills",
+        "bmad-module-template",
+        "bmad-manticore",
+        "bmad-dashboard",
+        "mybmad-dashboard",
+    )
+    npm_names = ("bmad-module-skill-forge",)
+    all_names = (*tag_names, *commit_names, *npm_names)
+
+    pixi_lines = [
+        "[feature.python.dependencies]",
+        'bmad-method = ">=6.11.0"',
+        "",
+        "[feature.local-recipes.dependencies]",
+    ]
+    for name in all_names:
+        pixi_lines.append(f'{name} = ">=1.0.0"')
+    _write_pixi(tmp_path, "\n".join(pixi_lines))
+    _write_manifest(tmp_path, _MANIFEST_611)
+    # mybmad-dashboard doesn't start with the "bmad-" prefix the pixi-only
+    # derivation requires (real repo precedent, Story 19.1) -- it only joins
+    # the watched set via the tracked suite-members.yaml manifest, unioned
+    # with the pixi-derived names. Listing every name here mirrors the real
+    # manifest's own union-not-replace relationship with pixi.toml.
+    _write_suite_manifest(
+        tmp_path,
+        "members:\n" + "".join(f"  - name: {name}\n" for name in all_names),
+    )
+
+    fetch_versions: dict[str, tuple[int, int, int]] = {"bmad-method": (6, 11, 0)}
+    for name in tag_names:
+        _write_conda_meta(tmp_path, "default", name, "1.0.0")
+        _write_recipe_yaml(
+            tmp_path, name,
+            f"""
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/{name}
+  cfe-source-kind: github-tag
+""",
+        )
+        fetch_versions[name] = (1, 0, 0)
+    for name in npm_names:
+        _write_conda_meta(tmp_path, "default", name, "1.0.0")
+        _write_recipe_yaml(
+            tmp_path, name,
+            f"""
+extra:
+  cfe-upstream-registry: npm
+  cfe-upstream-name: {name}
+  cfe-source-kind: npm-registry
+""",
+        )
+        fetch_versions[name] = (1, 0, 0)
+
+    pinned_commit = "c" * 40
+    for name in commit_names:
+        _write_conda_meta(tmp_path, "default", name, "1.0.0.dev0")
+        _write_recipe_yaml(
+            tmp_path, name,
+            f"""
+context:
+  version: "1.0.0.dev0"
+  commit: {pinned_commit}
+
+extra:
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/{name}
+  cfe-source-kind: github-commit
+""",
+        )
+
+    _stub_fetch_by_package(monkeypatch, fetch_versions)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_default_branch_head_sha", lambda **_: pinned_commit
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].status is DoctorStatus.OK
+    assert suite[0].evidence == {"packages_checked": 12, "packages_watched": 12}

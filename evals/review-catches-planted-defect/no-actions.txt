@@ -1,0 +1,1 @@
+The edge-case-hunter review layer, invoked headlessly, performs no tool actions of its own -- it reads the diff and the layer prompt and returns findings. Nothing else runs, so there is no action log for a real run to reference here beyond this file.

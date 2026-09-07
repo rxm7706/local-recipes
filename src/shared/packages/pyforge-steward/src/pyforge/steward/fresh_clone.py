@@ -47,7 +47,11 @@ _EXPECTED_WIRED = {
     "bmad-method": "present",
     "bmad-loop": "provisionable",
     "bmad-module-skill-forge": "present",
-    "bmad-labs-skills": "documented",
+    # Story 46.9: the plugin-path probe now reads the real .claude/skills
+    # census (Story 46.5's four consented dirs are actually provisioned in
+    # this repo) instead of only the playbook-text check -- "wired", not the
+    # stale "documented".
+    "bmad-labs-skills": "wired",
     "bmad-module-template": "n/a",
 }
 

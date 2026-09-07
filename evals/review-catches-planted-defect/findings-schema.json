@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "description": "Structured-output shape for one edge-case-hunter review call, matching contract.json's review-diff responseDescriptor (requiredKeys ok+findings). edge-case-hunter.md's own prompt asks for a bare JSON array, but claude -p --json-schema requires a top-level object (the API rejects an array-typed tool schema), so the array is wrapped under `findings` and `ok` records whether the review ran to completion.",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "true unless a halt condition fired (empty/undecodable input)."
+    },
+    "findings": {
+      "type": "array",
+      "description": "edge-case-hunter's own four required fields, plus the two optional fields its deletion/claims passes add.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "file:line or file:start-end (numeric line or line-range only -- the driver's matcher does not parse a bare hunk identifier)."
+          },
+          "trigger_condition": { "type": "string" },
+          "guard_snippet": { "type": "string" },
+          "potential_consequence": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": ["deletion", "claim"],
+            "description": "Present only on a Step 4 deletion finding or a Step 5 claims finding."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Present only alongside kind."
+          }
+        },
+        "required": ["location", "trigger_condition", "guard_snippet", "potential_consequence"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["ok", "findings"],
+  "additionalProperties": false
+}

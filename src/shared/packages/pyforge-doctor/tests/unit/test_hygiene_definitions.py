@@ -235,6 +235,30 @@ def test_is_orphan_file_false_for_a_conventional_directory():
     ) is False
 
 
+def test_is_orphan_file_false_for_tea_test_design_artifacts():
+    """Negative (Story 31.1, 2026-09-07): TEA's `bmad-testarch-test-design`
+    output -- the fixed filenames, the `test-design/` handoff subdirectory,
+    and the `reviews/` report directory -- are all conventional regardless
+    of inbound reference, same shape as `test-architecture.md` above."""
+    assert hd.is_orphan_file(
+        "planning-artifacts/test-design-architecture.md", has_inbound_references=False
+    ) is False
+    assert hd.is_orphan_file(
+        "planning-artifacts/test-design-qa.md", has_inbound_references=False
+    ) is False
+    assert hd.is_orphan_file(
+        "planning-artifacts/test-design-progress-system.md", has_inbound_references=False
+    ) is False
+    assert hd.is_orphan_file(
+        "planning-artifacts/test-design/pyforge-marshal-handoff.md",
+        has_inbound_references=False,
+    ) is False
+    assert hd.is_orphan_file(
+        "planning-artifacts/reviews/tea-equivalence-2026-09-07.md",
+        has_inbound_references=False,
+    ) is False
+
+
 def test_is_orphan_file_false_for_a_conventional_filename_glob():
     """Negative: the `_CONVENTIONAL_FILENAME_GLOBS` branch, uncovered by any
     other test -- a dated readiness-report filename is conventional."""

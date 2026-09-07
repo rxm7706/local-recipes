@@ -256,3 +256,156 @@ def test_fetch_github_latest_non_dict_body_fail_open(monkeypatch):
         lambda *a, **k: _Resp(),
     )
     assert fetch_github_latest("owner/repo", "some-pkg") is None
+
+
+# ── Story 46.9: installer-tree `installed` stage reads the APPLIED core ────
+
+
+def _write_manifest(repo: Path, version: str) -> None:
+    manifest = repo / "_bmad" / "_config" / "manifest.yaml"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"installation:\n  version: {version}\n", encoding="utf-8"
+    )
+
+
+def _write_conda_meta(repo: Path, version: str) -> None:
+    meta_dir = repo / ".pixi" / "envs" / "local-recipes" / "conda-meta"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    (meta_dir / f"bmad-method-{version}-h98f672e_0.json").write_text("{}", encoding="utf-8")
+
+
+def test_read_applied_core_version_reads_manifest(tmp_path: Path):
+    from pyforge.steward.suite import read_applied_core_version
+
+    _write_manifest(tmp_path, "6.11.0")
+    assert read_applied_core_version(tmp_path) == "6.11.0"
+
+
+def test_read_applied_core_version_absent_manifest_fails_open(tmp_path: Path):
+    from pyforge.steward.suite import read_applied_core_version
+
+    assert read_applied_core_version(tmp_path) is None
+
+
+def test_read_applied_core_version_malformed_yaml_fails_open(tmp_path: Path):
+    from pyforge.steward.suite import read_applied_core_version
+
+    manifest = tmp_path / "_bmad" / "_config" / "manifest.yaml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text("installation: [this is not a mapping\n", encoding="utf-8")
+    assert read_applied_core_version(tmp_path) is None
+
+
+def test_installer_tree_installed_stage_manifest_only_no_conda_meta(tmp_path: Path):
+    """AC: manifest-only, no conda-meta -> installed = 6.11.0, ok=True, no drift."""
+    from pyforge.steward.suite import ProbeHooks, _installer_tree_installed_stage
+
+    _write_manifest(tmp_path, "6.11.0")
+    stage = _installer_tree_installed_stage(tmp_path, "bmad-method", hooks=ProbeHooks())
+    assert stage.value == "6.11.0"
+    assert stage.ok is True
+    assert stage.detail is None
+
+
+def test_installer_tree_installed_stage_applied_wins_on_disagreement(tmp_path: Path):
+    """AC: the exact 2026-09-05 replay -- manifest 6.11.0, conda-meta 6.12.0 ->
+    applied (6.11.0) wins, detail names both, name_drifts gains
+    core_applied_env_drift."""
+    from pyforge.steward.suite import (
+        PackageTruth,
+        ProbeHooks,
+        StageProbe,
+        _installer_tree_installed_stage,
+        name_drifts,
+    )
+
+    _write_manifest(tmp_path, "6.11.0")
+    _write_conda_meta(tmp_path, "6.12.0")
+    stage = _installer_tree_installed_stage(tmp_path, "bmad-method", hooks=ProbeHooks())
+    assert stage.value == "6.11.0"
+    assert stage.ok is True
+    assert "6.11.0" in stage.detail
+    assert "6.12.0" in stage.detail
+    assert "core-applied-env-drift" in stage.detail
+
+    pkg = PackageTruth(
+        name="bmad-method",
+        upstream_npm=StageProbe("6.11.0", True),
+        upstream_github=StageProbe("6.11.0", True),
+        recipe=StageProbe("6.11.0", True),
+        channel=StageProbe("6.11.0", True),
+        installed=stage,
+        wired=StageProbe("present", True),
+    )
+    assert "core_applied_env_drift" in name_drifts(pkg)
+
+
+def test_installer_tree_installed_stage_falls_back_when_manifest_absent(tmp_path: Path):
+    """AC: manifest absent -> unchanged conda-meta fallback, no new drift."""
+    from pyforge.steward.suite import (
+        PackageTruth,
+        ProbeHooks,
+        StageProbe,
+        _installer_tree_installed_stage,
+        name_drifts,
+    )
+
+    _write_conda_meta(tmp_path, "6.12.0")
+    stage = _installer_tree_installed_stage(tmp_path, "bmad-method", hooks=ProbeHooks())
+    assert stage.value == "6.12.0"
+    assert stage.ok is True
+    assert stage.detail is None
+
+    pkg = PackageTruth(
+        name="bmad-method",
+        upstream_npm=StageProbe("6.12.0", True),
+        upstream_github=StageProbe("6.12.0", True),
+        recipe=StageProbe("6.12.0", True),
+        channel=StageProbe("6.12.0", True),
+        installed=stage,
+        wired=StageProbe("present", True),
+    )
+    assert "core_applied_env_drift" not in name_drifts(pkg)
+
+
+def test_installer_tree_installed_stage_live_repo_is_a_noop_today():
+    """AC: this repo's OWN real state (both present, currently agreeing) ->
+    the installed stage reports the agreed version, no drift -- a live,
+    non-fixture confirmation that today's fix changes nothing for the
+    currently healthy state."""
+    from pyforge.steward.suite import ProbeHooks, _installer_tree_installed_stage, repo_root
+
+    repo = repo_root()
+    stage = _installer_tree_installed_stage(repo, "bmad-method", hooks=ProbeHooks())
+    assert stage.ok is True
+    assert stage.value is not None
+    assert stage.detail is None
+
+
+def test_build_package_truth_installer_tree_class_uses_new_helper(tmp_path: Path):
+    """`build_package_truth` branches the installed-stage computation on
+    `install_class == INSTALL_CLASS_INSTALLER_TREE` -- every other class's
+    computation is byte-for-byte unchanged."""
+    from pyforge.steward.suite import (
+        INSTALL_CLASS_INSTALLER_TREE,
+        ProbeHooks,
+        SuitePackageDef,
+        build_package_truth,
+    )
+
+    _write_manifest(tmp_path, "6.11.0")
+    _write_conda_meta(tmp_path, "6.12.0")
+    pkg = SuitePackageDef(
+        name="bmad-method",
+        wire_bmad_dirs=("core", "bmm"),
+        install_class=INSTALL_CLASS_INSTALLER_TREE,
+    )
+    offline_hooks = ProbeHooks(
+        npm=lambda _n: None,
+        github=lambda *_a: None,
+        channel=lambda _p: None,
+    )
+    truth = build_package_truth(tmp_path, pkg, hooks=offline_hooks)
+    assert truth.installed.value == "6.11.0"
+    assert "core_applied_env_drift" in truth.drifts

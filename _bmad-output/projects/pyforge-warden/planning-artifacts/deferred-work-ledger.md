@@ -661,3 +661,13 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-11-2: Whether the AD-9 roster lacking a `tea` entry entirely (never provisioned via `steward provision --module tea`) should make the advisory scanner loudly refuse, distinct from today's silent fail-open when only the binary is absent from PATH.
+
+- source_spec: `planning-artifacts/specs/spec-11-2-tea-test-review-is-a-warden-advisory-finding.md`
+  summary: Whether the AD-9 roster lacking a `tea` entry entirely (never provisioned via `steward provision --module tea`) should make the advisory scanner loudly refuse, distinct from today's silent fail-open when only the binary is absent from PATH.
+  evidence: The lifecycle architecture spine (ARCHITECTURE-SPINE.md AD-10) says "31.1 / 11.2 refuse when the AD-9 roster lacks tea," and its cited template (steward Story 14.9's `--no-shims` flag) implements "refuse" as a real runtime CLI refusal, not a one-time dispatch-time check -- weighing toward a genuine runtime-behavior gap in this diff (the scanner and doctor check both treat "roster lacks tea" and "binary absent from PATH" identically, via fail-open). But Story 11.2's own Given/When/Then in epics.md states plainly "the scanner is fail-open when TEA is absent," with no roster/binary distinction -- the more specific, story-level acceptance text this spec was built from. Resolving requires an operator/architect call on which text governs; shipping either reading here without that call risks contradicting the other. If AD-10's runtime-refusal reading is correct, the real gap is medium (an architecture-mandated distinction never implemented; does not affect AD-4's no-competing-verdict invariant either way).
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py:TeaAdvisoryScanPlugin._contribute
+  origin: spec-deferred e2b19e6f3f44 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

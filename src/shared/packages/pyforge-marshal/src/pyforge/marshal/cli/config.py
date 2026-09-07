@@ -101,6 +101,11 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        # Story 31.3's 6th bmad-loop-adjacent knob (CAP-4) -- same reason
+        # as its 5 siblings immediately above: no AC asks for a `--set`
+        # surface, so `marshal-policy.toml`'s project layer is the only way
+        # to set it.
+        "review_min_score",
         # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
         # CAP-17) -- same reason as the 5 bmad-loop knobs above: no AC asks
         # for a `--set` surface, so `marshal-policy.toml`'s project layer is
@@ -173,6 +178,11 @@ _UNSETTABLE_KEYS = frozenset(
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        # Story 31.3's 6th bmad-loop-adjacent knob (CAP-4) -- a plain
+        # scalar excluded for the `_PROJECT_POLICY_ONLY_KEYS` reason (no AC
+        # asks for a `--set` surface), never the "no string value could
+        # ever satisfy this validator" reason.
+        "review_min_score",
         # Story 22.8's `harness_preference` (FR-193 CAP-8) -- a tuple of
         # profile names, the same "no string value could ever satisfy this
         # validator" reason `verify_commands`/`landing_resync_commands` are
@@ -257,6 +267,10 @@ _FIELD_ORDER: tuple[str, ...] = (
     "dev_contract_nudge",
     "operator_enabled",
     "stream_capture_kb",
+    # Story 31.3's 6th bmad-loop-adjacent knob (CAP-4) follows its siblings
+    # for the identical reason: `marshal-policy.toml` only, no `--set`
+    # surface.
+    "review_min_score",
 )
 
 
@@ -376,7 +390,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 31 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 33 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -405,7 +419,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 32-key document matching ``schemas/policy.json`` exactly:
+    """The flat 33-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

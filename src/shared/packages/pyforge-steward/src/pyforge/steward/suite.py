@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import http.client
 import json
+import os
 import re
 import shutil
 import urllib.error
@@ -33,6 +34,7 @@ from typing import Any
 import yaml
 
 from .interfaces import DutyResult
+from .provision import module_install_states
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _ANACONDA_CHANNEL = "SelfExplainML"
@@ -75,6 +77,20 @@ INSTALL_CLASS_VSCODE_EXTENSION = "vscode-extension"
 INSTALL_CLASS_SCAFFOLD_NA = "scaffold-n/a"
 # Story 45.1 — a bare CLI with nothing to wire into _bmad (eval-quality).
 INSTALL_CLASS_CLI = "cli"
+# Story 46.9 — manticore's own class (AD-3): a module installed OUTSIDE this
+# repo, into a dedicated studio root, never the generic "module" fallback.
+INSTALL_CLASS_STUDIO_MODULE = "studio-module"
+
+# Story 46.9: the APPLIED core version `_bmad/_config/manifest.yaml` records
+# for `installation.version` — the installer-tree class's `installed` stage
+# reads this FIRST, falling back to the generic conda-meta scan only when the
+# manifest is absent (I/O Matrix).
+_BMAD_CORE_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/manifest.yaml")
+
+# Story 46.9: manticore's studio root (AD-3) — declared once per machine,
+# outside this repo, never provisioned into `.claude/skills/` here.
+_PYFORGE_STUDIO_ROOT_ENV = "PYFORGE_STUDIO_ROOT"
+_PYFORGE_STUDIO_ROOT_DEFAULT = "~/pyforge-studio"
 
 INSTALL_CLASS_PLAYBOOK_REL = (
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
@@ -110,10 +126,14 @@ class SuitePackageDef:
     wire_bmad_dirs: tuple[str, ...] = ()
     wire_skill_prefixes: tuple[str, ...] = ()
     wire_skill_names: tuple[str, ...] = ()
+    # Story 46.9: ALL of these must be present (vs. wire_skill_names's ANY).
+    wire_skill_names_all: tuple[str, ...] = ()
     wire_bmad_config_keys: tuple[str, ...] = ()
     install_class: str = INSTALL_CLASS_MODULE
     wire_pixi_task: str | None = None  # vscode-extension class: pixi task name
     cli_bin: str | None = None  # cli class: executable expected on PATH (default: name)
+    # Story 46.9: the provision.py `_SUPPORTED_MODULES` key (AD-9 roster read).
+    module_code: str | None = None
 
 
 # install-matrix.md + Dream grounding (2026-08-22) — package class → probes.
@@ -137,19 +157,27 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         github_repo="bmad-code-org/bmad-method-test-architecture-enterprise",
         wire_skill_prefixes=("bmad-testarch-", "bmad-tea", "bmad-teach-me-testing"),
         wire_skill_names=("bmad-tea",),
+        module_code="tea",
     ),
     SuitePackageDef(
         name="bmad-builder",
         npm_name="bmad-builder",
         github_repo="bmad-code-org/bmad-builder",
         wire_bmad_config_keys=("bmb",),
-        wire_skill_prefixes=("bmad-bmb-", "bmad-agent-builder", "bmad-module-builder"),
+        wire_skill_names_all=(
+            "bmad-bmb-setup",
+            "bmad-agent-builder",
+            "bmad-workflow-builder",
+            "bmad-module-builder",
+            "bmad-eval-runner",
+        ),
     ),
     SuitePackageDef(
         name="bmad-creative-intelligence-suite",
         npm_name="bmad-creative-intelligence-suite",
         github_repo="bmad-code-org/bmad-module-creative-intelligence-suite",
         wire_skill_prefixes=("bmad-cis-",),
+        module_code="cis",
     ),
     SuitePackageDef(
         name="bmad-module-skill-forge",
@@ -174,12 +202,19 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         npm_name=None,
         github_repo="bmad-code-org/bmad-utility-skills",
         wire_skill_prefixes=("bmad-os-",),
+        module_code="utility-skills",
     ),
     SuitePackageDef(
         name="bmad-labs-skills",
         npm_name=None,
         github_repo="bmad-labs/skills",
         install_class=INSTALL_CLASS_PLUGIN_PATH,
+        wire_skill_names_all=(
+            "mcp-builder",
+            "slides-generator",
+            "multi-repo-git-ops",
+            "release-please",
+        ),
     ),
     SuitePackageDef(
         name="bmad-module-template",
@@ -193,6 +228,7 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         npm_name=None,
         github_repo="bmad-code-org/bmad-manticore",
         wire_skill_prefixes=("mc-",),
+        install_class=INSTALL_CLASS_STUDIO_MODULE,
     ),
     SuitePackageDef(
         name="bmad-dashboard",
@@ -439,6 +475,28 @@ def read_installed_version(repo: Path, package: str) -> str | None:
     return best[1] if best is not None else None
 
 
+def read_applied_core_version(repo: Path) -> str | None:
+    """Fail-open ``_bmad/_config/manifest.yaml``'s ``installation.version`` --
+    the APPLIED bmad-method core version (what ``_bmad/`` actually runs), as
+    opposed to ``read_installed_version``'s pixi-env conda-meta scan (what is
+    pinned). Mirrors ``read_recipe_version``'s own try/except/isinstance
+    shape: only ``str``/non-bool ``int`` are accepted -- a YAML float must
+    not be coerced via ``str()`` (float-lossy for version-like numbers).
+    """
+    try:
+        data = yaml.safe_load(
+            (repo / _BMAD_CORE_MANIFEST_RELATIVE_PATH).read_text(encoding="utf-8")
+        )
+        version = data["installation"]["version"]
+        if isinstance(version, str):
+            return version
+        if isinstance(version, int) and not isinstance(version, bool):
+            return str(version)
+        return None
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        return None
+
+
 def _skills_census(repo: Path) -> set[str]:
     skills = repo / ".claude" / "skills"
     try:
@@ -482,7 +540,27 @@ def _plugin_path_documented(repo: Path) -> bool:
 
 
 def _module_census_hit(repo: Path, pkg: SuitePackageDef) -> str | None:
-    """CAP-3 ``--module`` census only. Returns a detail string on hit."""
+    """CAP-3 ``--module`` census only. Returns a detail string on hit.
+
+    Story 46.9 review finding (HIGH, reproduced live against this repo's own
+    `_bmad/config.yaml`): ``wire_skill_names_all``, when declared, is the
+    SOLE, EXCLUSIVE signal for that package -- it returns immediately,
+    whether it hits or misses, rather than merely being "checked first."
+    An earlier draft let a miss fall through to `bmad-builder`'s own
+    auxiliary `wire_bmad_config_keys=("bmb",)` check, which independently
+    reports a hit from the `bmb:` key `merge-config.py` writes regardless
+    of whether all five skill dirs actually landed -- silently reintroducing
+    the exact "wired on partial provisioning" false-positive this field was
+    added to eliminate, live-reproducible against this repo's own real
+    `_bmad/config.yaml` (which genuinely carries that key). No other
+    package declares `wire_skill_names_all` alongside a second wire_* field
+    today, so this exclusivity has no effect on any other row.
+    """
+    skills = _skills_census(repo)
+    if pkg.wire_skill_names_all:
+        if all(name in skills for name in pkg.wire_skill_names_all):
+            return f".claude/skills has all of {', '.join(pkg.wire_skill_names_all)}"
+        return None
     if pkg.wire_bmad_dirs:
         if all((repo / "_bmad" / d).is_dir() for d in pkg.wire_bmad_dirs):
             return f"_bmad dirs: {', '.join(pkg.wire_bmad_dirs)}"
@@ -490,7 +568,6 @@ def _module_census_hit(repo: Path, pkg: SuitePackageDef) -> str | None:
         keys = _bmad_config_keys(repo)
         if any(k in keys for k in pkg.wire_bmad_config_keys):
             return f"_bmad/config.yaml keys: {', '.join(pkg.wire_bmad_config_keys)}"
-    skills = _skills_census(repo)
     for name in pkg.wire_skill_names:
         if name in skills:
             return f".claude/skills has {name}"
@@ -562,6 +639,12 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 detail="own installer: skf tree/skills not present",
             )
         if pkg.install_class == INSTALL_CLASS_PLUGIN_PATH:
+            # Story 46.9: a real .claude/skills census (the consented names
+            # actually landed) outranks the playbook-text-only check below —
+            # Story 46.5's real provisioning must not stay forever invisible.
+            hit = _module_census_hit(repo, pkg)
+            if hit:
+                return StageProbe(value="wired", ok=True, detail=hit)
             if _plugin_path_documented(repo):
                 return StageProbe(
                     value="documented",
@@ -572,6 +655,50 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 value="missing",
                 ok=True,
                 detail="plugin path not documented in playbook/matrix",
+            )
+        if pkg.install_class == INSTALL_CLASS_STUDIO_MODULE:
+            # Story 46.9 (AD-3): manticore is installed OUTSIDE this repo,
+            # into a dedicated studio root — never the in-repo mc-* census
+            # the old generic fallback branch used to consult.
+            #
+            # Review finding (medium): `os.environ.get(key, default)` only
+            # falls back to `default` when the key is ABSENT, not when it is
+            # present-but-empty (`PYFORGE_STUDIO_ROOT=""`) — that classic
+            # gotcha would resolve to `Path("").expanduser()` (the process's
+            # cwd, which almost always exists), silently reintroducing the
+            # exact in-repo signal AD-3 retired if this duty ever runs from
+            # this repo's own root with an accidentally-blank env value.
+            # `or` treats an empty string the same as "unset."
+            studio_root = Path(
+                os.environ.get(_PYFORGE_STUDIO_ROOT_ENV) or _PYFORGE_STUDIO_ROOT_DEFAULT
+            ).expanduser()
+            if not studio_root.is_dir():
+                return StageProbe(
+                    value="unwired",
+                    ok=True,
+                    detail=f"studio module: {studio_root} does not exist",
+                )
+            has_bmad = (studio_root / "_bmad").is_dir()
+            try:
+                has_mc_skill = any(
+                    p.is_dir() and p.name.startswith("mc-")
+                    for p in (studio_root / ".claude" / "skills").iterdir()
+                )
+            except OSError:
+                has_mc_skill = False
+            if has_bmad and has_mc_skill:
+                return StageProbe(
+                    value="wired",
+                    ok=True,
+                    detail=f"studio module: {studio_root}/_bmad + mc-* skill present",
+                )
+            return StageProbe(
+                value="unwired",
+                ok=True,
+                detail=(
+                    f"studio module: {studio_root} present but _bmad/ and/or a "
+                    "mc-* skill is missing"
+                ),
             )
         if pkg.install_class == INSTALL_CLASS_CLI:
             exe_name = pkg.cli_bin or pkg.name
@@ -596,6 +723,24 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
                 ok=True,
                 detail="VS Code extension / web: pixi install task not declared",
             )
+        # Story 46.9 (AD-9): a registered module_code reads the roster
+        # `--list-modules` and provision.py's own post-success gate already
+        # treat as the single source of truth, instead of re-deriving an
+        # imprecise skills/_bmad census a second way. `bmb` (no module_code)
+        # still falls through to the (now five-name-aware) census below.
+        if pkg.module_code is not None:
+            installed = module_install_states(cwd=repo).get(pkg.module_code) == "installed"
+            if installed:
+                return StageProbe(
+                    value="wired",
+                    ok=True,
+                    detail=f"AD-9 roster: modules.{pkg.module_code} installed",
+                )
+            return StageProbe(
+                value="unwired",
+                ok=True,
+                detail=f"AD-9 roster: modules.{pkg.module_code} not installed",
+            )
         # CAP-3 five: module census boolean.
         hit = _module_census_hit(repo, pkg)
         if hit:
@@ -613,6 +758,29 @@ def _stage_from_value(
     if value is None:
         return StageProbe(value=None, ok=False, detail="probe returned nothing")
     return StageProbe(value=value, ok=True)
+
+
+def _installer_tree_installed_stage(
+    repo: Path, name: str, *, hooks: ProbeHooks
+) -> StageProbe:
+    """The installer-tree class's ``installed`` stage (Story 46.9): the
+    APPLIED core version (``read_applied_core_version``) wins over the
+    pixi-env conda-meta scan (``hooks.installed``) whenever both are present
+    and disagree -- naming the disagreement via a documented, stable
+    ``detail`` sentinel (``name_drifts`` matches on it) rather than a new
+    ``StageProbe`` field. Falls back to the conda-meta read, unchanged,
+    when the manifest is absent (a non-``bmad-method`` checkout state)."""
+    applied = read_applied_core_version(repo)
+    env = hooks.installed(repo, name)
+    if applied is None:
+        return _stage_from_value(env)
+    if env is not None and applied != env:
+        return StageProbe(
+            value=applied,
+            ok=True,
+            detail=f"applied {applied} / env {env} -- core-applied-env-drift",
+        )
+    return StageProbe(value=applied, ok=True)
 
 
 def _behind(left: str | None, right: str | None) -> bool:
@@ -655,6 +823,12 @@ def name_drifts(pkg: PackageTruth) -> tuple[str, ...]:
 
     if recipe_v and installed_v and _behind(installed_v, recipe_v):
         drifts.append("installed")
+
+    # Story 46.9: the installer-tree class's applied-vs-env disagreement,
+    # named via `_installer_tree_installed_stage`'s own stable `detail`
+    # sentinel substring (never a new `StageProbe` field).
+    if pkg.installed.detail and "core-applied-env-drift" in pkg.installed.detail:
+        drifts.append("core_applied_env_drift")
 
     # Unwired / missing / failed wired probe name the wired stage.
     if not pkg.wired.ok or wired_v not in _WIRED_SETTLED_VALUES:
@@ -719,7 +893,10 @@ def build_package_truth(
         channel_stage = StageProbe(value=None, ok=False, detail=str(exc))
 
     try:
-        installed_stage = _stage_from_value(hooks.installed(repo, pkg.name))
+        if pkg.install_class == INSTALL_CLASS_INSTALLER_TREE:
+            installed_stage = _installer_tree_installed_stage(repo, pkg.name, hooks=hooks)
+        else:
+            installed_stage = _stage_from_value(hooks.installed(repo, pkg.name))
     except Exception as exc:  # noqa: BLE001
         installed_stage = StageProbe(value=None, ok=False, detail=str(exc))
 

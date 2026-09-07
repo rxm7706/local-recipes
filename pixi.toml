@@ -858,6 +858,10 @@ cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
 description = "Story 19.4 / CAP-5: fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all."
 cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
 
+[feature.local-recipes.tasks.tea-test-review]
+description = "Story 46.3 (spec-bmad-suite-lifecycle CAP-4 half): headless run of TEA's bmad-testarch-test-review skill (steward provision --module tea) against the PR's changed test files -- a Marshal review-lens / Warden-advisory precursor, never this task itself. Default: --base origin/main --min-score 80. Override or add flags after `--`, e.g. `pixi run -e local-recipes tea-test-review -- --min-score 90`. Not a gate: never joins detectors/detectors-ci -- Warden's own PR-gate exit code is unaffected by this task's existence."
+cmd = "tea-test-review --base origin/main --min-score 80"
+
 [feature.local-recipes.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
@@ -931,6 +935,14 @@ cmd = "python -m pyforge.doctor.sources spec-surface"
 description = "Detector: src/platform's manifest-only tests/policy subset (retro action item 3, 2026-09-04) — catches a pixi.toml regression like the openfeature-provider-flagd/cachebox ceiling drop even when Platform CI itself is disabled. Shells out to the platform-ci-test pixi env's own interpreter (WARN, not FAIL, if that env is not installed here — install it with `pixi install -e platform-ci-test` to make this a real gate). Exits non-zero only on an actual policy-suite failure."
 cmd = "python -m pyforge.doctor.sources platform-policy-suite"
 
+[feature.local-recipes.tasks.bmad-render-config-ambiguity-check]
+description = "Detector: render_skill.py's central-config merge (_bmad/config*.toml + _bmad/custom/config*.toml) holds no bare key ambiguous across two dotted paths — the class that HALTs every rendering skill (bmad-build, bmad-build-auto, ...) with `RenderError: ambiguous config value` (live 2026-09-06, fixed by 99e595cc6a). Warn-only, never gates."
+cmd = "python -m pyforge.doctor.sources bmad-render-config-ambiguity"
+
+[feature.local-recipes.tasks.frozen-path-changed-check]
+description = "Detector: no capability currently rebuilding/moving in the tracked capability ledger (docs/foundry/manifest.{yaml,yml,json}, absent pre-cutover) had one of its own frozen source paths touched by origin/main..HEAD (AD-22's freeze rule). OK when no ledger exists (today's real state, every real invocation until cutover begins). FAIL on a genuine violation, naming the capability and the changed path."
+cmd = "python -m pyforge.doctor.sources frozen-path-changed"
+
 [feature.local-recipes.tasks.dream-chain-check]
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources dream-chain"
@@ -994,6 +1006,18 @@ cmd = "python scripts/detectors.py --scope repo"
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
 cmd = "python scripts/deck_export.py"
+
+[feature.local-recipes.tasks.eval-quality-smoke]
+description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
+cmd = "python evals/review-catches-planted-defect/driver.py smoke"
+
+[feature.local-recipes.tasks.eval-quality-review-twin-run]
+description = "Story 45.2 (spec-45-2-the-reviewer-is-measured-against-a-planted-defect): drives the edge-case-hunter review layer headlessly via `claude -p` against a clean and a mutated arm of a planted boundary-condition defect (pkg/discount.py:17, >= flipped to >), then runs the real eval-quality preflight/score pipeline over both. One trial by default; pass `-- --trials N` for N trials per arm, aggregated into a catch-rate. Measurement harness, not a gate — never joins detectors/detectors-ci. Always exits 0: each arm/trial's `eval-quality score` exit is measurement data, printed per-trial and as a worst-case summary line, never propagated as this task's own exit code."
+cmd = "python evals/review-catches-planted-defect/driver.py twin-run"
+
+[feature.local-recipes.tasks.eval-quality-review-replay]
+description = "Story 45.2: re-scores a previously sealed run record from an eval-quality-review-twin-run invocation (same --out-dir) without re-invoking `claude -p`. Usage: pixi run -e local-recipes eval-quality-review-replay -- <path-to-a-*-record.json>. Missing record file exits non-zero with a clear message. Not a gate: never joins detectors/detectors-ci."
+cmd = "python evals/review-catches-planted-defect/driver.py replay"
 
 [feature.local-recipes.tasks.sprint-ledger-sync]
 description = "Promote each project's Tier-3 story-status map to its TRACKED twin at planning-artifacts/sprint-status-ledger.yaml. implementation-artifacts/ is gitignored wholesale, so sprint-status.yaml is invisible to CI. Written in the feed's own shape so fleet_scan.parse_sprint_status reads both. Idempotent; run it when a story lands, then commit."
@@ -1788,7 +1812,7 @@ mlx = ">=0.32.0"                  # Apple's array framework (Linux build via lib
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 bmad-module-skill-forge = ">=2.1.0"  # Skill Forge npx-wrapper CLI (the skf module itself installs into _bmad via bmad-method). linux-64 only here: the SelfExplainML build is linux-64 (spec-bmad-suite-channel-product — the suite's one pixi-installability gap, closed 2026-08-22)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant (the `__win` one needs a Windows build), so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
+bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant — the recipe itself is re-verified win-ready (Story 14.1: if: win/if: unix selectors, call-safe build.bat, build.number 1), only the `__win` artifact's Windows build/upload is outstanding — so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 ocrmypdf = ">=17.11.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
@@ -1809,7 +1833,7 @@ headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + l
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant (the `__win` one needs a Windows build), so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
+bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant — the recipe itself is re-verified win-ready (Story 14.1: if: win/if: unix selectors, call-safe build.bat, build.number 1), only the `__win` artifact's Windows build/upload is outstanding — so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 
 # --- bmad-ui: BMad Method UI dashboards (bmad-loop-adoption W4) ---------------
 # Consumes the consume-not-submit mirrors of staged-recipes#33513

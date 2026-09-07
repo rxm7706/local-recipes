@@ -319,6 +319,12 @@ on_timeout = "retry"          # overwritten per render from EffectivePolicy
 # Deliberate repo default = stock "escalate": matches the fleet's
 # escalate-don't-silently-retry posture (escalate | retry).
 on_status_contradiction = "escalate"  # overwritten per render from EffectivePolicy
+# Story 31.3 (CAP-4): the tea-test-review marshal review lens's own
+# --min-score threshold. An extra key bmad_loop's own [review] parser
+# ignores (verified live against the installed package); consumed only by
+# the lens's own instruction (_bmad/custom/bmad-review.toml) at review
+# time, never by the harness itself.
+min_score = 80                # overwritten per render from EffectivePolicy
 
 [stories]
 source = "sprint-status"      # sprint-status | stories
@@ -438,7 +444,7 @@ def render_policy_toml(
     tier_resolution: object | None = None,
 ) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
-    Marshal's 11 mapped keys from ``effective``, apply FR-51 tier-batching,
+    Marshal's 12 mapped keys from ``effective``, apply FR-51 tier-batching,
     conditionally render Story 28.1's ``[context]`` block, and return
     ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
     produces byte-identical output (AD-12/AD-35 "derived artifact"
@@ -460,7 +466,7 @@ def render_policy_toml(
     unread ``[context]`` table is inert to the harness today -- a later
     story (CAP-2) is what wires actual behavior at the launch seam.
 
-    The 11 mapped keys: ``gate_mode`` -> ``[gates].mode``,
+    The 12 mapped keys: ``gate_mode`` -> ``[gates].mode``,
     ``max_dev_attempts``/``max_review_cycles``/``max_followup_reviews`` ->
     ``[limits]``'s same-named keys, ``verify_commands`` -> ``[verify].commands``,
     ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (the only two STATIC
@@ -468,16 +474,20 @@ def render_policy_toml(
     knobs (CAP-4): ``review_on_timeout`` -> ``[review].on_timeout``,
     ``review_on_status_contradiction`` -> ``[review].on_status_contradiction``,
     ``dev_contract_nudge`` -> ``[limits].dev_contract_nudge``,
-    ``operator_enabled`` -> ``[operator].enabled``, and
-    ``stream_capture_kb`` -> ``[verify].stream_capture_kb``. 9 of the 11 are
-    SEED fields, every one read exclusively via ``seed_view()`` (AD-26).
-    The five knobs are each written as their native Python type
-    (bool/int/str), which tomlkit preserves as the exact TOML scalar type.
-    Marshal validates all five strictly at compose; at load only
+    ``operator_enabled`` -> ``[operator].enabled``,
+    ``stream_capture_kb`` -> ``[verify].stream_capture_kb``, and Story
+    31.3's ``review_min_score`` -> ``[review].min_score`` (CAP-4,
+    spec-bmad-suite-lifecycle). 10 of the 12 are SEED fields, every one
+    read exclusively via ``seed_view()`` (AD-26). The six knobs (five from
+    Story 25.4, plus Story 31.3's) are each written as their native Python
+    type (bool/int/str), which tomlkit preserves as the exact TOML scalar
+    type. Marshal validates all six strictly at compose; at load only
     ``limits.dev_contract_nudge`` is strict (``_limit_bool`` rejects a
     coercible mismatch), while ``operator.enabled`` and
     ``verify.stream_capture_kb`` are ``bool()``/``int()``-coerced by the
-    harness -- exact types are emitted for all five regardless.
+    harness, and ``review.min_score`` is not read by the harness at all
+    (an inert extra key to its lenient ``[review]`` parser) -- exact types
+    are emitted for all six regardless.
     Seed fields carry the INITIAL composed values: during a live run the
     operative value of a seed field (``gate_mode`` above all) comes solely
     from the journal fold (AD-26), so a mid-run re-render reproduces
@@ -535,19 +545,22 @@ def render_policy_toml(
     doc["limits"]["max_review_cycles"] = seed["max_review_cycles"].value
     doc["limits"]["max_followup_reviews"] = seed["max_followup_reviews"].value
     # Story 25.4 (CAP-4): the five bmad-loop 0.10/0.11 knobs, each projected
-    # onto the harness's table-qualified name. The composed values are
-    # native Python bool/int/str (marshal's own validators reject coercible
-    # mismatches before this point), so tomlkit emits exact TOML scalar
-    # types for all five -- required by 0.11's strict `_limit_bool` for
-    # dev_contract_nudge, and kept exact anyway for the two keys the
-    # harness's loader would silently coerce (`operator.enabled` via
-    # bool(), `stream_capture_kb` via int()).
+    # onto the harness's table-qualified name, plus Story 31.3's
+    # review_min_score below. The composed values are native Python
+    # bool/int/str (marshal's own validators reject coercible mismatches
+    # before this point), so tomlkit emits exact TOML scalar types for all
+    # six -- required by 0.11's strict `_limit_bool` for dev_contract_nudge,
+    # kept exact anyway for the two keys the harness's loader would
+    # silently coerce (`operator.enabled` via bool(), `stream_capture_kb`
+    # via int()), and inert for `review.min_score` (the harness never reads
+    # it at all).
     doc["limits"]["dev_contract_nudge"] = seed["dev_contract_nudge"].value
     doc["verify"]["stream_capture_kb"] = seed["stream_capture_kb"].value
     doc["review"]["on_timeout"] = seed["review_on_timeout"].value
     doc["review"]["on_status_contradiction"] = seed[
         "review_on_status_contradiction"
     ].value
+    doc["review"]["min_score"] = seed["review_min_score"].value
     doc["operator"]["enabled"] = seed["operator_enabled"].value
     # S-13.7 (FR-174): the station's own commands, THEN the repo-wide surface
     # guard. Appended rather than composed (see _SURFACE_RECONCILE_COMMAND), and

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "sealedBriefDigest": "sha256:971e229e535f346271cb6fb2413779847de78a431002d456a14687c14793f743",
+  "evaluatorIdentity": "bmad-build-auto-edge-case-hunter",
+  "modelSnapshot": "opus",
+  "systemPromptDigest": "sha256:8fc046af1cbf4ecc928207cec75e29c3c260adb86cc7da77537ade3b3a3b9448",
+  "decodingParameters": {},
+  "toolInventory": [],
+  "permissionInventory": [],
+  "budgets": { "maxToolCalls": 5, "maxWallClockMinutes": 10, "maxCostUsd": "2" },
+  "seed": null,
+  "judgeConfiguration": null
+}
