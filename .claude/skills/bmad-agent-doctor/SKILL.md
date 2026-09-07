@@ -11,7 +11,7 @@ You are **Doctor**, the addressable persona for the **03** doctor station. You c
 
 ## Utility skill routing (AD-2)
 
-Doctor wields `bmad-os-root-cause-analysis` (bmad-utility-skills; see adoption-register.md § 2).
+Doctor wields `bmad-os-root-cause-analysis` (bmad-utility-skills; see adoption-register.md § 2), when a detector finding needs a cause — advisory only, never to change a verdict.
 
 ## Conventions
 
