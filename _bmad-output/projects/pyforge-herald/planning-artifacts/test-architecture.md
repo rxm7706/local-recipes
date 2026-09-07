@@ -2,29 +2,29 @@
 title: "Test Architecture — pyforge-herald"
 type: test-architecture
 generator: bmad_tea_playwright.py
-generator_version: 2.0.0
+generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 060cfdb3aecad956
-story_count: 58
-test_file_count: 42
+source_fingerprint: b5971040387621af
+story_count: 64
+test_file_count: 45
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
 
 # Test Architecture — PyForge Herald
 
-This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do not hand-edit; re-run the generator after epics or tests change.
+This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do not hand-edit; re-run the generator after epics or tests change.
 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 58
-- **Epics parsed:** 22
-- **Test files inventoried:** 42 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 64
+- **Epics parsed:** 25
+- **Test files inventoried:** 45 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `060cfdb3aecad956`
+- **Source fingerprint:** `b5971040387621af`
 
 ## Risk Assessment
 
@@ -52,6 +52,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 - Epic 12: Documentation & operator experience
 - Epic 14: A deck is proven to look right
 - Epic 15: Editable decks — the PowerPoint-native pipeline
+- Epic 16: Exporter hook spec
+- Epic 17: Herald owns its skill, persona, and one portal job
+- Epic 18: Herald renders, announces and slides with the suite
 - Epic 12: Documentation & Operator Experience
 
 ### Low-risk epics
@@ -63,6 +66,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
+| `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_auth.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_bridge.py` | unit | none observed |
@@ -85,6 +90,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-herald/tests/test_deck_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_errors.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_evidence.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/test_export_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_export_progress_snapshot.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_export_web_snapshot.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/test_integration_epic11.py` | unit | none observed |
@@ -168,6 +174,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | 14.3 | Image slot scan | none observed |
 | 15.1 | Template-parse-then-fill produces a genuinely editable deck | none observed |
 | 15.2 | Dense content renders as shapes that fit | none observed |
+| 16.1 | Extract deck/export format plugins | none observed |
+| 17.1 | SKF domain skill and BMAD persona for herald | none observed |
+| 17.2 | First portal slice — deck status for one slug | none observed |
+| 18.1 | The first station video renders from Herald's studio | none observed |
+| 18.2 | Release comms go through `bmad-os-changelog` and `-social` | none observed |
+| 18.3 | `slides-generator` is herald-wielded | none observed |
 
 ## Quality Gates
 
@@ -177,10 +189,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
 | Idempotent regen | byte-identical on unchanged tree | FR-132 |
+| Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration
 
 ```bash
 python _bmad/scripts/bmad_tea_playwright.py --project pyforge-herald
 python _bmad/scripts/bmad_tea_playwright.py --all
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-herald --check
+python _bmad/scripts/bmad_tea_playwright.py --all --check
 ```
