@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+  release: model-files-v1.0
+
+package:
+  name: kokoro-onnx-models
+  version: ${{ version }}
+
+source:
+  # A bare release asset, not an archive, so file_name is required -- there is
+  # no extension-driven unpacking to rely on.
+  - url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/${{ release }}/kokoro-v1.0.onnx
+    sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+    file_name: kokoro-v1.0.onnx
+
+build:
+  number: 0
+  noarch: generic
+  dynamic_linking:
+    # The .onnx is a protobuf container holding tensor data at fixed offsets.
+    # It is data, not a linkable object, and relocation would silently corrupt
+    # weights rather than fail loudly -- the quiet cousin of the failure that
+    # corrupted a Bun binary in this repo's ccusage recipe.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/kokoro-onnx"
+        mkdir -p "${DEST}"
+        cp -a kokoro-v1.0.onnx "${DEST}/"
+
+requirements:
+  run:
+    # Voices are shared by every variant and ship separately so the three can
+    # co-install; the resolver lives there too. Pinned exactly because both
+    # come from the same upstream release tag.
+    - kokoro-onnx-voices ==${{ version }}
+  run_constraints:
+    - kokoro-onnx >=0.6.0
+
+tests:
+  - package_contents:
+      files:
+        - share/kokoro-onnx/kokoro-v1.0.onnx
+  - script:
+      # Resolution goes through the shared resolver, so this also proves the
+      # voices dependency actually arrived.
+      - python -c "import kokoro_onnx_models as m; print('model:', m.get_model_path('f32'))"
+      - python -c "import kokoro_onnx_models as m, sys; assert m.get_model_path('f32').startswith(sys.prefix)"
+      - python -c "import kokoro_onnx_models as m; assert m.list_variants() == ['f32'], m.list_variants(); print('variants:', m.list_variants())"
+      # With this the only variant installed, the no-argument call must find it.
+      - python -c "import kokoro_onnx_models as m; assert m.get_model_path() == m.get_model_path('f32'); print('default resolution OK')"
+      # Exact size catches truncation; the ONNX parse plus the node count
+      # catches a mangled or swapped payload, which a contents check would not.
+      - python -c "import kokoro_onnx_models as m, os; s=os.path.getsize(m.get_model_path('f32')); assert s == 325532387, s; print('bytes OK:', s)"
+      - python -c "import onnx, kokoro_onnx_models as m; g=onnx.load(m.get_model_path('f32')).graph; assert len(g.node) == 2464, len(g.node); print('onnx graph OK, nodes:', len(g.node))"
+    requirements:
+      run:
+        - python
+        - onnx
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://huggingface.co/hexgrad/Kokoro-82M
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: Kokoro v1.0 TTS model weights (f32) for kokoro-onnx
+  description: |
+    The Kokoro v1.0 ONNX model, f32 variant (311 MB) -- full-precision float32 reference weights --
+    installed into `$CONDA_PREFIX/share/kokoro-onnx/` so an environment is
+    complete from the lock alone rather than requiring a manual download.
+
+    Unquantized: all 324.6 MB of initializers are float32, and the
+    graph carries no quantize/dequantize operators.
+
+    This is also the FASTEST variant on CPU, not just the most
+    accurate -- see the table in the description of
+    `kokoro-onnx-models-int8`. Pick it unless disk or memory is
+    the binding constraint.
+
+    Voice embeddings are shared across variants and come from
+    `kokoro-onnx-voices`, pulled in automatically, which also provides the
+    resolver:
+
+        from kokoro_onnx import Kokoro
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path("f32"), get_voices_path())
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    All three variants co-install; `get_model_path()` with no argument returns
+    the highest-precision one present.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx-models
+  cfe-upstream-registry: github
+  cfe-upstream-name: thewh1teagle/kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx-models@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://huggingface.co/hexgrad/Kokoro-82M
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-pip-check-reason: no-python-package
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "311 MB of model weights - conda-forge discourages large binary data packages and would want this on a dedicated channel; the licence itself (Apache-2.0) is no obstacle"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: pending
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # One of three model variants that co-install. The split exists because
+#    # every variant needs the SAME voices-v1.0.bin: shipping it from each
+#    # would be a file clobber (conda refuses two packages owning one path),
+#    # and folding the variants into one package would force a 311 MB f32
+#    # download on someone who wanted int8's 88 MB.
+#    # Build 0 despite an earlier 1.0 artifact having existed briefly. That
+#    # one bundled voices-v1.0.bin and an older resolver, so it CLOBBERED two
+#    # paths that kokoro-onnx-voices now owns; it was withdrawn from the
+#    # channel rather than left to be superseded by a build 1. G113's
+#    # bump-the-build-number rule exists to disambiguate two artifacts a
+#    # consumer might resolve between -- with the earlier one deleted there is
+#    # nothing to disambiguate, and starting at 0 keeps the numbering honest
+#    # about what is actually published.
+#    # Note the withdrawn artifact had a different build STRING
+#    # (pyhec92b6f_0, from noarch: python) than this one (noarch: generic), so
+#    # no download cache can confuse the two.
+# build:
+#    # noarch: generic, not noarch: python -- this package ships no importable
+#    # code at all. The resolver module lives in kokoro-onnx-voices, which
+#    # means these weights are equally usable from a non-Python ONNX runtime.
+#    # The payload goes to share/kokoro-onnx/, the same directory every other
+#    # package in the set writes into, which is what lets one resolver find
+#    # all of them.
+# requirements:
+#    # kokoro-onnx is a run_constraint, not a dependency: these weights are
+#    # independently useful (any ONNX runtime can load them), but pairing them
+#    # with an incompatible kokoro-onnx should not happen silently.
+# tests:
+#    # Three layers, deliberately. package_contents proves the file shipped;
+#    # the exact byte count proves it is not truncated; onnx.load() with an
+#    # asserted node count proves the protobuf is intact AND that this is the
+#    # right variant -- the only check that would catch two assets swapped
+#    # between recipes, which is a real risk when three recipes differ by one
+#    # filename. Node counts were measured, not assumed: 2464 here.
+####

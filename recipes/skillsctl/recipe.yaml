@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.4"
+
+package:
+  name: skillsctl
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nebari-dev/skillsctl/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d1184f4ad4f1b4c2528e3e164f75b3423c93771adeaabcfb584b420e6a2146da
+  target_directory: src
+
+build:
+  number: 0
+  script:
+    env:
+      GOTOOLCHAIN: local
+    content:
+      - cd src
+      - go-licenses save ./cli ./backend/cmd/server --save_path ../library_licenses
+      - if: unix
+        then: |
+          go build -v -trimpath -o "${PREFIX}/bin/skillsctl" -ldflags="-s -w -X github.com/nebari-dev/skillsctl/cli/cmd.version=${{ version }}" ./cli
+          go build -v -trimpath -o "${PREFIX}/bin/skillsctl-server" -ldflags="-s -w -X main.buildVersion=${{ version }}" ./backend/cmd/server
+        else: |
+          go build -v -trimpath -o %LIBRARY_BIN%\skillsctl.exe -ldflags="-s -w -X github.com/nebari-dev/skillsctl/cli/cmd.version=${{ version }}" ./cli
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - skillsctl --version
+      - skillsctl --help
+  - if: unix
+    then:
+      script:
+        - test -x "${PREFIX}/bin/skillsctl-server"
+  - package_contents:
+      bin:
+        - skillsctl
+
+about:
+  homepage: https://github.com/nebari-dev/skillsctl
+  repository: https://github.com/nebari-dev/skillsctl
+  documentation: https://github.com/nebari-dev/skillsctl#readme
+  summary: CLI and registry server for discovering, installing, and publishing Claude Code skills
+  description: |
+    skillsctl is the Nebari skill registry: a CLI for discovering, installing
+    and publishing Claude Code skills, plus the registry server that backs it.
+    Skills are versioned, governed artifacts an organization can host inside
+    its own perimeter rather than re-pasting into each agent session.
+
+    This package ships both binaries upstream releases: `skillsctl`, the
+    client, and `skillsctl-server`, the registry backend (Unix only, matching
+    upstream's own release matrix). The server is configured entirely through
+    environment variables — `PORT`, `DB_PATH`, `OIDC_ISSUER_URL`,
+    `OIDC_CLIENT_ID` — and stores its data in SQLite via a pure-Go driver.
+
+    skillsctl is the project Nebari Frames succeeds and borrows its registry
+    foundations from; it continues to ship as the Claude Code skill registry.
+  license: Apache-2.0
+  license_file:
+    - src/LICENSE
+    - library_licenses/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: skillsctl
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/nebari-dev/skillsctl
+  cfe-purls:
+    - pkg:conda/skillsctl@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/nebari-dev/skillsctl@${{ version }}
+  cfe-upstream-repo: https://github.com/nebari-dev/skillsctl
+  cfe-upstream-homepage: https://github.com/nebari-dev/skillsctl
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T12:10:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # IDENTITY WARNING -- there are TWO unrelated projects named skillsctl.
+#    # This recipe packages nebari-dev/skillsctl (Go, Apache-2.0, v0.2.4,
+#    # pushed 2026-08-26): the Nebari skill registry named in
+#    # docs/dreams/intelligence-hub.md as the project nebari-frames succeeds.
+#    # The PyPI distribution `skillsctl` (0.3.1) is a DIFFERENT, unrelated
+#    # Python project -- yashshingvi/skillsctl, MIT, 0 stars, no description --
+#    # that merely owns the name on PyPI. Packaging from PyPI would ship the
+#    # wrong software under this name. Verified 2026-09-07 against both GitHub
+#    # repos and PyPI's JSON API. This is the G107 shape: a name resolving is
+#    # not evidence that it resolves to the artifact you meant.
+#    # Hand-authored: Go, so no generator path applies; modelled on the
+#    # nebari-frames recipe (same org, same goreleaser shape).
+# source:
+#    # github-tag archive; plain v<version> tag scheme matching the release.
+#    # target_directory: src keeps the generated library_licenses/ a sibling of
+#    # the source tree so about.license_file can name both cleanly.
+# build:
+#  script:
+#    env:
+#      # GOTOOLCHAIN: local forbids a network toolchain download. go.mod
+#      # declares `go 1.25.8`; conda-forge go-nocgo is 1.27.1, so the installed
+#      # toolchain already satisfies it and nothing is fetched.
+#      # CGO_ENABLED is not set here -- the go-nocgo activation already exports
+#      # CGO_ENABLED=0, which is what upstream's .goreleaser.yml sets.
+#    # TWO binaries, matching upstream's two goreleaser archives: `skillsctl`
+#    # (linux/darwin/windows) and `skillsctl-server` (linux/darwin only --
+#    # upstream's server build declares no windows goos, so the else branch
+#    # builds the client alone). Both are pure Go: the only //go:embed
+#    # directives are skills/*.md and the backend's *.sql migrations, both
+#    # committed in the tree, so there is no release-time-generated asset to
+#    # miss (the G51/G73 trap) and no npm/SPA build step.
+#    # -ldflags mirrors .goreleaser.yml. The `commit` symbol upstream also
+#    # injects is deliberately left unset: a tag archive carries no git
+#    # metadata, and a fabricated value would be worse than the default.
+#  requirements:
+#    # go-nocgo (NOT go-cgo): CGO is off and the sqlite driver is
+#    # modernc.org/sqlite, a pure-Go implementation -- so no compiler('c') /
+#    # stdlib('c') is needed. NOTE: `validate_recipe` reports "Missing
+#    # ${{ stdlib('c') }}" on every go-nocgo recipe; that check lacks the
+#    # go-nocgo exemption optimize_recipe's STD-001 received in skill v5.8.0.
+#    # Reproduced identically on recipes/wuphf and upstream mcp-grafana; the
+#    # CI-parity conda-smithy lint passes. Do not add stdlib to silence it.
+# tests:
+#    # skillsctl-server is checked for existence, not run: its main() parses NO
+#    # flags -- it reads PORT / DB_PATH / OIDC_* from the environment and
+#    # immediately opens a database and starts serving, so `--help` would hang
+#    # a test rather than print usage. `skillsctl --version` does double duty as
+#    # the ldflags-injection proof.
+####

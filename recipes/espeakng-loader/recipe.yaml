@@ -1,0 +1,141 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.4"
+
+package:
+  name: espeakng-loader
+  version: ${{ version }}
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - if: unix
+      then: |
+        set -ex
+        cp -a "${RECIPE_DIR}/pyproject.toml" "${RECIPE_DIR}/README.md" "${RECIPE_DIR}/espeakng_loader" .
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+    - espeak-ng
+
+tests:
+  - python:
+      imports:
+        - espeakng_loader
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      # Resolution must be real, not merely importable: both paths have to
+      # exist in the prefix, and the library has to actually dlopen.
+      - python -c "import espeakng_loader as e, os; p=e.get_library_path(); assert os.path.exists(p), p; print('lib ', p)"
+      - python -c "import espeakng_loader as e, os; p=e.get_data_path(); assert os.path.isdir(p), p; print('data', p)"
+      - python -c "import espeakng_loader as e; assert e.load_library() is not None; print('dlopen OK')"
+      # The path must point INTO this prefix, never at a vendored copy or a
+      # stale build tree -- the upstream wheel's exact failure.
+      - python -c "import espeakng_loader as e, sys; assert e.get_data_path().startswith(sys.prefix), (e.get_data_path(), sys.prefix); print('resolves into sys.prefix OK')"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/thewh1teagle/espeakng-loader
+  repository: https://github.com/thewh1teagle/espeakng-loader
+  summary: Shared-library loader for eSpeak NG, resolved from the conda prefix
+  description: |
+    Provides the `espeakng_loader` module that TTS front-ends such as
+    kokoro-onnx import to locate the eSpeak NG shared library and its data
+    directory.
+
+    This conda build keeps upstream's public API — `get_library_path`,
+    `get_data_path`, `load_library`, `make_library_available` — but resolves
+    them from the active prefix's `espeak-ng` package rather than from a
+    vendored copy inside the Python package. It therefore ships no binaries
+    and depends on `espeak-ng`.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: espeakng-loader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: espeakng-loader
+  cfe-purls:
+    - pkg:conda/espeakng-loader@${{ version }}?channel=conda-forge
+    - pkg:pypi/espeakng-loader@${{ version }}
+  cfe-upstream-repo: https://github.com/thewh1teagle/espeakng-loader
+  cfe-upstream-homepage: https://github.com/thewh1teagle/espeakng-loader
+  cfe-import-names: [espeakng_loader]
+  cfe-source-kind: recipe-authored
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "reimplements upstream's API against conda's espeak-ng rather than repackaging its wheel; a conda-forge submission would need upstream agreement on that divergence"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T13:20:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # DELIBERATE DIVERGENCE FROM UPSTREAM -- read before bumping.
+#    #
+#    # This does NOT repackage the PyPI wheels. Those wheels (6 per-platform,
+#    # ~9.5 MB each) bundle a prebuilt libespeak-ng whose data directory is
+#    # COMPILED IN as the upstream CI machine's build tree:
+#    #   /home/runner/work/espeakng-loader/espeakng-loader/espeak-ng/
+#    #       _dynamic/share/espeak-ng-data/phontab
+#    # Nothing overrides it -- not phonemizer's EspeakWrapper.set_data_path()
+#    # (which kokoro-onnx already calls correctly), not ESPEAK_DATA_PATH.
+#    # Verified 2026-09-07 with a control: a stock `pip install kokoro-onnx`
+#    # fails IDENTICALLY on Python 3.12 (upstream-supported) and 3.14, and
+#    # succeeds the moment PHONEMIZER_ESPEAK_LIBRARY names a real espeak-ng.
+#    # Repackaging that wheel would ship a package that builds green and
+#    # cannot synthesise -- the G51/G73 trap.
+#    #
+#    # So the module is authored here against the SAME public API (the four
+#    # functions kokoro-onnx and phonemizer call) and resolves to the
+#    # `espeak-ng` conda package instead. conda records espeak-ng's data path
+#    # in info/has_prefix and rewrites it at install time, which is exactly
+#    # the relocation the wheel cannot do.
+#    #
+#    # Version tracks upstream's 0.2.4 because kokoro-onnx pins
+#    # `espeakng-loader>=0.2.4`; the API is upstream's, only the resolution
+#    # differs.
+# build:
+#    # pip install (not a bare file copy) so a real .dist-info lands:
+#    # kokoro-onnx declares espeakng-loader>=0.2.4 and `pip check` resolves
+#    # that against installed distribution metadata. A copied module would
+#    # import fine and still fail pip_check.
+#    # noarch: python is correct -- this package is pure Python and ships no
+#    # binaries; the per-platform content lives in its espeak-ng run dep.
+# tests:
+#    # Deliberately beyond `imports`: the script tests assert both paths
+#    # EXIST, that the library actually dlopens, and that resolution lands
+#    # inside sys.prefix. An import-only test passes on precisely the broken
+#    # configuration this package was written to eliminate.
+#    # sys.prefix, not CONDA_PREFIX: the latter describes the shell's
+#    # activated env, which is not necessarily the interpreter running the
+#    # code (a direct /path/to/env/bin/python call, a subprocess, a Jupyter
+#    # kernel borrowed from another env).
+####

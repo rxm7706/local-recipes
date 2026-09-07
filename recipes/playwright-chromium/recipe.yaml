@@ -1,0 +1,183 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "153.0.8010.12"
+  revision: "1243"
+
+package:
+  name: playwright-chromium
+  version: ${{ version }}
+
+source:
+  url: https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.12/linux64/chrome-linux64.zip
+  sha256: 8aac35011c18f6e2d10696154af89a5728ac2ddd6dc6fad24ffdf243c3fcfd5a
+  # Extract under src/ so the build copies ONLY upstream content -- rattler-build
+  # also drops conda_build.sh / build_env.sh in the work dir, and `cp -a ./*`
+  # would sweep them into the package.
+  target_directory: src
+
+build:
+  number: 0
+  # linux-64 only: the archive is a linux x86-64 build, and this is the only
+  # platform the estate drives. Other subdirs need their own source URL.
+  skip:
+    - not (linux and x86_64)
+  dynamic_linking:
+    # MUST stay false. These are large prebuilt binaries carrying embedded
+    # resources (PAK bundles, V8 snapshots, ICU data) at fixed offsets;
+    # rewriting ELF sections to patch RPATH shifts those offsets and the
+    # binary segfaults at launch. Nothing here needs relocating -- the
+    # binaries resolve against host system libraries, exactly as they do
+    # under `playwright install`.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/ms-playwright/chromium-1243"
+        # rattler-build STRIPS a single top-level directory when it extracts an
+        # archive, so src/ holds that root's CONTENTS for chromium / headless
+        # shell / firefox, and holds the entries themselves for the multi-root
+        # webkit and ffmpeg archives. Re-creating the inner directory here makes
+        # both shapes land where Playwright looks, without depending on whether
+        # the strip happened.
+        mkdir -p "${DEST}/chrome-linux64"
+        cp -a src/. "${DEST}/chrome-linux64/"
+        # Playwright treats a browser directory WITHOUT this marker as not
+        # installed and re-downloads over it. Creating it is what makes the
+        # conda-provided browser count as a real install.
+        touch "${DEST}/INSTALLATION_COMPLETE"
+
+requirements:
+  run:
+    - playwright-browsers-base
+    # Built against Ubuntu's glibc; the binaries link the host's system
+    # libraries rather than conda's, so declare the floor rather than pull a
+    # parallel library stack in beside the system one.
+    - __glibc >=2.35
+  run_constraints:
+    # The revision is dictated by browsers.json INSIDE the playwright driver.
+    # Pair a mismatched driver with this package and Playwright reports
+    # "Executable doesn't exist ... run playwright install". Verified against
+    # playwright 1.63.0 (node) and playwright-python 1.62.0, which both pin
+    # chromium r1243.
+    - playwright >=1.62,<1.64
+    - playwright-python >=1.62,<1.64
+
+tests:
+  - package_contents:
+      files:
+        - share/ms-playwright/chromium-1243/INSTALLATION_COMPLETE
+        - share/ms-playwright/chromium-1243/chrome-linux64/chrome
+  - script:
+      # Executing the binary is the point: a contents-only test would pass
+      # on a relocation-corrupted binary that segfaults at launch.
+      - test -x "${PREFIX}/share/ms-playwright/chromium-1243/chrome-linux64/chrome"
+      - '"${PREFIX}/share/ms-playwright/chromium-1243/chrome-linux64/chrome" --version'
+      - '"${PREFIX}/share/ms-playwright/chromium-1243/chrome-linux64/chrome" --version | grep -F "Google Chrome for Testing 153.0.8010.12"'
+
+about:
+  homepage: https://playwright.dev/docs/browsers
+  repository: https://github.com/microsoft/playwright
+  documentation: https://playwright.dev/docs/browsers#managing-browser-binaries
+  summary: Chrome for Testing 153.0.8010.12, laid out for Playwright (chromium r1243)
+  description: |
+    The full headed Chrome for Testing build Playwright resolves as its
+    `chromium` browser. Use this when a test needs a real browser UI, an
+    extension, or a headed run; `playwright-chromium-headless-shell` is
+    roughly 70 MB smaller and is what `launch(headless=True)` prefers.
+
+    Installed under `$CONDA_PREFIX/share/ms-playwright/chromium-1243/` with the
+    `INSTALLATION_COMPLETE` marker Playwright looks for, so an environment
+    carrying `playwright-browsers-base` resolves it with no network access
+    and no `playwright install` step.
+  license: LicenseRef-Google-Chrome-ToS
+  license_file:
+    - src/ABOUT
+    - src/WidevineCdm/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: playwright-chromium
+  cfe-upstream-registry: github
+  cfe-upstream-name: microsoft/playwright
+  cfe-purls:
+    - pkg:conda/playwright-chromium@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/microsoft/playwright
+  cfe-upstream-homepage: https://playwright.dev/docs/browsers
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "Google Chrome for Testing is governed by the Google Chrome Terms of Service, not an OSI-approved licence - NOT conda-forge-submittable; private channel only"
+    - "prebuilt binary with no source-build path"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T15:40:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # conda-forge's `playwright` package ships ONLY the Node driver -- 178
+#    # files, all under lib/node_modules, no bin/ entry -- plus browsers.json,
+#    # which carries revision PINS and no binaries. The browsers themselves
+#    # come from a network `playwright install` into the machine-global
+#    # ~/.cache/ms-playwright, which no lock file describes and no air-gapped
+#    # host can reach. This package closes that gap for one browser.
+#    # This is the FULL Chrome for Testing build (186.8 MB zip, 308 entries),
+#    # not open-source Chromium -- `chrome --version` self-reports "Google
+#    # Chrome for Testing" and ABOUT reads "Google Chrome / Copyright 2026
+#    # Google LLC. All rights reserved." It additionally bundles WidevineCdm,
+#    # a proprietary DRM module, whose LICENSE is shipped alongside ABOUT.
+# source:
+#    # URL and sha256 are not guesses: `python -m playwright install --dry-run`
+#    # was run to get the authoritative download URL and install directory, the
+#    # archive was fetched, and the sha256 recorded from the fetched bytes.
+#    # Playwright's own CDN mirror of the Chrome-for-Testing archives was
+#    # verified byte-identical to Google's bucket (same sha256), so the Google
+#    # origin is used for the two Chrome packages as the true publisher.
+
+# build:
+#    # The install directory name is what Playwright's registry reports, taken
+#    # from --dry-run output rather than derived from the browser name.
+#    # binary_relocation: false is load-bearing here, and the reason is not
+#    # theoretical -- the same default corrupted a Bun static-PIE binary in the
+#    # ccusage recipe in this repo (4,346,528 -> 4,352,649 bytes, first
+#    # difference inside the ELF header, segfault at launch). These binaries
+#    # are far larger and carry more embedded payload.
+# requirements:
+#    # No conda library dependencies on purpose. The binaries are built against
+#    # Ubuntu's system libraries and resolve them from the host (verified: ldd
+#    # reports 0 missing on the Ubuntu 24.04 build host). Pulling conda's nss /
+#    # nspr / xorg stack in beside the system one invites version skew inside a
+#    # browser process. This mirrors Playwright's own model, which validates
+#    # host packages via `--with-deps` and ships deb.deps / rpm.deps manifests
+#    # inside the archive rather than vendoring libraries.
+#    # The cost of that choice: a minimal container without the usual X/NSS
+#    # runtime will not launch this browser. That is the same constraint
+#    # `playwright install` operates under, and it is why __glibc is declared.
+# about:
+#    # NON-OSI. The binary self-reports "Google Chrome for Testing" and
+#    # ABOUT reads "Google Chrome / Copyright 2026 Google LLC. All rights
+#    # reserved. See the Terms of Service at chrome://terms."
+#    # LICENSE.headless_shell / the bundled licence files cover the Chromium
+#    # COMPONENTS (BSD-3-Clause) inside it, NOT the Chrome build as a whole.
+#    # Recorded as LicenseRef-Google-Chrome-ToS because no SPDX id applies.
+#    # This is the reason the package is channel-only: conda-forge
+#    # distributes OSI-approved licences, so this cannot be submitted --
+#    # the same class of blocker as BUSL-1.1 on ragstack-ai-knowledge-store.
+#    # Redistribution beyond a first-party channel is a legal question for
+#    # the operator, not a packaging one.
+####

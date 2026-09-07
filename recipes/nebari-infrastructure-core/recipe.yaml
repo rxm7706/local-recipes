@@ -1,0 +1,159 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.0"
+  go_mod: github.com/nebari-dev/nebari-infrastructure-core
+  ldflags: "-s -w -X ${{ go_mod }}/internal/cli.version=${{ version }}"
+
+package:
+  name: nebari-infrastructure-core
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nebari-dev/nebari-infrastructure-core/releases/download/v${{ version }}/nebari-infrastructure-core-${{ version }}-source.tar.gz
+  sha256: 3090113f1ec93bc4070750788fbb861409277b25122d64adca7add7014bc1c58
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: |
+        set -ex
+        export CGO_ENABLED=0
+        go build -v -trimpath -ldflags "${{ ldflags }}" -o "${PREFIX}/bin/nic" ./cmd/nic
+        go-licenses save ./cmd/nic --save_path "${SRC_DIR}/library_licenses" --ignore ${{ go_mod }}
+      else: |
+        set CGO_ENABLED=0
+        go build -v -trimpath -ldflags "${{ ldflags }}" -o "%LIBRARY_BIN%\nic.exe" .\cmd\nic
+        if errorlevel 1 exit 1
+        go-licenses save .\cmd\nic --save_path "%SRC_DIR%\library_licenses" --ignore ${{ go_mod }}
+        if errorlevel 1 exit 1
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+    - go-licenses
+
+tests:
+  - script:
+      - nic --help
+      - nic version
+  - package_contents:
+      bin:
+        - nic
+
+about:
+  summary: CLI for managing Nebari cloud infrastructure using OpenTofu, ArgoCD, and GitOps
+  description: |
+    Nebari Infrastructure Core (NIC) is the `nic` command-line tool behind
+    Nebari, an opinionated Kubernetes distribution built for AI/ML workflows.
+
+    From a single configuration file it provisions and manages a
+    production-ready platform on any supported cloud, driving OpenTofu for
+    infrastructure and ArgoCD for GitOps-based application delivery.
+
+    Supported providers include AWS, Azure, GCP, Hetzner, an existing
+    Kubernetes cluster, and a local kind-based development cluster.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - library_licenses/
+  homepage: https://nebari.dev
+  repository: https://github.com/nebari-dev/nebari-infrastructure-core
+  documentation: https://github.com/nebari-dev/nebari-infrastructure-core/blob/main/docs/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nebari-infrastructure-core
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/nebari-dev/nebari-infrastructure-core
+  cfe-purls:
+    - pkg:conda/nebari-infrastructure-core@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/nebari-dev/nebari-infrastructure-core@${{ version }}
+  cfe-upstream-repo: https://github.com/nebari-dev/nebari-infrastructure-core
+  cfe-upstream-homepage: https://nebari.dev
+  cfe-import-names: []
+  cfe-source-kind: github-release-source-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T10:30:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Go CLI (binary `nic`), NOT a Python package -- no PyPI distribution
+#    # exists, so none of the PyPI/npm/CRAN generator paths apply. Authored by
+#    # hand from the upstream Makefile + .goreleaser.yml.
+#    # lookup_feedstock 2026-09-07: no conda-forge/nebari-infrastructure-core-feedstock
+#    # (G58 clear). `nebari` and `nebi` ARE on conda-forge; `nic` is free but is
+#    # deliberately NOT used as the conda package name -- it is a 3-letter generic
+#    # token with high collision risk (CFEP-26). The package name mirrors the
+#    # upstream project; the command it installs is `nic`.
+# source:
+#    # The release-asset source tarball is used in preference to the
+#    # archive/refs/tags GitHub-generated archive: it is an UPLOADED asset
+#    # (byte-stable, so not exposed to the G61 re-gzip sha256 drift that affects
+#    # generated archives), it is covered by upstream's own checksums.txt, and it
+#    # carries a sigstore attestation. sha256 verified twice 2026-09-07 -- streamed
+#    # download AND the GitHub release-asset digest field both report
+#    # 3090113f1ec93bc4070750788fbb861409277b25122d64adca7add7014bc1c58.
+#    # NOTE the archive has NO top-level wrapper directory: entries extract flat
+#    # into the work dir, so build paths are ./cmd/nic, not <pkg>-<ver>/cmd/nic.
+# build:
+#  script:
+#    # Pure Go: the upstream Makefile and .goreleaser.yml both build with
+#    # CGO_ENABLED=0, so this uses compiler("go-nocgo") and -- per the SKILL.md
+#    # go-nocgo exception -- correctly omits stdlib("c").
+#    # -trimpath and -s -w mirror upstream's own release build flags.
+#    # ldflags injects ONLY version. Upstream also injects commit and date; both
+#    # are deliberately left at their in-source defaults ("none"/"unknown")
+#    # because a build timestamp would make the artifact non-reproducible, and the
+#    # commit is not knowable from a source tarball. The -X target is the
+#    # internal/cli package path, NOT main -- version.go documents that pointing
+#    # it at main.version silently injects nothing.
+#    # GOOS / GOARCH / CGO_ENABLED / GOFLAGS are supplied by the conda
+#    # go-nocgo_<target> package via etc/conda/env_vars.d, so a plain `go build`
+#    # cross-compiles correctly on the linux_aarch64 / osx_arm64 legs with no
+#    # GOOS/GOARCH plumbing in this recipe. That package ALSO patches the default
+#    # GOPATH to $SRC_DIR/gopath (asserted by its own run_test.sh), so this recipe
+#    # deliberately does NOT set GOPATH -- an override would only fight a default
+#    # that is already correct and already inside the build sandbox.
+#    # CGO_ENABLED=0 is re-stated explicitly even though go-nocgo already sets it:
+#    # it mirrors upstream's Makefile/.goreleaser.yml and keeps the pure-Go intent
+#    # from silently changing if the compiler macro is ever swapped for go-cgo.
+#    # The build fetches modules from the network (upstream vendors nothing --
+#    # no vendor/ directory in the tarball). That is fine: conda-forge BUILD jobs
+#    # have network; only the TEST phase is offline. Same shape as the merged
+#    # mailpit and osv-scanner Go recipes.
+#    # Each entry of a script LIST runs in its own shell (G1), so the exports and
+#    # the commands that consume them are kept in ONE multi-line entry per platform.
+#    # --ignore <own module> per G79: go-licenses exits fatal on any package it
+#    # cannot classify, and a project's own packages are a routine false positive;
+#    # the project LICENSE ships separately via about.license_file.
+# requirements:
+#  build:
+#    # No run: requirements. The binary is statically linked (CGO_ENABLED=0).
+#    # NOTE: at runtime nic resolves an OpenTofu binary from NIC_TOFU_PATH or
+#    # PATH and otherwise downloads its own pinned build. conda-forge ships
+#    # opentofu, but it is deliberately NOT declared here: it is optional, and a
+#    # hard dependency would pull a version nic may warn is untested against.
+#    # Revisit if upstream ever pins a range that conda-forge's opentofu satisfies.
+# tests:
+#    # nic version is offline-safe: tofu.ResolveExternal only inspects
+#    # NIC_TOFU_PATH/PATH and REPORTS resolution errors rather than failing, so the
+#    # command stays usable as a diagnostic with no tofu present and no network.
+####

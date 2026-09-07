@@ -1,0 +1,179 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.1"
+
+package:
+  name: kokoro-onnx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kokoro-onnx/kokoro_onnx-${{ version }}.tar.gz
+  sha256: 7bbdb66dd53775f71088a99999a9aefdad240740daf54cb09410d8bb1e294e35
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - espeakng-loader >=0.2.4
+    - numpy >=2.0.2
+    - onnxruntime >=1.20.1
+    - phonemizer >=3.4.0
+
+tests:
+  - python:
+      imports:
+        - kokoro_onnx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      # The Tokenizer constructor is where espeak is wired up, and it is the
+      # step that fails on a stock pip install. Constructing it proves the
+      # whole chain (kokoro-onnx -> espeakng-loader -> espeak-ng) resolves.
+      # Model weights are NOT shipped (311 MB, see the CFE comments), so
+      # synthesis itself cannot be tested here.
+      - python -c "from kokoro_onnx import Kokoro; print('Kokoro importable')"
+      - python -c "from kokoro_onnx.tokenizer import Tokenizer; t=Tokenizer(); print('espeak wired OK')"
+      - python -c "from kokoro_onnx.tokenizer import Tokenizer; p=Tokenizer().phonemize('hello world', lang='en-us'); print('phonemes:', p); assert p.strip()"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://github.com/thewh1teagle/kokoro-onnx
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: TTS with Kokoro and the ONNX runtime
+  description: |
+    kokoro-onnx runs the Kokoro text-to-speech model through onnxruntime,
+    producing 24 kHz audio with a choice of voices and languages, on CPU or
+    GPU.
+
+    The model weights are NOT part of this package -- they are hundreds of
+    megabytes and the choice of variant is yours -- but they no longer need a
+    manual download. Install one alongside:
+
+        kokoro-onnx-models        f32    311 MB   most accurate, fastest on CPU
+        kokoro-onnx-models-fp16   fp16   169 MB   ~half the size, same speed
+        kokoro-onnx-models-int8   int8    88 MB   smallest, but slower on CPU
+
+    Each pulls in `kokoro-onnx-voices`, which carries the shared voice
+    embeddings and a resolver, so nothing has to be located by hand:
+
+        from kokoro_onnx import Kokoro
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path(), get_voices_path())
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    `get_model_path()` returns the highest-precision variant installed;
+    `get_model_path("int8")` selects one explicitly. The variants co-install.
+
+    Passing your own paths still works, so weights fetched from the upstream
+    release are unaffected:
+
+        kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
+
+    Phonemisation goes through `phonemizer` and the `espeak-ng` engine, both
+    of which install as dependencies, so no system eSpeak is required.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx@${{ version }}?channel=conda-forge
+    - pkg:pypi/kokoro-onnx@${{ version }}
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-import-names: [kokoro_onnx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "needs espeak-ng, phonemizer and espeakng-loader on conda-forge first; none of the three is there today"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T14:35:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Head of a four-package chain, none of which was on conda-forge:
+#    #   espeak-ng (C engine) <- espeakng-loader <- phonemizer <- kokoro-onnx
+#    # The ASR side of the same stack needs nothing: mlx 0.32.0,
+#    # parakeet-mlx 0.5.2 and onnx-asr 0.12.0 are all already on conda-forge
+#    # (verified 2026-09-07), and mlx ships linux-64/aarch64/osx-64/osx-arm64,
+#    # not Apple Silicon only.
+# context:
+#    # NO upper python bound, deliberately, despite upstream's
+#    # `requires-python = ">=3.10,<3.14"`. That cap is upstream conservatism,
+#    # not an ecosystem limit, and it was tested rather than assumed:
+#    # onnxruntime and numpy both ship py3.14 builds on conda-forge, and a
+#    # real synthesis run on 3.14.7 produced output byte-identical to the
+#    # same run on the upstream-supported 3.12.14 -- 24 kHz, 50,688 samples,
+#    # 2.11 s, peak 0.837. Mirroring the cap would make this package
+#    # uninstallable in 28 of the estate's 30 environments, all of which are
+#    # python 3.14, for no measured reason.
+#    # requires-python lives in wheel metadata and is NOT enforced by
+#    # pip check, so no source patch is needed for this (contrast G26, where
+#    # a loosened `==` pin does have to be patched into the source).
+# requirements:
+#    # espeakng-loader is a HARD dependency, not an optional accelerator:
+#    # kokoro_onnx/tokenizer.py imports it at module scope, so it cannot be
+#    # dropped even though this recipe's espeak-ng arrives via phonemizer.
+#    # The conda espeakng-loader in this repo resolves to the prefix's
+#    # espeak-ng rather than a bundled binary -- see that recipe for why the
+#    # upstream wheel is unusable.
+# tests:
+#    # Constructing Tokenizer() and phonemizing is the real gate. A stock
+#    # `pip install kokoro-onnx` imports perfectly and then dies at exactly
+#    # this step with
+#    #   Error processing file '/home/runner/.../phontab': No such file...
+#    # because the PyPI espeakng-loader wheel's bundled library has its data
+#    # path compiled in as upstream's CI build tree. An imports-only test
+#    # would have shipped that silently.
+#    # Synthesis is still NOT tested here, but the obvious reason for that
+#    # ("the weights are a separate manual download") does not apply: the
+#    # about: text points at kokoro-onnx-voices + the three
+#    # kokoro-onnx-models-* packages, which make the weights conda-installable
+#    # on the pattern used for the playwright browsers in this repo.
+#    # The reason now is PORTABILITY: those packages exist only on the
+#    # SelfExplainML channel, and adding one to this recipe's test
+#    # requirements would make the test unrunnable anywhere that channel is
+#    # absent -- including conda-forge CI, which is where this recipe is
+#    # eventually headed. Testing the head of a chain against packages the
+#    # target CI cannot see trades a real property (submittability) for a
+#    # check already covered elsewhere.
+#    # It IS covered: each kokoro-onnx-models-* recipe asserts its own weights
+#    # parse as ONNX with an exact node count, and full synthesis through all
+#    # three variants was verified end-to-end during packaging (2026-09-07) in
+#    # an environment solved from SelfExplainML + conda-forge alone -- 24 kHz,
+#    # ~2.7 s output, duration-normalised envelope correlation vs f32 of 0.95
+#    # (fp16) and 0.90 (int8). If the chain ever reaches conda-forge, move
+#    # that synthesis test into this recipe and delete this note.
+####

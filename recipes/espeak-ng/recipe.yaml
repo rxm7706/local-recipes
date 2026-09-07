@@ -1,0 +1,166 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.52.0"
+
+package:
+  name: espeak-ng
+  version: ${{ version }}
+
+source:
+  url: https://github.com/espeak-ng/espeak-ng/archive/refs/tags/${{ version }}.tar.gz
+  sha256: bb4338102ff3b49a81423da8a1a158b420124b055b60fa76cfb4b18677130a23
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: |
+        set -ex
+        # N_PATH_HOME defaults to 230 bytes (speech.h), and speech.c:338 fills
+        # it with a bare strcpy() of the compiled-in PATH_ESPEAK_DATA. conda's
+        # placeholder build prefix is longer than that, so a stock build
+        # aborts on the FIRST call with "*** buffer overflow detected ***"
+        # under _FORTIFY_SOURCE -- even `espeak-ng --version`. speech.h wraps
+        # the constant in `#ifndef N_PATH_HOME`, so raising it is the
+        # upstream-sanctioned override and needs no source patch.
+        export CFLAGS="${CFLAGS:-} -DN_PATH_HOME=1024"
+        export CXXFLAGS="${CXXFLAGS:-} -DN_PATH_HOME=1024"
+        ./autogen.sh
+        ./configure \
+          --prefix="${PREFIX}" \
+          --without-pcaudiolib \
+          --without-mbrola
+        make -j"${CPU_COUNT}"
+        make install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+
+tests:
+  - script:
+      - espeak-ng --version
+      # The real capability this package exists for: text -> IPA phonemes.
+      # `--version` alone would pass on a binary that cannot find its data.
+      - espeak-ng -q -x --ipa "hello world"
+      - 'espeak-ng -q -x --ipa "hello world" | grep -q "h"'
+  - package_contents:
+      bin:
+        - espeak-ng
+      lib:
+        - espeak-ng
+      files:
+        - share/espeak-ng-data/phontab
+        - share/espeak-ng-data/en_dict
+
+about:
+  homepage: https://github.com/espeak-ng/espeak-ng
+  repository: https://github.com/espeak-ng/espeak-ng
+  documentation: https://github.com/espeak-ng/espeak-ng/blob/master/docs/guide.md
+  summary: Compact open-source speech synthesizer and text-to-phoneme engine
+  description: |
+    eSpeak NG is a compact open-source software speech synthesizer supporting
+    over 100 languages and accents. It uses a formant synthesis method, which
+    keeps the installed size small at some cost in naturalness.
+
+    Beyond synthesis it is widely used as a text-to-phoneme (grapheme-to-
+    phoneme) engine: `espeak-ng -q -x --ipa` emits IPA for input text, which
+    is how the `phonemizer` library and TTS front-ends such as kokoro-onnx
+    obtain phonemes.
+
+    This package ships the `espeak-ng` command, the `libespeak-ng` shared
+    library, and the compiled `espeak-ng-data` dictionaries.
+  license: GPL-3.0-or-later AND Apache-2.0 AND BSD-2-Clause AND Unicode-DFS-2016
+  license_file:
+    - COPYING
+    - COPYING.APACHE
+    - COPYING.BSD2
+    - COPYING.UCD
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: espeak-ng
+  cfe-upstream-registry: github
+  cfe-upstream-name: espeak-ng/espeak-ng
+  cfe-purls:
+    - pkg:conda/espeak-ng@${{ version }}?channel=conda-forge
+    - pkg:github/espeak-ng/espeak-ng@${{ version }}
+  cfe-upstream-repo: https://github.com/espeak-ng/espeak-ng
+  cfe-upstream-homepage: https://github.com/espeak-ng/espeak-ng
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T13:20:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # espeak-ng is ABSENT from conda-forge under every spelling (checked
+#    # 2026-09-07 against live channeldata: the only *speak* matches are the
+#    # unrelated `genespeak` and `speaklater`). It is the foundation of the
+#    # kokoro-onnx TTS chain in this repo -- phonemizer talks to
+#    # libespeak-ng, and kokoro-onnx talks to phonemizer.
+#    #
+#    # WHY BUILD IT RATHER THAN REPACKAGE espeakng-loader's WHEEL: the PyPI
+#    # `espeakng-loader` wheels bundle a prebuilt libespeak-ng whose data
+#    # path is COMPILED IN as the upstream CI machine's own build directory
+#    # (/home/runner/work/espeakng-loader/...). Nothing overrides it --
+#    # neither phonemizer's EspeakWrapper.set_data_path() (which kokoro-onnx
+#    # already calls correctly) nor the ESPEAK_DATA_PATH environment
+#    # variable. Verified 2026-09-07: stock `pip install kokoro-onnx` fails
+#    # identically on Python 3.12 AND 3.14 with
+#    # "Error processing file '/home/runner/.../phontab'", and succeeds the
+#    # moment PHONEMIZER_ESPEAK_LIBRARY points at a real espeak-ng.
+#    #
+#    # A conda build does not have that defect: configure bakes
+#    # ${PREFIX}/share/espeak-ng-data into the binary, conda records it in
+#    # info/has_prefix, and the path is REWRITTEN at install time to the
+#    # real environment. That placeholder mechanism is precisely what the
+#    # wheel lacks -- which is why this package exists rather than a
+#    # binary repackage.
+# build:
+#    # autotools, not the CMakeLists: CMakeLists.txt in 1.52.0 is a stub
+#    # (one option, one install rule) while configure.ac is the maintained
+#    # build. `make` also COMPILES the dictionaries in dictsource/ into
+#    # espeak-ng-data/*_dict using the freshly built binary, so the data
+#    # this package ships is built here, not vendored.
+#    # --without-pcaudiolib: drops the runtime audio-output dependency.
+#    # Nothing in this chain plays audio -- phonemizer and kokoro-onnx only
+#    # ever ask espeak-ng for phonemes, and kokoro does its own synthesis
+#    # through onnxruntime. --without-mbrola drops the optional external
+#    # MBROLA voice backend for the same reason.
+# tests:
+#    # The test phonemizes rather than only printing --version, because
+#    # --version passes on a binary that cannot locate espeak-ng-data --
+#    # which is exactly the failure mode the wheel exhibits. package_contents
+#    # additionally pins phontab and en_dict, the two data files whose
+#    # absence produces that error.
+# about:
+#    # Compound licence: COPYING is GPL-3.0 (the engine), with Apache-2.0,
+#    # BSD-2-Clause and Unicode data licences covering vendored components;
+#    # all four texts ship. GPL-3.0-or-later is OSI-approved, so unlike the
+#    # Chrome-for-Testing packages in this repo there is no licensing bar to
+#    # conda-forge here -- espeak-ng is simply an unfilled gap.
+####

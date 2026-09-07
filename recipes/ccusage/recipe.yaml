@@ -2,12 +2,11 @@
 schema_version: 1
 
 context:
-  # PINNED <20: ccusage 20.x's npm dist is only a shim over prebuilt Bun
-  # native binaries (@ccusage/ccusage-<platform>, optionalDependencies)
-  # that segfault on this build host and cannot be built from source
-  # (bun is not on conda-forge). 19.0.3 is the last pure-JS,
-  # node-runnable release.
-  version: "19.0.3"
+  # 20.x unblocked 2026-09-07 -- by `binary_relocation: false` below, NOT by
+  # an upstream fix. The old <20 pin blamed the Bun binary for segfaulting;
+  # the binary was fine and OUR build was corrupting it. See the CFE
+  # comments for the measurement.
+  version: "20.0.20"
 
 package:
   name: ccusage
@@ -15,13 +14,24 @@ package:
 
 source:
   url: https://registry.npmjs.org/ccusage/-/ccusage-${{ version }}.tgz
-  sha256: 103384865cef17a6e4df5d5f9154994b1c9d44dd0ef5240a0b4aa4a7d38c1e4c
+  sha256: df1991b91f4e592a56dbd19557e513484b7486318fb6e0b98d4569c708ebaed3
 
 build:
-  number: 1
+  number: 0
   # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
   # platform's npm global install lays down its native bin shims (symlinks
   # on unix, .cmd on win), which a single noarch artifact cannot provide.
+  dynamic_linking:
+    # MUST stay false for 20.x. The shipped @ccusage/ccusage-<platform>
+    # payload is a Bun-compiled static-PIE ELF with an embedded bundle at
+    # fixed internal offsets. rattler-build's default binary relocation
+    # rewrites ELF sections to patch RPATH, which grows the file (measured:
+    # 4,346,528 -> 4,352,649 bytes, first difference at offset 41, inside
+    # the ELF header) and shifts every embedded offset -- the binary then
+    # segfaults with status 139 on any invocation. Nothing needs relocating
+    # here anyway: the payload is statically linked and the rest of the
+    # package is JavaScript.
+    binary_relocation: false
   script:
     - if: unix
       then:
@@ -44,12 +54,22 @@ requirements:
 
 tests:
   - script:
+      # --version and --help both dispatch THROUGH the shim into the
+      # prebuilt native binary, so they are the regression guard for the
+      # 20.0.17 segfault; `daily --help` additionally exercises a real
+      # subcommand path rather than only the argv-0 fast path.
       - ccusage --version
       - ccusage --help
+      - ccusage daily --help
   - if: unix
     then:
       script:
         - test -f "${PREFIX}/lib/node_modules/ccusage/package.json"
+        # The shim resolves @ccusage/ccusage-<platform>-<arch> via
+        # createRequire; if npm ever installs with --omit=optional the CLI
+        # degrades to "native binary is not available for <platform>", so
+        # assert the native package actually landed.
+        - test -d "${PREFIX}/lib/node_modules/ccusage/node_modules/@ccusage"
 
 about:
   summary: Analyze your Claude Code token usage and costs from local JSONL files
@@ -87,12 +107,12 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - pinned <20 - v20.x npm dist is a shim over prebuilt Bun native binaries (segfault on build host; bun not on conda-forge)
-  cfe-last-checked: "2026-07-12T19:20:00Z"
+    - "20.x repackages a prebuilt Bun native binary - no source build path (bun is not on conda-forge), so this is not conda-forge-submittable; fine for a private channel"
+  cfe-last-checked: 2026-09-07T13:20:00Z
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T16:20:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T16:59:14Z"
+  cfe-local-build-datetime: 2026-09-07T13:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -107,4 +127,41 @@ extra:
 #    # pnpm-licenses third-party-disclaimer step is omitted; the npm
 #    # symlink -> bash-wrapper replacement mirrors the caveman recipe
 #    # (noarch packages cannot ship symlinks), hence the __unix gate.
+# context:
+#    # 19.0.3 -> 20.0.20 (2026-09-07): the <20 pin is LIFTED, on evidence.
+#    #
+#    # Why it was pinned: from 20.x the npm dist stopped being pure JS. It is
+#    # now a ~475 KB shim (bin: ./src/cli.js) whose getNativePackageName()
+#    # resolves one of six @ccusage/ccusage-<platform>-<arch>
+#    # optionalDependencies -- a Bun-compiled static-PIE ELF -- and spawns it.
+#    # At 20.0.17 that binary segfaulted (exit 139) on this build host, first
+#    # intermittently and then 10/10, and there is no source-build path
+#    # because bun is not on conda-forge. So 19.0.3, the last node-runnable
+#    # release, was held.
+#    #
+#    # Why it is lifted -- and why the original diagnosis was WRONG. The
+#    # upstream binary never was the problem. Evidence, in order:
+#    #   1. @ccusage/ccusage-linux-x64 20.0.20 pulled straight from npm and run
+#    #      outside any conda build: `--version` 10/10 clean, plus `--help` and
+#    #      `daily --help`. (10 runs deliberately -- the 20.0.17 failure showed
+#    #      as intermittent survival first, so one green run proves nothing.)
+#    #   2. The same version built into a conda package STILL segfaulted at
+#    #      status 139 in the test env.
+#    #   3. sha256 of the binary inside the built package != sha256 of the npm
+#    #      original: 4,346,528 -> 4,352,649 bytes, 584 differing bytes, first
+#    #      difference at offset 41 (inside the ELF header). rattler-build's
+#    #      binary relocation had rewritten ELF sections to patch RPATH,
+#    #      shifting every offset in Bun's embedded bundle.
+#    #   4. With `binary_relocation: false` the packaged binary is
+#    #      BYTE-IDENTICAL to upstream's and the tests pass.
+#    # So "the vendor's binary segfaults on this host" was a misattribution:
+#    # a self-inflicted corruption. Any prebuilt single-file binary with an
+#    # embedded payload (Bun, Deno, PyInstaller, Go with embedded assets) is
+#    # exposed to the same failure -- suspect relocation before the vendor.
+#    #
+#    # This remains a REPACKAGED PREBUILT BINARY, which is the standing
+#    # conda-forge blocker recorded above -- lifting the version pin does not
+#    # make the package submittable. On any future bump, diff the packaged
+#    # binary against the npm original before trusting a green build; a green
+#    # `npm install` proves only that the tarball unpacked.
 ####
