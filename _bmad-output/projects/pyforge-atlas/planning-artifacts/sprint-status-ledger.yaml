@@ -76,7 +76,7 @@ development_status:
   23-7-zero-deferred-e2e-gate: done
   23-8-workbook-free-metrics-universe: done
   23-9-quartet-workbook-retirement: done
-  24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face: blocked
+  24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done
