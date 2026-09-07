@@ -217,12 +217,194 @@ def test_baseline_json_names_install_class_for_the_six(capsys):
     assert by_name["bmad-module-template"]["wired"]["value"] == "n/a"
 
 
+# ── Story 46.9: wired fixes -- labs, bmb, tea/cis/utility-skills, manticore ─
+
+
+def test_labs_wired_when_all_four_consented_skills_present(tmp_path: Path):
+    skills = tmp_path / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    for name in ("mcp-builder", "slides-generator", "multi-repo-git-ops", "release-please"):
+        (skills / name).mkdir()
+    probe = probe_wired(tmp_path, _by_name()["bmad-labs-skills"])
+    assert probe.value == "wired"
+
+
+def test_bmb_wired_when_all_five_skill_dirs_present(tmp_path: Path):
+    skills = tmp_path / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    for name in (
+        "bmad-bmb-setup",
+        "bmad-agent-builder",
+        "bmad-workflow-builder",
+        "bmad-module-builder",
+        "bmad-eval-runner",
+    ):
+        (skills / name).mkdir()
+    probe = probe_wired(tmp_path, _by_name()["bmad-builder"])
+    assert probe.value == "wired"
+
+
+def test_bmb_unwired_when_only_three_of_five_present(tmp_path: Path):
+    """The genuine behavior IMPROVEMENT: the old prefix-based census
+    (`bmad-bmb-`, `bmad-agent-builder`, `bmad-module-builder`) would have
+    falsely reported `wired` on this partial-provision state; the new
+    five-name-ALL census correctly does not."""
+    skills = tmp_path / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    for name in ("bmad-bmb-setup", "bmad-agent-builder", "bmad-module-builder"):
+        (skills / name).mkdir()
+    probe = probe_wired(tmp_path, _by_name()["bmad-builder"])
+    assert probe.value == "unwired"
+
+
+def test_bmb_partial_dirs_stays_unwired_even_with_the_config_key_present(tmp_path: Path):
+    """Review finding (HIGH), reproduced live against this repo's own real
+    `_bmad/config.yaml`: an earlier draft's `wire_skill_names_all` check
+    only ran FIRST, not EXCLUSIVELY -- a miss fell through to bmb's own
+    auxiliary `wire_bmad_config_keys=("bmb",)` check, which independently
+    reports a hit from the `bmb:` key `merge-config.py` writes regardless
+    of whether all five skill dirs actually landed. This repo's own
+    `_bmad/config.yaml` genuinely carries that key today, so this is not a
+    hypothetical: the fixture below reproduces the exact live shape."""
+    skills = tmp_path / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    for name in ("bmad-bmb-setup", "bmad-agent-builder", "bmad-module-builder"):
+        (skills / name).mkdir()
+    (tmp_path / "_bmad").mkdir()
+    (tmp_path / "_bmad" / "config.yaml").write_text(
+        "bmb:\n  provisioned_by: steward\n", encoding="utf-8"
+    )
+    probe = probe_wired(tmp_path, _by_name()["bmad-builder"])
+    assert probe.value == "unwired"
+
+
+def test_module_code_roster_wires_tea_cis_utility_skills(tmp_path: Path):
+    """`tea`/`utility-skills` via `_bmad/custom/config.toml` (AD-9); `cis`
+    via the still-unmigrated legacy `_bmad/config.yaml` fallback -- exactly
+    the two-location read `module_install_states` already implements."""
+    config_toml = tmp_path / "_bmad" / "custom" / "config.toml"
+    config_toml.parent.mkdir(parents=True)
+    config_toml.write_text(
+        '[modules.tea]\nprovisioned_by = "steward"\n\n'
+        '[modules.utility-skills]\nprovisioned_by = "steward"\n',
+        encoding="utf-8",
+    )
+    config_yaml = tmp_path / "_bmad" / "config.yaml"
+    config_yaml.write_text("cis:\n  provisioned_by: steward\n", encoding="utf-8")
+
+    by_name = _by_name()
+    assert (
+        probe_wired(tmp_path, by_name["bmad-method-test-architecture-enterprise"]).value
+        == "wired"
+    )
+    assert probe_wired(tmp_path, by_name["bmad-creative-intelligence-suite"]).value == "wired"
+    assert probe_wired(tmp_path, by_name["bmad-utility-skills"]).value == "wired"
+
+
+def test_module_code_roster_absent_is_unwired_even_with_stray_skill_dirs(tmp_path: Path):
+    """The new, stricter, correct-per-AD-9 behavior: a stray skill directory
+    with no roster entry no longer reports `wired` (the old prefix/dir
+    census would have)."""
+    skills = tmp_path / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    (skills / "bmad-testarch-fixture").mkdir()
+    probe = probe_wired(tmp_path, _by_name()["bmad-method-test-architecture-enterprise"])
+    assert probe.value != "wired"
+    assert probe.value == "unwired"
+
+
+def test_manticore_unwired_when_studio_root_absent(tmp_path: Path, monkeypatch):
+    studio_root = tmp_path / "pyforge-studio"
+    monkeypatch.setenv("PYFORGE_STUDIO_ROOT", str(studio_root))
+    probe = probe_wired(tmp_path, _by_name()["bmad-manticore"])
+    assert probe.value == "unwired"
+
+
+def test_manticore_unwired_when_studio_root_exists_but_empty(tmp_path: Path, monkeypatch):
+    studio_root = tmp_path / "pyforge-studio"
+    studio_root.mkdir()
+    monkeypatch.setenv("PYFORGE_STUDIO_ROOT", str(studio_root))
+    probe = probe_wired(tmp_path, _by_name()["bmad-manticore"])
+    assert probe.value == "unwired"
+
+
+def test_manticore_wired_when_studio_has_bmad_and_mc_skill(tmp_path: Path, monkeypatch):
+    studio_root = tmp_path / "pyforge-studio"
+    (studio_root / "_bmad").mkdir(parents=True)
+    (studio_root / ".claude" / "skills" / "mc-fixture-skill").mkdir(parents=True)
+    monkeypatch.setenv("PYFORGE_STUDIO_ROOT", str(studio_root))
+    probe = probe_wired(tmp_path, _by_name()["bmad-manticore"])
+    assert probe.value == "wired"
+
+
+def test_manticore_studio_root_env_set_but_empty_falls_back_to_default_not_cwd(
+    tmp_path: Path, monkeypatch
+):
+    """Review finding (medium): `os.environ.get(key, default)` only falls
+    back to `default` when the key is ABSENT, not when it is
+    present-but-empty (`PYFORGE_STUDIO_ROOT=""`). An earlier draft would
+    have resolved `Path("").expanduser()` -- the process's cwd -- instead
+    of the documented default (`~/pyforge-studio`), silently reintroducing
+    the in-repo signal AD-3 retired whenever this duty happens to run from
+    a directory that has its own `_bmad/`/`mc-*` content (this repo's own
+    root, for instance).
+
+    Hermetic against the real machine's actual home directory: `HOME` is
+    monkeypatched to a fresh, definitely-empty `tmp_path` subdirectory, so
+    the DEFAULT resolves to a known, controlled, nonexistent path -- never
+    the real `~/pyforge-studio` this test suite otherwise shares with a
+    live, ambient (and currently coincidentally empty, but not a test
+    concern either way) machine directory. `chdir`s into a SEPARATE cwd
+    that DOES have `_bmad/` + an `mc-*` skill -- the shape that would
+    wrongly read `wired` if the empty-string fallback bug used cwd instead
+    of the (here, controlled-empty) default.
+    """
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    cwd_with_content = tmp_path / "cwd"
+    (cwd_with_content / "_bmad").mkdir(parents=True)
+    (cwd_with_content / ".claude" / "skills" / "mc-fixture-skill").mkdir(parents=True)
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("PYFORGE_STUDIO_ROOT", "")
+    monkeypatch.chdir(cwd_with_content)
+    probe = probe_wired(cwd_with_content, _by_name()["bmad-manticore"])
+    assert probe.value == "unwired"
+    assert str(cwd_with_content) not in (probe.detail or "")
+
+
+def test_live_repo_wired_predicates_ad9_and_five_name_and_studio(monkeypatch):
+    """Task 2 AC (live, this repo): labs/bmb/tea/cis/utility-skills are all
+    real-wired via their respective corrected mechanisms; manticore honestly
+    reports `unwired` given Story 46.6's own blocked, empty-studio state
+    (Boundaries & Constraints: the honest currently-true answer, never a
+    fabricated `wired`)."""
+    monkeypatch.delenv("PYFORGE_STUDIO_ROOT", raising=False)
+    repo = _repo_root()
+    roster = _by_name()
+    assert probe_wired(repo, roster["bmad-labs-skills"]).value == "wired"
+    assert probe_wired(repo, roster["bmad-builder"]).value == "wired"
+    assert (
+        probe_wired(repo, roster["bmad-method-test-architecture-enterprise"]).value == "wired"
+    )
+    assert probe_wired(repo, roster["bmad-creative-intelligence-suite"]).value == "wired"
+    assert probe_wired(repo, roster["bmad-utility-skills"]).value == "wired"
+    assert probe_wired(repo, roster["bmad-manticore"]).value == "unwired"
+
+
 def test_live_repo_names_six_and_template_is_n_a():
+    """Story 46.9: `bmad-labs-skills` is the one exception to "the six
+    non-module classes never report wired" -- this repo's own live state has
+    all four Story 46.5-consented skills actually provisioned under
+    `.claude/skills/`, so the plugin-path class's fixed probe correctly
+    reports `wired`, not the stale `documented`."""
     repo = _repo_root()
     roster = _by_name()
     for name, install_class in _SIX_CLASSES.items():
         probe = probe_wired(repo, roster[name])
-        assert probe.value != "wired", name
         if name == "bmad-module-template":
             assert probe.value == "n/a"
+        elif name == "bmad-labs-skills":
+            assert probe.value == "wired"
+        else:
+            assert probe.value != "wired", name
         assert roster[name].install_class == install_class

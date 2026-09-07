@@ -115,7 +115,10 @@ def test_live_checkout_proves_six_class_outcomes():
     assert by_name["bmad-method"].actual == "present"
     assert by_name["bmad-loop"].actual == "provisionable"
     assert by_name["bmad-module-skill-forge"].actual == "present"
-    assert by_name["bmad-labs-skills"].actual == "documented"
+    # Story 46.9: this repo's own live state has all four Story 46.5-
+    # consented skills provisioned, so the corrected plugin-path probe
+    # reports "wired", not the stale "documented".
+    assert by_name["bmad-labs-skills"].actual == "wired"
     assert by_name["bmad-dashboard"].actual == "runnable"
     assert by_name["bmad-module-template"].actual == "n/a"
     assert by_name["bmad-module-template"].actual != "wired"

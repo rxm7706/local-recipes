@@ -174,7 +174,7 @@ development_status:
   46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path: backlog
   46-7-skf-is-pinned-to-v2-1-0-and-cap-7-is-exercised-live: done
   46-8-cis-is-re-provisioned-to-the-packaged-revision: done
-  46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env: backlog
+  46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env: done
   47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal: backlog
   47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: backlog
   47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: backlog
