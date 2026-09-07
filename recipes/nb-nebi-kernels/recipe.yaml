@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3"
+
+package:
+  name: nb-nebi-kernels
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nb-nebi-kernels/nb_nebi_kernels-${{ version }}.tar.gz
+  sha256: 10da3801ce6dea72a094b412361ecfa4211fd2ff5865c25035d08446c1437f2d
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      HATCH_VCS_PRETEND_VERSION: ${{ version }}
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - ipykernel >=6.0.0
+    - jupyter_client >=8.0.0
+    - jupyter_core >=5.0.0
+    - jupyter_server >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - nb_nebi_kernels
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - package_contents:
+      site_packages:
+        - nb_nebi_kernels/manager.py
+      files:
+        - etc/jupyter/jupyter_server_config.d/nb_nebi_kernels.json
+
+about:
+  homepage: https://github.com/nebari-dev/nb-nebi-kernels
+  repository: https://github.com/nebari-dev/nb-nebi-kernels
+  documentation: https://github.com/nebari-dev/nb-nebi-kernels#readme
+  summary: Jupyter KernelSpecManager that discovers kernels from nebi-tracked pixi workspaces
+  description: |
+    nb-nebi-kernels is a Jupyter `KernelSpecManager` that discovers Python
+    kernels from pixi workspaces tracked by nebi, so a Jupyter server exposes
+    every nebi-managed environment as a selectable kernel without a per-
+    workspace `ipykernel install` step.
+
+    Installing the package drops a Jupyter server config fragment at
+    `etc/jupyter/jupyter_server_config.d/nb_nebi_kernels.json`, which points
+    `ServerApp.kernel_spec_manager_class` at
+    `nb_nebi_kernels.NebiKernelSpecManager`; the manager is active as soon as
+    the server restarts.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nb-nebi-kernels
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nb-nebi-kernels
+  cfe-purls:
+    - pkg:conda/nb-nebi-kernels@${{ version }}?channel=conda-forge
+    - pkg:pypi/nb-nebi-kernels@${{ version }}
+  cfe-upstream-repo: https://github.com/nebari-dev/nb-nebi-kernels
+  cfe-upstream-homepage: https://github.com/nebari-dev/nb-nebi-kernels
+  cfe-import-names: [nb_nebi_kernels]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T12:05:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # The last unpackaged leg of the Nebari/Nebi lineage named in
+#    # docs/dreams/intelligence-hub.md (RB-2, 2026-09-06: "nb-nebi-kernels (a
+#    # Jupyter KernelSpecManager for nebi workspaces) is not packaged
+#    # anywhere"). nebari / nebi / opentofu are already on conda-forge;
+#    # nebari-infrastructure-core and nebari-frames are handled separately.
+# context:
+#    # No `python_min` override: upstream declares `requires-python = ">=3.11"`,
+#    # which is exactly the current conda-forge floor (moved 3.10 -> 3.11 on
+#    # 2026-09-02), so the pinning supplies it. Declaring it here would be the
+#    # redundant form SEL-002 / test_no_redundant_python_min flag.
+# build:
+#  script:
+#    env:
+#      # HATCH_VCS_PRETEND_VERSION is load-bearing, not defensive. The project
+#      # builds its version with hatch-vcs (`[tool.hatch.version] source =
+#      # "vcs"`), which reads git describe -- and a PyPI sdist has no git
+#      # metadata, so the build would either fail or emit a 0.0.0-style
+#      # placeholder (the G39 class). The sdist does ship a pre-generated
+#      # src/nb_nebi_kernels/_version.py carrying '0.3', but that file is an
+#      # OUTPUT of the version hook, not its input -- the hook still runs and
+#      # rewrites it. Pretending the tag is the recipe's own ${{ version }}
+#      # keeps the wheel's dist-info in lockstep with the conda label (G24).
+#  requirements:
+#    host:
+#      # hatchling + hatch-vcs both come from the sdist's own
+#      # [build-system].requires; hatch-vcs is a build-backend PLUGIN, so a
+#      # backend-name-only check misses it and the build dies with
+#      # `UnknownPluginError` (G91). Names verified on conda-forge.
+#    run:
+#      # Jupyter dep names take conda-forge's UNDERSCORE spellings --
+#      # jupyter_client / jupyter_core / jupyter_server. The hyphenated forms
+#      # upstream writes in [project.dependencies] do not exist on the channel
+#      # (verified against live channeldata; G10 four-spelling rule).
+# tests:
+#    # package_contents also asserts the shared-data drop of the Jupyter server
+#    # config fragment. That file is what actually ACTIVATES the kernel-spec
+#    # manager, it is placed by `[tool.hatch.build.targets.wheel.shared-data]`
+#    # rather than by any Python import, and no import test would notice if a
+#    # future build stopped shipping it -- the G106/G73 lesson that data assets
+#    # need their own contents guard.
+####
