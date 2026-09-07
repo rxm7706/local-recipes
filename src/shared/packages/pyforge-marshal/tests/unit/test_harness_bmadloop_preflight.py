@@ -140,6 +140,32 @@ def test_multiplexer_backend_available_raises_harness_error_when_bmad_loop_unimp
         harness.multiplexer_backend_available()
 
 
+def test_multiplexer_backend_available_returns_empty_when_no_row_is_selected(
+    harness, monkeypatch
+):
+    """No installed multiplexer matches this platform (or all detection
+    failed): ``detect_multiplexers()`` can legitimately return rows where
+    none has ``selected=True`` -- the empty-sentinel branch, distinct from
+    both the real-selected-backend and the raised-error paths above."""
+    import bmad_loop.adapters.multiplexer as mux
+
+    def _none_selected():
+        return [
+            mux.MuxBackendInfo(
+                name="tmux",
+                matches_platform=False,
+                available=False,
+                version=None,
+                selected=False,
+                reason="",
+                version_error=None,
+            )
+        ]
+
+    monkeypatch.setattr(mux, "detect_multiplexers", _none_selected)
+    assert harness.multiplexer_backend_available() == ("", False)
+
+
 def test_multiplexer_backend_available_raises_harness_error_not_raw_on_multiplexer_error(
     harness, monkeypatch
 ):

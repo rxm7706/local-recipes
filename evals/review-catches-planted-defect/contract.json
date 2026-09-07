@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 3,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "contractId": "review-catches-planted-defect",
+  "sourceSpecDigest": null,
+  "behaviors": [
+    {
+      "id": "B-001",
+      "description": "The edge-case-hunter review layer flags a boundary-condition regression introduced in a diff.",
+      "severity": "critical",
+      "observableSuccessCriterion": "A review run against a diff that flips the discount threshold's inclusive boundary (>= to >) cites the exact line where the boundary changed.",
+      "requirementLinks": [{ "scheme": "local-spec", "id": "spec-45-2" }],
+      "riskLinks": [],
+      "oracles": ["O-001"]
+    }
+  ],
+  "oracles": [
+    {
+      "id": "O-001",
+      "direction": {
+        "evidenceTargets": ["/interactions/review/response-body/findings"],
+        "relation": "covers-by-key",
+        "polarity": "expects-hold",
+        "scope": "The findings the review layer reported for one diff arm.",
+        "negativeDomain": "A review run over the mutated arm whose findings never cite the planted boundary-flip line."
+      },
+      "check": {
+        "op": "covers-by-key",
+        "operands": [
+          { "referenceSet": "planted-defects" },
+          { "pointer": "/interactions/review/response-body/findings" }
+        ],
+        "expectedKey": "location",
+        "actualKey": "location"
+      },
+      "polarity": "expects-hold",
+      "commentary": "Resolves caught/missed by exact file:line match against the one planted defect location. The reference set's declared keys are [\"file\",\"line\"]; covers-by-key itself compares a single field, so both are folded into one derived \"location\" string (\"file:line\") carried by every member and every observed finding."
+    }
+  ],
+  "rubrics": [],
+  "waivers": [],
+  "permittedInterfaces": [
+    {
+      "logicalId": "review-api",
+      "kind": "api",
+      "operations": [
+        {
+          "operationId": "review-diff",
+          "method": "POST",
+          "pathTemplate": "/review",
+          "stateChangeMarker": false,
+          "requestShape": {
+            "path": { "requiredKeys": [], "permittedKeys": [], "types": {} },
+            "query": { "requiredKeys": [], "permittedKeys": [], "types": {} },
+            "header": { "requiredKeys": [], "permittedKeys": [], "types": {} },
+            "body": { "requiredKeys": [], "permittedKeys": [], "types": {} }
+          },
+          "responseDescriptor": {
+            "requiredKeys": ["ok", "findings", "defectPresent"],
+            "permittedKeys": ["ok", "findings", "defectPresent"],
+            "types": { "ok": "boolean", "findings": "array", "defectPresent": "boolean" },
+            "successIndicator": "/ok",
+            "channelRoles": { "/ok": "success-indicator", "/findings": "collection" },
+            "collectionLocations": []
+          },
+          "volatilePointers": [],
+          "sensitivityWitness": null
+        }
+      ]
+    }
+  ],
+  "referenceSets": {
+    "planted-defects": {
+      "keys": ["file", "line"],
+      "members": [
+        { "file": "pkg/discount.py", "line": 17, "location": "pkg/discount.py:17" }
+      ],
+      "commentary": "The one boundary-condition defect this pilot plants: pkg/discount.py:17 flips >= to > (Story 45.2)."
+    }
+  },
+  "siblingGroups": null,
+  "interactionPlan": [
+    {
+      "stepId": "review",
+      "operationId": "review-diff",
+      "inputBinding": { "path": null, "query": null, "header": null, "body": null },
+      "after": null,
+      "cardinality": "exactly-one"
+    }
+  ],
+  "scopedResources": null,
+  "forbiddenInputs": [
+    "original-spec",
+    "source-code",
+    "repository",
+    "builder-transcript",
+    "implementation-logs",
+    "comparator-results",
+    "human-labels"
+  ],
+  "testData": {
+    "setup": "No fixture state to seed. The evaluator reads one diff arm (arms/clean.diff or arms/mutated.diff) and the edge-case-hunter layer prompt; both are static files under this contract's own directory.",
+    "cleanup": null,
+    "principals": null,
+    "resources": null
+  },
+  "budgets": { "maxToolCalls": 5, "maxWallClockMinutes": 10, "maxCostUsd": "2" },
+  "safetyLimits": [
+    "No request to any host other than the local claude CLI invocation.",
+    "No write access outside evals/review-catches-planted-defect/."
+  ],
+  "requiredEvidence": [
+    "The review layer's raw findings array and the run's exit status, for each arm."
+  ],
+  "probeStepBound": 1,
+  "fixtureReset": null
+}

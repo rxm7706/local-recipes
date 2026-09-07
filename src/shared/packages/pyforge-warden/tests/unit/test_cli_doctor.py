@@ -83,8 +83,8 @@ def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=ok checks=6"
-    assert len(lines) == 7  # header + 6 checks
+    assert lines[0] == "warden: doctor status=ok checks=7"
+    assert len(lines) == 8  # header + 7 checks (Story 11.2 adds "tea")
     for line in lines[1:]:
         assert " ok -- " in line
     assert captured.err == ""
@@ -100,7 +100,7 @@ def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(
     assert document["tool"] == "warden"
     assert document["doctor"] is True
     assert document["status"] == "ok"
-    assert len(document["checks"]) == 6
+    assert len(document["checks"]) == 7  # Story 11.2 adds "tea"
     assert all(check["ok"] is True for check in document["checks"])
     for check in document["checks"]:
         assert set(check) == {"name", "ok", "message"}
@@ -121,7 +121,7 @@ def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    assert "warden: doctor status=problem checks=6" in captured.out
+    assert "warden: doctor status=problem checks=7" in captured.out
     matches = [
         line for line in captured.out.splitlines() if "osv-scanner" in line
     ]
@@ -505,3 +505,115 @@ def test_doctor_bypass_without_reason_is_still_a_usage_error(capsys, tmp_path):
     assert rc == 2
     assert captured.out == ""
     assert "--bypass requires --reason" in captured.err
+
+
+def test_doctor_tea_advisory_check_is_present_and_always_ok(
+    monkeypatch, capsys, tmp_path
+):
+    """Story 11.2 (AD-9): the ``tea-test-review`` advisory scanner's
+    presence self-check is ALWAYS ``ok=True`` — an advisory lens has no
+    gate to fail against, so ``--doctor`` never flags TEA's absence as a
+    problem. ``shutil.which`` is monkeypatched deterministically: this
+    repo's ambient dev shells can leak an unrelated pixi environment's own
+    ``tea-test-review`` copy onto ``PATH`` even inside a scoped ``pixi run
+    -e pyforge-warden`` invocation, so relying on ambient absence (true of
+    this pixi env's OWN dependency set, which never installs
+    ``bmad-method-test-architecture-enterprise``) would be
+    environment-dependent. ``tmp_path`` also has no ``_bmad/custom/
+    config.toml`` — the AD-9 roster is genuinely absent too, matching the
+    real state a from-scratch scan target has."""
+    from pyforge.warden import engines as engines_module
+
+    monkeypatch.setattr(engines_module.shutil, "which", lambda name: None)
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    tea_line = next(
+        line
+        for line in captured.out.splitlines()
+        if line.startswith("  [doctor] tea ")
+    )
+    assert " ok -- " in tea_line
+    assert "operating without tea-test-review" in tea_line
+    assert "no [modules.tea] roster entry and no binary on PATH" in tea_line
+
+
+def test_doctor_tea_advisory_check_names_a_present_roster_entry(
+    monkeypatch, capsys, tmp_path
+):
+    """The AD-9 roster half is read from ``target/_bmad/custom/
+    config.toml``'s ``[modules.tea]`` table — present-roster/absent-binary
+    is the real production shape for THIS repo (steward 46.3 provisioned
+    ``[modules.tea]`` at the repo root, but the ``pyforge-warden`` pixi
+    test env's own dependency set never installs the binary)."""
+    from pyforge.warden import engines as engines_module
+
+    bmad_custom = tmp_path / "_bmad" / "custom"
+    bmad_custom.mkdir(parents=True)
+    (bmad_custom / "config.toml").write_text(
+        "[modules.tea]\nprovisioned_by = \"steward\"\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(engines_module.shutil, "which", lambda name: None)
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    tea_line = next(
+        line
+        for line in captured.out.splitlines()
+        if line.startswith("  [doctor] tea ")
+    )
+    assert " ok -- " in tea_line
+    assert "[modules.tea] roster entry present" in tea_line
+    assert "binary is not on PATH" in tea_line
+
+
+def test_doctor_tea_advisory_check_names_both_roster_and_binary_present(
+    monkeypatch, capsys, tmp_path
+):
+    """The fourth (and last untested) ``_doctor_check_tea`` message branch:
+    both the AD-9 roster entry and the binary are present."""
+    from pyforge.warden import engines as engines_module
+
+    bmad_custom = tmp_path / "_bmad" / "custom"
+    bmad_custom.mkdir(parents=True)
+    (bmad_custom / "config.toml").write_text(
+        "[modules.tea]\nprovisioned_by = \"steward\"\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review"
+    )
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    tea_line = next(
+        line
+        for line in captured.out.splitlines()
+        if line.startswith("  [doctor] tea ")
+    )
+    assert " ok -- " in tea_line
+    assert "[modules.tea] roster entry and binary both present" in tea_line
+    assert "can run when enabled via WARDEN_OPTIONAL_SCANNERS" in tea_line
+
+
+def test_doctor_tea_advisory_check_names_a_present_binary_without_roster(
+    monkeypatch, capsys, tmp_path
+):
+    """The remaining ``_doctor_check_tea`` message branch: the binary is on
+    PATH but no ``[modules.tea]`` roster entry exists (``tmp_path`` has no
+    ``_bmad/custom/config.toml`` at all)."""
+    from pyforge.warden import engines as engines_module
+
+    monkeypatch.setattr(
+        engines_module.shutil, "which", lambda name: "/usr/bin/tea-test-review"
+    )
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    tea_line = next(
+        line
+        for line in captured.out.splitlines()
+        if line.startswith("  [doctor] tea ")
+    )
+    assert " ok -- " in tea_line
+    assert "binary on PATH but no [modules.tea] roster entry" in tea_line
+    assert "steward provision --module tea has not run here" in tea_line

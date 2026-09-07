@@ -8,7 +8,7 @@ CLI flag wiring (``--list``, ``--engines <name>``) is Story 1.5's job:
 - :func:`list_checks` is a STATIC catalog -- a hand-maintained mirror of
   ``pyforge.warden.engines.run_doctor_checks``'s own documented fixed order
   (``deptry``, ``osv-scanner``, ``osv-db``, ``kev-feed``, ``epss-feed``,
-  ``endoflife-feed``). No warden API returns check names without running
+  ``endoflife-feed``, ``tea``). No warden API returns check names without running
   them, and the architecture spine's import allowlist (AD-1) sanctions only
   ``run_doctor_checks`` itself -- no metadata-only sibling exists to query
   instead. This catalog is therefore Doctor's OWN duplicate of warden's
@@ -50,6 +50,7 @@ _ENGINE_CHECK_NAMES: tuple[str, ...] = (
     "kev-feed",
     "epss-feed",
     "endoflife-feed",
+    "tea",
 )
 
 

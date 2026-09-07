@@ -260,10 +260,11 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_thirty_two_keys(capsys, monkeypatch):
-    """AC: every one of the 32 policy keys (Story 28.10's `model_cost_catalog`
-    joining Story 28.15's `scope_violation_mode`, Story 28.1's `context`, …)
-    prints its effective value and winning layer — checked exhaustively."""
+def test_config_prints_all_thirty_three_keys(capsys, monkeypatch):
+    """AC: every one of the 33 policy keys (Story 31.3's `review_min_score`
+    joining Story 28.10's `model_cost_catalog`, Story 28.15's
+    `scope_violation_mode`, Story 28.1's `context`, …) prints its effective
+    value and winning layer — checked exhaustively."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -300,10 +301,11 @@ def test_config_prints_all_thirty_two_keys(capsys, monkeypatch):
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "review_min_score",
         "model_cost_catalog",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 32
+    assert captured.out.count("(layer=") == 33
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -915,12 +917,14 @@ def test_config_set_on_a_budget_ceiling_is_a_usage_error(capsys, key):
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "review_min_score",
     ],
 )
 def test_config_set_on_a_bmad_loop_knob_is_a_usage_error(capsys, key):
-    """Story 25.4's 5 bmad-loop 0.10/0.11 knobs join the budget ceilings as
-    project-policy-only -- rejected the same clean way at the flag
-    boundary, never as a `MRS-POLICY-003` "malformed value" finding.
+    """Story 25.4's 5 bmad-loop 0.10/0.11 knobs, plus Story 31.3's
+    `review_min_score`, join the budget ceilings as project-policy-only --
+    rejected the same clean way at the flag boundary, never as a
+    `MRS-POLICY-003` "malformed value" finding.
 
     The literal value (`retry`, well-typed only for the enum keys) is
     deliberately irrelevant: `_parse_set_item` rejects by KEY membership in

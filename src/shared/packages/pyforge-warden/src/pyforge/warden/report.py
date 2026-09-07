@@ -230,6 +230,7 @@ def assemble_report(
     currency_gating: bool = False,
     warn_as_error: bool = False,
     actuation: object | None = None,
+    advisory: object | None = None,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -333,7 +334,18 @@ def assemble_report(
     JSON-serializable dict) verbatim, or ``None`` when neither
     ``--open-fix-prs``/``--fix-prs-dry-run`` is set. Stored pass-through into
     ``ComplianceReport.actuation`` (models.py already serializes it verbatim);
-    it never touches any rung, the composed status, or the exit code."""
+    it never touches any rung, the composed status, or the exit code.
+
+    ``advisory`` (Story 11.2, additive/defaulted ``None`` -- a direct
+    structural copy of ``actuation``'s own reserved-slot precedent, per this
+    module's Design Notes): ``cli.py`` passes a JSON-serializable
+    ``list[dict]`` of non-``Finding`` advisory notes (one per optional
+    advisory scanner that actually ran, e.g. ``tea-test-review`` --
+    ``tea_advisory.py``) collected in ``plugin_context["advisory_notes"]``,
+    or ``None`` when no such scanner contributed one. Stored pass-through
+    into ``ComplianceReport.advisory``; this module never reads it back --
+    AD-4's "advisory lenses never gate" holds simply because nothing in the
+    rung/``compose()``/exit-code path above consults this parameter."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -476,6 +488,7 @@ def assemble_report(
         epss_data=epss_data,
         currency_data=currency_data,
         actuation=actuation,
+        advisory=advisory,
     )
 
 
@@ -706,6 +719,7 @@ def render_text(
     warn_only: bool = False,
     warn_only_downgraded: int = 0,
     actuation: object | None = None,
+    advisory: object | None = None,
     manifest_locations: Mapping[str, tuple[str, ...]] = MappingProxyType({}),
     fixed_versions: Mapping[str, str] = MappingProxyType({}),
 ) -> str:
@@ -734,7 +748,13 @@ def render_text(
     ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring
     for why all three are required), then (Story 6.9) one ``[actuation]``
     line per fix-PR outcome (``<status> <action> <finding_id>[ ->
-    <pr_url>]``) when ``actuation`` is a non-``None`` payload dict.
+    <pr_url>]``) when ``actuation`` is a non-``None`` payload dict, then
+    (Story 11.2) one ``[advisory]`` line per note (``tool=<tool>
+    score=<score> recommendation=<recommendation> -- <summary>``) when
+    ``advisory`` is a
+    non-``None`` list of dicts — an advisory note is never a ``Finding``,
+    so it renders in its own section, never mixed into the finding loop
+    above.
     Free-format lines: unlike ``render_json``'s document, this output is
     never schema-validated. Every ``message``/``reason``/``authorized_by``/
     ``expires_at``/remediation string is passed through ``_single_line``
@@ -817,6 +837,29 @@ def render_text(
                 if pr_url:
                     line += f" -> {_single_line(str(pr_url))}"
                 lines.append(line)
+    # Story 11.2: tea-test-review's (or any future optional advisory
+    # scanner's) notes, one terse line each -- present only when an
+    # optional advisory scanner actually ran (advisory is not None).
+    # Mirrors the [actuation] block's shape/guard one section up; a note is
+    # a plain dict, never a Finding, so it can never move a rung/the
+    # composed status/the exit code (AD-4).
+    if isinstance(advisory, list):
+        for note in advisory:
+            if not isinstance(note, dict):
+                continue
+            tool = _single_line(str(note.get("tool")))
+            score = note.get("score")
+            score_text = str(score) if score is not None else "unknown"
+            recommendation = note.get("recommendation")
+            recommendation_text = (
+                _single_line(str(recommendation)) if recommendation else "unknown"
+            )
+            lines.append(
+                f"  [advisory] tool={tool} "
+                f"score={score_text} "
+                f"recommendation={recommendation_text} -- "
+                f"{_single_line(str(note.get('summary', '')))}"
+            )
     if warn_only and status["value"] == "warn" and warn_only_downgraded > 0:
         finding_word = "finding" if warn_only_downgraded == 1 else "findings"
         lines.append(

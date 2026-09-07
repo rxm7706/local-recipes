@@ -25,8 +25,8 @@ development_status:
   1-9-manifest-discovery-deterministic-selection-the-resolved-scan-set: done
   10-1-skf-skill-and-persona-for-warden: done
   10-2-first-portal-slice-audit-start-get: done
-  11-1-bmad-os-review-pr-and-findings-triage-are-warden-wielded-advisory-lenses: blocked
-  11-2-tea-test-review-is-a-warden-advisory-finding: blocked
+  11-1-bmad-os-review-pr-and-findings-triage-are-warden-wielded-advisory-lenses: done
+  11-2-tea-test-review-is-a-warden-advisory-finding: done
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
   2-2-non-rendering-extraction-differential-oracle: done
   2-3-the-full-supported-construct-matrix: done

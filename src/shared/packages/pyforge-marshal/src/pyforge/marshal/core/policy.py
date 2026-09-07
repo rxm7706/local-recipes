@@ -2,14 +2,16 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 32-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 33-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
-3.13), and Story 25.4's 5 bmad-loop 0.10/0.11 knobs
+3.13), Story 25.4's 5 bmad-loop 0.10/0.11 knobs
 (``review_on_timeout``, ``review_on_status_contradiction``,
 ``dev_contract_nudge``, ``operator_enabled``, ``stream_capture_kb`` --
-CAP-4, spec-bmad-611-era-alignment)) -- not a mirror of the harness's much
+CAP-4, spec-bmad-611-era-alignment), and Story 31.3's ``review_min_score``
+(CAP-4, spec-bmad-suite-lifecycle -- the ``tea-test-review`` lens's
+``--min-score`` argument, default 80)) -- not a mirror of the harness's much
 larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
 rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
 raw_source}`` so an operator can always answer "why is this value what it
@@ -102,8 +104,13 @@ value compose cleanly instead of tripping the generic "unknown key" finding
 ``dev_contract_nudge``, ``operator_enabled``, ``stream_capture_kb``: scalar
 operator-tunable knobs (the ``gate_mode``/attempt-count analog), each
 flattening the harness's table-qualified name the same way
-``max_dev_attempts`` <-> ``[limits].max_dev_attempts`` already does. Seed
-fields live ONLY in a private
+``max_dev_attempts`` <-> ``[limits].max_dev_attempts`` already does, and
+(Story 31.3, CAP-4) ``review_min_score``: the ``tea-test-review`` marshal
+review lens's ``--min-score`` threshold (0-100, default 80), rendered to
+``[review].min_score`` -- an extra key ``bmad_loop`` 0.11's own lenient
+``[review]`` parser ignores (verified against the installed package), never
+consumed by the harness itself, only by the lens's own instruction at
+review time. Seed fields live ONLY in a private
 ``_seed`` mapping;
 ``seed_view()`` is the sole whitelisted
 accessor (closing F-8: it is what lets ``marshal config``/FR-54 and FR-53
@@ -194,7 +201,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 32-key vocabulary -------------------------------------------
+# --- the closed 33-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -322,6 +329,15 @@ _SEED_KEYS: frozenset[str] = frozenset(
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        # Story 31.3's 6th SEED key, the vocabulary's 33rd (CAP-4,
+        # spec-bmad-suite-lifecycle): the tea-test-review marshal review
+        # lens's `--min-score` argument (0-100, default 80 -- upstream's
+        # own example value, per spec-bmad-suite-lifecycle's open question
+        # 2, calibrated against the first ten PRs). SEED for the same
+        # reason the other 5 bmad-loop knobs are: a scalar operator-tunable
+        # knob, the `gate_mode`/attempt-count analog -- not a structural
+        # declaration. `review_` prefix matches its two siblings above.
+        "review_min_score",
     }
 )
 _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
@@ -524,6 +540,12 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # hundreds of MB per attempt; 0 = capture nothing is legal on both
     # sides.
     "stream_capture_kb": 256,
+    # Story 31.3's 6th knob (CAP-4, spec-bmad-suite-lifecycle): 80 is
+    # upstream's own example value for `tea-test-review --min-score`
+    # (spec-bmad-suite-lifecycle's open question 2 answered at story time --
+    # calibrate against the first ten PRs rather than block on a guess;
+    # see spec-bmad-611-era-alignment's memlog for the calibration plan).
+    "review_min_score": 80,
     # Story 2.3's `epic_surfaces` (AD-27): no epic has a declared allowlist
     # until a project's own policy says otherwise -- an empty mapping, the
     # same "nothing declared yet" posture `model_tier_map`'s own empty-dict
@@ -1293,6 +1315,23 @@ def _valid_stream_capture_kb(value: object) -> int | None:
     return value
 
 
+def _valid_review_min_score(value: object) -> int | None:
+    """``review_min_score`` (Story 31.3): a plain ``int``, not ``bool``, in
+    ``[0, 100]`` -- the same bound ``tea-test-review --min-score`` itself
+    enforces (its own ``--help``: "integer 0-100"). Strict int-not-bool for
+    the same reason ``_valid_stream_capture_kb`` is: composing a coercible
+    ``bool``/numeric-string here would be a silent type mismatch waiting for
+    a future consumer, not a caught one, even though nothing downstream
+    coerces this value today. No overflow guard needed (unlike
+    ``_valid_stream_capture_kb``): the ``<= 100`` bound already rejects any
+    value large enough to threaten later str/JSON conversion."""
+    if not isinstance(value, int) or isinstance(value, bool):
+        return None
+    if value < 0 or value > 100:
+        return None
+    return value
+
+
 def _valid_attempt_count(value: object) -> int | None:
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value
@@ -1640,7 +1679,7 @@ def _compose_worktree_seed_paths(
 class EffectivePolicy:
     """The composed, immutable policy value (AD-10): 16 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
-    16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
+    17 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
     fails the build if any other module IN THE INSTALLED PACKAGE accesses
     the ``_seed`` attribute directly (its scan surface; test code and
@@ -1858,7 +1897,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 32-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 33-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -2212,6 +2251,18 @@ def compose(
             "stream_capture_kb",
             _valid_stream_capture_kb,
             DEFAULT_POLICY["stream_capture_kb"],
+            repo_defaults,
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        # Story 31.3's 6th knob (CAP-4, spec-bmad-suite-lifecycle) -- see
+        # _SEED_KEYS for why it is SEED.
+        "review_min_score": _merge_field(
+            "review_min_score",
+            _valid_review_min_score,
+            DEFAULT_POLICY["review_min_score"],
             repo_defaults,
             project,
             flags,

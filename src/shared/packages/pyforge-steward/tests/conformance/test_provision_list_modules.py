@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import tomllib
 
 import pytest
 import yaml
@@ -55,6 +56,13 @@ def _write_bmad_config(tmp_path, text):
     bmad_dir.mkdir(parents=True, exist_ok=True)
     (bmad_dir / "config.yaml").write_text(text, encoding="utf-8")
     return bmad_dir / "config.yaml"
+
+
+def _write_custom_config_toml(tmp_path, text):
+    custom_dir = tmp_path / "_bmad" / "custom"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+    (custom_dir / "config.toml").write_text(text, encoding="utf-8")
+    return custom_dir / "config.toml"
 
 
 # ── module_install_states (primitive) ────────────────────────────────────
@@ -120,6 +128,66 @@ def test_module_install_states_unreadable_encoding_raises_unicode_decode_error(t
     (bmad_dir / "config.yaml").write_bytes(b"bmb: \xff\xfe invalid utf8\n")
 
     with pytest.raises(UnicodeDecodeError):
+        module_install_states(cwd=tmp_path)
+
+
+# ── AD-9 two-location read (Story 46.2) ──────────────────────────────────
+
+
+def test_module_install_states_reports_installed_from_custom_config_toml(tmp_path):
+    """A module recorded only under `_bmad/custom/config.toml`'s
+    `[modules.<name>]` (the new roster location every `CondaInstallBackend`
+    module's provisioning path now writes) reports installed too."""
+    _write_custom_config_toml(
+        tmp_path,
+        '[modules.utility-skills]\nprovisioned_by = "steward"\n'
+        'installer = "bmad-utility-skills-install"\nskills = ["bmad-os-gh-triage"]\n',
+    )
+
+    states = module_install_states(cwd=tmp_path)
+
+    assert states["utility-skills"] == "installed"
+    assert all(states[n] == "available" for n in _WIRED_NAMES if n != "utility-skills")
+
+
+def test_module_install_states_two_location_read_cis_legacy_and_utility_new(tmp_path):
+    """The story's own I/O Matrix row: `cis` recorded only in the legacy
+    `_bmad/config.yaml`, `utility-skills` recorded only in the new
+    `_bmad/custom/config.toml` -- both report installed; a module in
+    neither location still reports available."""
+    _write_bmad_config(tmp_path, "cis:\n  installer: bmad-cis-install\n")
+    _write_custom_config_toml(
+        tmp_path,
+        '[modules.utility-skills]\nprovisioned_by = "steward"\n'
+        'installer = "bmad-utility-skills-install"\nskills = ["bmad-os-gh-triage"]\n',
+    )
+
+    states = module_install_states(cwd=tmp_path)
+
+    assert states["cis"] == "installed"
+    assert states["utility-skills"] == "installed"
+    assert states["tea"] == "available"
+    assert states["manticore"] == "available"
+    assert states["bmb"] == "available"
+
+
+def test_module_install_states_ignores_non_module_custom_config_toml_sections(tmp_path):
+    """`[modules.bmm]` / `[modules.skf]` (unrelated custom-config sections
+    this file already carries) must not be misread as a registered
+    module's install state."""
+    _write_custom_config_toml(tmp_path, '[modules.bmm]\nuser_skill_level = "intermediate"\n')
+
+    states = module_install_states(cwd=tmp_path)
+
+    assert states == _ALL_AVAILABLE
+
+
+def test_module_install_states_malformed_custom_config_toml_raises_toml_decode_error(tmp_path):
+    """Mirrors the malformed-YAML precedent above: a malformed `_bmad/
+    custom/config.toml` propagates `tomllib.TOMLDecodeError`, not swallowed."""
+    _write_custom_config_toml(tmp_path, "[modules.tea\n")
+
+    with pytest.raises(tomllib.TOMLDecodeError):
         module_install_states(cwd=tmp_path)
 
 
@@ -302,3 +370,27 @@ def test_provision_list_modules_takes_precedence_over_everything_else(tmp_path, 
     assert "bmb" in result.summary  # --list-modules's own handling ran
     assert "nope" not in result.summary  # never reached --module's handling
     assert "wds" not in result.summary
+
+
+def test_provision_list_modules_via_cli_reports_both_cis_legacy_and_utility_new_installed(
+    tmp_path, monkeypatch, capsys
+):
+    """The story's own headline AC, via the real CLI: `cis`'s roster entry
+    still lives only in the legacy `_bmad/config.yaml`, `utility-skills`'s
+    lives only in the new `_bmad/custom/config.toml` -- both report
+    installed."""
+    _write_bmad_config(tmp_path, "cis:\n  installer: bmad-cis-install\n")
+    _write_custom_config_toml(
+        tmp_path,
+        '[modules.utility-skills]\nprovisioned_by = "steward"\n'
+        'installer = "bmad-utility-skills-install"\nskills = ["bmad-os-gh-triage"]\n',
+    )
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    rc = main(["provision", "--list-modules", "--json"])
+
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["cis"] == "installed"
+    assert payload["utility-skills"] == "installed"
+    assert payload["tea"] == "available"

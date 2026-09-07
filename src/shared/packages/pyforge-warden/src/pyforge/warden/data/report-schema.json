@@ -168,6 +168,10 @@
     "actuation": {
       "type": ["object", "null"],
       "description": "Optional, reserved open slot for the fix-PR actuator section (Story 6.9 populates); always null in Story 6.1."
+    },
+    "advisory": {
+      "type": ["array", "null"],
+      "description": "Optional list of non-Finding advisory notes from an optional advisory scanner (Story 11.2 populates, e.g. tea-test-review's tool/score/recommendation/summary); null unless one actually ran. Never influences status/exit_code (AD-4)."
     }
   },
   "allOf": [

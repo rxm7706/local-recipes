@@ -219,7 +219,7 @@ def test_different_inputs_produce_different_hash():
     assert first.content_hash != second.content_hash
 
 
-def test_seed_view_returns_all_sixteen_seed_fields():
+def test_seed_view_returns_all_seventeen_seed_fields():
     effective, _ = compose(project_slug="acme", project={}, flags={})
     seed = effective.seed_view()
     assert set(seed.keys()) == {
@@ -239,6 +239,7 @@ def test_seed_view_returns_all_sixteen_seed_fields():
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "review_min_score",
     }
     assert all(isinstance(field, PolicyField) for field in seed.values())
 
@@ -1792,6 +1793,70 @@ def test_stream_capture_kb_zero_is_legal():
     assert field.layer is PolicyLayer.PROJECT
 
 
+# --- review_min_score (Story 31.3, CAP-4) ------------------------------------
+
+
+def test_review_min_score_defaults_to_eighty():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    field = effective.seed_view()["review_min_score"]
+    assert field.value == 80
+    assert field.layer is PolicyLayer.DEFAULT
+
+
+@pytest.mark.parametrize("value", [0, 1, 80, 99, 100])
+def test_review_min_score_accepts_the_full_legal_range(value):
+    effective, findings = compose(
+        project_slug="acme", project={"review_min_score": value}, flags={}
+    )
+    assert findings == ()
+    field = effective.seed_view()["review_min_score"]
+    assert field.value == value
+    assert field.layer is PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize("value", [-1, 101, 1000])
+def test_review_min_score_rejects_out_of_range_ints(value):
+    """Matrix row: out of [0, 100] falls back to the default, reported as
+    MRS-POLICY-003 (a malformed SEED field), never raised."""
+    effective, findings = compose(
+        project_slug="acme", project={"review_min_score": value}, flags={}
+    )
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
+        "review_min_score"
+    ]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
+def test_review_min_score_rejects_bool_even_though_bool_is_an_int_subclass():
+    """`True`/`False` must never compose as 1/0 -- same strict int-not-bool
+    discipline as every other numeric SEED knob (`_valid_stream_capture_kb`,
+    `_valid_attempt_count`)."""
+    effective, findings = compose(
+        project_slug="acme", project={"review_min_score": True}, flags={}
+    )
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
+        "review_min_score"
+    ]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
+def test_review_min_score_rejects_a_numeric_string():
+    effective, findings = compose(
+        project_slug="acme", project={"review_min_score": "80"}, flags={}
+    )
+    assert effective.seed_view()["review_min_score"].value == DEFAULT_POLICY[
+        "review_min_score"
+    ]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
 # --- the "excluded, not poisoned" fallback semantics -------------------------
 
 
@@ -2002,7 +2067,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_thirty_two_keys():
+def test_schema_file_declares_the_thirty_three_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -2040,6 +2105,7 @@ def test_schema_file_declares_the_thirty_two_keys():
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        "review_min_score",
         "model_cost_catalog",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])

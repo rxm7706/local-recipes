@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "probeId": "P-002",
+  "probeClass": "defect",
+  "behaviorId": "B-001",
+  "systemId": "review-catches-planted-defect",
+  "implementationDigest": "sha256:98d98e362ba5f695011a781a4e778591399d7113d202ffc6cf06fcb9f62cbc47",
+  "artifactDigest": "sha256:7a37eafa2633d1da92f5dbc98ba87fe0a6c2661de779b72babb6685476338c5f",
+  "commitDigest": "sha256:db406268fbafa0939e0af1a91746622e8cbabfbdbe33fa2133b2bef643bf755e",
+  "rationale": "The seeded boundary-flip defect: pkg/discount.py:17 changes >= to >, silently excluding an order totaling exactly the threshold from the loyalty discount. Reviewing arms/mutated.diff should cite this exact line.",
+  "qualification": {
+    "route": "controlled-mutation",
+    "mutationSource": "Hand-authored for spec-45-2-the-reviewer-is-measured-against-a-planted-defect: a one-token relational-operator flip on the same fixture the clean arm uses.",
+    "mutationOperator": "relational-operator-boundary-flip",
+    "targetArtifact": {
+      "storage": "public",
+      "path": "evals/review-catches-planted-defect/arms/mutated.diff",
+      "privateRef": null,
+      "digest": "sha256:7a37eafa2633d1da92f5dbc98ba87fe0a6c2661de779b72babb6685476338c5f"
+    },
+    "expectedObservableFailure": "An order totaling exactly DISCOUNT_THRESHOLD (100.0) no longer receives the loyalty discount.",
+    "baselinePassEvidence": {
+      "storage": "public",
+      "path": "evals/review-catches-planted-defect/arms/clean.diff",
+      "privateRef": null,
+      "digest": "sha256:baed06fa64fb4018049b396916a61e588f4952acd23dea046e32bea4e6ae81d3"
+    },
+    "mutatedFailEvidence": {
+      "storage": "public",
+      "path": "evals/review-catches-planted-defect/arms/mutated.diff",
+      "privateRef": null,
+      "digest": "sha256:7a37eafa2633d1da92f5dbc98ba87fe0a6c2661de779b72babb6685476338c5f"
+    },
+    "rollbackVerified": true
+  },
+  "expectedClean": false,
+  "defects": [
+    {
+      "defectId": "D-001",
+      "behaviorId": "B-001",
+      "summary": "pkg/discount.py:17 flips the inclusive >= boundary to >, so an order totaling exactly DISCOUNT_THRESHOLD is silently excluded from the discount.",
+      "severity": "critical",
+      "oracleEvidence": [
+        {
+          "storage": "public",
+          "path": "evals/review-catches-planted-defect/arms/mutated.diff",
+          "privateRef": null,
+          "digest": "sha256:7a37eafa2633d1da92f5dbc98ba87fe0a6c2661de779b72babb6685476338c5f"
+        }
+      ],
+      "source": "controlled-mutation",
+      "manifestationWitness": {
+        "legId": "mutated-witness",
+        "interfaceId": "review-api",
+        "operationId": "review-diff",
+        "inputs": {
+          "path": {},
+          "query": {},
+          "header": {},
+          "body": {
+            "kind": "absent"
+          }
+        },
+        "relation": {
+          "op": "equality",
+          "operands": [
+            {
+              "pointer": "/interactions/mutated-witness/response-body/defectPresent"
+            },
+            {
+              "literal": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "defectSignature": {
+    "interfaceKind": "api",
+    "method": "POST",
+    "pathTemplate": "/review",
+    "observableChannel": "response-body",
+    "condition": {
+      "selector": {
+        "inputBinding": {
+          "path": null,
+          "query": null,
+          "header": null,
+          "body": null
+        }
+      },
+      "predicate": {
+        "op": "equality",
+        "operands": [
+          {
+            "pointer": "/interactions/observed/response-body/defectPresent"
+          },
+          {
+            "literal": true
+          }
+        ]
+      }
+    }
+  }
+}

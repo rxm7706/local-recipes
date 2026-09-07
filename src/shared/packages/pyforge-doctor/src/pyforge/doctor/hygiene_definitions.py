@@ -137,6 +137,9 @@ _CONVENTIONAL_FILENAMES = frozenset({
     "epics.md",
     "epics-with-stories.md",
     "test-architecture.md",
+    "test-design-architecture.md",
+    "test-design-qa.md",
+    "test-design-progress-system.md",
     "sprint-status-ledger.yaml",
     "deferred-work-ledger.md",
     "marshal-policy.toml",
@@ -153,6 +156,7 @@ _CONVENTIONAL_FILENAME_GLOBS = (
 #: see `is_orphan_file`.
 _CONVENTIONAL_DIRECTORIES = frozenset({
     "prds", "architecture", "briefs", "research", "retros", "specs",
+    "test-design", "reviews",
 })
 
 

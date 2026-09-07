@@ -87,6 +87,7 @@ from __future__ import annotations
 import dataclasses
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import tomllib
@@ -703,6 +704,60 @@ def _doctor_check_feed(
     )
 
 
+def _doctor_check_tea(target: Path) -> DoctorCheck:
+    """Story 11.2 (AD-9): the ``tea-test-review`` advisory scanner's
+    presence self-check -- ALWAYS ``ok=True`` (mirrors ``_doctor_check_feed``'s
+    own "operating air-gapped" convention one level up): an advisory lens
+    has no default gate to fail against, so there is nothing for
+    ``--doctor`` to flag even when TEA is fully absent (the shipped
+    default: this repo's own ``pyforge-warden`` pixi environment does not
+    depend on the ``bmad-method-test-architecture-enterprise`` conda
+    package). Names which HALF is present/absent -- the AD-9 roster entry
+    (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table, written
+    by ``steward provision --module tea``) and the ``tea-test-review``
+    binary on PATH -- so an operator can tell "never provisioned" apart
+    from "provisioned but not installed in THIS environment". A malformed
+    or unreadable ``config.toml`` degrades to "no roster entry" (informational,
+    not a doctor problem — the same fail-open posture ``run_tea_test_review``
+    itself uses for a broken binary)."""
+    config_path = target / "_bmad" / "custom" / "config.toml"
+    roster_present = False
+    if config_path.is_file():
+        try:
+            with config_path.open("rb") as handle:
+                document = tomllib.load(handle)
+        except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+            document = {}
+        modules = document.get("modules")
+        if isinstance(modules, Mapping):
+            roster_present = "tea" in modules
+    binary_present = shutil.which("tea-test-review") is not None
+    if roster_present and binary_present:
+        message = (
+            "tea-test-review: [modules.tea] roster entry and binary both "
+            "present -- the advisory scanner can run when enabled via "
+            "WARDEN_OPTIONAL_SCANNERS=tea-test-review"
+        )
+    elif roster_present:
+        message = (
+            "tea-test-review: [modules.tea] roster entry present but the "
+            "binary is not on PATH -- the advisory scanner contributes "
+            "nothing until it is installed"
+        )
+    elif binary_present:
+        message = (
+            "tea-test-review: binary on PATH but no [modules.tea] roster "
+            "entry -- steward provision --module tea has not run here"
+        )
+    else:
+        message = (
+            "operating without tea-test-review: no [modules.tea] roster "
+            "entry and no binary on PATH -- the advisory scanner "
+            "contributes nothing"
+        )
+    return DoctorCheck(name="tea", ok=True, message=message)
+
+
 def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
     """Story 5.1 (D8)'s ``--doctor`` aggregation: the deptry/osv-scanner
     version pre-flight, the offline OSV-DB pre-flight, and the
@@ -716,7 +771,7 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
     policy-driven (mirrors ``_check_engine_version``'s own config-
     independent shape) — ``cli.py``'s ``_run_doctor`` calls this BEFORE any
     discovery/extraction/policy/engine-scan work happens. Order is fixed
-    (deptry, osv-scanner, osv-db, kev-feed, epss-feed, endoflife-feed) —
+    (deptry, osv-scanner, osv-db, kev-feed, epss-feed, endoflife-feed, tea) —
     ``--format text`` renders it verbatim; ``--format json`` sorts by
     ``name`` instead (its own small ad-hoc, non-schema document)."""
     return (
@@ -791,6 +846,7 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
                 "gate; no gate is active without those flags"
             ),
         ),
+        _doctor_check_tea(target),
     )
 
 

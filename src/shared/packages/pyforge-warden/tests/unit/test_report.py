@@ -564,6 +564,73 @@ def test_render_text_default_omitted_baseline_params_is_byte_identical_to_pre_6_
     )
 
 
+# --- render_text: [advisory] line (Story 11.2) ----------------------------
+
+
+def test_render_text_advisory_note_renders_an_advisory_line():
+    report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
+    rendered = render_text(
+        report,
+        advisory=[
+            {
+                "tool": "tea-test-review",
+                "score": 40,
+                "recommendation": "Request Changes",
+                "summary": "...",
+            }
+        ],
+    )
+    assert rendered == "\n".join(
+        [
+            "warden: status=clean exit_code=0 findings=0",
+            "  [advisory] tool=tea-test-review score=40 "
+            "recommendation=Request Changes -- ...",
+        ]
+    )
+
+
+def test_render_text_advisory_note_missing_score_and_recommendation_reads_unknown():
+    """Mirrors ``TeaAdvisoryResult.summary``'s own "unknown" fallback
+    convention (``tea_advisory.py``) -- a missing score/recommendation must
+    never render the bare Python literal ``None``."""
+    report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
+    rendered = render_text(
+        report,
+        advisory=[{"tool": "tea-test-review", "summary": "nothing to review"}],
+    )
+    assert rendered == "\n".join(
+        [
+            "warden: status=clean exit_code=0 findings=0",
+            "  [advisory] tool=tea-test-review score=unknown "
+            "recommendation=unknown -- nothing to review",
+        ]
+    )
+
+
+def test_render_text_advisory_note_sanitizes_embedded_newlines():
+    """``recommendation`` comes verbatim from an external tool's JSON output
+    -- exactly the untrusted-text case ``_single_line`` exists for -- an
+    embedded newline must never fabricate an extra report line."""
+    report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
+    rendered = render_text(
+        report,
+        advisory=[
+            {
+                "tool": "tea-test-review",
+                "score": 10,
+                "recommendation": "Request Changes\n  [forged] fake extra line",
+                "summary": "...",
+            }
+        ],
+    )
+    lines = rendered.splitlines()
+    assert len(lines) == 2
+    assert not any(line.strip() == "[forged] fake extra line" for line in lines)
+    assert (
+        "recommendation=Request Changes\\n  [forged] fake extra line" in rendered
+    )
+
+
 # --- Story 5.1 (AC1): remediation lines --------------------------------------
 
 

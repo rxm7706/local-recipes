@@ -3,7 +3,7 @@ spec: loop-home-fleet-refresh
 status: draft
 owner-dream: docs/dreams/loop-home-fleet-refresh.md
 surface: []          # frontier — likely extends src/shared/packages/pyforge-marshal/**; a decomposition pass will claim it
-companions: []
+companions: [loop-home-cutover-readiness.md]
 sources:
   - ../../../../../../docs/dreams/loop-home-fleet-refresh.md
   - ../../research/technical-marshal-orchestration-refresh-2026-08-08.md

@@ -81,7 +81,9 @@
             "sibling-dreams-drift",
             "dreams-hygiene",
             "chain-layers-audit",
-            "platform-policy-suite"
+            "platform-policy-suite",
+            "bmad-render-config-ambiguity",
+            "frozen-path-changed"
           ]
         },
         "check": { "type": "string" },
