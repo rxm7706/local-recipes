@@ -1,10 +1,14 @@
 """Default + optional scanner plugins on the PR-gate book (Story 9.2).
 
 Wraps today's ``register_engine`` factories as the default plugin bundle.
-Optional commercial scanners are stubs (no vendor SDKs). Plugins register
-through ``pyforge.core.hooks`` only; this module does not ship a second
-loader and does not ``load_entry_points()`` the shared group (other
-stations' plugins would load).
+Optional commercial scanners are stubs (no vendor SDKs). ``tea-test-review``
+(Story 11.2) is the one optional scanner that is real production wiring,
+not a stub -- it shells out to a runnable CLI (steward 46.3's pixi task)
+and appends a non-``Finding`` advisory note, never a stub finding; see
+``tea_advisory.py``. Plugins register through ``pyforge.core.hooks`` only;
+this module does not ship a second loader and does not
+``load_entry_points()`` the shared group (other stations' plugins would
+load).
 
 ``select_scanner_plugins`` returns defaults plus only *enabled* optionals.
 A missing or not-enabled optional is omitted, not an error
@@ -31,6 +35,7 @@ from .engines import (
 from .hooks import PR_GATE_SCAN
 from .interfaces import Engine
 from .models import AXIS_INGESTION, Finding
+from .tea_advisory import TeaAdvisoryScanPlugin
 
 OPTIONAL_SCANNER_IDS: tuple[str, ...] = (
     "checkmarx",
@@ -38,6 +43,14 @@ OPTIONAL_SCANNER_IDS: tuple[str, ...] = (
     "blackduck",
     "ghas",
     "profile-local",
+    # Story 11.2: tea-test-review is NOT an OptionalScanPlugin subclass (it
+    # appends to context["advisory_notes"], never context["plugin_findings"]
+    # -- a stub Finding would be a lie about what an advisory lens does), so
+    # TeaAdvisoryScanPlugin is registered directly in
+    # scanner_plugin_registry() below rather than joining OPTIONAL_SCAN_PLUGINS'
+    # homogeneous tuple. Its scanner_id is still listed here so
+    # select_scanner_plugins()'s enable/omit-not-error machinery covers it.
+    "tea-test-review",
 )
 
 OPTIONAL_SCANNER_ID_SET: frozenset[str] = frozenset(OPTIONAL_SCANNER_IDS)
@@ -205,6 +218,10 @@ def scanner_plugin_registry() -> PluginRegistry:
         registry.register(_plugin_for_factory(factory))
     for cls in OPTIONAL_SCAN_PLUGINS:
         registry.register(cls())
+    # Story 11.2: registered directly (not via OPTIONAL_SCAN_PLUGINS -- see
+    # the OPTIONAL_SCANNER_IDS comment above). No injected runner here: a
+    # shipped registry always resolves the real tea-test-review binary.
+    registry.register(TeaAdvisoryScanPlugin())
     return registry
 
 
