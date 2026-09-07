@@ -7,6 +7,10 @@ findings.
 Story 14.8 — CAP-8: a marker-free byte-diff scan of installer-owned skill
 files and ``_bmad/scripts/*.py`` finds local edits the marker-based trap-1
 mechanism misses (trap 16).
+
+Story 14.9 — CAP-9: ``shims_to_retire`` is a catalog∩installed preview of
+what a future ``--no-shims`` apply would remove — computed unconditionally
+and never added to ``trap_ids``.
 """
 
 from __future__ import annotations
@@ -32,6 +36,7 @@ from pyforge.steward.upgrade import (
     default_installed_package_root,
     format_preflight,
     load_custom_modules,
+    load_release_catalog,
     read_installed_module_sources,
 )
 
@@ -535,6 +540,126 @@ def test_preflight_installed_package_root_wrong_shape_notes_scan_skipped(tmp_pat
     assert "does not look like a bmad-method package" in notes
     text = format_preflight(report, as_json=False)
     assert "(none detected — see Notes below if the scan was skipped)" in text
+
+
+# ── Story 14.9 / CAP-9 fixtures ────────────────────────────────────────────
+
+
+def _write_repo_with_skills(root: Path, skill_names: list[str]) -> Path:
+    """Minimal installed-shaped repo carrying exactly *skill_names* in its
+    skill-manifest.csv (no other CAP-9-irrelevant machinery)."""
+    (root / "scripts").mkdir(parents=True)
+    (root / "scripts" / "bmad-loop-worktree").write_text("#!/bin/sh\n", encoding="utf-8")
+    manifest_dir = root / "_bmad" / "_config"
+    manifest_dir.mkdir(parents=True)
+    (manifest_dir / "manifest.yaml").write_text(
+        "installation:\n  version: 9.9.8\n", encoding="utf-8"
+    )
+    lines = ["canonicalId,name"]
+    for name in skill_names:
+        lines.append(f'"{name}","{name}"')
+    (manifest_dir / "skill-manifest.csv").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
+    return root
+
+
+def _write_shims_catalog(
+    directory: Path, *, version: str = "9.9.9", shims: list[str] | None = None
+) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{version}.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "version": version,
+                "baseline_pair_from": "9.9.8",
+                "shims_to_retire": shims or [],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return directory
+
+
+def test_shims_to_retire_is_catalog_installed_intersection_sorted(tmp_path):
+    repo = _write_repo_with_skills(
+        tmp_path / "repo", ["bmad-dev-auto", "bmad-quick-dev", "bmad-review"]
+    )
+    catalog_directory = _write_shims_catalog(
+        tmp_path / "catalog",
+        shims=["bmad-quick-dev", "bmad-dev-auto", "bmad-not-installed"],
+    )
+    report = build_preflight_report(
+        repo=repo,
+        target_version="9.9.9",
+        installed_version="9.9.8",
+        catalog_directory=catalog_directory,
+    )
+    # Sorted catalog∩installed intersection.
+    assert report.shims_to_retire == ("bmad-dev-auto", "bmad-quick-dev")
+    # A preview, never a trap — this minimal fixture triggers no other trap.
+    assert report.trap_ids == ()
+
+
+def test_shims_to_retire_empty_when_catalog_and_installed_disjoint(tmp_path):
+    repo = _write_repo_with_skills(tmp_path / "repo", ["bmad-review"])
+    catalog_directory = _write_shims_catalog(
+        tmp_path / "catalog", shims=["bmad-dev-auto", "bmad-quick-dev"]
+    )
+    report = build_preflight_report(
+        repo=repo,
+        target_version="9.9.9",
+        installed_version="9.9.8",
+        catalog_directory=catalog_directory,
+    )
+    assert report.shims_to_retire == ()
+    assert report.trap_ids == ()
+
+
+def test_shims_to_retire_absent_key_defaults_to_empty(tmp_path):
+    """A plain (non-CAP-9) fixture repo against the packaged 6.11.0 catalog
+    (no ``shims_to_retire`` key at all) must not error and yields an empty
+    preview — the field is unconditional but the key itself is optional."""
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    report = build_preflight_report(repo=repo, target_version="6.11.0")
+    assert report.shims_to_retire == ()
+
+
+def test_real_612_catalog_shims_to_retire_has_21_entries():
+    """Story 14.9: the REAL packaged 6.12.0 catalog carries the full 21-entry
+    ``shims_to_retire`` list (20 skill-manifest.csv ``v6-shims`` paths plus
+    ``bmad-generate-project-context``). Every other test touching
+    ``shims_to_retire`` uses a synthetic fixture catalog; this one catches an
+    accidental edit to the real list directly (mirrors Story 46.7's
+    ``test_real_catalog_pins_skf_v2_1_0`` precedent).
+    """
+    catalog = load_release_catalog("6.12.0")
+    shims = catalog["shims_to_retire"]
+    assert len(shims) == 21
+    assert "bmad-generate-project-context" in shims
+    assert "bmad-dev-auto" in shims
+
+
+def test_format_preflight_renders_shims_to_retire_section(tmp_path):
+    repo = _write_repo_with_skills(tmp_path / "repo", ["bmad-dev-auto"])
+    catalog_directory = _write_shims_catalog(tmp_path / "catalog", shims=["bmad-dev-auto"])
+    report = build_preflight_report(
+        repo=repo,
+        target_version="9.9.9",
+        installed_version="9.9.8",
+        catalog_directory=catalog_directory,
+    )
+    text = format_preflight(report, as_json=False)
+    assert "## Shims to retire (--no-shims candidates) [1]" in text
+    assert "- bmad-dev-auto" in text
+
+
+def test_format_preflight_shims_to_retire_none_when_empty(tmp_path):
+    repo = _write_610_repo(tmp_path / "repo", with_legacy_custom=False)
+    report = build_preflight_report(repo=repo, target_version="6.11.0")
+    text = format_preflight(report, as_json=False)
+    assert "## Shims to retire (--no-shims candidates) [0]" in text
 
 
 def test_preflight_never_mutates_tree(tmp_path):

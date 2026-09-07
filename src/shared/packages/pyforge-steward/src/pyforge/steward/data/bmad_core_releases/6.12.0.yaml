@@ -24,6 +24,34 @@ removals: []
 # still ships as a lifecycle:shim under src/bmm-skills/plan/ — not orphaned).
 skill_adds: []
 
+# CAP-9 (Story 14.9): the 21 deprecation shims this installed core still ships
+# (installShims: true) — 20 skill-manifest.csv `v6-shims` paths (core + bmm)
+# plus `bmad-generate-project-context`, which ships as `lifecycle: shim` under
+# `src/bmm-skills/plan/bmad-generate-project-context/SKILL.md` rather than
+# under a `v6-shims/` dir. A `--no-shims` apply retires all of these.
+shims_to_retire:
+  - bmad-checkpoint-preview
+  - bmad-create-architecture
+  - bmad-create-prd
+  - bmad-create-story
+  - bmad-dev-auto
+  - bmad-dev-story
+  - bmad-document-project
+  - bmad-domain-research
+  - bmad-editorial-review
+  - bmad-editorial-review-prose
+  - bmad-editorial-review-structure
+  - bmad-edit-prd
+  - bmad-generate-project-context
+  - bmad-market-research
+  - bmad-quick-dev
+  - bmad-review-adversarial-general
+  - bmad-review-edge-case-hunter
+  - bmad-review-verification-gap
+  - bmad-sprint-status
+  - bmad-technical-research
+  - bmad-validate-prd
+
 # Upstream installer rewrites these; repo-local edits are conflict surfaces (trap 1).
 # resolve_config.py: package 82 lines (four-layer) vs installed 168 (multi-project
 #   layers 5/6 via BMAD_ACTIVE_PROJECT / .active-project) -> CAP-3 re-applies.
