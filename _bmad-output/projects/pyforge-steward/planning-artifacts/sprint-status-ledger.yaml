@@ -179,7 +179,7 @@ development_status:
   47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: done
   47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: done
   47-4-the-foundry-stack-carries-a-bmad-floor-row: done
-  47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: blocked
+  47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: done
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done

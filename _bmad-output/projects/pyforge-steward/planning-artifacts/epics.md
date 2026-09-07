@@ -2614,10 +2614,11 @@ As a platform operator,
 I want the skills tree, the BMAD chain, the decks and the Dreams in foundry with IDE directories as symlink adapters,
 So that agents and loops resolve everything from the lasting root.
 
-**Type:** feature • **Effort:** L • **Deps:** S-44.4, S-44.11 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15, fnd:AD-18, fnd:AD-19
+**Type:** feature • **Effort:** L • **Deps:** S-44.4, S-44.11, S-14.9 • **FR/AD:** fnd:CAP-2 • fnd:AD-2, fnd:AD-5, fnd:AD-12, fnd:AD-13 (cell stays for 44.6), fnd:AD-15, fnd:AD-18, fnd:AD-19
 **Given** the manifest rows for `.claude/skills/**`, `_bmad/**`, `_bmad-output/projects/**`, `docs/dreams/**`, `presentations/**` **When** the move lands **Then** estate-authored skills — the eight station personas included — live under `skills/{stations,personas,domain}/` with SKF export writing there, no adapter is tracked (the 44.11 link step generates `.claude/skills/<x>` on every machine and `.cursor/skills/<x>` where Cursor is detected), installer-written `bmad-*` / `skf-*` dirs are untouched, the CFE cell is left in place for 44.6 (`fnd:AD-13`), and the BMAD chain resolves in foundry with the marker and planning links generated, never copied; the move is `steward cutover apply --phase 1b`, replayable until the flip
 **And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
 **And** the open question `planning-history-scope` is answered before dispatch
+**And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
 
 ### Story 44.6: CFE comes home
 
@@ -2703,6 +2704,7 @@ So that Dreams plus memlogs can seed foundry and nothing decided is lost in the 
 **Given** every `specs/spec-*/SPEC.md` across the eight stations **When** `bmad-spec` re-derives it from its memlog into a scratch folder **Then** the result is byte-equivalent to the rendered file, or every difference is recorded as a memlog entry and the re-derive is repeated until equivalent
 **And** the unifying strategy Spec, hand-edited past its memlog today, is reconciled first and its "never re-derive" exception is retired
 **And** this runs in `local-recipes` before Phase 0; a Spec that cannot be made to re-render without loss is a review-blocking finding, not a silent carry
+**And** every spine's own `.memlog.md` re-distills through `bmad-architecture` without loss (closing G6 — 44.13's own scope previously only exercised one re-derive, 44.14's)
 
 ### Story 44.14: Rebuild harness and oracle gate
 
