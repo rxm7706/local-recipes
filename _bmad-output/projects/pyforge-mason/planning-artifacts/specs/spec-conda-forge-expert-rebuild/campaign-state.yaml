@@ -612,7 +612,18 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+    brief_mirrored_through: "c4f699a280719aad03835f5263d77053fa25febb"
+                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
+                                    # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
+                                    # Windows-ready -- build.number 0 -> 1, recipe-build green on
+                                    # linux-64; new G114 documents that local_builder.py's noarch
+                                    # short-circuit means "builds green" for a selector-carrying
+                                    # noarch recipe only ever proves the native leg, never the
+                                    # other-OS branch). CFE-surface delta: SKILL.md (G114, version,
+                                    # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.4 -> 8.86.5).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
                                     # a10a8c7d00 (bmad-loop repo skills proven to match the
                                     # installed package, by test; landed via pyforge-marshal
@@ -887,7 +898,18 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+    brief_mirrored_through: "c4f699a280719aad03835f5263d77053fa25febb"
+                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
+                                    # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
+                                    # Windows-ready -- build.number 0 -> 1, recipe-build green on
+                                    # linux-64; new G114 documents that local_builder.py's noarch
+                                    # short-circuit means "builds green" for a selector-carrying
+                                    # noarch recipe only ever proves the native leg, never the
+                                    # other-OS branch). CFE-surface delta: SKILL.md (G114, version,
+                                    # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.4 -> 8.86.5).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
                                     # a10a8c7d00 (bmad-loop repo skills proven to match the
                                     # installed package, by test; landed via pyforge-marshal
