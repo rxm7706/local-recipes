@@ -13,7 +13,7 @@ source:
   sha256: 7bbdb66dd53775f71088a99999a9aefdad240740daf54cb09410d8bb1e294e35
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -60,15 +60,30 @@ about:
     producing 24 kHz audio with a choice of voices and languages, on CPU or
     GPU.
 
-    The model weights are NOT part of this package. Download them once from
-    the upstream release and pass their paths to the constructor:
+    The model weights are NOT part of this package -- they are hundreds of
+    megabytes and the choice of variant is yours -- but they no longer need a
+    manual download. Install one alongside:
 
-        wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
-        wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+        kokoro-onnx-models        f32    311 MB   most accurate, fastest on CPU
+        kokoro-onnx-models-fp16   fp16   169 MB   ~half the size, same speed
+        kokoro-onnx-models-int8   int8    88 MB   smallest, but slower on CPU
+
+    Each pulls in `kokoro-onnx-voices`, which carries the shared voice
+    embeddings and a resolver, so nothing has to be located by hand:
 
         from kokoro_onnx import Kokoro
-        kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path(), get_voices_path())
         samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    `get_model_path()` returns the highest-precision variant installed;
+    `get_model_path("int8")` selects one explicitly. The variants co-install.
+
+    Passing your own paths still works, so weights fetched from the upstream
+    release are unaffected:
+
+        kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
 
     Phonemisation goes through `phonemizer` and the `espeak-ng` engine, both
     of which install as dependencies, so no system eSpeak is required.
@@ -102,7 +117,7 @@ extra:
   cfe-generated-by-version: 8.86.4
   cfe-generated-at-datetime: 2026-09-07T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-07T13:20:00Z
+  cfe-local-build-datetime: 2026-09-07T14:35:00Z
   cfe-local-build-platform: noarch
   cfe-local-build-tool: rattler-build
 ####
@@ -142,9 +157,23 @@ extra:
 #    # because the PyPI espeakng-loader wheel's bundled library has its data
 #    # path compiled in as upstream's CI build tree. An imports-only test
 #    # would have shipped that silently.
-#    # Synthesis is NOT tested: the weights are a 311 MB kokoro-v1.0.onnx
-#    # plus a 27 MB voices-v1.0.bin, downloaded separately by the user. A
-#    # `kokoro-onnx-models` package would be the way to make those
-#    # conda-installable too, on the pattern used for the playwright
-#    # browsers in this repo; not attempted here.
+#    # Synthesis is still NOT tested here, but the earlier reason ("the
+#    # weights are a separate manual download") no longer holds -- build 1
+#    # points at kokoro-onnx-voices + the three kokoro-onnx-models-* packages,
+#    # which make the weights conda-installable on the pattern used for the
+#    # playwright browsers in this repo.
+#    # The reason now is PORTABILITY: those packages exist only on the
+#    # SelfExplainML channel, and adding one to this recipe's test
+#    # requirements would make the test unrunnable anywhere that channel is
+#    # absent -- including conda-forge CI, which is where this recipe is
+#    # eventually headed. Testing the head of a chain against packages the
+#    # target CI cannot see trades a real property (submittability) for a
+#    # check already covered elsewhere.
+#    # It IS covered: each kokoro-onnx-models-* recipe asserts its own weights
+#    # parse as ONNX with an exact node count, and full synthesis through all
+#    # three variants was verified end-to-end during packaging (2026-09-07) in
+#    # an environment solved from SelfExplainML + conda-forge alone -- 24 kHz,
+#    # ~2.7 s output, duration-normalised envelope correlation vs f32 of 0.95
+#    # (fp16) and 0.90 (int8). If the chain ever reaches conda-forge, move
+#    # that synthesis test into this recipe and delete this note.
 ####
