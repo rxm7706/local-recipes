@@ -12,3 +12,10 @@ cis:
   - bmad-cis-innovation-strategy
   - bmad-cis-problem-solving
   - bmad-cis-storytelling
+bmb:
+  name: BMad Builder
+  description: Standard Skill Compliant Factory for BMad Agents, Workflows and Modules
+  version: 1.0.0
+  default_selected: false
+  bmad_builder_output_folder: '{project-root}/skills'
+  bmad_builder_reports: '{project-root}/skills/reports'

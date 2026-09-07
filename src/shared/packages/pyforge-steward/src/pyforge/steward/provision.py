@@ -123,6 +123,27 @@ other TEA variable keeps its own declared default), merged by
 `_record_module_manifest` into `[modules.tea]` alongside `provisioned_by`/
 `installer`/`skills`. Neither mechanism touches `cis`/`utility-skills`/
 `manticore` -- both fields default to `()`/`None`.
+
+Story 46.4 slice (CAP-1 half): closes bmb's own long-standing gap --
+`SetupSkillBackend` only ever drove `merge-config.py`/`merge-help-csv.py`
+(the `_bmad/config.yaml` merge), never copied bmad-builder's five skill
+directories (`bmad-bmb-setup`, `bmad-agent-builder`, `bmad-workflow-builder`,
+`bmad-module-builder`, `bmad-eval-runner`) into `.claude/skills/` at all.
+`SetupSkillBackend.skills_source_dir` (opt-in, only `bmb` sets it) names the
+`share/bmad-builder/skills` directory whose immediate child directories
+`_setup_skill_names` discovers (directory-only, mirroring
+`_installer_skill_names`'s own filter -- the two sibling files, `module.yaml`
+and `module-help.csv`, are excluded for free); `_provision_setup_skill` gates
+the copy on the SAME `_check_skill_name_collisions` every `CondaInstallBackend`
+module already uses (reused verbatim, never a second, divergent check), then
+`_copy_setup_skill_dirs` lands each one under `.claude/skills/<name>` --
+overwrite-in-place on a re-provision, matching every other backend's own
+idempotent-overwrite convention. A plain `shutil.copytree`-class operation,
+never a subprocess call, so it cannot introduce a `cleanup-legacy.py`/
+`--legacy-dir` invocation by construction -- the existing Story 6.1 argv
+guard test needs no change. `_bmad/config.yaml` still gains the `bmb` section
+via the unchanged `merge-config.py` mechanism; `bmb` is still explicitly NOT
+part of the Story 46.2 AD-9 migration to `_bmad/custom/config.toml`.
 """
 
 from __future__ import annotations
@@ -342,10 +363,19 @@ def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
 
 @dataclass(frozen=True)
 class SetupSkillBackend:
-    """Drive BMB's own `bmad-bmb-setup` merge scripts (Story 6.1)."""
+    """Drive BMB's own `bmad-bmb-setup` merge scripts (Story 6.1).
+
+    `skills_source_dir` (Story 46.4, opt-in -- unset for any future
+    `SetupSkillBackend` module) names a directory, relative to repo root,
+    whose immediate child directories are copied into `.claude/skills/<name>`
+    -- gated by the same `_check_skill_name_collisions` every
+    `CondaInstallBackend` module already uses. `None` skips the copy step
+    entirely (the pre-Story-46.4 behavior).
+    """
 
     kind: Literal["setup_skill"] = "setup_skill"
     skill_dir: Path = Path()  # relative to repo root
+    skills_source_dir: Path | None = None  # relative to repo root
 
 
 @dataclass(frozen=True)
@@ -396,6 +426,7 @@ _CIS_SKILL_NAMES: tuple[str, ...] = (
 _SUPPORTED_MODULES: dict[str, ModuleBackend] = {
     "bmb": SetupSkillBackend(
         skill_dir=Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup"),
+        skills_source_dir=Path(".pixi/envs/local-recipes/share/bmad-builder/skills"),
     ),
     "tea": CondaInstallBackend(
         installer="bmad-tea-install",
@@ -563,6 +594,21 @@ def _installer_skill_names(backend: CondaInstallBackend, *, share_root: Path) ->
         else:
             names.extend(sorted(p.name for p in directory.iterdir() if p.is_dir()))
     return tuple(names)
+
+
+def _setup_skill_names(skills_source_dir: Path) -> tuple[str, ...]:
+    """Names of `skills_source_dir`'s own immediate child directories (Story
+    46.4) -- the skills a `SetupSkillBackend` module (`bmb`) copies into
+    `.claude/skills/`. Directory-only `iterdir()` discovery, mirroring
+    `_installer_skill_names`'s own filter, so files sitting alongside the
+    skill dirs (bmb's own `module.yaml`/`module-help.csv` at this level --
+    distinct from `bmad-bmb-setup`'s own `assets/module.yaml`) are excluded
+    without a second, divergent discovery convention. A missing directory
+    degrades to an empty tuple; the caller decides whether that is an
+    error."""
+    if not skills_source_dir.is_dir():
+        return ()
+    return tuple(sorted(p.name for p in skills_source_dir.iterdir() if p.is_dir()))
 
 
 def _check_skill_name_collisions(
@@ -806,8 +852,38 @@ def _record_module_manifest(
     atomic_write(config_path, _write)
 
 
+def _copy_setup_skill_dirs(
+    skills_source_dir: Path, skill_names: tuple[str, ...], *, dest: Path
+) -> None:
+    """Copy each of `skill_names` from `skills_source_dir` into `dest/<name>`
+    (Story 46.4) -- a full `rmtree`-then-`copytree` replace, never a merge,
+    so a re-provision after a real bmad-builder version bump picks up
+    renamed/removed files too, matching `_flatten_nested_skill_dirs`'s own
+    "fresh content always wins" precedent. A plain file operation, never a
+    subprocess call, so it cannot introduce a `cleanup-legacy.py`/
+    `--legacy-dir` invocation by construction. A `target` that exists but is
+    NOT a directory (a foreign plain file/symlink at that exact path) is a
+    clean, named `RuntimeError` rather than an unclear `shutil.copytree`
+    `FileExistsError` (review finding)."""
+    for skill_name in skill_names:
+        target = dest / skill_name
+        if target.exists() and not target.is_dir():
+            raise RuntimeError(
+                f"cannot copy skill {skill_name!r}: {target} exists and is "
+                "not a directory"
+            )
+        if target.is_dir():
+            shutil.rmtree(target)
+        shutil.copytree(skills_source_dir / skill_name, target)
+
+
 def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) -> dict[str, object]:
-    """Story 6.1 path: drive `merge-config.py` + `merge-help-csv.py`."""
+    """Story 6.1 path: drive `merge-config.py` + `merge-help-csv.py`. Story
+    46.4 (bmb only) inserts an opt-in skills-copy step below, gated by the
+    same `_check_skill_name_collisions` every `CondaInstallBackend` module
+    already uses -- before the two subprocess calls, matching
+    `_provision_conda_install`'s own collision-check-before-install-side-
+    effects ordering."""
     skill_dir = cwd / backend.skill_dir
     if not skill_dir.is_dir():
         raise FileNotFoundError(
@@ -825,6 +901,35 @@ def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) 
         raise RuntimeError(
             f"module.yaml at {module_yaml_path} declares code={module_yaml.get('code')!r}, "
             f"which does not match the registered name {name!r} in _SUPPORTED_MODULES"
+        )
+
+    # Story 46.4 (review finding): the collision check runs here, BEFORE any
+    # side effect -- so a genuine foreign collision refuses with nothing
+    # written, matching this function's own pre-existing guarantee. The
+    # actual copy (`_copy_setup_skill_dirs`) is deferred until AFTER both
+    # subprocess calls below succeed (see the second half of the merge, past
+    # `merge_help_csv`): copying here, before the subprocess calls, meant a
+    # `merge-config.py` failure left the freshly-copied skill dirs behind
+    # with `_bmad/config.yaml` never gaining the `bmb` key, so a retry's own
+    # `already_installed` check still read `False` and treated the module's
+    # own leftover directories from the failed attempt as a foreign
+    # collision -- permanently self-locking every retry until a human
+    # manually removed them. Deferring the copy closes that class of bug:
+    # a failed subprocess call now leaves nothing new behind to collide with.
+    skills_copied: tuple[str, ...] = ()
+    skill_names: tuple[str, ...] = ()
+    skills_source: Path | None = None
+    if backend.skills_source_dir is not None:
+        skills_source = cwd / backend.skills_source_dir
+        skill_names = _setup_skill_names(skills_source)
+        if not skill_names:
+            raise RuntimeError(
+                f"module {name!r}: no skills discovered under {skills_source} "
+                f"(skills_source_dir={backend.skills_source_dir!r})"
+            )
+        already_installed = _module_install_state_or_none(name, cwd=cwd) == "installed"
+        _check_skill_name_collisions(
+            name, skill_names, cwd=cwd, already_installed=already_installed
         )
 
     answers = {"module": _module_variable_defaults(module_yaml)}
@@ -880,10 +985,19 @@ def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) 
             f"module {name!r}'s setup-skill scripts exited 0 but did not emit valid JSON: {exc}"
         ) from exc
 
+    # Copy the skills only now that both scripts above have actually
+    # succeeded (see the ordering note above `skills_copied` for why).
+    if skills_source is not None:
+        dest = cwd / _CLAUDE_SKILLS_RELATIVE_PATH
+        dest.mkdir(parents=True, exist_ok=True)
+        _copy_setup_skill_dirs(skills_source, skill_names, dest=dest)
+        skills_copied = skill_names
+
     return {
         "merge_config": merge_config_result,
         "merge_help_csv": merge_help_csv_result,
         "output_dirs_created": list(output_dirs_created),
+        "skills_copied": list(skills_copied),
     }
 
 
@@ -1150,9 +1264,15 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
             f"{dirs_note}"
         )
     else:
+        skills_copied = steps.get("skills_copied") or ()
+        skills_note = (
+            f" ({len(skills_copied)} skill(s) → {_CLAUDE_SKILLS_RELATIVE_PATH})"
+            if skills_copied
+            else ""
+        )
         summary = (
             f"provision --module: {name!r} provisioned (merge-config.py, merge-help-csv.py)"
-            f"{dirs_note}"
+            f"{skills_note}{dirs_note}"
         )
     return DutyResult(ok=True, summary=summary)
 
