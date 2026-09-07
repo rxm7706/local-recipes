@@ -664,6 +664,33 @@ def test_spike_report_look_alike_without_a_numeric_index_still_hard_fails(tmp_pa
     assert finding.evidence["subject"] == "planning-artifacts/spike-copier-api-fit-report.md"
 
 
+def test_tea_test_design_artifacts_are_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The real 2026-09-07 shape (Story 31.1): TEA's `bmad-testarch-test-design`
+    output -- `test-design-architecture.md`, `test-design-qa.md`,
+    `test-design/<slug>-handoff.md`, `test-design-progress-system.md` -- plus a
+    top-level equivalence report under `planning-artifacts/reviews/`, kept as
+    additive artifacts alongside `test-architecture.md`. Must be classified
+    rather than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    plan = factory._plan(repo)
+    (plan / "test-design-architecture.md").write_text("x\n", encoding="utf-8")
+    (plan / "test-design-qa.md").write_text("x\n", encoding="utf-8")
+    (plan / "test-design-progress-system.md").write_text("x\n", encoding="utf-8")
+    (plan / "test-design").mkdir(parents=True, exist_ok=True)
+    (plan / "test-design" / "pyforge-marshal-handoff.md").write_text("x\n", encoding="utf-8")
+    (plan / "reviews").mkdir(parents=True, exist_ok=True)
+    (plan / "reviews" / "tea-equivalence-2026-09-07.md").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
 def test_fleet_drain_run_records_are_classified_and_not_flagged_uncovered(
     tmp_path: Path,
 ) -> None:

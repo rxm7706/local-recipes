@@ -1,9 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-09-04'
+updated: '2026-09-07'
 status: final
-currency_review: "Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor's .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19, above this PRD's FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1); reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
+currency_review: "Reviewed 2026-09-07 — chain-currency sweep (marshal Story 31.1). Three specs' .memlog moved to 2026-09-07 (cross-station surface-reconcile for factory.py/hygiene_definitions.py's new TEA test-design classification rules) after this PRD sat at 2026-09-04; reconciled in the appended § Currency reconciliation — 2026-09-07. No FR/content change required. Prior: Reviewed 2026-09-04 — chain-currency sweep (PR #1043). spec-pyforge-doctor's .memlog moved to 2026-09-03T20:35 (fleet-hygiene surface restamp, no new product work) after four 2026-08-30..09-01 detector bug-fix / classifier-rule entries against already-described FR-14/FR-15 infrastructure and the Story 19.1 entry (Epic 19, above this PRD's FR ceiling; bound to steward spec-bmad-suite-metapackage CAP-1); reconciled in the appended § Currency reconciliation — 2026-09-04. No FR/content change required. Prior: Reviewed 2026-08-29 — chain-currency sweep. spec-pyforge-doctor's .memlog moved to 2026-08-29T02:15 (five bookkeeping RECONCILES entries: two detector bug-fixes, one classifier-rule addition, one DEFERRED_SPECS registration note, all against already-described FR-14/FR-15 detector infrastructure — no new capability) while this PRD sat at 2026-08-26; reconciled in the appended § Currency reconciliation — 2026-08-29 (detector bug-fix attribution, spec-chain-currency-sweep's own DEFERRED_SPECS registration). No FR/content change required. Prior: Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
@@ -684,5 +684,27 @@ with registry-aware upstream resolution. It extends Epic 15's suite-drift work a
 steward `spec-bmad-suite-metapackage` CAP-1 (its `epics.md` heading carries the Spec
 binding); per this PRD's decompose-directly boundary it is referenced by that binding, not
 minted as an FR here.
+
+**No FR/content change required.** `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-09-07
+
+*Chain-currency sweep re-fired: three specs' `.memlog`s (`spec-bmad-drift-new-artifact-shape`,
+`spec-pixi-candidate-currency`, `spec-pyforge-doctor`) moved to 2026-09-07 (marshal Story 31.1
+cross-station surface-reconcile, below) while this PRD sat at 2026-09-04, past the runbook's
+2-day grace window.*
+
+**What moved, and why none of it is a new FR.** Marshal's Story 31.1 (TEA equivalence run
+against all 8 stations) added five new file shapes under each station's `planning-artifacts/`
+(`test-design-architecture.md`, `test-design-qa.md`, `test-design-progress-system.md`,
+`test-design/<slug>-handoff.md`, `reviews/*.md`) — a new artifact class this PRD's FR-14/FR-15
+detector-infrastructure sections already cover in kind (Doctor recognizes new planning-artifact
+shapes as they appear; it does not enumerate every shape in the PRD itself). The new shapes
+tripped two existing detectors for the first time — `factory.py::classify()`
+(`test_bmad_artifacts_integrity`, HARD `uncovered`) and `hygiene_definitions.py::is_orphan_file`
+(`test_live_repo_gather_reports_no_finding_naming_warden`, orphan-file WARN) — both fixed with
+one dated classification rule set each, same shape and convention as every prior new-artifact-
+shape incident recorded above. A classifier recognizing one more conventional shape is not a new
+capability.
 
 **No FR/content change required.** `updated:` bumped to record that the check ran.
