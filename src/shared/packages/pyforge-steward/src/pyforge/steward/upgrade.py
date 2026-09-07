@@ -93,13 +93,6 @@ _CUSTOM_RELATIVE_PATH = Path("_bmad/custom")
 _IDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
 _CONFIG_TOML_RELATIVE_PATH = Path("_bmad/config.toml")
 _SKILL_MANIFEST_RELATIVE_PATH = Path("_bmad/_config/skill-manifest.csv")
-# CAP-9 (Story 14.9): foreign-owned surfaces checked ONLY at `--no-shims`
-# apply time — reported, never edited (mirrors CAP-3/CAP-5's foreign-surface
-# stance). Steward does not own either file.
-_MARSHAL_HARNESS_TEMPLATE_RELATIVE_PATH = Path(
-    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py"
-)
-_RETIRED_DEV_SKILL_PATTERN = re.compile(r'skill\s*=\s*"bmad-dev-auto"')
 # CAP-8: best-effort default location of a rattler/conda package cache, used to
 # resolve the INSTALLED version's unpacked bmad-method package when
 # --installed-package-root is not passed.
@@ -1539,76 +1532,6 @@ def refuse_legacy_custom(preflight: PreflightReport) -> None:
     )
 
 
-def _shim_retirement_blockers(
-    repo: Path, *, loops_home: Path | None = None
-) -> tuple[str, ...]:
-    """CAP-9: report-only enumeration of foreign surfaces still naming the
-    retired ``bmad-dev-auto`` skill id. Never edits anything — both sites are
-    marshal-owned, not steward's.
-
-    Raises ``UpgradeError`` when an explicit *loops_home* override does not
-    resolve to a directory (fail loud on an operator typo, never silently
-    report zero blockers). The default (``loops_home=None``, resolving to the
-    real ``~/.bmad-loops``) is exempt — a machine with no loop homes at all is
-    normal and must stay silent.
-    """
-    blockers: list[str] = []
-    harness = repo / _MARSHAL_HARNESS_TEMPLATE_RELATIVE_PATH
-    if harness.is_file():
-        try:
-            harness_text = harness.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
-            blockers.append(
-                f"{harness.relative_to(repo)} could not be read ({exc}) — "
-                "treating as still naming the retired skill id, refuse to guess"
-            )
-        else:
-            if _RETIRED_DEV_SKILL_PATTERN.search(harness_text):
-                blockers.append(
-                    f"{harness.relative_to(repo)} still emits bmad-dev-auto in its "
-                    "policy.toml template"
-                )
-    if loops_home is not None and not loops_home.is_dir():
-        raise UpgradeError(
-            f"--loops-home {loops_home} is not a directory — refuse to silently "
-            "report zero loop-home blockers for a bad override"
-        )
-    home_root = loops_home if loops_home is not None else Path.home() / ".bmad-loops"
-    for home in _list_loop_homes(home_root):
-        policy = home / ".bmad-loop" / "policy.toml"
-        if policy.is_file():
-            try:
-                policy_text = policy.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                blockers.append(
-                    f"loop home {home.name}'s policy.toml could not be read "
-                    f"({exc}) — treating as still naming the retired skill id, "
-                    "refuse to guess"
-                )
-            else:
-                if _RETIRED_DEV_SKILL_PATTERN.search(policy_text):
-                    blockers.append(
-                        f"loop home {home.name}'s rendered policy.toml still names bmad-dev-auto"
-                    )
-    return tuple(blockers)
-
-
-def refuse_shim_retirement_not_ready(
-    repo: Path, *, loops_home: Path | None = None
-) -> None:
-    """CAP-9: refuse a ``--no-shims`` apply while a foreign surface still emits
-    the retired ``bmad-dev-auto`` skill id.
-    """
-    blockers = _shim_retirement_blockers(repo, loops_home=loops_home)
-    if not blockers:
-        return
-    raise UpgradeError(
-        "refuse --no-shims: the following foreign-owned surfaces still emit the "
-        "retired bmad-dev-auto skill id (reported, never edited by steward) — "
-        + "; ".join(blockers)
-    )
-
-
 def create_review_branch(repo: Path, branch: str) -> str:
     """Create and check out *branch* from HEAD; return the snapshot SHA.
 
@@ -2589,9 +2512,8 @@ def apply_bmad_core_upgrade(
     installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
     custom_installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
     no_shims: bool = False,
-    loops_home: Path | None = None,
 ) -> ApplyReport:
-    """CAP-2+3+6+7 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
+    """CAP-2+3+6+7+8+9 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
 
     The installer command is always ``bmad-method install --action update -y
     --directory <repo> --modules <every module the manifest lists, core first>
@@ -2606,6 +2528,12 @@ def apply_bmad_core_upgrade(
     the repo root through *custom_installer_runner* (default:
     ``default_installer_runner``); the only bytes steward itself writes in
     that phase are the restored config paths.
+
+    CAP-9: ``no_shims=True`` appends a literal ``--no-shims`` to the installer
+    argv (right after ``--modules``, before any ``--pin`` pair), asking the
+    installer to retire the release's deprecation shims (``installShims:
+    false``); the sole refusal is the pre-existing trap-2 legacy-custom check
+    above, which already halts unconditionally regardless of ``no_shims``.
     """
     assert_clean_tree(repo)
 
@@ -2623,8 +2551,6 @@ def apply_bmad_core_upgrade(
         preflight.installed_version
     )
     refuse_legacy_custom(preflight)
-    if no_shims:
-        refuse_shim_retirement_not_ready(repo, loops_home=loops_home)
     # CAP-6: refuse before any branch exists when the manifest names no modules.
     modules = read_installed_modules(repo)
     # CAP-7: one source of truth for `--modules` — the manifest. Assert every
@@ -4330,7 +4256,6 @@ class UpgradeDuty:
         installer_bin = getattr(ns, "installer", None) or "bmad-method"
         branch = getattr(ns, "branch", None) or None
         no_shims = bool(getattr(ns, "no_shims", False))
-        loops_home = Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
         apply_report = apply_bmad_core_upgrade(
             repo=repo,
             target_version=target,
@@ -4341,7 +4266,6 @@ class UpgradeDuty:
             installed_package_root=installed_package_root,
             installer_bin=installer_bin,
             no_shims=no_shims,
-            loops_home=loops_home,
         )
         reconcile_ok = (
             apply_report.reconcile is not None and apply_report.reconcile.all_clear

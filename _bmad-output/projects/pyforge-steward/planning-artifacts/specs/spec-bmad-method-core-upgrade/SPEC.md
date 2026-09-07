@@ -123,15 +123,33 @@ what CAP-6..8 close.
   and one flagged conflict (step-01 `done` routing).
 
 - **CAP-9 — Deliberate shim retirement (`--no-shims`)** *(added 2026-09-06,
-  spec-bmad-suite-lifecycle CAP-10)*. *Intent:* the apply can retire every
-  deprecation shim on purpose — `--no-shims` on the installer argv after
-  `--modules`, the pre-flight names each shim to retire (21 at 6.12.0), a
-  same-version run is accepted as a retirement run, and the flag is refused
-  while a legacy-name custom file exists or the marshal harness / any rendered
-  loop-home policy still emits `bmad-dev-auto` (reported, never edited).
-  *Success:* the manifest reads `installShims: false`, the shim rows leave
-  `skill-manifest.csv`, CAP-7 and CAP-8 run on the same apply, `prove-landed`
-  validates 8/8 (Story 14.9).
+  spec-bmad-suite-lifecycle CAP-10; corrected 2026-09-06, Story 30.5 —
+  see below)*. *Intent:* the apply can retire every deprecation shim on
+  purpose — `--no-shims` on the installer argv after `--modules`, the
+  pre-flight names each shim to retire (21 at 6.12.0), a same-version run is
+  accepted as a retirement run, and the flag is refused while a legacy-name
+  custom file exists (trap 2). *Success:* the manifest reads
+  `installShims: false`, the shim rows leave `skill-manifest.csv`, CAP-7 and
+  CAP-8 run on the same apply, `prove-landed` validates 8/8 (Story 14.9).
+  **Correction (2026-09-06, found during Story 30.5):** the original Intent
+  also refused `--no-shims` "while the marshal harness / any rendered
+  loop-home policy still emits `bmad-dev-auto`" — this premise is FALSE,
+  verified directly against the installed `bmad_loop` 0.11.1 package source
+  (`bmad_loop/policy.py`). `DevPolicy.skill` is a PERMANENT internal adapter
+  discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`, hard-validated by
+  `PolicyError` on any other value) — it is not a "which skill name is
+  current" field, and the skill actually invoked is resolved separately at
+  runtime from what is on disk (`Engine._dev_skill()` /
+  `install.dev_primitive_or_default`), independent of this field. Every real
+  loop-home's `policy.toml` (and the vendored `harness_bmadloop.py` template
+  that renders it) will ALWAYS emit this literal, forever, by design — a
+  refusal keyed on finding it provides no real signal about `--no-shims`
+  readiness and would refuse every retirement attempt permanently. This
+  clause is REMOVED: the harness-template / loop-home-policy check
+  (`_shim_retirement_blockers` / `refuse_shim_retirement_not_ready`) is
+  deleted from `upgrade.py`. The sole pre-apply refusal for `--no-shims`
+  remains the pre-existing, unconditional legacy-custom-name check (trap 2,
+  `refuse_legacy_custom`), which is unaffected by this correction.
 
 ## Constraints
 

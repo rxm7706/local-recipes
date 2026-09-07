@@ -134,15 +134,29 @@ of CAPs per shift, IDs never reused.
   validate` is clean across all 8 homes; the test reds a planted one-line
   divergence.
 
-- **CAP-12 — Shim retirement follows the harness** *(added 2026-09-06,
-  spec-bmad-suite-lifecycle CAP-10)*. *Intent:* the marshal harness template
-  and all 8 rendered loop-home policies name `bmad-build-auto`, every live
-  caller leads with the live skill id (history glossed, never rewritten), and
-  the retired-ID guard scans the harness template. *Success:*
-  `test_harness_policy_render` asserts `bmad-build-auto`; `bmad-loop validate`
-  8/8 after re-render; the guard reds a reintroduced `bmad-dev-auto` in
-  `harness_bmadloop.py`; steward 14.9's pre-flight refusal reads green
-  (Story 30.5).
+- **CAP-12 — Every live caller follows the shim retirement** *(added
+  2026-09-06, spec-bmad-suite-lifecycle CAP-10; corrected 2026-09-06, Story
+  30.5 — see below)*. *Intent:* every live caller leads with the live skill
+  id, `bmad-build-auto` (history glossed, never rewritten). *Success:* the
+  two dead file-path citations (doctor `chain.py`, marshal's own
+  `marshal-policy.toml`) resolve to real files; the present-tense
+  docstring/prose hits (`cli/spin.py` + its test mirror, `docs/dreams/README.md`)
+  lead with `bmad-build-auto` (Story 30.5).
+  **Correction (2026-09-06, found during Story 30.5):** the original Intent
+  also called for renaming the marshal harness template's vendored
+  `[dev] skill = "bmad-dev-auto"` literal to `"bmad-build-auto"`, widening
+  the retired-ID guard to scan the harness template, and re-rendering all 8
+  loop-home policies — this premise is FALSE. The installed `bmad_loop`
+  0.11.1 package hard-validates `DevPolicy.skill` as a PERMANENT internal
+  adapter discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`); it must never be
+  renamed, and the skill actually invoked is resolved separately from disk at
+  runtime, independent of this field. Renaming it throws `PolicyError` and
+  would break `bmad-loop validate` on all 8 real loop-homes. The
+  harness-template rename, its render-test update, the guard-widening, and
+  the 8-home re-render are all REMOVED from this capability's scope — none of
+  them should happen. See `spec-bmad-method-core-upgrade` CAP-9's matching
+  correction (steward-owned): the `--no-shims` refusal that depended on this
+  same false premise is also removed there.
 - **CAP-13 — TEA adoption is marshal Epic 31 (relay)** *(added 2026-09-06,
   spec-bmad-suite-lifecycle CAP-4)*. *Intent:* TEA's `bmad-testarch-*`
   workflows produce every station's `test-architecture.md`, `tea-test-review`
@@ -170,14 +184,21 @@ of CAPs per shift, IDs never reused.
 - Shims retire now, not at the v7 cut (operator, 2026-09-06 — supersedes the
   2026-09-05 "stay through v7 / every apply passes `--shims`" constraint): v7
   has no date, the python-foundry cutover assumes an estate with no shims
-  (`cutover-readiness.md` P11), and bmad-loop 0.11.1 resolves whichever skill
-  the policy names. The retirement is one `--no-shims` apply (steward 14.9)
-  after the harness flip (CAP-12, Story 30.5); the guard tuple stays until
-  upstream removes the ids.
-- Policy work emits exact TOML scalar types and names
-  `[dev] skill = "bmad-build-auto"` (superseded 2026-09-06: `bmad-dev-auto`
-  was the discriminator while the shims were kept; bmad-loop resolves the
-  invoked skill on disk).
+  (`cutover-readiness.md` P11). The retirement is one `--no-shims` apply
+  (steward 14.9); no harness change precedes it (CAP-12's harness-rename
+  half was found false and removed — see CAP-12's own correction note); the
+  guard tuple stays until upstream removes the ids.
+- **Corrected 2026-09-06 (Story 30.5):** `[dev] skill` in every rendered
+  `policy.toml` is `"bmad-dev-auto"` PERMANENTLY — this is `bmad_loop`'s own
+  internal adapter discriminator (`DevPolicy.skill`, hard-validated,
+  `DEV_SKILLS = {"bmad-dev-auto"}`), never the name of the currently-invoked
+  skill. `bmad-loop` resolves the actually-invoked skill from what is on
+  disk at runtime (`Engine._dev_skill()`), independent of this field, so a
+  project on either the `bmad-dev-auto` era or the `bmad-build-auto` era
+  works with this policy value untouched. It must never be changed to
+  `"bmad-build-auto"`; the harness template's `_POLICY_TEMPLATE` and every
+  rendered `policy.toml` correctly keep emitting the pre-rename spelling
+  forever.
 
 ## Non-goals
 

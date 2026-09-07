@@ -97,11 +97,21 @@ cutover chain, so it owns closing all three.
   `cutover-readiness.md`; untracked gaps are relayed to the cutover chain by memlog; the gate is
   every line green before Story 44.3 opens the foundry. *Success:* P1–P18 read green; G1–G11 each
   name a story; `steward upgrade bmad-core` pre-flight reports zero ungoverned local customizations.
-- **CAP-10 — Shim retirement (relay).** *Intent:* the 21 deprecated shims and every live caller
-  are gone before the foundry opens. *Success:* the harness policy names `bmad-build-auto`, the 8
-  loop homes re-render and validate clean, callers are glossed, the guard is widened to the
-  harness file, and one `--no-shims` apply lands `installShims: false` with 21 fewer skill dirs
-  (era-alignment CAP-12 / marshal 30.5; core-upgrade CAP-9 / steward 14.9).
+- **CAP-10 — Shim retirement (relay)** *(corrected 2026-09-06, Story 30.5 —
+  see below)*. *Intent:* the 21 deprecated shims are gone and every live
+  caller is glossed to the live skill id before the foundry opens.
+  *Success:* callers are glossed (era-alignment CAP-12 / marshal 30.5), and
+  one `--no-shims` apply lands `installShims: false` with 21 fewer skill
+  dirs (core-upgrade CAP-9 / steward 14.9).
+  **Correction (2026-09-06):** the original Success bar also named "the
+  harness policy names `bmad-build-auto`, the 8 loop homes re-render and
+  validate clean... the guard is widened to the harness file" — this is
+  FALSE. `bmad_loop`'s `DevPolicy.skill` is a permanent internal adapter
+  discriminator that must stay `"bmad-dev-auto"` forever (verified against
+  the installed package); it is never renamed, the harness template is
+  never touched, no loop-home re-render happens, and the retired-ID guard is
+  never widened to that file. See era-alignment CAP-12's own correction and
+  core-upgrade CAP-9's own correction for the full evidence.
 
 ## Constraints
 

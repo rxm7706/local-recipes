@@ -17,11 +17,9 @@ the clean ones and flags genuine conflicts with a ``.customization-conflict``
 sibling, repo bytes left exactly as the installer wrote them.
 
 Story 14.9 — CAP-9: ``--no-shims`` inserts literally on the installer argv
-right after ``--modules``; a same-version run that really deletes a shim is a
-real diff (never trap 12); the existing trap-2 legacy-custom refusal holds
-unchanged under ``--no-shims``; a NEW apply-time-only refusal blocks when a
-foreign-owned harness template or rendered loop-home ``policy.toml`` still
-names the retired ``bmad-dev-auto`` skill id (reported, never edited).
+right after ``--modules``, before any ``--pin`` pair; a same-version run that
+really deletes a shim is a real diff (never trap 12); the sole refusal under
+``--no-shims`` is the pre-existing trap-2 legacy-custom check, unchanged.
 """
 
 from __future__ import annotations
@@ -2256,8 +2254,6 @@ def test_apply_no_shims_argv_carries_flag_after_modules_before_pins(tmp_path):
     repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_fixture_shim(repo)
     installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
-    loops = tmp_path / "loops"
-    loops.mkdir()  # exists but empty — no real loop homes to scan
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -2265,7 +2261,6 @@ def test_apply_no_shims_argv_carries_flag_after_modules_before_pins(tmp_path):
         installer_bin=str(installer),
         branch="review/no-shims-argv",
         no_shims=True,
-        loops_home=loops,
     )
 
     assert report.installer_cmd == (
@@ -2289,8 +2284,6 @@ def test_apply_no_shims_same_version_target_is_a_real_diff_not_zero_diff(tmp_pat
     repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
     shim_dir = _add_fixture_shim(repo)
     installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
-    loops = tmp_path / "loops"
-    loops.mkdir()  # exists but empty — no real loop homes to scan
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -2299,7 +2292,6 @@ def test_apply_no_shims_same_version_target_is_a_real_diff_not_zero_diff(tmp_pat
         installer_bin=str(installer),
         branch="review/no-shims-same-version",
         no_shims=True,
-        loops_home=loops,
     )
 
     assert report.preflight.installed_version == report.preflight.target_version
@@ -2329,94 +2321,10 @@ def test_apply_no_shims_legacy_custom_still_halts_before_branch(tmp_path):
     assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
 
 
-def test_apply_no_shims_refuses_when_harness_template_names_retired_id(tmp_path):
-    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
-    installer = _fake_installer_script(tmp_path / "fake-bmad-method")
-    harness = (
-        repo
-        / "src"
-        / "shared"
-        / "packages"
-        / "pyforge-marshal"
-        / "src"
-        / "pyforge"
-        / "marshal"
-        / "adapters"
-        / "harness_bmadloop.py"
-    )
-    harness.parent.mkdir(parents=True, exist_ok=True)
-    harness.write_text('skill = "bmad-dev-auto"\n', encoding="utf-8")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-m", "fixture: harness template still names bmad-dev-auto")
-    before_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-
-    with pytest.raises(UpgradeError, match="harness_bmadloop"):
-        apply_bmad_core_upgrade(
-            repo=repo,
-            target_version="6.11.0",
-            installer_bin=str(installer),
-            no_shims=True,
-        )
-
-    after_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-    assert after_branch == before_branch
-    assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
-
-
-def test_apply_no_shims_refuses_when_loop_home_policy_names_retired_id(tmp_path):
-    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
-    installer = _fake_installer_script(tmp_path / "fake-bmad-method")
-    loops = tmp_path / "loops"
-    policy = loops / "home1" / ".bmad-loop" / "policy.toml"
-    policy.parent.mkdir(parents=True)
-    policy.write_text('skill = "bmad-dev-auto"\n', encoding="utf-8")
-    before_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-
-    with pytest.raises(UpgradeError, match="home1"):
-        apply_bmad_core_upgrade(
-            repo=repo,
-            target_version="6.11.0",
-            installer_bin=str(installer),
-            no_shims=True,
-            loops_home=loops,
-        )
-
-    after_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-    assert after_branch == before_branch
-    assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
-
-
-def test_apply_no_shims_plain_apply_never_scans_harness_or_loop_home(tmp_path):
-    """The refusal only runs when no_shims=True — a plain apply must not even
-    look, so a foreign surface naming bmad-dev-auto never blocks it."""
-    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
-    harness = (
-        repo
-        / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py"
-    )
-    harness.parent.mkdir(parents=True, exist_ok=True)
-    harness.write_text('skill = "bmad-dev-auto"\n', encoding="utf-8")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-m", "fixture: harness names bmad-dev-auto")
-    installer = _fake_installer_script(tmp_path / "fake-bmad-method")
-
-    report = apply_bmad_core_upgrade(
-        repo=repo,
-        target_version="6.11.0",
-        installer_bin=str(installer),
-        branch="review/no-shims-off",
-    )
-
-    assert report.installer_exit == 0
-    assert "--no-shims" not in report.installer_cmd
-
-
-def test_apply_no_shims_both_surfaces_clear_proceeds(tmp_path):
+def test_apply_no_shims_proceeds_normally(tmp_path):
     repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
     _add_fixture_shim(repo)
     installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
-    loops = tmp_path / "loops"
-    loops.mkdir()  # exists but empty — no homes at all
 
     report = apply_bmad_core_upgrade(
         repo=repo,
@@ -2424,7 +2332,6 @@ def test_apply_no_shims_both_surfaces_clear_proceeds(tmp_path):
         installer_bin=str(installer),
         branch="review/no-shims-clear",
         no_shims=True,
-        loops_home=loops,
     )
 
     assert report.installer_exit == 0
@@ -2432,13 +2339,45 @@ def test_apply_no_shims_both_surfaces_clear_proceeds(tmp_path):
     assert report.zero_diff is False
 
 
-def test_cli_apply_help_names_no_shims_and_loops_home_flags(capsys, monkeypatch):
+def test_apply_no_shims_argv_order_holds_with_custom_module_pins(tmp_path):
+    """--no-shims combined with a pin-bearing custom module: argv still shows
+    ``--modules``, then ``--no-shims``, then ``--pin`` — in that exact order."""
+    fx = _custom_module_fixture(tmp_path, pin="v2.1.0")
+    repo = fx["repo"]
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(fx["core"]),
+        catalog_directory=fx["catalog"],
+        branch="review/no-shims-with-pins",
+        no_shims=True,
+    )
+
+    expected = (
+        str(fx["core"]),
+        "install",
+        "--action",
+        "update",
+        "-y",
+        "--directory",
+        str(repo),
+        "--modules",
+        "core,bmm,skf",
+        "--no-shims",
+        "--pin",
+        "skf=v2.1.0",
+    )
+    assert report.installer_cmd == expected
+    assert tuple(json.loads(fx["core_record"].read_text(encoding="utf-8"))) == expected
+
+
+def test_cli_apply_help_names_no_shims_flag(capsys, monkeypatch):
     monkeypatch.setenv("COLUMNS", "400")
     rc = main(["upgrade", "bmad-core", "--help"])
     assert rc == EXIT_OK
     text = " ".join(capsys.readouterr().out.split())
     assert "--no-shims" in text
-    assert "--loops-home" in text
 
 
 def test_cli_apply_no_shims_flag_reaches_apply(tmp_path, capsys):
@@ -2448,8 +2387,6 @@ def test_cli_apply_no_shims_flag_reaches_apply(tmp_path, capsys):
     installer = _fake_installer_script(
         tmp_path / "fake-bmad-method", record=record, no_shims=True
     )
-    loops = tmp_path / "loops"
-    loops.mkdir()  # exists but empty — no homes at all
     rc = main(
         [
             "upgrade",
@@ -2464,8 +2401,6 @@ def test_cli_apply_no_shims_flag_reaches_apply(tmp_path, capsys):
             "--branch",
             "review/cli-no-shims",
             "--no-shims",
-            "--loops-home",
-            str(loops),
             "--json",
         ]
     )

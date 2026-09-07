@@ -4906,7 +4906,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "8b373b348d5f2032d6717213c7688610b989f859",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "d45124ee19ee64f810e4d210a21565f0c91d42eb",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "121209d4c8e97e4cbde0d915810468cdb92eaa94",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "2762070814c18365d7b3d443cffa978b76f0312e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/__init__.py": "9779e650eb45204ca8bd06dbf6457976c71868b2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/apps.py": "aa8e2bfb83c84e87da8216761d6ecf1be363b8e5",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py": "cddba4da79f24c1fad5344a17b949a69200189cb",
@@ -4936,7 +4936,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py": "207dbd504ae9e61d6b147ca0a412b15986f31ec1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/suite_advance.py": "10a41c1cf58a5368362bf782948092123ce4bb41",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "5e0bfc4326eafe5af1ad39e88c74a4db32c88d79",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "00518dcfcaca245d35c91aedf4b39504bb81fede",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "f718d7eae4328248280afe8857666905abc0d2e7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py": "cf6abdd3b6404f31b7a975e0d83126995e884197",
@@ -4997,7 +4997,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py": "676f8a31c83739b88010172b0df2d6fc126040be",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py": "7aa53921bd01eef03a756964b8a84a52063e816b",
    "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": "3b641642decaf3df605960c543777b419e4a176c",
-   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "c1ed76a839a5e3cb7f125ae93cd62508c8aeadcc",
+   "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py": "b1e50917958ab7278af500567a6b956d6573ccaa",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py": "3425bb96f846fe740ccab0c1a36c51c08abf7951",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py": "173c5e2f3dcb6deb6e1fed8ad62b1751cfbf7ef4",
    "src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py": "2cce137feabb086798579b91e0dfeb79e9eed219",
@@ -5007,7 +5007,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "7c0041fc020bbab47d702464deee1bc44a4b9dd6"
+  "memlog": "c7760d8fdd500e55379a54dbe538874f91f6599a"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -6298,10 +6298,10 @@
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "121209d4c8e97e4cbde0d915810468cdb92eaa94",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "2762070814c18365d7b3d443cffa978b76f0312e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "837edb4dda24faa58b51a1fab021e2d6a6a5caf8"
   },
-  "memlog": "b390a2bfe2e63ee82e8d95d06a098cc4bce26c7d"
+  "memlog": "ef062b1e679254c5377ba5f8454065af097bcf77"
  },
  "pyforge-steward/spec-secure-live-dashboards": {
   "files": {},
