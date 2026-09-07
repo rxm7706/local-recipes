@@ -613,12 +613,12 @@ slices:
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
     brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
-                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.86.5
+                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.87.0
                                     # follow-through retro b87a402abd: CHANGELOG.md gains a
                                     # one-line note that config/failure-catalog.yaml was
                                     # regenerated for G114 (114 rows). NO shipped script
                                     # changed -- nothing to re-port into either compiled slice.
-                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
+                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.87.0 retro
                                     # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
                                     # Windows-ready -- build.number 0 -> 1, recipe-build green on
                                     # linux-64; new G114 documents that local_builder.py's noarch
@@ -626,7 +626,7 @@ slices:
                                     # noarch recipe only ever proves the native leg, never the
                                     # other-OS branch). CFE-surface delta: SKILL.md (G114, version,
                                     # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
-                                    # (8.86.4 -> 8.86.5).
+                                    # (8.86.4 -> 8.87.0).
                                     # NO shipped script changed -- nothing to re-port into either
                                     # compiled slice.
                                     # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
@@ -904,12 +904,12 @@ slices:
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
     brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
-                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.86.5
+                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.87.0
                                     # follow-through retro b87a402abd: CHANGELOG.md gains a
                                     # one-line note that config/failure-catalog.yaml was
                                     # regenerated for G114 (114 rows). NO shipped script
                                     # changed -- nothing to re-port into either compiled slice.
-                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
+                                    # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.87.0 retro
                                     # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
                                     # Windows-ready -- build.number 0 -> 1, recipe-build green on
                                     # linux-64; new G114 documents that local_builder.py's noarch
@@ -917,7 +917,7 @@ slices:
                                     # noarch recipe only ever proves the native leg, never the
                                     # other-OS branch). CFE-surface delta: SKILL.md (G114, version,
                                     # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
-                                    # (8.86.4 -> 8.86.5).
+                                    # (8.86.4 -> 8.87.0).
                                     # NO shipped script changed -- nothing to re-port into either
                                     # compiled slice.
                                     # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
