@@ -21,12 +21,10 @@ build:
       then: |
         set -ex
         export CGO_ENABLED=0
-        export GOPATH="${SRC_DIR}/go"
         go build -v -trimpath -ldflags "${{ ldflags }}" -o "${PREFIX}/bin/nic" ./cmd/nic
         go-licenses save ./cmd/nic --save_path "${SRC_DIR}/library_licenses" --ignore ${{ go_mod }}
       else: |
         set CGO_ENABLED=0
-        set "GOPATH=%SRC_DIR%\go"
         go build -v -trimpath -ldflags "${{ ldflags }}" -o "%LIBRARY_BIN%\nic.exe" .\cmd\nic
         if errorlevel 1 exit 1
         go-licenses save .\cmd\nic --save_path "%SRC_DIR%\library_licenses" --ignore ${{ go_mod }}
@@ -127,9 +125,16 @@ extra:
 #    # commit is not knowable from a source tarball. The -X target is the
 #    # internal/cli package path, NOT main -- version.go documents that pointing
 #    # it at main.version silently injects nothing.
-#    # GOPATH is pinned under $SRC_DIR rather than inherited: rattler-build v0.62+
-#    # strict env-isolation remaps $HOME, so the default $HOME/go module cache
-#    # location is not a stable place to write. Same pattern as recipes/osv-scanner.
+#    # GOOS / GOARCH / CGO_ENABLED / GOFLAGS are supplied by the conda
+#    # go-nocgo_<target> package via etc/conda/env_vars.d, so a plain `go build`
+#    # cross-compiles correctly on the linux_aarch64 / osx_arm64 legs with no
+#    # GOOS/GOARCH plumbing in this recipe. That package ALSO patches the default
+#    # GOPATH to $SRC_DIR/gopath (asserted by its own run_test.sh), so this recipe
+#    # deliberately does NOT set GOPATH -- an override would only fight a default
+#    # that is already correct and already inside the build sandbox.
+#    # CGO_ENABLED=0 is re-stated explicitly even though go-nocgo already sets it:
+#    # it mirrors upstream's Makefile/.goreleaser.yml and keeps the pure-Go intent
+#    # from silently changing if the compiler macro is ever swapped for go-cgo.
 #    # The build fetches modules from the network (upstream vendors nothing --
 #    # no vendor/ directory in the tarball). That is fine: conda-forge BUILD jobs
 #    # have network; only the TEST phase is offline. Same shape as the merged

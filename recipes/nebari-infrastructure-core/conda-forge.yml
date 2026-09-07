@@ -6,23 +6,31 @@ bot:
   automerge: true
   check_solvable: true
   inspection: hint-all
-build_platform:
-  linux_aarch64: linux_64
-  osx_arm64: osx_64
 provider:
-  linux_aarch64: azure
-  osx_arm64: azure
-test: native_and_emulated
+  linux_aarch64: default
+  osx_arm64: default
 
 #### CFE metadata AND comments
 # CFE comments
 #    # Pre-seeds the feedstock (CFE skill default, G83): these keys are INERT in
 #    # a staged-recipes PR (build_all.py reads only conda_build_tool) and are
 #    # forwarded into the feedstock on merge. nebari-infrastructure-core is
-#    # COMPILED (pure Go, CGO_ENABLED=0), so it carries the full ARM platform
-#    # matrix (osx-arm64 + linux-aarch64) on top of the universal build-tool +
-#    # bot block. Upstream itself ships linux/darwin/windows on both amd64 and
-#    # arm64, so every leg in this matrix has an upstream-supported counterpart.
+#    # COMPILED (pure Go, CGO_ENABLED=0), so it carries the ARM platform matrix
+#    # (osx-arm64 + linux-aarch64) on top of the universal build-tool + bot block.
+#    # Upstream itself ships linux/darwin/windows on both amd64 and arm64, so
+#    # every leg here has an upstream-supported counterpart.
+#    # THIS IS THE ONLY WAY osx-arm64 GETS BUILT: a staged-recipes PR builds a
+#    # fixed 3-leg matrix (linux_64 / osx_64 / win_64) and has NO arm64 leg at all
+#    # (G82), so osx-arm64 cannot be validated pre-merge -- it is produced by the
+#    # feedstock after merge, from these keys.
+#    # `provider: <arch>: default` is the ENABLE switch (conda-smithy's field
+#    # default is null = leg off). build_platform is deliberately left UNSET so
+#    # both ARM legs run NATIVELY (osx_arm64 on Azure's macOS-15-arm64 image,
+#    # linux_aarch64 on native GHA arm64 runners) and therefore RUN THEIR TESTS.
+#    # An earlier draft pinned build_platform: {osx_arm64: osx_64}, which would
+#    # have cross-compiled on Intel and skipped the test phase
+#    # (CONDA_BUILD_CROSS_COMPILATION=1) -- shipping an arm64 binary that never
+#    # once executed `nic version`. Same shape as conda-forge/osv-scanner.
 #    # No run_deps_from_wheel: this is not a Python package -- it produces no wheel.
 #    # This #### CFE block is local-recipes-only and STRIPPED before push (G62) --
 #    # the pushed file is the trim top comment + keys.
