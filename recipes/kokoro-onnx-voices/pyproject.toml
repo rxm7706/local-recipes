@@ -1,0 +1,24 @@
+# Installs the resolver module as a real distribution so importlib.metadata
+# and pip check both see it. The voice embeddings themselves are NOT package
+# data -- they are placed under $PREFIX/share/kokoro-onnx by the recipe's
+# build script, which keeps a 27 MB payload out of site-packages and lets the
+# model packages drop their files into the same directory.
+#
+# The distribution is named for the voices it ships, but the import name stays
+# `kokoro_onnx_models`: the module resolves models as well as voices, and it
+# is the name already documented for the chain. A distribution name that
+# differs from its import name is ordinary and `pip check` does not care.
+[project]
+name = "kokoro-onnx-voices"
+version = "1.0"
+description = "Kokoro TTS voice embeddings and model resolver, from the conda prefix"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["kokoro_onnx_models"]

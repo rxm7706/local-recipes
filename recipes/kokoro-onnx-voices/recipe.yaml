@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+  release: model-files-v1.0
+
+package:
+  name: kokoro-onnx-voices
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/${{ release }}/voices-v1.0.bin
+    sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+    file_name: voices-v1.0.bin
+
+build:
+  number: 0
+  noarch: python
+  dynamic_linking:
+    # voices-v1.0.bin is a packed numpy archive of speaker embeddings -- data
+    # at fixed offsets, not a linkable object. Relocation would corrupt it
+    # silently rather than crash.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/kokoro-onnx"
+        mkdir -p "${DEST}"
+        cp -a voices-v1.0.bin "${DEST}/"
+        cp -a "${RECIPE_DIR}/pyproject.toml" "${RECIPE_DIR}/README.md" "${RECIPE_DIR}/kokoro_onnx_models" .
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - kokoro-onnx >=0.6.0
+
+tests:
+  - python:
+      imports:
+        - kokoro_onnx_models
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - package_contents:
+      files:
+        - share/kokoro-onnx/voices-v1.0.bin
+  - script:
+      # Resolution, payload integrity, and the no-model-installed error paths.
+      # See test_resolver.py for why this is a file and not inline -c lines.
+      - python test_resolver.py
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - numpy
+    files:
+      recipe:
+        - test_resolver.py
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://huggingface.co/hexgrad/Kokoro-82M
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: Kokoro v1.0 TTS voice embeddings, plus the model resolver for kokoro-onnx
+  description: |
+    The packed Kokoro v1.0 voice embeddings (`voices-v1.0.bin`) that
+    `kokoro-onnx` needs at runtime, installed into
+    `$CONDA_PREFIX/share/kokoro-onnx/` so an environment is complete from the
+    lock alone.
+
+    Voices are shared by every model variant, so they ship once here and the
+    weights ship separately:
+
+        kokoro-onnx-models        f32    311 MB
+        kokoro-onnx-models-fp16   fp16   169 MB
+        kokoro-onnx-models-int8   int8    88 MB
+
+    All three co-install. `kokoro-onnx` takes both paths as constructor
+    arguments and reads no environment variable for them, so this package also
+    ships the resolver:
+
+        from kokoro_onnx import Kokoro
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path(), get_voices_path())
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    `get_model_path()` picks the highest-precision installed variant;
+    `get_model_path("int8")` selects one explicitly.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx-voices
+  cfe-upstream-registry: github
+  cfe-upstream-name: thewh1teagle/kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx-voices@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://huggingface.co/hexgrad/Kokoro-82M
+  cfe-import-names: [kokoro_onnx_models]
+  cfe-source-kind: github-release-binary
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "model weights are a data payload conda-forge discourages and would want on a dedicated channel; the licence itself (Apache-2.0) is no obstacle"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: pending
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Split out of kokoro-onnx-models when the fp16 and int8 variants were
+#    # packaged. Every variant needs the SAME voices-v1.0.bin, so shipping it
+#    # from each model package would be a file clobber -- conda refuses to
+#    # install two packages owning one path -- and folding the variants into
+#    # one package would force a 311 MB f32 download on someone who wanted
+#    # int8's 88 MB. One shared voices package, three model packages that
+#    # co-install because their filenames differ, is the shape that satisfies
+#    # both.
+# build:
+#    # noarch: python because the resolver is pure Python and the embeddings
+#    # are architecture-independent data.
+#    # The payload goes to share/kokoro-onnx/, NOT site-packages: the model
+#    # packages drop their .onnx files into the same directory, which is what
+#    # lets one resolver find all of them.
+# requirements:
+#    # No dependency on a model package, deliberately. This package is
+#    # installable on its own (the resolver plus voices), and get_model_path()
+#    # raises a message naming the three model packages if none is present --
+#    # tested below. Depending on one would silently pick a variant for the
+#    # user, which is the decision this split exists to leave open.
+# tests:
+#    # The negative tests are the point. Two failure modes are easy to ship by
+#    # accident: get_model_path() returning a path to a file that is not there,
+#    # and an unknown variant name being reported as "not installed" rather
+#    # than as a typo. Both are asserted, along with numpy actually loading the
+#    # embeddings -- a contents check alone would pass on a truncated file.
+####
