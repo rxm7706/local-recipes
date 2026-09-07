@@ -462,6 +462,23 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         ),
     )
     provision_parser.add_argument(
+        "--plugin",
+        metavar="NAME",
+        help=(
+            "plugin-path install class to provision from by name (supported: "
+            "labs — bmad-labs-skills); never a --module target. See "
+            "install-class-playbook.md"
+        ),
+    )
+    provision_parser.add_argument(
+        "--skill",
+        metavar="NAME",
+        help=(
+            "skill to install with --plugin labs (consent list: mcp-builder, "
+            "slides-generator, multi-repo-git-ops, release-please)"
+        ),
+    )
+    provision_parser.add_argument(
         "--env", metavar="NAME", help="pixi environment name (pixi.toml's [environments] table)"
     )
     provision_parser.add_argument(
@@ -475,7 +492,10 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
     provision_parser.add_argument(
         "--json",
         action="store_true",
-        help="with --list, --module, --list-modules, or --prove-class-path, emit JSON instead of text",
+        help=(
+            "with --list, --module, --list-modules, --plugin, or "
+            "--prove-class-path, emit JSON instead of text"
+        ),
     )
     provision_parser.add_argument(
         "--verify", action="store_true", help="check environment.yaml against pixi.toml (the PR CI sync gate)"

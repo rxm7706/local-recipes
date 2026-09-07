@@ -84,6 +84,21 @@ loaded when an active project resolves.
 4. Switch to the new project: `scripts/bmad-switch <slug>`.
 5. Run BMAD skills as normal — they will write under the new project's directory.
 
+## Cutover target (foundry, AD-12)
+
+At the AD-17 cutover flip (Story 44.5, blocked pending solutioning review), `_bmad/`,
+`_bmad-output/projects/`, and `docs/dreams/` move into `python-foundry` as one unit — see the
+architecture spine `architecture-python-foundry-cutover-2026-09-04/ARCHITECTURE-SPINE.md` § AD-12
+for the full rule; it is not restated here. The marker file and both planning symlinks described
+above (§ Config layering, § Active project switching) are per-working-tree state: like the
+`.claude/skills`/`.cursor/skills` adapters AD-19 generates fresh per machine, they are **never
+copied** as static content — `bmad-switch` / `bmad-loop-worktree` recreate them in whichever root
+is active. `bmad-switch`'s own command surface and semantics are completely unchanged by the move;
+only the root it operates against changes, and only at the AD-17 flip.
+
+This describes a future state. As of this writing the foundry root does not exist, and the marker
+and symlinks still point at `local-recipes`.
+
 ## Reading another project's artifacts (without switching)
 
 For read-only cross-project access (e.g., comparing PRDs), just open the file

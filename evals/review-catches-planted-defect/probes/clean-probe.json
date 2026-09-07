@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "probeId": "P-001",
+  "probeClass": "zero-action",
+  "behaviorId": "B-001",
+  "systemId": "review-catches-planted-defect",
+  "implementationDigest": "sha256:98d98e362ba5f695011a781a4e778591399d7113d202ffc6cf06fcb9f62cbc47",
+  "artifactDigest": "sha256:baed06fa64fb4018049b396916a61e588f4952acd23dea046e32bea4e6ae81d3",
+  "commitDigest": "sha256:db406268fbafa0939e0af1a91746622e8cbabfbdbe33fa2133b2bef643bf755e",
+  "rationale": "The clean-control arm: pkg/discount.py:17 keeps the inclusive >= boundary. Reviewing arms/clean.diff should never cite a defect at that line.",
+  "qualification": {
+    "route": "clean-control",
+    "baselinePassEvidence": {
+      "storage": "public",
+      "path": "evals/review-catches-planted-defect/arms/clean.diff",
+      "privateRef": null,
+      "digest": "sha256:baed06fa64fb4018049b396916a61e588f4952acd23dea046e32bea4e6ae81d3"
+    },
+    "revisionCommitDigest": "sha256:db406268fbafa0939e0af1a91746622e8cbabfbdbe33fa2133b2bef643bf755e",
+    "noKnownDefectStatement": "arms/clean.diff introduces pkg/discount.py with the boundary check written as `if amount >= DISCOUNT_THRESHOLD:` at line 17 -- the inclusive form -- and no other defect is known in this fixture."
+  },
+  "expectedClean": true,
+  "defects": []
+}

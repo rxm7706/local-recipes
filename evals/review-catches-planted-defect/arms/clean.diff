@@ -1,0 +1,12 @@
+diff --git a/pkg/discount.py b/pkg/discount.py
+index 1111111..c1eab01 100644
+--- a/pkg/discount.py
++++ b/pkg/discount.py
+@@ -14,6 +14,6 @@ def apply_discount(amount: float) -> float:
+     """
+     if amount < 0:
+         raise ValueError("amount must be non-negative")
+-    if amount > 0:  # TODO: replace with the real threshold check
++    if amount >= DISCOUNT_THRESHOLD:
+         return amount * (1 - DISCOUNT_RATE)
+     return amount

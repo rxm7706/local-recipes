@@ -24,7 +24,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import ProvisionDuty, provision_module
 
@@ -64,6 +63,39 @@ def _write_bmb_skill(root: Path) -> Path:
     (skill_dir / "assets" / "module.yaml").write_text(_MODULE_YAML, encoding="utf-8")
     (skill_dir / "assets" / "module-help.csv").write_text(_MODULE_HELP_CSV, encoding="utf-8")
     (skill_dir / "scripts").mkdir()
+    return skill_dir
+
+
+# ── Story 46.4: the five real bmad-builder skills under `skills_source_dir`
+# (`.pixi/envs/local-recipes/share/bmad-builder/skills/`) ───────────────────
+
+_SKILLS_SOURCE_RELATIVE_PATH = Path(".pixi/envs/local-recipes/share/bmad-builder/skills")
+
+_SIBLING_BUILDER_SKILL_NAMES = (
+    "bmad-agent-builder",
+    "bmad-workflow-builder",
+    "bmad-module-builder",
+    "bmad-eval-runner",
+)
+
+_ALL_BUILDER_SKILL_NAMES = frozenset({"bmad-bmb-setup", *_SIBLING_BUILDER_SKILL_NAMES})
+
+
+def _write_bmb_skill_with_siblings(root: Path) -> Path:
+    """`_write_bmb_skill` plus the four sibling builder skills and the two
+    files (`module.yaml`, `module-help.csv`) confirmed live to sit alongside
+    all five skill dirs at `skills_source_dir` -- distinct from
+    `bmad-bmb-setup`'s own `assets/module.yaml` the merge scripts read.
+    Gives the directory-only discovery filter real files to skip, not just
+    directories to find."""
+    skill_dir = _write_bmb_skill(root)
+    skills_source = root / _SKILLS_SOURCE_RELATIVE_PATH
+    (skills_source / "module.yaml").write_text("code: bmad-builder\n", encoding="utf-8")
+    (skills_source / "module-help.csv").write_text("module,skill\n", encoding="utf-8")
+    for sibling in _SIBLING_BUILDER_SKILL_NAMES:
+        sibling_dir = skills_source / sibling
+        sibling_dir.mkdir()
+        (sibling_dir / "SKILL.md").write_text(f"# {sibling}\n", encoding="utf-8")
     return skill_dir
 
 
@@ -367,6 +399,90 @@ def test_provision_module_can_run_twice_without_error(tmp_path, monkeypatch):
     assert second["merge_config"]["status"] == "success"
 
 
+# ── Story 46.4: bmb's five skills land beside skf ────────────────────────
+
+
+def test_provision_module_bmb_copies_all_five_builder_skills_fresh(tmp_path, monkeypatch):
+    """I/O Matrix 'Fresh bmb provision': all five skill dirs land under
+    `.claude/skills/`, the two sibling files at `skills_source_dir` are
+    excluded, and `_bmad/config.yaml` still gains `bmb` via the unchanged
+    merge-config.py mechanism."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+
+    result = provision_module("bmb", cwd=tmp_path)
+
+    skills_dir = tmp_path / ".claude" / "skills"
+    for skill_name in _ALL_BUILDER_SKILL_NAMES:
+        assert (skills_dir / skill_name).is_dir(), skill_name
+    assert not (skills_dir / "module.yaml").exists()
+    assert not (skills_dir / "module-help.csv").exists()
+    assert set(result["skills_copied"]) == _ALL_BUILDER_SKILL_NAMES
+    assert (tmp_path / "_bmad" / "config.yaml").is_file()
+
+
+def test_provision_module_bmb_reprovision_overwrites_skills_in_place(tmp_path, monkeypatch):
+    """I/O Matrix 'Re-provision': the five dirs already exist from a prior,
+    bmb-recorded run -- overwritten in place (idempotent), no error, no
+    duplication. A stray leftover file inside a landed skill proves the
+    second run actually replaces the directory rather than merging into
+    whatever the first run left behind."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+
+    provision_module("bmb", cwd=tmp_path)
+    stray = tmp_path / ".claude" / "skills" / "bmad-agent-builder" / "STALE.md"
+    stray.write_text("leftover from a previous version\n", encoding="utf-8")
+
+    second = provision_module("bmb", cwd=tmp_path)
+
+    assert not stray.exists()
+    assert (tmp_path / ".claude" / "skills" / "bmad-agent-builder" / "SKILL.md").is_file()
+    assert set(second["skills_copied"]) == _ALL_BUILDER_SKILL_NAMES
+
+
+def test_provision_module_bmb_foreign_collision_refuses_and_writes_nothing(tmp_path, monkeypatch):
+    """I/O Matrix 'Foreign collision': `.claude/skills/bmad-agent-builder`
+    already exists but is NOT recorded as bmb-installed -- refuses with a
+    named collision error before any subprocess call, copies nothing, and
+    writes nothing to `_bmad/config.yaml`."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    foreign = tmp_path / ".claude" / "skills" / "bmad-agent-builder"
+    foreign.mkdir(parents=True)
+    (foreign / "SKILL.md").write_text("not the real one\n", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kwargs: calls.append(cmd))  # noqa: ARG005
+
+    with pytest.raises(RuntimeError, match="skill-name collision"):
+        provision_module("bmb", cwd=tmp_path)
+
+    assert calls == [], "collision refusal must happen before any subprocess call"
+    assert not (tmp_path / "_bmad" / "config.yaml").exists()
+    assert (foreign / "SKILL.md").read_text(encoding="utf-8") == "not the real one\n"
+    assert not (tmp_path / ".claude" / "skills" / "bmad-bmb-setup").exists()
+
+
+def test_provision_module_bmb_via_cli_reports_skills_copied_count(tmp_path, monkeypatch):
+    """The `--json` output surfaces `skills_copied` alongside the unchanged
+    `merge_config`/`merge_help_csv` keys, and the text summary names the
+    skill count -- both mirror the `CondaInstallBackend` path's own
+    `skills_installed` reporting rather than staying silent about the new
+    copy step."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+
+    duty = ProvisionDuty()
+    json_result = duty.run(_full_namespace(module="bmb", json=True))
+    text_result = duty.run(_full_namespace(module="bmb"))
+
+    assert json_result.ok is True
+    payload = json.loads(json_result.summary)
+    assert set(payload["skills_copied"]) == _ALL_BUILDER_SKILL_NAMES
+    assert text_result.ok is True
+    assert "5 skill(s)" in text_result.summary
+
+
 # ── ProvisionDuty / CLI dispatch ─────────────────────────────────────────
 
 
@@ -579,6 +695,64 @@ def test_provision_module_first_script_failure_names_nothing_written(tmp_path, m
     assert "Could not load module.yaml" in result.summary
     assert "nothing was written to _bmad/config.yaml" in result.summary
     assert "already wrote" not in result.summary
+
+
+def test_provision_module_bmb_retry_after_first_script_failure_does_not_self_collide(
+    tmp_path, monkeypatch
+):
+    """Review finding: an earlier draft copied bmb's five skill directories
+    BEFORE the merge-config.py/merge-help-csv.py subprocess calls. If those
+    calls then failed, the freshly-copied skill dirs were left behind with
+    _bmad/config.yaml never gaining the `bmb` key -- so a retry's own
+    `already_installed` check still read False and treated the module's own
+    leftover directories from the failed attempt as a foreign collision,
+    permanently self-locking every retry. The copy now runs only after both
+    scripts succeed, so a failed first attempt leaves nothing new behind to
+    collide with, and a fixed-and-retried run succeeds cleanly."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    def _failing_run(cmd, **kwargs):
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="transient uv error")
+
+    monkeypatch.setattr(subprocess, "run", _failing_run)
+    first = ProvisionDuty().run(_full_namespace(module="bmb"))
+    assert first.ok is False
+    assert not (tmp_path / ".claude/skills/bmad-bmb-setup").exists(), (
+        "the failed first attempt must not have copied anything"
+    )
+
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+    second = ProvisionDuty().run(_full_namespace(module="bmb"))
+
+    assert second.ok is True, second.summary
+    for skill in _ALL_BUILDER_SKILL_NAMES:
+        assert (tmp_path / ".claude/skills" / skill).is_dir(), skill
+
+
+def test_provision_module_bmb_target_exists_as_file_raises_named_error(tmp_path, monkeypatch):
+    """Review finding: a foreign plain file (not a directory) sitting at a
+    predicted skill path must fail with a clear, named RuntimeError, not an
+    unclear shutil.copytree FileExistsError. Uses an already-installed `bmb`
+    (the collision check is skipped once installed, per its own documented
+    idempotent-re-provision contract) so the scenario reaches
+    `_copy_setup_skill_dirs`'s own guard rather than the earlier collision
+    check, which would otherwise catch this exact path first via its
+    broader `.exists()` test."""
+    _write_bmb_skill_with_siblings(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+    bmad_dir = tmp_path / "_bmad"
+    bmad_dir.mkdir(parents=True)
+    (bmad_dir / "config.yaml").write_text("bmb: {}\n", encoding="utf-8")
+    claude_skills = tmp_path / ".claude/skills"
+    claude_skills.mkdir(parents=True)
+    (claude_skills / "bmad-bmb-setup").write_text("not a directory", encoding="utf-8")
+
+    result = ProvisionDuty().run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "exists and is not a directory" in result.summary
 
 
 def test_provision_module_output_dir_runtime_error_after_both_scripts_land_names_already_wrote_config(

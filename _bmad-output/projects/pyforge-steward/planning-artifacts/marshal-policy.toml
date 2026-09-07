@@ -533,6 +533,7 @@ verify_commands = [
   "pixi.toml",
   "pixi.lock",
   "environment.yaml",
+  "_bmad/**",
   "scripts/.spec-surface-baseline.json",
   "factory/**",
   "skills/**",

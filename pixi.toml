@@ -858,6 +858,10 @@ cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
 description = "Story 19.4 / CAP-5: fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all."
 cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
 
+[feature.local-recipes.tasks.tea-test-review]
+description = "Story 46.3 (spec-bmad-suite-lifecycle CAP-4 half): headless run of TEA's bmad-testarch-test-review skill (steward provision --module tea) against the PR's changed test files -- a Marshal review-lens / Warden-advisory precursor, never this task itself. Default: --base origin/main --min-score 80. Override or add flags after `--`, e.g. `pixi run -e local-recipes tea-test-review -- --min-score 90`. Not a gate: never joins detectors/detectors-ci -- Warden's own PR-gate exit code is unaffected by this task's existence."
+cmd = "tea-test-review --base origin/main --min-score 80"
+
 [feature.local-recipes.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
@@ -994,6 +998,18 @@ cmd = "python scripts/detectors.py --scope repo"
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
 cmd = "python scripts/deck_export.py"
+
+[feature.local-recipes.tasks.eval-quality-smoke]
+description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
+cmd = "python evals/review-catches-planted-defect/driver.py smoke"
+
+[feature.local-recipes.tasks.eval-quality-review-twin-run]
+description = "Story 45.2 (spec-45-2-the-reviewer-is-measured-against-a-planted-defect): drives the edge-case-hunter review layer headlessly via `claude -p` against a clean and a mutated arm of a planted boundary-condition defect (pkg/discount.py:17, >= flipped to >), then runs the real eval-quality preflight/score pipeline over both. One trial by default; pass `-- --trials N` for N trials per arm, aggregated into a catch-rate. Measurement harness, not a gate — never joins detectors/detectors-ci. Always exits 0: each arm/trial's `eval-quality score` exit is measurement data, printed per-trial and as a worst-case summary line, never propagated as this task's own exit code."
+cmd = "python evals/review-catches-planted-defect/driver.py twin-run"
+
+[feature.local-recipes.tasks.eval-quality-review-replay]
+description = "Story 45.2: re-scores a previously sealed run record from an eval-quality-review-twin-run invocation (same --out-dir) without re-invoking `claude -p`. Usage: pixi run -e local-recipes eval-quality-review-replay -- <path-to-a-*-record.json>. Missing record file exits non-zero with a clear message. Not a gate: never joins detectors/detectors-ci."
+cmd = "python evals/review-catches-planted-defect/driver.py replay"
 
 [feature.local-recipes.tasks.sprint-ledger-sync]
 description = "Promote each project's Tier-3 story-status map to its TRACKED twin at planning-artifacts/sprint-status-ledger.yaml. implementation-artifacts/ is gitignored wholesale, so sprint-status.yaml is invisible to CI. Written in the feed's own shape so fleet_scan.parse_sprint_status reads both. Idempotent; run it when a story lands, then commit."

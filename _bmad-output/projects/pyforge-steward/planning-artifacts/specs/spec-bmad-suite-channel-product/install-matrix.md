@@ -11,7 +11,7 @@ verification gate.
 
 | Package | Pixi (channel) | Native method (cited) | Hazards |
 |---|---|---|---|
-| bmad-method | conda-forge (canonical) 6.12.0; SelfExplainML refresh-parity 6.12.0 | `npx bmad-method install` (README L16; bins `bmad`, `bmad-method`) | npm current. **Installed-stage caveat:** pipeline-truth reads the pixi env's conda-meta (6.12.0), not the applied `_bmad/_config/manifest.yaml` (6.11.0 until steward Epic 14 applies) — doctor's core drift is the signal for that gap |
+| bmad-method | conda-forge (canonical) 6.12.0; SelfExplainML refresh-parity 6.12.0 | `npx bmad-method install` (README L16; bins `bmad`, `bmad-method`) | npm current |
 | bmad-loop | SelfExplainML 0.11.1 | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.1"` (README) — NOT on PyPI | npm-invisible |
 | TEA | SelfExplainML 1.24.0 | `npx bmad-method install` → select "Test Architect (TEA)" (README § Install); headless bin `tea-test-review` | npm current (the v1.23.3 tagged-unreleased watch closed 2026-09-05: 1.24.0 released) |
 | bmad-builder | SelfExplainML 2.2.2 | `npx bmad-method install` → select "BMad Builder" | npm STALE (1.1.0, 2026-03) — GitHub canonical |
