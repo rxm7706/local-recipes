@@ -1,0 +1,181 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+  release: model-files-v1.0
+
+package:
+  name: kokoro-onnx-models
+  version: ${{ version }}
+
+source:
+  # Two separate release assets, not an archive, so each is fetched by name
+  # with its own checksum and file_name.
+  - url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/${{ release }}/kokoro-v1.0.onnx
+    sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+    file_name: kokoro-v1.0.onnx
+  - url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/${{ release }}/voices-v1.0.bin
+    sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+    file_name: voices-v1.0.bin
+
+build:
+  number: 0
+  noarch: python
+  dynamic_linking:
+    # The .onnx is a protobuf container carrying ~310 MB of tensor data at
+    # fixed offsets. It is data, not a linkable object, and must not be
+    # touched by relocation -- the failure that corrupted a Bun binary in
+    # this repo's ccusage recipe and would silently produce garbage weights
+    # here rather than an obvious crash.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/kokoro-onnx"
+        mkdir -p "${DEST}"
+        cp -a kokoro-v1.0.onnx voices-v1.0.bin "${DEST}/"
+        cp -a "${RECIPE_DIR}/pyproject.toml" "${RECIPE_DIR}/README.md" "${RECIPE_DIR}/kokoro_onnx_models" .
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    # Constrain-if-present: this package is useful on its own as a weights
+    # store, so kokoro-onnx is not a hard dependency, but a mismatched pair
+    # should not co-install silently.
+    - kokoro-onnx >=0.6.0
+
+tests:
+  - python:
+      imports:
+        - kokoro_onnx_models
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - package_contents:
+      files:
+        - share/kokoro-onnx/kokoro-v1.0.onnx
+        - share/kokoro-onnx/voices-v1.0.bin
+  - script:
+      # Resolution must be real, and the payload must be intact: a truncated
+      # or relocation-mangled .onnx would still satisfy a contents check.
+      - python -c "import kokoro_onnx_models as m; print('model :', m.get_model_path())"
+      - python -c "import kokoro_onnx_models as m; print('voices:', m.get_voices_path())"
+      - python -c "import kokoro_onnx_models as m, sys; assert m.get_model_path().startswith(sys.prefix)"
+      - python -c "import kokoro_onnx_models as m, os; s=os.path.getsize(m.get_model_path()); assert s == 325532387, s; print('model bytes OK:', s)"
+      - python -c "import kokoro_onnx_models as m, os; s=os.path.getsize(m.get_voices_path()); assert s == 28214398, s; print('voices bytes OK:', s)"
+      # The ONNX container must still parse -- the check that actually
+      # distinguishes intact weights from a mangled file.
+      - python -c "import onnx, kokoro_onnx_models as m; g=onnx.load(m.get_model_path()).graph; print('onnx graph OK, nodes:', len(g.node))"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - onnx
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://huggingface.co/hexgrad/Kokoro-82M
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: Kokoro v1.0 TTS model weights and voices for kokoro-onnx
+  description: |
+    The Kokoro v1.0 ONNX model (f32) and packed voice embeddings that
+    `kokoro-onnx` needs at runtime, installed into
+    `$CONDA_PREFIX/share/kokoro-onnx/` so an environment is complete from the
+    lock alone rather than requiring a 337 MB manual download.
+
+    `kokoro-onnx` takes both paths as constructor arguments and reads no
+    environment variable for them, so this package also ships a small
+    resolver:
+
+        from kokoro_onnx import Kokoro
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path(), get_voices_path())
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    Only the f32 model is packaged. Upstream's release also offers fp16
+    (169 MB), fp16-gpu (169 MB) and int8 (88 MB) variants for callers who
+    would rather trade precision for size.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx-models
+  cfe-upstream-registry: github
+  cfe-upstream-name: thewh1teagle/kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx-models@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://huggingface.co/hexgrad/Kokoro-82M
+  cfe-import-names: [kokoro_onnx_models]
+  cfe-source-kind: github-release-binary
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "337 MB of model weights - conda-forge discourages large binary data packages and would want this on a dedicated channel; the licence itself (Apache-2.0) is no obstacle"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T14:05:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Completes the kokoro-onnx chain: espeak-ng <- espeakng-loader <-
+#    # phonemizer <- kokoro-onnx <- (this). Without it an environment can
+#    # phonemise but cannot synthesise, because the weights are a separate
+#    # 337 MB download the lock file knows nothing about -- the same
+#    # "machine-global thing the lock cannot describe" shape as the
+#    # playwright browsers in this repo.
+# source:
+#    # Two bare release assets rather than an archive, so file_name is
+#    # required (there is no extension-driven unpacking to rely on) and each
+#    # carries its own sha256. Checksums verified by re-fetching, not reused
+#    # from an earlier download.
+# build:
+#    # The weights go to share/kokoro-onnx/, NOT into site-packages: a
+#    # 337 MB payload has no business inside an importable package, and
+#    # keeping it out means the resolver module stays a few KB.
+#    # noarch: python -- the weights are architecture-independent data and
+#    # the resolver is pure Python. The f32 model runs anywhere onnxruntime
+#    # does.
+#    # binary_relocation: false is a real precaution, not boilerplate. The
+#    # .onnx is a protobuf holding tensor data at fixed offsets; relocation
+#    # rewriting it would not crash loudly, it would silently corrupt
+#    # weights. Same class of hazard as the ccusage Bun binary in this repo,
+#    # with a quieter failure mode.
+# requirements:
+#    # kokoro-onnx is a run_constraint, not a dependency: this package is a
+#    # weights store and is independently useful (another ONNX runtime could
+#    # load it), but pairing it with an incompatible kokoro-onnx should not
+#    # happen silently.
+# tests:
+#    # Three layers deliberately. package_contents proves the files shipped;
+#    # exact byte sizes prove they are not truncated; onnx.load() parsing the
+#    # graph proves the protobuf is intact. Only the last would catch a
+#    # relocation-mangled model, which is exactly the failure the build
+#    # guards against -- and it is why `onnx` is pulled into the test
+#    # environment even though the package itself does not need it.
+# about:
+#    # Apache-2.0 from hexgrad/Kokoro-82M, the upstream model card. Only the
+#    # f32 build is packaged; fp16 / fp16-gpu / int8 variants exist upstream
+#    # and would each need their own package or a variant axis.
+####

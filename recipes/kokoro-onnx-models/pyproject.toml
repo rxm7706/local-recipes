@@ -1,0 +1,18 @@
+# Installs the resolver module as a real distribution so importlib.metadata
+# and pip check both see it. The weights themselves are NOT package data --
+# they are placed under $PREFIX/share/kokoro-onnx by the recipe's build
+# script, which keeps a 337 MB payload out of site-packages.
+[project]
+name = "kokoro-onnx-models"
+version = "1.0"
+description = "Kokoro TTS model weights, resolved from the conda prefix"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["kokoro_onnx_models"]
