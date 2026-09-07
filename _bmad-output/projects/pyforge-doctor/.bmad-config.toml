@@ -4,3 +4,14 @@ output_folder = "_bmad-output/projects/pyforge-doctor"
 slug = "pyforge-doctor"
 description = "Doctor — ecosystem health & diagnostics CLI (pre-flight checks, fleet monitoring, prescriptions); consolidates atlas health/watch CLIs + warden self-check. dist pyforge-doctor / module pyforge.doctor / CLI doctor"
 status = "active"
+
+[tea]
+# Story 31.1 (spec-bmad-suite-lifecycle CAP-4, AD-9 "one path pinned"):
+# test-architecture.md's canonical writer for this station. TEA's
+# bmad-testarch-test-design ran for real (system-level) 2026-09-07 and its
+# equivalence against the generator's Story Coverage Matrix narrowed --
+# TEA's risk-tiered template names ~8-10 of 113 story ids verbatim (it
+# scopes to the one backlog epic, not an exhaustive per-story matrix).
+# Report: _bmad-output/projects/pyforge-marshal/planning-artifacts/reviews/tea-equivalence-2026-09-07.md
+test_architecture_path = "planning-artifacts/test-architecture.md"
+test_architecture_writer = "generator"

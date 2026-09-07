@@ -1,7 +1,9 @@
 """Unit tests for ``pyforge.marshal.adapters.harness_bmadloop`` (Story 1.10,
 AD-10/AD-12/AD-35, FR-49/50/51) -- ``render_policy_toml()``/
 ``write_policy_toml()`` across the full I/O & Edge-Case Matrix: determinism,
-all 6 Marshal-mapped keys, FR-51 tier-batching (full/partial/unknown
+all 6 Marshal-mapped bmad-loop-adjacent scalar knobs (Story 25.4's original
+5, plus Story 31.3's (CAP-4) ``review_min_score`` as the 6th), FR-51
+tier-batching (full/partial/unknown
 difficulty), empty ``verify_commands``, rendered-TOML validity, and
 ``write_policy_toml``'s atomic-overwrite behavior.
 
@@ -36,7 +38,7 @@ def _compose(**project_overrides):
 # --- full composition, all 11 mapped keys ------------------------------------
 
 
-def test_full_composition_maps_all_eleven_keys_and_keeps_template_baseline_elsewhere():
+def test_full_composition_maps_all_twelve_keys_and_keeps_template_baseline_elsewhere():
     effective = _compose(
         gate_mode="none",
         max_dev_attempts=5,
@@ -49,6 +51,7 @@ def test_full_composition_maps_all_eleven_keys_and_keeps_template_baseline_elsew
         dev_contract_nudge=False,
         operator_enabled=False,
         stream_capture_kb=64,
+        review_min_score=90,
     )
     doc = tomllib.loads(render_policy_toml(effective))
 
@@ -73,6 +76,9 @@ def test_full_composition_maps_all_eleven_keys_and_keeps_template_baseline_elsew
     assert doc["operator"]["enabled"] is False
     assert doc["verify"]["stream_capture_kb"] == 64
     assert not isinstance(doc["verify"]["stream_capture_kb"], bool)
+    # Story 31.3's 6th knob: same exact-type discipline.
+    assert doc["review"]["min_score"] == 90
+    assert not isinstance(doc["review"]["min_score"], bool)
 
     # every other key at template baseline, including the 6 hardcoded
     # repo-wide overrides
@@ -111,6 +117,10 @@ def test_defaults_only_composition_maps_marshal_defaults():
     assert doc["operator"]["enabled"] is True
     assert doc["verify"]["stream_capture_kb"] == 256
     assert not isinstance(doc["verify"]["stream_capture_kb"], bool)
+    # Story 31.3 (CAP-4): the tea-test-review lens's default, upstream's
+    # own example value (spec-bmad-suite-lifecycle open question 2).
+    assert doc["review"]["min_score"] == 80
+    assert not isinstance(doc["review"]["min_score"], bool)
     # 2, deliberately not the harness's stock 1 and not a loosened assertion:
     # DEFAULT_POLICY is the only repo-wide home for a repo-wide decision, and a
     # cap of 1 damped five still-recommended follow-up reviews across three
@@ -242,7 +252,17 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     salvage-if-done / defer; on_status_contradiction: escalate / retry). A
     direct ``bmad_loop`` import is fine IN A TEST: AD-3's import-linter
     contract binds the installed package's modules, not test code (the same
-    bounds ``test_harness_bmadloop_preflight.py`` already relies on)."""
+    bounds ``test_harness_bmadloop_preflight.py`` already relies on).
+
+    Story 31.3's ``review.min_score`` is asserted separately below via
+    ``hasattr`` rather than a value comparison: ``bmad_loop`` 0.11's own
+    ``ReviewPolicy`` dataclass has no ``min_score`` field at all (verified
+    against the installed package source), so the key is silently ignored
+    at load, never surfaced on the parsed object -- exactly the "inert
+    extra key" behavior this story's own design relies on (the rendered
+    value is never READ or CONSUMED by the harness itself, per AD-4 --
+    it is still a real, rendered TOML key, just an inert one to bmad_loop's
+    own loader)."""
     bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
 
     loaded = bmad_loop_policy.loads(render_policy_toml(_compose()))
@@ -251,6 +271,7 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     assert loaded.limits.dev_contract_nudge is True
     assert loaded.operator.enabled is True
     assert loaded.verify.stream_capture_kb == 256
+    assert not hasattr(loaded.review, "min_score")
 
     overridden = bmad_loop_policy.loads(
         render_policy_toml(

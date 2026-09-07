@@ -10,3 +10,14 @@ output_folder = "_bmad-output/projects/pyforge-warden"
 slug = "pyforge-warden"
 description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry + osv-scanner over Python/Conda/Pixi manifests; schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at src/shared/packages/pyforge-warden (builds conda + wheel + sdist). Intake spec: docs/specs/pyforge-warden.md."
 status = "active"
+
+[tea]
+# Story 31.1 (spec-bmad-suite-lifecycle CAP-4, AD-9 "one path pinned"):
+# test-architecture.md's canonical writer for this station. TEA's
+# bmad-testarch-test-design ran for real (system-level) 2026-09-07 and its
+# equivalence against the generator's Story Coverage Matrix narrowed --
+# TEA's risk-tiered template names 16 of 43 story ids / 0 of the baseline's
+# test paths verbatim (it samples P0-P3 risks, not an exhaustive matrix).
+# Report: _bmad-output/projects/pyforge-marshal/planning-artifacts/reviews/tea-equivalence-2026-09-07.md
+test_architecture_path = "planning-artifacts/test-architecture.md"
+test_architecture_writer = "generator"

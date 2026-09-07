@@ -2,29 +2,29 @@
 title: "Test Architecture — pyforge-doctor"
 type: test-architecture
 generator: bmad_tea_playwright.py
-generator_version: 2.0.0
+generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 9e18b242bb85297f
-story_count: 61
-test_file_count: 53
+source_fingerprint: af3aa4c83a30e43f
+story_count: 73
+test_file_count: 61
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
 
 # Test Architecture — PyForge Doctor
 
-This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do not hand-edit; re-run the generator after epics or tests change.
+This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do not hand-edit; re-run the generator after epics or tests change.
 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 61
-- **Epics parsed:** 19
-- **Test files inventoried:** 53 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 73
+- **Epics parsed:** 23
+- **Test files inventoried:** 61 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9e18b242bb85297f`
+- **Source fingerprint:** `af3aa4c83a30e43f`
 
 ## Risk Assessment
 
@@ -46,6 +46,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 - Epic 14: The bmad-suite's lag is as visible as the core's
 - Epic 15: The suite pipeline's drift is ambient at every stage
 - Epic 16: Sibling dreams directories don't drift silently
+- Epic 17: Gather/prescribe hook spec
+- Epic 19: Suite drift matches the channel catalog (registry-aware upstream)
 - Epic 2: Fleet Pulse (doctor monitor --fleet)
 - Epic 3: Diagnose & Prescribe (doctor diagnose --prescribe)
 
@@ -55,6 +57,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 - Epic 6: Every verdict comes home (Charter §6, generalized)
 - Epic 10: Doctor notices when BMAD-METHOD's own installed core falls behind upstream
 - Epic 12: The fleet's own hygiene/verification tooling gets its documented sharp edges fixed
+- Epic 18: Doctor owns its skill, persona, and one portal job
+- Epic 20: Doctor reads the whole suite and guards the estate's two blind spots
 
 ## Test Inventory
 
@@ -64,11 +68,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_env_hygiene_no_execution.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_no_warden_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_prescribe_pure_function.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_read_only_guard.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_score_pure_function.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_sources_warden_no_subprocess.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_narrows_warden.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py` | unit | none observed |
@@ -80,8 +87,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_cli_diagnose.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_cli_monitor.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_detector_incident_log.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_hooks_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_hygiene_definitions.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_main_stub.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_partition.py` | unit | none observed |
@@ -109,9 +119,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py` | unit | none observed |
 
 ## Story Coverage Matrix
@@ -155,6 +167,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | 8.2 | Minting picks the next free suffix per station convention | none observed |
 | 8.3 | The fix mode promotes the backlog and refuses on collision | none observed |
 | 8.4 | The baseline re-stamps so a second run is a no-op | none observed |
+| 8.5 | The detector recognizes content that already reached the ledger by another path | none observed |
+| 8.6 | DW-FU-8-4 closes — the collision-abort redesign, plus the parsing gap it surf... | none observed |
+| 8.7 | The promoter learns to copy already-identified-but-untracked entries too | none observed |
 | 9.1 | The five hygiene finding classes get testable definitions | none observed |
 | 9.2 | The sweep runs against all eight stations | none observed |
 | 9.3 | Hygiene findings report and never mutate | none observed |
@@ -179,6 +194,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | 15.1 | GitHub releases unblind the npm-invisible packages | none observed |
 | 15.2 | Channel and recipe staleness are ambient findings | none observed |
 | 16.1 | The shared-title diff is an ambient finding | none observed |
+| 17.1 | Extract gather/prescribe source plugins | none observed |
+| 18.1 | SKF domain skill and BMAD persona for doctor | none observed |
+| 18.2 | First portal slice — last fleet pulse | none observed |
+| 19.1 | The suite watched set matches the channel catalog and upstream follows recipe... | none observed |
+| 20.1 | Suite drift maps every active member, derived from the roster | none observed |
+| 20.2 | The render-HALT class has a detector | none observed |
+| 20.3 | `frozen-path-changed` exists | none observed |
+| 20.4 | `bmad-os-root-cause-analysis` is doctor-wielded | none observed |
+| 20.5 | The version-drift Spec's open questions are written back | none observed |
 
 ## Quality Gates
 
@@ -188,10 +212,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do 
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
 | Idempotent regen | byte-identical on unchanged tree | FR-132 |
+| Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration
 
 ```bash
 python _bmad/scripts/bmad_tea_playwright.py --project pyforge-doctor
 python _bmad/scripts/bmad_tea_playwright.py --all
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-doctor --check
+python _bmad/scripts/bmad_tea_playwright.py --all --check
 ```

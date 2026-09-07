@@ -1,0 +1,73 @@
+# Team override for bmad-review — local-recipes / PyForge factory.
+# Personal overrides go in bmad-review.user.toml (gitignored).
+#
+# Story 31.3 (spec-bmad-suite-lifecycle CAP-4; AD-4, AD-10): adds
+# `tea-test-review` as an ADVISORY marshal review lens, beside the shipped
+# `edge-case-hunter`. AD-4 boundary: this file is the sole placement for the
+# lens (the lens ITSELF lives only here, never as a `.bmad-loop/policy.toml`
+# key, and never as an in-place edit to a skill file -- the `review_min_score`
+# value it reads at runtime IS a real rendered policy.toml key, per AD-9,
+# just one the harness itself never reads back);
+# its findings are appended to the review output as `warn`-severity
+# observations only -- they never join `detectors`/`detectors-ci`, and they
+# never change a run's `done`/`review` routing (Warden's own PR-verdict exit
+# code, and bmad-loop's own review-verdict routing, are both unaffected by
+# this lens's existence or its findings, matching pixi.toml's own
+# `tea-test-review` task description).
+
+[[workflow.lenses]]
+code = "tea-test-review"
+name = "TEA Test Review"
+applies_to = "code"
+when = "Reviewing a diff/branch/commit-range in a git repo where the AD-9 module roster (`_bmad/custom/config.toml`'s `[modules.tea]`) is provisioned. Refused (no findings, not an error) when the roster lacks `tea` (AD-10) -- e.g. a repo that has not run steward's TEA-provisioning story yet."
+instruction = """
+Check whether TEA is provisioned before doing anything else: read
+`_bmad/custom/config.toml` and confirm a `[modules.tea]` table exists. If it
+does not, or the file/key cannot be read, report zero findings and stop --
+this lens is refused cleanly (AD-10), not a failure.
+
+Resolve `min_score` (the review-quality floor to pass to `tea-test-review`):
+if the content under review is a real git worktree with a rendered
+`.bmad-loop/policy.toml` at its root (or an ancestor, walking up from the
+content's own path) containing a `[review]` table with a `min_score` key
+that parses as a plain integer, use that value. If the key is present but
+does not parse as a plain integer (malformed rendering, hand-edited file),
+or no such file/key exists at all, use 80 (Marshal's own `core/policy.py`
+`DEFAULT_POLICY["review_min_score"]`, spec-bmad-suite-lifecycle open
+question 2's own upstream-example answer) -- never pass a non-integer or
+guessed value to `--min-score`.
+
+Run, from the repository root, with a hard wall-clock budget of 30 minutes
+(matching `tea-test-review`'s own `--timeout-ms` default) and using a
+uniquely-named temp file for `--json` that you delete after reading it
+(success or failure): `pixi run -e local-recipes tea-test-review --
+--base <the content's base ref, or origin/main if none is stated> --min-score
+<the resolved value> --json <that temp file>` (the pixi task already
+supplies `--base origin/main` as its own default -- override it only when
+the content under review states a different base). Treat ANY of the
+following as an environment failure, not a verdict: the command cannot run
+at all (`tea-test-review` not installed, the pixi environment missing, a
+non-git-repo target); it exits with any code other than 0 or 1 (2/3 are the
+tool's own documented environment/agent/parse-failure codes, but also treat
+an unexpected/killed/timeout exit the same way); or it exits 0/1 but the
+JSON file is missing, empty, or fails to parse as JSON. In every such case,
+report ONE finding at this lens's own discretion describing the problem,
+and stop -- never retry, never fall back to a different invocation, never
+fabricate findings from a report you could not actually read.
+
+On a genuine successful run (exit 0 or 1, JSON parsed cleanly -- both exit
+codes are real verdicts, not failures), read the JSON verdict file. For each
+named issue in its report (Critical / High / Medium violations, a
+below-floor quality score, a below-floor file count, a recommendation at or
+above --fail-on's threshold), emit ONE finding in this skill's canonical
+shape with `lens: "tea-test-review"` and an explicit note that its severity
+is capped at `warn` regardless of what `tea-test-review` itself called it --
+this lens never asserts high/medium/low per bmad-review's own triage
+vocabulary, and its findings must never be treated as revoking the reviewed
+story's sign-off (AD-4: advisory only). If the verdict is a clean pass with
+no issues, report zero findings.
+
+Do not invoke any skill, and do not spawn subagents of your own -- you are
+the reviewer. Return your findings as text in your final message; do not
+route them through any findings-reporting tool the host may offer.
+"""

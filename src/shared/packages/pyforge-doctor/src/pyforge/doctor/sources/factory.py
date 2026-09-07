@@ -997,6 +997,25 @@ def classify(path: Path, target: Path) -> str:
         # bmad test-architecture output — a chain artifact alongside prd/architecture,
         # so it classifies with them rather than earning its own category.
         return "tracked:plan"
+    if rel in (
+        "planning-artifacts/test-design-architecture.md",
+        "planning-artifacts/test-design-qa.md",
+    ) or re.fullmatch(r"planning-artifacts/test-design/[A-Za-z0-9._-]+-handoff\.md", rel):
+        # Story 31.1 (spec-bmad-suite-lifecycle CAP-4): TEA's real
+        # bmad-testarch-test-design output (system-level mode) — the same chain-artifact
+        # role as test-architecture.md above, kept as an additive artifact regardless of
+        # the equivalence outcome (see planning-artifacts/reviews/tea-equivalence-*.md).
+        return "tracked:plan"
+    if rel == "planning-artifacts/test-design-progress-system.md":
+        # TEA workflow's own per-run checkpoint (Story 31.1) — regenerated on every
+        # bmad-testarch-test-design invocation, same "dated re-run" shape as the
+        # implementation-readiness-report snapshot above.
+        return "tracked:snapshot"
+    if re.fullmatch(r"planning-artifacts/reviews/[A-Za-z0-9._-]+\.md", rel):
+        # Story 31.1: a top-level review artifact (e.g. the TEA equivalence report),
+        # distinct from the sharded per-run `architecture-.../reviews/` folders already
+        # matched above. Classifies with the other chain review artifacts.
+        return "tracked:plan"
     if rel == "planning-artifacts/upstream-register.json":
         # Marshal's hand-curated register of upstream bmad-loop gaps + workarounds
         # (FR-58/AD-2), read by `marshal upstream`. Curated data, so git review — not
