@@ -165,7 +165,16 @@ of CAPs per shift, IDs never reused.
   seven in-place-edited installer-owned files are governed. *Success:* Stories
   31.1–31.4 done; the equivalence report on disk; spec-surface reports zero
   `uncovered` for the seven.
-  **Outcome (2026-09-07, Stories 31.1–31.2 only — 31.3/31.4 not yet landed):**
+  **Outcome (2026-09-07, Stories 31.1–31.3 — 31.4 not yet landed):**
+  31.3 added `_bmad/custom/bmad-review.toml`'s `tea-test-review` lens
+  (beside `edge-case-hunter`; refused when the AD-9 roster lacks `tea`) and
+  `core/policy.py`'s new `review_min_score` SEED key (33rd key, default 80
+  per spec-bmad-suite-lifecycle's own open question 2 — upstream's example
+  value; calibration plan against the first ten PRs recorded in this spec's
+  `.memlog.md`), rendered into all 8 loop-home `policy.toml` files and
+  confirmed harmless to `bmad_loop` 0.11's own lenient `[review]` parser
+  (verified against the installed package; `policy: OK` on all 8 via
+  `bmad-loop validate`).
   31.1 ran `bmad-testarch-test-design` for real against all 8 stations
   (Contract: `spec-bmad-suite-lifecycle` CAP-4 / AD-5, AD-9, AD-10);
   `bmad-testarch-framework` was applicability-checked, not run live (no
