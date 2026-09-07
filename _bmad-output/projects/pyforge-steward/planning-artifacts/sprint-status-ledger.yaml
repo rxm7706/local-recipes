@@ -52,7 +52,7 @@ development_status:
   14-6-the-installer-is-driven-on-purpose-and-a-no-op-apply-is-a-refusal: done
   14-7-custom-modules-survive-the-core-apply: done
   14-8-local-edits-to-installer-owned-files-are-found-before-and-re-applied-after: done
-  14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: blocked
+  14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims: done
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
@@ -172,8 +172,8 @@ development_status:
   46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven: backlog
   46-5-labs-skills-arrive-by-name-and-by-consent: backlog
   46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path: backlog
-  46-7-skf-is-pinned-to-v2-1-0-and-cap-7-is-exercised-live: backlog
-  46-8-cis-is-re-provisioned-to-the-packaged-revision: backlog
+  46-7-skf-is-pinned-to-v2-1-0-and-cap-7-is-exercised-live: done
+  46-8-cis-is-re-provisioned-to-the-packaged-revision: done
   46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env: backlog
   47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal: backlog
   47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: backlog

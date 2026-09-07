@@ -4532,6 +4532,10 @@ guard passes on the swept tree while failing on a planted `bmad-checkpoint-previ
 The Spec's open question — derive the tuple from steward's
 `data/bmad_core_releases/<ver>.yaml` (`skill_renames` + `removals`) — is answered here: derive
 once the 6.12.0 catalog exists, otherwise keep the hand tuple with a dated comment.
+**Status:** done
+**Outcome (2026-09-06):** `bmad-checkpoint-preview` added to the guard tuple with the CK→WT
+rename; `bmad-generate-project-context`'s "not orphaned" correction recorded; CFE retro
+v8.86.3 landed the guard change. `test_no_retired_bmad_skill_ids`: 9 passed.
 
 ### Story 30.2: The project-context surface follows 6.12 (D1)
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-9
@@ -4544,6 +4548,12 @@ moves into the AGENTS.md block through `bmad-project-context adopt` / `audit`, t
 post-upgrade step), `bmad-drift-check` and `detectors-ci` are green with zero
 `project-context.md` rows and no `pin-missing` HARD finding, and SYNC-RUNBOOK's living-doc
 cadence names `architecture-bmad-infra.md` + the AGENTS.md block only.
+**Status:** done
+**Outcome (2026-09-06):** all 8 station `project-context.md` files migrated off and deleted;
+`factory.py`/`fleet_scan.py`/`bmad_drift_check.py`/SYNC-RUNBOOK.md updated; `bmad-project-context
+adopt` run for real on pyforge-marshal and pyforge-atlas. A follow-up review pass fixed a critical
+gap: 4 sibling stations' identical `test_context_files_not_hand_edited` copies would have broken
+on the same migration; all fixed and verified green.
 
 ### Story 30.3: Documentation pointers follow 6.12
 **Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-10 (+ the CAP-7 cadence)
@@ -4555,6 +4565,10 @@ the retired `bmad-checkpoint-preview` reads `bmad-walkthrough` in living docs, a
 apply — `architecture-bmad-infra.md` is re-grounded with `source_pin` reading BMAD 6.12.0
 (the CAP-7 once-per-core-minor cadence; it also clears the `pin-behind` warnings against
 CFE v8.86.x already firing on marshal's living docs).
+**Status:** done
+**Outcome (2026-09-06):** CLAUDE.md re-pointed off the discontinued `llms-full.txt`;
+`architecture-bmad-infra.md` re-grounded to `source_pin: BMAD 6.12.0 / CFE v8.86.4` after
+steward's 6.12 apply landed later the same day.
 
 ### Story 30.4: bmad-loop's repo skills match the installed package — by test
 **Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-11
@@ -4564,6 +4578,11 @@ CFE v8.86.x already firing on marshal's living docs).
 `-sweep` are already identical), a meta-test diffs the three repo skills against the
 installed package and reds a planted one-line divergence, and `bmad-loop validate` stays
 clean across all 8 loop homes.
+**Status:** done
+**Outcome (2026-09-06):** `module_version` and the three skill dirs were already correct
+before this story ran (an unrelated prior commit had closed the gap); the new meta-test makes
+that equivalence provable going forward, verified via planted-divergence fixtures. CFE retro
+v8.86.4 landed the guard.
 
 ### Story 30.5: Every live caller follows the shim retirement
 **Type:** feature • **Effort:** S • **Deps:** S-30.1 • **FR/AD:** spec-bmad-611-era-alignment CAP-12 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
@@ -4573,6 +4592,12 @@ clean across all 8 loop homes.
 **And** decks (`presentations/**`), `docs/specs/**` and `pixi.toml` comments are glossed, never rewritten (shipped history); `pyforge-warden/__init__.py`, `core/promotion.py`, `core/status.py`, and `cli/deploy.py` (named in the original Surface line) turned out to have zero `bmad-dev-auto` hits or cite a different retired skill (`bmad-quick-dev` → `bmad-build`, a separate rename, out of this story's scope) — verified by direct inspection, nothing to change there
 **And** `pyforge-marshal-test` and `pyforge-doctor-test` stay green; `mason_cfe_surface_check` stays clean (no CFE-surface file touched by this story, since the guard-widening never happens)
 **And** after the `--no-shims` apply lands (Session 2 step 9, steward 14.9), `bmad-project-context` records the pitfall "the 21 shims are gone — never author `_bmad/custom/<old-name>.toml`; old ids do not resolve" in the AGENTS.md block (recorded by the skill, not by hand) — unaffected by this correction, since the shims themselves (20 `v6-shims` + `bmad-generate-project-context`) are still genuinely retired by `--no-shims`; only the harness's permanent `[dev] skill` discriminator field is not one of them
+**Status:** done
+**Outcome (2026-09-06):** the two dead-path fixes and three present-tense docstring/prose
+renames landed; the harness rename found false and permanently descoped (see Corrected note
+above). Session 2 step 9's live `--no-shims` apply subsequently ran clean (steward 14.9,
+same day): `bmad-loop validate` 8/8, no `.customization-conflict` files. The
+`bmad-project-context` pitfall-recording clause remains a follow-up action, not yet run.
 
 
 **Epic 30 clears to dispatch in full — 30.1–30.4 are independent of each other; 30.5 (added

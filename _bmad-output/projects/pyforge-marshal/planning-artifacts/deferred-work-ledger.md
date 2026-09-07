@@ -5820,3 +5820,69 @@ status: open
   summary: `scripts/worktree_sweep.py` (2026-09-05, dry-run default, `--execute`) classifies every registered git worktree into KEEP / PRUNE / DELETE / PRESERVE-THEN-DELETE / DELETE-WORKTREE-KEEP-BRANCH / INSPECT from four inputs -- clean-and-ancestor-of-main, the owning station's sprint-ledger status for the branch's story key, whether the branch is on origin, and whether a live process has its cwd inside -- and applies the safe verdicts (patches exported under `~/.local/state/pyforge-marshal/worktree-preserve/` first). `marshal retire` (Story 4.10) proposes only branches named by the most recent bmad-loop run of an attached loop home, so it proposed nothing across a fleet that carried 262 registered worktrees and ~600 merged branches. The sweep's rule set belongs behind the marshal verb (`marshal retire --worktrees`, or a `marshal sweep` verb) so the fleet has ONE retirement authority with journaled evidence; the script is the interim home and its rules are pinned by `tests/scripts/test_worktree_sweep.py`.
   evidence: 2026-09-05 shutdown sweep, hand-verified per item: registered worktrees 262 -> 12 (primary, 8 loop homes, 3 INSPECT), local merged branches 360 + 226 deleted, origin merged branches 227 + 178 deleted in explicit-name batches (the 8 `loop/<station>` heads and every `attempt-preserve/*` kept by policy), 29 GB reclaimed; `marshal retire` dry-run reported `proposals: 0` throughout. Never delete `loop/*` on origin: the station heads read as merged into main whenever the homes are idle.
   status: open
+
+### DW-FU-30-1: The new catalog-consistency test only checks skill_renames[].from ids, never the catalog's removals list, so fully-removed (never-shimmed) ids like bmad-check-implementation-readiness / bmad-agent-tech-writer stay permanently unguarded by any automated check.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-retired-id-guard-follows-the-6-12-shim-roster.md`
+  summary: The new catalog-consistency test only checks skill_renames[].from ids, never the catalog's removals list, so fully-removed (never-shimmed) ids like bmad-check-implementation-readiness / bmad-agent-tech-writer stay permanently unguarded by any automated check.
+  evidence: Verified real: neither id appears in RETIRED_SKILL_IDS, and _collect_unguarded_catalog_renames never reads the removals key. Pre-existing condition, not worsened by this story -- before this diff there was zero catalog-consistency checking of any kind, so this is a partial improvement (renames only), not a regression. Removals are a categorically different failure class (fully deleted, no forwarder) already handled via separate architecture-bmad-infra.md prose (the bmad-index-docs / bmad-shard-doc notes) rather than this bare-mention guard, whose own docstring scopes it to ids that "survive today only as a deprecated forwarder shim." Full removals-inclusion would also immediately require reconciling architecture-bmad-infra.md's existing bmad-shard-doc mention (no same-line allow marker today), a cascading change outside this story's declared surface.
+  location: .claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py:_collect_unguarded_catalog_renames
+  origin: spec-deferred 20387faf8de0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-1-2: architecture-bmad-infra.md and development-guide.md are not part of the guard's SCAN_GLOBS, so a future re-introduction of a bare bmad-checkpoint-preview (or any other retired id) in either doc is not regression-protected.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-the-retired-id-guard-follows-the-6-12-shim-roster.md`
+  summary: architecture-bmad-infra.md and development-guide.md are not part of the guard's SCAN_GLOBS, so a future re-introduction of a bare bmad-checkpoint-preview (or any other retired id) in either doc is not regression-protected.
+  evidence: Verified: this story's AC only asks the two docs' bare mentions to be renamed/glossed once, not added to the automated guard. Story 30.5 (same epic) already establishes the precedent of widening SCAN_GLOBS for a new surface (the harness template) -- extending it to arbitrary living docs is a bigger, separate design decision (floor-tuning, false-positive risk against normal narrative prose) that this story's Given/When/Then does not request.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md
+  origin: spec-deferred be9286c74579 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-2: architecture-bmad-infra.md, index.md, and PRD.md still describe the retired per-station project-context.md rulebooks as live artifacts in several places.
+
+- source_spec: `planning-artifacts/specs/spec-30-2-the-project-context-surface-follows-6-12-d1.md`
+  summary: architecture-bmad-infra.md, index.md, and PRD.md still describe the retired per-station project-context.md rulebooks as live artifacts in several places.
+  evidence: Verified true by direct read. architecture-bmad-infra.md's re-ground is explicitly Story 30.3's job (epics.md sequences it after this story). PRD.md is on this spec's own "Never rewrite" list (shipped historical/living-doc prose, out of this story's declared consumer-migration scope). index.md is the same class of narrative living doc, swept by the ordinary SYNC-RUNBOOK cadence rather than this story's consumer list.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/{architecture-bmad-infra.md,index.md,PRD.md}
+  origin: spec-deferred b8f022e71b1e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-2-2: pyforge-doctor's test_full_applicable_layers_reports_ok fixture has a pre-existing, unrelated "dream" layer gap in the chain-audit-checkpoint-layers checkpoint (reports noDream/gaps:[dream]) despite its own dream=True fixture setup -- discovered while verifying the "context" glob fix, not caused by this story.
+
+- source_spec: `planning-artifacts/specs/spec-30-2-the-project-context-surface-follows-6-12-d1.md`
+  summary: pyforge-doctor's test_full_applicable_layers_reports_ok fixture has a pre-existing, unrelated "dream" layer gap in the chain-audit-checkpoint-layers checkpoint (reports noDream/gaps:[dream]) despite its own dream=True fixture setup -- discovered while verifying the "context" glob fix, not caused by this story.
+  evidence: Reproduced directly: pytest -s on the unmodified fixture prints "[fleet] noDream: pyforge-marshal" and layers_cp.evidence["gaps"] == ["dream"], even though the loop at line 162 asserting "dream" in ev["present"] passes -- two different evidence shapes (chain-layers-audit's "present" list vs. chain-audit-checkpoint-layers' "gaps" list) disagree on the same fixture, suggesting a deeper inconsistency in how DREAMS_DIR/REPO_ROOT get resolved across the monkeypatched _install_generate seam. Worked around by scoping this story's own new assertions to "context" specifically rather than the full layers-checkpoint pass, so this story's fix doesn't depend on the pre-existing gap being resolved.
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py::test_full_applicable_layers_reports_ok
+  origin: spec-deferred 0fc7191440f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-3: architecture-bmad-infra.md's "Installed Skills" section (~lines 408-585) states 94 directories in .claude/skills/ (90 real skills: 52 bmad-*, 16 skf-*, 21 engineering-practice, 1 conda-forge-expert). A spot-check during this story found the live tree now holds well over that, driven by additions since the 2026-09-05 pass: 8 new bmad-agent-<station> personas, 10 new bmad-cis-* Creative Intelligence Suite skills, 7 new pyforge-<station> skills, and cfe-recipe-lifecycle.
+
+- source_spec: `planning-artifacts/specs/spec-30-3-documentation-pointers-follow-6-12.md`
+  summary: architecture-bmad-infra.md's "Installed Skills" section (~lines 408-585) states 94 directories in .claude/skills/ (90 real skills: 52 bmad-*, 16 skf-*, 21 engineering-practice, 1 conda-forge-expert). A spot-check during this story found the live tree now holds well over that, driven by additions since the 2026-09-05 pass: 8 new bmad-agent-<station> personas, 10 new bmad-cis-* Creative Intelligence Suite skills, 7 new pyforge-<station> skills, and cfe-recipe-lifecycle.
+  evidence: `find .claude/skills -maxdepth 1 -mindepth 1 -type d | wc -l` = 121 (not 94); `find .claude/skills -maxdepth 2 -name SKILL.md | wc -l` = 109 (not 90); bare `bmad-*` dirs alone = 71 (not 52). Out of this story's declared scope: the Code Map names only `source_pin` + the "BMAD-METHOD version" table row + the "Installed modules" row + the `manifest.yaml` file-tree comment as the mentions to bump. Flagged as a residual in the new "Re-grounded 2026-09-06" note instead of rewritten, per this story's own "verification, not new edits" framing and to avoid an unplanned full re-audit of the Installed Skills section (its subsection tables and every skill-family count) inside a story scoped to the BMAD-core/CFE version pin.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md (## Installed Skills, ~lines 408-585)
+  origin: spec-deferred ca5c219fe4b2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-30-3-2: test_bmad_artifacts_in_sync.py (the only test touching architecture-bmad-infra.md's source_pin) checks structural pin parseability only, never semantic pin-behind currency at patch-version granularity -- a stale-but-parseable source_pin never fails this test.
+
+- source_spec: `planning-artifacts/specs/spec-30-3-documentation-pointers-follow-6-12.md`
+  summary: test_bmad_artifacts_in_sync.py (the only test touching architecture-bmad-infra.md's source_pin) checks structural pin parseability only, never semantic pin-behind currency at patch-version granularity -- a stale-but-parseable source_pin never fails this test.
+  evidence: Confirmed by the Verification Gap Reviewer and Intent Alignment Auditor independently: pyforge.doctor.sources.factory::check_pins compares (major, minor) only, so v8.86.1 vs live v8.86.4 never fires pin-behind as a HARD/FAIL finding. Fixing the detector's own comparison granularity is out of this docs-only story's scope.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py::check_pins
+  origin: spec-deferred 5b90dd65b52d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
