@@ -612,7 +612,17 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
+    brief_mirrored_through: "068b84c67366d9fa83e24e90ee206d59b6d3ba33"
+                                    # ADVANCED 2026-09-06 from b87a402abd to the CFE v8.87.0
+                                    # renumber retro 068b84c673: review finding -- v8.86.5 was
+                                    # mislabeled PATCH; renumbered to v8.87.0 (MINOR, per
+                                    # CLAUDE.md Rule 2 item 4 -- a new gotcha is MINOR) across
+                                    # SKILL.md (frontmatter version + Version History bullet,
+                                    # label + failure-catalog follow-through sentence added),
+                                    # CHANGELOG.md, MANIFEST.yaml, config/skill-config.yaml.
+                                    # Pure version-number/text renumbering -- no new gotcha,
+                                    # script, or behavior content. NO shipped script changed --
+                                    # nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.87.0
                                     # follow-through retro b87a402abd: CHANGELOG.md gains a
                                     # one-line note that config/failure-catalog.yaml was
@@ -903,7 +913,17 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
+    brief_mirrored_through: "068b84c67366d9fa83e24e90ee206d59b6d3ba33"
+                                    # ADVANCED 2026-09-06 from b87a402abd to the CFE v8.87.0
+                                    # renumber retro 068b84c673: review finding -- v8.86.5 was
+                                    # mislabeled PATCH; renumbered to v8.87.0 (MINOR, per
+                                    # CLAUDE.md Rule 2 item 4 -- a new gotcha is MINOR) across
+                                    # SKILL.md (frontmatter version + Version History bullet,
+                                    # label + failure-catalog follow-through sentence added),
+                                    # CHANGELOG.md, MANIFEST.yaml, config/skill-config.yaml.
+                                    # Pure version-number/text renumbering -- no new gotcha,
+                                    # script, or behavior content. NO shipped script changed --
+                                    # nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.87.0
                                     # follow-through retro b87a402abd: CHANGELOG.md gains a
                                     # one-line note that config/failure-catalog.yaml was
