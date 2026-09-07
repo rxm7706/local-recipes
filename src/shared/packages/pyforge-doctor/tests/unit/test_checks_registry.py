@@ -35,6 +35,7 @@ _ENGINE_NAMES = (
     "kev-feed",
     "epss-feed",
     "endoflife-feed",
+    "tea",
 )
 
 _EXPECTED_ENGINE_SPECS = tuple(
@@ -61,7 +62,7 @@ def _checks(*specs: tuple[str, bool, str]) -> tuple[DoctorCheck, ...]:
 # --- list_checks -------------------------------------------------------------
 
 
-def test_list_checks_returns_the_six_known_engine_specs():
+def test_list_checks_returns_the_seven_known_engine_specs():
     assert list_checks(category="engines") == _EXPECTED_ENGINE_SPECS
 
 

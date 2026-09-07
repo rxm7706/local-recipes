@@ -226,7 +226,9 @@ def _other_personas_silent(root: Path, station: str, name: str) -> list[str]:
 # persona mention, never before -- kept as an empty dict (not deleted) so a
 # future labs skill provisioned ahead of its station story has somewhere to
 # go.
-_ROUTING_STORY_NOT_YET_LANDED: dict[str, str] = {}
+_ROUTING_STORY_NOT_YET_LANDED = {
+    # empty: every consented labs skill's persona mention has landed
+}
 
 
 def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
