@@ -177,7 +177,7 @@ development_status:
   46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env: done
   47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal: done
   47-2-skf-export-is-proven-to-accept-the-foundry-skills-root: done
-  47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: backlog
+  47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: done
   47-4-the-foundry-stack-carries-a-bmad-floor-row: backlog
   47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
