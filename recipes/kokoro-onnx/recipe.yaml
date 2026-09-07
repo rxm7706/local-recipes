@@ -13,7 +13,7 @@ source:
   sha256: 7bbdb66dd53775f71088a99999a9aefdad240740daf54cb09410d8bb1e294e35
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -157,11 +157,11 @@ extra:
 #    # because the PyPI espeakng-loader wheel's bundled library has its data
 #    # path compiled in as upstream's CI build tree. An imports-only test
 #    # would have shipped that silently.
-#    # Synthesis is still NOT tested here, but the earlier reason ("the
-#    # weights are a separate manual download") no longer holds -- build 1
-#    # points at kokoro-onnx-voices + the three kokoro-onnx-models-* packages,
-#    # which make the weights conda-installable on the pattern used for the
-#    # playwright browsers in this repo.
+#    # Synthesis is still NOT tested here, but the obvious reason for that
+#    # ("the weights are a separate manual download") does not apply: the
+#    # about: text points at kokoro-onnx-voices + the three
+#    # kokoro-onnx-models-* packages, which make the weights conda-installable
+#    # on the pattern used for the playwright browsers in this repo.
 #    # The reason now is PORTABILITY: those packages exist only on the
 #    # SelfExplainML channel, and adding one to this recipe's test
 #    # requirements would make the test unrunnable anywhere that channel is

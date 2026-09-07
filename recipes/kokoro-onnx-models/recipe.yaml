@@ -17,7 +17,7 @@ source:
     file_name: kokoro-v1.0.onnx
 
 build:
-  number: 1
+  number: 0
   noarch: generic
   dynamic_linking:
     # The .onnx is a protobuf container holding tensor data at fixed offsets.
@@ -133,11 +133,17 @@ extra:
 #    # would be a file clobber (conda refuses two packages owning one path),
 #    # and folding the variants into one package would force a 311 MB f32
 #    # download on someone who wanted int8's 88 MB.
-#    # Build 1, not 0: version 1.0 build 0 shipped voices-v1.0.bin alongside
-#    # the model. Moving voices into their own package is a content change at
-#    # an unchanged version, which is exactly the case G113 says must bump the
-#    # build number rather than the version -- the upstream release tag has
-#    # not moved.
+#    # Build 0 despite an earlier 1.0 artifact having existed briefly. That
+#    # one bundled voices-v1.0.bin and an older resolver, so it CLOBBERED two
+#    # paths that kokoro-onnx-voices now owns; it was withdrawn from the
+#    # channel rather than left to be superseded by a build 1. G113's
+#    # bump-the-build-number rule exists to disambiguate two artifacts a
+#    # consumer might resolve between -- with the earlier one deleted there is
+#    # nothing to disambiguate, and starting at 0 keeps the numbering honest
+#    # about what is actually published.
+#    # Note the withdrawn artifact had a different build STRING
+#    # (pyhec92b6f_0, from noarch: python) than this one (noarch: generic), so
+#    # no download cache can confuse the two.
 # build:
 #    # noarch: generic, not noarch: python -- this package ships no importable
 #    # code at all. The resolver module lives in kokoro-onnx-voices, which
