@@ -15,18 +15,61 @@ chain. The gate: every P line green before Story 44.3 opens the foundry. Owners 
 | P4 | No hand-edited SPEC.md; memlog is the single writer | `AGENTS.md:22` | policy; enforced by 44.13 | steward 44.13 |
 | P5 | Ledgers generated, feed repaired before any write | cutover SPEC :160-163 | in force | — |
 | P6 | Physical-path writes with `BMAD_ACTIVE_PROJECT`; no parallel `bmad-switch` | cutover SPEC :160-162 | in force | — |
-| P7 | No in-place edits of installer-owned files; customizations in `_bmad/custom/**` or CAP-8-re-applied | 44.5 AC; `fnd:AD-5`; inventory C1/C5 | **violated** (C1 `resolve_config.py`; C5 seven skill files) — CAP-8 re-applies them at every apply | steward (mechanism shipped, 14.8); marshal 31.4 governs them |
+| P7 | No in-place edits of installer-owned files; customizations in `_bmad/custom/**` or CAP-8-re-applied | 44.5 AC; `fnd:AD-5`; inventory C1/C5 | **violated** — 2026-09-07 re-verified via live pre-flight (see Re-run note below): **9** files today, not the epic's 2026-09-06 assumption of 7 — C1 `_bmad/scripts/resolve_config.py` (`locally_modified`) plus **8** `local_customizations` skill files (C5 was 7, now 8; one more skill-file edit landed 2026-09-06→09-07) — CAP-8 re-applies them at every apply | steward (mechanism shipped, 14.8); marshal 31.4 governs them |
 | P8 | Config pins sit at the installer's own key paths | inventory C2 | satisfied (99e595cc6a) | doctor 20.2 adds the render-HALT detector |
 | P9 | skf provisioned by its own installer (class own-installer) | install-class playbook :21,62 | mixed (dual-installer by design; custom-module registration kept) | steward 46.7 (pin) |
 | P10 | `_bmad/skf/config.yaml` hand-set keys survive an apply; `skf-export` accepts `skills/stations/<x>/` | inventory C7; `fnd:AD-5` | keys restored by CAP-7; export root **unverified** | steward 47.2 |
 | P11 | No shims; harness = `bmad-build-auto` | inventory C9; era-alignment CAP-12 | **not done** (21 shim dirs; `harness_bmadloop.py:328`) | marshal 30.5; steward 14.9 |
 | P12 | No `project-context.md` rulebooks, readers migrated | inventory C13; era-alignment CAP-9 | **not done** (8 files, 4 readers) | marshal 30.2 |
-| P13 | Every in-place-edited installer file under a spec `surface:` | inventory §2 item 5 | 5 of 7 ungoverned | marshal 31.4 |
+| P13 | Every in-place-edited installer file under a spec `surface:` | inventory §2 item 5 | 5 of 9 ungoverned on THIS branch's checkout, 2026-09-07 (not "5 of 7" — total pool grew to 9; re-derived, not assumed — see Re-run note below, which also flags a KNOWN staleness risk: an unmerged sibling branch already governs 3 of these 5): governed — `.claude/skills/bmad-build-auto/compile-epic-context.md` (`spec-marshal-token-economy`), `.claude/skills/bmad-build-auto/step-01-clarify-and-route.md`, `.claude/skills/bmad-build-auto/step-04-review.md`, `.claude/skills/bmad-build-auto/spec-template.md` (all three `spec-marshal-single-story-dispatch`); ungoverned on this branch — `.claude/skills/bmad-brainstorming/assets/brain-methods.csv`, `.claude/skills/bmad-sprint-planning/references/generate-tracking.md`, `.claude/skills/bmad-sprint-planning/scripts/sprint_plan.py`, `.claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py`, `_bmad/scripts/resolve_config.py` | marshal 31.4 |
 | P14 | AGENTS.md block written only by `bmad-project-context` / `skf-export` | `fnd:AD-6`, `AD-17` | in force | — |
 | P15 | `bmad-module-skill-forge uninstall` never run | inventory C20; AGENTS pitfall | recorded | — |
 | P16 | No loop running at the flip; 8 homes re-provisioned attended | `fnd:AD-12`, `AD-17`; 44.12 | mechanism = 44.12 (not built); readiness undefined | marshal 31.5 defines; steward 44.12 builds |
 | P17 | `gh` can create a private repo; paid plan persists | cutover SPEC :185-187 | assumption | steward 44.3 |
 | P18 | Every register row with verdict `wield` is re-provisioned in foundry by its provisioning-path cell (the replay list): module class via `steward provision`, skf via its own installer, labs by name; nothing re-creates the installer-written dirs otherwise (`fnd:AD-5` keeps them real dirs but 44.11's link step generates only estate adapters) | adversarial review F-12 (2026-09-06); `fnd:AD-5`, `AD-12` | not defined until the register has a `wield` verdict per row (46.1) | steward 47.1 (checklist) + 44.5 (replay) |
+
+## Re-run (P7 / P13, 2026-09-07)
+
+Live, report-only re-verification of P7/P13 (`git status --short` identical
+before and after):
+
+    pyforge steward upgrade bmad-core --target 6.12.0 --json
+
+(review finding: an earlier draft of this command hardcoded
+`--package-root ~/.cache/rattler/cache/pkgs/bmad-method-6.12.0-h98f672e_0/...`
+— a machine- and build-specific hash (`h98f672e_0`) that would not resolve
+on a different machine or after a rebuild, undermining the "so every later
+pass is mechanical" goal. Confirmed live: `--package-root` is not needed
+for the P7 finding at all — only `--installed-package-root` drives
+`local_customizations`/`locally_modified`, and `upgrade.py`'s own
+`default_installed_package_root` best-effort-globs
+`~/.cache/rattler/cache/pkgs/bmad-method-<installed>-*/lib/node_modules/bmad-method`
+whenever that flag is unset too — so the bare command above, with NEITHER
+path flag, reproduces the identical 9-file result. Pass `--installed-
+package-root <dir>` explicitly only if more than one `bmad-method-*`
+version is ever cached at once and the auto-glob picks the wrong one.)
+
+Found: `local_customizations` 8 + `locally_modified` 1 = **9** files (up
+from the epic's 2026-09-06 assumption of 7 — one additional skill-file
+edit landed 2026-09-06→09-07). Cross-referenced against every `surface:`
+field in every project's every `SPEC.md` on THIS branch's checkout
+(full-repo grep, not scoped to one project): 4 governed, 5 ungoverned —
+the ungoverned count matches P13's pre-existing "5 ungoverned" claim
+exactly even though the total pool grew from 7 to 9.
+
+**Known staleness risk (review finding, not resolved here):** this "5
+ungoverned" figure is a snapshot of THIS branch's own checkout, not a
+fleet-wide fact — `bmad/adoption-readiness-2026-09-06-marshal-r1` (commit
+`6ba6bd9eb6`, "Story 31.4," unmerged as of this pass) already adds
+`generate-tracking.md`, `sprint_plan.py`, and `test_sprint_plan.py` to
+`spec-marshal-single-story-dispatch`'s `surface:` list — 3 of the 5 files
+this row lists as ungoverned. Once that branch merges, a re-run of this
+same command will correctly report **2 of 9** ungoverned
+(`brain-methods.csv`, `resolve_config.py`), not 5 — this row's count is
+therefore due for re-verification at that point, not a settled number.
+Governing the ungoverned files remains marshal Story 31.4's job either
+way; this note exists so a later reader isn't misled into treating "5"
+as more durable than it is.
 
 ## G — gaps the cutover texts assume but nothing tracked (relayed 2026-09-06)
 
