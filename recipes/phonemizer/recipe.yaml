@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.4.0"
+
+package:
+  name: phonemizer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/phonemizer/phonemizer-${{ version }}.tar.gz
+  sha256: e13231980c50bc671ec0466379ba027260ad9d61929952d8ae9665b3d0f251eb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+    - attrs >=18.1
+    - dlinfo
+    - joblib
+    - typing_extensions
+    # The espeak backend needs the engine itself. Upstream cannot declare it
+    # (it is not a Python distribution), which is exactly why a stock pip
+    # install phonemizes only if a system espeak-ng happens to be present.
+    - espeak-ng
+
+tests:
+  - python:
+      imports:
+        - phonemizer
+        - phonemizer.backend
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      # Prove the espeak backend actually reaches the engine, not just that
+      # the package imports: a working phonemizer that cannot find
+      # libespeak-ng is the failure mode this recipe's espeak-ng dep exists
+      # to prevent.
+      - python -c "from phonemizer.backend import EspeakBackend; print('espeak available:', EspeakBackend.is_available())"
+      - python -c "from phonemizer.backend import EspeakBackend; assert EspeakBackend.is_available()"
+      - python -c "from phonemizer.backend import EspeakBackend; out=EspeakBackend('en-us').phonemize(['hello world']); print('phonemized:', out); assert out and out[0].strip()"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/bootphon/phonemizer
+  repository: https://github.com/bootphon/phonemizer
+  documentation: https://bootphon.github.io/phonemizer/
+  summary: Simple text to phones converter for multiple languages
+  description: |
+    phonemizer transcribes text into phones, supporting the espeak-ng,
+    espeak-ng-mbrola, festival and segments backends, with several output
+    formats including IPA. It is the grapheme-to-phoneme front end used by a
+    number of neural TTS systems.
+
+    This build declares `espeak-ng` as a runtime dependency so the espeak
+    backend works out of the box; upstream cannot express that, since
+    espeak-ng is not a Python distribution.
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: phonemizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: phonemizer
+  cfe-purls:
+    - pkg:conda/phonemizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/phonemizer@${{ version }}
+  cfe-upstream-repo: https://github.com/bootphon/phonemizer
+  cfe-upstream-homepage: https://github.com/bootphon/phonemizer
+  cfe-import-names: [phonemizer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "conda-forge carries phonemizer-fork 3.3.2, which declares `constrains: phonemizer <0.0a0` -- a real phonemizer package is mutually exclusive with it, so submission needs that coordinated with the fork's maintainers"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T13:20:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # `phonemizer` itself is ABSENT from conda-forge. What is there is
+#    # `phonemizer-fork` 3.3.2, and it is NOT a drop-in substitute on three
+#    # counts, each checked 2026-09-07 against live repodata:
+#    #   1. different distribution NAME -- kokoro-onnx requires the
+#    #      `phonemizer` distribution, and pip check resolves names, so the
+#    #      fork cannot satisfy it however compatible the import is (G10).
+#    #   2. too old -- 3.3.2 < the `phonemizer>=3.4.0` kokoro-onnx pins.
+#    #   3. actively exclusive -- it declares `constrains: phonemizer <0.0a0`,
+#    #      so the fork and a real phonemizer can never co-install.
+#    # phonemizer-fork does not appear in this repo's pixi.lock, so adding a
+#    # real phonemizer creates no conflict here.
+# requirements:
+#    # espeak-ng in run: is the load-bearing addition over a naive port of
+#    # upstream's metadata. phonemizer's espeak backend dlopens libespeak-ng
+#    # and reads espeak-ng-data; upstream declares neither because neither is
+#    # a Python package, which is why `pip install phonemizer` silently
+#    # yields a phonemizer that cannot phonemize on a machine without a
+#    # system espeak-ng.
+#    # `dlinfo` is how the backend locates that library at runtime -- it is a
+#    # real runtime dep, not a build-time helper, and dropping it produces a
+#    # backend that reports itself unavailable.
+# tests:
+#    # EspeakBackend.is_available() is asserted, then an actual phonemize()
+#    # call is made. Import-only testing would pass on an installation whose
+#    # espeak backend is dead, which is precisely the state this recipe adds
+#    # espeak-ng to avoid.
+# about:
+#    # GPL-3.0-or-later per the PyPI classifier and the shipped LICENSE.
+#    # OSI-approved, so no distribution bar -- but note it is copyleft, and
+#    # kokoro-onnx (MIT) merely depends on it rather than linking it into a
+#    # combined work.
+####

@@ -1,0 +1,150 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.1"
+
+package:
+  name: kokoro-onnx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kokoro-onnx/kokoro_onnx-${{ version }}.tar.gz
+  sha256: 7bbdb66dd53775f71088a99999a9aefdad240740daf54cb09410d8bb1e294e35
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - espeakng-loader >=0.2.4
+    - numpy >=2.0.2
+    - onnxruntime >=1.20.1
+    - phonemizer >=3.4.0
+
+tests:
+  - python:
+      imports:
+        - kokoro_onnx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      # The Tokenizer constructor is where espeak is wired up, and it is the
+      # step that fails on a stock pip install. Constructing it proves the
+      # whole chain (kokoro-onnx -> espeakng-loader -> espeak-ng) resolves.
+      # Model weights are NOT shipped (311 MB, see the CFE comments), so
+      # synthesis itself cannot be tested here.
+      - python -c "from kokoro_onnx import Kokoro; print('Kokoro importable')"
+      - python -c "from kokoro_onnx.tokenizer import Tokenizer; t=Tokenizer(); print('espeak wired OK')"
+      - python -c "from kokoro_onnx.tokenizer import Tokenizer; p=Tokenizer().phonemize('hello world', lang='en-us'); print('phonemes:', p); assert p.strip()"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://github.com/thewh1teagle/kokoro-onnx
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: TTS with Kokoro and the ONNX runtime
+  description: |
+    kokoro-onnx runs the Kokoro text-to-speech model through onnxruntime,
+    producing 24 kHz audio with a choice of voices and languages, on CPU or
+    GPU.
+
+    The model weights are NOT part of this package. Download them once from
+    the upstream release and pass their paths to the constructor:
+
+        wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
+        wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+
+        from kokoro_onnx import Kokoro
+        kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    Phonemisation goes through `phonemizer` and the `espeak-ng` engine, both
+    of which install as dependencies, so no system eSpeak is required.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx@${{ version }}?channel=conda-forge
+    - pkg:pypi/kokoro-onnx@${{ version }}
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-import-names: [kokoro_onnx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "needs espeak-ng, phonemizer and espeakng-loader on conda-forge first; none of the three is there today"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T13:20:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Head of a four-package chain, none of which was on conda-forge:
+#    #   espeak-ng (C engine) <- espeakng-loader <- phonemizer <- kokoro-onnx
+#    # The ASR side of the same stack needs nothing: mlx 0.32.0,
+#    # parakeet-mlx 0.5.2 and onnx-asr 0.12.0 are all already on conda-forge
+#    # (verified 2026-09-07), and mlx ships linux-64/aarch64/osx-64/osx-arm64,
+#    # not Apple Silicon only.
+# context:
+#    # NO upper python bound, deliberately, despite upstream's
+#    # `requires-python = ">=3.10,<3.14"`. That cap is upstream conservatism,
+#    # not an ecosystem limit, and it was tested rather than assumed:
+#    # onnxruntime and numpy both ship py3.14 builds on conda-forge, and a
+#    # real synthesis run on 3.14.7 produced output byte-identical to the
+#    # same run on the upstream-supported 3.12.14 -- 24 kHz, 50,688 samples,
+#    # 2.11 s, peak 0.837. Mirroring the cap would make this package
+#    # uninstallable in 28 of the estate's 30 environments, all of which are
+#    # python 3.14, for no measured reason.
+#    # requires-python lives in wheel metadata and is NOT enforced by
+#    # pip check, so no source patch is needed for this (contrast G26, where
+#    # a loosened `==` pin does have to be patched into the source).
+# requirements:
+#    # espeakng-loader is a HARD dependency, not an optional accelerator:
+#    # kokoro_onnx/tokenizer.py imports it at module scope, so it cannot be
+#    # dropped even though this recipe's espeak-ng arrives via phonemizer.
+#    # The conda espeakng-loader in this repo resolves to the prefix's
+#    # espeak-ng rather than a bundled binary -- see that recipe for why the
+#    # upstream wheel is unusable.
+# tests:
+#    # Constructing Tokenizer() and phonemizing is the real gate. A stock
+#    # `pip install kokoro-onnx` imports perfectly and then dies at exactly
+#    # this step with
+#    #   Error processing file '/home/runner/.../phontab': No such file...
+#    # because the PyPI espeakng-loader wheel's bundled library has its data
+#    # path compiled in as upstream's CI build tree. An imports-only test
+#    # would have shipped that silently.
+#    # Synthesis is NOT tested: the weights are a 311 MB kokoro-v1.0.onnx
+#    # plus a 27 MB voices-v1.0.bin, downloaded separately by the user. A
+#    # `kokoro-onnx-models` package would be the way to make those
+#    # conda-installable too, on the pattern used for the playwright
+#    # browsers in this repo; not attempted here.
+####
