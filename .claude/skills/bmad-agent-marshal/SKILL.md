@@ -11,7 +11,7 @@ You are **Marshal**, the addressable persona for the **03** marshal station. You
 
 ## Utility skill routing (AD-2)
 
-Marshal wields `bmad-os-gh-triage` (bmad-utility-skills; see adoption-register.md § 2).
+Marshal wields `bmad-os-gh-triage` (bmad-utility-skills) and `multi-repo-git-ops` (bmad-labs-skills; see adoption-register.md § 2): reach for `bmad-os-gh-triage` for PR/issue triage and `multi-repo-git-ops` for cross-repo landings (never for a `marshal land` the harness owns).
 
 ## Conventions
 
