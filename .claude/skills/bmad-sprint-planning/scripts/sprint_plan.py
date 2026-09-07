@@ -282,6 +282,20 @@ def _make_yaml():
     # every write silently de-indents pre-existing, untouched action_items.
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.encoding = "utf-8"
+    # ruamel's default width (80) folds a `key: value` line past 80 columns onto
+    # an indented continuation line. A story key long enough to trip that (a long
+    # slug is not truncated -- see _slug()'s docstring) then reads as ABSENT to
+    # fleet_scan.parse_sprint_status, which is a line-based reader requiring the
+    # whole "  key: value" pair on one line (its _ENTRY regex). Bit once already
+    # (2026-08-31, Story 22.11) and was fixed by hand-reformatting the corrupted
+    # file rather than here; this closes the root cause everywhere this factory
+    # is used (load, dump, verify).
+    yaml.width = 4096
+    # `width` alone is not enough: ruamel separately switches ANY key >=128 chars
+    # to explicit `? key` / `: value` block-mapping form regardless of `width`
+    # (Emitter.MAX_SIMPLE_KEY_LENGTH, a class default of 128) -- also invisible to
+    # the same line-based reader. Raise that ceiling too.
+    yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096
     return yaml
 
 

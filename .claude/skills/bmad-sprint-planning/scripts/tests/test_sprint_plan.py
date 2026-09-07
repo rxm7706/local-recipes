@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pytest>=8.0", "ruamel.yaml>=0.18"]
 # ///
 """Tests for sprint_plan.py — deterministic sprint-status generation.
@@ -221,6 +221,58 @@ def test_long_title_is_not_truncated_on_first_mint(tmp_path, capsys):
     expected = "1-1-" + mod._slug(title)
     assert expected in keys
     assert len(expected.split("-", 2)[-1]) > 60
+
+
+FLEET_SCAN = Path(__file__).resolve().parents[5] / "scripts" / "fleet_scan.py"
+
+
+def _load_fleet_scan():
+    """Fresh module object per call, loaded the same
+    `importlib.util.spec_from_file_location` way
+    `.claude/skills/conda-forge-expert/tests/meta/test_dashboard_resolve_project.py`
+    loads it -- exercises the REAL downstream reader, not a reimplementation
+    of its line-based `_ENTRY` regex that could drift from it."""
+    spec = importlib.util.spec_from_file_location(
+        "_test_sprint_plan_fleet_scan", FLEET_SCAN)
+    assert spec is not None and spec.loader is not None
+    fs = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = fs
+    try:
+        spec.loader.exec_module(fs)
+    finally:
+        sys.modules.pop(spec.name, None)
+    return fs
+
+
+def test_long_key_line_is_not_wrapped_and_survives_fleet_scan_parse(tmp_path, capsys):
+    """Regression for the 2026-08-31 Story 22.11 corruption: ruamel's default
+    `width` (80) folds a `key: value` line past 80 columns onto an indented
+    continuation line, and separately switches any key >=128 chars
+    (Emitter.MAX_SIMPLE_KEY_LENGTH) to explicit `? key` / `: value` block-mapping
+    form -- both invisible to `fleet_scan.parse_sprint_status`'s line-based
+    `_ENTRY` regex, which reads the entry as ABSENT. `_make_yaml()` now raises
+    both ceilings; this proves a 100-char story key (the story AC's own size)
+    stays on one line and round-trips through the real downstream reader with
+    its status intact."""
+    long_title = "Every in place edited installer owned file must be governed by a marshal spec surface end to end"
+    epics = f"## Epic 1: Foundation\n### Story 1.1: {long_title}\n"
+    key = "1-1-" + mod._slug(long_title)
+    assert len(key) == 100  # sanity: this is the story AC's literal 100-char key
+
+    status_file = run_generate(tmp_path, epics_text=epics, stories=[key])
+    out_json(capsys)
+
+    raw_line = next(
+        (line for line in status_file.read_text(encoding="utf-8").splitlines()
+         if line.strip().startswith(f"{key}:")),
+        None,
+    )
+    assert raw_line is not None, "key: value wrapped onto multiple lines"
+    assert raw_line.strip() == f"{key}: ready-for-dev"
+
+    fleet_scan = _load_fleet_scan()
+    parsed = fleet_scan.parse_sprint_status(status_file)
+    assert parsed.get(key) == "ready-for-dev"
 
 
 def test_legacy_statuses_merge_by_meaning_not_reset(tmp_path, capsys):
