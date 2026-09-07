@@ -374,10 +374,22 @@ def test_manticore_studio_root_env_set_but_empty_falls_back_to_default_not_cwd(
 
 def test_live_repo_wired_predicates_ad9_and_five_name_and_studio(monkeypatch):
     """Task 2 AC (live, this repo): labs/bmb/tea/cis/utility-skills are all
-    real-wired via their respective corrected mechanisms; manticore honestly
-    reports `unwired` given Story 46.6's own blocked, empty-studio state
-    (Boundaries & Constraints: the honest currently-true answer, never a
-    fabricated `wired`)."""
+    real-wired via their respective corrected mechanisms -- all five are
+    backed by git-tracked `.claude/skills/` content, so these five
+    assertions hold on any clone, not just this machine.
+
+    manticore is different in kind (review finding, Story 46.6): its
+    backing state is `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio`),
+    a directory AD-3 deliberately keeps OUTSIDE git -- never portable
+    across machines or clones the way the other five are. An earlier draft
+    hardcoded `== "wired"` here because Story 46.6 happened to complete its
+    real studio install on THIS machine, which would fail on any other
+    machine (or a fresh clone) where that install never ran. The fix:
+    derive the expected value the same way `probe_wired`'s own
+    `INSTALL_CLASS_STUDIO_MODULE` branch does, so this assertion is correct
+    on every machine -- including one where the studio was never
+    installed -- rather than asserting a fact that is true only here,
+    only today."""
     monkeypatch.delenv("PYFORGE_STUDIO_ROOT", raising=False)
     repo = _repo_root()
     roster = _by_name()
@@ -388,7 +400,16 @@ def test_live_repo_wired_predicates_ad9_and_five_name_and_studio(monkeypatch):
     )
     assert probe_wired(repo, roster["bmad-creative-intelligence-suite"]).value == "wired"
     assert probe_wired(repo, roster["bmad-utility-skills"]).value == "wired"
-    assert probe_wired(repo, roster["bmad-manticore"]).value == "unwired"
+
+    studio_root = Path("~/pyforge-studio").expanduser()
+    studio_skills = studio_root / ".claude" / "skills"
+    studio_has_mc_skill = (
+        (studio_root / "_bmad").is_dir()
+        and studio_skills.is_dir()
+        and any(p.is_dir() and p.name.startswith("mc-") for p in studio_skills.iterdir())
+    )
+    expected_manticore = "wired" if studio_has_mc_skill else "unwired"
+    assert probe_wired(repo, roster["bmad-manticore"]).value == expected_manticore
 
 
 def test_live_repo_names_six_and_template_is_n_a():
