@@ -125,6 +125,13 @@ DEFERRED_SPECS: dict[str, str] = {
         "frames client? author the first conformant Frame now?) — only the operator can answer, "
         "so decomposing it into steward epics now would manufacture stories from guesses. "
         "De-register once the operator picks the shape(s) and steward's epics carry the chosen CAPs",
+    "spec-bmad-cursor-interactive-routing":
+        "a `draft` Spec seeded 2026-09-07 so the Dream's chain link is durable (dream-chain "
+        "INV-1); CAP-1 (a live probe of whether Cursor's interactive IDE chat can invoke a "
+        "context-free subagent) gates every other CAP and has not run yet, so decomposing this "
+        "into marshal epics now would manufacture stories ahead of an unanswered empirical "
+        "question. De-register once CAP-1's probe result is recorded and the operator's CAP-2/ "
+        "CAP-3 shape choice is settled",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
