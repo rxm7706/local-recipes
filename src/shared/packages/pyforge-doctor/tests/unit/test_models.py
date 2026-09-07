@@ -172,6 +172,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # added PLATFORM_POLICY_SUITE: src/platform's manifest-only tests/policy
     # subset, so a pixi.toml regression is caught even when Platform CI is
     # disabled.
+    # Story 20.2 (Epic 20) added BMAD_RENDER_CONFIG_AMBIGUITY: whether
+    # render_skill.py's own central-config merge holds a bare key ambiguous
+    # across two dotted paths -- the class that HALTs every rendering skill.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -201,6 +204,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "dreams-hygiene",
         "chain-layers-audit",
         "platform-policy-suite",
+        "bmad-render-config-ambiguity",
     }
 
 

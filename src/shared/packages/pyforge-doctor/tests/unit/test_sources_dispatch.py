@@ -25,6 +25,7 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import (
+    bmad_config,
     bmad_method,
     board,
     chain,
@@ -54,6 +55,7 @@ _EXPECTED_DISPATCH = {
     "bmad-method-version-drift": bmad_method.gather,
     "sibling-dreams-drift": sibling_dreams.gather,
     "platform-policy-suite": platform_policy.gather,
+    "bmad-render-config-ambiguity": bmad_config.gather,
 }
 
 

@@ -128,6 +128,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.CHAIN_LAYERS_AUDIT: "board.py",  # Story 17.3 (Epic 17 / FR-150)
     Source.PLATFORM_POLICY_SUITE: "platform_policy.py",  # retro action item 3
     # (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
+    Source.BMAD_RENDER_CONFIG_AMBIGUITY: "bmad_config.py",  # Story 20.2 (Epic 20)
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``

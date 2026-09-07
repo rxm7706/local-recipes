@@ -44,6 +44,7 @@ from pathlib import Path
 from ..models import Finding, Source
 from ..verdict import EXIT_SIGINT, exit_code_for
 from . import (
+    bmad_config,
     bmad_method,
     board,
     chain,
@@ -92,6 +93,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # -- another genuinely NEW (non-ported) DISPATCH member, same shape as
     # DUE_FOR_VERIFICATION/SIBLING_DREAMS_DRIFT above.
     Source.PLATFORM_POLICY_SUITE.value: platform_policy.gather,
+    # Story 20.2 (Epic 20) -- another genuinely NEW (non-ported) DISPATCH
+    # member, same shape as PLATFORM_POLICY_SUITE/SIBLING_DREAMS_DRIFT above.
+    Source.BMAD_RENDER_CONFIG_AMBIGUITY.value: bmad_config.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
