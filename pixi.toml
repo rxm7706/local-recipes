@@ -1812,7 +1812,7 @@ mlx = ">=0.32.0"                  # Apple's array framework (Linux build via lib
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 bmad-module-skill-forge = ">=2.1.0"  # Skill Forge npx-wrapper CLI (the skf module itself installs into _bmad via bmad-method). linux-64 only here: the SelfExplainML build is linux-64 (spec-bmad-suite-channel-product — the suite's one pixi-installability gap, closed 2026-08-22)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant (the `__win` one needs a Windows build), so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
+bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant — the recipe itself is re-verified win-ready (Story 14.1: if: win/if: unix selectors, call-safe build.bat, build.number 1), only the `__win` artifact's Windows build/upload is outstanding — so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 ocrmypdf = ">=17.11.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
@@ -1833,7 +1833,7 @@ headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + l
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant (the `__win` one needs a Windows build), so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
+bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); commit-pinned 0.2.0 line, npm 0.1.0 lacks `score`. unix-only here: SelfExplainML has only the `__unix` noarch variant — the recipe itself is re-verified win-ready (Story 14.1: if: win/if: unix selectors, call-safe build.bat, build.number 1), only the `__win` artifact's Windows build/upload is outstanding — so win-64 is excluded like skill-forge # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 
 # --- bmad-ui: BMad Method UI dashboards (bmad-loop-adoption W4) ---------------
 # Consumes the consume-not-submit mirrors of staged-recipes#33513
