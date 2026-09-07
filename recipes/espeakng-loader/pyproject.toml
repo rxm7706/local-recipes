@@ -1,0 +1,19 @@
+# Minimal PEP 621 metadata so the build installs a REAL distribution with
+# .dist-info. kokoro-onnx declares `espeakng-loader>=0.2.4`, and `pip check`
+# resolves that against installed distribution metadata -- copying the module
+# into site-packages without dist-info would import fine and still fail the
+# dependency check.
+[project]
+name = "espeakng-loader"
+version = "0.2.4"
+description = "Shared-library loader for eSpeak NG, resolved from the conda prefix"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["espeakng_loader"]

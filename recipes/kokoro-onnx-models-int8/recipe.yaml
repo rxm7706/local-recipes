@@ -1,0 +1,187 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+  release: model-files-v1.0
+
+package:
+  name: kokoro-onnx-models-int8
+  version: ${{ version }}
+
+source:
+  # A bare release asset, not an archive, so file_name is required -- there is
+  # no extension-driven unpacking to rely on.
+  - url: https://github.com/thewh1teagle/kokoro-onnx/releases/download/${{ release }}/kokoro-v1.0.int8.onnx
+    sha256: 6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb
+    file_name: kokoro-v1.0.int8.onnx
+
+build:
+  number: 0
+  noarch: generic
+  dynamic_linking:
+    # The .onnx is a protobuf container holding tensor data at fixed offsets.
+    # It is data, not a linkable object, and relocation would silently corrupt
+    # weights rather than fail loudly -- the quiet cousin of the failure that
+    # corrupted a Bun binary in this repo's ccusage recipe.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/kokoro-onnx"
+        mkdir -p "${DEST}"
+        cp -a kokoro-v1.0.int8.onnx "${DEST}/"
+
+requirements:
+  run:
+    # Voices are shared by every variant and ship separately so the three can
+    # co-install; the resolver lives there too. Pinned exactly because both
+    # come from the same upstream release tag.
+    - kokoro-onnx-voices ==${{ version }}
+  run_constraints:
+    - kokoro-onnx >=0.6.0
+
+tests:
+  - package_contents:
+      files:
+        - share/kokoro-onnx/kokoro-v1.0.int8.onnx
+  - script:
+      # Resolution goes through the shared resolver, so this also proves the
+      # voices dependency actually arrived.
+      - python -c "import kokoro_onnx_models as m; print('model:', m.get_model_path('int8'))"
+      - python -c "import kokoro_onnx_models as m, sys; assert m.get_model_path('int8').startswith(sys.prefix)"
+      - python -c "import kokoro_onnx_models as m; assert m.list_variants() == ['int8'], m.list_variants(); print('variants:', m.list_variants())"
+      # With this the only variant installed, the no-argument call must find it.
+      - python -c "import kokoro_onnx_models as m; assert m.get_model_path() == m.get_model_path('int8'); print('default resolution OK')"
+      # Exact size catches truncation; the ONNX parse plus the node count
+      # catches a mangled or swapped payload, which a contents check would not.
+      - python -c "import kokoro_onnx_models as m, os; s=os.path.getsize(m.get_model_path('int8')); assert s == 92361271, s; print('bytes OK:', s)"
+      - python -c "import onnx, kokoro_onnx_models as m; g=onnx.load(m.get_model_path('int8')).graph; assert len(g.node) == 3614, len(g.node); print('onnx graph OK, nodes:', len(g.node))"
+    requirements:
+      run:
+        - python
+        - onnx
+
+about:
+  homepage: https://github.com/thewh1teagle/kokoro-onnx
+  repository: https://huggingface.co/hexgrad/Kokoro-82M
+  documentation: https://github.com/thewh1teagle/kokoro-onnx#readme
+  summary: Kokoro v1.0 TTS model weights (int8) for kokoro-onnx
+  description: |
+    The Kokoro v1.0 ONNX model, int8 variant (88 MB) -- dynamically quantized weights, smallest on disk but slowest on CPU --
+    installed into `$CONDA_PREFIX/share/kokoro-onnx/` so an environment is
+    complete from the lock alone rather than requiring a manual download.
+
+    Measured composition: 54.7 MB uint8 + 23.3 MB int8 + 12.9 MB
+    float32, with 139 DynamicQuantizeLinear, 148 MatMulInteger and
+    87 ConvInteger nodes. Quantization is applied at run time,
+    which is why the node count (3614) is HIGHER than f32's 2464
+    despite the file being a quarter of the size.
+
+    THIS VARIANT IS SLOWER, NOT FASTER. Quantizing on every
+    inference costs more than the narrower arithmetic saves on a
+    CPU without int8 acceleration. Measured 2026-09-07, AMD Ryzen
+    7 7840HS / 16 threads, onnxruntime 1.28.0 CPU provider,
+    median of 3 runs after a warm-up, one 2.7 s utterance:
+
+        variant   load    synth   real-time factor
+        f32       0.66 s  0.59 s  0.22
+        fp16      0.62 s  0.68 s  0.25
+        int8      0.39 s  3.22 s  1.22   <- slower than real time
+
+    Choose int8 to fit the model in ~88 MB of disk or memory.
+    Do NOT choose it for throughput. Re-run the numbers on your
+    own hardware before relying on them; a CPU with VNNI/AMX, or
+    a GPU execution provider, can invert this result.
+
+    Voice embeddings are shared across variants and come from
+    `kokoro-onnx-voices`, pulled in automatically, which also provides the
+    resolver:
+
+        from kokoro_onnx import Kokoro
+        from kokoro_onnx_models import get_model_path, get_voices_path
+
+        kokoro = Kokoro(get_model_path("int8"), get_voices_path())
+        samples, sample_rate = kokoro.create("Hello world", voice="af_sarah")
+
+    All three variants co-install; `get_model_path()` with no argument returns
+    the highest-precision one present.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kokoro-onnx-models-int8
+  cfe-upstream-registry: github
+  cfe-upstream-name: thewh1teagle/kokoro-onnx
+  cfe-purls:
+    - pkg:conda/kokoro-onnx-models-int8@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/thewh1teagle/kokoro-onnx
+  cfe-upstream-homepage: https://huggingface.co/hexgrad/Kokoro-82M
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-pip-check-reason: no-python-package
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "88 MB of model weights - conda-forge discourages large binary data packages and would want this on a dedicated channel; the licence itself (Apache-2.0) is no obstacle"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: pending
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # One of three model variants that co-install. The split exists because
+#    # every variant needs the SAME voices-v1.0.bin: shipping it from each
+#    # would be a file clobber (conda refuses two packages owning one path),
+#    # and folding the variants into one package would force a 311 MB f32
+#    # download on someone who wanted int8's 88 MB.
+#    # Genuinely quantized, unlike the "fp16" variant: 139
+#    # DynamicQuantizeLinear + 148 MatMulInteger + 87 ConvInteger, quantizing
+#    # at run time. That is why the node count (3614) EXCEEDS f32's 2464 even
+#    # though the file is a quarter of the size -- worth knowing before reading
+#    # the asserted count below as a transcription error.
+#    # The `about` text carries a measured speed table because the obvious
+#    # assumption about this variant is BACKWARDS: it is 5.5x slower than f32
+#    # on a CPU without int8 acceleration (RTF 1.22 -- slower than real time),
+#    # since per-inference dynamic quantization costs more than the narrower
+#    # arithmetic saves. Measured, not assumed, on the co-install env built
+#    # during packaging; the numbers are dated and name their hardware so a
+#    # future reader can tell whether they still apply.
+#    # Output quality was checked at the same time: duration-normalised
+#    # envelope correlation against f32 is 0.90 for int8 and 0.95 for fp16, on
+#    # one utterance. Note the metric -- raw waveform correlation reads ~0.006
+#    # for perceptually fine audio here, because the variants emit different
+#    # lengths and a sub-frame shift decorrelates speech completely. That is a
+#    # measurement artefact, not a defect, and it is recorded so nobody
+#    # "discovers" it later and files a bug against this recipe.
+# build:
+#    # noarch: generic, not noarch: python -- this package ships no importable
+#    # code at all. The resolver module lives in kokoro-onnx-voices, which
+#    # means these weights are equally usable from a non-Python ONNX runtime.
+#    # The payload goes to share/kokoro-onnx/, the same directory every other
+#    # package in the set writes into, which is what lets one resolver find
+#    # all of them.
+# requirements:
+#    # kokoro-onnx is a run_constraint, not a dependency: these weights are
+#    # independently useful (any ONNX runtime can load them), but pairing them
+#    # with an incompatible kokoro-onnx should not happen silently.
+# tests:
+#    # Three layers, deliberately. package_contents proves the file shipped;
+#    # the exact byte count proves it is not truncated; onnx.load() with an
+#    # asserted node count proves the protobuf is intact AND that this is the
+#    # right variant -- the only check that would catch two assets swapped
+#    # between recipes, which is a real risk when three recipes differ by one
+#    # filename. Node counts were measured, not assumed: 3614 here.
+####
