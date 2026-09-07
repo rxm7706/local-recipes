@@ -858,6 +858,10 @@ cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
 description = "Story 19.4 / CAP-5: fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all."
 cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
 
+[feature.local-recipes.tasks.tea-test-review]
+description = "Story 46.3 (spec-bmad-suite-lifecycle CAP-4 half): headless run of TEA's bmad-testarch-test-review skill (steward provision --module tea) against the PR's changed test files -- a Marshal review-lens / Warden-advisory precursor, never this task itself. Default: --base origin/main --min-score 80. Override or add flags after `--`, e.g. `pixi run -e local-recipes tea-test-review -- --min-score 90`. Not a gate: never joins detectors/detectors-ci -- Warden's own PR-gate exit code is unaffected by this task's existence."
+cmd = "tea-test-review --base origin/main --min-score 80"
+
 [feature.local-recipes.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"

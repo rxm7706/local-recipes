@@ -104,6 +104,25 @@ config.yaml`) so `cis`'s still-unmigrated Story 46.8 entry keeps reporting
 `installed` alongside every freshly (re-)provisioned module. Nothing
 migrates `cis`'s existing entry in place -- the read-side fallback is the
 whole fix.
+
+Story 46.3 slice (CAP-4 half): TEA's own upstream `*-install` layout nests
+its nine workflow skills one level too deep (`workflows/testarch/bmad-
+testarch-*`), invisible to Claude Code's own one-level `.claude/skills/
+<name>/SKILL.md` discovery -- `CondaInstallBackend.flatten_nested_dirs`
+(opt-in, only set for `tea`) names which `skill_source_dirs` entries need
+this post-install fixup; `_flatten_nested_skill_dirs` moves each leaf
+skill up to `.claude/skills/<name>` and removes the now-empty container,
+operating only on files the (untouched, vendored) installer already
+wrote. Separately, `CondaInstallBackend.module_yaml_relative_path`
+(opt-in, only set for `tea`, whose `module.yaml` sits at the share root,
+unlike bmb's `assets/module.yaml`) drives a new module.yaml-answers
+mechanism for `_provision_conda_install`: `_module_yaml_answers` reuses
+`_module_variable_defaults` verbatim and overrides only `test_artifacts`
+to the unresolved template `"{output_folder}/planning-artifacts"` (every
+other TEA variable keeps its own declared default), merged by
+`_record_module_manifest` into `[modules.tea]` alongside `provisioned_by`/
+`installer`/`skills`. Neither mechanism touches `cis`/`utility-skills`/
+`manticore` -- both fields default to `()`/`None`.
 """
 
 from __future__ import annotations
@@ -112,6 +131,7 @@ import argparse
 import difflib
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -337,12 +357,24 @@ class CondaInstallBackend:
     skills). `skill_names`, when non-empty, is an explicit allowlist matching
     the installer's own fixed list (cis) — used for collision checks and
     post-install verification instead of directory discovery.
+
+    `flatten_nested_dirs` (Story 46.3, opt-in) names which `skill_source_dirs`
+    entries land one level too deep from the installer (each immediate child
+    is itself a container of leaf skills, not a leaf skill itself) — only
+    `tea` sets this (`("workflows",)`); `cis`/`utility-skills`/`manticore`
+    are unaffected. `module_yaml_relative_path` (Story 46.3, opt-in), when
+    set, drives the module.yaml-answers mechanism in
+    `_provision_conda_install` — relative to `share_root`, NOT `bmb`'s own
+    `assets/module.yaml` convention (`_MODULE_YAML_RELATIVE_PATH`), since
+    TEA's `module.yaml` sits at the share root. Only `tea` sets this today.
     """
 
     installer: str
     share_package: str
     skill_source_dirs: tuple[str, ...] = ()
     skill_names: tuple[str, ...] = ()
+    flatten_nested_dirs: tuple[str, ...] = ()
+    module_yaml_relative_path: Path | None = None
     kind: Literal["conda_install"] = "conda_install"
 
 
@@ -369,6 +401,8 @@ _SUPPORTED_MODULES: dict[str, ModuleBackend] = {
         installer="bmad-tea-install",
         share_package="bmad-method-test-architecture-enterprise",
         skill_source_dirs=("agents", "workflows"),
+        flatten_nested_dirs=("workflows",),
+        module_yaml_relative_path=Path("module.yaml"),
     ),
     "cis": CondaInstallBackend(
         installer="bmad-cis-install",
@@ -416,6 +450,29 @@ def _module_variable_defaults(module_yaml: dict[str, object]) -> dict[str, objec
         for key, value in module_yaml.items()
         if isinstance(value, dict) and "default" in value
     }
+
+
+# Story 46.3: TEA's own module.yaml default (`"{output_folder}/test-artifacts"`)
+# is overridden so the epic's "test_artifacts ... pointed at each station's
+# planning-artifacts/" lands -- stored as this UNRESOLVED template string,
+# never a pre-resolved absolute path (resolution happens per-active-project
+# at skill-render time against that project's own `.bmad-config.toml`
+# `output_folder`, not at provisioning time).
+_TEST_ARTIFACTS_ANSWER_OVERRIDE = "{output_folder}/planning-artifacts"
+_TEST_ARTIFACTS_ANSWER_KEY = "test_artifacts"
+
+
+def _module_yaml_answers(module_yaml: dict[str, object]) -> dict[str, object]:
+    """TEA's module.yaml-answers (Story 46.3): reuses `_module_variable_defaults`
+    verbatim, then overrides only `test_artifacts` -- every other declared
+    variable (`tea_use_playwright_utils`, `ci_platform`, `risk_threshold`,
+    etc.) keeps its own module.yaml `default` untouched. This story does not
+    decide any of those; it only closes the `test_artifacts` gap the epic
+    names."""
+    answers = _module_variable_defaults(module_yaml)
+    if _TEST_ARTIFACTS_ANSWER_KEY in answers:
+        answers[_TEST_ARTIFACTS_ANSWER_KEY] = _TEST_ARTIFACTS_ANSWER_OVERRIDE
+    return answers
 
 
 def _materialize_module_output_dirs(
@@ -483,7 +540,16 @@ def _conda_prefix(*, cwd: Path, share_package: str | None = None) -> Path:
 
 
 def _installer_skill_names(backend: CondaInstallBackend, *, share_root: Path) -> tuple[str, ...]:
-    """Names the installer will place under `.claude/skills/`."""
+    """Names the installer will place under `.claude/skills/`.
+
+    For a `flatten_nested_dirs` source (Story 46.3, TEA's own `workflows`
+    entry), predicts the POST-flatten leaf names -- each immediate child of
+    that source is itself a container (e.g. `testarch`) whose OWN children
+    are the real leaf skills -- rather than the container's own name, which
+    is what the installer actually writes before `_flatten_nested_skill_dirs`
+    runs. This function is used for BOTH pre-install collision checking and
+    the post-install missing-skills check, so it must predict the flattened
+    end state either way."""
     if backend.skill_names:
         return backend.skill_names
     names: list[str] = []
@@ -491,7 +557,11 @@ def _installer_skill_names(backend: CondaInstallBackend, *, share_root: Path) ->
         directory = share_root / source
         if not directory.is_dir():
             continue
-        names.extend(sorted(p.name for p in directory.iterdir() if p.is_dir()))
+        if source in backend.flatten_nested_dirs:
+            for container in sorted(p for p in directory.iterdir() if p.is_dir()):
+                names.extend(sorted(c.name for c in container.iterdir() if c.is_dir()))
+        else:
+            names.extend(sorted(p.name for p in directory.iterdir() if p.is_dir()))
     return tuple(names)
 
 
@@ -522,6 +592,72 @@ def _check_skill_name_collisions(
         )
 
 
+def _flatten_nested_skill_dirs(
+    name: str, backend: CondaInstallBackend, *, share_root: Path, dest: Path
+) -> None:
+    """Post-install fixup for a `flatten_nested_dirs` source (Story 46.3):
+    `bmad-tea-install`'s own upstream layout copies each `workflows/<container>`
+    (e.g. `testarch`, holding all nine workflow skills) to `dest/<container>`
+    verbatim -- one level too deep for Claude Code's own one-level
+    `.claude/skills/<name>/SKILL.md` discovery. Moves each leaf skill up to
+    `dest/<leaf>` and removes the now-empty container, operating only on
+    files the (untouched, vendored) installer already wrote -- never a patch
+    to `bmad-tea-install` itself.
+
+    Idempotent AND refreshing: a re-provision re-runs the installer, which
+    does not know Story 46.3 already moved the previous nested copy out
+    from under it, so it writes a fresh one right back to
+    `dest/<container>/<leaf>` -- reflecting whatever the currently-pinned
+    TEA package version now ships. A leaf already flattened by a prior run
+    (`dest/<leaf>` already present) is REPLACED by that fresh nested copy
+    (never the reverse) -- a re-provision after a real TEA version bump
+    must pick up the new content, exactly like every other conda-install
+    module's own plain rmtree+copytree refresh (review finding: an earlier
+    draft discarded the fresh copy and kept the stale flattened one,
+    silently freezing every flattened skill at whatever was installed the
+    very first time). If neither the nested location nor an
+    already-flattened leaf can be found at all, raises a `RuntimeError`
+    naming what was expected vs. found -- never silently leaves the nested
+    layout in place (I/O Matrix: "Fresh TEA provision").
+    """
+    for source in backend.flatten_nested_dirs:
+        source_dir = share_root / source
+        if not source_dir.is_dir():
+            continue
+        for container in sorted(p.name for p in source_dir.iterdir() if p.is_dir()):
+            container_share = source_dir / container
+            container_dest = dest / container
+            leaves = sorted(p.name for p in container_share.iterdir() if p.is_dir())
+            for leaf in leaves:
+                target = dest / leaf
+                nested = container_dest / leaf
+                if nested.is_dir():
+                    # This run's installer wrote (or rewrote) the nested
+                    # copy -- it is always the authoritative, freshest
+                    # content. Replace any stale already-flattened target.
+                    if target.is_dir():
+                        shutil.rmtree(target)
+                    shutil.move(str(nested), str(target))
+                    continue
+                if not target.is_dir():
+                    raise RuntimeError(
+                        f"module {name!r}: flattening {container!r} expected "
+                        f"{nested} to exist, found neither it nor an "
+                        f"already-flattened {target}"
+                    )
+                # No fresh nested copy this run (e.g. a share-only dry
+                # re-check with an installer that skipped this leaf); the
+                # already-flattened target from a prior run is kept as-is.
+            if container_dest.is_dir():
+                remaining = sorted(p.name for p in container_dest.iterdir())
+                if remaining:
+                    raise RuntimeError(
+                        f"module {name!r}: {container_dest} still has "
+                        f"unexpected entries after flattening: {remaining!r}"
+                    )
+                container_dest.rmdir()
+
+
 def _toml_string(value: str) -> str:
     """A TOML basic-string literal for `value`. Every value this writer ever
     renders (`"steward"`, an installer entry-point name, a skill directory
@@ -531,22 +667,59 @@ def _toml_string(value: str) -> str:
     return json.dumps(value)
 
 
+def _toml_value(value: object) -> str:
+    """A TOML scalar literal for `value` -- the only two shapes a module.yaml
+    answer (Story 46.3) or this file's own existing generated fields ever
+    produce: a plain ASCII string (`_toml_string`) or a bool. Bools are
+    rendered lowercase (`true`/`false`) -- Python's own `str()` would wrongly
+    emit `True`/`False`, which is not valid TOML."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        return _toml_string(value)
+    raise TypeError(f"unsupported module.yaml answer type for TOML rendering: {type(value)!r}")
+
+
 def _render_module_toml_section(
-    name: str, *, installer: str, skills: tuple[str, ...]
+    name: str,
+    *,
+    installer: str,
+    skills: tuple[str, ...],
+    answers: dict[str, object] | None = None,
 ) -> str:
     """Render a `[modules.<name>]` section -- AD-9's target shape, carrying
-    exactly the three fields the legacy `_bmad/config.yaml` entry carried
-    (`provisioned_by`, `installer`, `skills`). A flat one-line `skills`
+    the three fields the legacy `_bmad/config.yaml` entry carried
+    (`provisioned_by`, `installer`, `skills`), plus (Story 46.3) any
+    module.yaml answers for a backend that declares
+    `module_yaml_relative_path` -- rendered as additional scalar keys,
+    sorted by name for deterministic output. A flat one-line `skills`
     array matches this file's own existing generated scalar-key style
     (`sidecar_path = "..."` etc.) -- no need to match `[modules.skf]`'s
     hand-authored, prose-commented multi-line style."""
+    reserved = {"provisioned_by", "installer", "skills"}
+    collisions = reserved & set(answers or {})
+    if collisions:
+        raise RuntimeError(
+            f"module {name!r}: module.yaml declares reserved manifest key(s) "
+            f"{sorted(collisions)!r} -- would duplicate the fixed "
+            "provisioned_by/installer/skills fields in [modules."
+            f"{name}]"
+        )
     skills_array = ", ".join(_toml_string(s) for s in skills)
-    return (
-        f"[modules.{name}]\n"
-        f"provisioned_by = {_toml_string('steward')}\n"
-        f"installer = {_toml_string(installer)}\n"
-        f"skills = [{skills_array}]\n"
-    )
+    lines = [
+        f"[modules.{name}]\n",
+        f"provisioned_by = {_toml_string('steward')}\n",
+        f"installer = {_toml_string(installer)}\n",
+        f"skills = [{skills_array}]\n",
+    ]
+    for key in sorted(answers or {}):
+        try:
+            lines.append(f"{key} = {_toml_value(answers[key])}\n")
+        except TypeError as exc:
+            raise TypeError(
+                f"module {name!r}: module.yaml variable {key!r}: {exc}"
+            ) from exc
+    return "".join(lines)
 
 
 def _record_module_manifest(
@@ -555,6 +728,7 @@ def _record_module_manifest(
     cwd: Path,
     installer: str,
     skills: tuple[str, ...],
+    answers: dict[str, object] | None = None,
 ) -> None:
     """Write/replace `[modules.<name>]` in `_bmad/custom/config.toml` (AD-9)
     -- the roster every `CondaInstallBackend` module's provisioning path
@@ -562,6 +736,10 @@ def _record_module_manifest(
     provision is discoverable via `--list-modules`. `bmb`
     (`SetupSkillBackend`) never calls this function -- `merge-config.py`
     writes `_bmad/config.yaml` itself.
+
+    `answers` (Story 46.3, opt-in -- only `tea` populates it today) merges a
+    backend's module.yaml-derived answers dict as additional scalar keys
+    into the same section, alongside `provisioned_by`/`installer`/`skills`.
 
     Targeted text editing only: locate an existing `[modules.<name>]`
     header line and replace it plus its own key=value body lines only --
@@ -598,7 +776,9 @@ def _record_module_manifest(
                 f"cannot record module {name!r}: {_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH} "
                 f"is not valid TOML ({exc})"
             ) from exc
-    section_text = _render_module_toml_section(name, installer=installer, skills=skills)
+    section_text = _render_module_toml_section(
+        name, installer=installer, skills=skills, answers=answers
+    )
     header = f"[modules.{name}]"
     lines = original.splitlines(keepends=True)
     header_idx = next(
@@ -714,6 +894,13 @@ def _provision_conda_install(
     record a `_bmad/custom/config.toml` `[modules.<name>]` manifest section
     (Story 46.2, AD-9) so `--list-modules` and Story 6.3's post-success gate
     see the module as installed.
+
+    Story 46.3 adds two opt-in post-subprocess steps for a backend that
+    declares them (only `tea` today): `_flatten_nested_skill_dirs` runs
+    BEFORE the missing-skills check, so that check validates the flattened
+    end state rather than the installer's own one-level-too-deep layout;
+    the module.yaml-answers computation runs after the missing-skills check
+    passes and is merged into the manifest section by `_record_module_manifest`.
     """
     prefix = _conda_prefix(cwd=cwd, share_package=backend.share_package)
     share_root = prefix / "share" / backend.share_package
@@ -748,6 +935,9 @@ def _provision_conda_install(
         env=env,
     )
 
+    if backend.flatten_nested_dirs:
+        _flatten_nested_skill_dirs(name, backend, share_root=share_root, dest=dest)
+
     missing = [s for s in skill_names if not (dest / s).is_dir()]
     if missing:
         raise RuntimeError(
@@ -755,8 +945,25 @@ def _provision_conda_install(
             f"missing under {_CLAUDE_SKILLS_RELATIVE_PATH}: {', '.join(missing)}"
         )
 
+    answers: dict[str, object] | None = None
+    if backend.module_yaml_relative_path is not None:
+        module_yaml_path = share_root / backend.module_yaml_relative_path
+        if not module_yaml_path.is_file():
+            raise FileNotFoundError(
+                f"module {name!r}'s module.yaml is missing at {module_yaml_path} — "
+                f"the {backend.share_package} pixi/conda dependency does not ship "
+                "a module.yaml at the declared path."
+            )
+        with module_yaml_path.open("r", encoding="utf-8") as f:
+            module_yaml = yaml.safe_load(f)
+        if not isinstance(module_yaml, dict):
+            raise RuntimeError(
+                f"{module_yaml_path} did not parse to a mapping -- malformed module.yaml"
+            )
+        answers = _module_yaml_answers(module_yaml)
+
     _record_module_manifest(
-        name, cwd=cwd, installer=backend.installer, skills=skill_names
+        name, cwd=cwd, installer=backend.installer, skills=skill_names, answers=answers
     )
 
     return {

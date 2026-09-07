@@ -45,3 +45,22 @@ forge_data_folder = "{project-root}/_bmad-output/projects/pyforge-atlas/implemen
 provisioned_by = "steward"
 installer = "bmad-utility-skills-install"
 skills = ["bmad-os-audit-file-refs", "bmad-os-changelog", "bmad-os-changelog-social", "bmad-os-diataxis", "bmad-os-editorial-review-translation", "bmad-os-findings-triage", "bmad-os-gh-triage", "bmad-os-review-pr", "bmad-os-root-cause-analysis", "bmad-os-skill-to-bundle"]
+
+[modules.tea]
+provisioned_by = "steward"
+installer = "bmad-tea-install"
+skills = ["bmad-tea", "bmad-teach-me-testing", "bmad-testarch-atdd", "bmad-testarch-automate", "bmad-testarch-ci", "bmad-testarch-framework", "bmad-testarch-nfr", "bmad-testarch-test-design", "bmad-testarch-test-review", "bmad-testarch-trace"]
+ci_platform = "auto"
+risk_threshold = "p1"
+tea_browser_automation = "auto"
+tea_capability_probe = true
+tea_execution_mode = "auto"
+tea_pact_mcp = "mcp"
+tea_use_pactjs_utils = true
+tea_use_playwright_utils = true
+test_artifacts = "{output_folder}/planning-artifacts"
+test_design_output = "test-design"
+test_framework = "auto"
+test_review_output = "test-reviews"
+test_stack_type = "auto"
+trace_output = "traceability"
