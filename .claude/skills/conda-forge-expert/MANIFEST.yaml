@@ -12,7 +12,7 @@
 
 skill:
   name: conda-forge-expert
-  version: 8.86.4
+  version: 8.86.5
   type: standalone-portable
 
 # Where this skill expects to live within a host repo.
