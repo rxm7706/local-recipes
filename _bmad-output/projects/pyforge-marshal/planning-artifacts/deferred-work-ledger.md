@@ -5902,3 +5902,146 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-31-1: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
+
+- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+  summary: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
+  evidence: Confirmed by direct inspection of `_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md` (207/208 "none observed" rows) and `_bmad/scripts/bmad_tea_playwright.py`'s `_stories_linked_to_test` (matches only `test_1_2_*`/`test_story_19_1_*`-shaped filenames). Pre-existing generator limitation, not a regression from this story.
+  location: _bmad/scripts/bmad_tea_playwright.py::_stories_linked_to_test
+  origin: spec-deferred 52d65d117b85 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-1-2: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
+
+- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+  summary: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
+  evidence: Both TEA subagent runs independently read `epics.md` for their station and reported the differing counts; root cause not investigated (could be either side's parsing). Doctor's run additionally noted 108 of its 113 stories are already `done`/shipped, out of its own declared scope for this pass.
+  location: _bmad/scripts/bmad_tea_playwright.py (story-parsing regexes) vs epics.md for pyforge-herald and pyforge-doctor
+  origin: spec-deferred c121ec97eb21 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-1-3: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
+
+- source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
+  summary: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
+  evidence: 11 Blind Hunter + 4 Edge Case Hunter findings were verified and patched directly (see Review Triage Log); a full line-by-line audit of all 8 stations' ~250KB of TEA-generated prose for further such nits was not attempted -- out of proportion for advisory documents whose core claim (equivalence coverage) does not depend on internal cross-reference polish.
+  location: all 8 stations' test-design-architecture.md / test-design-qa.md
+  origin: spec-deferred b36444e68b97 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-2: `architecture-bmad-infra.md` was not glossed with an FR-129/FR-132 note recording the refusal, even though 31.2's own Surface line names that file.
+
+- source_spec: `planning-artifacts/specs/spec-31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check.md`
+  summary: `architecture-bmad-infra.md` was not glossed with an FR-129/FR-132 note recording the refusal, even though 31.2's own Surface line names that file.
+  evidence: The story's literal Then-clause gloss requirement ("glosses FR-129/FR-132 as retired...") is textually conditioned on the deletion path ("Given 31.1's equivalence report passes 8/8"), which did not hold; the refusal itself is thoroughly recorded in two authoritative places instead (spec-bmad-611-era-alignment's CAP-13 memlog entry and SPEC.md outcome note). architecture-bmad-infra.md has no existing FR-129/FR-132 section to extend, and inserting a new one into a large, unfamiliar living document without a natural home risked a worse edit than deferring it. Low-severity, easily added later if a reader is found looking for it there and not finding it.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md
+  origin: spec-deferred a2e974c9b3d2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-3: The lens's real end-to-end behavior (invoking tea-test-review, parsing its verdict, emitting capped-at-warn findings, refusing cleanly when the AD-9 roster lacks tea) is not exercised by an automated test in this pass.
+
+- source_spec: `planning-artifacts/specs/spec-31-3-tea-test-review-is-a-marshal-review-lens.md`
+  summary: The lens's real end-to-end behavior (invoking tea-test-review, parsing its verdict, emitting capped-at-warn findings, refusing cleanly when the AD-9 roster lacks tea) is not exercised by an automated test in this pass.
+  evidence: The lens's `instruction` is a prompt for an LLM-driven review session, not code -- the same nature as every other shipped bmad-review lens (edge-case-hunter et al.), none of which have an automated "run the lens and check its output" test either. What is mechanically verified: the lens merges correctly into the resolved lens set, the TOML parses, and the review_min_score policy plumbing it depends on composes/renders/loads correctly end-to-end against the real installed bmad_loop package.
+  location: _bmad/custom/bmad-review.toml
+  origin: spec-deferred 0d9270177816 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-3-2: New review_min_score validator tests (out-of-range, bool, numeric-string rejection) only exercise the project policy layer, not repo_defaults or flags (--set).
+
+- source_spec: `planning-artifacts/specs/spec-31-3-tea-test-review-is-a-marshal-review-lens.md`
+  summary: New review_min_score validator tests (out-of-range, bool, numeric-string rejection) only exercise the project policy layer, not repo_defaults or flags (--set).
+  evidence: Verified this matches the existing, accepted test-depth convention for every sibling bmad-loop-adjacent knob: grepped test_policy.py and confirmed stream_capture_kb's own rejection tests (test_stream_capture_kb_rejects_an_arbitrary_precision_int_without_raising, test_stream_capture_kb_zero_is_legal) are also project-layer only. Not a new gap this story introduces; adding flags/repo_defaults coverage for review_min_score alone, without doing the same for its five siblings, would be inconsistent scope creep beyond this story's own surface.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_policy.py
+  origin: spec-deferred 6fae8734c2cf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-3-3: cli/config.py:125's "Naming any of these 9 keys" comment above _UNSETTABLE_KEYS remains stale (pre-existing drift, DW-3-13-1) -- the frozenset now holds 28 members after this story's addition, further widening the gap from the literal "9".
+
+- source_spec: `planning-artifacts/specs/spec-31-3-tea-test-review-is-a-marshal-review-lens.md`
+  summary: cli/config.py:125's "Naming any of these 9 keys" comment above _UNSETTABLE_KEYS remains stale (pre-existing drift, DW-3-13-1) -- the frozenset now holds 28 members after this story's addition, further widening the gap from the literal "9".
+  evidence: Confirmed live: `len(_UNSETTABLE_KEYS) == 28`. This is DW-3-13-1 in planning-artifacts/deferred-work-ledger.md, open since Story 3.13, re-verified multiple times (most recently 2026-09-05 at 27 members) with "not fixed here" as the established precedent each time a story adds a member adjacent to the stale comment -- fixing the literal is a dedicated cleanup out of every contributing story's own bounded scope. This story added a fresh `verified: 2026-09-07` line to that ledger entry rather than silently leaving it un-re-checked.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py:125
+  origin: spec-deferred c0f2174ab7ff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-4: No sweep audits already-materialized sprint-status.yaml files elsewhere in the fleet for latent pre-existing wrap corruption from before this fix.
+
+- source_spec: `planning-artifacts/specs/spec-31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface.md`
+  summary: No sweep audits already-materialized sprint-status.yaml files elsewhere in the fleet for latent pre-existing wrap corruption from before this fix.
+  evidence: Real but out of this story's declared Surface (governance of the 7 files + the factory fix only, per the AC). A fleet-wide audit for latent corruption is a distinct, larger task -- the one known instance (Story 22.11, 2026-08-31) was already hand-repaired at the time.
+  location: .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
+  origin: spec-deferred 134045864501 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-4-2: bmad-retrospective's sprint_status.py has an independent ruamel.yaml factory that shares the same file format and the same fleet_scan.parse_sprint_status downstream reader, but was never given the width fix -- a long story key is silently dropped by its own `update` subcommand.
+
+- source_spec: `planning-artifacts/specs/spec-31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface.md`
+  summary: bmad-retrospective's sprint_status.py has an independent ruamel.yaml factory that shares the same file format and the same fleet_scan.parse_sprint_status downstream reader, but was never given the width fix -- a long story key is silently dropped by its own `update` subcommand.
+  evidence: Confirmed by live reproduction (verification-gap review layer, 2026-09-06): seeded a fixture with an 86-char story key, ran `sprint_status.py update` touching only `last_updated`, and the key was folded onto a continuation line and read as absent by the real `fleet_scan.parse_sprint_status`. Real and demonstrated, not this story's problem -- `bmad-retrospective` is a different skill, not part of this story's declared Surface (`.claude/skills/bmad-sprint-planning/*` + the two named SPEC.md files).
+  location: .claude/skills/bmad-retrospective/scripts/sprint_status.py:40-54 (_load_yaml)
+  origin: spec-deferred 5be8833906e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-5: No audit trail (checklist or sign-off log) proves the three manual-only readiness items (R1, R2, R5) were actually checked for each of the eight loop homes.
+
+- source_spec: `planning-artifacts/specs/spec-31-5-loop-home-readiness-is-defined-for-the-cutover-flip.md`
+  summary: No audit trail (checklist or sign-off log) proves the three manual-only readiness items (R1, R2, R5) were actually checked for each of the eight loop homes.
+  evidence: Real gap, but out of this Effort-S/docs story's scope -- the AC asks for the readiness items, their proving checks, and the runner, not a new record-keeping artifact. A future story could add a per-home sign-off log.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md
+  origin: spec-deferred aace52634746 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-5-2: No failure/rollback guidance for the attended, eight-times-repeated re-provisioning procedure if a readiness check fails partway through.
+
+- source_spec: `planning-artifacts/specs/spec-31-5-loop-home-readiness-is-defined-for-the-cutover-flip.md`
+  summary: No failure/rollback guidance for the attended, eight-times-repeated re-provisioning procedure if a readiness check fails partway through.
+  evidence: Real but not requested by the AC; a design question for whoever builds steward 44.12's mechanism, not this readiness-definition doc.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md
+  origin: spec-deferred c20b1e87aa8c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-5-3: The readiness doc's field-name citations against marshal's live code (e.g. which HomeFacts fields marshal homes --json actually serializes) are not wired to any test, so a future rename could silently invalidate them.
+
+- source_spec: `planning-artifacts/specs/spec-31-5-loop-home-readiness-is-defined-for-the-cutover-flip.md`
+  summary: The readiness doc's field-name citations against marshal's live code (e.g. which HomeFacts fields marshal homes --json actually serializes) are not wired to any test, so a future rename could silently invalidate them.
+  evidence: Real but generic to any hand-written doc citing code shape; no specific actionable fix within this docs-only story's scope -- adding a self-verifying test is a different, larger story.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md
+  origin: spec-deferred 40cf435f6bcd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-31-6: The new `note:` field on DW-HYGIENE-2026-09-05-1 is not in pyforge-doctor's chain.py `_KNOWN_FIELD_KEYS` closed vocabulary, so `classify_tier3_entries` silently folds it into the preceding `evidence:` field instead of keeping it as its own field.
+
+- source_spec: `planning-artifacts/specs/spec-31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded.md`
+  summary: The new `note:` field on DW-HYGIENE-2026-09-05-1 is not in pyforge-doctor's chain.py `_KNOWN_FIELD_KEYS` closed vocabulary, so `classify_tier3_entries` silently folds it into the preceding `evidence:` field instead of keeping it as its own field.
+  evidence: Verified real (edge-case-hunter finding, independently confirmed): `_KNOWN_FIELD_KEYS` in src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:1967-1971 lists source_spec/summary/evidence/origin/location/severity/reason/status/resolution/decision/ seen-again/promoted/found_by/raised/verified -- no `note`. But this is pre-existing, not introduced by this story: two unrelated prior entries in the same ledger already use a `note:` field the same way (DW-SURFACE-2026-08-08-1 and -2, both pre-dating this diff), so the parser gap already existed and this story's usage merely follows established (if imperfect) local convention rather than worsening it. Fixing the parser's vocabulary is a pyforge-doctor change, out of this XS docs story's scope.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:1967
+  origin: spec-deferred e2d68c5f9a2f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -3580,3 +3580,498 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-45-2: No automated test exists for most of driver.py's subprocess-orchestration logic (resolve_model's fallback chain, prepare_shared, the isolation-manifest/digest plumbing) beyond the two pure helpers (cites_planted, parse_review_envelope) that test_driver.py now covers.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: No automated test exists for most of driver.py's subprocess-orchestration logic (resolve_model's fallback chain, prepare_shared, the isolation-manifest/digest plumbing) beyond the two pure helpers (cites_planted, parse_review_envelope) that test_driver.py now covers.
+  evidence: A real regression test for the remaining logic would need to mock the claude/pixi/eval-quality subprocess boundary -- nontrivial engineering, not a trivial patch. Confirmed via repo-wide grep that no other test references driver.py, and the delivered test_driver.py (8 passing tests) only exercises the two pure functions.
+  location: evals/review-catches-planted-defect/driver.py
+  origin: spec-deferred 4dd132100ce3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-2: A non-zero eval-quality preflight exit only prints a warning; the same verdict_path is still passed on to eval-quality score for that arm.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: A non-zero eval-quality preflight exit only prints a warning; the same verdict_path is still passed on to eval-quality score for that arm.
+  evidence: Could not fully verify without deeper knowledge of whether `eval-quality preflight` always writes its --out file even on a failing/invalidating exit. The CLI's own documented AD-21 exit code 3 ("failed pre-flight") suggests preflight failure is a structured, always-emitted verdict rather than a missing file, and no preflight failure was observed across this review's own live verification runs. If the file really can be missing on a non-zero preflight exit, this would be medium (a FileNotFoundError crash mid-run rather than a graceful failure).
+  location: evals/review-catches-planted-defect/driver.py:319-324
+  origin: spec-deferred b68a5d037be0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-3: No version pin or check on the claude -p CLI flags the driver depends on (--json-schema, --max-budget-usd, --no-session-persistence, etc.), and eval-quality-smoke never exercises the actual claude -p invocation path.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: No version pin or check on the claude -p CLI flags the driver depends on (--json-schema, --max-budget-usd, --no-session-persistence, etc.), and eval-quality-smoke never exercises the actual claude -p invocation path.
+  evidence: A future Claude Code CLI flag rename/removal could silently break eval-quality-review-twin-run with no shipped task catching it before a real run. Deferred rather than adding a live-call smoke test, which would itself cost real API budget on every smoke invocation.
+  location: evals/review-catches-planted-defect/driver.py (invoke_review)
+  origin: spec-deferred 6ab7696fa4e6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-4: driver.py's eq()-routed subprocess.run calls (compile/seal/preflight/score) pass no explicit timeout, unlike the claude -p call which has timeout=630.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: driver.py's eq()-routed subprocess.run calls (compile/seal/preflight/score) pass no explicit timeout, unlike the claude -p call which has timeout=630.
+  evidence: These are local-CLI calls, lower risk than the LLM call; adding timeouts everywhere is a nice-to-have, deferred rather than patched now.
+  location: evals/review-catches-planted-defect/driver.py (eq)
+  origin: spec-deferred aba7cd072ba6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-5: Static asset reads (system_prompt/diff/schema .read_text() calls in invoke_review) have no existence/decode guard.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: Static asset reads (system_prompt/diff/schema .read_text() calls in invoke_review) have no existence/decode guard.
+  evidence: Real but low-likelihood: these are core repo files under version control, unlikely to go missing in a correctly checked-out repo. Deferred rather than adding speculative guards.
+  location: evals/review-catches-planted-defect/driver.py (invoke_review)
+  origin: spec-deferred ad329dabeac7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-6: evaluator-configuration.json's sealedBriefDigest is a hand-computed value baked into the static template file; nothing recomputes or validates it at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: evaluator-configuration.json's sealedBriefDigest is a hand-computed value baked into the static template file; nothing recomputes or validates it at runtime.
+  evidence: Correct today (independently reverified by recomputing the digest); if contract.json is edited in the future without refreshing this cached value it would silently go stale, and the installed eval-quality CLI never reads this field either, so nothing downstream would catch it. Verification Gap reviewer's own finding.
+  location: evals/review-catches-planted-defect/evaluator-configuration.json
+  origin: spec-deferred 2cad28bd785d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-45-2-7: Six near-identical "Surface reconcile" memlog paragraphs were pasted across unrelated specs (pyforge-atlas, pyforge-doctor, pyforge-marshal, three pyforge-steward specs) because each spec's blanket pixi.toml glob makes it a co-governor of this one three-task addition, and this is a recurring class of churn with no structural fix.
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: Six near-identical "Surface reconcile" memlog paragraphs were pasted across unrelated specs (pyforge-atlas, pyforge-doctor, pyforge-marshal, three pyforge-steward specs) because each spec's blanket pixi.toml glob makes it a co-governor of this one three-task addition, and this is a recurring class of churn with no structural fix.
+  evidence: Pre-existing spec-surface design (the blanket globs), not caused by this story; Verification Gap reviewer independently confirmed the mechanism produces zero gating FAIL findings, i.e. it is behaving as designed. Worth a future narrowing pass across those six specs, not this one.
+  location: _bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md
+  origin: spec-deferred ea837a9d66a7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1: The fixture test for the single-station branch checks the _claude_md_mentions helper directly rather than driving the real top-level `assert not _claude_md_mentions(...)` through an actual violation.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: The fixture test for the single-station branch checks the _claude_md_mentions helper directly rather than driving the real top-level `assert not _claude_md_mentions(...)` through an actual violation.
+  evidence: Real but low-value: the helper is a one-line substring check, simple enough that testing it directly is adequate; a full failure-path drive would add test complexity disproportionate to the risk.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::test_single_station_branch_is_not_dead_code
+  origin: spec-deferred dff7de3f2e76 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-2: _persona_mentions only scans SKILL.md and customize.toml, not a reference/*.md file or README a persona skill might also carry routing text in.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: _persona_mentions only scans SKILL.md and customize.toml, not a reference/*.md file or README a persona skill might also carry routing text in.
+  evidence: Matches this story's own Code Map scope; grepped and confirmed no current routing text lives outside those two files for any provisioned skill. Revisit if a future persona skill moves routing text elsewhere.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::_persona_mentions
+  origin: spec-deferred d78b6e2c8d97 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-3: No drift guard exists for a currently-skipped § 2 skill prefix becoming provisioned later without a corresponding register update.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: No drift guard exists for a currently-skipped § 2 skill prefix becoming provisioned later without a corresponding register update.
+  evidence: The test's "not vacuous" assertions (checking bmad-cis-* and skf-* are actually exercised) partially cover staleness detection, but a newly provisioned prefix with no register-shape change would not be flagged. A full drift guard is a larger, separate mechanism than this story's scope.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::test_skill_routing_matches_ad2_for_every_currently_provisioned_row
+  origin: spec-deferred 8e5f65f838cb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-4: The markdown table parser's cell split on a bare "|" does not handle an escaped pipe character inside a cell's text.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: The markdown table parser's cell split on a bare "|" does not handle an escaped pipe character inside a cell's text.
+  evidence: Real in principle but currently inert -- no cell in adoption-register.md uses an escaped pipe. Not worth the added regex complexity without a live case.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::_table_rows
+  origin: spec-deferred 5169ed8b0812 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-5: _skill_dir_exists's glob matching only recognizes the exact "<prefix>-*" wildcard shape via endswith("-*"), not general fnmatch semantics.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: _skill_dir_exists's glob matching only recognizes the exact "<prefix>-*" wildcard shape via endswith("-*"), not general fnmatch semantics.
+  evidence: Currently inert -- every § 2 glob-shaped skill cell uses exactly this form. Would need fnmatch (or similar) if the register ever adopts a different wildcard convention.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::_skill_dir_exists
+  origin: spec-deferred 59313e18fc61 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-1-6: _persona_mentions and _claude_md_mentions use plain substring matching, not word-boundary matching, when checking whether a skill name is mentioned.
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: _persona_mentions and _claude_md_mentions use plain substring matching, not word-boundary matching, when checking whether a skill name is mentioned.
+  evidence: Real in principle (a skill name that is a substring of an unrelated identifier could false-positive or false-negative), but verified no current skill name is a substring of anything unrelated in the checked files. Deferred rather than adding escaping/regex complexity with no live case to justify it.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::_persona_mentions
+  origin: spec-deferred 6002030fee67 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2: The epic's own text asks for "the module's module.yaml answers at the installer's key paths" in the AD-9 roster section; no CondaInstallBackend module (tea/cis/utility-skills/manticore) ships a module.yaml, so this is vacuous for the migration this story actually performs.
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: The epic's own text asks for "the module's module.yaml answers at the installer's key paths" in the AD-9 roster section; no CondaInstallBackend module (tea/cis/utility-skills/manticore) ships a module.yaml, so this is vacuous for the migration this story actually performs.
+  evidence: Confirmed: no module.yaml exists anywhere under .pixi/envs/local-recipes/share/bmad-utility-skills/. That machinery is exclusive to bmb's SetupSkillBackend path, untouched by this story. Disclosed as an explicit interpretation in the spec's own Boundaries & Constraints before implementation began.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_record_module_manifest
+  origin: spec-deferred 546cf54df76e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2-2: "The CAP-8 pre-flight scan compares conda-module skills against share/bmad-utility-skills/skills" (epics.md) names a specific existing subsystem (spec-bmad-method-core-upgrade's CAP-8, the local-customization pre-flight in upgrade.py); this story satisfies the underlying drift-detection intent via a standalone pytest assertion instead, and does not touch upgrade.py.
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: "The CAP-8 pre-flight scan compares conda-module skills against share/bmad-utility-skills/skills" (epics.md) names a specific existing subsystem (spec-bmad-method-core-upgrade's CAP-8, the local-customization pre-flight in upgrade.py); this story satisfies the underlying drift-detection intent via a standalone pytest assertion instead, and does not touch upgrade.py.
+  evidence: Confirmed via grep: zero references to this story in upgrade.py. Extending the real CLI pre-flight report machinery would be a materially larger, cross-cutting change disproportionate to this story's S effort estimate. Disclosed as the one clause "most likely to need a documented deviation" in the spec's own Boundaries before implementation began; the Intent Alignment reviewer independently confirmed this exact divergence.
+  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module_installers.py::test_live_utility_skills_share_tree_matches_the_ten_expected_names
+  origin: spec-deferred 9e018ed9ba6d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (documented deviation, not a defect)
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2-3: adoption-register.md's column header ("Wired 2026-09-06") and file-level "Measured 2026-09-06" intro note were left unchanged even though row 8's cell was updated based on a 2026-09-07 re-verification.
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: adoption-register.md's column header ("Wired 2026-09-06") and file-level "Measured 2026-09-06" intro note were left unchanged even though row 8's cell was updated based on a 2026-09-07 re-verification.
+  evidence: The header's own convention states "a member's wiring changes only by changing its row" -- read as the header/intro documenting the table's original baseline pass, not an auto-updating per-row timestamp. A reader who does not read that sentence carefully could still momentarily believe the whole table is a 2026-09-06 snapshot.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  origin: spec-deferred 9d3a5cd6c744 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2-4: _record_module_manifest's line-based section matcher only replaces the first occurrence of a `[modules.<name>]` header if the file somehow already contains more than one (a state that should not arise from this function's own writes, but could from manual editing).
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: _record_module_manifest's line-based section matcher only replaces the first occurrence of a `[modules.<name>]` header if the file somehow already contains more than one (a state that should not arise from this function's own writes, but could from manual editing).
+  evidence: Real in principle, no live trigger today (no duplicate section exists in the tracked _bmad/custom/config.toml). The regex-swallowing bug that made duplicates more likely to accumulate silently was fixed this pass (line-based boundary stops at the first blank/comment/next-header line); a genuinely already-duplicated file would need separate, manual reconciliation regardless of this writer's behavior.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_record_module_manifest
+  origin: spec-deferred 5a2efcc186e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2-5: The section matcher does not tolerate CRLF line endings in an existing `[modules.<name>]` header line (compares against a bare `\n`/`\r\n`-stripped literal, which is CRLF-tolerant for the compare itself, but the file is read as text in default universal-newlines mode so this is likely already fine in practice -- flagged as low-confidence residual risk, not independently re-verified with an actual CRLF fixture this pass).
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: The section matcher does not tolerate CRLF line endings in an existing `[modules.<name>]` header line (compares against a bare `\n`/`\r\n`-stripped literal, which is CRLF-tolerant for the compare itself, but the file is read as text in default universal-newlines mode so this is likely already fine in practice -- flagged as low-confidence residual risk, not independently re-verified with an actual CRLF fixture this pass).
+  evidence: Python's default text-mode file reading normalizes line endings, so a CRLF source file should already present as LF to this code; not independently proven with a dedicated CRLF fixture test this pass.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_record_module_manifest
+  origin: spec-deferred 76c268d33d51 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-2-6: Non-BMP Unicode characters in a name/installer/skill value would be escaped by json.dumps as UTF-16 surrogate pairs, which tomllib rejects on the next read.
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: Non-BMP Unicode characters in a name/installer/skill value would be escaped by json.dumps as UTF-16 surrogate pairs, which tomllib rejects on the next read.
+  evidence: Currently inert -- every value this writer ever renders today (a registered module name, an installer entry-point name, a skill directory name) is a plain ASCII identifier from hardcoded _SUPPORTED_MODULES data or discovered skill directory names, never user-supplied Unicode.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_toml_string
+  origin: spec-deferred dc04f1d92c87 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3: No promoted per-story spec file exists in the tracked planning-artifacts/specs/ directory for Stories 46.1, 46.2, or 46.3 (unlike 46.7/46.8, which each have one).
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: No promoted per-story spec file exists in the tracked planning-artifacts/specs/ directory for Stories 46.1, 46.2, or 46.3 (unlike 46.7/46.8, which each have one).
+  evidence: Matches this repo's own "story specs are durable, promoted after merge" convention, which happens at merge time per the repo's stated process, not mid-batch while several dependent stories are still landing on the same branch. Real gap to close when this branch merges, not blocking mid-batch.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/
+  origin: spec-deferred 5e228f5e609f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3-2: Reading "test_artifacts ... pointed at each station's planning-artifacts/ per its .bmad-config.toml" could plausibly mean per-station RESOLVED values rather than the one global unresolved template string this story actually writes.
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: Reading "test_artifacts ... pointed at each station's planning-artifacts/ per its .bmad-config.toml" could plausibly mean per-station RESOLVED values rather than the one global unresolved template string this story actually writes.
+  evidence: Proving per-station resolution would require actually rendering a TEA skill per active project, which is blocked by the separate, disclosed render_skill.py/workflow.yaml incompatibility finding. The unresolved-template approach is the best achievable outcome given that constraint, and matches how other `{output_folder}`-style templates already resolve per-active-project elsewhere in this repo.
+  location: _bmad/custom/config.toml::modules.tea.test_artifacts
+  origin: spec-deferred 57b901a0477d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (documented interpretation, not a defect)
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3-3: `_installer_skill_names`'s flatten-branch prediction is derived only from the share_root tree, never cross-checked against what the installer's own copy actually produced at dest before flattening.
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: `_installer_skill_names`'s flatten-branch prediction is derived only from the share_root tree, never cross-checked against what the installer's own copy actually produced at dest before flattening.
+  evidence: Real in principle; the existing post-install missing-skills check (comparing predicted names against `dest/<name>.is_dir()`) already catches the case where a predicted leaf never actually materializes, which covers the practical failure mode. A share-vs-installer disagreement narrower than "leaf missing entirely" is not covered, but no such case is currently reachable with the real TEA package.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_installer_skill_names
+  origin: spec-deferred bbad65a8402a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3-4: A new test (`test_provision_installer_missing_non_nested_skill_after_successful_flatten_raises`) hand-rolls its own installer stand-in instead of reusing the shared `_fake_installer_run`, risking drift as the real TEA share shape evolves.
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: A new test (`test_provision_installer_missing_non_nested_skill_after_successful_flatten_raises`) hand-rolls its own installer stand-in instead of reusing the shared `_fake_installer_run`, risking drift as the real TEA share shape evolves.
+  evidence: Real test-hygiene nit, no functional risk to production code.
+  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module_installers.py
+  origin: spec-deferred 959e81a0aef0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3-5: If TEA's own upstream layout ever grew a second flatten-nested container with a leaf name colliding with another container's leaf, the second would be silently discarded rather than raising.
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: If TEA's own upstream layout ever grew a second flatten-nested container with a leaf name colliding with another container's leaf, the second would be silently discarded rather than raising.
+  evidence: Currently inert -- TEA's only flatten_nested_dirs source ("workflows") has exactly one container ("testarch"); no second container exists to collide with it.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_flatten_nested_skill_dirs
+  origin: spec-deferred 75f0b5d6a749 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-3-6: A foreign, pre-existing `.claude/skills/testarch/` directory (not created by this story's own flattening) would not be caught by the pre-install skill-name-collision check, since "testarch" is no longer one of the predicted post-flatten names.
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: A foreign, pre-existing `.claude/skills/testarch/` directory (not created by this story's own flattening) would not be caught by the pre-install skill-name-collision check, since "testarch" is no longer one of the predicted post-flatten names.
+  evidence: Exotic: no other module or convention in this repo uses "testarch" as a skill name; the practical likelihood of a real collision is very low.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_provision_conda_install
+  origin: spec-deferred ad9e0750d631 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4: The `if not skill_names: raise RuntimeError(...)` branch (empty skills_source_dir) is currently unreachable given bmb's own registration (skill_dir is guaranteed to be a child of skills_source_dir, and skill_dir's own existence is already checked earlier) -- defensive code for a future misregistration, with no test.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: The `if not skill_names: raise RuntimeError(...)` branch (empty skills_source_dir) is currently unreachable given bmb's own registration (skill_dir is guaranteed to be a child of skills_source_dir, and skill_dir's own existence is already checked earlier) -- defensive code for a future misregistration, with no test.
+  evidence: Real defensive code, but exercising it requires deliberately misconfiguring a future SetupSkillBackend registration; not worth a test for currently-dead-but-harmless code.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_provision_setup_skill
+  origin: spec-deferred 04cfd91d5366 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-2: `_copy_setup_skill_dirs` does rmtree-then-copytree per skill with no staging/temp-and-rename step; a process kill or disk error between those two calls could leave a skill directory missing or half-populated.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: `_copy_setup_skill_dirs` does rmtree-then-copytree per skill with no staging/temp-and-rename step; a process kill or disk error between those two calls could leave a skill directory missing or half-populated.
+  evidence: Matches the same pattern already used by `_flatten_nested_skill_dirs` (Story 46.3) and every other module's own idempotent-overwrite convention in this file; not a new risk class this story introduces.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_copy_setup_skill_dirs
+  origin: spec-deferred 2fcffc861d4b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-3: The "collision check passes against the live 16 skf-* dirs" claim is only verified by a one-time manual run recorded in .memlog.md; no test fixture populates skf-*-shaped directories.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: The "collision check passes against the live 16 skf-* dirs" claim is only verified by a one-time manual run recorded in .memlog.md; no test fixture populates skf-*-shaped directories.
+  evidence: The registry-level `test_supported_installer_modules_have_disjoint_skill_names` and `test_live_share_skill_names_are_disjoint_across_installer_modules` tests already cover the structural cross-module-collision invariant generically; a bmb-specific skf-* fixture would be redundant coverage of the same mechanism.
+  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  origin: spec-deferred e57c0bc2fe95 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-4: Once bmb is recorded installed, a later-introduced foreign directory at one of the five skill-name paths would be silently overwritten on the next re-provision rather than refusing.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: Once bmb is recorded installed, a later-introduced foreign directory at one of the five skill-name paths would be silently overwritten on the next re-provision rather than refusing.
+  evidence: Matches the exact same idempotent-overwrite architecture every other module in this file already uses (the collision check is intentionally skipped once `already_installed` is true); not a new risk this story introduces, a pre-existing, fleet-wide design choice.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_provision_setup_skill
+  origin: spec-deferred 7459439c3e8f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-5: "bmad-builder is provisioned beside skf" is tested only against synthetic fixtures (four fabricated sibling skill dirs), never the real installed skf-* tree or a real bmad-builder share tree, in any automated test.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: "bmad-builder is provisioned beside skf" is tested only against synthetic fixtures (four fabricated sibling skill dirs), never the real installed skf-* tree or a real bmad-builder share tree, in any automated test.
+  evidence: Matches this project's own established pattern (Stories 46.2/46.3) of pairing synthetic-fixture unit tests with a documented, dated live-verification run recorded in .memlog.md for the real-tree half of a claim.
+  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  origin: spec-deferred 897a8931eb9c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-6: "The cleanup-legacy guard proven" relies on the pre-existing Story 6.1 argv-assertion test rather than a new, story-owned assertion specific to the new copy code path.
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: "The cleanup-legacy guard proven" relies on the pre-existing Story 6.1 argv-assertion test rather than a new, story-owned assertion specific to the new copy code path.
+  evidence: The existing test re-runs against the CURRENT, updated `_provision_setup_skill` (including the new copy step) on every suite run -- confirmed still green after this story's changes -- so it is current, live coverage, not stale inherited evidence, even though its own assertion text was not modified by this diff.
+  location: src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py
+  origin: spec-deferred d95308717000 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-7: "Provisioned"/"wired" status asserts a stronger claim (functional reachability by a station persona) than what this diff's own functional surface delivers (files land + config record).
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: "Provisioned"/"wired" status asserts a stronger claim (functional reachability by a station persona) than what this diff's own functional surface delivers (files land + config record).
+  evidence: Matches Stories 46.2/46.3's own precedent for what "wired" means in this register -- "installed and bookkept," not "proven invocable by a live persona session." Reasonable, consistent interpretation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  origin: spec-deferred 2115b7f441da — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-4-8: No test in this diff touches Mason (the register's row 7 also names Mason as a wielder of module/agent authoring alongside Steward).
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: No test in this diff touches Mason (the register's row 7 also names Mason as a wielder of module/agent authoring alongside Steward).
+  evidence: Explicitly out of this story's own scope per its Never clause and Code Map (Mason's own routing is a separate story, not this one).
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  origin: spec-deferred 5a97d1418fc2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-5: _module_toml_skills doesn't validate skills list-element types; a hand-corrupted TOML roster crashes past the local (RuntimeError, FileNotFoundError) catch with a raw TypeError
+
+- source_spec: `planning-artifacts/specs/spec-46-5-labs-skills-arrive-by-name-and-by-consent.md`
+  summary: _module_toml_skills doesn't validate skills list-element types; a hand-corrupted TOML roster crashes past the local (RuntimeError, FileNotFoundError) catch with a raw TypeError
+  evidence: Blind Hunter finding #4; caught cleanly at ProvisionDuty.run()'s outer boundary (AD-8 crash contract), never a silent failure
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::_module_toml_skills
+  origin: spec-deferred ef16dc4be2ba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-5-2: Malformed _bmad/custom/config.toml hit via the plugin path surfaces a bare tomllib.TOMLDecodeError instead of _record_module_manifest's friendlier diagnostic
+
+- source_spec: `planning-artifacts/specs/spec-46-5-labs-skills-arrive-by-name-and-by-consent.md`
+  summary: Malformed _bmad/custom/config.toml hit via the plugin path surfaces a bare tomllib.TOMLDecodeError instead of _record_module_manifest's friendlier diagnostic
+  evidence: Blind Hunter finding #5; still caught cleanly at the outer boundary, only the message wording is less friendly
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py::provision_plugin_skill
+  origin: spec-deferred 626d05a05d2a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-5-3: _ROUTING_STORY_NOT_YET_LANDED carve-out's cleanup is a manual, prose-commented honor system, not mechanically enforced when atlas 24.1 / herald 18.3 / marshal 31.6 land their own routing
+
+- source_spec: `planning-artifacts/specs/spec-46-5-labs-skills-arrive-by-name-and-by-consent.md`
+  summary: _ROUTING_STORY_NOT_YET_LANDED carve-out's cleanup is a manual, prose-commented honor system, not mechanically enforced when atlas 24.1 / herald 18.3 / marshal 31.6 land their own routing
+  evidence: Intent Alignment finding #5, matching the implementer's own Implementation Notes follow-up
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py::_ROUTING_STORY_NOT_YET_LANDED
+  origin: spec-deferred 1f3e6206fafa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-6: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
+
+- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+  summary: The studio's manticore module tracks main/next (unpinned, floating) with no lockfile or version-check -- re-running the sanctioned command later can silently install a different version, unlike every other custom module in this register
+  evidence: Edge Case Hunter finding; recorded in adoption-register.md row 9's Hazards cell as an open reproducibility risk, not resolved here (AD-7 prove-and-relay boundary)
+  location: docs/reference/manticore-studio.md; adoption-register.md row 9
+  origin: spec-deferred 5403aee9f773 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-6-2: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
+
+- source_spec: `planning-artifacts/specs/spec-46-6-herald-s-manticore-studio-has-a-root-and-a-proven-native-path.md`
+  summary: The isolation guarantee's two halves (checksum bracket vs. .claude/skills/ zero-mc-* claim) have uneven evidentiary rigor -- the latter has no equivalent tight before/after snapshot of its own, though independently re-verified true by three reviewers
+  evidence: Edge Case Hunter finding; not retroactively fixable for an already-completed run, noted for future re-runs of the same command
+  location: docs/reference/manticore-studio.md (isolation guarantee section)
+  origin: spec-deferred 1b1cb5e9a417 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-9: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
+
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+  summary: _skills_census() now runs unconditionally at the top of _module_census_hit, a wasted iterdir() for bmad-module-skill-forge (which could previously short-circuit via wire_bmad_dirs alone)
+  evidence: Edge Case Hunter finding #3; negligible cost, no behavioral effect
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::_module_census_hit
+  origin: spec-deferred 8fc1a05e4fc7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-46-9-2: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
+
+- source_spec: `planning-artifacts/specs/spec-46-9-pipeline-truth-s-installed-stage-reads-the-applied-core-not-the-pixi-env.md`
+  summary: Manticore's wired probe (studio root + _bmad/ + mc-* census) is written against best-available evidence but not empirically verified against a real, completed studio install, since Story 46.6 is separately blocked (interactive installer, awaiting operator --tools decision)
+  evidence: Spec's own Boundaries & Constraints, re-confirmed sound by Intent Alignment review; this story's own manticore tests correctly assert unwired against the real, empty studio root
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py::probe_wired (INSTALL_CLASS_STUDIO_MODULE branch)
+  origin: spec-deferred fccee991eaba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-47-1: P13's '5 of 9 ungoverned' figure is a snapshot of this branch's own checkout, already stale relative to an unmerged sibling branch (marshal-r1, commit 6ba6bd9eb6, Story 31.4) which governs 3 of the 5 -- re-verification needed once that branch merges
+
+- source_spec: `planning-artifacts/specs/spec-47-1-the-readiness-checklist-is-live-and-the-pre-flight-is-its-p7-signal.md`
+  summary: P13's '5 of 9 ungoverned' figure is a snapshot of this branch's own checkout, already stale relative to an unmerged sibling branch (marshal-r1, commit 6ba6bd9eb6, Story 31.4) which governs 3 of the 5 -- re-verification needed once that branch merges
+  evidence: Edge Case Hunter finding, confirmed via git log/branch/show; a Known-staleness-risk note was added to cutover-readiness.md so this isn't silently assumed settled
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md (P13 row + Re-run section)
+  origin: spec-deferred 257a998697f9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-47-2: SKF has no link-generation step of any kind -- the .claude/skills/ 'generated per-machine links' the cutover target-tree diagram assumes does not exist anywhere in SKF today; a dedicated link-generator (or an SKF feature) must be built before any station's live IDE skill discovery can rely on a skills/stations/ canonical root
+
+- source_spec: `planning-artifacts/specs/spec-47-2-skf-export-is-proven-to-accept-the-foundry-skills-root.md`
+  summary: SKF has no link-generation step of any kind -- the .claude/skills/ 'generated per-machine links' the cutover target-tree diagram assumes does not exist anywhere in SKF today; a dedicated link-generator (or an SKF feature) must be built before any station's live IDE skill discovery can rely on a skills/stations/ canonical root
+  evidence: Confirmed empirically (scratch worktree run) and independently re-confirmed by Blind Hunter reading skf-export-skill's full source directly; relayed to spec-python-foundry-cutover's own memlog as a finding for that project to close
+  location: _bmad/skf/skf-export-skill/ (no file -- an absence, not a bug in an existing file)
+  origin: spec-deferred 62778f2c3cdb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-47-2-2: Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the AD-12 config-key flip
+
+- source_spec: `planning-artifacts/specs/spec-47-2-skf-export-is-proven-to-accept-the-foundry-skills-root.md`
+  summary: Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the AD-12 config-key flip
+  evidence: Empirically confirmed (Run 1 halted exit 3 resolution-failure); independently re-confirmed by Blind Hunter reading load-skill.md's resolution logic directly
+  location: _bmad/skf/skf-export-skill/references/load-skill.md (resolution ladder)
+  origin: spec-deferred 5dfb7cb8aeb2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-47-2-3: With snippet_skill_root_override left set, a re-exported skill's managed-section root: pointer can silently drift from its package's real new location with no warning from SKF
+
+- source_spec: `planning-artifacts/specs/spec-47-2-skf-export-is-proven-to-accept-the-foundry-skills-root.md`
+  summary: With snippet_skill_root_override left set, a re-exported skill's managed-section root: pointer can silently drift from its package's real new location with no warning from SKF
+  evidence: Observed live in the scratch run: pyforge-herald's root: pointer stayed at the old .claude/skills/ location after its package moved to skills/stations/...
+  location: _bmad/skf/skf-export-skill/references/update-context.md (root-rewrite logic, override branch)
+  origin: spec-deferred d3a90eeb28ef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-47-5: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
+
+- source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines.md`
+  summary: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
+  evidence: Named explicitly in G3's own resolution note; independently confirmed by three reviewers this staleness is real and correctly left untouched here
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md rows P11/P12
+  origin: spec-deferred 5df9badb06b1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -3779,3 +3779,24 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+### DW-FU-24-1: test_adoption_register.py's persona-mention check only verifies the skill name substring appears in a persona SKILL.md, never that the routing line's stated grammar constraint text is present.
+
+- source_spec: `planning-artifacts/specs/spec-24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
+  summary: test_adoption_register.py's persona-mention check only verifies the skill name substring appears in a persona SKILL.md, never that the routing line's stated grammar constraint text is present.
+  evidence: _persona_mentions (test_adoption_register.py:145-151) does `name in path.read_text(...)` -- a bare substring match. A future edit could delete the "pyforge atlas ... verbs only" constraint sentence while leaving a stray mention of `mcp-builder` elsewhere in bmad-agent-atlas/SKILL.md and this test would still pass. Pre-existing design from Story 46.1, unchanged by this diff -- not this story's surface to fix.
+  location: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py:145
+  origin: spec-deferred 814a39b21f4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-24-1-2: The eventual integration PR for this branch needs the `maintenance` label (none of this diff's three changed files are under recipes/).
+
+- source_spec: `planning-artifacts/specs/spec-24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face.md`
+  summary: The eventual integration PR for this branch needs the `maintenance` label (none of this diff's three changed files are under recipes/).
+  evidence: CLAUDE.md's always-on PR-gate rule: any change outside recipes/ requires `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance` at PR open/update time. This task run does not open a PR -- the orchestrating session merges this branch -- so the labeling step belongs to whichever later PR wraps it.
+  location: .claude/skills/bmad-agent-atlas/SKILL.md, src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py, _bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml
+  origin: spec-deferred 2dd4de723657 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
