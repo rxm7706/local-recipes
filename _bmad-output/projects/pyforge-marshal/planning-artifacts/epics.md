@@ -4533,9 +4533,10 @@ The Spec's open question — derive the tuple from steward's
 `data/bmad_core_releases/<ver>.yaml` (`skill_renames` + `removals`) — is answered here: derive
 once the 6.12.0 catalog exists, otherwise keep the hand tuple with a dated comment.
 **Status:** done
-**Outcome (2026-09-06):** `bmad-checkpoint-preview` added to the guard tuple with the CK→WT
-rename; `bmad-generate-project-context`'s "not orphaned" correction recorded; CFE retro
-v8.86.3 landed the guard change. `test_no_retired_bmad_skill_ids`: 9 passed.
+**Outcome (2026-09-06):** `bmad-checkpoint-preview` (the new 6.12 shim forwarding to
+`bmad-walkthrough`) added to the guard tuple with the CK→WT rename;
+`bmad-generate-project-context` (the retired 6.11 shim)'s "not orphaned" correction recorded;
+CFE retro v8.86.3 landed the guard change. `test_no_retired_bmad_skill_ids`: 9 passed.
 
 ### Story 30.2: The project-context surface follows 6.12 (D1)
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-9
