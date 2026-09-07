@@ -3,8 +3,8 @@ doc_type: architecture
 part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
-date: 2026-09-05
-source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.86.1'
+date: 2026-09-06
+source_pin: 'BMAD 6.12.0 / conda-forge-expert v8.86.4'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -49,6 +49,41 @@ skill**. The hand that builds is never the gate that judges.
 
 > **Re-grounded 2026-09-05** (`source_pin` v8.84.0 → **conda-forge-expert v8.86.1**; hand pass per SYNC-RUNBOOK row 84 after the `bmad-drift` `pin-behind` warn). BMAD core stays **6.11.0** in `_bmad/` (the 6.12.0 core upgrade is planned, not applied), while the 2026-09-05 pixi upgrade sweep moves the `bmad-method` pin to **>=6.12.0** in `pixi.toml` / `environment.yaml` — the pin-fan-out step of that upgrade landing early. bmad-suite metapackage **2026.9.5** (v8.86.0 retro: `bmad-eval-quality` joined as the 14th recipe, `bmad-method-wds-expansion` retired). Live factory pin row (2026-09-05): schema **v29** · MCP **46** · atlas phases **22** · gotchas **G1–G113** · pixi envs **28** · CFE **v8.86.1**. CFE releases in the window: v8.82.0–v8.82.3 (`scripts/_paths.py` shared data-dir/repo-root helper; `_http.py` JFrog credential host-gate + public-host floor + credential-kind gating; G108), v8.83.0 (G109/G110; SelfExplainML publish flow in the cheatsheet), v8.84.0 (`github_updater.py --head` HEAD-advance), v8.84.1 (`bmad_suite_metapackage.py` marker-splice fix + test), v8.85.0 (3.11 floor; 438 recipes lost a redundant `context.python_min`, 47 unparseable recipes repaired; `tests/meta/test_dashboard_renders.py` retired), v8.85.1 (G82 / CI-provider table correction), v8.85.2 (`_paths.get_repo_root` marker walk; both compiled slices back in equivalence), v8.86.0 (G111–G113; HEAD mode increments `build.number`; `config/failure-catalog.yaml` regenerated), v8.86.1 (`tests/meta/test_recipe_maintainers_nonempty.py`; the G26 marker-split extension re-landed from orphaned commit `74bc80fe61`). live `bmad-groundtruth` 2026-09-05: schema **v29**, MCP tools **46**, atlas phases **22 executable / 23 cataloged** — all three unchanged since the 2026-07-29 pass; gotchas now **G1–G113** (v8.82.0 G108 `sys.executable` for internal subprocess calls; v8.83.0 G109 upstream can renumber past a dev snapshot, G110 npm bin maps are release-mutable; v8.86.0 G111 `noarch_platforms` is required for selector-carrying noarch recipes, G112 npm-from-commit-archive build with a clean prod reinstall, G113 same-version content changes bump `build.number`); pixi **28 envs / 31 features / 236 tasks (146 in `local-recipes`)** counted from `pixi.toml` (`[environments]` keys / distinct `[feature.<x>…]` names / `[feature.<x>.tasks.<t>]` headers); SKILL.md **4,287 lines**; **71 `.py` files under `scripts/`** (including the `_`-prefixed shared helpers) and **63 entries in `.claude/scripts/conda-forge-expert/`**; conda-forge's Python floor is **3.11** since 2026-09-02 (v8.85.0 — the generator now reads it from the installed pinning). Body figures below that predate this pass (18 / 20 / 26 envs, 17 features, 152 / 106 tasks, G1–G107 / G1–G110, 3,887 lines, 66 canonical scripts) are historical — read them against the live numbers here.
 
+> **Re-grounded 2026-09-06** (`source_pin` → **BMAD 6.12.0 / conda-forge-expert v8.86.4**; marshal
+> Story 30.3 / `spec-bmad-611-era-alignment` CAP-10, after steward Epic 14's first core apply —
+> PR #1074 + #1076, commit `4fa185be56`). BMAD core + `bmm` bump to **6.12.0** in
+> `_bmad/_config/manifest.yaml` (`steward upgrade bmad-core --target 6.12.0 --apply` ran the
+> installer as sole writer). **`installShims: true`** — all 20 v6-shims plus
+> `bmad-checkpoint-preview`'s forwarding shim to `bmad-walkthrough` stay installed; the
+> `--no-shims` retirement is steward Story 14.9, **not yet run**. The custom `skf` module still
+> reads **`version: main` / `source: custom`** in the manifest — **not yet pinned to v2.1.0**
+> (that pin is Story 46.7, a different repo's pixi env; do not read the commit title
+> "skf 2.1.0 re-coherent" as a manifest pin — it names the installer tool version used to
+> reconcile the module, not the recorded module version). CFE bumped **v8.86.1 → v8.86.4**:
+> v8.86.2 (strict duplicate-mapping-key `recipe.yaml` audit; 31 recipes fixed), v8.86.3 (the
+> retired-BMAD-skill-ID regression guard's tracked-id tuple — which guards bare mentions of an
+> id that is INSTALLED as a live forwarding shim, not one that is gone — gains
+> `bmad-checkpoint-preview` as its 21st tracked id, since 6.12.0 renamed it to forward to
+> `bmad-walkthrough` — marshal Story 30.1), v8.86.4 (`test_bmad_loop_skills_match_installed.py`
+> proves the three vendored `bmad-loop-*` skills match the installed package — marshal Story
+> 30.4). Live `bmad-groundtruth` 2026-09-06: schema **v29** · MCP **46** · atlas phases **22** ·
+> gotchas **G1–G113** · pixi envs **28** — all five UNCHANGED since the 2026-09-05 pass. **Not
+> touched this pass** (out of Story 30.3's scope; residual for a future full re-ground): the
+> Mission statement above, the "Live factory pin" / "BMAD dependency pins" table rows, the
+> Rebuild-checklist's `bmad-method` mentions, and the whole "Installed Skills" section below,
+> INCLUDING the "At a Glance" table's own "Skill directories" / "Skill split" rows (lines
+> ~109-110, immediately above this note) and the matching counts in the source-tree comment
+> (~line 600) and the rebuild-checklist bullet (~line 1229) — all four cite the same stale
+> **94** dirs / **52** `bmad-*` (32 active + **20** deprecated forwarders) figures. A spot-check
+> during this pass found the live count is **121** directories / **109** `SKILL.md` files / **71**
+> bare `bmad-*` dirs (new `bmad-agent-<station>` personas, `bmad-cis-*` Creative Intelligence
+> Suite skills, and 7 `pyforge-<station>` skills have landed since 2026-09-05; separately, the
+> "20 deprecated forwarders" sub-count is ALSO stale on its own terms — Story 30.1 grew the
+> guard to 21 tracked ids the same week — but is left unchanged here rather than partially
+> corrected, since the surrounding 52/32 totals cannot be recomputed with confidence without
+> the same full re-audit). All of it is known-stale pending a dedicated re-audit, not just the
+> "Installed Skills" section by itself.
+
 Operationalized:
 - Six-layer TOML config merge (installer team/user → custom team/user → project team/user) resolved
   by `_bmad/scripts/resolve_config.py`.
@@ -77,9 +112,9 @@ Operationalized:
 |---|---|
 | Installer root | `_bmad/` |
 | Multi-project root | `_bmad-output/projects/` |
-| BMAD-METHOD version | **6.11.0** (`_bmad/_config/manifest.yaml`; `_bmad/{bmm,core}/config.yaml` headers agree) |
-| Install / last update | installed 2026-04-30, last updated 2026-08-22 |
-| Installed modules | `core` 6.11.0, `bmm` 6.11.0 (both `source: built-in`) + `skf` **2.1.0** (`source: custom`) |
+| BMAD-METHOD version | **6.12.0** (`_bmad/_config/manifest.yaml`; `_bmad/{bmm,core}/config.yaml` headers agree) |
+| Install / last update | installed 2026-04-30, last updated 2026-09-06 |
+| Installed modules | `core` 6.12.0, `bmm` 6.12.0 (both `source: built-in`) + `skf` **`main`** (`source: custom`, not yet pinned to v2.1.0 — Story 46.7) |
 | Registered IDEs | `claude-code` |
 | Skill directories | **94** in `.claude/skills/` = **90 real skills** + **4** nonskill support dirs |
 | Skill split | **52** `bmad-*` (32 active + 20 deprecated forwarders) · **16** `skf-*` · **21** engineering-practice · **1** repo-specific (`conda-forge-expert`) |
@@ -407,19 +442,22 @@ shared switcher).
 
 ## Installed Skills
 
-`.claude/skills/` holds **94 directories = 90 real skills + 4 nonskill support directories**. A real
-skill is a directory containing `SKILL.md`; the resolver and Claude Code's `Skill` tool read them
-at runtime.
+**Re-grounded 2026-09-06 (post shim-retirement).** `.claude/skills/` holds **100 directories = 88
+real skills + 12 nonskill / non-top-level support directories**. A real skill, for this count, is a
+directory containing a top-level `SKILL.md`; that is what the resolver and Claude Code's `Skill`
+tool discover at runtime. The 21 deprecated v7-removal forwarder shims (previously counted inside
+`bmad-*`) were fully removed by the live `--no-shims` apply (marshal Story 30.5 / steward Story
+14.9, same day) — none remain on disk.
 
 | Family | Count |
 |---|---|
-| `bmad-*` (BMAD installer, bmm + core) | **52** (32 active + **20** deprecated v7-removal forwarders) |
+| `bmad-*` (BMAD installer, bmm + core; 0 deprecated forwarders remain) | **50** |
 | `skf-*` (Skill Forge module) | **16** |
 | Engineering-practice (not BMAD-installer) | **21** |
 | Repo-specific | **1** (`conda-forge-expert`) |
-| **Total real skills** | **90** |
+| **Total real skills** | **88** |
 
-### BMAD agent personas (5 — bmm module; tech-writer retired in 6.11)
+### BMAD agent personas (13 — 5 bmm + 8 station; tech-writer retired in 6.11)
 
 Defined in `_bmad/config.toml` under `[agents.bmad-agent-<role>]`, each with `name`, `title`, `icon`,
 `description`. Invoked via the `bmad-agent-<role>` skill name.
@@ -436,12 +474,23 @@ Defined in `_bmad/config.toml` under `[agents.bmad-agent-<role>]`, each with `na
 is **retired** — no skill directory and no `[agents.*]` entry remain. Do not invoke or document it
 as current.
 
-**These five are not the same layer as the Smiths.** The eight Smiths (Herald · Marshal · Atlas ·
-Warden · Mason · Doctor · Scribe · Steward) are the *factory's stations* — accountable owners of a
-capability, each with its own project and Spec. Mary, John, Winston, Sally and Amelia are
-**Marshal's sub-agents on the floor**: personas the orchestration station spawns inside a single
-effort. Conflating the two layers is the standard reading error; the Smiths own capabilities, the
-BMAD agents own turns of work.
+**Station personas (8 — added since the 2026-09-05 pass):** `bmad-agent-atlas`, `bmad-agent-doctor`,
+`bmad-agent-herald`, `bmad-agent-marshal`, `bmad-agent-mason`, `bmad-agent-scribe`,
+`bmad-agent-steward`, `bmad-agent-warden`. Each acts only through its station's own CLI grammar and
+MCP endpoint (`POST /stations/<station>/mcp`) — a persona wrapper over the station's real interface,
+not a parallel execution path.
+
+**These are not the same layer as the Smiths, and not the same thing as the `pyforge-<station>`
+directories below either — three distinct layers share station names.** The eight Smiths (Herald ·
+Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward) are the *factory's stations* —
+accountable owners of a capability, each with its own project and Spec. The 5 bmm personas (Mary,
+John, Winston, Sally, Amelia) are **Marshal's sub-agents on the floor**: personas the orchestration
+station spawns inside a single effort. The 8 `bmad-agent-<station>` skills above are a **persona
+face on each station itself** (Claude-Code-discoverable, real skills, counted in the 50). The 7
+`pyforge-<station>` directories (§ Nonskill support directories, below) are a **different, SKF-forged
+artifact** — a versioned skill-card store documented in `CLAUDE.md`'s own "[SKF Skills]" block, not
+discoverable via Claude Code's `Skill` tool at the top level, and not counted in the 88. Conflating
+any two of these three is the standard reading error.
 
 ### Spec & planning (active)
 
@@ -490,17 +539,20 @@ workflow. The former standalone lens / editorial skill IDs are deprecated forwar
 
 ### Process / facilitation
 
-`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-checkpoint-preview`, `bmad-help`,
+`bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-walkthrough`, `bmad-help`,
 `bmad-party-mode`, `bmad-qa-generate-e2e-tests`. (**6.11 removed `bmad-index-docs`** with no
 replacement — maintain `index.md` by hand. **`bmad-shard-doc` is also gone** — no skill directory
 and no deprecated forwarder; do not invoke it.)
 
-### Deprecated `bmad-*` skills (20 — committed v7 removal list)
+### Deprecated `bmad-*` skills — retired 2026-09-06 (0 remain)
 
-These are the IDs the CAP-1 regression guard tracks. Each ships a stub `SKILL.md` that forwards to
-its 6.11 successor. They still occupy skill directories and count toward the 52.
+These 21 IDs were the CAP-1 regression guard's tracked forwarder shims (each a stub `SKILL.md`
+forwarding to its 6.11 successor). The live `--no-shims` apply (marshal Story 30.5 / steward Story
+14.9) deleted all 21 directories from disk the same day; none of these IDs resolve to a skill any
+more. Live instruction text must use the 6.11 names regardless; historical mentions keep a
+same-line gloss (the CAP-1 guard, `test_no_retired_bmad_skill_ids.py`, still enforces this).
 
-| Deprecated shim | Forwards to / note |
+| Retired shim (gone) | Forwarded to / note |
 |---|---|
 | `bmad-quick-dev` | `bmad-build` |
 | `bmad-dev-auto` | `bmad-build-auto` |
@@ -522,9 +574,17 @@ its 6.11 successor. They still occupy skill directories and count toward the 52.
 | `bmad-editorial-review` | `bmad-review` |
 | `bmad-editorial-review-prose` | `bmad-review` |
 | `bmad-editorial-review-structure` | `bmad-review` |
+| `bmad-checkpoint-preview` | `bmad-walkthrough` |
 
-Shims stay installed until the v7 cut; live instruction text must use the 6.11 names (historical
-mentions keep a same-line gloss).
+### Creative Intelligence Suite — `bmad-cis-*` (10 — added since the 2026-09-05 pass)
+
+A separate persona/workflow family (`bmad-cis-*`, module CIS), provisioned by steward Story 46.8
+alongside `_bmad/config.yaml`'s CIS bookkeeping:
+
+`bmad-cis-agent-brainstorming-coach`, `bmad-cis-agent-creative-problem-solver`,
+`bmad-cis-agent-design-thinking-coach`, `bmad-cis-agent-innovation-strategist`,
+`bmad-cis-agent-presentation-master`, `bmad-cis-agent-storyteller`, `bmad-cis-design-thinking`,
+`bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-cis-storytelling`.
 
 ### Skill Forge — `skf-*` (16)
 
@@ -554,32 +614,50 @@ repositories and docs into version-pinned, provenance-backed agent skills. Its
 `conda-forge-expert` — the Part 1 skill (**v8.84.0** at this re-ground). Drives every conda-forge
 task; `CLAUDE.md` mandates that BMAD agents invoke it for any conda-forge work.
 
-### Nonskill support directories (4)
+### Nonskill support directories (12)
 
-These sit in `.claude/skills/` but contain **no top-level `SKILL.md`** and are not skills:
+These sit in `.claude/skills/` but have **no top-level `SKILL.md`**, so Claude Code's `Skill` tool
+does not discover them — not counted in the 88 real skills.
+
+**Original 3** — no skill structure at all:
 
 | Directory | Role |
 |---|---|
-| `cf-atlas-legacy/` | versioned legacy skill store (`active/`, pinned versions) |
 | `cfe-recipe-generation/` | recipe-generation support tree (not a Claude Skill entry) |
 | `knowledge/` | shared knowledge notes |
 | `shared/` | shared `data/`, `references/`, `scripts/`, health-check helpers |
 
+**SKF-forged versioned skill stores (9 — 8 added since the 2026-09-05 pass, `cf-atlas-legacy` predates
+it):** `<name>/active` points
+at a pinned `<version>/<name>/SKILL.md` — a real, documented skill card by SKF's own convention, but
+one directory level too deep for Claude Code's top-level scan, so this table treats them the same
+way it already treated `cf-atlas-legacy/` (the original member of this shape). Documented instead in
+`CLAUDE.md`'s own "[SKF Skills]" block, which each station persona (§ above) fronts:
+
+`cf-atlas-legacy/`, `cfe-recipe-lifecycle/`, `pyforge-atlas/`, `pyforge-doctor/`,
+`pyforge-herald/`, `pyforge-marshal/`, `pyforge-scribe/`, `pyforge-steward/`, `pyforge-warden/`.
+
+Note: `pyforge-mason` has no SKF-forged skill-card entry as of this re-ground; mason's own tooling
+routes through `conda-forge-expert` instead (unexplained gap otherwise — not investigated further,
+out of this story's declared surface).
+
 A prior revision listed a stray top-level `data/` as a current nonskill directory — **that is not
-current**. Do not count `data/` as one of the four.
+current**. Do not count `data/` as one of these.
 
 ### Skill count math
 
 ```
-  52  bmad-*            (32 active + 20 deprecated forwarders)
+  50  bmad-*            (0 deprecated forwarders remain; includes 13 personas + 10 CIS)
   16  skf-*
   21  engineering-practice
    1  conda-forge-expert
  ───
-  90  real skills
- + 4  nonskill dirs (cf-atlas-legacy, cfe-recipe-generation, knowledge, shared)
+  88  real skills (top-level SKILL.md)
+ + 3  nonskill dirs, no skill structure (cfe-recipe-generation, knowledge, shared)
+ + 9  SKF-forged versioned skill stores, one level too deep for the top-level scan
+      (cf-atlas-legacy, cfe-recipe-lifecycle, pyforge-{atlas,doctor,herald,marshal,scribe,steward,warden})
  ───
-  94  directories in .claude/skills/
+ 100  directories in .claude/skills/
 ```
 
 ---
@@ -594,7 +672,7 @@ current**. Do not count `data/` as one of the four.
 _bmad/
 ├── config.toml            # layer 1 (installer team) — [agents.*] descriptors live here
 ├── _config/
-│   ├── manifest.yaml      # installation.version 6.11.0, modules core+bmm+skf, ides [claude-code]
+│   ├── manifest.yaml      # installation.version 6.12.0, modules core+bmm+skf, ides [claude-code]
 │   ├── skf-manifest.yaml  # Skill Forge detail manifest
 │   ├── skill-manifest.csv
 │   ├── files-manifest.csv

@@ -1144,12 +1144,19 @@ a bare `.bak` restore — **And** the fixture replaying 2026-09-06's seven files
 clean merges and one flagged conflict (step-01 `done` routing) (failure-modes.md trap 16).
 
 ### Story 14.9: The apply retires deprecation shims on purpose (`--no-shims`)
-**Type:** feature • **Effort:** S • **Deps:** S-14.6 (after marshal 30.5 — cross-station: ledger `blocked` + the refusal check, AD-10) • **FR/AD:** spec-bmad-method-core-upgrade CAP-9 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
+**Type:** feature • **Effort:** S • **Deps:** S-14.6 • **FR/AD:** spec-bmad-method-core-upgrade CAP-9 • spec-bmad-suite-lifecycle CAP-10 • lifecycle spine AD-5, AD-7
 **Surface:** `upgrade.py` (apply argv + pre-flight report), steward CLI (`--no-shims`), `tests/unit/test_upgrade_apply.py`, `tests/unit/test_upgrade_preflight.py`
+**Corrected 2026-09-06** (found during marshal Story 30.5; operator-directed spec correction, same session): the original **And** clause below naming a refusal keyed on "the marshal harness template or any rendered loop-home policy still emits the retired `bmad-dev-auto`" was FALSE — verified directly against the installed `bmad_loop` 0.11.1 package source. `DevPolicy.skill` is a PERMANENT internal adapter discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`, hard-validated) that must read `"bmad-dev-auto"` forever, on every era; the skill actually invoked is resolved separately from disk at runtime, independent of this field. Every loop-home's `policy.toml` (and the harness template that renders it) will emit this literal forever by design — a refusal keyed on finding it would refuse `--no-shims` permanently, with no way to ever satisfy it. That refusal clause, its `_shim_retirement_blockers`/`refuse_shim_retirement_not_ready` implementation, and the `--loops-home` flag that only existed to parameterize it are REMOVED. The "prove-landed validates... whose policy already names `bmad-build-auto`" clause below is also corrected: no loop-home policy ever names `bmad-build-auto` — that field stays `bmad-dev-auto` forever. The `Deps` field's "after marshal 30.5" cross-station note is removed — no harness change precedes this story any more (era-alignment CAP-12 corrected to match).
 **Given** an installed core whose manifest reads `installShims: true` **When** `steward upgrade bmad-core --target <installed-or-newer> --apply --no-shims --branch <name>` runs **Then** the installer argv carries `--no-shims` after `--modules …`, the pre-flight report lists every shim the manifest names as "to retire" (21 at 6.12.0: the 20 `v6-shims` plus `bmad-generate-project-context`), and a same-version run is accepted as a retirement run — the removed dirs are a real diff, not a trap-12 zero-diff refusal
-**And** after the run `_bmad/_config/manifest.yaml` reads `installShims: false`, the shim rows are gone from `skill-manifest.csv`, CAP-7 restored skf's config and ran its own installer (`--pin skf=v2.1.0` once Story 46.7 pins the catalog), CAP-8 re-applied every listed local customization by three-way merge with no `.customization-conflict` sibling left, and `prove-landed` validates 8/8 loop homes whose policy already names `bmad-build-auto`
-**And** the flag is refused with a named reason when any `_bmad/custom/<legacy-name>.toml` exists (trap 2) or when the marshal harness template or any rendered loop-home policy still emits `bmad-dev-auto` (reported, never edited — foreign surface), so a retirement can never strand a loop home
-**And** the argv assertion, the refusal, and the 21-row report each have a unit test with an injected runner; the live run is Session 2's step 9 (`open-items-register.md`)
+**And** after the run `_bmad/_config/manifest.yaml` reads `installShims: false`, the shim rows are gone from `skill-manifest.csv`, CAP-7 restored skf's config and ran its own installer (`--pin skf=v2.1.0`, pinned by Story 46.7), CAP-8 re-applied every listed local customization by three-way merge with no `.customization-conflict` sibling left, and `prove-landed` validates 8/8 loop homes
+**And** the flag is refused with a named reason when any `_bmad/custom/<legacy-name>.toml` exists (trap 2) — the sole pre-apply `--no-shims` refusal, unconditional and pre-existing, unaffected by the correction above
+**And** the argv assertion and the 21-row report each have a unit test with an injected runner; the live run is Session 2's step 9 (`open-items-register.md`)
+**Status:** done
+**Outcome (2026-09-06):** implementation + CAP-9 false-positive correction landed same session.
+The live run (Session 2 step 9) executed the same day: `installShims: true -> false`, 21 shim
+dirs deleted, CAP-7 skf reinstall ok, CAP-8 three-way-merged all 8 previously-flagged files
+cleanly (no `.customization-conflict`), `_bmad/custom/**` byte-identical, `prove-landed`
+verdict PASS 8/8. `pyforge-steward-test`: 1104 passed.
 
 ### Story 14.10: The `@next` rehearsal exercises CAP-6's fallback and CAP-8's conflict path, report-only
 **Type:** chore • **Effort:** S • **Deps:** S-14.9 • **FR/AD:** spec-bmad-method-core-upgrade CAP-6, CAP-8 (+ answered Q2) • spec-bmad-suite-lifecycle CAP-8 • lifecycle spine AD-7
@@ -2824,12 +2831,21 @@ mason 14.1) and are named in each story's acceptance, never restated here.
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/data/bmad_core_releases/6.12.0.yaml` (`custom_modules[skf].pin`), `tests/unit/test_upgrade_apply.py` (pin argv), core-upgrade memlog
 **Given** the 2026-09-06 verification (npm 2.1.0 tarball `src/` == GitHub tag `v2.1.0`, 337 files, `diff -rq` empty) **When** the catalog's `custom_modules` entry for skf reads `pin: v2.1.0` **Then** the apply argv carries `--pin skf=v2.1.0`, the unit test asserts it, and the next live apply (Session 2 step 9, the `--no-shims` retirement) exercises CAP-7's restore → own-installer → verify path against the pinned source
 **And** skf stays registered as a bmad-method custom module (`bmad-help` routing for fifteen skills); the install-class playbook row is unchanged (own-installer)
+**Status:** done
+**Outcome (2026-09-06):** catalog pin flipped `null` -> `v2.1.0`; `test_real_catalog_pins_skf_v2_1_0`
+added (loads the real catalog, not a fixture). Session 2 step 9's live `--no-shims` apply the
+same day exercised CAP-7 for real: skf own installer exit 0, 16/16 skill dirs verified, config
+restored.
 
 ### Story 46.8: CIS is re-provisioned to the packaged revision
 **Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-2 • AD-1 • customization-inventory C11
 **Surface:** `.claude/skills/bmad-cis-*/SKILL.md` (10 files), `steward provision --module cis` (idempotent re-provision)
 **Given** the packaged `bmad-creative-intelligence-suite` 0.3.2 passes `--project-root {project-root}` on every `resolve_customization` call and the installed copies do not (15 lines across 10 files) **When** `PATH="$PWD/.pixi/envs/local-recipes/bin:$PATH" pixi run -e pyforge-steward steward provision --module cis --json` runs **Then** `git diff --stat -- '.claude/skills/bmad-cis-*'` shows exactly those 10 files / 15 lines, nothing else moves, and the retired-ID guard stays green
 **And** atlas `DW-FU-20-4-3` (the `{{project_name}}` placeholder in `bmad-cis-design-thinking/template.md`) is re-checked against the refreshed copy and closed or re-verified in the atlas ledger
+**Status:** done
+**Outcome (2026-09-06):** re-provisioned exactly the 10 files / 15 lines; retired-ID guard
+stayed green. `DW-FU-20-4-3` re-verified still genuinely open (unrelated upstream placeholder
+bug), recorded with dated evidence in the atlas ledger.
 
 ### Story 46.9: pipeline-truth's installed stage reads the applied core, and `wired` is a declared per-class predicate
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-1 (relayed hole #1, 2026-09-05) • spec-bmad-suite-lifecycle CAP-8

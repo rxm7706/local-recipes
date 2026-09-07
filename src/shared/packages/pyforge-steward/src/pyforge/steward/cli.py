@@ -654,6 +654,15 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         help="override the bmad-method binary invoked by --apply (tests)",
     )
     bmad_core.add_argument(
+        "--no-shims",
+        action="store_true",
+        help=(
+            "CAP-9: retire the installed core's deprecation shims on this apply "
+            "(installShims: false); refused if a legacy-name _bmad/custom/** "
+            "override exists (trap 2)"
+        ),
+    )
+    bmad_core.add_argument(
         "--json",
         action="store_true",
         help="emit JSON instead of the human-readable report",

@@ -817,7 +817,8 @@ Quick Flow planner should confirm or override.
 - **Open feature request — anthropics/claude-code#38536** — first-class
   team-shared memory in Claude Code (not shipped at spec time).
 - **BMAD Method docs** — `.claude/docs/bmad-method-llms-full.txt`
-  (offline) / <https://docs.bmad-method.org/llms-full.txt> (live).
+  (offline, frozen 6.11-era snapshot) / <https://docs.bmad-method.org/> (live; BMAD-METHOD
+  6.12.0 discontinued `llms.txt`/`llms-full.txt` — the old URL above is dead).
 
 ---
 

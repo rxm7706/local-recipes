@@ -198,8 +198,9 @@ def _docs_specs(target: Path) -> Path:
 
 
 # Tracked pinned docs and their sync category -- verbatim from the original's
-# own TRACKED list (see that script's own comment for the living/context/
-# plan/snapshot category meanings).
+# own TRACKED list (see that script's own comment for the living/plan/snapshot
+# category meanings). "context" retired with Story 30.2 (2026-09-06) --
+# project-context.md is gone, and neither file's classify() returns it anymore.
 TRACKED: list[tuple[str, str]] = [
     ("planning-artifacts/index.md", "living"),
     ("planning-artifacts/architecture.md", "living"),
@@ -213,7 +214,6 @@ TRACKED: list[tuple[str, str]] = [
     ("planning-artifacts/source-tree-analysis.md", "living"),
     ("planning-artifacts/project-overview.md", "living"),
     ("planning-artifacts/project-parts.json", "living"),
-    ("project-context.md", "context"),
     ("planning-artifacts/PRD.md", "plan"),
     ("planning-artifacts/epics-regenerable-factory.md", "plan"),
     ("planning-artifacts/implementation-readiness-report.md", "snapshot"),
@@ -947,8 +947,6 @@ def classify(path: Path, target: Path) -> str:
         return "baseline"
     if rel == "SYNC-RUNBOOK.md":
         return "runbook"
-    if rel == "project-context.md":
-        return "tracked:context"
     if rel in TRACKED_REL:
         return f"tracked:{TRACKED_CAT[rel]}"
     if rel.startswith("planning-artifacts/change-history/"):

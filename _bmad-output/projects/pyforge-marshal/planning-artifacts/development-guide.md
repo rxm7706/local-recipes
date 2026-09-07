@@ -713,8 +713,8 @@ For changes to **BMAD infra**:
    `_bmad-output/projects/<slug>/.bmad-config.toml` (layers 5 and 6 of the six-layer merge)
 
 For changes that span multiple parts:
-1. Plan with `bmad-architecture` (**not** the deprecated `bmad-create-architecture`) or `bmad-quick-dev`
-2. Use `bmad-checkpoint-preview` to walk a reviewer through the diff
+1. Plan with `bmad-architecture` (**not** the deprecated `bmad-create-architecture`) or `bmad-build`
+2. Use `bmad-walkthrough` to walk a reviewer through the diff
 3. Run `bmad-retrospective` at closeout if it touched conda-forge work
 
 Every PR that changes any of the above touches files outside `recipes/` — see § PR CI gates.

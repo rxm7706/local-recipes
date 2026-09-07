@@ -1157,7 +1157,7 @@ def test_preflight_advisory_warns_on_a_real_titled_spec_filename(home, capsys):
     The first implementation probed one exact path,
     ``spec-{render_filename_slug(key)}.md`` (``spec-1-1.md``) -- the literal
     formula the story's own intent contract names. But every spec
-    ``bmad-dev-auto`` actually writes carries a descriptive title after the
+    ``bmad-build-auto`` actually writes carries a descriptive title after the
     key: its step-01 derives ``spec-{slug}.md`` from a slug that LEADS with
     the story number and continues with the intent text, so real files are
     ``spec-1-1-package-spine-verdict-lattice-....md``. ``stat()`` therefore
@@ -1167,7 +1167,7 @@ def test_preflight_advisory_warns_on_a_real_titled_spec_filename(home, capsys):
 
     The pre-existing test above passes only because it fabricates the
     untitled name -- which is why this one uses the shape bmad-loop and
-    bmad-dev-auto really produce."""
+    bmad-build-auto really produce."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)

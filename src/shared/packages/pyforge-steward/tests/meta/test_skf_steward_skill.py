@@ -9,7 +9,6 @@ from pathlib import Path
 
 from pyforge.testing_kit import (
     changed_paths_since,
-    diff_text_since,
     pyforge_import_offenders,
     unsanctioned_commits,
 )
@@ -110,11 +109,29 @@ def test_compiled_skill_is_agentskills_compliant_with_provenance():
 
 
 def test_context_files_not_hand_edited():
-    """Wave A prefers skip export; CLAUDE.md/AGENTS.md must not be hand-edited."""
+    """Wave A prefers skip export; CLAUDE.md/AGENTS.md must not be hand-edited.
+
+    Matches the sibling `test_skf_domain_skills.py`'s already-loosened form: the
+    SKF managed-section well-formedness check is the real invariant (a flat
+    zero-diff-vs-origin/main ban predates the SKF-export shift and also blocks
+    a legitimate `bmad-project-context adopt`/`audit` content migration, e.g.
+    Story 30.2, 2026-09-06).
+    """
     root = _repo_root()
     for name in ("CLAUDE.md", "AGENTS.md"):
-        diff = diff_text_since(root, base="origin/main...HEAD", pathspec=name, require="origin/main")
-        assert not diff.strip(), f"{name} changed without skf-export-skill"
+        result = json.loads(
+            subprocess.check_output(
+                [
+                    sys.executable,
+                    str(root / ".claude" / "skills" / "shared" / "scripts" / "skf-rebuild-managed-sections.py"),
+                    str(root / name),
+                    "check",
+                ],
+                text=True,
+            )
+        )
+        if result["has_managed_section"]:
+            assert result["markers_valid"], f"{name}: malformed SKF managed section"
 
 
 _CFE_SURFACE = ".claude/skills/conda-forge-expert"

@@ -65,15 +65,18 @@ import re
 from pathlib import Path
 
 import pytest
+import yaml
 
 # .claude/skills/<skill>/tests/meta/<file> -> repo root.
 SKILL_DIR = Path(__file__).resolve().parent.parent.parent
 REPO_ROOT = SKILL_DIR.parents[2]
 
-# The published 20-shim list (upstream v6-shims/README.md; installer prompt
-# #2746 counts 20). These are the only IDs guarded -- still-live skills that
-# merely LOOK similar (bmad-review, bmad-prd, bmad-sprint-planning,
-# bmad-create-epics-and-stories) are not in this tuple.
+# The published 20-shim v6.11.0 list (upstream v6-shims/README.md; installer
+# prompt #2746 counts 20) plus one 6.12.0 addition (bmad-checkpoint-preview,
+# renamed to bmad-walkthrough) -- 21 guarded ids total. These are the only IDs
+# guarded -- still-live skills that merely LOOK similar (bmad-review,
+# bmad-prd, bmad-sprint-planning, bmad-create-epics-and-stories) are not in
+# this tuple.
 RETIRED_SKILL_IDS = (
     "bmad-quick-dev",
     "bmad-dev-auto",
@@ -88,6 +91,10 @@ RETIRED_SKILL_IDS = (
     "bmad-technical-research",
     "bmad-sprint-status",
     "bmad-document-project",
+    # 2026-09-06: 6.12.0 ships this id as neither a new `skill_renames` entry
+    # nor a `removals` entry -- it still ships a live `lifecycle: shim` skill
+    # directory under the package's plan/ tree. It is NOT orphaned; it stays
+    # guarded here on its own pre-existing (6.11) merit.
     "bmad-generate-project-context",
     "bmad-review-adversarial-general",
     "bmad-review-edge-case-hunter",
@@ -95,6 +102,9 @@ RETIRED_SKILL_IDS = (
     "bmad-editorial-review",
     "bmad-editorial-review-prose",
     "bmad-editorial-review-structure",
+    # 2026-09-06: BMAD-METHOD 6.12.0 renamed this shim to `bmad-walkthrough`
+    # (bmad_core_releases/6.12.0.yaml skill_renames). 21st guarded id.
+    "bmad-checkpoint-preview",
 )
 
 # Longest-first so the reported match is the most specific retired ID.
@@ -168,6 +178,50 @@ def scan_file(path: Path) -> list[tuple[int, str]]:
     return scan_lines(text.splitlines())
 
 
+# Steward's CAP-1 pre-flight release catalog -- see Design Notes: this is a
+# NARROWER set than RETIRED_SKILL_IDS (it only tracks steward's rename/legacy
+# bookkeeping), so the consistency check below is one-directional (catalog
+# subset-of guard), never full derivation.
+BMAD_CORE_RELEASES_GLOB = (
+    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/"
+    "bmad_core_releases/*.yaml"
+)
+
+
+def _catalog_files(root: Path) -> list[Path]:
+    return sorted(root.glob(BMAD_CORE_RELEASES_GLOB))
+
+
+def _collect_unguarded_catalog_renames(
+    catalog_paths: list[Path], guarded_ids: tuple[str, ...]
+) -> list[str]:
+    """Return "from-id (source.yaml)" for every skill_renames[].from not guarded."""
+    unguarded: list[str] = []
+    for path in catalog_paths:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for rename in data.get("skill_renames") or []:
+            from_id = rename["from"]
+            if from_id not in guarded_ids:
+                unguarded.append(f"{from_id} ({path.name})")
+    return unguarded
+
+
+def _assert_catalog_renames_guarded(
+    catalog_paths: list[Path], guarded_ids: tuple[str, ...] = RETIRED_SKILL_IDS
+) -> None:
+    """One-directional subset check: every catalog rename id is guarded.
+
+    Shared by the real-catalog test and its fixture-based red-on-plant proof
+    so both exercise the identical assertion logic.
+    """
+    unguarded = _collect_unguarded_catalog_renames(catalog_paths, guarded_ids)
+    assert not unguarded, (
+        "bmad_core_releases catalog skill_renames[].from ids missing from "
+        f"RETIRED_SKILL_IDS: {unguarded} -- add each to the guard tuple with "
+        "a dated comment."
+    )
+
+
 @pytest.mark.meta
 def test_scan_set_resolves_and_has_not_rotted():
     """Every include-glob must clear its own floor; rot fails loudly per surface."""
@@ -212,23 +266,68 @@ def test_live_tree_has_no_bare_retired_skill_ids():
 
 
 @pytest.mark.meta
+def test_catalog_renames_are_guarded():
+    """Every bmad_core_releases/*.yaml skill_renames[].from id is guarded.
+
+    One-directional subset check (catalog subset-of RETIRED_SKILL_IDS), not
+    full derivation -- see the module's Design Notes counterpart in the
+    story spec: 8 pre-existing guarded ids (the bmad-review-*/
+    bmad-editorial-review-* trio, bmad-create-story, bmad-dev-story) never
+    appear in either catalog file, so replacing the tuple with the catalog's
+    contents would silently drop their coverage.
+    """
+    catalog_paths = _catalog_files(REPO_ROOT)
+    assert catalog_paths, (
+        "no bmad_core_releases/*.yaml catalogs found -- glob rot, or the "
+        "catalog directory moved"
+    )
+    _assert_catalog_renames_guarded(catalog_paths)
+
+
+@pytest.mark.meta
+def test_catalog_renames_are_guarded_reds_on_planted_gap(tmp_path):
+    """A planted catalog rename absent from RETIRED_SKILL_IDS fails, by name."""
+    fixture = tmp_path / "9.9.9.yaml"
+    fixture.write_text(
+        'version: "9.9.9"\n'
+        "skill_renames:\n"
+        "  - from: bmad-not-a-real-guarded-id\n"
+        "    to: bmad-something-else\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="bmad-not-a-real-guarded-id"):
+        _assert_catalog_renames_guarded([fixture])
+
+
+@pytest.mark.meta
 def test_planted_bare_id_is_detected(tmp_path):
-    """Red-on-plant proof, in a fixture -- the repo tree is never dirtied."""
+    """Red-on-plant proof, in a fixture -- the repo tree is never dirtied.
+
+    Includes the 21st (6.12) guarded id alongside two pre-existing (6.11)
+    ones -- the scanner is fully generic over RETIRED_SKILL_IDS, so one
+    fixture proves detection for old and new ids alike.
+    """
     planted = tmp_path / "planted.md"
     planted.write_text(
         "Some ordinary line.\n"
         "bmad-dev-auto\n"
-        "Marshal drives stories via `bmad-quick-dev` when hand-picked.\n",
+        "Marshal drives stories via `bmad-quick-dev` when hand-picked.\n"
+        "bmad-checkpoint-preview\n",
         encoding="utf-8",
     )
     violations = scan_file(planted)
-    assert violations == [(2, "bmad-dev-auto"), (3, "bmad-quick-dev")], (
+    assert violations == [
+        (2, "bmad-dev-auto"),
+        (3, "bmad-quick-dev"),
+        (4, "bmad-checkpoint-preview"),
+    ], (
         "scanner failed to report the planted bare retired IDs as "
         f"file:line violations; got {violations!r}"
     )
     # The reporting shape the live-tree test emits names file AND line.
     rendered = [f"{planted.name}:{lineno}: {rid}" for lineno, rid in violations]
     assert "planted.md:2: bmad-dev-auto" in rendered
+    assert "planted.md:4: bmad-checkpoint-preview" in rendered
 
 
 @pytest.mark.meta

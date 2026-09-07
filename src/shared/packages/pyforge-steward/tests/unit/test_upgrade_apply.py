@@ -15,6 +15,11 @@ files and ``_bmad/scripts/*.py`` edited in place (trap 16); after the core
 installer regenerates them, a real ``git merge-file`` three-way merge lands
 the clean ones and flags genuine conflicts with a ``.customization-conflict``
 sibling, repo bytes left exactly as the installer wrote them.
+
+Story 14.9 — CAP-9: ``--no-shims`` inserts literally on the installer argv
+right after ``--modules``, before any ``--pin`` pair; a same-version run that
+really deletes a shim is a real diff (never trap 12); the sole refusal under
+``--no-shims`` is the pre-existing trap-2 legacy-custom check, unchanged.
 """
 
 from __future__ import annotations
@@ -48,6 +53,7 @@ from pyforge.steward.upgrade import (
     format_apply,
     format_preflight,
     load_custom_modules,
+    load_release_catalog,
     read_installed_module_sources,
     read_installed_modules,
     reapply_local_customizations,
@@ -235,6 +241,7 @@ def _fake_installer_script(
     no_changes: bool = False,
     record: Path | None = None,
     clobber_custom_module: bool = False,
+    no_shims: bool = False,
 ) -> Path:
     """Write a tiny 'bmad-method' stand-in that mutates bmm/core only (unless clobber).
 
@@ -244,6 +251,9 @@ def _fake_installer_script(
     ``_bmad/skf/**``, regenerate ``config.yaml`` from defaults with a literal
     ``{project-root}/{value}``, drop the undeclared ``skf-campaign`` skill dir,
     and rewrite the ``[modules.skf]`` block of ``_bmad/config.toml`` with defaults.
+    ``no_shims`` (Story 14.9 / CAP-9) asserts ``--no-shims`` really is on argv
+    and deletes a fixture shim-shaped dir (``_bmad/bmm/v6-shims/bmad-dev-auto``,
+    when present) to mimic a real shim-retirement diff.
     """
     record_str = str(record) if record is not None else ""
     body = textwrap.dedent(
@@ -258,12 +268,18 @@ def _fake_installer_script(
         directory = pathlib.Path(sys.argv[sys.argv.index("--directory") + 1])
         assert directory.resolve() == repo.resolve(), sys.argv
         assert sys.argv[sys.argv.index("--modules") + 1], sys.argv
+        if {no_shims!r}:
+            assert "--no-shims" in sys.argv, sys.argv
         if {record_str!r}:
             pathlib.Path({record_str!r}).write_text(json.dumps(sys.argv), encoding="utf-8")
         if {no_changes!r}:
             sys.exit({exit_code})
         (repo / "_bmad" / "bmm" / "updated.txt").write_text("from-installer\\n", encoding="utf-8")
         (repo / "_bmad" / "core" / "updated.txt").write_text("from-installer\\n", encoding="utf-8")
+        if {no_shims!r}:
+            shutil.rmtree(
+                repo / "_bmad" / "bmm" / "v6-shims" / "bmad-dev-auto", ignore_errors=True
+            )
         if {clobber_custom!r}:
             custom = repo / "_bmad" / "custom" / "config.toml"
             if custom.is_file():
@@ -1108,6 +1124,21 @@ def test_apply_custom_module_catalog_pin_lands_on_core_argv(tmp_path):
     assert report.custom_modules[0].pin == "v2.1.0"
     assert any("skf=v2.1.0" in n for n in report.notes)
     assert report.custom_modules_ok is True
+
+
+def test_real_catalog_pins_skf_v2_1_0():
+    """Story 46.7: the REAL packaged 6.12.0 catalog carries the skf pin (CAP-7).
+
+    ``test_apply_custom_module_catalog_pin_lands_on_core_argv`` above proves the
+    generic pin-to-argv mechanism works once a pin exists, but it only ever
+    reads a synthetic fixture catalog. This test loads the actual packaged
+    ``bmad_core_releases/6.12.0.yaml`` so an accidental revert of the pin back
+    to ``null`` is caught here, not just in the mechanism test.
+    """
+    catalog = load_release_catalog("6.12.0")
+    (skf,) = load_custom_modules(catalog)
+    assert skf.name == "skf"
+    assert skf.pin == "v2.1.0"
 
 
 def test_apply_custom_module_own_installer_binary_missing_is_reported(tmp_path):
@@ -2203,3 +2234,177 @@ def test_cli_apply_help_names_installed_package_root_flag(capsys, monkeypatch):
     text = " ".join(capsys.readouterr().out.split())
     assert "--installed-package-root" in text
     assert "run `bmad-method install --action update -y`," not in text
+
+
+# ── Story 14.9 / CAP-9 — --no-shims deliberate shim retirement ─────────────
+
+
+def _add_fixture_shim(repo: Path) -> Path:
+    """Commit a ``_bmad/bmm/v6-shims/bmad-dev-auto`` dir so the fake installer's
+    ``no_shims`` deletion has something real to remove."""
+    shim = repo / "_bmad" / "bmm" / "v6-shims" / "bmad-dev-auto"
+    shim.mkdir(parents=True)
+    (shim / "SKILL.md").write_text("# bmad-dev-auto shim\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "fixture: add v6-shims/bmad-dev-auto")
+    return shim
+
+
+def test_apply_no_shims_argv_carries_flag_after_modules_before_pins(tmp_path):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_fixture_shim(repo)
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(installer),
+        branch="review/no-shims-argv",
+        no_shims=True,
+    )
+
+    assert report.installer_cmd == (
+        str(installer),
+        "install",
+        "--action",
+        "update",
+        "-y",
+        "--directory",
+        str(repo),
+        "--modules",
+        "core,bmm,skf",
+        "--no-shims",
+    )
+    assert any("--no-shims requested" in n for n in report.notes)
+
+
+def test_apply_no_shims_same_version_target_is_a_real_diff_not_zero_diff(tmp_path):
+    """Same-version + --no-shims that actually deletes a shim dir is a real
+    diff — never mistaken for the trap-12 silent no-op."""
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    shim_dir = _add_fixture_shim(repo)
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installed_version="6.11.0",
+        installer_bin=str(installer),
+        branch="review/no-shims-same-version",
+        no_shims=True,
+    )
+
+    assert report.preflight.installed_version == report.preflight.target_version
+    assert report.zero_diff is False
+    # Proves the shim-directory deletion itself (not just the routine
+    # updated.txt writes) produced the diff.
+    assert not shim_dir.exists()
+    assert any("v6-shims/bmad-dev-auto" in p for p in report.changed_paths)
+
+
+def test_apply_no_shims_legacy_custom_still_halts_before_branch(tmp_path):
+    """Trap 2's unconditional refusal holds unchanged under --no-shims."""
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=True)
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method")
+    before_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+
+    with pytest.raises(UpgradeError, match="legacy-name"):
+        apply_bmad_core_upgrade(
+            repo=repo,
+            target_version="6.11.0",
+            installer_bin=str(installer),
+            no_shims=True,
+        )
+
+    after_branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    assert after_branch == before_branch
+    assert not (repo / "_bmad" / "bmm" / "updated.txt").exists()
+
+
+def test_apply_no_shims_proceeds_normally(tmp_path):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_fixture_shim(repo)
+    installer = _fake_installer_script(tmp_path / "fake-bmad-method", no_shims=True)
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(installer),
+        branch="review/no-shims-clear",
+        no_shims=True,
+    )
+
+    assert report.installer_exit == 0
+    assert "--no-shims" in report.installer_cmd
+    assert report.zero_diff is False
+
+
+def test_apply_no_shims_argv_order_holds_with_custom_module_pins(tmp_path):
+    """--no-shims combined with a pin-bearing custom module: argv still shows
+    ``--modules``, then ``--no-shims``, then ``--pin`` — in that exact order."""
+    fx = _custom_module_fixture(tmp_path, pin="v2.1.0")
+    repo = fx["repo"]
+
+    report = apply_bmad_core_upgrade(
+        repo=repo,
+        target_version="6.11.0",
+        installer_bin=str(fx["core"]),
+        catalog_directory=fx["catalog"],
+        branch="review/no-shims-with-pins",
+        no_shims=True,
+    )
+
+    expected = (
+        str(fx["core"]),
+        "install",
+        "--action",
+        "update",
+        "-y",
+        "--directory",
+        str(repo),
+        "--modules",
+        "core,bmm,skf",
+        "--no-shims",
+        "--pin",
+        "skf=v2.1.0",
+    )
+    assert report.installer_cmd == expected
+    assert tuple(json.loads(fx["core_record"].read_text(encoding="utf-8"))) == expected
+
+
+def test_cli_apply_help_names_no_shims_flag(capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "400")
+    rc = main(["upgrade", "bmad-core", "--help"])
+    assert rc == EXIT_OK
+    text = " ".join(capsys.readouterr().out.split())
+    assert "--no-shims" in text
+
+
+def test_cli_apply_no_shims_flag_reaches_apply(tmp_path, capsys):
+    repo = _write_repo(tmp_path / "repo", with_legacy_custom=False)
+    _add_fixture_shim(repo)
+    record = tmp_path / "argv.json"
+    installer = _fake_installer_script(
+        tmp_path / "fake-bmad-method", record=record, no_shims=True
+    )
+    rc = main(
+        [
+            "upgrade",
+            "bmad-core",
+            "--target",
+            "6.11.0",
+            "--apply",
+            "--repo-root",
+            str(repo),
+            "--installer",
+            str(installer),
+            "--branch",
+            "review/cli-no-shims",
+            "--no-shims",
+            "--json",
+        ]
+    )
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert "--no-shims" in payload["installer_cmd"]
+    assert json.loads(record.read_text(encoding="utf-8")) == payload["installer_cmd"]

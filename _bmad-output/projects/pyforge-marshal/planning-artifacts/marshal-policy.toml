@@ -24,8 +24,8 @@
 # it would silently swallow `verify_commands`/`gate_mode` into itself). It maps a
 # DIFFICULTY CLASS (a free-form string) to `{stage: model}`. A story declares which
 # class governs its own launch via `difficulty: <key>` in its own Tier-3 spec
-# frontmatter (`.claude/skills/bmad-dev-auto/spec-template.md` /
-# `.claude/skills/bmad-quick-dev/spec-template.md`) -- authored, never derived from
+# frontmatter (`.claude/skills/bmad-build-auto/spec-template.md` /
+# `.claude/skills/bmad-build/spec-template.md`) -- authored, never derived from
 # `epics.md`'s separate PM-time `Effort:` field. An undeclared or declared-but-unmapped
 # difficulty resolves to "no override": the flat baseline stays unchanged
 # (`[adapter] model = "sonnet"`, `[adapter.review] model = "opus"`). Only the stages

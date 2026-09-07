@@ -766,7 +766,7 @@ def _large_spec_bytes(home: Path, slug: str, key: StoryKey) -> int:
     first implementation probed the single exact path
     ``spec-{render_filename_slug(key)}.md`` (``spec-3-6.md``), the literal
     formula this story's own intent contract names; but every spec
-    ``bmad-dev-auto`` actually writes carries a descriptive title after the
+    ``bmad-build-auto`` actually writes carries a descriptive title after the
     key (``spec-3-6-budget-ceilings-and-the-heaviest-story-advisory.md`` --
     its step-01 derives ``spec-{slug}.md`` from a slug that LEADS with the
     story number and continues with the intent text), so the ``stat()``

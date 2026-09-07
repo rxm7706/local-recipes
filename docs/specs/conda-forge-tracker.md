@@ -741,7 +741,8 @@ explicit answers before implementation.
 - **conda-forge webservices** — `feedstock-comment` channel target.
   <https://github.com/conda-forge/webservices>
 - **BMAD Method docs** — `.claude/docs/bmad-method-llms-full.txt`
-  (offline) / <https://docs.bmad-method.org/llms-full.txt> (live).
+  (offline, frozen 6.11-era snapshot) / <https://docs.bmad-method.org/> (live; BMAD-METHOD
+  6.12.0 discontinued `llms.txt`/`llms-full.txt` — the old URL above is dead).
 
 ---
 

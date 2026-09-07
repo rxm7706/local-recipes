@@ -295,6 +295,9 @@ class PreflightReport:
     custom_modules: tuple[CustomModuleFinding, ...] = ()
     # CAP-8 (Story 14.8) — appended last for the same reason.
     local_customizations: tuple[LocalCustomizationFinding, ...] = ()
+    # CAP-9 (Story 14.9) — appended last for the same reason. A preview of what
+    # a future `--no-shims` run would remove; never a trap (see Design Notes).
+    shims_to_retire: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -1221,6 +1224,18 @@ def build_preflight_report(
     forwarder_changes = _forwarder_findings(catalog)
     config_migration = _config_migration_finding(catalog)
     custom_modules = _custom_module_findings(repo, catalog)
+    # CAP-9 (Story 14.9): preview-only — never a trap (see module docstring's
+    # Design Notes in the story spec). Computed unconditionally, independent
+    # of any --no-shims flag, so a plain pre-flight can audit it too.
+    shims_to_retire = tuple(
+        sorted(
+            {
+                name
+                for name in (catalog.get("shims_to_retire") or [])
+                if name in installed_skills
+            }
+        )
+    )
 
     trap_ids: list[int] = []
     if locally_modified:
@@ -1301,6 +1316,7 @@ def build_preflight_report(
         notes=tuple(notes),
         custom_modules=tuple(custom_modules),
         local_customizations=tuple(local_customizations),
+        shims_to_retire=shims_to_retire,
     )
 
 
@@ -1395,6 +1411,14 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
         lines.append("(none detected — see Notes below if the scan was skipped)")
     for entry in report.local_customizations:
         lines.append(f"- [trap {entry.trap_id}] {entry.path}: {entry.reason}")
+
+    lines.extend(
+        ["", f"## Shims to retire (--no-shims candidates) [{len(report.shims_to_retire)}]"]
+    )
+    if not report.shims_to_retire:
+        lines.append("(none)")
+    for name in report.shims_to_retire:
+        lines.append(f"- {name}")
 
     if report.notes:
         lines.extend(["", "## Notes"])
@@ -2487,8 +2511,9 @@ def apply_bmad_core_upgrade(
     installer_bin: str = "bmad-method",
     installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
     custom_installer_runner: InstallerRunner | LegacyInstallerRunner | None = None,
+    no_shims: bool = False,
 ) -> ApplyReport:
-    """CAP-2+3+6+7 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
+    """CAP-2+3+6+7+8+9 deliberate apply: preflight → branch → installer → custom modules → custom check → CAP-3 reconcile.
 
     The installer command is always ``bmad-method install --action update -y
     --directory <repo> --modules <every module the manifest lists, core first>
@@ -2503,6 +2528,12 @@ def apply_bmad_core_upgrade(
     the repo root through *custom_installer_runner* (default:
     ``default_installer_runner``); the only bytes steward itself writes in
     that phase are the restored config paths.
+
+    CAP-9: ``no_shims=True`` appends a literal ``--no-shims`` to the installer
+    argv (right after ``--modules``, before any ``--pin`` pair), asking the
+    installer to retire the release's deprecation shims (``installShims:
+    false``); the sole refusal is the pre-existing trap-2 legacy-custom check
+    above, which already halts unconditionally regardless of ``no_shims``.
     """
     assert_clean_tree(repo)
 
@@ -2582,6 +2613,7 @@ def apply_bmad_core_upgrade(
         str(repo.resolve()),
         "--modules",
         modules_csv,
+        *(("--no-shims",) if no_shims else ()),
         *(part for pin in pins for part in ("--pin", pin)),
     )
     runner = installer_runner or default_installer_runner
@@ -2592,13 +2624,23 @@ def apply_bmad_core_upgrade(
         "(never merged/applied blind)",
         "steward did not write _bmad/bmm/** or _bmad/core/** — installer is sole writer",
         f"installer argv: {' '.join(installer_cmd)}",
-        (
-            "installer modules selected from the installed manifest (core first): "
-            f"{modules_csv} — every listed module is selected so `--action update -y` "
-            f"cannot deselect a cached custom module (trap {TRAP_CUSTOM_MODULE_DESELECTED})"
-        ),
-        env_note,
     ]
+    if no_shims:
+        notes.append(
+            "--no-shims requested: shim retirement is judged by the same trap-12 "
+            "zero-diff refusal as any other apply — a same-version run that actually "
+            "removes shim directories is a real diff, never treated as a no-op"
+        )
+    notes.extend(
+        [
+            (
+                "installer modules selected from the installed manifest (core first): "
+                f"{modules_csv} — every listed module is selected so `--action update -y` "
+                f"cannot deselect a cached custom module (trap {TRAP_CUSTOM_MODULE_DESELECTED})"
+            ),
+            env_note,
+        ]
+    )
     if pins:
         notes.append(
             f"catalog pins on the installer argv: {', '.join(pins)} — stops the "
@@ -4213,6 +4255,7 @@ class UpgradeDuty:
 
         installer_bin = getattr(ns, "installer", None) or "bmad-method"
         branch = getattr(ns, "branch", None) or None
+        no_shims = bool(getattr(ns, "no_shims", False))
         apply_report = apply_bmad_core_upgrade(
             repo=repo,
             target_version=target,
@@ -4222,6 +4265,7 @@ class UpgradeDuty:
             package_root=package_root,
             installed_package_root=installed_package_root,
             installer_bin=installer_bin,
+            no_shims=no_shims,
         )
         reconcile_ok = (
             apply_report.reconcile is not None and apply_report.reconcile.all_clear

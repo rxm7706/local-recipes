@@ -33,9 +33,11 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 - Recipe lifecycle: `.claude/skills/conda-forge-expert/SKILL.md`. Invoke the skill before any conda work; every conda-forge effort closes with a retro that edits that skill and its `CHANGELOG.md`.
 - Station code: read `.claude/skills/pyforge-<station>/SKILL.md` before touching `src/shared/packages/pyforge-<station>/`; use the CLI grammar, never `pyforge.<station>` internals.
+- **Workspace-package conventions** (`src/shared/packages/pyforge-*/`): tests live in the package's own `tests/{unit,meta,conformance,integration}/` — never under `_bmad-output/projects/<slug>/tests/`, which holds only planning-scaffold mocks/fixtures. Where a package projects an exit-code verdict, that projection has a single-owner module (`verdict.py`) and, where the report contract is externally consumed, a shipped, frozen JSON Schema under `src/pyforge/<name>/data/report-schema.json` (`$id: urn:local-recipes:pyforge-<name>:report-schema`, additive changes only) — verified 2026-09-06: `pyforge-doctor`/`pyforge-warden` ship both; `pyforge-core`/`pyforge-marshal` ship `verdict.py` with no schema yet; the rest have neither. Not yet a universal requirement — the shape to follow where a package needs it.
 - Architecture invariants and naming (station token, `python-<role>-<class>`, id prefixes, ledger keys): `planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` under `pyforge-steward`; cite `canopy AD-n`, `pap:AD-n` for the host, and `fnd:AD-n` for the cutover spine once PR #1041 merges.
 - Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
 - Governance: `docs/governance/`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
+- pyforge-atlas subtree-exclusive rules (Kedro/Dagster/DuckDB internals — testing contract, AD-1 import boundaries, exit-code convention, code-grounded patterns): `src/shared/packages/pyforge-atlas/AGENTS.md`.
 
 ## Running and verifying
 
@@ -54,9 +56,10 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Squash subjects break merge detection; `git merge-base --is-ancestor` is the proof a story landed.
 - `.cmd` shims in `build.bat` need `call`, or the parent script exits.
 - Marshal's `Deps:` parser is station-local; a cross-project gate is a ledger `blocked` row the operator flips.
-- Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under `.claude/skills/` (1,269), so it removes all 121 skill dirs, not the 16 skf ones (read 2026-09-06).
+- Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under `.claude/skills/`, so it removes every skill dir, not the 16 skf ones (found 2026-09-06; the 6.12 shim retirement moved the exact skill-dir count, so don't restate a count here — `find .claude/skills -maxdepth 1 -mindepth 1 -type d | wc -l` gets the live one).
 - A config pin in `_bmad/custom/config.toml` must sit at the installer's own key path (`[core] communication_language`, `[modules.bmm] user_skill_level`); the same key at a second path makes `render_skill.py` HALT with "ambiguous config value" and every rendering skill stops (caught 2026-09-06 after the 6.12 apply).
 - `bmad-method install --action update -y` is not idempotent here: pass `--directory <repo>` (else a closed stdin exits 0 having written nothing) and `--modules core,bmm,skf` (else the cached custom module skf is deleted); re-apply local skill edits from the cached package diff (failure-modes.md traps 12-16).
+- `bmad_loop`'s `DevPolicy.skill` (`[dev] skill = "bmad-dev-auto"`, the retired 6.x name, in the harness template and every loop-home `policy.toml`) is a permanent adapter discriminator, not the invoked skill name — never rename it or build a guard against its presence; `bmad_loop.policy` already refuses a bad value at render time (caught 2026-09-06: CAP-9's now-removed refuse-check assumed the opposite).
 
 <!-- /bmad:context -->
 

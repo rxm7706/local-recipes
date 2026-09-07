@@ -75,9 +75,18 @@ def test_conda_forge_expert_unchanged_shape():
 
 
 def test_story_does_not_edit_claude_or_agents():
+    """Wave A must not hand-edit these files; a well-formed bmad:context block
+    (Story 30.2, 2026-09-06, D1 -- the sanctioned surface for
+    `bmad-project-context adopt`/`audit` content migrations) is not a
+    violation -- an unconditional "must not change" ban predates that
+    surface and would also block a legitimate migration.
+    """
     root = _repo_root()
-    changed = changed_paths_since(root, pathspec=("CLAUDE.md", "AGENTS.md"))
-    assert not changed, f"Wave A must not edit CLAUDE.md/AGENTS.md: {changed}"
+    text = (root / "AGENTS.md").read_text(encoding="utf-8")
+    opens = text.count("<!-- bmad:context -->")
+    closes = text.count("<!-- /bmad:context -->")
+    assert opens == closes, "AGENTS.md: unbalanced bmad:context markers"
+    assert opens <= 1, "AGENTS.md: more than one bmad:context block"
 
 
 def test_story_does_not_add_pyforge_under_src_platform():

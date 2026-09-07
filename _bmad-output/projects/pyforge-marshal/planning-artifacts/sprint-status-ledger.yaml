@@ -160,11 +160,11 @@ development_status:
   3-7-escalation-deferral-and-resume: done
   3-8-stage-bound-durability-and-fleet-launch-wiring: done
   3-9-a-retired-story-branch-is-not-a-push-failure: done
-  30-1-the-retired-id-guard-follows-the-6-12-shim-roster: backlog
-  30-2-the-project-context-surface-follows-6-12-d1: backlog
-  30-3-documentation-pointers-follow-6-12: backlog
-  30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test: backlog
-  30-5-the-harness-and-every-live-caller-follow-the-shim-retirement: backlog
+  30-1-the-retired-id-guard-follows-the-6-12-shim-roster: done
+  30-2-the-project-context-surface-follows-6-12-d1: done
+  30-3-documentation-pointers-follow-6-12: done
+  30-4-bmad-loop-s-repo-skills-match-the-installed-package-by-test: done
+  30-5-the-harness-and-every-live-caller-follow-the-shim-retirement: done
   31-1-tea-s-workflows-produce-every-station-s-test-architecture: blocked
   31-2-the-generator-its-meta-tests-and-its-pixi-tasks-retire-behind-the-equivalence-check: backlog
   31-3-tea-test-review-is-a-marshal-review-lens: blocked

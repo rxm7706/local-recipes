@@ -6,9 +6,11 @@ portrays the live `local-recipes` repo, and can be **caught up after _any_ out-o
 
 **Recurring owner (living factory docs):** **marshal** (CAP-7 decision **2026-08-24**).
 After every CFE MINOR / `surface-changed` detector trip, and at least once per BMAD core minor
-bump, marshal re-grounds `architecture-bmad-infra.md` + the **8** station `project-context.md`
-pins (`source_pin` / marshal's `last_synced_skill_version`). Stations do **not** each own a
-relay — this is factory-governance surface, not a per-station chore.
+bump, marshal re-grounds `architecture-bmad-infra.md`'s `source_pin` and audits the root
+`AGENTS.md` `bmad:context` managed block (the shared project-context surface since Story 30.2,
+2026-09-06 — it replaced the eight per-station rulebook files this duty used to also re-ground).
+Stations do **not** each own a relay — this is factory-governance surface, not a per-station
+chore.
 
 ## The guarantee — and its honest limit
 
@@ -46,9 +48,10 @@ detector trips).
   docs even if the detector has not yet tripped on a skill pin.
 - **Living-doc cadence (marshal-owned, 2026-08-24):** when any of the triggers above fire,
   marshal re-grounds `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md`
-  and all eight `_bmad-output/projects/*/project-context.md` rulebooks (bump `source_pin`; for
-  marshal also bump `last_synced_skill_version`). Do **not** fan this out as eight independent
-  station stories.
+  (bump `source_pin` and `last_synced_skill_version`) and audits the root `AGENTS.md`
+  `bmad:context` managed block via `bmad-project-context`. Story 30.2 (2026-09-06) retired the
+  eight per-station rulebook files this cadence used to also re-ground — do **not** reintroduce
+  a per-station relay.
 - **In the test suite** — `tests/meta/test_bmad_artifacts_in_sync.py` enforces *integrity* (not
   currency) so a corrupt pin / misplaced file / uncovered doc fails fast.
 
@@ -80,9 +83,8 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
 | `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
 | `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
-| `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-project-context`** (6.11 successor of `bmad-generate-project-context`; note it maintains an `AGENTS.md` block, not `project-context.md` — an existing `project-context.md` is read as legacy input) |
-| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **marshal** re-grounds by hand or with a plain read-only agent, then bumps each `source_pin` — **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs (the deeper capability is promised upstream, not shipped). Cadence: after CFE MINOR / `surface-changed` / BMAD core minor (see When to run) |
-| `pin-behind` (context) | `project-context.md` (×8 stations) | **marshal** reconciles pins by hand (`source_pin`; marshal also `last_synced_skill_version`) — **not** a per-station relay. `bmad-project-context` writes only the `AGENTS.md` block (HOLD that managed block unless a separate story owns it); treat station `project-context.md` as a frozen legacy rulebook refreshed on the marshal cadence |
+| `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`. (Neither this covers nor `factory.py`/`bmad_drift_check.py` track the AGENTS.md `bmad:context` block — that surface carries no `source_pin`, and its own freshness proof is `bmad-project-context`'s "Verified `<date>` against `<commit>`" stamp, checked by `bmad-project-context audit`, not by this detector.) |
+| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **marshal** re-grounds living docs by hand or with a plain read-only agent, then bumps each `source_pin` — **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs (the deeper capability is promised upstream, not shipped). Cadence: after CFE MINOR / `surface-changed` / BMAD core minor (see When to run). Separately (no shared detector finding, since it isn't `source_pin`-tracked): run **`bmad-project-context`** in refresh/audit mode against the AGENTS.md `bmad:context` block on the same cadence — **not** a per-station relay (Story 30.2, 2026-09-06, retired the eight per-station rulebook files this cadence used to also re-ground) |
 | `pin-behind` (plan) | `PRD.md`, `epics.md` | **`bmad-correct-course`** → **`bmad-edit-prd`** / **`bmad-create-epics-and-stories`** (structural: new epics/stories for net-new capabilities, not a number swap) |
 | `pin-behind` (snapshot) | `validation-report-PRD.md`, `implementation-readiness-report.md` | regenerate fresh: **`bmad-prd`** (validate intent), **`bmad-sprint-planning`** readiness gate (6.11 absorbed `bmad-check-implementation-readiness`; PASS/CONCERNS/FAIL, finds artifacts by content not filename globs) (a gate is only meaningful re-run against current artifacts — never number-patch a dated snapshot) |
 | `stale-rule` | any | hand-fix the rule, then add the bad pattern to `STALE_RULE_PATTERNS` in `sources/factory.py` (the ported verdict's own copy — `scripts/bmad_drift_check.py` no longer carries this constant) so it can never silently return |
@@ -103,11 +105,11 @@ ownership**:
 ```
 # 6.11: bmad-document-project is removed and bmad-project-context does NOT
 # re-derive brownfield docs. Marshal owns living-doc re-ground of
-# architecture-bmad-infra.md + the 8× project-context.md pins (CAP-7,
-# 2026-08-24) via plain read-only agents grounded in the live repo.
-# bmad-project-context maintains only the AGENTS.md block (do not edit that
-# managed block from this runbook unless a dedicated story lifts the HOLD).
-bmad-project-context         # refresh/audit the verified AGENTS.md block (separate HOLD)
+# architecture-bmad-infra.md's source_pin (CAP-7, 2026-08-24) via plain
+# read-only agents grounded in the live repo. Story 30.2 (2026-09-06)
+# retired the eight per-station rulebook files that pin used to also cover;
+# the shared surface is now the AGENTS.md bmad:context managed block.
+bmad-project-context         # refresh/audit the AGENTS.md bmad:context block
 ```
 
 For high-stakes reconciliations, follow with an adversarial pass (`bmad-review` — 6.11 consolidates the adversarial / edge-case-hunter / verification-gap lenses) or a fan-out of read-only verification agents that check each
@@ -140,14 +142,18 @@ it can't classify — so a new doc can never silently escape the sync loop. Clas
 
 ## Issue classes from the 2026-06-20 audit (now all detector-covered)
 
+*The per-station `project-context` rulebook file class named in two rows below was retired
+2026-09-06 (Story 30.2) — that content is now covered by the AGENTS.md `bmad:context` managed
+block. The rows remain as a historical record of the 2026-06-20 audit.*
+
 | Session issue | Detector finding that now catches it |
 |---|---|
 | 3 junk files (verbatim-dup spec, `review-diff.patch`, superseded spec) | `stray-file` (+ `--fix`) / manual |
 | 30 historical files unarchived (SCPs, retros) | `archive-misplaced` (+ `--fix`) |
 | `index.md` 3 conflicting pins + stale counts | `pin-behind`, `count-stale` |
 | architecture/overview stale schema/tool/phase counts | `count-stale`, `phase-list-stale` |
-| `project-context.md` corrupt `span` frontmatter | `pin-missing` (HARD; integrity-gated) |
-| `project-context.md` stale rules (8 envs, 17 lint, missing O–S, branch convention) | `phase-list-stale`, `stale-rule`, `count-stale` |
+| per-station `project-context` rulebook corrupt `span` frontmatter | `pin-missing` (HARD; integrity-gated) |
+| per-station `project-context` rulebook stale rules (8 envs, 17 lint, missing O–S, branch convention) | `phase-list-stale`, `stale-rule`, `count-stale` |
 | `spec-phase-k-hang-fix.md` shipped but still `in-flight` | `spec-status-stale` |
 | `deferred-work.md` ~85% shipped, stale | `deferred-stale` |
 | any out-of-band repo change since last sync | `surface-changed` (baseline) |

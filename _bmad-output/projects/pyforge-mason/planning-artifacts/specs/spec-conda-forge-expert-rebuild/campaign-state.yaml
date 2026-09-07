@@ -612,7 +612,26 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "a5f63c95fb8e733f715900690af692293057ed74"
+    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+                                    # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
+                                    # a10a8c7d00 (bmad-loop repo skills proven to match the
+                                    # installed package, by test; landed via pyforge-marshal
+                                    # Story 30.4, the "fleet hygiene branch" sanctioned-exception).
+                                    # CFE-surface delta: SKILL.md (version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.3 -> 8.86.4),
+                                    # tests/meta/test_bmad_loop_skills_match_installed.py (new).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
+                                    # ADVANCED 2026-09-06 from a5f63c95fb to the CFE v8.86.3 retro
+                                    # 647fda3ed3 (fleet-hygiene retro -- retired-BMAD-skill-ID guard
+                                    # gains bmad-checkpoint-preview as the 21st id + a one-directional
+                                    # catalog-consistency check; landed via pyforge-marshal Story 30.1,
+                                    # the "fleet hygiene branch" sanctioned-exception the station
+                                    # CFE-surface guards name). CFE-surface delta: SKILL.md (version,
+                                    # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.2 -> 8.86.3), tests/meta/test_no_retired_bmad_skill_ids.py.
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-05 from 879dbebf2f to the CFE v8.86.2 retro
                                     # a5f63c95fb (strict duplicate-key audit meta-test; 31 half-migrated
                                     # recipes fixed in the companion commit). CFE-surface delta: SKILL.md
@@ -868,7 +887,26 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "a5f63c95fb8e733f715900690af692293057ed74"
+    brief_mirrored_through: "a10a8c7d0019af7ed4f49d3ebdcf62e133340756"
+                                    # ADVANCED 2026-09-06 from 647fda3ed3 to the CFE v8.86.4 retro
+                                    # a10a8c7d00 (bmad-loop repo skills proven to match the
+                                    # installed package, by test; landed via pyforge-marshal
+                                    # Story 30.4, the "fleet hygiene branch" sanctioned-exception).
+                                    # CFE-surface delta: SKILL.md (version, history), CHANGELOG.md,
+                                    # MANIFEST.yaml + config/skill-config.yaml (8.86.3 -> 8.86.4),
+                                    # tests/meta/test_bmad_loop_skills_match_installed.py (new).
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
+                                    # ADVANCED 2026-09-06 from a5f63c95fb to the CFE v8.86.3 retro
+                                    # 647fda3ed3 (fleet-hygiene retro -- retired-BMAD-skill-ID guard
+                                    # gains bmad-checkpoint-preview as the 21st id + a one-directional
+                                    # catalog-consistency check; landed via pyforge-marshal Story 30.1,
+                                    # the "fleet hygiene branch" sanctioned-exception the station
+                                    # CFE-surface guards name). CFE-surface delta: SKILL.md (version,
+                                    # history), CHANGELOG.md, MANIFEST.yaml + config/skill-config.yaml
+                                    # (8.86.2 -> 8.86.3), tests/meta/test_no_retired_bmad_skill_ids.py.
+                                    # NO shipped script changed -- nothing to re-port into either
+                                    # compiled slice.
                                     # ADVANCED 2026-09-05 from 879dbebf2f to the CFE v8.86.2 retro
                                     # a5f63c95fb (strict duplicate-key audit meta-test; 31 half-migrated
                                     # recipes fixed in the companion commit). CFE-surface delta: SKILL.md

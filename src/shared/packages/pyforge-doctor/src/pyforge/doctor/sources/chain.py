@@ -2335,7 +2335,7 @@ def _consume_plain_field_block(
 
 # --- Story 8.2: mint_id_for_entry ------------------------------------------
 #
-# Ports `.claude/skills/bmad-dev-auto/step-04-review.md`'s "Minting the id"
+# Ports `.claude/skills/bmad-build-auto/step-04-review.md`'s "Minting the id"
 # prose (lines ~81-98) into reusable, testable code -- that procedure has so
 # far only ever been followed BY HAND, one finding at a time, by an LLM
 # agent mid-review-pass, and has already produced three real near-miss

@@ -142,9 +142,7 @@ def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
     (tmp_path / "presentations" / project / "project" / "x.html").write_text(
         "<html></html>\n", encoding="utf-8"
     )
-    (tmp_path / "_bmad-output" / "projects" / project / "project-context.md").write_text(
-        "# ctx\n", encoding="utf-8"
-    )
+    (tmp_path / "AGENTS.md").write_text("# ctx\n", encoding="utf-8")
     (pa / "sprint-status-ledger.yaml").write_text("development_status:\n", encoding="utf-8")
     pkg = tmp_path / "src" / "shared" / "packages" / project
     (pkg / "tests").mkdir(parents=True, exist_ok=True)
@@ -161,12 +159,19 @@ def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
     layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
     assert len(layer_summary) == 1
     ev = layer_summary[0].evidence
-    for layer in ("dream", "spec", "brief", "prd", "arch", "epics"):
+    for layer in ("dream", "spec", "brief", "prd", "arch", "epics", "context"):
         assert layer in ev["present"], layer
     assert "prd" not in ev["missing"]
+    assert "context" not in ev.get("missing", []), (
+        "'context' resolves to the AGENTS.md fixture written above (Story 30.2, "
+        "2026-09-06 -- the project-context surface moved from a per-station "
+        "rulebook to this shared file); pin this so a future regression in "
+        "_stage_globs()'s 'context' glob reds here, not silently."
+    )
     verdict = next(f for f in findings if f.check == "chain-audit-verdict")
     assert "layers" in verdict.evidence["checkpoints"]
     assert "orphans" in verdict.evidence["checkpoints"]
+    assert "context" not in verdict.evidence["checkpoints"]["layers"].get("gaps", [])
 
 
 def test_isolation_does_not_credit_sibling_project_artifacts(

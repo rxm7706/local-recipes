@@ -282,8 +282,10 @@ def _discovered_board_keys() -> list[str]:
 # key _discovered_board_keys() strips -- round-tripping to the same directory
 # this glob just found relies on every discovered directory actually being
 # `pyforge-`-prefixed. That is a Charter-level constitutive naming rule for
-# every Smith/station (see project-context.md's Identity & Vocabulary
-# section), not merely an assumption local to this file, so a directory that
+# every Smith/station (see `docs/dreams/pyforge-charter.md` § Branding / § The
+# Lexicon -- the canonical source; the retired project-context.md "Identity &
+# Vocabulary" section was a mirror of it, never the original), not merely an
+# assumption local to this file, so a directory that
 # violated it would already be invalid elsewhere in the repo. If that rule
 # is ever relaxed, resolve_project() would raise UnresolvableProjectError
 # here at import time (before main()'s own try/except runs) -- still a loud,
@@ -1939,12 +1941,18 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         "prd":      [f"{pa}/prds/prd-{slug}-*/prd.md"],
         "ux":       [f"{pa}/ux-{slug}*.md", f"{pa}/ux/{slug}*.md"],
         "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
-        "context":  [f"{proj}/project-context-{slug}.md"],
+        # BMAD-METHOD 6.12.0 ships `persistent_facts = []`; the project-context surface is now
+        # a `bmad:context` managed block (D1, Story 30.2, 2026-09-06), not a per-station
+        # rulebook file. Every chain resolves the shared root AGENTS.md; a station whose
+        # content warranted `bmad-project-context`'s "child" split (subtree-exclusive,
+        # substantial -- pyforge-atlas is the first) also gets its own block at
+        # src/shared/packages/<slug>/AGENTS.md, so both paths count.
+        "context":  ["AGENTS.md", f"src/shared/packages/{slug}/AGENTS.md"],
         "epics":    [f"{pa}/epics-{slug}.md"],
         "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
         # CAP-1, spec-pyforge-testing-charter (2026-08-02): real tests live at the
-        # canonical src/shared/packages/pyforge-<slug>/tests/ location per
-        # project-context.md's workspace-package convention -- NOT under
+        # canonical src/shared/packages/pyforge-<slug>/tests/ location per the root
+        # AGENTS.md's `bmad:context` block's workspace-package convention -- NOT under
         # _bmad-output/projects/<slug>/tests/, which holds only planning-scaffold
         # mocks/fixtures (or, for 6 of 8 stations, nothing but empty __init__.py
         # stubs). The old glob undercounted every station's real coverage.
@@ -1963,7 +1971,6 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         g["prd"] += [f"{pa}/prd.md", f"{pa}/PRD.md"]
         g["ux"] += [f"{pa}/ux*.md"]
         g["arch"] += [f"{pa}/architecture.md"]
-        g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
         g["epics"] += [f"{pa}/epics.md"]
         g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
         g["gates"] += [f"{pa}/implementation-readiness-report*.md",
