@@ -612,7 +612,12 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "c4f699a280719aad03835f5263d77053fa25febb"
+    brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
+                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.86.5
+                                    # follow-through retro b87a402abd: CHANGELOG.md gains a
+                                    # one-line note that config/failure-catalog.yaml was
+                                    # regenerated for G114 (114 rows). NO shipped script
+                                    # changed -- nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
                                     # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
                                     # Windows-ready -- build.number 0 -> 1, recipe-build green on
@@ -898,7 +903,12 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "c4f699a280719aad03835f5263d77053fa25febb"
+    brief_mirrored_through: "b87a402abd684b45d88597c09c711af36d8a4e2a"
+                                    # ADVANCED 2026-09-06 from c4f699a280 to the CFE v8.86.5
+                                    # follow-through retro b87a402abd: CHANGELOG.md gains a
+                                    # one-line note that config/failure-catalog.yaml was
+                                    # regenerated for G114 (114 rows). NO shipped script
+                                    # changed -- nothing to re-port into either compiled slice.
                                     # ADVANCED 2026-09-06 from a10a8c7d00 to the CFE v8.86.5 retro
                                     # c4f699a280 (Mason Story 14.1: bmad-eval-quality re-verified
                                     # Windows-ready -- build.number 0 -> 1, recipe-build green on
