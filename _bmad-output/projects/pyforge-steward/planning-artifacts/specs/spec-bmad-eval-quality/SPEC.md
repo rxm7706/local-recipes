@@ -1,10 +1,10 @@
 ---
 spec: bmad-eval-quality
-status: ready
+status: shipped
 owner-dream: docs/dreams/bmad-eval-quality.md
 surface:
   - recipes/bmad-eval-quality/**   # CAP-1 lands in the same PR as this Spec
-  # - evals/review-catches-planted-defect/**   # claim when CAP-2 lands
+  - evals/review-catches-planted-defect/**   # CAP-2 landed Story 45.2 (2026-09-07)
 companions:
   - packaging.md
   - pilot-contract.md
@@ -57,7 +57,9 @@ with zero evidence about the last line of defence.
   review cites `pkg/discount.py:17` and the clean arm does not; three trials per arm yield a
   policy-comparable strength vector with a catch rate; pixi tasks `eval-quality-smoke`,
   `eval-quality-review-twin-run -- --trials N`, `eval-quality-review-replay` exist and are never
-  wired into `detectors`.
+  wired into `detectors`. *Known limitation (empirical, live `--trials 3` runs):* the clean arm is
+  a reproducible false-positive source — `edge-case-hunter`'s exhaustive-enumeration methodology
+  finds a different real boundary concern at the same line every time; see `.memlog.md` for detail.
 
 ## Constraints
 

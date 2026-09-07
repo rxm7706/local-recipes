@@ -164,7 +164,7 @@ development_status:
   44-8-the-working-set: backlog
   44-9-mason-submits-to-conda-forge: backlog
   45-1-eval-quality-joins-the-suite: done
-  45-2-the-reviewer-is-measured-against-a-planted-defect: backlog
+  45-2-the-reviewer-is-measured-against-a-planted-defect: done
   46-1-the-adoption-register-governs-wiring: backlog
   46-10-the-release-cadence-is-one-runbook-and-the-next-rehearsal-has-run-once: backlog
   46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders: backlog

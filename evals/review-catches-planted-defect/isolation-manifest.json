@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "runId": "__PATCHED_PER_RUN_BY_DRIVER__",
+  "contractId": "review-catches-planted-defect",
+  "conditionArm": "__PATCHED_PER_RUN_BY_DRIVER__",
+  "modelSnapshot": "opus",
+  "systemPromptDigest": "sha256:8fc046af1cbf4ecc928207cec75e29c3c260adb86cc7da77537ade3b3a3b9448",
+  "contractDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "evaluatorConfigurationDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "workspaceIdentity": "evals/review-catches-planted-defect",
+  "allowedMounts": ["evals/review-catches-planted-defect"],
+  "observedMounts": ["evals/review-catches-planted-defect"],
+  "networkAllowlist": [],
+  "observedNetworkTargets": [],
+  "toolAllowlist": [],
+  "observedToolCalls": [],
+  "resourceCeilings": {
+    "maxToolCalls": 5,
+    "maxInputTokens": 200000,
+    "maxOutputTokens": 32000,
+    "maxWallClockMinutes": 10,
+    "maxCostUsd": "2"
+  },
+  "actualResourceUse": {
+    "toolCalls": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "wallClockSeconds": 0,
+    "costUsd": "0"
+  },
+  "forbiddenInputAccounting": {
+    "original-spec": { "withheld": true, "note": "The driver never gives the reviewer this spec file or any planning artifact." },
+    "source-code": { "withheld": true, "note": "Only the two diff arms are shown; no other repository source." },
+    "repository": { "withheld": true, "note": "The reviewer runs with Bash/Read/Write/Edit/Glob/Grep/WebFetch/WebSearch/Task disallowed -- no repository access beyond the inline diff text." },
+    "builder-transcript": { "withheld": true, "note": "No prior session transcript is passed." },
+    "implementation-logs": { "withheld": true, "note": "No implementation logs are passed." },
+    "comparator-results": { "withheld": true, "note": "The oracle's covers-by-key check runs only after the reviewer responds; never shown to it." },
+    "human-labels": { "withheld": true, "note": "No human labels exist for this pilot." }
+  },
+  "violation": null
+}
