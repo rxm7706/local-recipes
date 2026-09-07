@@ -229,6 +229,31 @@ def test_adapter_probe_output_falls_back_to_opaque_redaction_for_non_json_output
     assert token not in probe.probe_output
 
 
+def test_adapter_probe_notes_when_redaction_itself_fails(harness, monkeypatch, tmp_path):
+    """``_redact_probe_output`` degrades to ``None`` (never raises) when
+    ``to_redacted`` itself fails on an otherwise well-formed dict payload --
+    the one branch of ``adapter_probe``'s probe_note assembly none of the
+    redaction-round-trip tests above exercise, since they all reach a real
+    redacted string."""
+    import pyforge.marshal.adapters.harness_bmadloop as module
+
+    monkeypatch.setattr(module.shutil, "which", lambda binary: "/usr/bin/" + binary)
+    version_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="claude 1.0\n", stderr="")
+    probe_result = subprocess.CompletedProcess(
+        args=[], returncode=0, stdout=json.dumps({"cli": "claude"}), stderr=""
+    )
+    monkeypatch.setattr(
+        module.subprocess, "run", _fake_run_dispatch(version_result, probe_result)
+    )
+    monkeypatch.setattr(
+        module.BmadLoopHarness, "_redact_probe_output", staticmethod(lambda text: None)
+    )
+
+    probe = harness.adapter_probe("claude", tmp_path)
+    assert probe.probe_output is None
+    assert probe.probe_note == "probe output could not be redacted"
+
+
 # --- raises HarnessError for the same class of failure adapter_binary does ---
 
 
