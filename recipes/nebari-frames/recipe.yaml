@@ -1,0 +1,171 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.7"
+
+package:
+  name: nebari-frames
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nebari-dev/nebari-frames/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 518d2dde0ae9af344c3007bce33a156c97e57a3f9a39e57eefc0e3631fcd734f
+  target_directory: src
+
+build:
+  number: 0
+  script:
+    env:
+      GOTOOLCHAIN: local
+    content:
+      - cd src
+      - go-licenses save ./cli --save_path ../library_licenses
+      - if: unix
+        then: go build -v -trimpath -o $PREFIX/bin/frames -ldflags="-s -w -X github.com/nebari-dev/nebari-frames/cli/cmd.version=${{ version }}" ./cli
+        else: go build -v -trimpath -o %LIBRARY_BIN%\frames.exe -ldflags="-s -w -X github.com/nebari-dev/nebari-frames/cli/cmd.version=${{ version }}" ./cli
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - frames --version
+      - frames --help
+  - package_contents:
+      bin:
+        - frames
+      strict: true
+
+about:
+  homepage: https://packs.nebari.dev/nebari-frames/
+  repository: https://github.com/nebari-dev/nebari-frames
+  documentation: https://packs.nebari.dev/nebari-frames/
+  summary: CLI for publishing, browsing, and resolving Nebari Frames
+  description: |
+    Nebari Frames is the registry and exchange for Frames: scoped, text-based
+    artifacts that carry organizational context — terminology, style, goals,
+    rules, business processes — into AI conversations. A Frame composes through
+    inheritance, is governed through role-based access control, and is
+    consumable by any MCP-capable AI client or installed directly as a file.
+
+    This package ships the `frames` command-line client, the only binary the
+    upstream project publishes as a release artifact. Use it to authenticate
+    against a Frames registry, publish Frames authored in your editor, browse
+    the Frames your organization has shared, inspect inheritance chains, and
+    print the inheritance-resolved form of a Frame.
+
+    Frames import and export as conformant Frame Spec 0.2 `.frame.md`
+    documents, so they survive a round trip through other Frame tooling.
+
+    The Frames server and its web UI are deployed from the upstream container
+    image and Helm chart and are not part of this package.
+  license: Apache-2.0
+  license_file:
+    - src/LICENSE
+    - library_licenses/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nebari-frames
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/nebari-dev/nebari-frames
+  cfe-purls:
+    - pkg:conda/nebari-frames@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/nebari-dev/nebari-frames@${{ version }}
+  cfe-upstream-repo: https://github.com/nebari-dev/nebari-frames
+  cfe-upstream-homepage: https://packs.nebari.dev/nebari-frames/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T11:35:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Hand-authored (no generator path applies): nebari-frames is a Go project,
+#    # not PyPI / npm / CRAN / CPAN / LuaRocks. Modelled on the merged
+#    # mcp-grafana recipe (pure-Go CLI + go-licenses + target_directory: src).
+#    # NAME DECISION: conda package = nebari-frames (repo + upstream pack name,
+#    # per pack-metadata.yaml); the shipped command is `frames` (goreleaser
+#    # `binary: frames`, Homebrew formula `frames`). Package name and command
+#    # name deliberately differ — `frames` alone is too generic for a
+#    # channel-wide name (CFEP-26). Neither `frames` nor `nebari-frames` exists
+#    # on conda-forge (channeldata + lookup_feedstock checked 2026-09-07, G58 /
+#    # G74).
+#    # SCOPE: the repo is a monorepo (cli/ + backend/ + web/ + chart/). Upstream
+#    # only releases the CLI as a downloadable artifact (.goreleaser.yml builds
+#    # `main: ./cli` for linux/darwin amd64+arm64 and windows amd64); the server
+#    # is shipped as a container image + Helm chart and embeds a Vite SPA that
+#    # would need an npm build (G73). Packaging the CLI matches what upstream
+#    # itself distributes; a `nebari-frames-server` output would be a separate
+#    # decision.
+# source:
+#    # github-tag archive; the tag scheme is a plain v<version> and matches the
+#    # release exactly. sha256 computed from the live tarball (G61: a
+#    # commit-archive sha can drift when GitHub re-gzips — a TAG archive is the
+#    # stabler form, but re-verify on every bump).
+#    # target_directory: src keeps the generated library_licenses/ a sibling of
+#    # the source tree rather than inside it (mcp-grafana pattern), so
+#    # about.license_file can name src/LICENSE and library_licenses/ cleanly.
+# build:
+#  script:
+#    env:
+#      # GOTOOLCHAIN: local pins the build to the toolchain conda-forge ships and
+#      # forbids a network toolchain download. go.mod declares `go 1.25.7`;
+#      # conda-forge go-nocgo is 1.27.1 (linux-64 repodata, 2026-09-07), so the
+#      # installed toolchain already satisfies the directive and nothing is
+#      # fetched — the pin only removes the failure mode.
+#      # CGO_ENABLED is deliberately NOT set here: the go-nocgo compiler
+#      # activation already exports CGO_ENABLED=0, which is what upstream's
+#      # .goreleaser.yml sets explicitly.
+#    # `cd src` is its own script entry on purpose: CWD persists across
+#    # rattler-build script entries (env vars do not — G1/G13), and plain `cd`
+#    # is valid in both bash and cmd.exe, so no unix/win fork is needed for it.
+#    # -ldflags mirrors .goreleaser.yml exactly, including the version symbol
+#    # path (cli/cmd.version); without it `frames --version` reports "dev".
+#    # -trimpath is added for build reproducibility (not in goreleaser).
+#  requirements:
+#    # go-nocgo (NOT go-cgo): upstream builds with CGO_ENABLED=0 and the CLI's
+#    # import graph is pure Go — cli/ imports only connectrpc, cobra, viper and
+#    # its own internal packages (verified against the v0.1.7 tarball: nothing
+#    # under cli/ imports the web/ or backend/ trees, so neither the embedded
+#    # SPA nor modernc.org/sqlite is compiled). Per the skill's Critical
+#    # Constraints, go-nocgo needs no stdlib('c') / compiler('c').
+#    # go-licenses bundles the third-party dependency license texts into
+#    # library_licenses/, shipped via about.license_file (Apache-2.0 §4).
+#    # KNOWN LOCAL-GATE FALSE POSITIVE: `validate_recipe` reports "Missing
+#    # ${{ stdlib('c') }}" for this recipe. That check does not carry the
+#    # go-nocgo exemption the optimizer's STD-001 got in skill v5.8.0, so it
+#    # fires on every pure-Go recipe — reproduced identically against
+#    # recipes/wuphf (green local build) and the upstream conda-forge
+#    # mcp-grafana recipe. The authoritative CI-parity linter (current
+#    # conda-smithy via `pixi exec`, G65) reports "in fine form", and
+#    # optimize_recipe reports 0 suggestions. Do not add stdlib('c') to
+#    # silence it: CGO is off, so there is no C ABI to pin.
+# tests:
+#    # command tests, not Python imports (cfe-import-names: []). `frames
+#    # --version` also proves the ldflags version injection actually took.
+#    # package_contents strict:true asserts `frames` is the only binary shipped.
+# about:
+#    # license_file lists the project's own Apache-2.0 LICENSE plus the
+#    # go-licenses output directory. If `go-licenses save` ever fatals on the
+#    # project's OWN packages (G79), add `--ignore github.com/nebari-dev/nebari-frames`
+#    # rather than masking the failure with `|| true`.
+####
