@@ -140,4 +140,74 @@ before and after — the native install never targets this repo.
 Herald's first actual render using this studio is **Story herald 18.1's**
 job — this doc only proves the studio exists, is reachable, and is
 isolated. `ffmpeg` will need to be installed on whatever machine runs that
-story before a render can succeed.
+story before a render can succeed. (That render is the one recorded
+immediately below, completed 2026-09-07.)
+
+## Story 18.1: the first real render (2026-09-07)
+
+`ffmpeg` was resolved via the `ffmpeg` pixi env on this machine (the gap the
+section above flagged). The full pipeline walked for real, end to end, on
+project `warden-never-false-green` (format `voiceover-explainer`), narrating
+the real Warden deck's speaker notes
+(`presentations/pyforge-warden/src/marp/warden-deck-narration-2026-07-31.md`
+in this repo):
+
+- **Narration:** no human creator was recording, so `mc-audio`'s
+  `kokoro-local` TTS lane produced it. `ensure_workspace.py` built the
+  shared audio-lab venv for real (torch, accelerate, scipy,
+  `diffusers==0.31.0`, `transformers==4.43.4`, `kokoro-onnx==0.5.0`,
+  `soundfile` — several GB, including CUDA runtime packages the default
+  Linux PyPI `torch` wheel bundles even with no GPU present) and downloaded
+  the real `kokoro-v1.0.onnx` + `voices-v1.0.bin`. `farm_audio.py` then
+  synthesized 512.23s of narration (voice `af_heart`, speed 1.0) from the
+  spoken-only text of `script.md` (the ~39s gap to the 473.40s final render
+  below is the 149 mechanical silence trims applied at the cutplan gate,
+  not lost or unaccounted-for content).
+- **The video-stream gap:** `mc-cut`'s `preflight.py` unconditionally
+  requires a video stream and has no audio-only lane, a real gap for a
+  no-camera format with no human recording video either. Resolved by muxing
+  the narration onto a plain brand-canvas base video (`color=c=0xf3f2f2`,
+  the real Modernist token, at the delivery resolution/fps) — a mechanical
+  necessity, not fabricated content, since the format's actual visual track
+  is 100% wall-to-wall graphics overlays regardless.
+- **Gates walked, all four, all self-approved** by the operating agent
+  (bmad-build-auto's no-human-interaction rule; no separate human creator
+  present — a limitation of this walkthrough, not a general policy: a real
+  production render should have an independent human approve at least gate
+  2 and gate 4) — full provenance in the project's own `project.json.notes`:
+  - **outline** (gate 1, 2026-09-07, prior session)
+  - **cutplan**: transcribed via `onnx-asr` (this machine's `auto` lane);
+    `verify_transcript.py` genuinely failed once (a real 3.18s dropped
+    phrase, the exact windowing defect class `mc-cut/SKILL.md` documents)
+    and was fixed by re-transcribing the region in isolation and splicing
+    the recovery in; 149 mechanical silence trims applied, 4 candidates
+    (2 ASR token-splits, 2 deliberate rhetorical repeats) checked against
+    the real script and rejected.
+  - **beats**: 16 beats, every anchor time derived from the real transcript
+    remapped through the EDL (never estimated); `verify_anchors.py` also
+    failed once for real (an anchor word landing astride a silence-trim
+    boundary) and was fixed by choosing an unambiguous anchor word for the
+    same moment.
+  - **final**: all 16 graphics rendered as real HTML/SVG comps (Playwright
+    + Chromium, real Archivo brand font embedded) — no HyperFrames engine
+    workspace built, per this story's own scope. Compositing the graphics
+    overlays surfaced a genuine precision bug in this story's own EDL
+    frame-quantization (rounding to 4 decimals landed just past the true
+    frame boundary, so ffmpeg's trim included one extra frame per affected
+    segment, accumulating to +0.93s over 150 segments); fixed by keeping
+    full float precision and re-verified before the final render.
+- **Result:** `renders/final.mp4` — h264 1920x1080 30fps + aac 48kHz
+  stereo, 473.40s, loudnorm applied (measured -20.6 LUFS -> -14.0 LUFS
+  target), `ffprobe`-valid, 16,643,022 bytes. These figures (durations, byte
+  size, LUFS, beat/trim counts) are only checkable on the machine that ran
+  the render, against the real file with `ffprobe`; nothing in this repo's
+  own tooling can independently confirm them, since the studio and its
+  render live entirely outside this repo by design.
+- **Isolation re-proven:** this repo's `_bmad` + `_bmad-output` checksum was
+  captured before the render and again after every stage completed,
+  byte-identical throughout, despite the multi-GB TTS install, transcription
+  model download, and Chromium install all happening in the same session.
+
+The installed Manticore module still tracks `main`/`next` (unpinned, the
+open reproducibility risk 46.6 already recorded); this render used whatever
+resolved on 2026-09-07 and records no new pin.

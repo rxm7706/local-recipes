@@ -72,6 +72,21 @@ Station tasks use **only** these kinds:
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge herald`. Example: `pyforge herald deck status pyforge-warden`. Do not call the `herald` binary as a second public grammar. Do not import `pyforge.herald` internals.
 - `mcp` — FR-11 service face: `POST /stations/herald/mcp` only (identity tool `station_face`). No other URL, method, or host.
 
+## Manticore studio hand-off
+
+Herald's video-production capability, `bmad-manticore`, lives entirely in its own studio ROOT
+outside this repo, at `$PYFORGE_STUDIO_ROOT` (default `~/pyforge-studio/`) -- never inside this
+repo's `.claude/skills/` or `_bmad/`. To turn a station deck's speaker notes into a rendered
+`.mp4`, an operator opens a session in the studio root and runs the `mc-*` skill family there
+directly: `mc-setup` (studio/brand config), `mc-new`/`mc-braindump`/`mc-outline` (gate 1)/`mc-script`
+(pre-production), `record` (the creator's own take, or `mc-audio`'s local TTS lane when no human
+creator is recording), `mc-cut` (transcribe, cutplan, gate 2), `mc-beats` (the graphics beat
+table, gate 3), `mc-assets`/`mc-graphics` (farm and render), `mc-package` (titles, thumbnails,
+description, chapters, captions), and `final` (the offered `render_final.py` render, gate 4).
+This is a hand-off note, not a wrapper: this skill does not shell out to, import, or invoke any
+`mc-*` tooling from inside this repo. Full procedure and the proven isolation guarantee:
+`docs/reference/manticore-studio.md`.
+
 ## Forbidden actions
 
 - **No direct filesystem.** Do not use Read, Write, Delete, StrReplace, EditNotebook, open, Path.write, or any other file tool against dreams, presentations, recipes, or source. Do not edit deck files by hand.
