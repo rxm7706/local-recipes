@@ -2822,12 +2822,15 @@
    ".claude/skills/bmad-build-auto/spec-template.md": "8ad38537954548bcb4040e0cd8dbfe350a4a527a",
    ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md": "1fb7bb823731f4b33f639be7223d1602e03089f0",
    ".claude/skills/bmad-build-auto/step-04-review.md": "41b272817045771cf7e1288dcc2e2b140697323e",
+   ".claude/skills/bmad-sprint-planning/references/generate-tracking.md": "26b76467f9599a9c5e0f6c987ed9e471cbec0a2f",
+   ".claude/skills/bmad-sprint-planning/scripts/sprint_plan.py": "37bf4e66aa7ea62b6fc63d40a75209a780e460a5",
+   ".claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py": "1d3b0c7858e2ba7611f0cf43b5439f06d8e482c2",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "0177191dd318f0399da99aead2a2e9d2d9e955bb",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "7bbff4437689e0cb36ccb03918003404796cbf1d",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "0a550a1a42abc91915ba5a40c1ba0d9d3e2969aa",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "ac50e702427c8102d5a359233c174b6ba000eac8"
   },
-  "memlog": "021648c7c82170c6c421f08065ea0fca4253f1d3"
+  "memlog": "a0b3a12db8bd6055f4806b9ca9c4708e3b76cef0"
  },
  "pyforge-marshal/spec-marshal-status-harness-run-id-poisoning": {
   "files": {},
