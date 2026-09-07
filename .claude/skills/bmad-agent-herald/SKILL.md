@@ -37,6 +37,8 @@ themselves, outside any herald persona transcript.
    `pyforge herald success create "<project>" --evidence-notice <component>`
    instead.
 
+Herald also wields `slides-generator` (`bmad-labs-skills`; see adoption-register.md § 2, story herald 18.3) for quick draft slides only. It is an ordinary Claude Code skill, not part of the persona's CAP-16 action set — whoever drafts quick slides invokes it directly. It never becomes a deck head and never replaces the Claude-Design → Vite deck pipeline (`docs/specs/presentation-deck.md`), which remains the deck source of record.
+
 ## Conventions
 
 - Bare paths (e.g. `references/guide.md`) resolve from the skill root.

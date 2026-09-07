@@ -27,9 +27,10 @@ Story 46.5 update: `release-please` (labs) is now provisioned AND routed
 single-station positive branch. Its three sibling labs skills
 (`mcp-builder`, `slides-generator`, `multi-repo-git-ops`) were provisioned by
 the same story; `mcp-builder` has since been routed by atlas 24.1
-(`bmad-agent-atlas`), leaving two remaining siblings (`slides-generator`,
-`multi-repo-git-ops`) routed by two still not-yet-landed station stories
-(herald 18.3, marshal 31.6 -- see `_ROUTING_STORY_NOT_YET_LANDED` below);
+(`bmad-agent-atlas`), `slides-generator` by herald 18.3
+(`bmad-agent-herald`), and `multi-repo-git-ops` by marshal 31.6
+(`bmad-agent-marshal`) -- all three siblings now routed, none remaining in
+`_ROUTING_STORY_NOT_YET_LANDED` below;
 `test_no_labs_skill_outside_the_consent_list_is_present` guards the
 separate CAP-6 invariant that only the operator's four-name 2026-09-06
 consent list ever lands under `.claude/skills/`.
@@ -208,26 +209,24 @@ def _other_personas_silent(root: Path, station: str, name: str) -> list[str]:
 
 # Story 46.5 landed all four consented `bmad-labs-skills` directories
 # unconditionally (its own AC), but is scoped to route ONLY `release-please`
-# -- the remaining name's routing line is a DIFFERENT, not-yet-landed
-# station story named directly in the register's own § 2 rows (`slides-generator`
-# -> herald 18.3; epics.md Epic 46's own boundary text: "Station-side halves
-# are their own stories ... and are named in each story's acceptance, never
-# restated here"). Its directory now exists on disk from 46.5's own
-# provisioning, so the single-station routing assertion below would
-# otherwise fire against it -- this narrow, story-cited carve-out skips
-# ONLY the positive "the owning station mentions it" half for this name;
-# the exclusivity half (no OTHER, wrong station mentions it) keeps running
-# unconditionally for every name, carved out or not (review finding: an
-# earlier draft's `continue` skipped both halves, silently widening the
-# carve-out past what it needed to cover). Remove a name from this set the
-# same day its own cited story lands the persona mention, never before.
-# `multi-repo-git-ops` was removed 2026-09-07 by marshal 31.6, which landed
-# its persona mention in `bmad-agent-marshal`; `mcp-builder` was removed the
-# same day by atlas 24.1, which landed its persona mention in
-# `bmad-agent-atlas` (the register's own row 43 is unchanged).
-_ROUTING_STORY_NOT_YET_LANDED = {
-    "slides-generator": "herald 18.3",
-}
+# -- the other three names' routing lines were each a DIFFERENT,
+# not-yet-landed station story named directly in the register's own § 2
+# rows (`mcp-builder` -> atlas 24.1, `slides-generator` -> herald 18.3,
+# `multi-repo-git-ops` -> marshal 31.6; epics.md Epic 46's own boundary
+# text: "Station-side halves are their own stories ... and are named in
+# each story's acceptance, never restated here"). All three now have their
+# persona mention landed (`bmad-agent-atlas`, `bmad-agent-herald`,
+# `bmad-agent-marshal` respectively, all 2026-09-07), so this carve-out is
+# empty -- the single-station routing assertion below now runs
+# unconditionally for every labs skill, carved out or not (review finding:
+# an earlier draft's `continue` skipped both the positive and exclusivity
+# halves, silently widening the carve-out past what it needed to cover;
+# fixed to skip only the positive half while a name is still carved out).
+# Remove a name from this set the same day its own cited story lands the
+# persona mention, never before -- kept as an empty dict (not deleted) so a
+# future labs skill provisioned ahead of its station story has somewhere to
+# go.
+_ROUTING_STORY_NOT_YET_LANDED: dict[str, str] = {}
 
 
 def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
