@@ -64,3 +64,8 @@ test_framework = "auto"
 test_review_output = "test-reviews"
 test_stack_type = "auto"
 trace_output = "traceability"
+
+[modules.labs]
+provisioned_by = "steward"
+installer = "steward provision --plugin labs --skill <name>"
+skills = ["mcp-builder", "multi-repo-git-ops", "release-please", "slides-generator"]

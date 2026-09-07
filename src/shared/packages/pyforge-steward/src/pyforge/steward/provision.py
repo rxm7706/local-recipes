@@ -144,6 +144,36 @@ never a subprocess call, so it cannot introduce a `cleanup-legacy.py`/
 guard test needs no change. `_bmad/config.yaml` still gains the `bmb` section
 via the unchanged `merge-config.py` mechanism; `bmb` is still explicitly NOT
 part of the Story 46.2 AD-9 migration to `_bmad/custom/config.toml`.
+
+Story 46.5 slice (the plugin-path install class's first real wiring):
+`bmad-labs-skills` had `wire_policy` = "documented" everywhere (register row
+10, `install-class-playbook.md`, `suite.py`'s `probe_wired`) -- the upstream
+README's own by-name-or-marketplace commands were only ever cited, never run
+by any steward mechanism. `_SUPPORTED_PLUGINS` (`PluginBackend`, today just
+`labs`) is a small, deliberately separate registry from `_SUPPORTED_MODULES`:
+every `CondaInstallBackend`/`SetupSkillBackend` module installs its ENTIRE
+declared skill set atomically in one call, while the plugin-path class
+installs exactly ONE named skill per invocation, gated by a fixed four-name
+operator consent list (`_LABS_CONSENT_SKILLS` -- the 2026-09-06 decision,
+register row 10 / § 2 rows 43-46 -- refused for any of the package's other
+18 skills even though the share tree makes them technically copyable).
+`provision_plugin_skill` reuses `_check_skill_name_collisions` and
+`_copy_setup_skill_dirs` verbatim (never `npx skills add` -- AD-1's "never
+both"), resolving the copy source from the conda package's own pinned share
+tree (`_conda_prefix`) rather than a second, redundant runtime commit-check.
+Unlike every `CondaInstallBackend` module's `_record_module_manifest` call
+(which replaces `skills` wholesale with the one full set the installer just
+wrote), the plugin path must ACCUMULATE: `_module_toml_skills` reads
+`[modules.labs]`'s currently-recorded `skills` array back out of `_bmad/
+custom/config.toml` so the caller can union it with the newly-installed name
+before calling `_record_module_manifest` -- a previously-installed sibling
+skill (e.g. `mcp-builder`) must never be wiped by installing a second one
+(e.g. `release-please`). `suite.py`'s `probe_wired` for
+`INSTALL_CLASS_PLUGIN_PATH` is untouched by this story (still `"documented"`,
+a playbook-text check with zero filesystem inspection) -- Story 46.9 owns
+correcting that probe; `adoption-register.md` row 10's Wired cell
+deliberately stays `documented` here, not `wired`, so it does not disagree
+with that still-unfixed live probe.
 """
 
 from __future__ import annotations
@@ -462,6 +492,51 @@ _SKIPPED_MODULES: dict[str, str] = {
     ),
 }
 
+
+@dataclass(frozen=True)
+class PluginBackend:
+    """A plugin-path install-class backend (Story 46.5) — a small, deliberately
+    separate registry from `_SUPPORTED_MODULES`/`ModuleBackend`. Every
+    `ModuleBackend` module installs its ENTIRE declared skill set atomically
+    in one call; the plugin-path class installs exactly ONE named skill per
+    invocation, gated by a fixed operator consent list. `share_package`
+    names the conda share package whose `skills/<name>` subdirectories are
+    copyable; `allowed_skills` is the consent list — a `--skill` name
+    outside it is refused even though the package's share tree may make it
+    technically copyable.
+    """
+
+    share_package: str
+    allowed_skills: tuple[str, ...]
+
+
+# Story 46.5: the operator's 2026-09-06 consent decision (adoption-register.md
+# row 10 / § 2 rows 43-46) — exactly these four of the 22 skills
+# bmad-labs-skills ships. A fixed constant, never derived from the share tree
+# (deriving it would silently consent to whatever upstream ships next).
+_LABS_CONSENT_SKILLS: tuple[str, ...] = (
+    "mcp-builder",
+    "slides-generator",
+    "multi-repo-git-ops",
+    "release-please",
+)
+
+_SUPPORTED_PLUGINS: dict[str, PluginBackend] = {
+    "labs": PluginBackend(share_package="bmad-labs-skills", allowed_skills=_LABS_CONSENT_SKILLS),
+}
+
+# Relative to the share root: share/bmad-labs-skills/skills/<name>.
+_LABS_SKILLS_SOURCE_SUBDIR = Path("skills")
+
+# There is no real subprocess entry-point binary for the plugin-path class —
+# the mechanism is a plain `shutil` copy (never `npx skills add`, AD-1's
+# "never both"). This fixed literal is recorded as the `[modules.labs]`
+# manifest's `installer` field so the manifest schema stays uniform (every
+# module has SOME string there) while being honest that no external binary
+# runs underneath — it matches, verbatim, the Provisioning-path cell text
+# adoption-register.md row 10 already carries.
+_LABS_INSTALLER_LABEL = "steward provision --plugin labs --skill <name>"
+
 _MODULE_YAML_RELATIVE_PATH = Path("assets/module.yaml")
 _MODULE_HELP_CSV_RELATIVE_PATH = Path("assets/module-help.csv")
 _BMAD_RELATIVE_PATH = Path("_bmad")
@@ -617,10 +692,19 @@ def _check_skill_name_collisions(
     *,
     cwd: Path,
     already_installed: bool,
+    kind: str = "module",
 ) -> None:
     """Refuse to overwrite `.claude/skills/<skill>` that already exists when
     this module is not yet manifest-recorded (a foreign skill collision).
     Re-provision of an already-installed module is allowed (idempotent).
+
+    `kind` (Story 46.5, opt-in) names the noun the error message uses --
+    every `_SUPPORTED_MODULES` caller keeps the default `"module"`; the
+    plugin-path caller (`provision_plugin_skill`) passes `"plugin"` so the
+    message never calls `labs` a "module" (it is never a `--module` target
+    -- review finding: the reused-verbatim message previously said `module
+    'labs'`, contradicting that guarantee and pointing an operator at
+    `--list-modules`/`--module labs`, neither of which shows it).
     """
     if already_installed or not skill_names:
         return
@@ -630,9 +714,9 @@ def _check_skill_name_collisions(
     )
     if collisions:
         raise RuntimeError(
-            f"module {name!r}: skill-name collision(s) under "
+            f"{kind} {name!r}: skill-name collision(s) under "
             f"{_CLAUDE_SKILLS_RELATIVE_PATH}: {', '.join(collisions)} — refuse "
-            "to overwrite skills that already exist before this module is "
+            f"to overwrite skills that already exist before this {kind} is "
             "manifest-recorded. Remove or rename the colliding skills, then "
             "re-run provision."
         )
@@ -1277,6 +1361,147 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
     return DutyResult(ok=True, summary=summary)
 
 
+# ── Plugin-path provisioning (Story 46.5, the plugin-path class's first real
+# wiring) ─────────────────────────────────────────────────────────────────
+
+
+def provision_plugin_skill(plugin: str, skill: str, *, cwd: str | Path) -> dict[str, object]:
+    """Provision exactly ONE named skill from a registered plugin-path
+    backend (Story 46.5) — the plugin-path counterpart to `provision_module`.
+
+    Validates `plugin` is a registered key of `_SUPPORTED_PLUGINS`
+    (`FileNotFoundError` naming the supported plugins if not), validates
+    `skill` is on the backend's `allowed_skills` consent list (`RuntimeError`
+    naming the allowed names if not — even a real, share-tree-present skill
+    outside the four-name consent list is refused), resolves the share root
+    via the existing `_conda_prefix`, and asserts the named skill's share
+    directory exists (`FileNotFoundError` if not — mirrors
+    `_provision_setup_skill`'s own missing-share-dir message shape).
+
+    Collision-checks PER SKILL, not per module: `already_installed` reflects
+    only whether THIS skill name is already on `[modules.<plugin>]`'s
+    roster, so `_check_skill_name_collisions` is called with just `(skill,)`
+    — a previously-installed sibling skill's own directory is never treated
+    as something this call needs to re-check, but a genuine foreign
+    collision on THIS skill's own directory still refuses.
+
+    Records the roster BEFORE copying (review finding, mirroring
+    `_provision_setup_skill`'s own documented ordering fix): accumulates the
+    currently-recorded `skills` array (`_module_toml_skills`) with the
+    newly-installed name and writes it via `_record_module_manifest` FIRST,
+    then copies via `_copy_setup_skill_dirs` (reused verbatim — an
+    idempotent rmtree+copytree). Copying first (an earlier draft's order)
+    reintroduced the exact self-locking-retry bug `_provision_setup_skill`
+    already found and fixed: a manifest-write failure AFTER a successful
+    copy left the copied directory behind with the roster never gaining the
+    skill, so a retry's `already_installed` read `False` and treated the
+    prior attempt's own leftover directory as a foreign collision —
+    permanently refusing until a human manually deleted it (reproduced
+    empirically in review). Writing the roster first means any failure
+    *after* it (a `_copy_setup_skill_dirs` error) leaves `already_installed`
+    reading `True` on retry, so `_check_skill_name_collisions` is skipped
+    entirely and the retry just re-runs the (idempotent) copy — the correct
+    self-healing outcome. Never a wholesale replacement that would wipe a
+    previously-installed sibling skill.
+
+    Raises `FileNotFoundError` for an unregistered plugin or a missing share
+    directory, and `RuntimeError` for a consent-list refusal or a skill-name
+    collision — both propagated, not swallowed; `_run_plugin` catches both
+    locally, mirroring `_run_module`'s own precedent.
+    """
+    if plugin not in _SUPPORTED_PLUGINS:
+        supported = ", ".join(sorted(_SUPPORTED_PLUGINS))
+        raise FileNotFoundError(
+            f"plugin {plugin!r} is not registered. Supported plugins: {supported}"
+        )
+    backend = _SUPPORTED_PLUGINS[plugin]
+    if skill not in backend.allowed_skills:
+        allowed = ", ".join(backend.allowed_skills)
+        raise RuntimeError(
+            f"skill {skill!r} is not on the {plugin!r} consent list. "
+            f"Allowed skills: {allowed}"
+        )
+
+    root = Path(cwd)
+    prefix = _conda_prefix(cwd=root, share_package=backend.share_package)
+    share_root = prefix / "share" / backend.share_package
+    skill_dir = share_root / _LABS_SKILLS_SOURCE_SUBDIR / skill
+    if not skill_dir.is_dir():
+        raise FileNotFoundError(
+            f"plugin {plugin!r}'s skill {skill!r} is missing at {skill_dir} — "
+            f"the {backend.share_package} pixi/conda dependency is not "
+            "installed. Fix with `pixi install -e local-recipes`."
+        )
+
+    already_installed = skill in _module_toml_skills(plugin, cwd=root)
+    _check_skill_name_collisions(
+        plugin, (skill,), cwd=root, already_installed=already_installed, kind="plugin"
+    )
+
+    # Record the roster BEFORE copying — see the docstring's "review finding"
+    # paragraph for why the reverse order self-locks a retry after a
+    # manifest-write failure.
+    accumulated = tuple(sorted({*_module_toml_skills(plugin, cwd=root), skill}))
+    _record_module_manifest(
+        plugin, cwd=root, installer=_LABS_INSTALLER_LABEL, skills=accumulated
+    )
+
+    dest = root / _CLAUDE_SKILLS_RELATIVE_PATH
+    dest.mkdir(parents=True, exist_ok=True)
+    _copy_setup_skill_dirs(share_root / _LABS_SKILLS_SOURCE_SUBDIR, (skill,), dest=dest)
+
+    return {
+        "installer": _LABS_INSTALLER_LABEL,
+        "skill_installed": skill,
+        "skills_on_roster": list(accumulated),
+    }
+
+
+def _run_plugin(ns: argparse.Namespace) -> DutyResult:
+    """`provision --plugin <name> --skill <name>` (Story 46.5).
+
+    Argparse-level validation stays permissive (Boundaries) — an
+    unregistered `--plugin` name, a `--skill` name outside the consent
+    list, or `--plugin` given without `--skill` are all reported through
+    `DutyResult(ok=False, ...)` here, never an argparse crash. `ns.plugin`'s
+    registration is checked FIRST, then `ns.skill`'s presence (review
+    finding: checking `--skill` first meant `--plugin bogus` with no
+    `--skill` reported "--skill is required" instead of naming `bogus` as
+    unsupported — an operator adding `--skill x` would only then discover
+    the real problem). `provision_plugin_skill` is called with its own
+    `(RuntimeError, FileNotFoundError)` caught locally — mirroring
+    `_run_module`'s own local-handler precedent — so a genuine consent-list
+    refusal or skill-name collision is never masked as an unrelated crash by
+    `ProvisionDuty.run()`'s outer boundary.
+    """
+    plugin = ns.plugin
+    if plugin not in _SUPPORTED_PLUGINS:
+        supported = ", ".join(sorted(_SUPPORTED_PLUGINS))
+        message = f"{plugin!r} is not a supported plugin. Supported plugins: {supported}"
+        return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, message))
+    skill = getattr(ns, "skill", None)
+    if skill is None:
+        return DutyResult(
+            ok=False,
+            summary=ProvisionDuty._render_error(
+                ns, "--skill is required together with --plugin"
+            ),
+        )
+    root = repo_root()
+    try:
+        steps = provision_plugin_skill(plugin, skill, cwd=root)
+    except (RuntimeError, FileNotFoundError) as exc:
+        return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, str(exc)))
+    if getattr(ns, "json", False):
+        return DutyResult(ok=True, summary=json.dumps(steps, indent=2))
+    roster = ", ".join(steps["skills_on_roster"])
+    summary = (
+        f"provision --plugin: {plugin!r} skill {skill!r} provisioned "
+        f"({_CLAUDE_SKILLS_RELATIVE_PATH}/{skill}; roster: {roster})"
+    )
+    return DutyResult(ok=True, summary=summary)
+
+
 # ── Module discovery (FR-20, Story 6.2) ─────────────────────────────────────
 
 
@@ -1301,6 +1526,34 @@ def _custom_config_toml_module_names(*, cwd: str | Path) -> set[str]:
     if not isinstance(modules, dict):
         return set()
     return set(modules)
+
+
+def _module_toml_skills(name: str, *, cwd: str | Path) -> tuple[str, ...]:
+    """Read `_bmad/custom/config.toml`'s `[modules.<name>].skills` array back
+    out (Story 46.5) — the small reader the plugin-path roster-accumulation
+    mechanism needs; no existing function reads a specific module's `skills`
+    field back out (`_custom_config_toml_module_names` above only reads
+    section NAMES, not a section's field values). Degrades to `()` on a
+    missing file, a missing `[modules.<name>]` section, or a non-list
+    `skills` value — never raises, mirroring
+    `_custom_config_toml_module_names`'s own missing-file/malformed-shape
+    degrade precedent.
+    """
+    path = Path(cwd) / _BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH
+    if not path.is_file():
+        return ()
+    with path.open("rb") as f:
+        document = tomllib.load(f)
+    modules = document.get("modules", {})
+    if not isinstance(modules, dict):
+        return ()
+    section = modules.get(name)
+    if not isinstance(section, dict):
+        return ()
+    skills = section.get("skills")
+    if not isinstance(skills, list):
+        return ()
+    return tuple(skills)
 
 
 def module_install_states(*, cwd: str | Path) -> dict[str, str]:
@@ -1370,6 +1623,7 @@ def _run_list_modules(ns: argparse.Namespace) -> DutyResult:
 
 _PROVISION_HELP = (
     "available flags: --list-modules [--json] | --module <name> [--json] | "
+    "--plugin labs --skill <name> [--json] | "
     "--prove-class-path [--json] | --env <name> | --runner bmad-loop --env <name> | "
     "--list [--json] | --verify"
 )
@@ -1476,6 +1730,14 @@ class ProvisionDuty:
                 return _run_list_modules(ns)
             if getattr(ns, "module", None) is not None:
                 return _run_module(ns)
+            if getattr(ns, "plugin", None) is not None:
+                # Story 46.5: a new provisioning-class flag joins the group of
+                # provisioning flags at the top of this precedence chain —
+                # matching how each prior story's own new flag landed at the
+                # top of its own group (a documented judgment call, not a
+                # silent one; no AC defines combining --plugin with --module
+                # or --list-modules).
+                return _run_plugin(ns)
             if getattr(ns, "prove_class_path", False):
                 return _run_prove_class_path(ns)
             if getattr(ns, "verify", False):

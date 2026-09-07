@@ -15,17 +15,30 @@ live tree:
   does mention it.
 
 Live 2026-09-07 finding (recorded in this story's spec Code Map and
-`.memlog.md`): today only `bmad-cis-*` (herald, scribe -- multi-station) and
-`skf-*` (all stations) are provisioned among § 2's rows, so no real row
-exercises the single-station positive branch. That branch is still real
-code, not dead code -- `test_single_station_branch_is_not_dead_code` proves
-it against a synthetic fixture root, both the positive and negative case.
+`.memlog.md`): as of Story 46.1, only `bmad-cis-*` (herald, scribe --
+multi-station) and `skf-*` (all stations) were provisioned among § 2's rows,
+so no real row exercised the single-station positive branch. That branch is
+still real code, not dead code -- `test_single_station_branch_is_not_dead_code`
+proves it against a synthetic fixture root, both the positive and negative
+case.
+
+Story 46.5 update: `release-please` (labs) is now provisioned AND routed
+(`bmad-agent-steward`), so it is the first REAL row to exercise the
+single-station positive branch. Its three sibling labs skills
+(`mcp-builder`, `slides-generator`, `multi-repo-git-ops`) are provisioned by
+the same story but routed by three OTHER, not-yet-landed station stories
+(atlas 24.1, herald 18.3, marshal 31.6 -- see `_ROUTING_STORY_NOT_YET_LANDED`
+below); `test_no_labs_skill_outside_the_consent_list_is_present` guards the
+separate CAP-6 invariant that only the operator's four-name 2026-09-06
+consent list ever lands under `.claude/skills/`.
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
+
+import pytest
 
 FORBIDDEN_STATUS_WORDS = re.compile(
     r"(?i)\b(?:done|blocked|backlog|in-progress|in-review|ready|draft|shipped|"
@@ -191,6 +204,30 @@ def _other_personas_silent(root: Path, station: str, name: str) -> list[str]:
     ]
 
 
+# Story 46.5 landed all four consented `bmad-labs-skills` directories
+# unconditionally (its own AC), but is scoped to route ONLY `release-please`
+# -- the other three names' routing lines are each a DIFFERENT, not-yet-
+# landed station story named directly in the register's own § 2 rows 43-45
+# (`mcp-builder` -> atlas 24.1, `slides-generator` -> herald 18.3,
+# `multi-repo-git-ops` -> marshal 31.6; epics.md Epic 46's own boundary text:
+# "Station-side halves are their own stories ... and are named in each
+# story's acceptance, never restated here"). Their directories now exist on
+# disk from 46.5's own provisioning, so the single-station routing
+# assertion below would otherwise fire against them -- this narrow,
+# story-cited carve-out skips ONLY the positive "the owning station
+# mentions it" half for these three names; the exclusivity half (no OTHER,
+# wrong station mentions it) keeps running unconditionally for every name,
+# carved out or not (review finding: an earlier draft's `continue` skipped
+# both halves, silently widening the carve-out past what it needed to
+# cover). Remove a name from this set the same day its own cited story
+# lands the persona mention, never before.
+_ROUTING_STORY_NOT_YET_LANDED = {
+    "mcp-builder": "atlas 24.1",
+    "slides-generator": "herald 18.3",
+    "multi-repo-git-ops": "marshal 31.6",
+}
+
+
 def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
     root = _repo_root()
     rows = _table_rows(_section(_register_text(root), 2))
@@ -210,20 +247,29 @@ def test_skill_routing_matches_ad2_for_every_currently_provisioned_row():
         for name in _skill_names(skill_cell):
             if not _skill_dir_exists(skills_dir, name):
                 # Not-yet-provisioned (bmad-os-*, bmad-testarch-*, mc-*, the
-                # bmad-builder skills, the labs skills, eval-quality): this
-                # story never asserts against a skill that does not exist
-                # yet (I/O & Edge-Case Matrix).
+                # bmad-builder skills, eval-quality): this story never
+                # asserts against a skill that does not exist yet (I/O &
+                # Edge-Case Matrix).
                 continue
             checked_names.append(name)
             assert not _claude_md_mentions(claude_md, name), (
                 f"CLAUDE.md must never route {name!r} (AD-2)"
             )
             if shape == "single":
-                assert _persona_mentions(root, station, name), (
-                    f"bmad-agent-{station} does not mention {name!r}, but "
-                    f"the register names {station!r} its sole wielding "
-                    f"station"
-                )
+                # Story 46.5 review finding: the carve-out must skip ONLY
+                # the positive "the owning station mentions it" assertion
+                # for the three not-yet-landed names -- it must NOT also
+                # skip the exclusivity half below, which catches a
+                # DIFFERENT, still-live violation (some OTHER, wrong
+                # station accidentally mentioning the skill) that has
+                # nothing to do with whether the true owning station's own
+                # story has landed yet.
+                if name not in _ROUTING_STORY_NOT_YET_LANDED:
+                    assert _persona_mentions(root, station, name), (
+                        f"bmad-agent-{station} does not mention {name!r}, but "
+                        f"the register names {station!r} its sole wielding "
+                        f"station"
+                    )
                 others = _other_personas_silent(root, station, name)
                 assert not others, (
                     f"{name!r} is meant to have exactly one wielding "
@@ -364,3 +410,75 @@ def test_single_station_branch_is_not_dead_code(tmp_path):
 
     # Not-yet-provisioned: skipped, not asserted either way.
     assert not _skill_dir_exists(skills_dir, "bmad-os-never-provisioned")
+
+
+# ── § 2 labs consent boundary (Story 46.5, CAP-6) ───────────────────────────
+
+
+def _labs_share_skill_names(root: Path) -> set[str] | None:
+    """Full labs-shipped skill names from the pixi-installed share tree
+    (`.pixi/envs/local-recipes/share/bmad-labs-skills/skills/*`), or `None`
+    if that share tree isn't present in the running test environment --
+    mirrors this file's own not-yet-provisioned skip precedent."""
+    share = root / ".pixi" / "envs" / "local-recipes" / "share" / "bmad-labs-skills" / "skills"
+    if not share.is_dir():
+        return None
+    return {p.name for p in share.iterdir() if p.is_dir()}
+
+
+def _labs_consent_violations(
+    skills_dir: Path, share_skill_names: set[str], consent: tuple[str, ...]
+) -> list[str]:
+    """Non-consented labs skill names that exist under `.claude/skills/` --
+    the CAP-6 consent-boundary invariant (Story 46.5). Only names the SHARE
+    TREE actually ships are checked -- a name absent from the share tree
+    could never have been copied by `provision_plugin_skill` in the first
+    place, so it can never be a labs-consent violation."""
+    non_consented = sorted(set(share_skill_names) - set(consent))
+    return sorted(name for name in non_consented if (skills_dir / name).is_dir())
+
+
+def test_no_labs_skill_outside_the_consent_list_is_present():
+    """Story 46.5 CAP-6: only the operator's four-name 2026-09-06 consent
+    list (read from `provision.py`'s own `_LABS_CONSENT_SKILLS` -- never
+    re-declared here, avoiding a second, divergent copy of the same list)
+    may ever land under `.claude/skills/` from `bmad-labs-skills`'s
+    22-skill share tree."""
+    from pyforge.steward.provision import _LABS_CONSENT_SKILLS
+
+    root = _repo_root()
+    share_names = _labs_share_skill_names(root)
+    if share_names is None:
+        pytest.skip("bmad-labs-skills share tree not present in this environment")
+
+    violations = _labs_consent_violations(
+        root / ".claude" / "skills", share_names, _LABS_CONSENT_SKILLS
+    )
+    assert not violations, (
+        "non-consented bmad-labs-skills director(ies) present under "
+        f".claude/skills/: {violations} -- only {_LABS_CONSENT_SKILLS} are "
+        "consented (2026-09-06)"
+    )
+
+
+def test_labs_consent_violation_check_is_not_vacuous(tmp_path):
+    """Not-dead-code proof (mirrors `test_single_station_branch_is_not_dead_code`'s
+    own synthetic-fixture precedent): the consent-violation check above must
+    actually RED when a fifth, non-consented labs skill directory is staged
+    under `.claude/skills/` -- never a check that only ever reports clean."""
+    skills_dir = tmp_path / ".claude" / "skills"
+    consent = ("mcp-builder", "slides-generator", "multi-repo-git-ops", "release-please")
+    share_names = {"mcp-builder", "release-please", "software-research"}
+
+    for name in ("mcp-builder", "release-please"):
+        (skills_dir / name).mkdir(parents=True)
+
+    # Positive: no non-consented dir staged yet -- clean.
+    assert _labs_consent_violations(skills_dir, share_names, consent) == []
+
+    # Stage a fifth, non-consented (but real, share-tree-present) directory
+    # -- must red.
+    (skills_dir / "software-research").mkdir()
+    assert _labs_consent_violations(skills_dir, share_names, consent) == [
+        "software-research"
+    ]
