@@ -83,7 +83,7 @@ as more durable than it is.
 | G6 | 44.13's scope omits spine memlogs; only one `bmad-architecture` re-derive is exercised (44.14) | AD-20 vs 44.13 AC | steward 47.5 (memlog note on 44.13) |
 | G7 | render-HALT class (ambiguous config key kills every rendering skill) has no detector | inventory C2 | doctor 20.2 |
 | G8 | `_bmad-output/PROJECTS.md` has no cutover-target layout (marker/junction vs `bmad-switch`) | `PROJECTS.md:36-46,68-85` | **RESOLVED 2026-09-07 (Story 47.3):** new "## Cutover target (foundry, AD-12)" subsection added after § Adding a new project, before § Reading another project's artifacts — § Config layering and § Adding a new project are no longer left silently un-cross-referenced with AD-12/AD-19. | steward 47.3 (done) |
-| G9 | Foundry Stack table has no `bmad-*` floor row; win-64 excludes skf + eval-quality | cutover spine :249-260 | steward 47.4 |
+| G9 | Foundry Stack table has no `bmad-*` floor row; win-64 excludes skf + eval-quality | cutover spine :249-260 | **RESOLVED 2026-09-07 (Story 47.4):** `ARCHITECTURE-SPINE.md` § Stack gains a 9th row, `bmad-* suite floor`, appended after `GitHub Actions`, transcribing the 2026-09-06 memlog decision verbatim: `bmad-method >=6.12.0, bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only), bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise, bmad-eval-quality, bmad-utility-skills, bmad-builder` — win-64 (44.11) excludes skf and eval-quality; no AD id added or changed. | steward 47.4 (done) |
 | G10 | Loop-home readiness undefined (`pyforge.toml name = "local-recipes"`, own `_bmad/`) | `fnd:AD-12`; `DW-CC-2026-09-04-1` | marshal 31.5 |
 | G11 | `frozen-path-changed` detector named by AD-22/AD-11, never built | cutover spine :159,225 | doctor 20.3 |
 

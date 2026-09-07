@@ -258,6 +258,7 @@ flowchart LR
 | conda-smithy (island) | `>=3.44.6,<4` — the cap is deliberate (CalVer `2026.x` needs the `conda` package absent from the env); revisit in 44.7 |
 | conda-build (island engine; estate test oracle) | `>=25.3.1` |
 | GitHub Actions | estate + island workflows; Azure DevOps not carried |
+| bmad-* suite floor | bmad-method >=6.12.0, bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only), bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise, bmad-eval-quality, bmad-utility-skills, bmad-builder — win-64 (44.11) excludes skf and eval-quality |
 
 ## Structural Seed
 
