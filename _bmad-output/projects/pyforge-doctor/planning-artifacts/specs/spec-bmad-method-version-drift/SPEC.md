@@ -38,6 +38,8 @@ Doctor already reports staleness for every other class of fleet dependency — f
 - **Read-only, always.** This Spec never runs `npx bmad-method install` or writes to `_bmad/**` — applying an upgrade is `bmad-method-core-upgrade`'s (owner: steward) territory entirely, never this one's.
 - **Fits Doctor's existing closed-taxonomy Source enum** (PRD FR-2's convention, reused verbatim by FR-12's `adoption-stage`) — never an open/stringly-typed source.
 - **Must not duplicate `bmad-method-core-upgrade`'s own pre-flight diff.** That Dream may run its own dry-run check immediately before an apply; this Spec's job is the AMBIENT, continuously-refreshed signal an operator sees without running anything.
+- **CAP-2's data source is settled: a live, per-check npm registry query.** Resolved in practice by Story 10.2 — `_fetch_latest_upstream_version` queries npm's public registry (`https://registry.npmjs.org/bmad-method/latest`) live at check time via stdlib `urllib.request`, fails open on any error within `_UPSTREAM_FETCH_TIMEOUT_SECONDS`, and is never a periodically-cached feed; CAP-2 was never deferred to a follow-on story.
+- **Registry placement is settled: a dedicated Source, never an extension of `bmad-drift`.** Resolved in practice by Story 10.1 — this capability is registered as its own dedicated `pyforge.doctor.sources.bmad_method` module and its own `Source.BMAD_METHOD_VERSION_DRIFT` enum member, never folded into the existing `bmad-drift` source (`pyforge-marshal` artifact-vs-live-factory drift), a different artifact class entirely.
 
 ## Non-goals
 
@@ -48,8 +50,3 @@ Doctor already reports staleness for every other class of fleet dependency — f
 ## Success signal
 
 An operator running `fleet-picture` or Doctor's own report sees, without checking anything by hand, that the installed `bmad-method` core is behind either the declared `pixi.toml` floor or the latest upstream release — demonstrated today by the real, live `pixi.toml`-vs-`manifest.yaml` drift firing a Finding as soon as CAP-1 ships.
-
-## Open Questions
-
-- **CAP-2's data source.** No existing fleet infrastructure covers npm-package version lookups — `atlas`'s `behind-upstream`/`version-downloads` machinery (FR-12's own precedent) is conda-forge/PyPI-scoped only, not npm. Options: a live npm registry query at check time (tension with Marshal's own "no live query per home" discipline this fleet otherwise favors), a periodically-refreshed cached feed, or shipping CAP-1 alone first and deferring CAP-2 to a follow-on story.
-- **Exact registry placement.** Which `pyforge.doctor.sources.*` module this plugs into — a new dedicated source, or an extension of the existing `bmad-drift` source (already used for `pyforge-marshal` artifact-vs-live-factory drift)? An architecture-level decision, not resolved here.
