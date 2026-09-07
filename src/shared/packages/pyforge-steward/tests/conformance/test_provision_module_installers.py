@@ -2,7 +2,8 @@
 manticore.
 
 Each addition drives the package's own `*-install` entry point (AD-1),
-records a `_bmad/config.yaml` manifest section, refuses skill-name
+records a `_bmad/custom/config.toml` `[modules.<name>]` manifest section
+(Story 46.2, AD-9 -- moved off `_bmad/config.yaml`), refuses skill-name
 collisions before first install, and stays reproducible against a
 fresh-clone fixture (share data staged under `.pixi/envs/local-recipes`).
 WDS is covered as an explicit skip citation, never as a registered module.
@@ -13,17 +14,19 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
-import yaml
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import (
     CondaInstallBackend,
     ProvisionDuty,
+    SetupSkillBackend,
     _SUPPORTED_MODULES,
     _installer_skill_names,
+    _manifest_location_label,
     provision_module,
 )
 
@@ -202,6 +205,50 @@ def test_live_share_skill_names_are_disjoint_across_installer_modules():
     assert claimed  # sanity: at least one skill discovered
 
 
+_UTILITY_SKILLS_EXPECTED_NAMES: frozenset[str] = frozenset(
+    {
+        "bmad-os-audit-file-refs",
+        "bmad-os-changelog",
+        "bmad-os-changelog-social",
+        "bmad-os-diataxis",
+        "bmad-os-editorial-review-translation",
+        "bmad-os-findings-triage",
+        "bmad-os-gh-triage",
+        "bmad-os-review-pr",
+        "bmad-os-root-cause-analysis",
+        "bmad-os-skill-to-bundle",
+    }
+)
+
+
+def test_live_utility_skills_share_tree_matches_the_ten_expected_names():
+    """DW-FU-15-3-4 (utility-skills half; the CIS half already closed by
+    Story 46.8): the real installed `share/bmad-utility-skills/skills/`
+    tree must discover exactly these 10 `bmad-os-*` names -- a share-tree
+    change (a skill added or removed upstream) that isn't reflected here
+    must fail this assertion loudly, rather than surfacing only as a
+    post-install skills-missing `RuntimeError` at provision time."""
+    root = Path(__file__).resolve()
+    repo = None
+    for ancestor in root.parents:
+        if (ancestor / "scripts/bmad-loop-worktree").is_file():
+            repo = ancestor
+            break
+    assert repo is not None
+    share = repo / ".pixi/envs/local-recipes/share"
+    if not share.is_dir():
+        pytest.skip("local-recipes pixi env share data not present")
+
+    backend = _SUPPORTED_MODULES["utility-skills"]
+    assert isinstance(backend, CondaInstallBackend)
+    share_root = share / backend.share_package
+    if not share_root.is_dir():
+        pytest.skip(f"share package {backend.share_package} missing")
+
+    discovered = set(_installer_skill_names(backend, share_root=share_root))
+    assert discovered == _UTILITY_SKILLS_EXPECTED_NAMES
+
+
 # ── provision_module (installer backends) ────────────────────────────────
 
 
@@ -214,38 +261,93 @@ def test_provision_tea_via_installer_records_manifest_and_skills(tea_fixture, mo
     assert set(result["skills_installed"]) == {"bmad-tea", "testarch"}
     assert (tea_fixture / ".claude/skills/bmad-tea").is_dir()
     assert (tea_fixture / ".claude/skills/testarch").is_dir()
-    config = yaml.safe_load((tea_fixture / "_bmad/config.yaml").read_text(encoding="utf-8"))
-    assert "tea" in config
-    assert config["tea"]["installer"] == "bmad-tea-install"
-    assert config["tea"]["provisioned_by"] == "steward"
+    config = tomllib.loads((tea_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
+    assert "tea" in config["modules"]
+    assert config["modules"]["tea"]["installer"] == "bmad-tea-install"
+    assert config["modules"]["tea"]["provisioned_by"] == "steward"
+    assert not (tea_fixture / "_bmad/config.yaml").exists()
 
 
-def test_provision_installer_preserves_sibling_manifest_keys(tea_fixture, monkeypatch):
-    """Manifest merge must not drop other module keys already in config.yaml."""
-    bmad = tea_fixture / "_bmad"
-    bmad.mkdir(parents=True)
-    (bmad / "config.yaml").write_text(
-        "bmb:\n  output_folder: skills\n",
-        encoding="utf-8",
+def test_provision_installer_preserves_sibling_config_toml_content(tea_fixture, monkeypatch):
+    """AD-9: the roster writer must not disturb any other content already in
+    `_bmad/custom/config.toml` -- hand-written prose comments included --
+    when appending a new `[modules.<name>]` section. Superseded (Story
+    46.2) version of this test's own `config.yaml`-sibling-keys shape,
+    which no longer applies now that `_record_module_manifest` never
+    touches `_bmad/config.yaml`."""
+    custom_dir = tea_fixture / "_bmad" / "custom"
+    custom_dir.mkdir(parents=True)
+    existing = (
+        "# hand-authored header comment, must survive byte-for-byte.\n"
+        "[core]\n"
+        'communication_language = "English"\n'
+        "\n"
+        "# skf prose comment block.\n"
+        "[modules.skf]\n"
+        'sidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n'
     )
+    (custom_dir / "config.toml").write_text(existing, encoding="utf-8")
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
 
     provision_module("tea", cwd=tea_fixture)
 
-    config = yaml.safe_load((bmad / "config.yaml").read_text(encoding="utf-8"))
-    assert "bmb" in config
-    assert config["bmb"]["output_folder"] == "skills"
-    assert "tea" in config
+    updated = (custom_dir / "config.toml").read_text(encoding="utf-8")
+    assert updated.startswith(existing), "pre-existing content must be untouched"
+    parsed = tomllib.loads(updated)
+    assert parsed["modules"]["skf"]["sidecar_path"] == (
+        "{project-root}/_bmad/_memory/forger-sidecar"
+    )
+    assert parsed["modules"]["tea"]["installer"] == "bmad-tea-install"
 
 
-def test_provision_installer_refuses_non_mapping_config(tea_fixture, monkeypatch):
-    bmad = tea_fixture / "_bmad"
-    bmad.mkdir(parents=True)
-    (bmad / "config.yaml").write_text("- not-a-mapping\n", encoding="utf-8")
+def test_provision_installer_idempotent_config_toml_rewrite_replaces_in_place(
+    tea_fixture, monkeypatch
+):
+    """Re-provisioning must replace the existing `[modules.tea]` section in
+    place -- not duplicate it -- and leave the rest of the file byte-for-byte
+    unchanged between the two runs."""
     monkeypatch.setattr(subprocess, "run", _fake_installer_run)
 
-    with pytest.raises(RuntimeError, match="must be a mapping"):
-        provision_module("tea", cwd=tea_fixture)
+    provision_module("tea", cwd=tea_fixture)
+    config_path = tea_fixture / "_bmad/custom/config.toml"
+    first = config_path.read_text(encoding="utf-8")
+
+    provision_module("tea", cwd=tea_fixture)
+    second = config_path.read_text(encoding="utf-8")
+
+    assert second == first
+    assert first.count("[modules.tea]") == 1
+
+
+def test_provision_installer_rewrite_of_non_last_section_preserves_trailing_content(
+    tea_fixture, monkeypatch
+):
+    """Review finding: rewriting `[modules.tea]` when it is NOT the file's
+    last section must not swallow the blank line or hand-written comment
+    that separates it from the section after it -- both belong to the rest
+    of the file, never to the section being replaced."""
+    custom_dir = tea_fixture / "_bmad" / "custom"
+    custom_dir.mkdir(parents=True)
+    existing = (
+        "[modules.tea]\n"
+        'installer = "stale-value"\n'
+        "\n"
+        "# skf prose comment block, describes the NEXT section.\n"
+        "[modules.skf]\n"
+        'sidecar_path = "{project-root}/_bmad/_memory/forger-sidecar"\n'
+    )
+    (custom_dir / "config.toml").write_text(existing, encoding="utf-8")
+    monkeypatch.setattr(subprocess, "run", _fake_installer_run)
+
+    provision_module("tea", cwd=tea_fixture)
+
+    updated = (custom_dir / "config.toml").read_text(encoding="utf-8")
+    assert "\n\n# skf prose comment block, describes the NEXT section.\n[modules.skf]\n" in updated
+    parsed = tomllib.loads(updated)
+    assert parsed["modules"]["tea"]["installer"] == "bmad-tea-install"
+    assert parsed["modules"]["skf"]["sidecar_path"] == (
+        "{project-root}/_bmad/_memory/forger-sidecar"
+    )
 
 
 def test_provision_prefers_local_share_over_ambient_conda_prefix(tea_fixture, monkeypatch):
@@ -278,6 +380,7 @@ def test_provision_installer_exit_0_but_skills_missing_raises(tea_fixture, monke
         provision_module("tea", cwd=tea_fixture)
 
     assert not (tea_fixture / "_bmad/config.yaml").exists()
+    assert not (tea_fixture / "_bmad/custom/config.toml").exists()
 
 
 def test_discovery_backends_skill_names_are_disjoint_in_fixture(tmp_path):
@@ -319,8 +422,8 @@ def test_provision_cis_via_installer_records_manifest(cis_fixture, monkeypatch):
 
     assert result["installer"] == "bmad-cis-install"
     assert len(result["skills_installed"]) == 10
-    config = yaml.safe_load((cis_fixture / "_bmad/config.yaml").read_text(encoding="utf-8"))
-    assert config["cis"]["installer"] == "bmad-cis-install"
+    config = tomllib.loads((cis_fixture / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
+    assert config["modules"]["cis"]["installer"] == "bmad-cis-install"
 
 
 @pytest.mark.parametrize(
@@ -352,8 +455,8 @@ def test_provision_utility_and_manticore_via_installer(
 
     assert result["installer"] == installer
     assert set(result["skills_installed"]) == set(skills)
-    config = yaml.safe_load((tmp_path / "_bmad/config.yaml").read_text(encoding="utf-8"))
-    assert module_name in config
+    config = tomllib.loads((tmp_path / "_bmad/custom/config.toml").read_text(encoding="utf-8"))
+    assert module_name in config["modules"]
 
 
 def test_provision_installer_refuses_skill_name_collision(tea_fixture, monkeypatch):
@@ -374,6 +477,20 @@ def test_provision_installer_refuses_skill_name_collision(tea_fixture, monkeypat
         provision_module("tea", cwd=tea_fixture)
 
     assert calls == []
+
+
+def test_provision_installer_refuses_malformed_destination_toml(tea_fixture, monkeypatch):
+    """Post-AD-9 equivalent of the legacy YAML writer's "must be a mapping"
+    refusal: `_record_module_manifest` must not text-edit a destination
+    that isn't valid TOML today, even though its own line-based editor
+    doesn't otherwise need a full parse to do its job."""
+    custom_dir = tea_fixture / "_bmad" / "custom"
+    custom_dir.mkdir(parents=True)
+    (custom_dir / "config.toml").write_text("not [ valid toml", encoding="utf-8")
+    monkeypatch.setattr(subprocess, "run", _fake_installer_run)
+
+    with pytest.raises(RuntimeError, match="is not valid TOML"):
+        provision_module("tea", cwd=tea_fixture)
 
 
 def test_provision_installer_idempotent_reprovision_allows_overwrite(tea_fixture, monkeypatch):
@@ -449,8 +566,47 @@ def test_provision_installer_failure_names_nothing_written(tea_fixture, monkeypa
 
     assert result.ok is False
     assert "CONDA_PREFIX is not set" in result.summary
-    assert "nothing was written to _bmad/config.yaml" in result.summary
+    assert "nothing was written to _bmad/custom/config.toml" in result.summary
     assert not (tea_fixture / "_bmad/config.yaml").exists()
+    assert not (tea_fixture / "_bmad/custom/config.toml").exists()
+
+
+def test_manifest_location_label_per_backend_kind():
+    """`_manifest_location_label` (review finding: its `CondaInstallBackend`
+    branch was untested at the two `_run_module` call sites that build a
+    failure/state-unknown message, since `_provision_conda_install` has no
+    natural mid-chain failure point after `_record_module_manifest` runs --
+    a direct unit test of the pure label function is the correct, minimal
+    coverage rather than forcing an artificial mid-chain failure that
+    cannot occur via the real `provision_module` call for these backends)."""
+    for name, backend in _SUPPORTED_MODULES.items():
+        label = _manifest_location_label(name)
+        if isinstance(backend, CondaInstallBackend):
+            assert label == "_bmad/custom/config.toml", (name, label)
+        elif isinstance(backend, SetupSkillBackend):
+            assert label == "_bmad/config.yaml", (name, label)
+
+
+def test_provision_installer_state_read_failure_names_could_not_confirm(tea_fixture, monkeypatch):
+    """The "could not confirm whether ... was touched" branch (`state_after
+    is None`): a malformed `_bmad/custom/config.toml` at the moment of a
+    mid-run subprocess failure must name the new TOML path, not the legacy
+    YAML one (review finding -- this branch was previously only exercised,
+    if at all, against `bmb`'s legacy-path label)."""
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tea_fixture)
+    custom_dir = tea_fixture / "_bmad/custom"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+    (custom_dir / "config.toml").write_text("not [ valid toml", encoding="utf-8")
+
+    def _boom(cmd, **kwargs):
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="CONDA_PREFIX is not set")
+
+    monkeypatch.setattr(subprocess, "run", _boom)
+
+    result = ProvisionDuty().run(_full_namespace(module="tea"))
+
+    assert result.ok is False
+    assert "could not confirm whether _bmad/custom/config.toml was touched" in result.summary
 
 
 def test_provision_does_not_register_method_loop_skf_labs_dashboards_template():

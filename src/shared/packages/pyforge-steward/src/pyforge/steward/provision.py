@@ -89,6 +89,21 @@ leaving the module unimportable" clause). `FileNotFoundError`
 (unregistered name / missing backend dir) is deliberately not caught
 locally -- both occur before any subprocess call, so Story 6.1's existing
 message via `ProvisionDuty.run()`'s outer boundary already covers it.
+
+Story 46.2 slice (AD-9): `_record_module_manifest` -- the roster writer
+SHARED by every `CondaInstallBackend` module (tea/cis/utility-skills/
+manticore) -- moves from `_bmad/config.yaml` to `_bmad/custom/config.toml`
+`[modules.<name>]`, written via targeted text editing (locate-and-replace
+an existing `^[modules.<name>]` block, or append) so this file's own
+hand-written prose comments survive byte-for-byte; a full parse-mutate-
+reserialize round trip through a TOML library would silently drop them.
+`bmb` (`SetupSkillBackend`) is untouched -- `merge-config.py` still writes
+`_bmad/config.yaml` itself. `module_install_states` becomes a two-location
+read (new `_bmad/custom/config.toml` first, then the legacy `_bmad/
+config.yaml`) so `cis`'s still-unmigrated Story 46.8 entry keeps reporting
+`installed` alongside every freshly (re-)provisioned module. Nothing
+migrates `cis`'s existing entry in place -- the read-side fallback is the
+whole fix.
 """
 
 from __future__ import annotations
@@ -99,11 +114,11 @@ import json
 import os
 import subprocess
 import tempfile
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+import tomllib
 import yaml
 from pyforge.core.atomic_write import atomic_write
 
@@ -385,6 +400,7 @@ _SKIPPED_MODULES: dict[str, str] = {
 _MODULE_YAML_RELATIVE_PATH = Path("assets/module.yaml")
 _MODULE_HELP_CSV_RELATIVE_PATH = Path("assets/module-help.csv")
 _BMAD_RELATIVE_PATH = Path("_bmad")
+_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH = Path("_bmad/custom/config.toml")
 _CLAUDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
 _LOCAL_RECIPES_ENV_RELATIVE_PATH = Path(".pixi/envs/local-recipes")
 
@@ -506,6 +522,33 @@ def _check_skill_name_collisions(
         )
 
 
+def _toml_string(value: str) -> str:
+    """A TOML basic-string literal for `value`. Every value this writer ever
+    renders (`"steward"`, an installer entry-point name, a skill directory
+    name) is a plain ASCII identifier with no quotes/backslashes, so JSON's
+    escaping rules (a strict subset of TOML's for this class of string) are
+    sufficient without adding a TOML-writing dependency."""
+    return json.dumps(value)
+
+
+def _render_module_toml_section(
+    name: str, *, installer: str, skills: tuple[str, ...]
+) -> str:
+    """Render a `[modules.<name>]` section -- AD-9's target shape, carrying
+    exactly the three fields the legacy `_bmad/config.yaml` entry carried
+    (`provisioned_by`, `installer`, `skills`). A flat one-line `skills`
+    array matches this file's own existing generated scalar-key style
+    (`sidecar_path = "..."` etc.) -- no need to match `[modules.skf]`'s
+    hand-authored, prose-commented multi-line style."""
+    skills_array = ", ".join(_toml_string(s) for s in skills)
+    return (
+        f"[modules.{name}]\n"
+        f"provisioned_by = {_toml_string('steward')}\n"
+        f"installer = {_toml_string(installer)}\n"
+        f"skills = [{skills_array}]\n"
+    )
+
+
 def _record_module_manifest(
     name: str,
     *,
@@ -513,44 +556,74 @@ def _record_module_manifest(
     installer: str,
     skills: tuple[str, ...],
 ) -> None:
-    """Write/merge `<name>:` into `_bmad/config.yaml` — the same anti-zombie
-    key `module_install_states` / Story 6.3's post-success gate consult.
-    Installer entry points only copy skills; Steward records the manifest
-    so a fresh-clone provision is discoverable via `--list-modules`.
+    """Write/replace `[modules.<name>]` in `_bmad/custom/config.toml` (AD-9)
+    -- the roster every `CondaInstallBackend` module's provisioning path
+    (tea/cis/utility-skills/manticore) now records, so a fresh-clone
+    provision is discoverable via `--list-modules`. `bmb`
+    (`SetupSkillBackend`) never calls this function -- `merge-config.py`
+    writes `_bmad/config.yaml` itself.
+
+    Targeted text editing only: locate an existing `[modules.<name>]`
+    header line and replace it plus its own key=value body lines only --
+    stopping at the first blank line, comment line, or the next `[...]`
+    header, whichever comes first (line-based, `\r\n`-tolerant) -- or
+    append a new section with exactly one blank-line separator if no
+    header is found. Never a parse-mutate-reserialize round trip through a
+    TOML library, which would silently drop this file's own hand-written
+    prose comments (`[core]`'s header block, `[modules.skf]`'s per-key
+    explanations). Stopping at the first blank/comment/header line (rather
+    than consuming everything up to the next section, as an earlier draft
+    did) matters specifically because a blank-line separator or a comment
+    describing the *following* section must survive a rewrite of *this*
+    section untouched (review finding).
+
+    `cis`'s own pre-existing entry (Story 46.8) still lives only in the
+    legacy `_bmad/config.yaml` -- this function never touches that file or
+    migrates that entry; the read side (`module_install_states`) checks
+    both locations instead.
     """
-    config_path = cwd / _BMAD_RELATIVE_PATH / "config.yaml"
-    config: dict[str, object] = {}
-    if config_path.is_file():
+    config_path = cwd / _BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH
+    original = config_path.read_text(encoding="utf-8") if config_path.is_file() else ""
+    if original.strip():
+        # Refuse to text-edit a destination that isn't even valid TOML today
+        # -- the line-based editor below doesn't need a full parse to do its
+        # job, but writing into an already-broken file would silently make
+        # a real problem harder to diagnose (review finding: the legacy
+        # YAML writer's own "must be a mapping" refusal had no equivalent
+        # here after the AD-9 migration).
         try:
-            with config_path.open("r", encoding="utf-8") as f:
-                loaded = yaml.safe_load(f)
-        except (yaml.YAMLError, UnicodeDecodeError) as exc:
+            tomllib.loads(original)
+        except tomllib.TOMLDecodeError as exc:
             raise RuntimeError(
-                f"cannot record module {name!r}: {_BMAD_RELATIVE_PATH / 'config.yaml'} "
-                f"is unreadable ({exc})"
+                f"cannot record module {name!r}: {_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH} "
+                f"is not valid TOML ({exc})"
             ) from exc
-        if loaded is None:
-            config = {}
-        elif isinstance(loaded, dict):
-            config = loaded
-        else:
-            raise RuntimeError(
-                f"cannot record module {name!r}: {_BMAD_RELATIVE_PATH / 'config.yaml'} "
-                "must be a mapping (refusing to overwrite a non-mapping config)"
-            )
-    config[name] = {
-        "provisioned_by": "steward",
-        "installer": installer,
-        "skills": list(skills),
-    }
+    section_text = _render_module_toml_section(name, installer=installer, skills=skills)
+    header = f"[modules.{name}]"
+    lines = original.splitlines(keepends=True)
+    header_idx = next(
+        (i for i, line in enumerate(lines) if line.rstrip("\r\n") == header), None
+    )
+    if header_idx is not None:
+        end_idx = header_idx + 1
+        while end_idx < len(lines):
+            stripped = lines[end_idx].strip()
+            if stripped == "" or stripped.startswith("#") or stripped.startswith("["):
+                break
+            end_idx += 1
+        updated = "".join(lines[:header_idx]) + section_text + "".join(lines[end_idx:])
+    elif original.strip():
+        updated = original.rstrip("\n") + "\n\n" + section_text
+    else:
+        updated = section_text
+
     # Atomic replace so a crash mid-write cannot leave a truncated config
     # (Story 14.2, CAP-2: pyforge-core's atomic_write is the sole write-open
     # + os.replace implementation -- also handles the parent mkdir).
-    def _dump_config(tmp: Path) -> None:
-        with tmp.open("w", encoding="utf-8") as f:
-            yaml.safe_dump(config, f, sort_keys=False)
+    def _write(tmp: Path) -> None:
+        tmp.write_text(updated, encoding="utf-8")
 
-    atomic_write(config_path, _dump_config)
+    atomic_write(config_path, _write)
 
 
 def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) -> dict[str, object]:
@@ -638,8 +711,9 @@ def _provision_conda_install(
     name: str, backend: CondaInstallBackend, *, cwd: Path
 ) -> dict[str, object]:
     """Story 15.3 path: drive the package's `*-install` entry point, then
-    record a `_bmad/config.yaml` manifest section so `--list-modules` and
-    Story 6.3's post-success gate see the module as installed.
+    record a `_bmad/custom/config.toml` `[modules.<name>]` manifest section
+    (Story 46.2, AD-9) so `--list-modules` and Story 6.3's post-success gate
+    see the module as installed.
     """
     prefix = _conda_prefix(cwd=cwd, share_package=backend.share_package)
     share_root = prefix / "share" / backend.share_package
@@ -739,17 +813,38 @@ def _format_called_process_error(exc: subprocess.CalledProcessError) -> str:
 
 def _module_install_state_or_none(name: str, *, cwd: str | Path) -> str | None:
     """`module_install_states(cwd=cwd).get(name)`, degrading a failed read
-    (a malformed or unreadable `_bmad/config.yaml`) to `None` rather than
-    letting a second exception mask whatever failure `_run_module` is
-    already reporting, or crash past `ProvisionDuty.run()`'s boundary on
-    the success path where nothing else is there to catch it (review
-    finding: an earlier draft called `module_install_states` directly in
-    both spots, so a malformed `_bmad/config.yaml` replaced a genuinely
-    diagnostic subprocess stderr with an unrelated `yaml.YAMLError`)."""
+    (a malformed or unreadable `_bmad/config.yaml` OR, since Story 46.2/
+    AD-9, `_bmad/custom/config.toml`) to `None` rather than letting a
+    second exception mask whatever failure `_run_module` is already
+    reporting, or crash past `ProvisionDuty.run()`'s boundary on the
+    success path where nothing else is there to catch it (review finding:
+    an earlier draft called `module_install_states` directly in both
+    spots, so a malformed `_bmad/config.yaml` replaced a genuinely
+    diagnostic subprocess stderr with an unrelated `yaml.YAMLError`).
+    `UnicodeDecodeError` (non-UTF-8 bytes in either config file -- raised
+    by `tomllib.load`/`.read_text`, not a subclass of `OSError`) is caught
+    explicitly alongside the two parse-error types; the old YAML-only
+    reader wrapped this exact failure into a `RuntimeError` its caller
+    could catch, and this degrade-to-`None` path must cover it too rather
+    than letting it propagate uncaught (review finding)."""
     try:
         return module_install_states(cwd=cwd).get(name)
-    except (yaml.YAMLError, OSError):
+    except (yaml.YAMLError, tomllib.TOMLDecodeError, UnicodeDecodeError, OSError):
         return None
+
+
+def _manifest_location_label(name: str) -> str:
+    """Where `<name>`'s roster entry lives, for `_run_module`'s own
+    failure/post-success messages: `_bmad/config.yaml` for the
+    `SetupSkillBackend` path (`bmb`, written by `merge-config.py` itself,
+    never by `_record_module_manifest`), or `_bmad/custom/config.toml` for
+    every `CondaInstallBackend` module (Story 46.2, AD-9). Falls back to
+    the legacy path for an unregistered name (unreachable in practice --
+    both call sites below only run after `name` is confirmed registered)."""
+    backend = _SUPPORTED_MODULES.get(name)
+    if isinstance(backend, CondaInstallBackend):
+        return str(_BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH)
+    return str(_BMAD_RELATIVE_PATH / "config.yaml")
 
 
 def _run_module(ns: argparse.Namespace) -> DutyResult:
@@ -805,18 +900,19 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
             else str(exc)
         )
         state_after = _module_install_state_or_none(name, cwd=root)
+        manifest_label = _manifest_location_label(name)
         if state_after == "installed" and state_before != "installed":
             message += (
-                f"; already wrote a {name!r} section to _bmad/config.yaml during this "
+                f"; already wrote a {name!r} section to {manifest_label} during this "
                 "run before the failure above -- provisioning is INCOMPLETE"
             )
         elif state_after is None:
             message += (
-                "; could not confirm whether _bmad/config.yaml was touched before this "
+                f"; could not confirm whether {manifest_label} was touched before this "
                 "failure (its own state could not be read)"
             )
         elif state_after != "installed":
-            message += "; nothing was written to _bmad/config.yaml before this failure"
+            message += f"; nothing was written to {manifest_label} before this failure"
         # else: state_after == "installed" and state_before == "installed" --
         # `<name>` was already provisioned by an earlier run and this
         # failure did not change that; no landed-state note is appended,
@@ -828,7 +924,7 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
             summary=ProvisionDuty._render_error(
                 ns,
                 f"{name!r} exited 0, but {name!r} is not present "
-                "in _bmad/config.yaml afterward -- not counted as provisioned",
+                f"in {_manifest_location_label(name)} afterward -- not counted as provisioned",
             ),
         )
     if getattr(ns, "json", False):
@@ -857,29 +953,61 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
 # ── Module discovery (FR-20, Story 6.2) ─────────────────────────────────────
 
 
+def _custom_config_toml_module_names(*, cwd: str | Path) -> set[str]:
+    """Names recorded under `_bmad/custom/config.toml`'s `[modules.<name>]`
+    tables -- AD-9's roster location, written by `_record_module_manifest`
+    for every `CondaInstallBackend` module. A missing file degrades to an
+    empty set, mirroring `module_install_states`'s own missing-`_bmad/
+    config.yaml` precedent below. A malformed file is NOT caught here --
+    `tomllib.TOMLDecodeError` propagates, matching that same
+    propagate-don't-swallow precedent for a malformed manifest. Unrelated
+    sections under `[modules.*]` (`bmm`, `skf` -- neither is a registered
+    `_SUPPORTED_MODULES` name) are harmless: the caller only checks
+    membership for names it already knows about.
+    """
+    path = Path(cwd) / _BMAD_CUSTOM_CONFIG_TOML_RELATIVE_PATH
+    if not path.is_file():
+        return set()
+    with path.open("rb") as f:
+        document = tomllib.load(f)
+    modules = document.get("modules", {})
+    if not isinstance(modules, dict):
+        return set()
+    return set(modules)
+
+
 def module_install_states(*, cwd: str | Path) -> dict[str, str]:
-    """Derive each registered module's `installed`/`available` state from
-    `_bmad/config.yaml`'s own top-level keys -- the exact anti-zombie key
-    `merge-config.py`'s own `config[module_code] = module_section` writes
-    (verified against the real script; story spec Design Notes).
+    """Derive each registered module's `installed`/`available` state from a
+    two-location read (Story 46.2, AD-9): `_bmad/custom/config.toml`'s
+    `[modules.<name>]` tables first, then `_bmad/config.yaml`'s own
+    top-level keys -- the exact anti-zombie key `merge-config.py`'s own
+    `config[module_code] = module_section` writes (verified against the
+    real script; story spec Design Notes) -- as a fallback for a module not
+    found in the new location (`cis`'s own Story 46.8 entry still lives
+    only there, unmigrated by design; see `_record_module_manifest`).
 
     A missing `_bmad/config.yaml`, or one that parses to something other
     than a `dict` (e.g. a bare YAML list), both degrade to `{}` rather than
-    raising -- both read as "no modules installed", so every registered
-    module reports `available`. A malformed (unparseable) `_bmad/
-    config.yaml` is NOT caught here -- `yaml.YAMLError` propagates to
+    raising -- both read as "not installed via the legacy path", so a
+    module found in neither location reports `available`. A malformed
+    (unparseable) `_bmad/config.yaml` or `_bmad/custom/config.toml` is NOT
+    caught here -- `yaml.YAMLError` / `tomllib.TOMLDecodeError` propagate to
     `ProvisionDuty.run()`'s existing exception boundary, matching
     `load_pixi_environments`'s own propagate-don't-swallow precedent for a
     malformed `pixi.toml`.
     """
+    toml_names = _custom_config_toml_module_names(cwd=cwd)
     config_path = Path(cwd) / _BMAD_RELATIVE_PATH / "config.yaml"
-    config: dict[str, object] = {}
+    legacy_config: dict[str, object] = {}
     if config_path.is_file():
         with config_path.open("r", encoding="utf-8") as f:
             loaded = yaml.safe_load(f)
         if isinstance(loaded, dict):
-            config = loaded
-    return {name: ("installed" if name in config else "available") for name in _SUPPORTED_MODULES}
+            legacy_config = loaded
+    return {
+        name: ("installed" if name in toml_names or name in legacy_config else "available")
+        for name in _SUPPORTED_MODULES
+    }
 
 
 def format_module_states(states: dict[str, str], *, as_json: bool) -> str:
