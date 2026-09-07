@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: playwright-browsers-base
+  version: ${{ version }}
+
+build:
+  number: 1
+  noarch: generic
+  script:
+    - if: unix
+      then: |
+        set -ex
+        mkdir -p "${PREFIX}/etc/conda/activate.d" "${PREFIX}/etc/conda/deactivate.d"
+        mkdir -p "${PREFIX}/share/ms-playwright"
+        cp "${RECIPE_DIR}/activate.sh"   "${PREFIX}/etc/conda/activate.d/playwright-browsers.sh"
+        cp "${RECIPE_DIR}/deactivate.sh" "${PREFIX}/etc/conda/deactivate.d/playwright-browsers.sh"
+        cp "${RECIPE_DIR}/activate.bat"   "${PREFIX}/etc/conda/activate.d/playwright-browsers.bat"
+        cp "${RECIPE_DIR}/deactivate.bat" "${PREFIX}/etc/conda/deactivate.d/playwright-browsers.bat"
+        # conda does not track empty directories; this keeps share/ms-playwright
+        # present even when no browser package is installed, so a bare
+        # `playwright install` has the right target already pointed at it.
+        printf 'Playwright browser root managed by conda.\n' > "${PREFIX}/share/ms-playwright/README"
+      else: |
+        mkdir "%PREFIX%\etc\conda\activate.d" 2>nul
+        mkdir "%PREFIX%\etc\conda\deactivate.d" 2>nul
+        mkdir "%PREFIX%\share\ms-playwright" 2>nul
+        copy /Y "%RECIPE_DIR%\activate.sh"    "%PREFIX%\etc\conda\activate.d\playwright-browsers.sh"
+        copy /Y "%RECIPE_DIR%\deactivate.sh"  "%PREFIX%\etc\conda\deactivate.d\playwright-browsers.sh"
+        copy /Y "%RECIPE_DIR%\activate.bat"   "%PREFIX%\etc\conda\activate.d\playwright-browsers.bat"
+        copy /Y "%RECIPE_DIR%\deactivate.bat" "%PREFIX%\etc\conda\deactivate.d\playwright-browsers.bat"
+        echo Playwright browser root managed by conda.> "%PREFIX%\share\ms-playwright\README"
+
+tests:
+  - package_contents:
+      files:
+        - etc/conda/activate.d/playwright-browsers.sh
+        - etc/conda/deactivate.d/playwright-browsers.sh
+        - share/ms-playwright/README
+  - if: unix
+    then:
+      script:
+        # The activation hook must be a no-op when the operator already chose a
+        # path, and must point into the prefix otherwise. Each assignment is its
+        # own statement: `VAR=x . file` is a TEMPORARY assignment in bash, so the
+        # value reverts once the sourced file returns and the assertion would
+        # read whatever the test env's own activation already set.
+        - export PLAYWRIGHT_BROWSERS_PATH=/opt/mine; unset PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA; . "${PREFIX}/etc/conda/activate.d/playwright-browsers.sh"; test "${PLAYWRIGHT_BROWSERS_PATH}" = /opt/mine
+        - unset PLAYWRIGHT_BROWSERS_PATH PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA; CONDA_PREFIX="${PREFIX}"; . "${PREFIX}/etc/conda/activate.d/playwright-browsers.sh"; test "${PLAYWRIGHT_BROWSERS_PATH}" = "${PREFIX}/share/ms-playwright"
+        # ...and the deactivate hook must leave an operator value alone while
+        # clearing one the activate hook set.
+        - export PLAYWRIGHT_BROWSERS_PATH=/opt/mine; unset PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA; . "${PREFIX}/etc/conda/deactivate.d/playwright-browsers.sh"; test "${PLAYWRIGHT_BROWSERS_PATH}" = /opt/mine
+        # Both hooks must survive `set -u`. Conda activation is sourced into the
+        # caller's shell, and a bare ${VAR} reference to an unset variable aborts
+        # it under nounset -- which is exactly how this broke the first time.
+        - set -u; unset PLAYWRIGHT_BROWSERS_PATH PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA; CONDA_PREFIX="${PREFIX}"; . "${PREFIX}/etc/conda/activate.d/playwright-browsers.sh"; test "${PLAYWRIGHT_BROWSERS_PATH}" = "${PREFIX}/share/ms-playwright"
+        - set -u; unset PLAYWRIGHT_BROWSERS_PATH PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA; . "${PREFIX}/etc/conda/deactivate.d/playwright-browsers.sh"
+
+about:
+  homepage: https://playwright.dev/docs/browsers
+  repository: https://github.com/microsoft/playwright
+  documentation: https://playwright.dev/docs/browsers#managing-browser-binaries
+  summary: Points PLAYWRIGHT_BROWSERS_PATH at the conda prefix for playwright-* browser packages
+  description: |
+    Playwright resolves its browser binaries through `PLAYWRIGHT_BROWSERS_PATH`,
+    defaulting to a machine-global `~/.cache/ms-playwright` populated by a
+    network `playwright install`. That cache is shared across every
+    environment on the host, is not described by any lock file, and is
+    unavailable in an air-gapped deployment.
+
+    This package owns a conda activation hook that redirects Playwright to
+    `$CONDA_PREFIX/share/ms-playwright`, so the `playwright-chromium`,
+    `playwright-chromium-headless-shell`, `playwright-firefox`,
+    `playwright-webkit` and `playwright-ffmpeg` packages become the source of
+    the browsers and the environment is reproducible from the lock alone.
+
+    The hook never overrides an operator-supplied `PLAYWRIGHT_BROWSERS_PATH`;
+    it only fills the variable in when it is unset, and only unsets on
+    deactivation what it itself set.
+
+    It carries no browser binaries. Install a `playwright-*` browser package
+    alongside it.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: playwright-browsers-base
+  cfe-upstream-registry: github
+  cfe-upstream-name: microsoft/playwright
+  cfe-purls:
+    - pkg:conda/playwright-browsers-base@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/microsoft/playwright
+  cfe-upstream-homepage: https://playwright.dev/docs/browsers
+  cfe-import-names: []
+  cfe-source-kind: recipe-authored
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "enabler for the playwright-* browser packages; only the two Chrome-for-Testing ones are non-OSI, so this package and the firefox/webkit/ffmpeg ones could be submitted independently if ever wanted"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T15:40:00Z
+  cfe-local-build-platform: noarch
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Hand-authored: there is no upstream artifact to package. This is the
+#    # ENABLER for the five playwright-* browser packages -- exactly one
+#    # package may own etc/conda/activate.d/playwright-browsers.sh, or conda
+#    # reports a clobber when two browser packages ship the same path. Every
+#    # browser package run-depends on this one.
+# build:
+#    # noarch: generic -- a shell/bat fragment plus an empty-directory anchor,
+#    # nothing platform-specific. The README file exists solely because conda
+#    # does not track empty directories: without a tracked file inside it,
+#    # share/ms-playwright/ would not be created, and a bare `playwright
+#    # install` into the activated env would have to mkdir it itself.
+#    # The activation hook is deliberately NON-DESTRUCTIVE. It fills
+#    # PLAYWRIGHT_BROWSERS_PATH only when unset and records that it did so in
+#    # PLAYWRIGHT_BROWSERS_PATH_SET_BY_CONDA, which the deactivate hook keys
+#    # off. An operator pointing at a shared /opt/pw-browsers or a CI cache
+#    # mount keeps their value through activate AND deactivate. Overriding it
+#    # would silently break exactly the setups that already work.
+# tests:
+#    # Both branches of that rule are executed, not merely asserted to exist:
+#    # a pre-set value must survive the hook, and an unset one must land on
+#    # the prefix path. A contents-only test would pass on a hook that does
+#    # the opposite of what it claims.
+# about:
+#    # Apache-2.0 matches microsoft/playwright, whose documented environment
+#    # contract this package implements; the scripts themselves are authored
+#    # here. No browser binary and no upstream code ships in this package.
+####

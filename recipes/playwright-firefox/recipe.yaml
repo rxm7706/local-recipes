@@ -1,0 +1,181 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "155.0"
+  revision: "1543"
+
+package:
+  name: playwright-firefox
+  version: ${{ version }}
+
+source:
+  url: https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1543/firefox-ubuntu-22.04.zip
+  sha256: bc8469cbdc2016aabc894b0633654e73861332a6990fc6c2149db6864d013ff3
+  # Extract under src/ so the build copies ONLY upstream content -- rattler-build
+  # also drops conda_build.sh / build_env.sh in the work dir, and `cp -a ./*`
+  # would sweep them into the package.
+  target_directory: src
+
+build:
+  number: 0
+  # linux-64 only: the archive is a linux x86-64 build, and this is the only
+  # platform the estate drives. Other subdirs need their own source URL.
+  skip:
+    - not (linux and x86_64)
+  dynamic_linking:
+    # MUST stay false. These are large prebuilt binaries carrying embedded
+    # resources (PAK bundles, V8 snapshots, ICU data) at fixed offsets;
+    # rewriting ELF sections to patch RPATH shifts those offsets and the
+    # binary segfaults at launch. Nothing here needs relocating -- the
+    # binaries resolve against host system libraries, exactly as they do
+    # under `playwright install`.
+    binary_relocation: false
+  script:
+    - if: unix
+      then: |
+        set -ex
+        DEST="${PREFIX}/share/ms-playwright/firefox-1543"
+        # rattler-build STRIPS a single top-level directory when it extracts an
+        # archive, so src/ holds that root's CONTENTS for chromium / headless
+        # shell / firefox, and holds the entries themselves for the multi-root
+        # webkit and ffmpeg archives. Re-creating the inner directory here makes
+        # both shapes land where Playwright looks, without depending on whether
+        # the strip happened.
+        mkdir -p "${DEST}/firefox"
+        cp -a src/. "${DEST}/firefox/"
+        # Playwright treats a browser directory WITHOUT this marker as not
+        # installed and re-downloads over it. Creating it is what makes the
+        # conda-provided browser count as a real install.
+        touch "${DEST}/INSTALLATION_COMPLETE"
+
+requirements:
+  run:
+    - playwright-browsers-base
+    # Built against Ubuntu's glibc; the binaries link the host's system
+    # libraries rather than conda's, so declare the floor rather than pull a
+    # parallel library stack in beside the system one.
+    - __glibc >=2.35
+  run_constraints:
+    # The revision is dictated by browsers.json INSIDE the playwright driver.
+    # Pair a mismatched driver with this package and Playwright reports
+    # "Executable doesn't exist ... run playwright install". Verified against
+    # playwright 1.63.0 (node) and playwright-python 1.62.0, which both pin
+    # firefox r1543.
+    - playwright >=1.62,<1.64
+    - playwright-python >=1.62,<1.64
+
+tests:
+  - package_contents:
+      files:
+        - share/ms-playwright/firefox-1543/INSTALLATION_COMPLETE
+        - share/ms-playwright/firefox-1543/firefox/firefox
+  - script:
+      # Executing the binary is the point: a contents-only test would pass
+      # on a relocation-corrupted binary that segfaults at launch.
+      - test -x "${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox"
+      - '"${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox" --version'
+      - '"${PREFIX}/share/ms-playwright/firefox-1543/firefox/firefox" --version | grep -F "Mozilla Firefox 155.0"'
+
+about:
+  homepage: https://playwright.dev/docs/browsers
+  repository: https://github.com/microsoft/playwright
+  documentation: https://playwright.dev/docs/browsers#managing-browser-binaries
+  summary: Playwright's patched Firefox 155.0 build (firefox r1543)
+  description: |
+    Playwright's own Firefox build. This is NOT interchangeable with the
+    stock `firefox` package on conda-forge: Playwright drives Firefox
+    through its patched Juggler protocol, which an unpatched Firefox does
+    not speak. Nothing in this estate drives Firefox today; it is packaged
+    for completeness of the browser set.
+
+    Installed under `$CONDA_PREFIX/share/ms-playwright/firefox-1543/` with the
+    `INSTALLATION_COMPLETE` marker Playwright looks for, so an environment
+    carrying `playwright-browsers-base` resolves it with no network access
+    and no `playwright install` step.
+  license: MPL-2.0
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: playwright-firefox
+  cfe-upstream-registry: github
+  cfe-upstream-name: microsoft/playwright
+  cfe-purls:
+    - pkg:conda/playwright-firefox@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/microsoft/playwright
+  cfe-upstream-homepage: https://playwright.dev/docs/browsers
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "prebuilt binary with no source-build path; the licence itself is OSI-approved, so submission is a build-provenance question rather than a licensing one"
+  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-generated-by-version: 8.86.4
+  cfe-generated-at-datetime: 2026-09-07T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-09-07T15:40:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # conda-forge's `playwright` package ships ONLY the Node driver -- 178
+#    # files, all under lib/node_modules, no bin/ entry -- plus browsers.json,
+#    # which carries revision PINS and no binaries. The browsers themselves
+#    # come from a network `playwright install` into the machine-global
+#    # ~/.cache/ms-playwright, which no lock file describes and no air-gapped
+#    # host can reach. This package closes that gap for one browser.
+#    # The archive ships NO licence file, so the canonical MPL-2.0 text is
+#    # shipped from the recipe directory (License-File pattern 2). Firefox is
+#    # MPL-2.0; Playwright's Juggler patches are Apache-2.0 and do not change
+#    # the MPL terms on the Firefox tree itself.
+#    # ubuntu-22.04 variant chosen deliberately -- see the build notes.
+# source:
+#    # URL and sha256 are not guesses: `python -m playwright install --dry-run`
+#    # was run to get the authoritative download URL and install directory, the
+#    # archive was fetched, and the sha256 recorded from the fetched bytes.
+#    # Playwright's own CDN mirror of the Chrome-for-Testing archives was
+#    # verified byte-identical to Google's bucket (same sha256), so the Google
+#    # origin is used for the two Chrome packages as the true publisher.
+#    # ubuntu-22.04 variant chosen over the ubuntu-24.04 one Playwright
+#    # would pick on this host. Playwright publishes per-distro builds and
+#    # selects by the RUNNING distro, but a conda package must serve every
+#    # linux-64 host, so the oldest available build (glibc 2.35) is the
+#    # portable choice. Playwright locates a browser purely by directory
+#    # name and does not check which variant is inside. Verified on the
+#    # Ubuntu 24.04 build host: 0 unresolved libraries, and Firefox reports
+#    # 155.0, so the older build runs on the newer distro as expected.
+# build:
+#    # The install directory name is what Playwright's registry reports, taken
+#    # from --dry-run output rather than derived from the browser name.
+#    # binary_relocation: false is load-bearing here, and the reason is not
+#    # theoretical -- the same default corrupted a Bun static-PIE binary in the
+#    # ccusage recipe in this repo (4,346,528 -> 4,352,649 bytes, first
+#    # difference inside the ELF header, segfault at launch). These binaries
+#    # are far larger and carry more embedded payload.
+# requirements:
+#    # No conda library dependencies on purpose. The binaries are built against
+#    # Ubuntu's system libraries and resolve them from the host (verified: ldd
+#    # reports 0 missing on the Ubuntu 24.04 build host). Pulling conda's nss /
+#    # nspr / xorg stack in beside the system one invites version skew inside a
+#    # browser process. This mirrors Playwright's own model, which validates
+#    # host packages via `--with-deps` and ships deb.deps / rpm.deps manifests
+#    # inside the archive rather than vendoring libraries.
+#    # The cost of that choice: a minimal container without the usual X/NSS
+#    # runtime will not launch this browser. That is the same constraint
+#    # `playwright install` operates under, and it is why __glibc is declared.
+# about:
+#    # OSI-approved, unlike the two Chrome-for-Testing packages in this set:
+#    # MPL-2.0. The remaining obstacle to conda-forge is provenance
+#    # (a repackaged prebuilt binary), not the licence.
+####
