@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+# conda-forge.yml — pre-seeds the feedstock
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+bot:
+  automerge: true
+  check_solvable: true
+  inspection: hint-all
+build_platform:
+  linux_aarch64: linux_64
+  osx_arm64: osx_64
+provider:
+  linux_aarch64: azure
+  osx_arm64: azure
+test: native_and_emulated
+
+#### CFE metadata AND comments
+# CFE comments
+#    # Pre-seeds the feedstock (CFE skill default, G83): these keys are INERT in
+#    # a staged-recipes PR (build_all.py reads only conda_build_tool) and are
+#    # forwarded into the feedstock on merge. nebari-infrastructure-core is
+#    # COMPILED (pure Go, CGO_ENABLED=0), so it carries the full ARM platform
+#    # matrix (osx-arm64 + linux-aarch64) on top of the universal build-tool +
+#    # bot block. Upstream itself ships linux/darwin/windows on both amd64 and
+#    # arm64, so every leg in this matrix has an upstream-supported counterpart.
+#    # No run_deps_from_wheel: this is not a Python package -- it produces no wheel.
+#    # This #### CFE block is local-recipes-only and STRIPPED before push (G62) --
+#    # the pushed file is the trim top comment + keys.
+####
