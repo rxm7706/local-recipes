@@ -935,6 +935,10 @@ cmd = "python -m pyforge.doctor.sources platform-policy-suite"
 description = "Detector: render_skill.py's central-config merge (_bmad/config*.toml + _bmad/custom/config*.toml) holds no bare key ambiguous across two dotted paths — the class that HALTs every rendering skill (bmad-build, bmad-build-auto, ...) with `RenderError: ambiguous config value` (live 2026-09-06, fixed by 99e595cc6a). Warn-only, never gates."
 cmd = "python -m pyforge.doctor.sources bmad-render-config-ambiguity"
 
+[feature.local-recipes.tasks.frozen-path-changed-check]
+description = "Detector: no capability currently rebuilding/moving in the tracked capability ledger (docs/foundry/manifest.{yaml,yml,json}, absent pre-cutover) had one of its own frozen source paths touched by origin/main..HEAD (AD-22's freeze rule). OK when no ledger exists (today's real state, every real invocation until cutover begins). FAIL on a genuine violation, naming the capability and the changed path."
+cmd = "python -m pyforge.doctor.sources frozen-path-changed"
+
 [feature.local-recipes.tasks.dream-chain-check]
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources dream-chain"

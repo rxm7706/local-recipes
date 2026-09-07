@@ -31,6 +31,7 @@ from pyforge.doctor.sources import (
     chain,
     deps,
     factory,
+    frozen_path,
     ledger,
     marshal,
     platform_policy,
@@ -56,6 +57,7 @@ _EXPECTED_DISPATCH = {
     "sibling-dreams-drift": sibling_dreams.gather,
     "platform-policy-suite": platform_policy.gather,
     "bmad-render-config-ambiguity": bmad_config.gather,
+    "frozen-path-changed": frozen_path.gather,
 }
 
 

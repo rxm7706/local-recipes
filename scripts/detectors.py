@@ -225,6 +225,10 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # bmad-method-version-drift/sibling-dreams-drift/due-for-verification,
     # which stay opt-in-only and are deliberately absent from this tuple).
     ("bmad-render-config-ambiguity", "bmad-render-config-ambiguity-check"),
+    # Story 20.3 (Epic 20): another genuinely NEW (not a retiring
+    # scripts/*_check.py origin) entry, added here like bmad-render-config-
+    # ambiguity above -- offline, deterministic, no budget concerns.
+    ("frozen-path-changed", "frozen-path-changed-check"),
 )
 
 

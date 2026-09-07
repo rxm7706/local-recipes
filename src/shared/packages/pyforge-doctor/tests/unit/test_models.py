@@ -175,6 +175,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 20.2 (Epic 20) added BMAD_RENDER_CONFIG_AMBIGUITY: whether
     # render_skill.py's own central-config merge holds a bare key ambiguous
     # across two dotted paths -- the class that HALTs every rendering skill.
+    # Story 20.3 (Epic 20) added FROZEN_PATH_CHANGED: whether a capability
+    # currently rebuilding/moving in the tracked capability ledger had one
+    # of its own frozen source paths touched by origin/main..HEAD (AD-22).
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -205,6 +208,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "chain-layers-audit",
         "platform-policy-suite",
         "bmad-render-config-ambiguity",
+        "frozen-path-changed",
     }
 
 

@@ -1,9 +1,13 @@
 """Story 6.9: one thin, target-less CLI dispatcher for Doctor's ported
 sources -- ``python -m pyforge.doctor.sources <name> [--json] [--groundtruth]``.
-Twelve total today: the ten Story 6.9 originally dispatched, plus Story
-11.1's ``due-for-verification`` and Story 10.1's
-``bmad-method-version-drift`` -- both genuinely NEW (non-ported) members
-(see their own DISPATCH rows below).
+The ten Story 6.9 originally dispatched, plus every genuinely NEW
+(non-ported) member a later story has added since (``due-for-verification``,
+``bmad-method-version-drift``, ...) -- see ``DISPATCH`` below for the
+current, exhaustive roster; the member COUNT is deliberately not written
+down in prose here, mirroring ``sources/__init__.py``'s own REGISTRY
+docstring rationale (a number here would only ever be a second source of
+truth that goes stale the next time a story appends an entry -- it already
+did once).
 
 WHY THIS EXISTS. Stories 6.4-6.8 ported ten ``scripts/*_check.py`` (plus
 ``docs/dashboard/check_layout.py``) verdicts into library ``gather(target)``
@@ -50,6 +54,7 @@ from . import (
     chain,
     deps,
     factory,
+    frozen_path,
     ledger,
     marshal,
     platform_policy,
@@ -96,6 +101,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 20.2 (Epic 20) -- another genuinely NEW (non-ported) DISPATCH
     # member, same shape as PLATFORM_POLICY_SUITE/SIBLING_DREAMS_DRIFT above.
     Source.BMAD_RENDER_CONFIG_AMBIGUITY.value: bmad_config.gather,
+    # Story 20.3 (Epic 20) -- another genuinely NEW (non-ported) DISPATCH
+    # member, same shape as BMAD_RENDER_CONFIG_AMBIGUITY above.
+    Source.FROZEN_PATH_CHANGED.value: frozen_path.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

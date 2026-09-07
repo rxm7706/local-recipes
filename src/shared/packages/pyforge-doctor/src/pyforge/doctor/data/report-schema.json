@@ -82,7 +82,8 @@
             "dreams-hygiene",
             "chain-layers-audit",
             "platform-policy-suite",
-            "bmad-render-config-ambiguity"
+            "bmad-render-config-ambiguity",
+            "frozen-path-changed"
           ]
         },
         "check": { "type": "string" },

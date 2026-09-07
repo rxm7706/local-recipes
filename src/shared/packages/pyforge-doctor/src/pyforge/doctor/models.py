@@ -270,6 +270,24 @@ class Source(StrEnum):
     # installer-managed base file. See sources/bmad_config.py for the
     # independence rationale.
     BMAD_RENDER_CONFIG_AMBIGUITY = "bmad-render-config-ambiguity"
+    # Story 20.3 (Epic 20): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on whether a capability currently `rebuilding`/`moving` in the
+    # tracked capability ledger (`docs/foundry/manifest.{yaml,yml,json}`, an
+    # `[ASSUMPTION: schema]` synthesis -- no ledger exists at all until the
+    # real python-foundry cutover begins) had one of its own frozen source
+    # paths touched by `origin/main..HEAD` anyway (AD-22's own freeze rule;
+    # `cutover-readiness.md` G11: "never built" before this story). Unlike
+    # BMAD_RENDER_CONFIG_AMBIGUITY/BMAD_METHOD_VERSION_DRIFT above, this
+    # member CAN FAIL -- the story's own AC is explicit ("a change under a
+    # frozen path is a fail naming the capability and the path"), a
+    # deliberate departure from Epic 20's general "warn at most" framing,
+    # governed by this specific AC (mirrors LEDGER_REGRESSION/SPEC_SURFACE/
+    # PLATFORM_POLICY_SUITE's own FAIL-capable precedent). subject_station=
+    # "steward" (sources/__init__.py's own REGISTRY entry): steward owns the
+    # cutover plan / capability ledger (AD-22's own "steward cutover plan
+    # --append" ownership). See sources/frozen_path.py for the independence
+    # rationale.
+    FROZEN_PATH_CHANGED = "frozen-path-changed"
 
 
 class Partition(StrEnum):
