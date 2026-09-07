@@ -132,6 +132,29 @@ pre-existing npm/GitHub upstream check already uses -- that pool was
 doubled (``5.0`` -> ``10.0``, review pass 1 bad_spec repair) so a third
 per-package fetch type does not starve the pre-existing check's own
 coverage.
+
+**Story 20.1 (Epic 20): the suite pass learns each package's own probe
+class.** ``_resolve_upstream_latest`` compares every suite package via
+releases/tags or npm -- but 7 of the roster's 13 ``suite-members.yaml``
+entries (``bmad-eval-quality``, ``bmad-utility-skills``,
+``bmad-labs-skills``, ``bmad-module-template``, ``bmad-manticore``,
+``bmad-dashboard``, ``mybmad-dashboard``) are pinned to a raw commit on
+their default branch, not a version tag -- querying releases/tags for them
+either 404s or returns a stale/irrelevant tag. Each watched package's own
+already-tracked ``extra.cfe-source-kind`` (``recipes/<name>/recipe.yaml``)
+now picks its probe: ``github-tag``/``npm-registry`` (unchanged --
+``_resolve_upstream_latest``) or ``github-commit`` (NEW -- compare the
+recipe's own ``context.commit`` against the GitHub repo's default-branch
+HEAD sha via ``_fetch_default_branch_head_sha``). Every per-package
+``bmad-suite-upstream-drift`` WARN now names its probe class in
+``evidence["probe_class"]`` (one of ``"tag"``/``"npm"``/``"commit-pinned"``
+today; the aggregate OK Finding's evidence is unchanged). The commit-pinned
+branch is exactly as fail-open as every other probe in this module: a
+missing ``context.commit``, a missing/non-github owner-repo mapping, or any
+GitHub fetch failure leaves that package unchecked, and it draws its fetch
+timeout from the SAME shared per-package budget every other suite fetch
+already uses. ``bmad-method`` (the core) stays excluded from this loop --
+CAP-1/CAP-2 already own its own separate Finding.
 """
 
 from __future__ import annotations
@@ -426,6 +449,23 @@ def _suite_packages(pixi_data: dict, target: Path | None = None) -> tuple[str, .
     return tuple(sorted(pixi_names))
 
 
+#: The three ``extra.cfe-source-kind`` values ``_source_kind`` can read from a
+#: package's own recipe.yaml (Story 20.1) -- names the registry class each
+#: real roster member uses today, mirroring ``_upstream_registry``'s own
+#: string-constant precedent (``"npm"``/``"github"``/``"pypi"``).
+_SOURCE_KIND_GITHUB_TAG = "github-tag"
+_SOURCE_KIND_GITHUB_COMMIT = "github-commit"
+_SOURCE_KIND_NPM_REGISTRY = "npm-registry"
+
+#: ``evidence["probe_class"]`` values ``_probe_class`` returns (Story 20.1).
+#: A fourth value, ``"pypi"``, is reachable via the ``registry == "pypi"``
+#: branch but has no dedicated constant -- no roster member uses it today
+#: (Boundaries).
+_PROBE_CLASS_TAG = "tag"
+_PROBE_CLASS_COMMIT_PINNED = "commit-pinned"
+_PROBE_CLASS_NPM = "npm"
+
+
 def _upstream_registry(target: Path, package: str) -> str | None:
     """``extra.cfe-upstream-registry`` from ``recipes/<package>/recipe.yaml``,
     lowercased, or ``None`` when absent/unreadable (Story 19.1)."""
@@ -439,6 +479,80 @@ def _upstream_registry(target: Path, package: str) -> str | None:
     except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
         pass
     return None
+
+
+def _source_kind(target: Path, package: str) -> str | None:
+    """``extra.cfe-source-kind`` from ``recipes/<package>/recipe.yaml``,
+    lowercased, or ``None`` when absent/unreadable (Story 20.1) -- mirrors
+    ``_upstream_registry``'s exact try/except shape and recipe-read
+    pattern. Gives ``_gather_suite_findings`` a single, already-tracked
+    signal for which probe a package uses -- never a hardcoded
+    per-package table."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        extra = data["extra"]
+        kind = extra.get("cfe-source-kind")
+        if isinstance(kind, str) and kind.strip():
+            return kind.strip().lower()
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        pass
+    return None
+
+
+def _probe_class(source_kind: str | None, registry: str | None) -> str:
+    """Which upstream probe ``_gather_suite_findings`` uses for a package
+    (Story 20.1): ``github-commit`` -> ``"commit-pinned"``; ``registry ==
+    "npm"`` or ``source_kind == "npm-registry"`` -> ``"npm"``; ``registry ==
+    "pypi"`` -> ``"pypi"``; else -> ``"tag"``.
+
+    The commit-pinned check runs FIRST so a package with both fields set is
+    never mislabeled ``"npm"`` (Boundaries: no real roster member hits this
+    today, but the ordering is load-bearing). A package with no recognized
+    ``cfe-source-kind`` defaults to ``"tag"`` when its registry is not
+    ``"npm"`` -- preserving today's only pre-existing github behavior for
+    any fixture that predates ``cfe-source-kind``."""
+    if source_kind == _SOURCE_KIND_GITHUB_COMMIT:
+        return _PROBE_CLASS_COMMIT_PINNED
+    if registry == "npm" or source_kind == _SOURCE_KIND_NPM_REGISTRY:
+        return _PROBE_CLASS_NPM
+    if registry == "pypi":
+        return "pypi"
+    return _PROBE_CLASS_TAG
+
+
+def _recipe_pinned_commit(target: Path, package: str) -> tuple[str, str] | None:
+    """``(raw context.version text, raw context.commit text)`` from
+    ``recipes/<package>/recipe.yaml`` (Story 20.1) -- ``None`` on any
+    missing/malformed input. Deliberately reads ``context.version`` as a
+    raw string, NEVER through ``_parse_release_triple``/``_recipe_version``
+    -- that parser drops the ``.dev0`` suffix the ``"X.Y.Z.dev0 @ sha"``
+    encoding requires (Design Notes).
+
+    Mirrors ``_recipe_version``'s own fail-open try/except shape: a
+    missing/unreadable ``recipe.yaml`` (``OSError``), an unrepresentable
+    path (``ValueError``), malformed YAML (``yaml.YAMLError``), a
+    non-mapping document, or a missing/non-mapping ``context``/``version``/
+    ``commit`` (``KeyError``/``TypeError``/``AttributeError``) all fold to
+    ``None``. A present-but-``null`` ``version``/``commit`` key (YAML
+    ``key:`` with no value) does NOT raise ``KeyError`` -- without an
+    explicit non-empty-string check, ``str(None)`` would silently become
+    the literal text ``"None"`` instead of fail-opening (review finding),
+    so both fields are validated with the same ``isinstance(x, str) and
+    x.strip()`` guard ``_upstream_registry``/``_source_kind`` already use."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        context = data["context"]
+        version_value = context["version"]
+        commit_value = context["commit"]
+        if not (isinstance(version_value, str) and version_value.strip()):
+            return None
+        if not (isinstance(commit_value, str) and commit_value.strip()):
+            return None
+        return version_value, commit_value
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        return None
 
 
 def _upstream_package_name(target: Path, package: str) -> str:
@@ -593,6 +707,13 @@ def _installed_suite_versions(
 _GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/{owner_repo}/releases/latest"
 _GITHUB_TAGS_URL = "https://api.github.com/repos/{owner_repo}/tags"
 
+#: GitHub's own public, unauthenticated commits endpoint (Story 20.1) -- with
+#: no ``sha``/``path`` query params it returns commits reachable from the
+#: repository's DEFAULT branch, newest first, so ``?per_page=1`` gets the
+#: HEAD commit in one GET with no separate default-branch-name lookup
+#: (Design Notes).
+_GITHUB_COMMITS_URL = "https://api.github.com/repos/{owner_repo}/commits?per_page=1"
+
 
 def _strip_leading_v(text: str) -> str:
     """Strip exactly one optional leading ``v``/``V`` (GitHub's own de
@@ -725,6 +846,40 @@ def _fetch_latest_github_release(
                 parsed.append(triple)
         return max(parsed) if parsed else None
     except _GITHUB_FETCH_FAIL_TYPES:
+        return None
+
+
+def _fetch_default_branch_head_sha(
+    *, owner_repo: str, timeout: float | None = None
+) -> str | None:
+    """One GET to ``_GITHUB_COMMITS_URL`` for ``owner_repo``'s default-branch
+    HEAD commit sha (Story 20.1) -- the commit-pinned suite probe's
+    counterpart to ``_fetch_latest_github_release``'s tag-based probe.
+    Mirrors ``_fetch_latest_upstream_version``'s never-raises fail-open
+    shape exactly.
+
+    Never raises: an ``HTTPError``, ``URLError``, a malformed/truncated HTTP
+    response (``http.client.HTTPException``), ``OSError``, ``TimeoutError``,
+    a malformed JSON body, a non-list/empty response body
+    (``IndexError`` -- a brand-new/emptied repo), or a missing/unrepresentable
+    ``"sha"`` field (``KeyError``/``TypeError``) all fold to ``None``
+    (Boundaries)."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    url = _GITHUB_COMMITS_URL.format(owner_repo=owner_repo)
+    try:
+        with urllib.request.urlopen(url, timeout=resolved_timeout) as response:
+            entries = json.loads(response.read())
+        return str(entries[0]["sha"])
+    except (
+        urllib.error.URLError,
+        http.client.HTTPException,
+        OSError,
+        TimeoutError,
+        ValueError,
+        KeyError,
+        TypeError,
+        IndexError,
+    ):
         return None
 
 
@@ -921,6 +1076,15 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
     the SAME shared budget below -- ``checked`` increments identically
     regardless of which source ultimately resolved a package.
 
+    Story 20.1 branches EACH package's own probe by its recipe's tracked
+    ``extra.cfe-source-kind``: a ``github-commit`` package compares its
+    recipe's ``context.commit`` against the GitHub repo's default-branch
+    HEAD sha instead of going through ``_resolve_upstream_latest`` at all
+    (still inside the SAME shared budget, still entirely fail-open); every
+    other package falls through unchanged, now with its probe class
+    (``"tag"``/``"npm"``/``"commit-pinned"``) recorded in its own WARN
+    Finding's ``evidence["probe_class"]``.
+
     ENTIRELY fail-open, never raises -- deliberately unlike CAP-1/CAP-2's
     raise-then-``degrade_on_exception`` style. Rationale: CAP-1/2 read
     TRACKED contract files where absence is a reportable misconfiguration;
@@ -962,10 +1126,73 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break  # shared budget exhausted: skip the rest (fail-open)
+            per_fetch_timeout = min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS)
+
+            # Story 20.1: which probe this package uses, derived from its
+            # own already-tracked extra.cfe-source-kind/cfe-upstream-registry
+            # -- never a hardcoded per-package table.
+            source_kind = _source_kind(target, name)
+
+            if source_kind == _SOURCE_KIND_GITHUB_COMMIT:
+                # Commit-pinned probe: compare the recipe's own tracked
+                # context.commit against the GitHub repo's default-branch
+                # HEAD sha -- entirely fail-open, exactly like every other
+                # probe in this loop (Boundaries). `_probe_class` would
+                # return "commit-pinned" from `source_kind` alone here, so
+                # skip the (unused) `_upstream_registry` YAML read/parse
+                # entirely (review finding).
+                probe_class = _PROBE_CLASS_COMMIT_PINNED
+                pinned = _recipe_pinned_commit(target, name)
+                if pinned is None:
+                    continue
+                pinned_version_text, pinned_commit = pinned
+                owner_repo = _github_owner_repo(target, name)
+                if owner_repo is None:
+                    continue
+                head_sha = _fetch_default_branch_head_sha(
+                    owner_repo=owner_repo, timeout=per_fetch_timeout
+                )
+                if head_sha is None:
+                    continue
+                checked += 1
+                # Case/whitespace-normalized comparison (review finding):
+                # GitHub's API always returns lowercase hex, but a recipe's
+                # own context.commit could be written in mixed/upper case --
+                # comparing raw would produce a permanent spurious WARN for
+                # an actually-current pin. The displayed sha (message +
+                # evidence) uses the SAME normalized forms so what's shown
+                # matches what was actually compared.
+                normalized_pinned = pinned_commit.strip().lower()
+                normalized_head = head_sha.strip().lower()
+                if normalized_head != normalized_pinned:
+                    warn_findings.append(
+                        Finding(
+                            source=Source.BMAD_METHOD_VERSION_DRIFT,
+                            check="bmad-suite-upstream-drift",
+                            status=DoctorStatus.WARN,
+                            message=(
+                                f"{name} {pinned_version_text} @ "
+                                f"{normalized_pinned[:12]} is behind the "
+                                f"default-branch HEAD {normalized_head[:12]}"
+                            ),
+                            evidence={
+                                "package": name,
+                                "probe_class": probe_class,
+                                "installed": (
+                                    f"{pinned_version_text} @ "
+                                    f"{normalized_pinned[:12]}"
+                                ),
+                                "latest_upstream": normalized_head[:12],
+                            },
+                        )
+                    )
+                continue
+
+            probe_class = _probe_class(source_kind, _upstream_registry(target, name))
             latest = _resolve_upstream_latest(
                 name,
                 target,
-                timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
+                timeout=per_fetch_timeout,
             )
             if latest is None:
                 continue  # per-package fail-open (404, outage, garbage body)
@@ -1000,6 +1227,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                         ),
                         evidence={
                             "package": name,
+                            "probe_class": probe_class,
                             "installed": installed_text,
                             "latest_upstream": latest_text,
                         },
