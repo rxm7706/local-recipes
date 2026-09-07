@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.4.0"
+  version: "2.6.0"
 
 package:
   name: caveman
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://github.com/juliusbrussee/caveman/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 3e487f5b3b0916cc5594f2bf4973b47cf5711995be68eae4ae92f4698444756f
+  sha256: c4d2549b3a26610edee530418471b576c7abef643d56e5f8eb2b86aa176ed782
 
 build:
-  number: 2
+  number: 0
   # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
   # platform's npm global install lays down its native bin shims (symlinks
   # on unix, .cmd on win), which a single noarch artifact cannot provide.
@@ -33,7 +33,8 @@ build:
 
 requirements:
   host:
-    # nodejs held to the 24.x LTS line (build 2, 2026-08-30): nodejs's
+    # nodejs held to the 24.x LTS line (held since build 2, 2026-08-30;
+    # carried forward across the 2.6.0 bump): nodejs's
     # run_exports pins the major of whatever host resolves, and build 1's
     # host resolved 26.6.0, stamping `nodejs >=26.6.0,<27.0a0` into run —
     # which made caveman mutually exclusive with codegraph (whose own
@@ -102,11 +103,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-30T02:35:54Z"
+  cfe-last-checked: 2026-09-07T13:05:00Z
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T15:45:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-30T02:35:54Z"
+  cfe-local-build-datetime: 2026-09-07T13:05:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -169,4 +170,53 @@ extra:
 #    # Converted noarch->per-arch 2026-07-12 (win-64 buildability sweep):
 #    # per-arch lets npm lay down native shims per platform (openspec/
 #    # bmalph precedent) instead of the earlier bash-wrapper + __unix gate.
+#    #
+#    # 2.4.0 -> 2.6.0 bump (2026-09-07). package.json is UNCHANGED in the
+#    # fields that drive this recipe: name caveman-installer, bin
+#    # caveman-install, engines node >=18, the single @caveman-ai/cli
+#    # ^1.1.0 dependency. So the nodejs 24.* host hold and every note above
+#    # carry forward verbatim; build.number resets to 0 on the version bump.
+# about:
+#    # LICENSE RE-VERIFIED at 2.6.0 -- upstream runs a SPLIT license model
+#    # (already present at 2.4.0, so this is a correction of an unexamined
+#    # assumption, not a new upstream change). Root LICENSE is MIT plus a
+#    # scope note; LICENSE.BSL carries Business Source License 1.1 for the
+#    # Engine-linked directories, and LICENSING.md is the per-directory
+#    # source of truth: engine/, rewriter/, browse/, proxy/, mcp/, shrink/,
+#    # the mem/ Go core and shared/platform/ are all BSL-1.1.
+#    #
+#    # `license: MIT` is nonetheless CORRECT for this artifact, verified
+#    # against the BUILT package rather than assumed. None of the BSL
+#    # directories (engine/, rewriter/, browse/, proxy/, mcp/, shrink/, the
+#    # mem/ Go core, shared/platform/) appear in it. Four paths whose NAMES
+#    # match those words do ship, and each was classified individually:
+#    #   - src/mcp-servers/caveman-shrink/  -- declares its own
+#    #     "license": "MIT" in package.json; a standalone JS MCP proxy that
+#    #     compresses prose fields in pure JS (compress.js) and spawns the
+#    #     WRAPPED upstream MCP server, not the BSL Go shrink binary. It is
+#    #     not the BSL `shrink/` directory despite the shared word.
+#    #   - skills/engine-mcp-tools.json -- a manifest; skills/ is explicitly
+#    #     MIT in LICENSING.md.
+#    #   - node_modules/@caveman-ai/cli/dist/proxy-fetch.js -- @caveman-ai/cli
+#    #     is MIT (npm metadata + ships its own LICENSE); LICENSING.md
+#    #     classifies packages/cli/ as "MIT | Funnel/on-ramp ... does not
+#    #     contain engine code".
+#    # The BSL Go binaries are fetched lazily at `caveman setup`, never
+#    # bundled. Identical file set in 2.4.0, so this is a correction of an
+#    # earlier unexamined assumption, not a 2.6.0 regression.
+#    #
+#    # NOTE: LICENSE.BSL itself DOES ship, even though `files` does not list
+#    # it -- npm force-includes every LICENSE* at the package root regardless
+#    # of the allowlist. That is the licence TEXT riding along, not licensed
+#    # code; about.license_file stays the operative root LICENSE (MIT plus
+#    # its scope note). Do not read the presence of LICENSE.BSL in the
+#    # artifact as evidence the package is BSL-encumbered.
+#    #
+#    # Re-verify on any future bump by inspecting the BUILT package, not the
+#    # `files` list: a directory-only listing of `npm pack` output hides both
+#    # root-level files like LICENSE.BSL and the nested node_modules tree. If
+#    # upstream ever ships real engine code, about.license must become a
+#    # compound SPDX expression and the package stops being
+#    # conda-forge-eligible (BSL-1.1 is a valid SPDX id but NOT OSI-approved
+#    # -- the ragstack-ai-knowledge-store precedent).
 ####
