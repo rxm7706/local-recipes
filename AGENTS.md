@@ -38,6 +38,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
 - Governance: `docs/governance/`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
 - pyforge-atlas subtree-exclusive rules (Kedro/Dagster/DuckDB internals — testing contract, AD-1 import boundaries, exit-code convention, code-grounded patterns): `src/shared/packages/pyforge-atlas/AGENTS.md`.
+- bmad-suite member wiring (which of the 13 members is adopted, its wielding station, its provisioning path): `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` § 2 is the one durable home (AD-2) — routing detail lives in each wielding station's own `bmad-agent-<station>` persona skill, never restated here.
 
 ## Running and verifying
 
