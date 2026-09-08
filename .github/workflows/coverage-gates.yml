@@ -121,6 +121,12 @@ jobs:
           environments: pyforge-${{ matrix.station }}
           cache: true
 
+      # herald's tests/meta/test_skf_skill_and_persona.py invokes `uv run` directly
+      # (its skf-frontmatter validator is meant to be runnable standalone via uv, not
+      # as a pixi dependency). pyforge-station-tests.yml provides this for the same
+      # reason; the coverage lane collects tests/meta too, so it needs it as well.
+      - uses: astral-sh/setup-uv@v5
+
       # The gate's own fixture proof lives in marshal (it owns coverage_gate.py),
       # so it runs only on marshal's job rather than eight times.
       - name: Named-module fixture proof

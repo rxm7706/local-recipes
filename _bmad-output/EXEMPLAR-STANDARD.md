@@ -429,10 +429,19 @@ with no directory at all — 43 of its 47 test files loose at the tests root. So
 `marshal/support/` was never a suite — it holds `__init__.py` and `testing_kit.py`. The
 leading underscore keeps helper modules out of suite globs by shape rather than by exception.
 
-**Domain structure survives inside a suite.** `pyforge-atlas`'s 23 topic directories (catalog,
-pipelines, wasm, publish, …) are a domain taxonomy, not a suite taxonomy; they live at
+**Domain structure survives inside a suite.** `pyforge-atlas`'s topic directories (catalog,
+pipelines, semantic, …) are a domain taxonomy, not a suite taxonomy; they live at
 `unit/<topic>/` with their structure intact. Nesting by domain under a suite is conformant;
 inventing a sibling of `unit/` for a domain is not.
+
+**But the level still decides which suite a domain sits under.** Three of atlas's topic
+directories are `integration/<topic>/`, not `unit/`: `dashboard/` launches Playwright's
+managed Chromium, `publish/` needs the DuckDB `httpfs` extension, and `wasm/` needs a built
+WASM artifact — each fails loud rather than skipping when its prerequisite is absent (by
+design: a misconfigured CI must not pass a gate having verified nothing). A suite that cannot
+run without provisioning is not a unit suite. Found the honest way, by CI: they were placed in
+`unit/` on 2026-09-07 and moved on 2026-09-08 when the coverage lane — which provisions none
+of those three — went red.
 
 ## The kernel/companion rule
 

@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 6cbe711cb553db9a
+source_fingerprint: 44291bfab689964e
 story_count: 61
 test_file_count: 39
 coverage_target_unit: ">=80%"
@@ -20,17 +20,16 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-mason`
 - **Stories parsed:** 61
-- **Epics parsed:** 19
+- **Epics parsed:** 14
 - **Test files inventoried:** 39 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6cbe711cb553db9a`
+- **Source fingerprint:** `44291bfab689964e`
 
 ## Risk Assessment
 
 ### High-risk epics
 
-- Epic 2: Author, build, and submit recipes
 - Epic 2: Author, build, and submit recipes
 
 ### Medium-risk epics
@@ -48,10 +47,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 12: The CFE rebuild continues — gate closure and slice 2
 - Epic 13: Two feedstock pins admit Python 3.14 (steward 43.5 hybrid decision)
 - Epic 14: The eval-quality Windows variant (spec-bmad-suite-lifecycle CAP-7 relay)
-- Epic 1: Install, run, and diagnose Mason
-- Epic 3: Ship a library to both ecosystems
-- Epic 4: Bind environments into lockfiles
-- Epic 5: Prove the seam holds
 
 ### Low-risk epics
 

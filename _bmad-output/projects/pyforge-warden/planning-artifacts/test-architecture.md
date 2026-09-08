@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 61db49da7af356c3
+source_fingerprint: 173058a881ab485d
 story_count: 43
-test_file_count: 64
+test_file_count: 66
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-warden`
 - **Stories parsed:** 43
-- **Epics parsed:** 17
-- **Test files inventoried:** 64 under `src/shared/packages/pyforge-warden/tests/`
+- **Epics parsed:** 11
+- **Test files inventoried:** 66 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `61db49da7af356c3`
+- **Source fingerprint:** `173058a881ab485d`
 
 ## Risk Assessment
 
@@ -45,12 +45,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 9: PR-gate hook specs; scanners are plugins
 - Epic 10: Warden owns its skill, persona, and one portal job
 - Epic 11: Two advisory lenses beside the gate
-- Epic 1: Spine + PyPI engine (walking skeleton)
-- Epic 2: The conda/pixi source-manifest wedge
-- Epic 3: Policy control + auditable waivers + warn-only
-- Epic 4: Machine contract + CycloneDX SBOM
-- Epic 5: Fleet-readiness & adoption on-ramp
-- Epic 6: Multi-axis expansion — license, currency, KEV/EPSS & adoption (added 2026-07-15; re-baselined 2026-07-16, D12)
 
 ### Low-risk epics
 
@@ -60,25 +54,25 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
-| `src/shared/packages/pyforge-warden/tests/conformance/test_axis_producer_ceiling.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_baseline_grandfathering.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_corpus_determinism.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_corpus_egress_counter.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_corpus_regression.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_doctor.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_dogfood.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_engine_parallelism.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_epss_enrichment.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_extraction_oracle.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_fix_pr_actuator.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_kev_enrichment.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_lockfile_oracle.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_osv_engine.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_osv_offline_db_spike.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_perf_overhead.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_report_schema.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_sbom_schema.py` | unit | none observed |
-| `src/shared/packages/pyforge-warden/tests/conformance/test_scan_harness.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_axis_producer_ceiling.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_baseline_grandfathering.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_corpus_determinism.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_corpus_egress_counter.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_corpus_regression.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_doctor.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_dogfood.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_engine_parallelism.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_epss_enrichment.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_extraction_oracle.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_fix_pr_actuator.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_kev_enrichment.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_lockfile_oracle.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_osv_engine.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_osv_offline_db_spike.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_perf_overhead.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_report_schema.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_sbom_schema.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_scan_harness.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_extract_no_execution.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py` | meta | none observed |
@@ -87,8 +81,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/meta/test_socket_deny_alive.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
-| `src/shared/packages/pyforge-warden/tests/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_bypass.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_sbom.py` | unit | none observed |
@@ -120,7 +114,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_report.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_verdict.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_vuln.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_waiver.py` | unit | none observed |

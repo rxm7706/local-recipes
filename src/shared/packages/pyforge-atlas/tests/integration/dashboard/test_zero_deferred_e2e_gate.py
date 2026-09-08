@@ -18,17 +18,21 @@ _DASHBOARD_SRC = _REPO_ROOT / "src/shared/packages/pyforge-atlas/src/pyforge/atl
 _METRICS_SCRIPT = _REPO_ROOT / "scripts/conda-forge-packaging-inventory-operations_metrics.py"
 _IDENTITY_SCRIPT = _REPO_ROOT / "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py"
 _README = _REPO_ROOT / "src/shared/packages/pyforge-atlas/README.md"
-_MEMBER_TESTS = _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/unit"
+_MEMBER_TESTS = _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests"
 
-# §7 items 2–5: upstream story suites this gate re-runs (not duplicated here).
+# §7 items 2-5: upstream story suites this gate re-runs (not duplicated here).
+# Story 32.5/32.8 note: these span BOTH suites. The pipeline suites are unit
+# weight; the dashboard suite is integration weight (it launches Playwright's
+# managed Chromium), which is why it sits beside this file under integration/.
+# Each path therefore names its own suite rather than sharing one prefix.
 _UPSTREAM_MATRIX_TESTS = {
-    2: _MEMBER_TESTS / "pipelines/derived_artifacts/test_identity_complete_export.py",
-    3: _MEMBER_TESTS / "pipelines/derived_artifacts/test_inventory_verified_packages.py",
+    2: _MEMBER_TESTS / "unit/pipelines/derived_artifacts/test_identity_complete_export.py",
+    3: _MEMBER_TESTS / "unit/pipelines/derived_artifacts/test_inventory_verified_packages.py",
     4: (
-        _MEMBER_TESTS / "pipelines/upstream_discovery/test_identity_parity_fixtures.py",
-        _MEMBER_TESTS / "pipelines/derived_artifacts/test_inventory_priority_assignments.py",
+        _MEMBER_TESTS / "unit/pipelines/upstream_discovery/test_identity_parity_fixtures.py",
+        _MEMBER_TESTS / "unit/pipelines/derived_artifacts/test_inventory_priority_assignments.py",
     ),
-    5: _MEMBER_TESTS / "dashboard/test_identity_gist_markdown.py",
+    5: _MEMBER_TESTS / "integration/dashboard/test_identity_gist_markdown.py",
 }
 
 

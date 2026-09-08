@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: cc2849f223437ee4
+source_fingerprint: 00b63c144e11556b
 story_count: 19
 test_file_count: 19
 coverage_target_unit: ">=80%"
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-scribe`
 - **Stories parsed:** 19
-- **Epics parsed:** 9
+- **Epics parsed:** 7
 - **Test files inventoried:** 19 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cc2849f223437ee4`
+- **Source fingerprint:** `00b63c144e11556b`
 
 ## Risk Assessment
 
@@ -40,8 +40,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 4: GraphStore on the shared plugin contract
 - Epic 5: Scribe owns remaining skill/persona and one portal job
 - Epic 6: The compile_surface extras — graphify and cocoindex behind the ports
-- Epic 1: Team Memory — Capture & Promotion
-- Epic 2: Knowledge Graph — Compile & Recall
 
 ### Low-risk epics
 

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: af3aa4c83a30e43f
+source_fingerprint: 23976aa926d403a4
 story_count: 73
-test_file_count: 61
+test_file_count: 63
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-doctor`
 - **Stories parsed:** 73
-- **Epics parsed:** 23
-- **Test files inventoried:** 61 under `src/shared/packages/pyforge-doctor/tests/`
+- **Epics parsed:** 20
+- **Test files inventoried:** 63 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `af3aa4c83a30e43f`
+- **Source fingerprint:** `23976aa926d403a4`
 
 ## Risk Assessment
 
@@ -32,7 +32,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - Epic 1: Pre-flight Check (walking skeleton)
 - Epic 11: Tracked deferred-work entries get periodically re-verified against live code
-- Epic 1: Pre-flight Check (walking skeleton)
 
 ### Medium-risk epics
 
@@ -48,8 +47,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 16: Sibling dreams directories don't drift silently
 - Epic 17: Gather/prescribe hook spec
 - Epic 19: Suite drift matches the channel catalog (registry-aware upstream)
-- Epic 2: Fleet Pulse (doctor monitor --fleet)
-- Epic 3: Diagnose & Prescribe (doctor diagnose --prescribe)
 
 ### Low-risk epics
 
@@ -102,6 +99,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_atlas.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_atlas_watch_axes.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_backlog_intake.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py` | unit | none observed |
@@ -115,6 +113,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py` | unit | none observed |

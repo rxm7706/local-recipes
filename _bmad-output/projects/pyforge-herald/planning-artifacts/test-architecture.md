@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: b5971040387621af
+source_fingerprint: d42594ee98f152e7
 story_count: 64
-test_file_count: 45
+test_file_count: 47
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-herald`
 - **Stories parsed:** 64
-- **Epics parsed:** 25
-- **Test files inventoried:** 45 under `src/shared/packages/pyforge-herald/tests/`
+- **Epics parsed:** 18
+- **Test files inventoried:** 47 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b5971040387621af`
+- **Source fingerprint:** `d42594ee98f152e7`
 
 ## Risk Assessment
 
@@ -37,11 +37,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 10: Moment 4 — operations notices
 - Epic 11: Integration testing & automation reliability
 - Epic 13: The live backend — a ship records itself
-- Epic 6: Foundation — CLI Architecture + Shared Infrastructure
-- Epic 8: Moment 2 — Progress Visibility (PRIORITY 1 — Week 3 Delivery)
-- Epic 9: Moment 3 — Success Proclamation (Parallel with Epic 8 & 10)
-- Epic 10: Moment 4 — Operations Notices (Parallel with Epic 8 & 9)
-- Epic 11: Integration Testing & Automation Reliability
 
 ### Medium-risk epics
 
@@ -55,62 +50,62 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 16: Exporter hook spec
 - Epic 17: Herald owns its skill, persona, and one portal job
 - Epic 18: Herald renders, announces and slides with the suite
-- Epic 12: Documentation & Operator Experience
 
 ### Low-risk epics
 
 - Epic 7: Foundation — web surface
-- Epic 7: Foundation — Web Surface
 
 ## Test Inventory
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_auth.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_bridge.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_claims.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_deck_qa.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_dispatch.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_epic13.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_epic6.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_notice_epic10.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_progress.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_pull.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_push.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_seed.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_status.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_success.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_cli_watch.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_db.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_deck_pipeline.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_deck_qa.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_deck_status.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_errors.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_evidence.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_export_plugins.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_export_progress_snapshot.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_export_web_snapshot.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_integration_epic11.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_live_design_spike.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_locking.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_mcp_transport.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_notices.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_performance_epic11.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_pptx_pipeline.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_progress.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_registry.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_reliability_epic11.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_scheduler.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_smoke.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_state.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_transport_base.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_watch.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_webhook.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_webhook_host.py` | unit | none observed |
-| `src/shared/packages/pyforge-herald/tests/test_webhook_live_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_agent_sdk_transport.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_auth.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_bridge.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_claims.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_deck_qa.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_dispatch.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_epic13.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_epic6.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_notice_epic10.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_progress.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_pull.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_push.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_seed.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_success.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_cli_watch.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_db.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_qa.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_errors.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_evidence.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_export_plugins.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_export_progress_snapshot.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_export_web_snapshot.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_integration_epic11.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_live_design_spike.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_locking.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_notices.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_performance_epic11.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_pptx_pipeline.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_progress.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_registry.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_reliability_epic11.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_scheduler.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_state.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_transport_base.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_watch.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_webhook.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_webhook_host.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py` | unit | none observed |
 
 ## Story Coverage Matrix
 

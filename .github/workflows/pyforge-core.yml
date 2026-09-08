@@ -37,7 +37,13 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          # 3.14 since 2026-09-08 (marshal Story 32.2, spec-fleet-consistency-standard
+          # CAP-5). This lane pip-installs the pyforge packages outside pixi, so raising
+          # their requires-python to >=3.14 made pip refuse here: "Package 'pyforge-core'
+          # requires a different Python: 3.12.14 not in '>=3.14'". These three workflows
+          # were the ONLY thing in the repo still exercising 3.12 -- see the correction
+          # recorded on the Spec. detectors.yml already ran 3.14.
+          python-version: '3.14'
 
       - name: Install pyforge-core and pytest
         run: |

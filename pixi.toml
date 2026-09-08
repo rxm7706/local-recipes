@@ -1048,12 +1048,12 @@ env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/
 
 [feature.local-recipes.tasks.dashboard-dryrun]
 description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 31-page inventory shipped (Story 20.5 CAP-7 + Story 21.9 CAP-5 — closes DW-D2-1); Story 22.5 adds identity catalog/ops/workbook canvas-vs-Vizro parity coverage (test_identity_parity.py). This suite also runs the Playwright e2e + §2.1 semantic-HTML/ARIA navigation check (test_dashboard_e2e.py), which launches a real local server -- not fully offline despite the gate's name. --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q"
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/dashboard -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
 [feature.local-recipes.tasks.vizro-ai-dryrun]
 description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/nl -q"
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/unit/nl -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
 [feature.local-recipes.tasks.wasm-build]
@@ -1062,7 +1062,7 @@ cmd = "python src/shared/packages/pyforge-atlas/wasm/build.py"
 
 [feature.local-recipes.tasks.wasm-smoke]
 description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke — a Playwright HEADLESS Chromium load-and-query against the built wasm artifact (run `wasm-build` first). Proves the intelligence read surface loads and its query runs CLIENT-SIDE in the browser with NO backend: serves wasm/build/ over a loopback static host, drives the pre-provisioned Chromium, BLOCKS + asserts zero non-loopback requests (offline / no-CDN proof), waits for the in-browser DuckDB-WASM query to reach ready (an in-page error FAILS, never silently passes), and asserts the client-side ci_red result (D1 feedstock-health semantics). Full Vizro-in-Pyodide render is deferred (DW-G1). Offline at runtime, --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/wasm -q"
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/wasm -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
 [feature.local-recipes.tasks.publish]
@@ -1072,7 +1072,7 @@ env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/
 
 [feature.local-recipes.tasks.publish-range]
 description = "Wave G verify gate (Story G2, FR-14 / AD-2 / AD-21): publish-range — prove the emitted static-host layout is consumed via HTTP RANGE. Emits the chunked Parquet + manifest to a tmp dir, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and asserts (a) consumption is via 206 Partial Content reading STRICTLY FEWER bytes than the whole file (a whole-file 200 FAILS), (b) the chunk path is discovered FROM the manifest + matches its checksums, (c) host-agnostic (same dir, two bases), (d) the D1 ci_red result is correct over the range-served Parquet — plus determinism + edge cases (empty/multi-chunk/corruption/past-EOF/non-Range fallback). httpfs LOADed OFFLINE from cache (skips if unprovisioned locally, fails under CI). Live publish DEFERRED (DW-G2). --frozen."
-cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/publish -q"
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/publish -q"
 # PUBLISH_RANGE_REQUIRED: the AUTHORITATIVE gate must FAIL (not skip) if httpfs is
 # unprovisioned, so it can never exit 0 having proven nothing about HTTP Range — the
 # load-bearing G2 claim (Reviewer-A skip-to-green). Ad-hoc local runs use the bare pytest.
@@ -2153,7 +2153,7 @@ depends-on = ["pyforge-atlas-test"]
 
 [feature.pyforge-atlas.tasks.kedro-catalog-check]
 description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/catalog -q"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-bootstrap]
 description = "Story 21.1 (CAP-1, Epic 21 success signal): fresh-clone Kedro bootstrap on PYFORGE_ATLAS_DATA_ROOT -- no legacy bootstrap-data / CF_ATLAS_DB required on this path. tools/bootstrap.py first mkdir's the two § 3.4 external-refresh store dirs (stores/vdb, stores/osv) under the data root, then seeds an EMPTY conf/local/credentials.yml stub (github_token/bigquery_adc) only if one is not already there -- Kedro resolves every catalog entry's `credentials:` key eagerly regardless of --pipeline, so a totally absent file would KeyError before a single node runs; both referencing datasets already no-op offline by default, so an empty stub is enough (a real operator's own credentials.yml is never touched). `kedro run --pipelines <list>` SUMS the named pipelines into ONE combined DAG and lets Kedro's own topological sort order every node -- no hand-guessed sequence: core, pypi_intelligence, vulnerability, vcs_health, upstream_discovery, derived_artifacts, seed_gaps, artifactory_downloads (Story 21.6, CAP-3: added because build_identity_packages_primary now reads artifactory_downloads' enterprise_jfrog_names as a real cross-pipeline free input -- a plain pandas.ParquetDataset with no AD-13 missing-file degrade, so it must actually be materialized once per fresh clone; params:artifactory.virtual_repos defaults to [] so the pipeline stays functionally inert -- zero live JFrog calls, zero new credentials). B5 external-refresh (vdb/OSV/mapping-cache) rides inside vulnerability's + pypi_intelligence's own trigger nodes, not a separate step. Excludes universal_sbom (entry-scoped, needs --params sbom_intake_path; spec non-goal) and semantic_packages/query_plane_cache (downstream composition/cache, not data-fetch). Exits 0 on an empty data root; credentialed-only nodes (live GitHub/BigQuery fan-out) degrade to their existing AD-13 seeded-or-empty default rather than failing the run."
@@ -2170,19 +2170,19 @@ cmd = "python -m pyforge.atlas.trending_candidates.handoff_main"
 
 [feature.pyforge-atlas.tasks.parity-diff]
 description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/parity -q"
 
 [feature.pyforge-atlas.tasks.bsl-metric-check]
 description = "Wave D verify gate (Story D1, AC-4, FR-8 / AD-7): BSL metric-parity — each core metric (staleness / adoption stage / feedstock health / downloads / actionable + the first-class maintainer ⋈) declared ONCE as Ibis->DuckDB (AD-4) matches its legacy CLI formula, anchored by an INDEPENDENT re-implementation (DW-B1-1 honesty). Offline, --frozen."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/semantic -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/semantic -q"
 
 [feature.pyforge-atlas.tasks.dagster-dryrun]
 description = "Wave C verify gate (Story C1, AC-5, FR-6): kedro-dagster dryrun — build Dagster Definitions from KedroProjectTranslator, assert schedules enumerate + jobs resolve + each op carries its OWN timeout + Phase P admin-only + profile precedence. DEFINITIONS LOAD ONLY — NO live daemon/scheduled run (attended bring-up deferred, DW-C1). Offline, --frozen."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/orchestration -q"
 
 [feature.pyforge-atlas.tasks.duckdb-singularity]
 description = "Wave F verify gate (Story F1, FR-5 / AD-4): the DuckDB-singularity grep gate — NO sqlite3 read/write path anywhere in the migrated pyforge/atlas surface (DuckDB/Parquet is the sole engine); the one legacy-SQLite reader (the B4 credentialed parity comparator) is pinned to tests/, never src/. The cold-start/warm-incremental benchmark is the ATTENDED half (DW-F1-1). Offline, --frozen."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/singularity -q"
 
 [feature.pyforge-atlas.tasks.query-plane-boot]
 description = "Story 20.1 (CAP-5, `query-plane-face` ruling 2026-08-26): the ONE pixi-sourced boot script raising both plane faces — always opens the in-process library face on atlas.duckdb via duckdb_writer.connect_writer (AD-16 local-first; DuckDB stays a query face, never a fourth backing store), and raises the Mosaic duckdb-server HTTP/Arrow face from this SAME script ONLY when the platform stack is up (PYFORGE_PLATFORM_STACK_UP truthy: 1/true/yes/on); stack down degrades to library-face-only with a structured one-line JSON notice, never a crash. No second boot path exists (grep/AST-gated by tests/singularity/test_one_duckdb_server_launch_site.py). NFR-6 exit codes: 0 pass, 1 policy-fail (typed refusals, e.g. SecondWriterRefused / DuckDBServerNotProvisionedError), 2 error, 130 interrupted."
@@ -2190,7 +2190,7 @@ cmd = "python -m pyforge.atlas.query_plane_boot"
 
 [feature.pyforge-atlas.tasks.query-plane-parity]
 description = "Story 20.2 (CAP-5, `query-plane-face` ruling 2026-08-26): the face-parity gate — runs an IDENTICAL fixture query set against the library face (duckdb_writer.connect_reader) and the HTTP/Arrow face raised by query_plane_boot.boot_query_plane, and asserts row-for-row agreement; a seeded-divergence negative test proves the gate is not vacuous, and the stack-down degrade path is explicitly marked not-applicable (never a silent pass). Distinct from `parity-diff` (legacy-cf_atlas.db-vs-migrated-pipeline-output, an unrelated concept). Offline, --frozen; the real-duckdb-server cases skip cleanly when the binary isn't provisioned."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests/query_plane -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit/query_plane -q"
 
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
