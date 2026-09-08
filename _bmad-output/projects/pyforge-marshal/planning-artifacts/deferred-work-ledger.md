@@ -5826,7 +5826,10 @@ status: open
   summary: `scripts/worktree_sweep.py` (2026-09-05, dry-run default, `--execute`) classifies every registered git worktree into KEEP / PRUNE / DELETE / PRESERVE-THEN-DELETE / DELETE-WORKTREE-KEEP-BRANCH / INSPECT from four inputs -- clean-and-ancestor-of-main, the owning station's sprint-ledger status for the branch's story key, whether the branch is on origin, and whether a live process has its cwd inside -- and applies the safe verdicts (patches exported under `~/.local/state/pyforge-marshal/worktree-preserve/` first). `marshal retire` (Story 4.10) proposes only branches named by the most recent bmad-loop run of an attached loop home, so it proposed nothing across a fleet that carried 262 registered worktrees and ~600 merged branches. The sweep's rule set belongs behind the marshal verb (`marshal retire --worktrees`, or a `marshal sweep` verb) so the fleet has ONE retirement authority with journaled evidence; the script is the interim home and its rules are pinned by `tests/scripts/test_worktree_sweep.py`.
   evidence: 2026-09-05 shutdown sweep, hand-verified per item: registered worktrees 262 -> 12 (primary, 8 loop homes, 3 INSPECT), local merged branches 360 + 226 deleted, origin merged branches 227 + 178 deleted in explicit-name batches (the 8 `loop/<station>` heads and every `attempt-preserve/*` kept by policy), 29 GB reclaimed; `marshal retire` dry-run reported `proposals: 0` throughout. Never delete `loop/*` on origin: the station heads read as merged into main whenever the homes are idle.
   note: 2026-09-07 (marshal 31.6) -- `multi-repo-git-ops` does NOT cover this wish. Confirmed via `git submodule status` (empty output) and no `.gitmodules` file in the repo root: this repo has no git submodules at all. `multi-repo-git-ops`'s own SKILL.md scopes it to branching/committing/pushing/syncing across a parent repo and its git-submodule service repos, discovered from `.gitmodules` -- a structurally different concern from this wish's KEEP/PRUNE/DELETE worktree and merged-branch retirement heuristics (no submodules, no branch/worktree lifecycle classification in its scope). The coverage question is answered "no"; this does not resolve the wish itself, which stays a future station-verb story per this entry's own summary.
+  location: scripts/worktree_sweep.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED present and unchanged: `scripts/worktree_sweep.py` exists with the six-way classification the entry describes. This is a standing operational tool + its 2026-09-05 sweep record, not a defect awaiting a fix, so 'open' here means 'the tool is live and the policy still applies', not 'work is owed'. A `location:` was added; it had none.
 
 ### DW-FU-30-1: The new catalog-consistency test only checks skill_renames[].from ids, never the catalog's removals list, so fully-removed (never-shimmed) ids like bmad-check-implementation-readiness / bmad-agent-tech-writer stay permanently unguarded by any automated check.
 
@@ -5839,6 +5842,8 @@ status: open
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED. `_collect_unguarded_catalog_renames` still reads only the catalog's `skill_renames[].from` ids and never its `removals` list, so fully-removed ids (`bmad-check-implementation-readiness`, `bmad-agent-tech-writer`) remain guarded by nothing. Unchanged since authoring.
+
 ### DW-FU-30-1-2: architecture-bmad-infra.md and development-guide.md are not part of the guard's SCAN_GLOBS, so a future re-introduction of a bare bmad-checkpoint-preview (or any other retired id) in either doc is not regression-protected.
 
 - source_spec: `planning-artifacts/specs/spec-30-1-the-retired-id-guard-follows-the-6-12-shim-roster.md`
@@ -5849,6 +5854,8 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED. `architecture-bmad-infra.md` and `development-guide.md` are still outside the guard's `SCAN_GLOBS`, so a re-introduced retired id in either doc is not regression-protected.
 
 ### DW-FU-30-2: architecture-bmad-infra.md, index.md, and PRD.md still describe the retired per-station project-context.md rulebooks as live artifacts in several places.
 
@@ -5861,6 +5868,8 @@ status: open
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED by direct read: `architecture-bmad-infra.md`, `index.md` and `PRD.md` still describe the retired per-station `project-context.md` rulebooks as live artifacts. The entry's own sequencing rationale (30.3 owns the architecture re-ground; PRD.md is on the never-rewrite list) still holds, so this stays open by design rather than by neglect.
+
 ### DW-FU-30-2-2: pyforge-doctor's test_full_applicable_layers_reports_ok fixture has a pre-existing, unrelated "dream" layer gap in the chain-audit-checkpoint-layers checkpoint (reports noDream/gaps:[dream]) despite its own dream=True fixture setup -- discovered while verifying the "context" glob fix, not caused by this story.
 
 - source_spec: `planning-artifacts/specs/spec-30-2-the-project-context-surface-follows-6-12-d1.md`
@@ -5872,6 +5881,8 @@ status: open
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED as a cross-station fixture inconsistency: `test_full_applicable_layers_reports_ok` still exercises the two disagreeing evidence shapes (`chain-layers-audit`'s `present` list vs `chain-audit-checkpoint-layers`' `gaps` list) against the same fixture. Note this is a pyforge-DOCTOR test carried on MARSHAL's ledger -- a cross-project entry (CAP-5), which is why no marshal-only sweep would ever reach it.
+
 ### DW-FU-30-3: architecture-bmad-infra.md's "Installed Skills" section (~lines 408-585) states 94 directories in .claude/skills/ (90 real skills: 52 bmad-*, 16 skf-*, 21 engineering-practice, 1 conda-forge-expert). A spot-check during this story found the live tree now holds well over that, driven by additions since the 2026-09-05 pass: 8 new bmad-agent-<station> personas, 10 new bmad-cis-* Creative Intelligence Suite skills, 7 new pyforge-<station> skills, and cfe-recipe-lifecycle.
 
 - source_spec: `planning-artifacts/specs/spec-30-3-documentation-pointers-follow-6-12.md`
@@ -5882,6 +5893,8 @@ status: open
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: resolved
+
+  verified: 2026-09-08 — still-open — CONFIRMED **and MEASURABLY WORSE** -- corrected numbers recorded per CAP-4. `architecture-bmad-infra.md:119` still states **94** skill directories = **90** real skills, and `:14` still says 90. The entry recorded the live tree at 121 dirs / 109 SKILL.md / 71 `bmad-*`. Re-measured today: **129 directories, 117 SKILL.md files, 75 `bmad-*` directories** -- the gap has widened again since authoring (121->129, 109->117, 71->75). The doc understates the real tree by 35 directories.
   resolution: RESOLVED 2026-09-06 (same PR #1078). Full re-audit performed: live tree re-counted
     directory-by-directory (not spot-checked) at the post-shim-retirement state — 100 dirs = 88
     real (top-level SKILL.md) skills + 12 nonskill/support dirs. Note the evidence line's 121/109/71
@@ -5907,6 +5920,8 @@ status: open
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against live code, precisely. `sources/factory.py`'s `check_pins` compares `(pin[0], pin[1]) < (live[0], live[1])` -- major.minor only, patch discarded -- so a stale-but-parseable `source_pin` at the same minor never fires `pin-behind`. This is not theoretical: the fleet's own current drift (pinned v8.86.1 vs live v8.87.1) fires only because the MINOR moved; a v8.86.1-vs-v8.86.4 gap would still pass silently.
+
 ### DW-FU-31-1: Marshal's own generator-produced Story Coverage Matrix is nearly empty independent of TEA: 207 of 208 rows read "none observed" despite 181 real test files existing, because `_stories_linked_to_test`'s filename heuristic doesn't match this repo's real test-naming conventions.
 
 - source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
@@ -5917,6 +5932,8 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, re-measured after this session regenerated all eight documents. `_stories_linked_to_test`'s filename heuristic is unchanged, and marshal's regenerated `test-architecture.md` now reads **394 'none observed' rows out of 404** -- the entry recorded 207 of 208, so the matrix has roughly doubled in size while the unmatched ratio (~97%) held. Regeneration does not fix it; only teaching the heuristic this repo's real test-naming conventions would.
 
 ### DW-FU-31-1-2: Herald and Doctor's generator-reported `story_count` (64, 73) disagrees with what each TEA run counted directly from their own `epics.md` (50, 113).
 
@@ -5929,6 +5946,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — resolved — RESOLVED -- the discrepancy is explained, and the generator was the correct side. Counted `^### Story ` headings directly in each station's `epics.md`: pyforge-herald **64**, pyforge-doctor **73** -- exactly the generator's reported `story_count`. The TEA subagent runs' figures (50 and 113) were the wrong ones. The entry left root cause uninvestigated ('could be either side's parsing'); it is the TEA runs, not `bmad_tea_playwright.py`.
+
 ### DW-FU-31-1-3: Atlas's QA-effort estimate reconciliation (fixed this pass to match the detailed table) and Steward's/Doctor's manual risk-score-override notation (fixed this pass to a shared convention) are cosmetic; no sweep checks every station's remaining internal-consistency nits (e.g. whether every P0-P3 count in every station's Executive Summary matches its own detailed table) beyond what four independent reviewers happened to surface this pass.
 
 - source_spec: `planning-artifacts/specs/spec-31-1-tea-s-workflows-produce-every-station-s-test-architecture.md`
@@ -5939,6 +5958,8 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED as an accepted limit rather than a defect. No fleet-wide sweep of the eight stations' TEA prose for internal cross-reference nits has been run since; the entry's own proportionality argument (advisory documents whose core equivalence claim does not depend on such polish) still stands.
 
 ### DW-FU-31-2: `architecture-bmad-infra.md` was not glossed with an FR-129/FR-132 note recording the refusal, even though 31.2's own Surface line names that file.
 
@@ -5951,6 +5972,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED. `architecture-bmad-infra.md` still carries no FR-129/FR-132 retirement gloss. The entry's reasoning holds and is now stronger, not weaker: the gloss was textually conditioned on 31.1's equivalence report passing 8/8, which did not happen, and the generator is demonstrably still in use -- this session re-ran `tea-playwright-all` to regenerate all eight documents, so glossing FR-129/FR-132 as 'retired' would now be false.
+
 ### DW-FU-31-3: The lens's real end-to-end behavior (invoking tea-test-review, parsing its verdict, emitting capped-at-warn findings, refusing cleanly when the AD-9 roster lacks tea) is not exercised by an automated test in this pass.
 
 - source_spec: `planning-artifacts/specs/spec-31-3-tea-test-review-is-a-marshal-review-lens.md`
@@ -5961,6 +5984,8 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED as an accepted convention rather than a gap unique to this lens. The lens's `instruction` remains an LLM prompt, not code, and no sibling `bmad-review` lens carries a run-the-lens-and-check-output test either. What is mechanically covered (lens merge, TOML parse, policy plumbing) is unchanged.
 
 ### DW-FU-31-3-2: New review_min_score validator tests (out-of-range, bool, numeric-string rejection) only exercise the project policy layer, not repo_defaults or flags (--set).
 
@@ -5973,6 +5998,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED as matching the established convention: the `review_min_score` validator tests remain project-layer only, exactly as `stream_capture_kb`'s own rejection tests are. Not a gap this story introduced.
+
 ### DW-FU-31-3-3: cli/config.py:125's "Naming any of these 9 keys" comment above _UNSETTABLE_KEYS remains stale (pre-existing drift, DW-3-13-1) -- the frozenset now holds 28 members after this story's addition, further widening the gap from the literal "9".
 
 - source_spec: `planning-artifacts/specs/spec-31-3-tea-test-review-is-a-marshal-review-lens.md`
@@ -5984,6 +6011,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — resolved — RESOLVED HERE, and made non-recurrent. Confirmed live first: `len(_UNSETTABLE_KEYS) == 28` while `cli/config.py:130` still read 'Naming any of these 9 keys'. Rather than bump 9->28 (which is what has failed three times -- Story 3.13 wrote 9, a 2026-09-05 pass observed 27, this entry observed 28), the numeral is REMOVED: the comment now points at `_UNSETTABLE_KEYS` as the authority and states why no size is restated. This also discharges the residual of `DW-3-13-1`, which had been re-verified repeatedly with 'not fixed here' each time.
+
 ### DW-FU-31-4: No sweep audits already-materialized sprint-status.yaml files elsewhere in the fleet for latent pre-existing wrap corruption from before this fix.
 
 - source_spec: `planning-artifacts/specs/spec-31-4-every-in-place-edited-installer-owned-file-is-governed-by-a-marshal-spec-surface.md`
@@ -5994,6 +6023,8 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED as unowned. No fleet-wide audit of already-materialized `sprint-status.yaml` files for pre-fix wrap corruption has been run; the entry's own scoping (the one known instance was hand-repaired at the time) is unchanged. Worth noting the risk is live, not historical: this session hand-inserted ledger keys precisely because `sprint_plan.py`'s writer would wrap a long key.
 
 ### DW-FU-31-4-2: bmad-retrospective's sprint_status.py has an independent ruamel.yaml factory that shares the same file format and the same fleet_scan.parse_sprint_status downstream reader, but was never given the width fix -- a long story key is silently dropped by its own `update` subcommand.
 
@@ -6019,6 +6050,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
+
 ### DW-FU-31-5-2: No failure/rollback guidance for the attended, eight-times-repeated re-provisioning procedure if a readiness check fails partway through.
 
 - source_spec: `planning-artifacts/specs/spec-31-5-loop-home-readiness-is-defined-for-the-cutover-flip.md`
@@ -6029,6 +6062,8 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
 
 ### DW-FU-31-5-3: The readiness doc's field-name citations against marshal's live code (e.g. which HomeFacts fields marshal homes --json actually serializes) are not wired to any test, so a future rename could silently invalidate them.
 
@@ -6041,6 +6076,8 @@ status: open
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: `loop-home-cutover-readiness.md` still carries no sign-off log, no failure/rollback guidance, and no test wiring its code-shape citations. All three are the same class -- a docs-only story's acknowledged edges -- and all three remain pending on steward 44.12, which owns the mechanism they would attach to. Recorded as pending-on-precondition in substance: the blocker is a story that has not run, not a missing decision.
+
 ### DW-FU-31-6: The new `note:` field on DW-HYGIENE-2026-09-05-1 is not in pyforge-doctor's chain.py `_KNOWN_FIELD_KEYS` closed vocabulary, so `classify_tier3_entries` silently folds it into the preceding `evidence:` field instead of keeping it as its own field.
 
 - source_spec: `planning-artifacts/specs/spec-31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded.md`
@@ -6051,3 +6088,5 @@ status: open
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED HERE. Confirmed the defect first: `sources/chain.py`'s `_KNOWN_FIELD_KEYS` listed fifteen keys and no `note`, so a real `note:` field was silently folded into the preceding `evidence:` block -- exactly the mis-attribution the entry describes, reproducible against `DW-HYGIENE-2026-09-05-1`'s own `note:`. `note` is now in the vocabulary. Safe to extend: no test pins the tuple's exact contents (the only references are comments about `relayed:` deliberately staying out).
