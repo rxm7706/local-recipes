@@ -113,12 +113,35 @@ jobs:
     if: needs.changes.outputs.atlas == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # test_wasm_smoke.py's _chromium_executable() reads this var itself
+      # (falling back to a hardcoded /opt/pw-browsers otherwise, which this
+      # runner does not have) -- set once, at job level, so the install step
+      # and the test run resolve the identical browser.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-atlas
           cache: true
+      # Three of atlas's gates fail loud (never silently skip) when their
+      # prerequisite isn't provisioned: the dashboard E2E suite AND the WASM
+      # smoke test both need a real Chromium (unconditionally -- both launch
+      # Playwright's own managed browser directly, never a system one),
+      # test_emit_range.py's PUBLISH_RANGE_REQUIRED path needs the DuckDB
+      # httpfs extension, and test_wasm_smoke.py's WASM_SMOKE_REQUIRED path
+      # needs the built WASM artifact. All three provisioned here so a fresh
+      # runner has what a maintainer's already-provisioned machine has.
+      - name: Install Chromium for the dashboard E2E + WASM smoke gates
+        run: pixi run --frozen -e pyforge-atlas python -m playwright install --with-deps chromium
+      - name: Provision the DuckDB httpfs extension
+        run: pixi run --frozen -e pyforge-atlas python -c "import duckdb; duckdb.connect().execute('INSTALL httpfs')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build the WASM smoke-test artifact
+        run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/wasm/build.py
       - run: pixi run --frozen -e pyforge-atlas kedro-test
 
   doctor-test:
@@ -152,6 +175,10 @@ jobs:
         run: |
           which google-chrome || which chromium || \
             pixi run --frozen -e pyforge-herald python -m playwright install --with-deps chromium
+      # test_skf_validators_pass invokes `uv run` directly (not a pixi
+      # dependency -- this station's own skf-frontmatter validator script
+      # is meant to be runnable standalone via uv).
+      - uses: astral-sh/setup-uv@v5
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
 
   marshal-test:
@@ -165,6 +192,11 @@ jobs:
         with:
           environments: pyforge-marshal
           cache: true
+      # Seed verbs + integration harnesses create real commits; GHA runners
+      # have no git identity by default (same precedent as coverage-gates.yml).
+      - run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
 
   mason-test:

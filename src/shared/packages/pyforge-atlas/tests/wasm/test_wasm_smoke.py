@@ -63,6 +63,12 @@ EXPECTED_ROWS = {
 def _chromium_executable() -> str | None:
     base = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/opt/pw-browsers")
     for pat in (
+        # Current Playwright (>=1.4x) per-arch layout, confirmed live
+        # against a real `playwright install chromium` download.
+        f"{base}/chromium-*/chrome-linux64/chrome",
+        f"{base}/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+        # Older Playwright layout (pre per-arch split) -- kept for whatever
+        # pinned version a given environment happens to have.
         f"{base}/chromium-*/chrome-linux/chrome",
         f"{base}/chromium_headless_shell-*/chrome-linux/headless_shell",
     ):
