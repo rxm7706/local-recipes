@@ -2250,3 +2250,64 @@ def test_tier3_only_deferral_still_reports_fail(tmp_path: Path) -> None:
     findings = chain.gather_deferred_work(tmp_path)
 
     assert any(f.check == "tier3-only-deferral" for f in findings)
+
+
+# --- Uncited-entry flagging at intake (2026-09-08) -----------------------------
+
+
+def _finding(summary: str, evidence: str, location: str = "") -> chain.SpecDeferredFinding:
+    return chain.SpecDeferredFinding(
+        summary=summary,
+        evidence=evidence,
+        location=location,
+        severity="",
+        fingerprint="fp1",
+        spec_path=Path("specs/spec-x/SPEC.md"),
+        spec_rel="_bmad-output/projects/p/planning-artifacts/specs/spec-x/SPEC.md",
+    )
+
+
+def test_intake_entry_citing_no_code_is_admitted_but_flagged() -> None:
+    """The entry is NOT refused -- an uncited deferral is real work -- but the
+    gap is named in the artifact so it is countable at intake rather than
+    rediscovered at the next sweep."""
+    block = chain.format_frontmatter_intake_entry(
+        "DW-1-1", _finding("deferred to a later story", "out of scope for this pass")
+    )
+    assert f"location: {chain.NO_LOCATION_MARKER}" in block
+    assert "### DW-1-1: deferred to a later story" in block
+
+
+def test_intake_entry_citing_code_in_evidence_is_not_flagged() -> None:
+    """A path cited in prose still counts -- the marker means "CAP-2 can see
+    nothing here", not "the `location:` field is empty"."""
+    block = chain.format_frontmatter_intake_entry(
+        "DW-1-2", _finding("tighten the parser", "`src/pyforge/doctor/sources/chain.py` over-matches")
+    )
+    assert chain.NO_LOCATION_MARKER not in block
+
+
+def test_intake_entry_with_explicit_location_is_never_flagged() -> None:
+    block = chain.format_frontmatter_intake_entry(
+        "DW-1-3", _finding("a thing", "some prose", location="`scripts/detectors.py`")
+    )
+    assert chain.NO_LOCATION_MARKER not in block
+    assert "location: `scripts/detectors.py`" in block
+
+
+def test_intake_entry_citing_only_a_dotted_symbol_is_flagged() -> None:
+    """The flag uses the churn filter's own extraction rules, so a token CAP-2
+    cannot resolve (`os.replace`) does not count as a citation."""
+    block = chain.format_frontmatter_intake_entry(
+        "DW-1-4", _finding("a thing", "`os.replace` is not atomic on Windows")
+    )
+    assert f"location: {chain.NO_LOCATION_MARKER}" in block
+
+
+def test_intake_entry_source_spec_path_does_not_count_as_a_citation() -> None:
+    """`source_spec:` names WHERE the entry came from, not the code under its
+    claim -- the same exclusion `_entry_named_paths` already makes."""
+    block = chain.format_frontmatter_intake_entry(
+        "DW-1-5", _finding("a thing", "no code named here at all")
+    )
+    assert f"location: {chain.NO_LOCATION_MARKER}" in block

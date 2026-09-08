@@ -31,6 +31,7 @@ for _pkg in ("pyforge-doctor", "pyforge-core"):
         sys.path.insert(0, str(_src))
 
 from pyforge.doctor.sources.chain import (  # noqa: E402
+    NO_LOCATION_MARKER,
     LegacyEntry,
     Tier3Shape,
     TRACKED_REL,
@@ -48,6 +49,11 @@ class _Outcome:
     slug: str
     status: str  # "ingested" | "no-op" | "aborted"
     message: str
+    #: How many of this project's newly-ingested entries cite no code at
+    #: all. Admitted anyway (refusing would push the backlog somewhere
+    #: unmeasured), but counted here and totalled by `main` so the cost is
+    #: visible at intake instead of at the next sweep.
+    uncited: int = 0
 
 
 def _project_slug_map() -> dict[str, str]:
@@ -127,6 +133,12 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
         minted_ids.append(new_id)
         blocks.append(format_frontmatter_intake_entry(new_id, finding))
 
+    uncited = [
+        mid
+        for mid, block in zip(minted_ids, blocks)
+        if f"location: {NO_LOCATION_MARKER}" in block
+    ]
+
     new_blocks_text = "\n".join(blocks)
     if tracked_text:
         prefix = tracked_text if tracked_text.endswith("\n") else tracked_text + "\n"
@@ -147,10 +159,18 @@ def _ingest_project(slug: str, project_dir: Path) -> _Outcome:
         raise
 
     ids_str = ", ".join(minted_ids)
+    uncited_note = (
+        f"; {len(uncited)} cite no code (stamped `location: {NO_LOCATION_MARKER}`)"
+        f" — {', '.join(uncited)}"
+        if uncited
+        else ""
+    )
     return _Outcome(
         slug,
         "ingested",
-        f"{slug}: ingested {len(minted_ids)} spec-frontmatter deferral(s) — {ids_str}",
+        f"{slug}: ingested {len(minted_ids)} spec-frontmatter deferral(s) — "
+        f"{ids_str}{uncited_note}",
+        uncited=len(uncited),
     )
 
 
@@ -208,6 +228,7 @@ def main() -> int:
 
     projects_dir = REPO_ROOT / "_bmad-output" / "projects"
     exit_code = 0
+    uncited_total = 0
     for slug in targets:
         try:
             outcome = _ingest_project(slug, projects_dir / slug_map[slug])
@@ -216,8 +237,21 @@ def main() -> int:
             exit_code = 1
             continue
         print(outcome.message)
+        uncited_total += outcome.uncited
         if outcome.status == "aborted":
             exit_code = 1
+    if uncited_total:
+        # Never an error: an uncited deferral is real work and admitting it
+        # is the point. But it is the single biggest cost driver in a sweep
+        # -- 144 of 183 due entries cited nothing on 2026-09-08, which is
+        # why the churn filter could skip none of them -- so it is said out
+        # loud at the moment the entry is created, when adding the citation
+        # is cheapest.
+        print(
+            f"\n{uncited_total} newly-ingested entr(ies) cite no code. Each "
+            f"costs a full agent read every sweep until a `location:` is "
+            f"added. Consider citing the code now, while the context is warm."
+        )
     return exit_code
 
 
