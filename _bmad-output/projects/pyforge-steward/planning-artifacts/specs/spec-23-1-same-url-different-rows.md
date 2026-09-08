@@ -22,7 +22,7 @@ deferred:
       Canopy canopy:AD-20 also names audit write and role-built navigation; this
       story's board is JSON filter-then-search only.
     evidence: |-
-      Story 23.1 ACs and FR-16 name same-URL row isolation via
+      Story 23.1 ACs and canopy:FR-16 name same-URL row isolation via
       filter_by_role / AccessDeclaration. Audit and build_navigation are
       already in pyforge.steward.dashboard from Epic 9 and were not wired
       onto /stations/atlas/board/.
@@ -35,9 +35,9 @@ deferred:
 
 ## Intent
 
-**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. FR-16 / canopy:AD-20.
+**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. canopy:FR-16 / canopy:AD-20.
 
-**Approach:** Serve one board URL on the atlas portal. Load the unfiltered master via `get_master_dataset`, then `filter_by_role` / `AccessDeclaration` and `search`. Identity is this request's IdP token roles (18.2), not trusted headers (FR-15).
+**Approach:** Serve one board URL on the atlas portal. Load the unfiltered master via `get_master_dataset`, then `filter_by_role` / `AccessDeclaration` and `search`. Identity is this request's IdP token roles (18.2), not trusted headers (canopy:FR-15).
 
 ## Boundaries & Constraints
 

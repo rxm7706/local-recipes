@@ -70,7 +70,7 @@ and a chart test that no PVC labelled for the plane is `ReadWriteMany`.
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `41-2-query-plane-process-boundary`. Host never imports `pyforge.*`. Kedro stays the only writer of derived layers (FR-27). BSL stays the dashboard contract.
+Ledger key `41-2-query-plane-process-boundary`. Host never imports `pyforge.*`. Kedro stays the only writer of derived layers (canopy:FR-27). BSL stays the dashboard contract.
 
 **Block If:** Implementation would put the `.duckdb` file on RWX "with locking", add a DuckDB server as a required kind, or make Mosaic `duckdb-server` mandatory.
 

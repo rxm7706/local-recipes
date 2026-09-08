@@ -14,12 +14,12 @@ review_loop_iteration: 0
 followup_review_recommended: true
 deferred:
   - summary: >-
-      Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong
+      Live IdP revoke on the next request (canopy:FR-31 / canopy:AD-15 strong
       reading) still waits on a per-request token, not this session snapshot.
     evidence: |-
       OIDC login writes group-claim names into session idp_token_roles until
       the next successful pre_social_login. 18.3 JWT re-verify is out of
-      scope. Epic 21 / FR-31 owns next-request revoke.
+      scope. Epic 21 / canopy:FR-31 owns next-request revoke.
     location: >-
       src/platform/config/authorization/adapters.py
     severity: medium
@@ -38,7 +38,7 @@ deferred:
 
 ## Intent
 
-**Problem:** The chrome switcher lists every registered portal. An operator without a station's IdP role still sees a door they cannot open (FR-3, canopy:AD-15).
+**Problem:** The chrome switcher lists every registered portal. An operator without a station's IdP role still sees a door they cannot open (canopy:FR-3, canopy:AD-15).
 
 **Approach:** Filter switcher entries from roles on the current request's token. Station views still refuse a direct URL. Do not treat Django groups or other durable local grants as the switcher's authority.
 

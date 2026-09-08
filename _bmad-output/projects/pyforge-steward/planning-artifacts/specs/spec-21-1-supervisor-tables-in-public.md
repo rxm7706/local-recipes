@@ -131,7 +131,7 @@ Status: done
 - `src/platform/tests/test_supervisor_tables.py` — I/O matrix
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md` — tracked spec
 
-**Review:** 6 patches applied; 3 deferred; 18 rejected (21.3/21.5 runtime, FR-12 disconnect, replica alias vs same-DB second connection). Follow-up recommended: patched medium 3 + low 3 → score 12 (≥ 5).
+**Review:** 6 patches applied; 3 deferred; 18 rejected (21.3/21.5 runtime, canopy:FR-12 disconnect, replica alias vs same-DB second connection). Follow-up recommended: patched medium 3 + low 3 → score 12 (≥ 5).
 
 **Verification:** `pixi run -e platform-ci-test pytest tests/test_supervisor_tables.py tests/meta/test_no_pyforge_import.py -q` — 8 passed. `ruff check` on new files — clean.
 

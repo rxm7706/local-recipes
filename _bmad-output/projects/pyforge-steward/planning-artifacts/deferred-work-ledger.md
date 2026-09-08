@@ -1375,13 +1375,13 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-18-2: Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+### DW-FU-18-2: Live IdP revoke on the next request (canopy:FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
 
 - source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
-  summary: Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
-  evidence: OIDC login writes group-claim names into session idp_token_roles until the next successful pre_social_login. 18.3 JWT re-verify is out of scope. Epic 21 / FR-31 owns next-request revoke.
+  summary: Live IdP revoke on the next request (canopy:FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+  evidence: OIDC login writes group-claim names into session idp_token_roles until the next successful pre_social_login. 18.3 JWT re-verify is out of scope. Epic 21 / canopy:FR-31 owns next-request revoke.
   location: src/platform/config/authorization/adapters.py
-  origin: spec-deferred 48ebd974a4a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred da6ec3115970 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

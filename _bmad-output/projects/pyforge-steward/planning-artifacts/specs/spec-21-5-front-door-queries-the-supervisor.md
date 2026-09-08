@@ -39,7 +39,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Always:** Query `django_pyforge.supervisor.query_board` only. Ingest timing in `complete_run`, not at page generation. Cross-machine visibility is the same PostgreSQL (second DB connection). FR-26 budget is 500ms (`QUERY_BUDGET_SECONDS`). Live board is not a Wagtail field. Parent AD-2: no `import pyforge` under `src/platform/`. Physical writes under `_bmad-output/projects/pyforge-steward/` plus the Code Map. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
+**Always:** Query `django_pyforge.supervisor.query_board` only. Ingest timing in `complete_run`, not at page generation. Cross-machine visibility is the same PostgreSQL (second DB connection). canopy:FR-26 budget is 500ms (`QUERY_BUDGET_SECONDS`). Live board is not a Wagtail field. Parent AD-2: no `import pyforge` under `src/platform/`. Physical writes under `_bmad-output/projects/pyforge-steward/` plus the Code Map. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
 **Block If:** Implementation would need MinIO, Liquibase 27-1, a fifth PostgreSQL schema, or `pyforge.*` under `src/platform/`.
 

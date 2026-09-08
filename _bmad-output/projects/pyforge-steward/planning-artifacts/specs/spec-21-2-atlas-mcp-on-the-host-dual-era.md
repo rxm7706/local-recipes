@@ -67,7 +67,7 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` -- official SDK registration -- FR-11 bring-not-duplicate
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` -- official SDK registration -- canopy:FR-11 bring-not-duplicate
 - `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` -- dual-era POST face helpers -- canopy:AD-5
 - `src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py` -- lazy atlas server mount -- host must not import `pyforge.*`
 - `src/platform/config/asgi.py` -- pattern dispatch + lifespan -- one ASGI process

@@ -17,13 +17,13 @@ warnings: []
 
 ## Intent
 
-**Problem:** CAP-9 / FR-21 cannot start production DDL until Liquibase 5.0.4+ with a vendored PostgreSQL JDBC driver is on the platform env the image consumes. Recipe authoring is operator-owned and already published on SelfExplainML.
+**Problem:** CAP-9 / canopy:FR-21 cannot start production DDL until Liquibase 5.0.4+ with a vendored PostgreSQL JDBC driver is on the platform env the image consumes. Recipe authoring is operator-owned and already published on SelfExplainML.
 
 **Approach:** Declare `liquibase >=5.0.4` and `liquibase-postgresql >=42.7.13` on `[feature.python-agent-platform]` (same env as 26.3; inherited by `platform-dev`), prove the env solves, and add a policy test that reds if the liquibase pin vanishes or the lock selects `<5.0.4`.
 
 ## Boundaries & Constraints
 
-**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. Do not rebuild published packages (`liquibase` 5.0.4; `liquibase-postgresql` 42.7.13 with JDBC under `share/liquibase/lib`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite FR-21 / canopy:AD-16.
+**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. Do not rebuild published packages (`liquibase` 5.0.4; `liquibase-postgresql` 42.7.13 with JDBC under `share/liquibase/lib`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite canopy:FR-21 / canopy:AD-16.
 
 **Block If:** `pixi install -e python-agent-platform` cannot solve from those channels without authoring or rebuilding recipes.
 
@@ -82,7 +82,7 @@ warnings: []
 
 ## Design Notes
 
-The host image builder runs `pixi install --frozen -e python-agent-platform` (`src/platform/Containerfile`). `platform-dev` already composes that feature, so one pin table covers image + local Tier-1. Published: `liquibase` 5.0.4 (`run: openjdk >=17` from conda-forge); `liquibase-postgresql` 42.7.13 (JDBC vendored into `share/liquibase/lib` for the air gap). FR-21's live `runInTransaction=false` demonstration is Story 27.2, not this gate. `openjdk` is a run-dep of the liquibase package — do not add a second JDK pin unless the solve requires it.
+The host image builder runs `pixi install --frozen -e python-agent-platform` (`src/platform/Containerfile`). `platform-dev` already composes that feature, so one pin table covers image + local Tier-1. Published: `liquibase` 5.0.4 (`run: openjdk >=17` from conda-forge); `liquibase-postgresql` 42.7.13 (JDBC vendored into `share/liquibase/lib` for the air gap). canopy:FR-21's live `runInTransaction=false` demonstration is Story 27.2, not this gate. `openjdk` is a run-dep of the liquibase package — do not add a second JDK pin unless the solve requires it.
 
 ## Verification
 

@@ -20,13 +20,13 @@ deferred: []
 
 ## Intent
 
-**Problem:** An agent asked to do scribe work can freelance against the filesystem or call random HTTP. canopy:FR-38 / CAP-16 require each **03** station to be addressable as a persona that acts only through FR-13 grammar and FR-11 MCP.
+**Problem:** An agent asked to do scribe work can freelance against the filesystem or call random HTTP. canopy:FR-38 / CAP-16 require each **03** station to be addressable as a persona that acts only through canopy:FR-13 grammar and canopy:FR-11 MCP.
 
 **Approach:** Author one BMAD launcher/agent skill for the 29.1 proof station (`scribe`). It consults the CAP-15 `pyforge-scribe` content skill and may only emit grammar (`pyforge scribe …`) and MCP (`POST /stations/scribe/mcp`). Demonstrate one end-to-end station task as a checked transcript. Do not SKF-compile the persona.
 
 ## Acceptance Criteria
 
-- Given the scribe persona, when it completes a station task, then the transcript contains only `consult_content_skill`, FR-13 grammar, and FR-11 MCP.
+- Given the scribe persona, when it completes a station task, then the transcript contains only `consult_content_skill`, canopy:FR-13 grammar, and canopy:FR-11 MCP.
 - Given a transcript that includes direct filesystem or ad-hoc HTTP, when the contract checker runs, then it fails.
 - Given a persona skill that permits filesystem or ad-hoc HTTP, when the contract checker runs, then it fails.
 - Given the persona package, when inspected, then it is a BMAD launcher (`SKILL.md` + `customize.toml`, `resolve_customization.py`) that consults `.claude/skills/pyforge-scribe/`, is not SKF-compiled, and does not replace `conda-forge-expert`.
@@ -59,8 +59,8 @@ deferred: []
 - `.claude/skills/bmad-agent-scribe/customize.toml` — **new** `[agent]` + menu of grammar/MCP prompts only (no `bmad-build`). `persistent_facts` must `file:` the CAP-15 skill
 - `.claude/skills/bmad-agent-scribe/transcripts/scribe-recall-e2e.json` — **new** golden transcript for `scribe recall`
 - `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` — CAP-15 consult target (read-only)
-- `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — FR-13 grammar (read-only; `pyforge scribe …`)
-- `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` — FR-11 `asgi_for_station` / `POST /stations/<name>/mcp` (read-only)
+- `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — canopy:FR-13 grammar (read-only; `pyforge scribe …`)
+- `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` — canopy:FR-11 `asgi_for_station` / `POST /stations/<name>/mcp` (read-only)
 - `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — **new** canopy:FR-38 / canopy:AD-17 gates (I/O matrix)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 - `src/platform/` — do not add `pyforge.*`
@@ -74,7 +74,7 @@ deferred: []
 - `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — I/O matrix; fail on FS/HTTP freelance
 
 **Acceptance Criteria:**
-- Given a station persona, when it completes a station task, then the transcript shows only FR-13 grammar and FR-11 MCP — no direct filesystem and no ad-hoc HTTP.
+- Given a station persona, when it completes a station task, then the transcript shows only canopy:FR-13 grammar and canopy:FR-11 MCP — no direct filesystem and no ad-hoc HTTP.
 - Given personas, when inspected, then they are BMAD launcher/agent skills that consult the CAP-15 content skill.
 
 ## Design Notes
@@ -103,7 +103,7 @@ Do not SKF-compile: no `provenance-map.json`, no `generated_by: create-skill`. 2
 
 Status: done
 
-Summary: BMAD launcher `bmad-agent-scribe` consults the CAP-15 `pyforge-scribe` content skill and may only emit FR-13 `pyforge scribe …` and FR-11 `POST /stations/scribe/mcp`. A golden recall transcript plus contract tests fail on filesystem or ad-hoc HTTP freelance. Persona is not SKF-compiled. CFE untouched. No `pyforge.*` under `src/platform/`.
+Summary: BMAD launcher `bmad-agent-scribe` consults the CAP-15 `pyforge-scribe` content skill and may only emit canopy:FR-13 `pyforge scribe …` and canopy:FR-11 `POST /stations/scribe/mcp`. A golden recall transcript plus contract tests fail on filesystem or ad-hoc HTTP freelance. Persona is not SKF-compiled. CFE untouched. No `pyforge.*` under `src/platform/`.
 
 Files:
 - `.claude/skills/bmad-agent-scribe/` — launcher SKILL.md, customize.toml, golden transcript

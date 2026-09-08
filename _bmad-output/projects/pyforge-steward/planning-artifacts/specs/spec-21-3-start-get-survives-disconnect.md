@@ -60,7 +60,7 @@ deferred: []
 **Execution:**
 - `django_pyforge/models.py` + `migrations/0002_*.py` — persist result + subject — get without recompute
 - `django_pyforge/supervisor.py` + `tasks.py` — one ledger + Celery after commit — start returns first
-- `django_pyforge/mcp_start_get.py` + `django_atlas_portal/mcp_asgi.py` — atlas MCP tools — FR-12 surface
+- `django_pyforge/mcp_start_get.py` + `django_atlas_portal/mcp_asgi.py` — atlas MCP tools — canopy:FR-12 surface
 - `src/platform/tests/test_start_get_survives_disconnect.py` — I/O matrix
 
 **Acceptance Criteria:**

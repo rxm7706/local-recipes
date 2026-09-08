@@ -30,7 +30,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Portal access still follows the login-time session role snapshot. A security officer who revokes an IdP role must not wait for the user to log in again (FR-31, CAP-12, canopy:AD-15).
+**Problem:** Portal access still follows the login-time session role snapshot. A security officer who revokes an IdP role must not wait for the user to log in again (canopy:FR-31, CAP-12, canopy:AD-15).
 
 **Approach:** Re-read IdP roles from the token claims on each request. Switcher and station gates from 18.2 honor that fresh token. Django group tables and the login-time `idp_token_roles` session list are not the authority.
 

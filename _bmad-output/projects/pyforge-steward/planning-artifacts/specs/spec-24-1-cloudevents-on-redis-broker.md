@@ -29,7 +29,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Stations have no durable event backbone. A down consumer drops work, a poison payload can stall a group, and ad-hoc JSON has no identity envelope (FR-17, FR-18, canopy:AD-8).
+**Problem:** Stations have no durable event backbone. A down consumer drops work, a poison payload can stall a group, and ad-hoc JSON has no identity envelope (canopy:FR-17, canopy:FR-18, canopy:AD-8).
 
 **Approach:** Publish CloudEvents 1.0 onto the existing redis-broker Streams split from Story 20.2. One estate stream and DLQ, consumer groups named by station token, poison harvested with XAUTOCLAIM, envelope identity required except Jira.
 

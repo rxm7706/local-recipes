@@ -19,7 +19,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** A killed Mason boot that re-inserts index rows duplicates them. MinIO/boto3 would be a fourth infra kind (FR-29, BS-8, canopy:AD-13, parent AD-1).
+**Problem:** A killed Mason boot that re-inserts index rows duplicates them. MinIO/boto3 would be a fourth infra kind (canopy:FR-29, BS-8, canopy:AD-13, parent AD-1).
 
 **Approach:** Mason boot re-index upserts by a stable artifact key against PostgreSQL (and RWX files if present). Interrupted mid-flight + resume → one row per key. Tests fail if reconciliation is removed. No MinIO.
 

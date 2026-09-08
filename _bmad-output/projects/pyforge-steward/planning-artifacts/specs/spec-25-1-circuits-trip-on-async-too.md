@@ -19,13 +19,13 @@ warnings: []
 
 ## Intent
 
-**Problem:** A dead outbound dependency can hang the estate. PyBreaker's `call()` treats an un-awaited asyncio coroutine as success, so the circuit never opens (FR-26, canopy:AD-15, BS-4). `pybreaker` is not in pixi; this story ships an in-tree wrapper, not a new dep.
+**Problem:** A dead outbound dependency can hang the estate. PyBreaker's `call()` treats an un-awaited asyncio coroutine as success, so the circuit never opens (canopy:FR-26, canopy:AD-15, BS-4). `pybreaker` is not in pixi; this story ships an in-tree wrapper, not a new dep.
 
-**Approach:** One asyncio-aware circuit wrapper in `django-pyforge`. A failing awaited call registers as a failure. After repeated failures the circuit opens and the caller returns degraded inside the FR-26 budget. `fail_max` is coarse protection — tests never assert an exact failure count. Stations do not ship a second wrapper (adversarial F-10).
+**Approach:** One asyncio-aware circuit wrapper in `django-pyforge`. A failing awaited call registers as a failure. After repeated failures the circuit opens and the caller returns degraded inside the canopy:FR-26 budget. `fail_max` is coarse protection — tests never assert an exact failure count. Stations do not ship a second wrapper (adversarial F-10).
 
 ## Boundaries & Constraints
 
-**Always:** Wrapper lives in `django-pyforge` (`django_pyforge.circuits`). Tests fail if `acall` does not await (canopy:AD-15: mechanism absent). Reuse FR-26 budget `0.5s` (`FAIL_FAST_SECONDS`). Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug. Consult `docs/reference/library-llms-full.md` before new imports — stdlib only here.
+**Always:** Wrapper lives in `django-pyforge` (`django_pyforge.circuits`). Tests fail if `acall` does not await (canopy:AD-15: mechanism absent). Reuse canopy:FR-26 budget `0.5s` (`FAIL_FAST_SECONDS`). Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug. Consult `docs/reference/library-llms-full.md` before new imports — stdlib only here.
 
 **Block If:** Implementation would add `pybreaker` / `aiocircuitbreaker` / `purgatory` to pixi, put `pyforge.*` under `src/platform/`, or require Redis for the unit tests.
 
@@ -65,7 +65,7 @@ warnings: []
 
 ## Design Notes
 
-PyBreaker on conda-forge is sync / Tornado; `breaker.call(async_fn)` returns the coroutine and records success. Rejected: `aiocircuitbreaker` (dormant 2022), `purgatory` (unpackaged). In-memory fail counter is exact in tests; Redis `setnx`/`incr` in upstream is not atomic, so production `fail_max` stays coarse — tests only prove "many failures ⇒ open", never "the Nth call opens". Open circuit fail-fast budget is the same 500ms as `QUERY_BUDGET_SECONDS` (FR-26 / 21.5); this module does not import supervisor.
+PyBreaker on conda-forge is sync / Tornado; `breaker.call(async_fn)` returns the coroutine and records success. Rejected: `aiocircuitbreaker` (dormant 2022), `purgatory` (unpackaged). In-memory fail counter is exact in tests; Redis `setnx`/`incr` in upstream is not atomic, so production `fail_max` stays coarse — tests only prove "many failures ⇒ open", never "the Nth call opens". Open circuit fail-fast budget is the same 500ms as `QUERY_BUDGET_SECONDS` (canopy:FR-26 / 21.5); this module does not import supervisor.
 
 ## Verification
 

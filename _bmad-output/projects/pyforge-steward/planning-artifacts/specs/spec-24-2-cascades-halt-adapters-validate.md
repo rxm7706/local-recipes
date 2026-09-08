@@ -17,7 +17,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** A buggy producer can fan out forever, event `type` can be a story-local string, and payload shape can be rejected at the stream (killing transport) instead of in the domain (FR-19, FR-20, canopy:AD-8).
+**Problem:** A buggy producer can fan out forever, event `type` can be a story-local string, and payload shape can be rejected at the stream (killing transport) instead of in the domain (canopy:FR-19, canopy:FR-20, canopy:AD-8).
 
 **Approach:** Enforce `pyforgeloopdepth` ceiling 8 on publish in `django-pyforge`, register event `type` as dotted verbs in that same chrome, and reject payload shape only in consuming domain adapters. Keep CloudEvents on redis-broker Streams from 24-1.
 
