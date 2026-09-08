@@ -4173,7 +4173,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py": "cddba4da79f24c1fad5344a17b949a69200189cb",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/cache.py": "ff5486920d4ee895b4190addffa729c3187abb99",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/declarations.py": "98d5b67757e91701b447f3eec204fce434fa7ab3",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/export.py": "31a42346a6320e73786c8427f68b6918663ee067",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/export.py": "fff7f22fc5337ccac2a619f9d63263bec6133b34",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/filtering.py": "7de15cb81957239e8fec22b37b934a939facb2b2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/middleware.py": "087d4210652aaa3d93559293bc13eb86b7d416e1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/migrations/0001_initial.py": "5b3c7a517c18d39333b48d443ad0f07443f2a78f",
@@ -4182,7 +4182,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8"
   },
-  "memlog": "553eba20200064eb1fa45f833db593300ac22ad5"
+  "memlog": "a5cd7ec6188ba1a114aba80e64b02afadf5f6799"
  },
  "pyforge-mason/spec-fleet-stewardship": {
   "files": {},
@@ -4941,7 +4941,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py": "cddba4da79f24c1fad5344a17b949a69200189cb",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/cache.py": "ff5486920d4ee895b4190addffa729c3187abb99",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/declarations.py": "98d5b67757e91701b447f3eec204fce434fa7ab3",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/export.py": "31a42346a6320e73786c8427f68b6918663ee067",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/export.py": "fff7f22fc5337ccac2a619f9d63263bec6133b34",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/filtering.py": "7de15cb81957239e8fec22b37b934a939facb2b2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/middleware.py": "087d4210652aaa3d93559293bc13eb86b7d416e1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/migrations/0001_initial.py": "5b3c7a517c18d39333b48d443ad0f07443f2a78f",
@@ -5008,13 +5008,14 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": "af9468f307ea83c6f18172b280b1443813c79aa1",
    "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": "06a27fbac02c1677e8dae344885d454ed63d98a9",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "55d283defca1adeefadeec99a4e6386e458dc08c",
+   "src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py": "13d7e626d95dcd59b127fc8849e0750058f8da7a",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": "9b5e688f33ae1fbf686ddfcf3a216fbfca61374f",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": "b09f1fdfcc76d4b42844a4e330b736c531134d4a",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "76d0846e87c56175d9dbab4e013a67edfba8fc64",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py": "f34121d38da67e52d6e28458cea986167008ef91",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_cache.py": "72056861b06b8e493c73c378d711d358f7d85b5d",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_declarations.py": "b5401bb806792e67dc62f7f6d8a307740efaeece",
-   "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_export.py": "8a9231cb5a16dea58a750fad8d06ed561b260713",
+   "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_export.py": "545ea45b2b4a26bc0c156b5c0ce52e9a0ce6f211",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_filtering.py": "7a5ff1f080657f49dd56f83070963b50491d7001",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_isolation_proof.py": "7d87326c1b54c7c02e719b8f44fa42f58b6aebfb",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_middleware.py": "c6becaff27b687d7ede29bc5424c83075708dd07",
@@ -5038,7 +5039,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py": "ddd5d1a9008da23b1d293bf967ce8dfd27cdedc2",
    "src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py": "df99f1eba132eb160f0c28d8e16b90729a8f4f8e"
   },
-  "memlog": "c7760d8fdd500e55379a54dbe538874f91f6599a"
+  "memlog": "d334c7995531f20888c6ba799314ddf1f50b1a6e"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
