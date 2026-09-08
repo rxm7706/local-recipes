@@ -255,16 +255,20 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
     # injection: the very bug FR-3 was written to catch. The conda-forge-expert
     # Rule-2 retro (Story 5.5, CFE v8.82.x) host-gated that injection and its
     # copy in `inventory_channel.py`, so the detector correctly reports nothing
-    # -- verified by A/B: scanning the pre-retro revision still yields both
-    # findings (`_http.py:215`, `inventory_channel.py:116`), the post-retro
-    # tree yields none.
+    # for THOSE TWO FILES -- verified by A/B: scanning the pre-retro revision
+    # still yields both findings (`_http.py:215`, `inventory_channel.py:116`),
+    # the post-retro tree yields none.
     #
     # Asserting the absence keeps the same property the original had (the
     # detector runs against real, unmodified code rather than a synthetic
     # string) and converts it into a live regression guard that the leak class
-    # stays closed. That the detector FINDS such an injection is covered by the
-    # synthetic positive cases above, which do not depend on another package
-    # shipping a real bug.
+    # stays closed for those two files specifically. That the detector FINDS
+    # such an injection is covered by the synthetic positive cases above,
+    # which do not depend on another package shipping a real bug -- except
+    # for two now-KNOWN, pre-existing findings elsewhere in this same
+    # directory that DW-FU-1-4's intermediate-variable fix newly surfaces
+    # (see `_KNOWN_PRE_EXISTING` below); everything else in the directory
+    # must stay clean.
     if not _HTTP_PY_DIR.is_dir():
         pytest.skip(
             "CFE scripts golden fixture not present (non-monorepo context)"
@@ -289,11 +293,39 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
     assert incomplete == [], f"scan did not complete: {incomplete}"
 
     unconditional = [f for f in result if f.check == CHECK_NAME]
-    assert unconditional == [], (
-        "the real CFE scripts must contain no unconditional credential "
-        "injection -- got "
-        f"{[(f.evidence.get('file'), f.evidence.get('line'), f.evidence.get('var_name')) for f in unconditional]}"
+    seen = {
+        (Path(f.evidence["file"]).name, f.evidence["line"], f.evidence["var_name"])
+        for f in unconditional
+    }
+
+    # DW-FU-1-4 follow-up (2026-09-07): closing the intermediate-variable v1
+    # gap (`name = os.environ.get(...); headers[...] = name`) makes this
+    # detector correctly see two PRE-EXISTING, previously-invisible
+    # host-scoping gaps live in this same scripts directory --
+    # `github_version_checker.py`'s `token = os.environ.get("GITHUB_TOKEN")
+    # or os.environ.get("GH_TOKEN")` feeding `headers["Authorization"]` with
+    # no host check, and `scan_project.py`'s `tok =
+    # os.environ.get("OCI_REGISTRY_TOKEN")` feeding `headers["Authorization"]`
+    # against a registry host derived from the caller's own image ref -- the
+    # SAME leak class `_http.py`'s own fix closed, now correctly surfaced by
+    # the more complete detector rather than a regression it introduces.
+    # Fixing those two scripts is conda-forge-expert's own surface, not
+    # pyforge-doctor's (out of this fix's scope) -- pinned here BY NAME so a
+    # THIRD, different finding anywhere else in the directory still reds
+    # this test rather than silently passing.
+    _KNOWN_PRE_EXISTING = {
+        ("github_version_checker.py", 68, "GITHUB_TOKEN"),
+        ("scan_project.py", 1898, "OCI_REGISTRY_TOKEN"),
+    }
+    assert seen <= _KNOWN_PRE_EXISTING, (
+        "the real CFE scripts must contain no NEW unconditional credential "
+        "injection beyond the known, pre-existing findings -- got "
+        f"{seen - _KNOWN_PRE_EXISTING}"
     )
+    assert not any(
+        Path(f.evidence["file"]).name in {"_http.py", "inventory_channel.py"}
+        for f in unconditional
+    ), "the original golden-fixture files must stay clean"
 
 
 # --- gather_one filter-equivalence ---------------------------------------
@@ -801,3 +833,145 @@ def test_gather_env_read_in_comprehension_iter_is_still_flagged(
 
     assert len(result) == 1
     assert result[0].evidence["var_name"] == "ACCEPT"
+
+
+# --- DW-FU-1-4 follow-up: intermediate-variable / dict-literal tracking ---
+
+
+def test_gather_intermediate_variable_credential_injection_is_detected(
+    tmp_path: Path,
+):
+    # DW-FU-1-4's own reported miss, reproduced verbatim: `token =
+    # os.environ.get(...)` then `headers["X"] = token` was invisible under
+    # the v1 direct-expression-only boundary (real repo shape: this exact
+    # pattern in `scan_project.py`'s `tok = os.environ.get(...)` feeding
+    # `headers["Authorization"]`).
+    _write(
+        tmp_path,
+        "intermediate_var.py",
+        "import os\n"
+        "\n"
+        "def handler():\n"
+        '    token = os.environ.get("X")\n'
+        '    headers["Authorization"] = token\n',
+    )
+
+    result = gather(tmp_path)
+
+    assert len(result) == 1
+    assert result[0].evidence["var_name"] == "X"
+    assert result[0].evidence["line"] == 5
+
+
+def test_gather_intermediate_variable_reassigned_to_non_credential_not_flagged(
+    tmp_path: Path,
+):
+    # A tracked var later reassigned to something that is NOT
+    # credential-bearing must stop being treated as one (best-effort, not
+    # full dataflow -- see `_track_credential_var`'s docstring).
+    _write(
+        tmp_path,
+        "reassigned.py",
+        "import os\n"
+        "\n"
+        "def handler():\n"
+        '    token = os.environ.get("X")\n'
+        '    token = "static-default"\n'
+        '    headers["Authorization"] = token\n',
+    )
+
+    assert gather(tmp_path) == ()
+
+
+def test_gather_intermediate_variable_still_respects_host_guard(
+    tmp_path: Path,
+):
+    # The intermediate-variable extension must still honor the existing
+    # enclosing host-scope guard model, not bypass it.
+    _write(
+        tmp_path,
+        "guarded_intermediate.py",
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    token = os.environ.get("X")\n'
+        '    if host == "internal.example.com":\n'
+        '        headers["Authorization"] = token\n',
+    )
+
+    assert gather(tmp_path) == ()
+
+
+def test_gather_dict_literal_assigned_to_header_name_is_detected(
+    tmp_path: Path,
+):
+    # DW-FU-1-4's other reported miss, reproduced verbatim: a dict LITERAL
+    # assigned to a bare header-shaped name (real repo shape:
+    # `gemini_server.py`'s `headers = {"x-goog-api-key": ...}`) was
+    # invisible -- only a `headers[...]` Subscript target was recognized.
+    _write(
+        tmp_path,
+        "dict_literal.py",
+        "import os\n"
+        "\n"
+        "def handler():\n"
+        '    headers = {"x-goog-api-key": os.environ.get("KEY")}\n',
+    )
+
+    result = gather(tmp_path)
+
+    assert len(result) == 1
+    assert result[0].evidence["var_name"] == "KEY"
+    assert result[0].evidence["line"] == 4
+
+
+def test_gather_dict_literal_with_intermediate_variable_is_detected(
+    tmp_path: Path,
+):
+    # The two DW-FU-1-4 gaps compose: an intermediate variable embedded in
+    # a dict literal assigned to a bare header-shaped name.
+    _write(
+        tmp_path,
+        "dict_literal_var.py",
+        "import os\n"
+        "\n"
+        "def handler():\n"
+        '    key = os.environ.get("KEY")\n'
+        '    headers = {"x-goog-api-key": key}\n',
+    )
+
+    result = gather(tmp_path)
+
+    assert len(result) == 1
+    assert result[0].evidence["var_name"] == "KEY"
+
+
+def test_gather_dict_literal_assigned_to_non_header_name_not_flagged(
+    tmp_path: Path,
+):
+    # The dict-literal widening is scoped to a header-shaped bare NAME
+    # target -- an unrelated name assigned a dict literal must not match.
+    _write(
+        tmp_path,
+        "unrelated_dict.py",
+        "import os\n"
+        "\n"
+        "def handler():\n"
+        '    config = {"key": os.environ.get("KEY")}\n',
+    )
+
+    assert gather(tmp_path) == ()
+
+
+def test_gather_dict_literal_host_guard_still_suppresses(tmp_path: Path):
+    _write(
+        tmp_path,
+        "guarded_dict_literal.py",
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    if host == "internal.example.com":\n'
+        '        headers = {"Authorization": os.environ.get("TOKEN")}\n',
+    )
+
+    assert gather(tmp_path) == ()
