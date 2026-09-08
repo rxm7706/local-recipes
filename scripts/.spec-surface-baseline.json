@@ -541,7 +541,7 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "1793fa87ddc08b117e59d2da9202b1857ad4aff0",
-   "pixi.toml": "166df1fe8a05bf044832833192c898be36fcd1bd",
+   "pixi.toml": "d1449330627c61c40524db3a9ef637afa6864e0a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "c9ceece6aa040ac9b2d62b9dba24a91b9bf21c44",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "3788a33297571c63bfac5d0a47ec18c301a71d56",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "b85f442c9626fac92287ea3737ccef486a85ebad"
+  "memlog": "1fc03fe44e850886e14f0f43466720d2b57e5bb4"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -2954,7 +2954,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "166df1fe8a05bf044832833192c898be36fcd1bd",
+   "pixi.toml": "d1449330627c61c40524db3a9ef637afa6864e0a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "8a93e5e51a08423391a0da2cfb4b65cee68a3e3c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "ddaa3060c1d5985d03a96e33c8327cb328b1e2e5",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3466,7 +3466,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "48f5cbc011ed474bc7b7bb27573c284500af65c7"
+  "memlog": "45ddffcc72fbfdd998a51c63473606c9fb5bf2c4"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
