@@ -5,7 +5,19 @@ status: draft
 owner-dream: docs/dreams/pyforge-core.md
 surface:
   - src/shared/packages/pyforge-core/**            # net-new, not yet created
-  - src/shared/packages/pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}/src/**  # the copies each extraction retires
+  # DW-FU-20-2 fix (2026-09-07): the prior single-line brace-expansion glob
+  # (pyforge-{atlas,doctor,...}/src/**) never matched any real path --
+  # chain.py::_glob_to_re has no {a,b,c} expansion support, so the literal
+  # brace text could never appear in a scanned path. One real glob per
+  # station below, matching each package's actual src/ tree.
+  - src/shared/packages/pyforge-atlas/src/**        # the copies each extraction retires
+  - src/shared/packages/pyforge-doctor/src/**       # the copies each extraction retires
+  - src/shared/packages/pyforge-herald/src/**       # the copies each extraction retires
+  - src/shared/packages/pyforge-marshal/src/**      # the copies each extraction retires
+  - src/shared/packages/pyforge-mason/src/**        # the copies each extraction retires
+  - src/shared/packages/pyforge-scribe/src/**       # the copies each extraction retires
+  - src/shared/packages/pyforge-steward/src/**      # the copies each extraction retires
+  - src/shared/packages/pyforge-warden/src/**       # the copies each extraction retires
   - pixi.toml                                       # the new workspace member + its per-station dep edges
 sources:
   - ../../../../../../docs/dreams/pyforge-core.md

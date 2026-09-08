@@ -25,11 +25,25 @@ story spec's Design Notes -- do not re-litigate here):
   ``test`` (e.g. ``"a" if os.environ.get("X") else "b"``, deciding BETWEEN
   two unrelated values) does not count (review finding: that shape is not
   actually feeding the header, so flagging it produced a false positive
-  with a misleading message). No intermediate-variable tracking (``token =
-  os.environ.get(...); headers["X"] = token`` is invisible to this
-  scanner) and no dict-literal-construction tracking (``headers = {"X":
-  os.environ.get(...)}`` likewise). Both gaps are logged in
-  ``deferred-work.md``, not chased here.
+  with a misleading message).
+* DW-FU-1-4 follow-up (fixed): an INTERMEDIATE VARIABLE assigned directly
+  from a credential-bearing expression (``token = os.environ.get(...);
+  headers["X"] = token``) is now tracked per-function (see
+  ``_CredentialInjectionVisitor._track_credential_var``/
+  ``._credential_vars``) and resolved when later referenced by bare name in
+  a value-carrying position -- including transitively (``a =
+  os.environ.get(...); b = a``) and through a compound expression
+  (``token = os.environ.get("X") or os.environ.get("Y")``). A DICT LITERAL
+  assigned to a bare header-shaped name (``headers = {"X":
+  os.environ.get(...)}``, previously invisible -- only a ``Subscript``
+  target was recognized; see ``_header_dict_literal_name``) is now covered
+  too -- confirmed live against this repo's own ``gemini_server.py``
+  (DW-FU-1-4's evidence) before being closed. A bare ``return {...}`` dict
+  literal with NO header-named variable at all (``dependency-checker.py``'s
+  ``return {"X-JFrog-Art-Api": api_key}``) is DELIBERATELY still not
+  tracked -- see ``_CredentialInjectionVisitor``'s own docstring for why
+  (entangled with DW-FU-1-4-2's still-open statement-flow-guard item (a),
+  live-confirmed to regress the golden fixture if chased here).
 * The assignment target must be an ``ast.Subscript`` on a bare
   ``ast.Name`` whose ``.id`` (case-insensitive) contains ``"header"`` --
   ``headers[...]``, ``request_headers[...]``, etc. An attribute-based
@@ -374,16 +388,23 @@ def _direct_env_read(
     os_names: frozenset[str],
     environ_names: frozenset[str],
     getenv_names: frozenset[str],
+    credential_vars: dict[str, str | None],
 ) -> tuple[str | None, bool]:
-    """Whether ``value``'s own expression subtree directly contains an
-    env-var read in a value-carrying position -- never following a
-    ``Name`` reference to its assignment elsewhere (the direct-expression-
-    only v1 boundary), and never counting a ternary's ``test`` (see
-    ``_walk_value_positions``)."""
+    """Whether ``value``'s own expression subtree contains an env-var read
+    in a value-carrying position -- either DIRECTLY (an ``os.environ``/
+    ``os.getenv`` call or subscript textually inside the expression), or
+    THROUGH a tracked intermediate variable (DW-FU-1-4 follow-up: ``token =
+    os.environ.get(...); headers["X"] = token`` was previously invisible --
+    ``token`` is a bare ``ast.Name`` reference resolved against
+    ``credential_vars``, the enclosing scope's own credential-var map built
+    by ``_CredentialInjectionVisitor._track_credential_var``). Never counts
+    a ternary's ``test`` (see ``_walk_value_positions``)."""
     for node in _walk_value_positions(value):
         name, found = _env_read_match(node, os_names, environ_names, getenv_names)
         if found:
             return name, True
+        if isinstance(node, ast.Name) and node.id in credential_vars:
+            return credential_vars[node.id], True
     return None, False
 
 
@@ -394,6 +415,21 @@ def _header_subscript_name(target: ast.expr) -> str | None:
     if not isinstance(base, ast.Name) or "header" not in base.id.lower():
         return None
     return base.id
+
+
+def _header_dict_literal_name(target: ast.expr, value: ast.expr) -> str | None:
+    """``target`` a bare header-shaped ``ast.Name`` (``headers``, not
+    ``headers[...]``) assigned a ``dict`` LITERAL (DW-FU-1-4 follow-up:
+    ``headers = {"k": os.environ.get(...)}`` was previously invisible --
+    only a ``Subscript`` target was recognized). Restricted to a literal
+    ``ast.Dict`` value, not any value whatsoever, to stay a narrow,
+    deliberate widening rather than "check every assignment to a
+    header-shaped name" (a much bigger, unrequested behavior change)."""
+    if not isinstance(target, ast.Name) or "header" not in target.id.lower():
+        return None
+    if not isinstance(value, ast.Dict):
+        return None
+    return target.id
 
 
 def _iter_assign_checks(assign: ast.Assign) -> Iterator[tuple[str, ast.expr]]:
@@ -410,6 +446,11 @@ def _iter_assign_checks(assign: ast.Assign) -> Iterator[tuple[str, ast.expr]]:
     level of unpacking only -- nested destructuring is out of v1 scope."""
     for target in assign.targets:
         name = _header_subscript_name(target)
+        if name is not None:
+            yield name, assign.value
+            return
+    for target in assign.targets:
+        name = _header_dict_literal_name(target, assign.value)
         if name is not None:
             yield name, assign.value
             return
@@ -488,7 +529,30 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
     ``ast.If`` nodes in Python's own AST (living in the outer ``If``'s
     ``orelse``), so an assignment guarded by an ``elif`` naturally
     accumulates both that ``elif``'s own test and every enclosing ``if``'s
-    test on the stack -- exactly "anywhere up the ancestor chain"."""
+    test on the stack -- exactly "anywhere up the ancestor chain".
+
+    ``self._credential_vars`` (DW-FU-1-4 follow-up) is a second, PARALLEL
+    per-function-scope map -- ``{var_name: env_var_name}`` -- of plain
+    ``name = <credential-bearing-expression>`` assignments seen so far in
+    the CURRENT function, reset at the same function boundaries as
+    ``_guards`` for the same reason (an outer function's local `token`
+    must not leak into an unrelated nested `def`'s own `token`). It lets
+    ``_direct_env_read`` resolve a bare ``ast.Name`` reference back to the
+    env-var read that produced it, closing the "intermediate variable"
+    v1 gap (``token = os.environ.get(...); headers["X"] = token``).
+
+    A bare ``return {...}`` dict literal (no header-named variable at all,
+    e.g. ``dependency-checker.py``'s ``return {"X-JFrog-Art-Api":
+    api_key}``) is DELIBERATELY still not tracked: this repo's own
+    ``_auth_headers`` uses the early-return guard-clause idiom (``if not
+    enterprise_host: return {}`` ... later ... ``if api_key: return
+    {...}``), which this module's enclosing-guard model cannot see (that is
+    DW-FU-1-4-2's OWN separately-tracked, still-open item (a) -- fixing it
+    here first, live-confirmed during this pass, would newly flag five
+    already-safe real findings in this repo's own scripts and break
+    ``test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts``).
+    Chasing that shape needs the statement-flow analysis DW-FU-1-4-2(a)
+    already scopes out; not duplicated here."""
 
     def __init__(
         self,
@@ -500,6 +564,7 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         self._environ_names = environ_names
         self._getenv_names = getenv_names
         self._guards: list[ast.expr] = []
+        self._credential_vars: dict[str, str | None] = {}
         self.matches: list[tuple[int, str, str | None]] = []
 
     def visit_If(self, node: ast.If) -> None:
@@ -531,7 +596,9 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> None:
         saved_guards, self._guards = self._guards, []
+        saved_vars, self._credential_vars = self._credential_vars, {}
         self.generic_visit(node)
+        self._credential_vars = saved_vars
         self._guards = saved_guards
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
@@ -544,16 +611,51 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         if header_var is None:
             return
         env_var_name, found = _direct_env_read(
-            value, self._os_names, self._environ_names, self._getenv_names
+            value,
+            self._os_names,
+            self._environ_names,
+            self._getenv_names,
+            self._credential_vars,
         )
         if found and not any(
             _references_host_like(guard) for guard in self._guards
         ):
             self.matches.append((lineno, header_var, env_var_name))
 
+    def _track_credential_var(self, node: ast.Assign) -> None:
+        """DW-FU-1-4 follow-up: record ``name = <credential-bearing-expr>``
+        for a single bare-``ast.Name`` target so a LATER reference to
+        ``name`` (in a header assignment or a returned dict literal) is
+        still recognized -- the "intermediate variable" gap. Deliberately
+        NOT scoped to header-shaped names: the whole point is that ``token``
+        (unlike ``headers``) carries no naming signal of its own. Reusing
+        ``_direct_env_read`` (rather than the narrower ``_env_read_match``)
+        also makes tracking transitive for free (``a = os.environ.get(...);
+        b = a`` resolves ``b`` too) and lets a compound expression like
+        ``os.environ.get("X") or os.environ.get("Y")`` still register, since
+        it walks the same value-carrying-position logic real credential
+        assignments use elsewhere in this module. A target reassigned to a
+        NON-credential-bearing expression is dropped from the map rather
+        than left stale (best-effort flow tracking, not full dataflow)."""
+        if len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
+            return
+        name = node.targets[0].id
+        env_var_name, found = _direct_env_read(
+            node.value,
+            self._os_names,
+            self._environ_names,
+            self._getenv_names,
+            self._credential_vars,
+        )
+        if found:
+            self._credential_vars[name] = env_var_name
+        else:
+            self._credential_vars.pop(name, None)
+
     def visit_Assign(self, node: ast.Assign) -> None:
         for header_var, value in _iter_assign_checks(node):
             self._check(header_var, value, node.lineno)
+        self._track_credential_var(node)
         self.generic_visit(node)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
@@ -612,17 +714,18 @@ def _scan_file(file_path: Path) -> list[Finding]:
         visitor.matches, key=lambda match: match[0]
     ):
         env_label = env_var_name or "an env-var"
+        message = (
+            f"{file_path}:{lineno}: {env_label} is read directly "
+            f"into {header_var}[...] with no enclosing host-scope "
+            "if/elif guard -- looks like an unconditional "
+            "credential injection"
+        )
         findings.append(
             Finding(
                 source=Source.ENV_HYGIENE,
                 check=CHECK_NAME,
                 status=DoctorStatus.WARN,
-                message=(
-                    f"{file_path}:{lineno}: {env_label} is read directly "
-                    f"into {header_var}[...] with no enclosing host-scope "
-                    "if/elif guard -- looks like an unconditional "
-                    "credential injection"
-                ),
+                message=message,
                 evidence={
                     "file": str(file_path),
                     "line": lineno,
