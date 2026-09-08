@@ -3049,13 +3049,13 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py": "fb762326ea4f672020551f017f051cb3240b20a3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py": "d356873f5d804a8c511c15201bfc788cecf29892",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py": "45d9486c7f6f4f5f2dfc40835f078d563ee4868e",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py": "0a33527576b4cc04b261f5feb666b5316e0cfcc3",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py": "e7ba18a95f97e7e22865cecf1db8c545eb489c64",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py": "12bd1c96ccfef87dbed5358483ef8af4320ce75f",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py": "8944f45f605cfa47156f2ce17a92f31a1ef219fe",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py": "0b4f0a162b69aae574532e5234298d30112a95ff",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_session.py": "4c41220cf05420b5e131c6572007e2535da7f611",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/identity.py": "0f7d3a8df689f4b1833b97ad7916b47948df6c8a",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/journal.py": "debb18ea3521da6dfbab2f0d264d46c3dd8de027",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/journal.py": "13bba3f717138d729cf63a42de70fb6726a776b8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/landing.py": "3af268de561b5fe06412084e66e8083146e5a829",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model.py": "51d1d0d1919d3eda959ac31165c4d8839c56e641",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py": "56ce04a0805ee0650d4e1d72a8dfe6f210314b52",
@@ -3190,7 +3190,7 @@
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad23_inline_key_format_guard.py": "1d90c30c6393ad0b1b96b7a288fa67146d26d7cb",
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad26_seed_field_access_guard.py": "90fc7962d31572a707a33cee31599054fd5fa9ac",
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad31_conformance_check_can_genuinely_fail.py": "9d8ae3eeba7a23a9e1104ffed15c65820beca61c",
-   "src/shared/packages/pyforge-marshal/tests/meta/test_ad34_egress_registry_completeness.py": "330e1477e69d9b3d18826beef7d6f041e03dfbd5",
+   "src/shared/packages/pyforge-marshal/tests/meta/test_ad34_egress_registry_completeness.py": "5e81808379e3671d51d9a8aee615d63c0ef96800",
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad36_projection_mechanism_table.py": "75d3ee97c787b899a4b4235afb30df7514a7fbe3",
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad39_envelope_consistency.py": "54d89344e7f37bdcd61da236ecfca98348fa5f39",
    "src/shared/packages/pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py": "349e484bbf02a3f59339af8965d67eb6e69de923",
@@ -3268,7 +3268,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_durability.py": "25fb4af45d257c5a6bbb022a00011699e7b9e7e9",
    "src/shared/packages/pyforge-marshal/tests/unit/test_egress.py": "36bf75a1c3fa2fab89ec931ab7df29031f92e1e0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_findings.py": "382b2f4a9f730bea4b8df11d0ebf15f25da5f639",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_fold.py": "235204895485336e7a30ccfe7d748147c32726e8",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_fold.py": "e444d795faed4bf6a18d1e2506c40959f2508663",
    "src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py": "a6ac8d887f5cd3c7e2509270dee7d3fe9ea3d2e8",
    "src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py": "730029f3a28f1445ef18d2a4d0aac4d25098fdb2",
    "src/shared/packages/pyforge-marshal/tests/unit/test_gate.py": "3e199f906ea5524096cb7b657e2ded9bcc63be81",
@@ -3362,7 +3362,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py": "b267344fe5ea1802971c7876603bb87756c48ae3",
    "src/shared/packages/pyforge-marshal/tests/unit/test_wave_scheduler.py": "ee92600544d54e358dc02829b81f157c1ad81895"
   },
-  "memlog": "0d9e2dd04bbb5a47c19ed1cf6c11e20376921e46"
+  "memlog": "b94814092df6b607aa8275022da7ba6f8b72321b"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

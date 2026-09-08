@@ -3,7 +3,7 @@
 ``tests/meta/test_ad7_verdict_sole_ownership.py``'s AST-scan technique
 exactly, adapted to a different structural signature.
 
-Three guards:
+Four guards:
 
 (1) Every ``Protocol`` subclass defined under ``pyforge.marshal.ports.*``
     has an entry in ``core.egress.EGRESS_PORTS`` -- a new port module with
@@ -22,6 +22,19 @@ Three guards:
     token-shape vocabulary (a known prefix followed by a regex character
     class) -- the structural proof that no call site can hand-roll its own
     redaction against a copy of that vocabulary.
+(4) Every ``pane_content`` method defined under ``adapters/`` calls
+    ``to_redacted`` somewhere in its own body (DW-FU-3-4-5). Guards (1)/(2)
+    cannot reach this surface: ``SessionObserverPort`` is classified
+    ``egress: False`` (its own docstring's reasoning is correct by AD-34's
+    letter -- it never forwards a payload to a durable/third-party SINK),
+    but that classification's boolean vocabulary models only "accepts a
+    payload bound for a sink", not "returns externally-sourced,
+    secret-bearing content" -- the one thing ``SessionObserverPort.
+    pane_content`` does. Before this guard, the whole redaction obligation
+    rested on one hand-written unit test asserting the adapter's own
+    ``to_redacted`` call; a second implementation, or a refactor that
+    dropped that call, returned unredacted tmux pane text into ``core`` and
+    nothing structural failed.
 
 Positively asserts the scan surfaces are non-empty and that ``RecordPort``
 (the one real egress port shipped so far) is classified ``True`` -- the
@@ -78,6 +91,7 @@ if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 PORTS_DIR = PACKAGE_DIR / "ports"
+ADAPTERS_DIR = PACKAGE_DIR / "adapters"
 _EGRESS_MODULE = PACKAGE_DIR / "core" / "egress.py"
 
 _PRIVATE_NAME = "_TOKEN_SHAPE_PATTERNS"
@@ -324,6 +338,66 @@ def _token_shape_pattern_references(tree: ast.Module) -> list[tuple[int, str]]:
     return sorted(violations)
 
 
+# --- guard (4): SessionObserverPort.pane_content must call to_redacted ------
+
+
+def _adapter_modules(root: Path | None = None) -> list[Path]:
+    # `root` is injectable for the same reason `_port_modules`'s is -- the
+    # "guard is alive" self-test below runs the guard's own scan-and-assert
+    # path over a synthetic tree rather than asserting around it.
+    return sorted((root if root is not None else ADAPTERS_DIR).rglob("*.py"))
+
+
+def _pane_content_methods(
+    tree: ast.Module,
+) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
+    """Every ``pane_content`` method defined on any class in ``tree`` -- the
+    observation surface ``SessionObserverPort``'s own docstring rests its
+    ``egress: False`` classification on entirely ("its own pane_content
+    ALREADY redacts via to_redacted at the adapter's own capture site")."""
+    methods: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for item in node.body:
+            if (
+                isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and item.name == "pane_content"
+            ):
+                methods.append(item)
+    return methods
+
+
+def _calls_to_redacted(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """``True`` if ``node``'s body contains a call whose callee resolves to
+    ``to_redacted`` -- a bare name (``from ..core.egress import
+    to_redacted``, the real adapter's own import shape) or a
+    ``module.to_redacted`` attribute access. Does not verify the call's
+    RESULT is what gets returned (a stated bound, matching guards (1)-(3)'s
+    own best-effort-static nature) -- it proves the call is present at all,
+    which is exactly the thing a dropped-call refactor removes."""
+    for child in ast.walk(node):
+        if not isinstance(child, ast.Call):
+            continue
+        func = child.func
+        if isinstance(func, ast.Name) and func.id == "to_redacted":
+            return True
+        if isinstance(func, ast.Attribute) and func.attr == "to_redacted":
+            return True
+    return False
+
+
+def _unredacted_pane_content_methods(root: Path | None = None) -> list[str]:
+    """Guard (4) itself, extracted so both the real test and its synthetic
+    self-test exercise the identical code path."""
+    violations: list[str] = []
+    for module_path in _adapter_modules(root):
+        for method in _pane_content_methods(_parse(module_path)):
+            if not _calls_to_redacted(method):
+                violations.append(f"{module_path.name}::{method.name}")
+    return violations
+
+
 # --- guard (1) --------------------------------------------------------------
 
 
@@ -378,6 +452,88 @@ def test_no_token_shape_pattern_reference_outside_egress(module_path: Path):
         + " -- only core/egress.py may redact; no other module may hand-roll its "
         "own token-shape scanning (AD-34)"
     )
+
+
+# --- guard (4) ---------------------------------------------------------------
+
+
+def test_pane_content_scan_surface_is_not_empty():
+    modules = _adapter_modules()
+    assert modules, "AD-34 pane_content redaction guard found no adapter modules to scan"
+    found = [
+        method
+        for module_path in modules
+        for method in _pane_content_methods(_parse(module_path))
+    ]
+    assert found, (
+        "no pane_content implementation found under adapters/ -- this guard "
+        "is vacuous if SessionObserverPort's sole implementation ever moves "
+        "or is renamed"
+    )
+
+
+def test_pane_content_implementations_call_to_redacted():
+    """DW-FU-3-4-5: makes the redaction obligation structural instead of
+    resting on one hand-written unit test in isolation -- a second
+    ``SessionObserverPort`` implementation, or a refactor that drops the
+    ``to_redacted`` call, now fails the build."""
+    violations = _unredacted_pane_content_methods()
+    assert not violations, (
+        f"pane_content implementation(s) {violations} do not call to_redacted() -- "
+        "AD-34 requires pane-derived content to be redacted at capture, before it "
+        "enters core (SessionObserverPort's own docstring)"
+    )
+
+
+def test_guard_is_alive_synthetic_pane_content_missing_redaction_fires(tmp_path):
+    """Runs guard (4)'s OWN scan-and-assert path over a synthetic adapters
+    tree, mirroring guard (1)'s identical self-test shape."""
+    (tmp_path / "fake_observer.py").write_text(
+        "class FakeObserver:\n"
+        "    def pane_content(self, session):\n"
+        "        return capture(session)\n",
+        encoding="utf-8",
+    )
+    assert _unredacted_pane_content_methods(root=tmp_path) == [
+        "fake_observer.py::pane_content"
+    ]
+    # ...and stays silent once the call is present -- otherwise the guard
+    # would be "always fires", just as vacuous as "never fires".
+    (tmp_path / "fake_observer.py").write_text(
+        "from ..core.egress import to_redacted\n\n"
+        "class FakeObserver:\n"
+        "    def pane_content(self, session):\n"
+        "        redacted = to_redacted({'pane': capture(session)})\n"
+        "        return redacted.text\n",
+        encoding="utf-8",
+    )
+    assert _unredacted_pane_content_methods(root=tmp_path) == []
+
+
+def test_guard_is_alive_synthetic_pane_content_attribute_call_form_fires(tmp_path):
+    """The attribute-access call form (``egress.to_redacted(...)``) must be
+    recognized too, not just the bare-name import form the real adapter
+    uses -- mirrors guard (3)'s identical two-shape recognition."""
+    (tmp_path / "fake_observer.py").write_text(
+        "from ..core import egress\n\n"
+        "class FakeObserver:\n"
+        "    def pane_content(self, session):\n"
+        "        return egress.to_redacted({'pane': capture(session)}).text\n",
+        encoding="utf-8",
+    )
+    assert _unredacted_pane_content_methods(root=tmp_path) == []
+
+
+def test_guard_does_not_fire_on_the_real_observer_mux():
+    """The real, shipped ``MultiplexerObserver.pane_content`` must produce
+    zero violations -- it already calls ``to_redacted`` at its own capture
+    site."""
+    from pyforge.marshal.adapters import observer_mux as observer_mux_module
+
+    module_path = Path(observer_mux_module.__file__)
+    methods = _pane_content_methods(_parse(module_path))
+    assert methods, "observer_mux.py no longer defines pane_content"
+    assert all(_calls_to_redacted(method) for method in methods)
 
 
 # --- detector self-tests: non-vacuous proof ----------------------------------

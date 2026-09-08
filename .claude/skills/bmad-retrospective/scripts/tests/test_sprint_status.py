@@ -30,6 +30,31 @@ SCRIPT = Path(__file__).resolve().parents[1] / "sprint_status.py"
 # test/test-template-sync.js keeps this fixture identical to the source.
 TEMPLATE = Path(__file__).resolve().parent / "fixtures" / "sprint-status-template.yaml"
 
+# The shared downstream reader BOTH sprint_status.py (here) and
+# bmad-sprint-planning's sprint_plan.py write for. This is a repo-root
+# `scripts/` path, not another skill's directory, so reaching into it does
+# not trip PATH-05 -- `bmad-sprint-planning/scripts/tests/test_sprint_plan.py`
+# already reaches into this exact same file the identical way.
+FLEET_SCAN = Path(__file__).resolve().parents[5] / "scripts" / "fleet_scan.py"
+
+
+def _load_fleet_scan():
+    """Fresh module object per call, loaded the same
+    `importlib.util.spec_from_file_location` way
+    `bmad-sprint-planning/scripts/tests/test_sprint_plan.py` loads it --
+    exercises the REAL downstream reader, not a reimplementation of its
+    line-based `_ENTRY` regex that could drift from it."""
+    spec = importlib.util.spec_from_file_location(
+        "_test_sprint_status_fleet_scan", FLEET_SCAN)
+    assert spec is not None and spec.loader is not None
+    fs = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = fs
+    try:
+        spec.loader.exec_module(fs)
+    finally:
+        sys.modules.pop(spec.name, None)
+    return fs
+
 FIXTURE = """\
 # Sprint Status Tracking
 # STATUS DEFINITIONS:
@@ -655,6 +680,49 @@ def test_template_round_trip_changes_only_last_updated(tmp_path):
     assert changed[0][1] == "last_updated: 01-01-2026 09:00"
     # The pre-existing action item keeps its 2-space sequence indent.
     assert "  - epic: 1" in after
+
+
+def test_long_story_key_survives_update_and_fleet_scan_parse(tmp_path):
+    """Regression for DW-FU-31-4-2: `_load_yaml`'s ruamel factory shares its
+    file format AND its downstream reader (`fleet_scan.parse_sprint_status`,
+    a line-based reader requiring the whole "  key: value" pair on one
+    line) with bmad-sprint-planning's `sprint_plan.py`, but never got that
+    module's width fix (Story 22.11, 2026-08-31): ruamel's default `width`
+    (80) folds a `key: value` line past 80 columns onto an indented
+    continuation line, invisible to the real reader. Live-reproduced before
+    the fix: seeding an 86-char story key and running `update` (touching
+    only `last_updated`) folded the key onto a continuation line and
+    `fleet_scan.parse_sprint_status` read it as ABSENT."""
+    long_key = "1-1-" + "a" * 82
+    assert len(long_key) == 86  # the exact repro width, verified live
+    fixture = (
+        'generated: "01-01-2026 09:00"\n'
+        'last_updated: "01-01-2026 09:00"\n'
+        "development_status:\n"
+        f"  {long_key}: ready-for-dev\n"
+        "  epic-1-retrospective: optional\n"
+    )
+    target = tmp_path / "sprint-status.yaml"
+    target.write_text(fixture, encoding="utf-8")
+
+    proc = _run(["update", "--file", str(target), "--epic", "1", "--set-retro-done"])
+    assert proc.returncode == 0, proc.stderr
+    assert _json(proc)["ok"] is True
+
+    raw_line = next(
+        (
+            line
+            for line in target.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith(f"{long_key}:")
+        ),
+        None,
+    )
+    assert raw_line is not None, "long story key wrapped onto multiple lines"
+    assert raw_line.strip() == f"{long_key}: ready-for-dev"
+
+    fleet_scan = _load_fleet_scan()
+    parsed = fleet_scan.parse_sprint_status(target)
+    assert parsed.get(long_key) == "ready-for-dev"
 
 
 def test_mid_file_comment_survives_update(tmp_path):

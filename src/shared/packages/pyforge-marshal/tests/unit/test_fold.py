@@ -281,6 +281,36 @@ def test_quarantined_finding_carries_path_back_to_the_raw_line():
     assert result.quarantined[0].finding.path == "not-json{"
 
 
+def test_quarantined_finding_redacts_a_credential_shaped_payload_field():
+    """Regression for DW-FU-3-2-12: `_quarantine` used to set
+    `Finding.path = raw_line` VERBATIM, so any credential a writer put in a
+    line's payload flowed straight through to every `Envelope.findings`
+    consumer (stdout JSON, CI logs, dashboards) for exactly the lines fold
+    could not validate. `run_id` is missing here, so `build_entry` raises
+    and this line is quarantined MRS-JOURNAL-001 -- reproducing the exact
+    live repro the ledger entry recorded: a payload carrying `api_token`
+    (one of `core.policy.SECRET_KEY_SUFFIXES`) previously leaked its value
+    into `finding.path` in full."""
+    document = {
+        "id": {"writer_id": "cli-1", "counter": 0},
+        "ts": _ts(0),
+        "kind": "gate-verdict",
+        "phase": "intent",
+        "payload": {"api_token": "SECRET-abc123"},
+    }
+    raw_line = json.dumps(document)
+    result = fold([raw_line])
+    assert result.entries == ()
+    assert len(result.quarantined) == 1
+    record = result.quarantined[0]
+    assert record.finding.code == "MRS-JOURNAL-001"
+    assert "SECRET-abc123" not in (record.finding.path or "")
+    # QuarantinedRecord.raw is deliberately UNCHANGED -- the verbatim
+    # forensic copy of the line that failed, not a Finding, and not the
+    # leak this entry describes.
+    assert record.raw == raw_line
+
+
 def test_fold_quarantines_a_non_str_element_without_aborting_the_fold():
     good = build_entry(
         id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={}
