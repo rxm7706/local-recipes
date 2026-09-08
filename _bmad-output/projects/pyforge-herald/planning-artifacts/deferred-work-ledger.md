@@ -727,6 +727,8 @@ deployment.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: .github/workflows/*.yml, _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-07 — resolved — CI/hygiene sweep added `.github/workflows/pyforge-station-tests.yml`'s `herald-test` job: runs `pixi run --frozen -e pyforge-herald pyforge-herald-test` on every PR touching `src/shared/packages/pyforge-herald/**`, with a "Verify a browser is present for the render gate" step (mirrors `detectors.yml`'s `check_layout` precedent: prefers ubuntu-latest's pre-installed google-chrome, falls back to `playwright install --with-deps chromium`). Confirmed locally first: full herald suite is 1254 passed / 4 skipped against this machine's own google-chrome. While auditing this gap, found it generalizes to atlas/mason/scribe/steward/warden too (only marshal and a doctor "scripts" subset had CI coverage before); the same workflow adds a job for each, gated on that station's own changed paths. Ledger status mapped to resolved.
+
 ### DW-14-3-1: `image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same file
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-3-image-slot-scan.md`
