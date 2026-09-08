@@ -212,6 +212,61 @@ to a PRD.** The Spec (and its `station-tea-status.md` companion — the real,
 verified per-station test-file counts this Dream's own claims got wrong) stays
 live as the reference for that remaining work.
 
+**Fleet consistency standard** — the operating model has drifted from its own
+instruments, and the instruments are the last place anyone looks. Measured
+2026-09-07 across all 8 stations, on an operator brief of *"simplicity and
+consistency decides"*:
+
+- **`_bmad-output/EXEMPLAR-STANDARD.md` — the document that defines the model —
+  is itself the largest stale customization.** Its 16-stage table names four
+  skills that no longer exist (`bmad-document-project`, `bmad-create-story`,
+  `bmad-check-implementation-readiness`, `bmad-dev-auto`) and three research
+  skills BMAD 6.12 consolidated into `bmad-deep-recon`. It mandates
+  `epics-with-stories.md`, which 6.12 produces nowhere. It carries a
+  self-invalidating clause (*"when it and pyforge-atlas disagree, pyforge-atlas
+  is right and this document is stale"*), and its own verification section
+  admits INV-2/INV-3 were measured by hand and never mechanized.
+- **`epics-with-stories.md` is a derived summary that stopped being derived** —
+  frozen at 2026-08-08 in six of eight stations while `epics.md` moved to
+  2026-09-06. Two of its four consumers actively *exclude* it as a derived
+  file; one is an inert allowlist entry; one reads it only as a fallback.
+  Retirable — except steward's suite-shape mandate is buried inside it, which
+  is what a derived file accumulating contract is worth as a warning.
+- **The fleet grew eight test-suite names for two concepts.** CLI-contract
+  conformance (steward's `conformance/`, 32 files; marshal's `contract/`, an
+  empty placeholder; herald's 12 loose `test_cli_*.py`) and oracle/engine gates
+  (warden's `conformance/`, 19 files; marshal's `oracle/`, 1 file). BMAD 6.12's
+  Python default is `tests/{conftest.py, unit/, integration/, api/}`. The
+  coverage gate's suite map knows neither `conformance` name, so **51 real test
+  files are measured by nothing**, and `marshal/support/` is a helper module
+  wearing a suite's clothes.
+- **`pytest-cov` is declared in 2 of 10 pixi features.** Seven station envs
+  cannot run a coverage gate at all — verified live against scribe: exit 1,
+  `unrecognized arguments: --cov`. Nobody has ever measured the fleet's real
+  coverage, which `spec-pyforge-testing-charter`'s own assumptions already say
+  out loud.
+- **Three date formats for one artifact.** `implementation-readiness-report-`
+  appears as `-20260801`, `-2026-08-01`, and undated across 27 files. Not
+  cosmetic: `bmad_drift_check.py`'s classifier matches only the hyphenated ISO
+  form, so the compact variant lands as `uncovered` the moment the detector is
+  pointed at those five stations.
+
+What is *not* drifting is worth naming, because it shows the model works when
+it is mechanized: the five-tier check reports **40/40 cells green**, mason's
+skill tier deliberately resolving to `conda-forge-expert` (Epic 11.1, "CFE
+stays; no second recipe skill") — a documented, tested exception that a
+by-hand audit would have mis-filed as a gap, and did, until the check was run.
+
+The resolution is three-layered, and each layer has a different lifetime: the
+pre-action rules go into `AGENTS.md` through `bmad-project-context` (never
+hand-edited — its managed block is replaced on refresh); the reviewable
+enumerations stay in `EXEMPLAR-STANDARD.md`, **rewritten as this effort's Spec
+companion rather than deleted**, because `pixi.toml`'s `dream-chain` detector
+names it as its `Contract:` and 33 other files reference it; and the effort
+itself becomes `spec-fleet-consistency-standard` here. Coverage is deliberately
+*not* folded in — it amends `spec-pyforge-testing-charter` CAP-4, which already
+owns it, rather than re-minting an owned capability.
+
 Other open frontier items, unchanged: many-lines-one-floor concurrency (a
 floor that survives two writers, not just isolated worktrees); crossing the
 boundary between stations as structured, machine-checkable output; a crash an
