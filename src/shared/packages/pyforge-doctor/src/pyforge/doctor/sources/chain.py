@@ -1968,6 +1968,10 @@ _KNOWN_FIELD_KEYS = (
     "source_spec", "summary", "evidence", "origin", "location", "severity",
     "reason", "status", "resolution", "decision", "seen-again", "promoted",
     "found_by", "raised", "verified",
+    # "note" added 2026-09-08 (DW-FU-31-6, verified in the fleet sweep): a real
+    # `note:` field was silently folded into the preceding `evidence:` block
+    # because it was absent here, so the entry's own note was mis-attributed.
+    "note",
 )
 _CONT_KEY_RE = re.compile(
     r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$"

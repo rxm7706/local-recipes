@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: 2026-09-02  # currency reconciliation + Part IV (AD-73..AD-80): re-derived against the 2026-08-14 PRD (FR-1..FR-191 + the § 18 registrations) and the 2026-08-22 Spec-era motion. In-place corrections: AD-3 import-linter provisioned; Stack bmad-loop row 0.9->0.11 era; AD-19/AD-35 harness-shape notes; AD-70 subcommand count. Part IV records the post-08-10 shipped decisions: landing-evidence grammar, upstream-drift containment, the dispatch verb, wall-clock velocity, liveness, 6.11 era pinning, the core hook plugin, and the estate faces (console superseded by unifying-strategy CAP-2). AD-1..AD-80, no gaps. RE-STAMPED 2026-09-02: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1009; no AD added, changed, or removed.
+updated: "2026-09-08"
 # 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
@@ -1574,3 +1574,24 @@ deltas:
    — and `epics.md` is untouched (within the audit's grace window; the FR-193
    double-assignment and FR-148..152/FR-192 overlap are recorded in the PRD's § 18 for the
    next INV-A pass, not repaired here).
+
+
+## Deferred-work verification state — reconciled 2026-09-08
+
+The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all
+eight stations** (marshal: 442 entries). Before the 2026-09-08 sweep steward sat at 61% and
+the other seven at 92–98%; 183 entries had never been re-checked against live code since
+authoring.
+
+Marshal's own 19 never-verified entries were verified in that pass — three resolutions and
+two code fixes: `cli/config.py`'s stale "9 keys" numeral removed in favour of naming
+`_UNSETTABLE_KEYS` as the authority (a literal that had gone stale three times), and
+`sources/chain.py`'s `_KNOWN_FIELD_KEYS` extended with `note`.
+
+Two marshal entries got **worse** since authoring and carry corrected numbers, not stale
+ones: `architecture-bmad-infra.md` still claims 94 skill directories against a live 129, and
+the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows (was 207 of
+208).
+
+`spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
+found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.

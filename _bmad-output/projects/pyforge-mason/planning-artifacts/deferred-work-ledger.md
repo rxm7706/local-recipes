@@ -1414,7 +1414,10 @@ status: open
   origin: spec-deferred 22c09d04c9a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: .claude/skills/conda-forge-expert/SKILL.md:2454 (G26 extension) and CHANGELOG.md (v8.86.1)
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, with a SCOPE CORRECTION that matters. A G26 extension DID land -- `SKILL.md:2454`, re-landed by CFE v8.86.1 from an orphaned retro commit -- so a reader could easily mark this done. It is not: that extension's **Case study** is `langflow-base`/`langflow-suite` **Story 13.1**, not Story 13.2's dbgpt-client upper-bound cap. The only `dbgpt-client` material in the CFE skill (`SKILL.md:2453`, `:2468`, `:2489`) is the Jun 17 2026 G26/G27/G28 originals, unrelated to this deferral. CFE is now at v8.87.1 with no 13.2 retro entry anywhere in CHANGELOG.md. The Rule-2 retro this entry defers remains unwritten.
 
 ### DW-13-2-2: Sidecar runtime validation on Python 3.14 (Celery REST round-trip + SQLite metadata store) deferred to Steward 43.6.
 
@@ -1424,7 +1427,10 @@ status: open
   origin: spec-deferred c0fc10a4d69f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md:2547 (Story 43.6) — the story this entry defers to
   status: open
+
+  verified: 2026-09-08 — still-open — CORRECTED POINTER: the story this entry defers to has CLOSED WITHOUT DOING IT. steward `43-6-platform-image-moves-to-python-3-14` reads `done` in the tracked ledger (`sprint-status-ledger.yaml:150`), but its acceptance criteria (`epics.md:2547-2556`) are pin-flip, `pixi lock` resolution, regenerated `environment.yaml`, and an `import pyforge.atlas, pyforge.doctor` smoke inside the image -- none of which is the Celery REST round-trip or SQLite metadata-store runtime validation this entry describes. Searched steward's epics for `Celery REST` / `round-trip` / `SQLite metadata`: zero hits in any story. So the validation is not merely late, it is unowned: 43.6 can never pick it up again. Re-homing it to a named story is the action this entry now needs.
 
 ### DW-13-2-3: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
 
@@ -1434,4 +1440,7 @@ status: open
   origin: spec-deferred b4726b1d9e43 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: recipes/db-gpt/recipe.yaml:16 (patch list), :309 (onnxruntime run-dep), :488 (residual note)
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED. The cap this entry names is gone from the local mirror: `recipes/db-gpt/recipe.yaml:16` applies `patches/0002-loosen-dbgpt-ext-onnxruntime-cap.patch`, and `:309` now declares `onnxruntime >=1.14.1` with NO upper bound -- the `<=1.18.1` ceiling that excluded cp314 is removed. The lock probe this entry said was blocked has also since run green: steward Story 43.6 (`done`) required `python-agent-platform` and `dbgpt-sidecar` to resolve on `python = "3.14.*"` with a re-lock and a regenerated `environment.yaml`, which is exactly the full-solve this entry was waiting on. Residual, recorded not hidden: `recipe.yaml:488` still notes `loosen-numpy-and-onnxruntime-caps-for-py314 (feedstock PR pending)`, so the fix lives in this repo's mirror and the upstream feedstock has not yet taken it. That is a feedstock-submission item, not this entry's blocker.

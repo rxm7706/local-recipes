@@ -127,7 +127,11 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
 # while before this frozenset actually enforced it -- an unenforced
 # `--set idle_threshold_minutes=...` reached `compose()` as a raw string and
 # came back as a misleading "malformed value" finding (MRS-POLICY-003)
-# instead of this same clean usage error. Naming any of these 9 keys on
+# instead of this same clean usage error. Naming any key in _UNSETTABLE_KEYS on
+# (the set below is the authority -- do NOT restate its size here. This comment
+# read "these 9 keys" from Story 3.13 until 2026-09-08 while the set grew to 28;
+# DW-3-13-1 and DW-FU-31-3-3 both tracked that drift. A numeral in a comment beside
+# a growing collection is a defect waiting to recur, so the numeral is gone.)
 # `--set` is a usage error, not a policy finding. See the module docstring.
 _UNSETTABLE_KEYS = frozenset(
     {
