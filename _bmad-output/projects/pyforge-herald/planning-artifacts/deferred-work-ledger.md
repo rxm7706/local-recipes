@@ -957,6 +957,8 @@ deployment.
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against live code. `scripts/detectors.py`'s `_DOCTOR_SOURCE_TASKS` still omits `ledger-direction`: the tuple names ledger-regression, story-status, chain-completeness, dashboard-drift, check-layout, dream-chain, spec-surface, deferred-work, forward-dependency, bmad-drift and platform-policy-suite, and `grep -n 'ledger-direction' scripts/detectors.py pixi.toml` returns nothing, so no pixi task exposes it and neither `detectors` nor `detectors-ci` runs it. The source itself is live and healthy -- `python -m pyforge.doctor.sources ledger-direction` executes and returns findings. SCOPE CORRECTION, and the reason this is not the trivial wiring the entry implies: run by hand today it emits REAL findings (>=6 warden keys, e.g. `pyforge-warden/4-1-cyclonedx-sbom-emission: done-but-unmerged`). Wiring it in without first triaging those would turn a currently-green `detectors-ci` red on unrelated pre-existing state, so the fix is triage-then-wire, not wire.
+
 ### DW-FU-18-3: Story 18.2 (sibling branch herald-r2a, not present in this branch's history) already rewrites the same "Utility skill routing (AD-2)" section this story appends to, into a numbered procedure -- landing both branches will need manual re-threading, not a mechanical git merge.
 
 - source_spec: `planning-artifacts/specs/spec-18-3-slides-generator-is-herald-wielded.md`
@@ -967,3 +969,5 @@ deployment.
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — resolved — The merge hazard was navigated; both branches landed and the section re-threaded correctly. `.claude/skills/bmad-agent-herald/SKILL.md:12-39` now carries Story 18.2's rewritten '## Utility skill routing (AD-2)' as a 4-step numbered procedure (the one-line 'Herald wields `bmad-os-changelog`...' sentence this entry warned would be replaced is gone), and 18.3's `slides-generator` paragraph sits intact at `SKILL.md:40`, AFTER that procedure rather than orphaned against a deleted anchor. Nothing was lost in the merge, so the manual re-threading this entry called for is complete and no longer owed.
