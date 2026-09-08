@@ -4705,7 +4705,7 @@ re-minted.
 
 ### Story 32.6: Governance documents cannot go stale silently
 **Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** spec-fleet-consistency-standard CAP-6
-**Surface:** `scripts/governance_currency_check.py` (net-new), `pixi.toml` (`[feature.local-recipes.tasks.governance-currency]`), `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` (`SCRIPTS` list)
+**Surface:** `scripts/governance_currency_check.py` (net-new), `pixi.toml` (`[feature.local-recipes.tasks.governance-currency]`). *(Corrected during implementation: the `SCRIPTS`-list meta-test governs the CFE skill's own `.claude/skills/conda-forge-expert/scripts/`, not repo-root `scripts/`, so a repo-root detector needs no entry there — `scripts/detectors.py` discovers it from the filesystem via its `DETECTOR = {"scope": "repo"}` declaration.)*
 **Given** the removed 16-stage table named four non-existent skills for two BMAD versions with no gate noticing — the same class of defect INV-4 identified for detectors, applied to the prose that governs them **When** a detector resolves every `bmad-*` skill name, script path and file reference in `EXEMPLAR-STANDARD.md`, `AGENTS.md`, `CLAUDE.md` and `docs/reference/test-charter.md` **Then** it exits non-zero naming each reference that no longer resolves, is discovered by `scripts/detectors.py` from the filesystem, and run against the standard as it stood on 2026-09-07 reproduces all seven staleness findings this session found by hand
 **And** deliberate historical citations (a name quoted precisely because it was removed) are exempted by an explicit `governance-currency:ignore-start/end` marker, never by a silent heuristic — an unmarked dead reference must fail
 

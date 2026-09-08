@@ -271,7 +271,9 @@ Each Smith:
 - [x] Pattern documented (reusable across projects)
 - [x] Automation script created (one command per project)
 
+<!-- governance-currency:ignore-start (the pre-reconcile filename, cited as superseded) -->
 **Files**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture-tea.md`
+<!-- governance-currency:ignore-end -->
 
 ### Phase 2: Automation Setup ⏳ NEXT SPRINT (6-8 hours)
 
@@ -323,9 +325,11 @@ python _bmad/scripts/bmad_tea_playwright.py \
 
 ## References
 
+<!-- governance-currency:ignore-start (the pre-reconcile filename, cited as superseded) -->
 - **Canonical Reference**: `_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture-tea.md` (Herald test architecture, 1,895 lines)
 - **Automation Script**: `_bmad/scripts/bmad_tea_playwright.py` (one command per project)
 - **Pattern Documentation**: `_bmad-output/projects/pyforge-herald/planning-artifacts/tea-playwright-addendum.md` (reusable pattern guide)
+<!-- governance-currency:ignore-end -->
 
 ---
 

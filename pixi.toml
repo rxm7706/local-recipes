@@ -465,6 +465,7 @@ pyyaml = ">=6.0.3"                # PyYAML -- Story 4.4's engines/condalock.py::
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."
@@ -484,6 +485,10 @@ depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
 cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\""
 
+[feature.pyforge-mason.tasks.pyforge-mason-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-mason. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station mason"
+
 [feature.pyforge-mason.tasks.pyforge-mason-test-slow]
 description = "Run the slow, real-CFE-dependent tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-marshal-test-slow's split; collects zero tests until Story 5.3 lands FR-46's delegation-fidelity test)."
 cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
@@ -500,6 +505,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # re
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 django = ">=5.2.17,<6"            # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 channels = ">=4.3.2,<5.0"         # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
 daphne = ">=4.2.3,<5.0"           # Story 9.5: terminates both HTTP and WebSocket (architecture Stack table). Same package [feature.local-recipes.dependencies] already pins for an unrelated reason (wagtail/coderedcms, line ~1243) -- this pin is independently sourced/verified, not copied, and MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
@@ -523,6 +529,10 @@ depends-on = ["pyforge-steward-build-conda", "pyforge-steward-build-dist"]
 [feature.pyforge-steward.tasks.pyforge-steward-test]
 description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta)."
 cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
+
+[feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station steward"
 
 [feature.pyforge-steward.tasks.pyforge-steward-dogfood]
 description = "Steward dogfoods itself: run the CLI from the built env, then run its own drift audit against this repo's current state (Story 1.6)."
@@ -958,6 +968,10 @@ cmd = "python -m pyforge.doctor.sources chain-completeness"
 [feature.local-recipes.tasks.chain-currency-sweep-check]
 description = "Detector: the eight station planning spines are CURRENT -- the CAP-3 chain audit's staleness + coherence checkpoints swept across all 8 stations in one run (layers/orphans deliberately excluded: they are chain-completeness policy work, and folding the deck gap in would make this permanently red). scope=repo -- reads tracked planning artifacts, dreams, and tracked ledgers only. Exit 0 current / 1 findings (run the reconciler per _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md) / 2 could-not-run. Flags: -- --json, -- --project <slug>. Contract: docs/dreams/chain-currency-sweep.md."
 cmd = "python scripts/chain_currency_sweep_check.py"
+
+[feature.local-recipes.tasks.governance-currency]
+description = "Detector: every skill, script and path named in the governance documents (_bmad-output/EXEMPLAR-STANDARD.md, AGENTS.md, CLAUDE.md, docs/reference/test-charter.md) still resolves. Story 32.6 / spec-fleet-consistency-standard CAP-6, written because EXEMPLAR-STANDARD spent two BMAD versions naming four skills that had not existed since 6.11 with no gate noticing -- INV-4's argument applied to the prose that governs the detectors. A name resolves as a skill, a script or a pixi task/dependency, all derived from the tree; deliberate historical citations are exempted only by an explicit governance-currency:ignore-start/end marker, never a heuristic. scope=repo. Exit 0 clean / 1 findings / 2 could-not-run. Flags: -- --json, -- --file <path>."
+cmd = "python scripts/governance_currency_check.py"
 
 [feature.local-recipes.tasks.chain-layers-audit-check]
 description = "Detector: Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3 — read-only per-project chain audit. Pass/fail per checkpoint (layers, coherence, staleness, orphan-freedom) seeded from pyforge.doctor.sources.fleet_scan + dream-chain (never a cached table). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Exit non-zero on checkpoint fail."
@@ -2017,6 +2031,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # re
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 py-rattler = ">=0.25.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep
 py-rattler-build = ">=0.72.2"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
 conda-build = ">=25.3.1"          # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
@@ -2028,6 +2043,10 @@ cmd = "warden"
 [feature.pyforge-warden.tasks.pyforge-warden-test]
 description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow)"
 cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\""
+
+[feature.pyforge-warden.tasks.pyforge-warden-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-warden. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station warden"
 
 [feature.pyforge-warden.tasks.pyforge-warden-test-corpus-oracle]
 description = "Run the slow, corpus-scale differential-oracle + full-corpus determinism + egress-counter proofs (Story 5.2) -- not part of the default loop"
@@ -2070,6 +2089,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # re
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner (kedro-test)
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 kedro-viz = ">=12.4.0"            # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
 # AUD-ATLAS-010 (2026-07-27): G1 `wasm-smoke` + the D2 dashboard e2e test drive headless
 # Chromium. TEST-ONLY — deliberately NOT package run-deps (the shipped package never drives
@@ -2122,6 +2142,10 @@ duckdb-server = ">=0.31.0"
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
 description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-atlas. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station atlas"
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11). Retained as a delegating alias of `pyforge-atlas-test` (Story 32.2) so existing callers and muscle memory keep working; the canonical name is the fleet-grammar one."
@@ -2227,6 +2251,7 @@ pyyaml = ">=6.0.3"                # PyYAML -- Story 6.6's sources/chain.py front
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 # --- pyforge-scribe (Scribe): pixi build workspace member (warden mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-scribe (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2244,6 +2269,7 @@ psycopg = ">=3.3.4"               # Story 28.1: PostgresGraphStore (scribe_schem
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 # --- pyforge-herald (Herald): pixi build workspace member (warden/atlas mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-herald (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2264,6 +2290,7 @@ httpx2 = ">=2.12.0"               # Story 6.4 evidence-link HTTP client (also a 
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 daphne = ">=4.2.3"                # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
 # Story 14.2: deck_qa.py's headless-render gate drives Chromium via playwright
 # and composes a Pillow contact sheet from the captured PNGs. BOTH playwright
@@ -2300,6 +2327,10 @@ pytest = ">=9.1.1"                # test runner
 description = "Run the pyforge.doctor test suite"
 cmd = "pytest src/shared/packages/pyforge-doctor/tests -q"
 
+[feature.pyforge-doctor.tasks.pyforge-doctor-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-doctor. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station doctor"
+
 [feature.pyforge-doctor.tasks.pyforge-doctor-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
@@ -2317,6 +2348,10 @@ depends-on = ["pyforge-doctor-build-conda", "pyforge-doctor-build-dist"]
 description = "Run the pyforge.scribe test suite"
 cmd = "pytest src/shared/packages/pyforge-scribe/tests -q"
 
+[feature.pyforge-scribe.tasks.pyforge-scribe-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-scribe. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station scribe"
+
 [feature.pyforge-scribe.tasks.pyforge-scribe-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
@@ -2333,6 +2368,10 @@ depends-on = ["pyforge-scribe-build-conda", "pyforge-scribe-build-dist"]
 [feature.pyforge-herald.tasks.pyforge-herald-test]
 description = "Run the pyforge.herald test suite"
 cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+
+[feature.pyforge-herald.tasks.pyforge-herald-test-coverage]
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-herald. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+cmd = "python scripts/run_station_coverage_gate.py --station herald"
 
 [feature.pyforge-herald.tasks.pyforge-herald-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

@@ -176,7 +176,7 @@ development_status:
   32-3-dated-planning-artifacts-are-machine-classifiable: done
   32-4-no-artifact-survives-that-the-toolchain-no-longer-produces: done
   32-5-one-test-suite-vocabulary-across-the-fleet: done
-  32-6-governance-documents-cannot-go-stale-silently: backlog
+  32-6-governance-documents-cannot-go-stale-silently: done
   32-7-coverage-is-measured-on-all-eight-stations-before-any-floor-is-enforced: backlog
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done

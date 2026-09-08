@@ -100,7 +100,9 @@ forbade the first to protect the second, and only the second needed protecting.
 `pyforge-charter` and `pyforge-genesis` — record the origin Dream, the Charter, the Lexicon,
 and the Guild's membership. `owner: guild` is terminal for exactly these two; a third is an
 unassigned Dream hiding behind a collective noun. Their Spec kernels live at
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 `docs/governance/spec-pyforge-charter/` and `docs/governance/spec-pyforge-genesis/` — not a
+<!-- governance-currency:ignore-end -->
 `_bmad-output/projects/<x>/planning-artifacts/` tree, since they own no product and no
 Smith-shaped scaffolding (2026-08-02: the `pyforge-genesis` *project* dissolved for exactly
 this reason — see below).
@@ -139,8 +141,10 @@ existed only to say "there is no product here." That scaffolding was real vestig
 naming mistake. The fix is not a new project; it is *no project* — the two Spec kernels move
 to `docs/governance/`, a plain documentation directory with no `.bmad-config.toml` and no
 Smith-shaped machinery to keep vestigially current. `pyforge.doctor.sources.fleet_scan` and
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 `scripts/dream_chain_check.py` both special-case this location for the two `owner: guild`
 chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
+<!-- governance-currency:ignore-end -->
 `docs/dreams/pyforge-charter.md`) are unchanged; only their Spec kernels' physical home moved.
 The rest of the old project is archived at `archive/_bmad-output/projects/pyforge-genesis/`,
 never deleted.
@@ -149,9 +153,11 @@ never deleted.
 own housekeeping): the two-kernel split above did not last either.* Commit `a3b5fefae8`
 ("charter: absorb pyforge-genesis; `owner: guild` closes at one Dream") went one step further
 than this amendment anticipated: `spec-pyforge-genesis`'s capabilities were absorbed directly
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 into `spec-pyforge-charter` as CAP-5..CAP-8, and `docs/dreams/pyforge-genesis.md` itself was
 folded into `docs/dreams/pyforge-charter.md` as "§ Satellite: The Seed" — **neither file exists
 standalone any more.** `docs/governance/spec-pyforge-genesis/` was moved to
+<!-- governance-currency:ignore-end -->
 `archive/docs/governance/spec-pyforge-genesis/` (archived, not deleted, same convention as
 everything else here). The constitutive tier is now genuinely **one Dream, one Spec kernel** —
 `docs/dreams/pyforge-charter.md` / `docs/governance/spec-pyforge-charter/` — not two files at
@@ -174,8 +180,10 @@ planning-artifacts/
 └── README.md
 ```
 
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 Flat `prd.md` / `architecture.md` is the output of `bmad-create-prd` /
 `bmad-create-architecture` — deprecated wrappers slated for removal in v7 — and is
+<!-- governance-currency:ignore-end -->
 non-conformant.
 
 *Measured at adoption: 9 of 14 projects sharded; 5 flat (local-recipes, pyforge-marshal,
@@ -210,7 +218,9 @@ the detectors grading all four.
 
 **Enforcement, stated honestly.** Half is live: the blanket glob was split into per-file
 entries on 2026-08-08, so a newly added unclaimed detector now produces `[ungoverned]`
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 (verified by mutation — a throwaway `scripts/zz_fake_detector.py` was flagged where the
+<!-- governance-currency:ignore-end -->
 glob had absorbed it). Half is **not yet enforced**: no check asserts owner ≠ subject. That
 is `pyforge-doctor` Story 6.10's meta-test, behind Epic 6's re-home of the 10 judging
 detectors — itself sequenced behind S-6.1, because `doctor check` is 7.04s against a
@@ -372,7 +382,9 @@ The standard exists so that question has a mechanical answer.
 
 | # | Requirement | Why it is load-bearing |
 |---|---|---|
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 | **1** | PRD lives in `prds/prd-<slug>-<date>/` with `prd.md`, `.memlog.md`, and any `addendum.md` / `review-*.md` / `validation-report.*` | This is what `bmad-prd` binds (`{prd_output_path}/{run_folder_pattern}/`). A flat `prd.md` is pre-6.10 `bmad-create-prd` output — a deprecated wrapper slated for removal in v7. |
+<!-- governance-currency:ignore-end -->
 | **2** | Architecture lives in `architecture/architecture-<slug>-<date>/ARCHITECTURE-SPINE.md` with its `.memlog.md` and `reviews/` | Same reason: `bmad-architecture` binds a spine run folder. A flat `architecture.md` predates the spine concept. |
 | **3** | Core docs carry `status` / `created` / `updated` frontmatter | `stepsCompleted:` alone records *which workflow steps ran*, not whether the document is final. Only the former survives a reader who wasn't there. |
 | **4** | A Spec kernel exists at `specs/spec-<slug>/SPEC.md` | The Spec is the unit of contract. The planning chain decomposes it; it does not replace it. |
@@ -463,7 +475,9 @@ These are the ones most likely to be violated with good intentions.
 
 ## Verifying conformance
 
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 **`scripts/dream_chain_check.py` was retired 2026-08-10** (`c698d4b1ad`, superseded by Doctor
+<!-- governance-currency:ignore-end -->
 sources per the same pattern `bmad_drift_check.py` followed for its own verdict — CLAUDE.md
 § "Keeping BMAD artifacts in sync"). Its INV-0/INV-1 half (Spec linkage) now lives at
 `python -m pyforge.doctor.sources dream-chain`; INV-2/INV-3 (station ownership, build-tree
