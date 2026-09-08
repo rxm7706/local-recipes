@@ -668,7 +668,7 @@ real correctness defect in AD-5's original time-based zero-loop guard, and corre
 rather than ship it: the sync point was stored as a field *on the item*, so writing it advanced
 the same item's `updated_at` past the value just recorded — permanently, not for a tunable
 window. AD-5 was amended (PR #390) to a **value comparison against a per-field baseline**, and
-**AD-10** was added for the baseline's storage contract and lifecycle. 8.1's frozen
+**jira:AD-10** was added for the baseline's storage contract and lifecycle. 8.1's frozen
 intent-contract was re-issued from that amendment on 2026-08-10. **Never reintroduce a timestamp
 comparison on the correctness path** — `updated_at` may only select candidates under
 `trigger=schedule`, never decide.
@@ -759,7 +759,7 @@ link propagate to the other side too, no human action on the receiving side — 
 of CAP-1 Story 8.1's own frozen intent-contract deliberately narrowed away (status-field-only,
 fake-transport-tested) and its own audit note (AF-5) named as undelivered with no owning
 story until this one. Uses the same reconcile/baseline machinery Story 8.1 already
-established (AD-5's value-comparison guard, AD-10's baseline contract) — never a second
+established (AD-5's value-comparison guard, jira:AD-10's baseline contract) — never a second
 propagation path.
 **Status:** done — *code on main via PR #544 (`b0072f42d3`); ledger key
 `8-7-assignee-and-identity-link-propagation` already `done` (PR #548). This inline
@@ -786,12 +786,12 @@ dependency.
 AD-1 (optional extra), **AD-4** (refuse to start when identity headers arrive from outside
 declared ingress), **AD-5** (no role-filtered dataset in the shared cache), **AD-6**
 (API shape enforces filter-then-search), **AD-7** (retention declared, no default,
-deployment refused without it), **AD-11/AD-12** (per-message isolation), **AD-14** (SQLite
+deployment refused without it), **sld:AD-11/sld:AD-12** (per-message isolation), **sld:AD-14** (SQLite
 dev / Postgres deploy). Each is cited by the story that owns it — an earlier draft cited
 only AD-1 and was refused on review.
 
 ### Story 9.1: Identity at the boundary, declared isolation, and the cache invariant
-**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** CAP-1, CAP-2; AD-4, AD-5, AD-14
+**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** CAP-1, CAP-2; AD-4, AD-5, sld:AD-14
 **Surface:** ASGI middleware, adopter-declaration schema, cache layer
 **Given** a request **Then** identity and role arrive from the request at the ASGI boundary
 (the pattern authenticates no one) and the adopter DECLARES its access column and roles
@@ -799,7 +799,7 @@ rather than implementing filtering. **AD-4:** identity headers arriving from out
 declared ingress refuse the start, not the request. **CAP-2's real invariant (AD-5):** two
 concurrent users of different roles produce **one** upstream fetch and **a role-filtered
 frame is never written back to the shared cache** — asserted by test, not documented.
-**AD-14:** SQLite in dev, Postgres in deployment.
+**sld:AD-14:** SQLite in dev, Postgres in deployment.
 
 ### Story 9.2: An unauthorized page is absent, not hidden
 **Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-3; AD-6
@@ -809,12 +809,12 @@ user cannot access does not exist in their tree — and the API shape enforces
 filter-then-search (AD-6), never search-then-filter.
 
 ### Story 9.3: The audit trail records what was seen
-**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-4; AD-7, AD-11, AD-12
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-4; AD-7, sld:AD-11, sld:AD-12
 **Surface:** audit-trail store, retention config
 **Given** any data load, filter, navigation or export **Then** a durable role-isolated trail
 entry records what was actually seen, not merely that an event fired; **retention is declared
 with no default and deployment is refused without it** (AD-7); per-message isolation holds
-(AD-11/12).
+(sld:AD-11/12).
 
 ### Story 9.4: Export gated server-side
 **Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-5
@@ -902,12 +902,12 @@ rerender). Dev session invokes `conda-forge-expert` (Rule 1). Success: a py3.14 
 langflow + dbgpt + django completes cleanly.
 
 ### Story 10.5: The DB-GPT sidecar image + docker-compose wiring
-**Type:** infra • **Effort:** M • **Deps:** S-10.3 • **FR/AD:** spec-python-agent-platform CAP-6, AD-17
+**Type:** infra • **Effort:** M • **Deps:** S-10.3 • **FR/AD:** spec-python-agent-platform CAP-6, pap:AD-17
 **Surface:** `src/platform/compose/dbgpt/`, platform CI
-**Given** DB-GPT's Pattern-B deviation (AD-14, dated 2026-08-21 in `db-gpt-django-plugin.md`)
+**Given** DB-GPT's Pattern-B deviation (pap:AD-14, dated 2026-08-21 in `db-gpt-django-plugin.md`)
 **Then** a `docker-compose.yml` service builds and runs DB-GPT as its own container (model
 worker + API server), rootless-clean under the same Docker∩Podman intersection discipline as
-Story 10.3's image, wired into the local-dev tiers (AD-16) and platform CI so 11.2's sidecar
+Story 10.3's image, wired into the local-dev tiers (pap:AD-16) and platform CI so 11.2's sidecar
 integration is testable end-to-end without a manual DB-GPT setup step. Added 2026-08-21 —
 Story 10.3 shipped "one image, both engines" before this deviation existed; this is the
 additive counterpart for the engine that no longer fits that image, not a correction to 10.3.
@@ -917,7 +917,7 @@ additive counterpart for the engine that no longer fits that image, not a correc
 **Spec binding.** CAP-2, CAP-3, CAP-4 and the isolation/statelessness constraints of
 `spec-python-agent-platform`. Pattern A per the plugin dreams ([[langflow-django-plugin]],
 [[db-gpt-django-plugin]]) is the default; a sidecar fallback requires a dated deviation in
-the Dream first (AD-14) and is selected through AD-17's per-engine config switch, added
+the Dream first (pap:AD-14) and is selected through pap:AD-17's per-engine config switch, added
 2026-08-21 after DB-GPT's Pattern-B deviation — see the 2026-08-21 sprint-change-proposal.
 Langflow (11.1) is unaffected and stays on Pattern A.
 
@@ -929,7 +929,7 @@ Langflow (11.1) is unaffected and stays on Pattern A.
 `LANGFLOW_DATABASE_URL` carries the `search_path` suffix; no local-disk state path survives;
 and a flow executes end-to-end through the mount with its tables provably confined to
 `langflow_schema`.
-**And** (added 2026-08-14, AD-16 — folded here rather than into 10.2, whose contract was
+**And** (added 2026-08-14, pap:AD-16 — folded here rather than into 10.2, whose contract was
 frozen mid-dev under the graceful stop) a `platform-dev` pixi feature exists providing
 per-user `postgresql` + `pgvector` + `redis-server` (plus `kubernetes-helm`/
 `kubernetes-client`) so this story's schema work — and all of Epic 11 — runs on the
@@ -937,13 +937,13 @@ guaranteed baseline with no managed services and no containers; its pixi.toml ed
 the standard env-count reconcile ripple.
 
 ### Story 11.2: DB-GPT joins via its configured integration pattern
-**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2, S-10.5 • **FR/AD:** spec-python-agent-platform CAP-3, AD-6 (bounded exception, 2026-08-21), AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2, S-10.5 • **FR/AD:** spec-python-agent-platform CAP-3, AD-6 (bounded exception, 2026-08-21), pap:AD-17
 **Surface:** `src/platform/dbgpt_integration/`
-**Given** the `dbgpt_integration` app configured for Pattern B (AD-17 — `dbgpt: B` in the
+**Given** the `dbgpt_integration` app configured for Pattern B (pap:AD-17 — `dbgpt: B` in the
 pattern registry, per the 2026-08-21 deviation dated in `db-gpt-django-plugin.md`) **Then** a
 Django data migration provisions `dbgpt_schema` exactly as Pattern A would (Django ORM never
 crosses in; DB-GPT's Alembic never touches `public`); the sidecar built by Story 10.5
-(`docker-compose`-managed, its own FastAPI/AWEL process) is registered in the AD-17 pattern
+(`docker-compose`-managed, its own FastAPI/AWEL process) is registered in the pap:AD-17 pattern
 registry; requests route to it via the Celery/Redis path (11.3) rather than an in-process
 ASGI mount; pgvector lives in the SAME PostgreSQL if a vector store is needed; a text-to-SQL
 round-trip succeeds end-to-end through the sidecar. **DB-GPT's own `service.web.database`
@@ -956,16 +956,16 @@ test), never on ephemeral local disk. Rationale: `dbgpt-app` cannot co-install w
 entirely since `dbgpt-app` never enters the shared environment.
 
 ### Story 11.3: Async work never blocks Django
-**Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4, AD-17
+**Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4, pap:AD-17
 **Surface:** `src/platform/config/celery*`, worker wiring
 **Given** Celery over Redis **Then** LLM/AWEL work dispatches to workers that call each
-engine per its AD-17 pattern — Pattern-A engines in-process, Pattern-B engines (DB-GPT) via a
+engine per its pap:AD-17 pattern — Pattern-A engines in-process, Pattern-B engines (DB-GPT) via a
 REST call to the sidecar's AWEL endpoint (never through the public edge) — the host stays
 responsive under a long-running agent task, and the new failure mode (timeout / partial
 result, now including a sidecar-unreachable case) is named and handled, not discovered.
 
 ### Story 11.4: Isolation and statelessness proven
-**Type:** test • **Effort:** L • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-2, CAP-3 (success clauses), AD-17
+**Type:** test • **Effort:** L • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-2, CAP-3 (success clauses), pap:AD-17
 **Surface:** `src/platform/tests/`
 **Given** the proof suite **Then** schema inspection asserts each engine's tables live only
 in its schema; a container-replacement simulation covers BOTH the in-process Pattern-A case
@@ -1271,12 +1271,12 @@ board created and repo-linked, queryable end to end; kin-declared to
 **Spec binding (2026-08-24).** Story 12.9 decomposes `spec-ocp-as-a-portability-profile` CAP-1..3
 (chain Spec landed 2026-08-24 from `docs/dreams/ocp-as-a-portability-profile.md`; INV-1 requires
 the folder `spec-ocp-as-a-portability-profile/`, not a `spec-12-9-*` story-spec name). Parent
-`spec-python-agent-platform` CAP-6 / AD-11 remain. Adopted companions: `cluster-bringup-facts.md`,
+`spec-python-agent-platform` CAP-6 / pap:AD-11 remain. Adopted companions: `cluster-bringup-facts.md`,
 `spec-12-2-gke-as-a-portability-profile.md`. Runner class is an open question at story time.
 Ledger previously marked 12.9 done with no `ocp-portability-smoke` job — flipped to backlog.
 
 ### Story 12.9: OCP as a portability profile
-**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-ocp-as-a-portability-profile CAP-1, CAP-2, CAP-3 (parent CAP-6 / AD-11)
+**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-ocp-as-a-portability-profile CAP-1, CAP-2, CAP-3 (parent CAP-6 / pap:AD-11)
 **Surface:** platform CI (`.github/workflows/platform-ci.yml`), `deploy/README.md` honesty line
 **Given** the Story 12.1 OCP overlay and a real OpenShift API (CRC / OpenShift Local — not `kind`)
 **Then** an optional Platform CI job (`ocp-portability-smoke`, default off) pushes the shared
@@ -1420,7 +1420,7 @@ NFR-C7: Search is PostgreSQL FTS; Wagtail work is Celery, not django-tasks DB/RQ
 - JWT: RS256; claims `sub`/`roles`/`aud=mcp:<station>`/`exp`≤5m/`delegated_by=pyforge-host` (canopy:AD-7). HMAC rejected.
 - Events: `pyforge.events` + `pyforge.events.dlq`; `pyforgeloopdepth` ceiling 8 (canopy:AD-8).
 - Four PostgreSQL schemas only; `run_state`/`mcp_handles` are tables in `public` (canopy:AD-9).
-- Flags: in-process FILE watches the ConfigMap; Reloader/flagd sidecar is parent AD-14 (canopy:AD-11).
+- Flags: in-process FILE watches the ConfigMap; Reloader/flagd sidecar is parent canopy:AD-14 (canopy:AD-11).
 - `start_*` is a supervisor publish (canopy:AD-12).
 - CAP-7 consumes `pyforge.steward.dashboard` only (canopy:AD-20).
 - Portal models are projections; factory package is the writer (canopy:AD-18).
@@ -1846,7 +1846,7 @@ As a platform operator,
 I want rendered Helm to contain `secretKeyRef`s and never secret values,
 So that a git-diff of the chart cannot leak credentials.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-32 • canopy:AD-19 • parent AD-12
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-32 • canopy:AD-19 • parent canopy:AD-12
 **Given** `helm template` (or Kustomize) output **When** a secret check runs **Then** it fails if a secret *value* appears
 **And** pods consume env/file mounts; the app does not call a secrets HTTP API
 **And** Vault injector / CSI / extra secrets sidecar is out of this chain without a dated Dream entry
@@ -2113,7 +2113,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
@@ -2396,7 +2396,7 @@ As a platform operator,
 I want a written DR contract and a scheduled PostgreSQL base backup with WAL archiving plus a restore drill,
 So that a lost volume is a recoverable incident with a known RPO/RTO, not the end of the estate.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, FR-29 • canopy:AD-1 (parent), AD-12 • BS-8 • red-team B-2 / S-8 / R-3
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, FR-29 • canopy:AD-1 (parent), canopy:AD-12 • BS-8 • red-team B-2 / S-8 / R-3
 **Given** the story spec `spec-41-1-dr-contract-and-postgresql-backup.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `deploy/DR.md`, when read, then every store (PostgreSQL, redis-broker, redis-cache, media RWX, DB-GPT SQLite PVC, DuckDB cache) has RPO, RTO, mechanism, owner and drill cadence, and the BS-8 reconciliation order is written down.
 
@@ -2630,7 +2630,7 @@ So that agents and loops resolve everything from the lasting root.
 **Given** the manifest rows for `.claude/skills/**`, `_bmad/**`, `_bmad-output/projects/**`, `docs/dreams/**`, `presentations/**` **When** the move lands **Then** estate-authored skills — the eight station personas included — live under `skills/{stations,personas,domain}/` with SKF export writing there, no adapter is tracked (the 44.11 link step generates `.claude/skills/<x>` on every machine and `.cursor/skills/<x>` where Cursor is detected), installer-written `bmad-*` / `skf-*` dirs are untouched, the CFE cell is left in place for 44.6 (`fnd:AD-13`), and the BMAD chain resolves in foundry with the marker and planning links generated, never copied; the move is `steward cutover apply --phase 1b`, replayable until the flip
 **And** the flag flip that follows this story is an attended operator act with no loop running: `pyforge.cutover_root` → `foundry`, the eight loop homes re-provisioned against the foundry remote, the Realization log stamped (`fnd:AD-17`)
 **And** the open question `planning-history-scope` is answered before dispatch
-**And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
+**And** this story refuses to run while `cutover-readiness.md` P11 or P12 reads anything but green (fnd:AD-10's own worked example) — after marshal 30.5 and 30.2 and steward 14.9, all confirmed `done` as of 2026-09-07; the check itself, not this prose, is what 44.5 runs against P11/P12's live state at execution time
 
 ### Story 44.6: CFE comes home
 
@@ -2893,12 +2893,12 @@ detectors) — this epic proves and relays (AD-7).
 **Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** CAP-9 (G5, P10) • `fnd:AD-5`
 **Surface:** `_bmad/skf/config.yaml` (`skills_output_folder`, `snippet_skill_root_override` — exercised in a scratch copy, never edited in place), a scratch worktree, `cutover-readiness.md` G5/P10
 **Given** the cutover spine's claim that SKF export writes to `skills/stations/<x>/` **When** `skf-export-skill` runs in a scratch worktree with `skills_output_folder: skills/stations` **Then** the export lands there with a working adapter under `.claude/skills/<x>` generated by the link step's shape, or the story records precisely which key/option skf lacks — a finding for `spec-python-foundry-cutover` by memlog, never a silent assumption
-**And** P10's "hand-set keys survive an apply" half is re-verified against CAP-7's restore on the same run, and the story records the single declaring key (`_bmad/custom/config.toml [modules.skf].skills_output_folder`, AD-12) from which `_bmad/skf/config.yaml` is re-rendered — never restored from git
+**And** P10's "hand-set keys survive an apply" half is re-verified against CAP-7's restore on the same run, and the story records the single declaring key (`_bmad/custom/config.toml [modules.skf].skills_output_folder`, fnd:AD-12) from which `_bmad/skf/config.yaml` is re-rendered — never restored from git
 
 ### Story 47.3: `_bmad/**` joins Epic 44's surface and `PROJECTS.md` carries the cutover layout
 **Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** CAP-9 (G1, G8) • `fnd:AD-12`
 **Surface:** `_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml` (`[epic_surfaces] "44"`), `_bmad-output/PROJECTS.md` (§ config layers, § Adding a new project), cutover memlog
-**Given** AD-12 moves `_bmad/` in Story 44.5 but `[epic_surfaces] "44"` omits `_bmad/**` (MRS-GATE-007 would fire) **When** the glob is added and `PROJECTS.md` gains a "cutover target" subsection (marker + planning links generated per machine — symlink on POSIX, junction on Windows — never copied; `bmad-switch` semantics unchanged until the flip) **Then** `marshal factory drain` accepts a 44.5-shaped change and the two PROJECTS.md sections cited by `cutover-readiness.md` G8 no longer contradict `fnd:AD-12` / `AD-19`
+**Given** fnd:AD-12 moves `_bmad/` in Story 44.5 but `[epic_surfaces] "44"` omits `_bmad/**` (MRS-GATE-007 would fire) **When** the glob is added and `PROJECTS.md` gains a "cutover target" subsection (marker + planning links generated per machine — symlink on POSIX, junction on Windows — never copied; `bmad-switch` semantics unchanged until the flip) **Then** `marshal factory drain` accepts a 44.5-shaped change and the two PROJECTS.md sections cited by `cutover-readiness.md` G8 no longer contradict `fnd:AD-12` / `fnd:AD-19`
 
 ### Story 47.4: The foundry stack carries a `bmad-*` floor row
 **Type:** docs • **Effort:** XS • **Deps:** — • **FR/AD:** CAP-9 (G9) • AD-8
@@ -2906,9 +2906,9 @@ detectors) — this epic proves and relays (AD-7).
 **Given** the spine memlog decision of 2026-09-06 **When** `bmad-architecture` update re-distills the cutover spine **Then** § Stack gains one row: `bmad-method >=6.12.0, bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only), bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise, bmad-eval-quality, bmad-utility-skills, bmad-builder` with the note that win-64 (44.11) excludes skf and eval-quality; AD ids unchanged
 
 ### Story 47.5: Epic 44 depends on the era tail, and 44.13's scope names the spines
-**Type:** docs • **Effort:** XS • **Deps:** S-14.9 (after marshal 30.5 and 30.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** CAP-9 (G2, G3, G6) • AD-7
+**Type:** docs • **Effort:** XS • **Deps:** S-14.9 (after marshal 30.5 and 30.2 — cross-station: ledger `blocked`, fnd:AD-10) • **FR/AD:** CAP-9 (G2, G3, G6) • AD-7
 **Surface:** `epics.md` Epic 44 stories 44.5 / 44.12 / 44.13 (`Deps:` lines only), cutover memlog, `sprint-status-ledger.yaml` (via generate + sync)
-**Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: …, S-14.9` with the trailing prose "after marshal 30.5 and 30.2" plus a `blocked` ledger row and an in-story check (AD-10 — never a foreign-station token), and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
+**Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: …, S-14.9` with the trailing prose "after marshal 30.5 and 30.2" plus a `blocked` ledger row and an in-story check (fnd:AD-10 — never a foreign-station token), and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
 
 
 ## Currency validation note — 2026-09-05

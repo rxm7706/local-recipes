@@ -34,7 +34,7 @@ verdicts. They do change how a later reader must use this file:
 - The claim that `django-feedstock` has no 5.2 maintenance branch was **wrong** — it has a
   `5.x` branch (see `technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md`
   and SPEC). Currency gap, not a missing branch.
-- **Hooks and plugins (AD-21)** are an architecture principle (replaceable layers). Kedro
+- **Hooks and plugins (canopy:AD-21)** are an architecture principle (replaceable layers). Kedro
   names the spec-vs-plugin split. Q8 is the PR-gate instance (Warden owns those specs).
 - WFT-named tools and Tachyon are **plugins / adapters**, not a rewrite of this research's
   stack table.
@@ -286,9 +286,9 @@ Worth knowing: the conda-forge `django-lasuite` feedstock's sole listed maintain
 
 ## What the later-day operating-model bind adds (does not replace §1–5)
 
-7. **Q2 / AD-14** — do not write “a station is unfinished on fewer than five tiers” into
+7. **Q2 / canopy:AD-14** — do not write “a station is unfinished on fewer than five tiers” into
    acceptance criteria for 01/02 work. The eight stations remain 03 and still owe all five.
-8. **AD-21 + Q8** — design processes as hook specifications + plugins. Do not require Warden
+8. **canopy:AD-21 + Q8** — design processes as hook specifications + plugins. Do not require Warden
    (or every station) to become a Kedro project. Do not let a plugin publish a second PR
    verdict.
 9. **Q5** — do not invent scorecard metrics in this chain. No CAP-18.

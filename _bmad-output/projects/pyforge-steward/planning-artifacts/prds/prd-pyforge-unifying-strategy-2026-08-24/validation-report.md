@@ -32,7 +32,7 @@ Integration still says the compliance portal “may need to move if OQ-4 chooses
 
 Fix: PRD Update — rewrite those bullets; point at FR-9a and Epic 18.
 
-**Scope honesty** — Packaging authorship disagrees with the brief and AD-16 (§10)
+**Scope honesty** — Packaging authorship disagrees with the brief and canopy:AD-16 (§10)
 
 “Each is a `conda-forge-expert` session under repo Rule 1.” Brief: S-26.3 / S-27.1 do not author recipes.
 

@@ -53,7 +53,7 @@ does not re-derive pre-OM five-tier from this addendum's older sequencing list.
 | Q5 measurement | Rules in the Dream. Board = sibling Dream. No CAP-18. No unpublished metrics. |
 | Q6 Path B ≠ Tachyon | Path B = Agent Canopy + persona. Tachyon = production LLM adapter. |
 | Q7 Lane 2 is HTMX | FastAPI = compute. DRF on Atlas / data-models only. |
-| AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
+| canopy:AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
 | Q8 Warden sole PR verdict | Warden **owns** PR-gate hook specs; plugins implement. Missing scanner ≠ failed run. |
 
 ## Sequencing constraints the epic pass must honour

@@ -23,7 +23,7 @@ inputs:
 > that draft was written before the audit and assumed a greenfield.
 >
 > **Operating-model bind (2026-08-24, after first ready).** Dream Grounding Q1–Q8 and canopy
-> AD-21 are live. This file was first `ready` before that bind; the sections below are
+> canopy:AD-21 are live. This file was first `ready` before that bind; the sections below are
 > corrected in place so a reader is not sent to a stale five-tier or packaging story. SPEC,
 > PRD, and the architecture spine remain the contract if anything still disagrees.
 
@@ -166,14 +166,14 @@ re-decision of the monolith-versus-microservices topology, which is closed in
 CMS, whose upstream has been dormant since 2025 and supports Wagtail only through 7.1 against a
 current 7.4.3 LTS. It **does** mint CAP-18 for the shared hook-spec contract (not a scorecard
 board). It does not rename Path B to Tachyon, or re-template Warden or every station as a Kedro
-project (AD-21 names the spec-vs-plugin split). It
+project (canopy:AD-21 names the spec-vs-plugin split). It
 is not a general-purpose multi-tenancy model — row isolation is for analytical boards, not a
 tenancy layer for the estate.
 
 ## Where this goes next
 
 The PRD traces functional requirements to the eighteen capability IDs so nothing floats. The
-architecture spine (including canopy:AD-14 scoped to 03, and AD-21 hooks/plugins bound to
+architecture spine (including canopy:AD-14 scoped to 03, and canopy:AD-21 hooks/plugins bound to
 CAP-18) is the invariant set. Canopy **Epics 18–30** are written; **Epic 32** plus Warden
 **Epic 9** plus per-station process-hook stories implement CAP-18. First chrome dispatch is
 Story 18.1; first CAP-18 dispatch is Story 32.1. Do not regenerate the

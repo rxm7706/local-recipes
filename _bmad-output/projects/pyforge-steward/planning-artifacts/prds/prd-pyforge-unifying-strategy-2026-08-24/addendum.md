@@ -24,7 +24,7 @@ sees the outcome would reasonably wonder why the obvious thing was not done.
 ## Operating model (bound 2026-08-24)
 
 These are estate rules, not a second mechanism hunt. Full text: Dream Grounding; canopy:AD-14
-(03-only five tiers), AD-21 (hooks/plugins).
+(03-only five tiers), canopy:AD-21 (hooks/plugins).
 
 | Bind | Consequence for this chain |
 |---|---|
@@ -35,7 +35,7 @@ These are estate rules, not a second mechanism hunt. Full text: Dream Grounding;
 | Q5 measurement | Scorecard / Build League rules live in the Dream; board is a sibling Dream; **no CAP-18**. Measures unpublished (human + agent + team). |
 | Q6 Path B ≠ Tachyon | Path B = Agent Canopy + CAP-16 persona. Tachyon = production LLM provider adapter. |
 | Q7 Lane 2 is HTMX | FastAPI = station compute. DRF JSON:API on Atlas / `enterprise-data-models-and-apis` only. |
-| AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
+| canopy:AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
 | Q8 Warden sole PR verdict | Warden **owns** PR-gate hook specs; scanner plugins implement them. Missing named scanner ≠ failed run. |
 
 Lane 2 URL scheme is **no longer open**: uniform `/stations/<name>/`, permanent `/compliance/`
@@ -179,7 +179,7 @@ a pass reading the Dream directly would re-derive them in good faith.
 | No Wagtail anywhere in the estate | Atlas ships a client and a syncer against a **La Suite Docs** REST contract — which is not the CMS's own API, hence OQ-5 |
 | Zero runtime ORM DDL | Unimplementable; enforcement moved to the database role |
 | Five-tier completeness for any work / any station | **03 only** (Q2). 01/02 stay spec+script or spec+skill. canopy:AD-14. |
-| Warden re-templated as a Kedro project so scanners can plug in | Kedro *names* the spec-vs-plugin split (AD-21). Warden owns PR-gate hook **specs**; plugins implement. Atlas already *is* Kedro. |
+| Warden re-templated as a Kedro project so scanners can plug in | Kedro *names* the spec-vs-plugin split (canopy:AD-21). Warden owns PR-gate hook **specs**; plugins implement. Atlas already *is* Kedro. |
 | Tachyon is Path B / the Agent Canopy | Tachyon is a production LLM adapter (Q6). |
 
 ## Adjacent, deliberately not absorbed
