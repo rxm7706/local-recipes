@@ -1,7 +1,7 @@
 ---
 epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
-# 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (AD-72).
+# 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
 epicCount: 18  # 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
 storyCount: 50  # 2026-09-06: 47 + Stories 18.1–18.3 (dated snapshot; the ledger enumerates).
@@ -503,7 +503,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 

@@ -22,7 +22,7 @@ that the check is something I see, not something that merely exists. FR-14; AD-1
 caller** — `__main__.py:47` imported `atlas` and `warden`, not `marshal`. Marking 5.1 done
 while the source was unreachable would be the "merged, marked done, never became the
 runtime" shape this repo already carries as the Atlas Kedro precedent and forbids in
-Marshal's AD-67. Splitting states the truth: the verdict is built and provably independent,
+Marshal's marshal:AD-67. Splitting states the truth: the verdict is built and provably independent,
 and it is not yet rendered.
 
 **Sequenced behind a profile, not blocked on nothing.** `doctor check` was measured at

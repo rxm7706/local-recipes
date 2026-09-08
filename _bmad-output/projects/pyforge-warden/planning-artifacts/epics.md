@@ -17,7 +17,7 @@ replan:
 updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
 currency_review: "Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
@@ -669,7 +669,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
@@ -748,18 +748,18 @@ So that the portal uses the host MCP face instead of only local ORM lists.
 `docs/dreams/bmad-suite-lifecycle.md`, 2026-09-06): `bmad-os-review-pr` / `bmad-os-findings-triage`
 (CAP-3) and TEA's `tea-test-review` (CAP-4) as advisory findings. **HARD boundaries:** Warden's
 gate stays the sole PR verdict — a lens produces `warn`-severity findings and never moves the exit
-code or the seven-rung status (lifecycle spine AD-4; `spec-pyforge-warden` no-competing-verdict
+code or the seven-rung status (lifecycle spine suite:AD-4; `spec-pyforge-warden` no-competing-verdict
 invariant, test-enforced by 9.3); steward 46.2 / 46.3 install the tools first.
 
 ### Story 11.1: `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses
-**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2, AD-4
-**Surface:** `.claude/skills/bmad-agent-warden/SKILL.md` (routing), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows, one hook-book test asserting the lens cannot alter the composed status
-**Given** the two skills installed **When** the warden persona routes PR review depth to `bmad-os-review-pr` and finding consolidation to `bmad-os-findings-triage` **Then** their outputs surface as non-`Finding` advisory notes (no schema bump to the frozen five families — AD-4; a versioned `advisory:<tool>:<subject>` family only if the note proves insufficient), a test proves `compose()` never sees them, the register names warden as sole wielder, and CLAUDE.md is untouched
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, suite:AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • suite:AD-2, suite:AD-4
+**Surface:** `.claude/skills/bmad-agent-warden/SKILL.md` (routing), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, suite:AD-2/suite:AD-11), `adoption-register.md` § 2 rows, one hook-book test asserting the lens cannot alter the composed status
+**Given** the two skills installed **When** the warden persona routes PR review depth to `bmad-os-review-pr` and finding consolidation to `bmad-os-findings-triage` **Then** their outputs surface as non-`Finding` advisory notes (no schema bump to the frozen five families — suite:AD-4; a versioned `advisory:<tool>:<subject>` family only if the note proves insufficient), a test proves `compose()` never sees them, the register names warden as sole wielder, and CLAUDE.md is untouched
 
 ### Story 11.2: `tea-test-review` is a warden advisory finding
-**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the AD-9 roster lacks `tea`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-4
+**Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the suite:AD-9 roster lacks `tea`, suite:AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • suite:AD-4
 **Surface:** warden hook book (`pyforge.core.hooks` plugin bundle: one advisory scanner wrapping the `tea-test-review` pixi task), `tests/`, `--doctor` output
-**Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the *score*, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open ONLY when the AD-9 roster carries `tea` but its binary is merely unreachable on this process's PATH; when the AD-9 roster lacks a `tea` entry entirely (`steward provision --module tea` never ran here) the scanner refuses per AD-10 — `run_tea_test_review` raises `TeaRosterMissingError`, and `cli.py` records it as a `config-validation` error (a real ERROR rung, exit code moved) rather than a silent pass. Resolved 2026-09-07, DW-FU-11-2 — see `tea_advisory.py`'s module docstring for the full rationale.
+**Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the *score*, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open ONLY when the suite:AD-9 roster carries `tea` but its binary is merely unreachable on this process's PATH; when the suite:AD-9 roster lacks a `tea` entry entirely (`steward provision --module tea` never ran here) the scanner refuses per suite:AD-10 — `run_tea_test_review` raises `TeaRosterMissingError`, and `cli.py` records it as a `config-validation` error (a real ERROR rung, exit code moved) rather than a silent pass. Resolved 2026-09-07, DW-FU-11-2 — see `tea_advisory.py`'s module docstring for the full rationale.
 
 ## Currency validation — 2026-08-26
 

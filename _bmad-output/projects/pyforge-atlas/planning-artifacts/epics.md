@@ -12,7 +12,7 @@ updated: "2026-09-07"
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
@@ -2038,7 +2038,7 @@ heading or status change:
   minted here** although their code lands in this station's surface — they are
   tracked on the steward chain (one story in flight per station; the strategy SPEC
   forbids re-dispatching 18–37). This file remains the canonical story source for
-  atlas-keyed ledger stories only (AD-72 role unchanged).
+  atlas-keyed ledger stories only (marshal:AD-72 role unchanged).
 - **Numbering is as intended:** Epic 11 does not exist (10 → 12 by design — Epic
   10 was the post-audit insertion, 12+ the post-migration chains), and the earlier
   duplicate-Epic-16 numbering was resolved by the 2026-08-22 correct-course

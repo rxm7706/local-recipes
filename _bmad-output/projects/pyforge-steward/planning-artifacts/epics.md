@@ -21,7 +21,7 @@ mode: headless-express
 updated: '2026-09-08'   # spec→prd→arch→epics cascade 2026-09-08 (deferred-work sweep follow-ups); Story 43.7 added — see § Currency validation note — 2026-09-08
 currency_review: "Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the Celery REST round-trip and SQLite metadata-store validation that mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 canopy_chain: pyforge-unifying-strategy
 canopy_stepsCompleted: [1, 2, 3]
@@ -511,7 +511,7 @@ Carried forward from the PRD/architecture chain, still unresolved at story-writi
 
 ## Epic 5: The Marshal seam — obligations from the 2026-08-08 seam ratification
 
-**Value delivered.** The two stations stop overlapping. Marshal's AD-71 named both of
+**Value delivered.** The two stations stop overlapping. Marshal's marshal:AD-71 named both of
 these as "actioned in Steward's chain" when the build-line/estate seam was ratified;
 until this epic they existed only as a claim in another station's architecture, which is
 exactly the unowned-obligation shape the seam was meant to end.
@@ -523,7 +523,7 @@ I want one command that provisions a loop home,
 So that two stations do not ship two ways to make the same thing, one of them wrapping
 a legacy script.
 
-**Type:** change • **Effort:** S • **Deps:** — • **FR/AD:** AD-5 (this station), Marshal AD-71
+**Type:** change • **Effort:** S • **Deps:** — • **FR/AD:** AD-5 (this station), Marshal marshal:AD-71
 **Surface:** `provision.py`, `cli.py`, `tests/`
 
 **Why.** Steward's **own AD-5** already calls this "Marshal-owned machinery", and
@@ -560,10 +560,10 @@ I want `steward deploy dashboard` to publish exactly what the ledger says,
 So that the durable record has one writer and the publisher cannot invent a second
 version of the truth.
 
-**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** Marshal FR-136..FR-139, AD-71
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** Marshal FR-136..FR-139, marshal:AD-71
 **Surface:** `deploy.py`, `tests/`
 
-**Why.** AD-71 makes the ledger a two-sided contract: Marshal produces it and is
+**Why.** marshal:AD-71 makes the ledger a two-sided contract: Marshal produces it and is
 accountable for its currency; Steward publishes what it says and **never derives status
 itself**. The producer half shipped 2026-08-08 (the monotonic guard); the consumer half
 was never written down here.
@@ -2747,7 +2747,7 @@ Validated this breakdown against the same-day reconciliations of the station bri
 and `architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`, plus the Canopy
 spine (`architecture-pyforge-unifying-strategy-2026-08-24`) already listed in
 `inputDocuments`: every `### Story` heading still maps 1:1 to a
-`sprint-status-ledger.yaml` key (AD-72 holds; 37 epics / 131 stories, all `done` per the
+`sprint-status-ledger.yaml` key (marshal:AD-72 holds; 37 epics / 131 stories, all `done` per the
 ledger as of this date), the Epic 18–37 chain sections match the strategy SPEC's
 CAP-1..19 state (`open_questions: []` since 2026-08-26; CAP-19's first slice = Epics 34
 and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not the

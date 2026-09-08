@@ -14,7 +14,7 @@ mode: headless-express — no interactive elicitation; epic/story structure draf
 updated: "2026-09-07"
 currency_review: "Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
@@ -355,7 +355,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
@@ -463,8 +463,8 @@ routing in the persona + AGENTS block, never CLAUDE.md (lifecycle spine AD-2); s
 installs first; recall stays grounded (`spec-pyforge-scribe`).
 
 ### Story 7.1: Three docs skills are scribe-wielded
-**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
-**Surface:** `.claude/skills/bmad-agent-scribe/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.2 — cross-station: ledger `blocked`, suite:AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-3 • AD-2
+**Surface:** `.claude/skills/bmad-agent-scribe/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/suite:AD-11), `adoption-register.md` § 2 rows
 **Given** the three skills installed **When** the scribe persona routes doc structure to `bmad-os-diataxis`, stale-reference sweeps to `bmad-os-audit-file-refs`, and translated prose review to `bmad-os-editorial-review-translation` **Then** one `audit-file-refs` pass runs against `docs/reference/` and its findings land as a scribe capture, the register names scribe as sole wielder for all three, and CLAUDE.md is untouched
 
 ## Currency validation — 2026-08-26

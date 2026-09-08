@@ -23,7 +23,7 @@ Scope is the SOURCE only. Rendering it is Story 5.2 — deliberately split rathe
 folded in, because `sources/marshal.py` shipped with no caller and marking the story done
 while the source was unreachable would be the "merged, marked done, never became the
 runtime" shape this repo carries as the Atlas Kedro precedent and forbids in Marshal's
-AD-67.
+marshal:AD-67.
 
 **Surface:** `sources/marshal.py`, `cli_bridge.py` (`run_git`), `models.py`
 (`Source.MARSHAL_DURABILITY`), `tests/unit/test_sources_marshal_independence.py`

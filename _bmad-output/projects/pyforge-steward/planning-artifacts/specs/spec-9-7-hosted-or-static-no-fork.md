@@ -274,7 +274,7 @@ question remains.
 - **Implementation deviation (non-scope-changing):** `--board`'s `^[A-Za-z0-9_-]+$` validation is
   implemented as a manual character-set check (`_is_valid_board_slug`) rather than `re.compile`.
   A pre-existing guard, `tests/meta/test_invariants.py::test_deploy_has_no_story_status_
-  derivation` (Story 5.2/AD-71/AD-1), bans `import re` anywhere in `deploy.py` unconditionally
+  derivation` (Story 5.2/marshal:AD-71/AD-1), bans `import re` anywhere in `deploy.py` unconditionally
   (it exists to keep this module from re-deriving individual story-status parsing, for which `re`
   would be the toolkit) -- discovered only by running the full suite, which the spec's own
   Verification section requires. The equivalent `^[A-Za-z0-9_-]+$` semantics are reproduced by

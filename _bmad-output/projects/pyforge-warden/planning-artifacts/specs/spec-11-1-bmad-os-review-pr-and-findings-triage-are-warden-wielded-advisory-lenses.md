@@ -36,7 +36,7 @@ documentation-level routing at the persona layer, proven safe by a test built
 on the existing `PluginRegistry`/`compose()` infrastructure. Advisory content
 stays out of the five frozen `Finding`-id families (no schema bump). Routing
 stays documented in exactly one durable home: `bmad-agent-warden/SKILL.md`
-(AD-2); `adoption-register.md` § 2 and the `AGENTS.md` pointer line already
+(suite:AD-2); `adoption-register.md` § 2 and the `AGENTS.md` pointer line already
 name warden sole wielder -- verify, do not restate elsewhere.
 
 **Never:** Do not add per-skill routing lines to `CLAUDE.md` or `AGENTS.md` --
@@ -64,7 +64,7 @@ the routing text.
 - `src/shared/packages/pyforge-warden/tests/unit/test_hooks.py` -- existing hook-book test precedent (`_ScanPlugin`, `PluginRegistry`, `invoke_pr_gate`) -- style/pattern reference.
 - `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py` -- Story 9.3's "no-competing-verdict" / green-without-a-named-plugin test -- precedent for how this story's invariant test should read.
 - `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` (NEW) -- the Story 11.1 hook-book test the Surface line requires.
-- `.claude/skills/bmad-agent-warden/SKILL.md` -- "Utility skill routing (AD-2)" section (steward 46.2 landed a generic one-line pointer here); refine to map each lens to its specific role.
+- `.claude/skills/bmad-agent-warden/SKILL.md` -- "Utility skill routing (suite:AD-2)" section (steward 46.2 landed a generic one-line pointer here); refine to map each lens to its specific role.
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` § 2 -- already names warden sole wielder for both skills (verify only).
 - `AGENTS.md` (~line 41) -- already carries the one pointer line to the register (verify only).
 - `CLAUDE.md` -- verify untouched.
@@ -74,7 +74,7 @@ the routing text.
 
 **Execution:**
 - `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` -- add a hook-book test proving the two advisory-lens plugins can contribute an advisory note without ever reaching `plugin_findings`/`compose()`, and cannot publish the PR-gate verdict -- satisfies the story's "one hook-book test asserting the lens cannot alter the composed status" surface requirement.
-- `.claude/skills/bmad-agent-warden/SKILL.md` -- refine the "Utility skill routing (AD-2)" line to explicitly map `bmad-os-review-pr` to PR-review depth and `bmad-os-findings-triage` to finding consolidation -- matches the story's Given/When/Then wording precisely.
+- `.claude/skills/bmad-agent-warden/SKILL.md` -- refine the "Utility skill routing (suite:AD-2)" line to explicitly map `bmad-os-review-pr` to PR-review depth and `bmad-os-findings-triage` to finding consolidation -- matches the story's Given/When/Then wording precisely.
 - `_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml` -- flip the story's row from `blocked` to `done`.
 
 **Acceptance Criteria:**
@@ -98,11 +98,11 @@ the routing text.
   - `[low]` `[patch]` `_AdvisoryLensPlugin.is_default: bool = False` was vestigial (only `select_scanner_plugins`/`scanner_plugin_registry()` read `is_default`, neither of which the tests call) -- removed.
   - `[low]` `[reject]` "no test registers both lenses concurrently" -- a coverage-completeness suggestion, not a demonstrated defect; `PluginRegistry` uniqueness keys on `(type, hook_spec, owner)` and the two stand-ins differ only by `owner`, so no collision was shown; the fix is a net-new test (an addition), and neither skill is a real registered plugin in production.
   - `[low]` `[reject]` "SKILL.md's routing prose uses hook-book internals vocabulary (`plugin_findings`, `rungs`, `compose()`) the same file's Forbidden-actions section tells the persona not to touch" -- refuted: the Forbidden section itself already uses this exact vocabulary purely to state boundaries ("Do not call `compose` or `exit_code_for`"), never as an instruction to invoke them; the new routing prose does the same, consistent with the file's existing style.
-  - `[false]` `[reject]` "diff never touches `adoption-register.md` despite Surface naming it in-scope" -- refuted: per AD-2, routing detail lives solely in the persona skill and is never restated in the register (confirmed by `AGENTS.md`'s own pointer text); the register already carries the correct row from the planning-authoring commit, so leaving it untouched is the correct, AD-2-compliant behavior, not an omission.
+  - `[false]` `[reject]` "diff never touches `adoption-register.md` despite Surface naming it in-scope" -- refuted: per suite:AD-2, routing detail lives solely in the persona skill and is never restated in the register (confirmed by `AGENTS.md`'s own pointer text); the register already carries the correct row from the planning-authoring commit, so leaving it untouched is the correct, suite:AD-2-compliant behavior, not an omission.
   - `[false]` `[reject]` "before/after hook points are unexercised in `_AdvisoryLensPlugin.call()`" -- refuted: this mirrors `EngineScanPlugin`/`OptionalScanPlugin`'s identical pre-existing pattern (only `"around"` is handled); the edge-case-hunter layer independently traced this exact point and confirmed it is handled, not a gap.
   - `[false]` `[reject]` "neither `bmad-os-review-pr` nor `bmad-os-findings-triage` exists anywhere in the repository" -- refuted: both directories exist under `.claude/skills/`, committed at the current revision (steward's Story 46.2 commit), confirmed via a direct filesystem check plus a clean version-control status for those paths.
   - `[false]` `[reject]` "steward's ledger shows `46-2-...: backlog`, so the cross-station dependency is not landed" -- refuted: `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` line 170 reads `done` at the current revision with a clean working tree, verified independently and corroborated by the verification-gap layer's own check of the same line.
-  - `[false]` `[reject]` "the adoption register's authority precedes the code that's supposed to make it true, so register and implementation are not shown to be in lockstep" -- refuted: this is the designed Dream-to-code order (planning declares intent, implementation fulfills it), not a defect; same substance as the adoption-register finding above, settled the same way by AD-2.
+  - `[false]` `[reject]` "the adoption register's authority precedes the code that's supposed to make it true, so register and implementation are not shown to be in lockstep" -- refuted: this is the designed Dream-to-code order (planning declares intent, implementation fulfills it), not a defect; same substance as the adoption-register finding above, settled the same way by suite:AD-2.
 
 ## Design Notes
 
@@ -127,7 +127,7 @@ an integration of the skills' own content.
 **Summary:** Warden now names each of its two steward-46.2-provisioned advisory
 lenses to its specific role (`bmad-os-review-pr` -> PR-review depth,
 `bmad-os-findings-triage` -> finding consolidation) in the one durable routing
-home (`bmad-agent-warden/SKILL.md`, AD-2), and a new hook-book test proves --
+home (`bmad-agent-warden/SKILL.md`, suite:AD-2), and a new hook-book test proves --
 against the real `pyforge.core.hooks` `PluginRegistry` / `compose()`
 infrastructure -- that an advisory-lens plugin's notes never reach
 `plugin_findings`, never influence `compose()`'s composed status, and can
@@ -137,14 +137,14 @@ unchanged, and `adoption-register.md` already named warden sole wielder from
 the planning-authoring pass.
 
 **Files changed:**
-- `.claude/skills/bmad-agent-warden/SKILL.md` -- refined the "Utility skill routing (AD-2)" section to map each of the two lenses to its specific role and state the non-`Finding`/never-`compose()`/never-verdict boundary explicitly.
+- `.claude/skills/bmad-agent-warden/SKILL.md` -- refined the "Utility skill routing (suite:AD-2)" section to map each of the two lenses to its specific role and state the non-`Finding`/never-`compose()`/never-verdict boundary explicitly.
 - `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` (new) -- three hook-book tests: an advisory note never becomes a `Finding`; `compose()` is identical with and without the lens registered; an advisory-lens-owned plugin cannot publish `PR_GATE_VERDICT`.
 - `_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml` -- flipped `11-1-...` from `blocked` to `done`.
 - `_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml` (Tier-3, gitignored) -- flipped the same row to `done` so the tracked twin and its source feed agree (review-pass patch).
 
 **Review findings breakdown** (full evidence in `## Review Triage Log` above):
 - Patched (4): Tier-3/tracked-ledger drift (medium); a misleading "one rung per Finding" comment (low); an invented `"security"` axis in the test's stand-in rung (low); a vestigial unused `is_default` attribute (low).
-- Rejected as false (6): "the two skills don't exist anywhere in the repo" (they do, committed in steward 46.2); "steward's 46.2 ledger row is still `backlog`" (it reads `done`); "the new verdict-theft test is pure duplication" (it names the story's specific lens as owner, unlike the generic pre-existing coverage); "the diff should have touched `adoption-register.md`" (AD-2 forbids restating routing there); "the register precedes the code" (the designed spec-then-code order, not a defect); "before/after hook points are unexercised" (identical to the pre-existing `EngineScanPlugin` pattern, confirmed handled by the edge-case-hunter layer).
+- Rejected as false (6): "the two skills don't exist anywhere in the repo" (they do, committed in steward 46.2); "steward's 46.2 ledger row is still `backlog`" (it reads `done`); "the new verdict-theft test is pure duplication" (it names the story's specific lens as owner, unlike the generic pre-existing coverage); "the diff should have touched `adoption-register.md`" (suite:AD-2 forbids restating routing there); "the register precedes the code" (the designed spec-then-code order, not a defect); "before/after hook points are unexercised" (identical to the pre-existing `EngineScanPlugin` pattern, confirmed handled by the edge-case-hunter layer).
 - Rejected as low (2, not worth the added complexity): no test registers both lenses concurrently; SKILL.md's boundary language uses hook-book vocabulary (consistent with the file's pre-existing Forbidden-actions style).
 
 **Follow-up review recommendation:** `false`. This pass patched one `medium` and three `low` entries -- one `medium` alone does not cross the two-or-more-`medium` threshold, and no `high` was patched, so the work has converged.
