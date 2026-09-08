@@ -123,6 +123,51 @@ def test_intake_is_idempotent(tmp_path: Path) -> None:
     assert "already in tracked ledger" in second.message
 
 
+def test_intake_marks_long_summary_truncation_instead_of_silently_corrupting(
+    tmp_path: Path,
+) -> None:
+    # DW-FU-21-8-6: a `summary:` over 500 chars used to be hard-sliced with no
+    # marker -- silent, mid-sentence data loss in the promoted ledger heading AND
+    # `summary:` line. It must now say so (and the original length must be
+    # recoverable), not disappear.
+    long_summary = "The widget subsystem silently drops every third request. " * 12
+    assert len(long_summary) > 500
+    long_summary_yaml = f"""\
+---
+title: canary spec
+status: done
+deferred:
+  - summary: {long_summary.strip()!r}
+    evidence: seen in prod logs
+    location: src/pyforge/doctor/sources/widget.py
+    severity: medium
+---
+
+# Canary
+"""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_spec(repo, "pyforge-doctor", "spec-long-summary.md", long_summary_yaml)
+    _write_tracked(repo, "pyforge-doctor", "# empty ledger\n")
+
+    mod = _load_intake_module(repo)
+    outcome = mod._ingest_project("doctor", repo / "_bmad-output" / "projects" / "pyforge-doctor")
+
+    assert outcome.status == "ingested"
+    tracked = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-doctor"
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+    text = tracked.read_text(encoding="utf-8")
+    flat_original = " ".join(long_summary.split()).strip()
+    assert "[truncated" in text
+    assert str(len(flat_original)) in text  # original length recoverable, not lost
+
+
 def test_intake_no_op_without_frontmatter_deferred(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()

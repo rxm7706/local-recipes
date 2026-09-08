@@ -2690,9 +2690,22 @@ class SpecDeferredFinding:
 
 
 def _flatten_deferred_scalar(value: object, limit: int) -> str:
+    """Collapse ``value`` to one whitespace-normalized line, capped at ``limit``.
+
+    DW-FU-21-8-6 fix: a scalar longer than ``limit`` used to be hard-sliced with no
+    marker, silently corrupting mid-sentence/mid-word (observed on ``summary`` text
+    used verbatim as the ledger's ``###`` heading). Now the head is still capped at
+    ``limit`` chars (unchanged budget, so ledger growth stays bounded), but a
+    truncation IS marked -- and the marker records the untruncated length, so the
+    data loss is visible and the original size is recoverable rather than silently
+    guessed at.
+    """
     if value is None:
         return ""
-    return " ".join(str(value).split())[:limit].strip()
+    flat = " ".join(str(value).split()).strip()
+    if len(flat) <= limit:
+        return flat
+    return f"{flat[:limit].rstrip()}... [truncated, {len(flat)} chars total]"
 
 
 def _is_deferred_yaml_scalar(value: object) -> bool:

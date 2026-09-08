@@ -2193,6 +2193,54 @@ def test_spec_frontmatter_deferral_ingested_reports_no_finding(tmp_path: Path) -
     assert not any(f.check == "spec-frontmatter-only-deferral" for f in findings)
 
 
+def test_flatten_deferred_scalar_marks_truncation_and_records_original_length() -> None:
+    # DW-FU-21-8-6: a scalar longer than the limit used to be hard-sliced with no
+    # marker (silent, mid-sentence/mid-word data loss). It must now say so, and the
+    # original (untruncated) length must be recoverable from the marker itself.
+    long_text = "word " * 200  # 1000 chars, well past the 500-char summary limit
+    flat = " ".join(long_text.split())
+    out = chain._flatten_deferred_scalar(long_text, 500)
+    assert "[truncated" in out
+    assert str(len(flat)) in out  # original length is recorded, not silently lost
+    assert out.startswith(flat[:20])  # the surviving head is real content, not mangled
+
+
+def test_flatten_deferred_scalar_short_value_is_returned_unmarked() -> None:
+    # No truncation occurred -> no marker, exact value preserved (regression guard
+    # against over-eagerly appending the marker to values under the limit).
+    assert chain._flatten_deferred_scalar("short summary", 500) == "short summary"
+
+
+def test_spec_frontmatter_deferral_long_summary_is_marked_not_silently_corrupted(
+    tmp_path: Path,
+) -> None:
+    # DW-FU-21-8-6 end-to-end: a spec frontmatter `summary:` over 500 chars must not
+    # be silently corrupted mid-sentence in the ingested finding (which becomes both
+    # the ledger's `###` heading AND its `summary:` line).
+    long_summary = "The widget subsystem silently drops every third request. " * 12
+    assert len(long_summary) > 500
+    spec_body = (
+        "---\n"
+        "title: canary\n"
+        "status: done\n"
+        "deferred:\n"
+        f"  - summary: {long_summary.strip()!r}\n"
+        "    evidence: seen in prod logs\n"
+        "    location: src/pyforge/doctor/sources/widget.py\n"
+        "    severity: medium\n"
+        "---\n\n# Canary\n"
+    )
+    spec_path = _write_spec(tmp_path, "proj", "spec-long-summary.md", spec_body)
+    findings, malformed = chain.parse_spec_frontmatter_deferrals(
+        spec_path, project_dir=_project_dir(tmp_path, "proj")
+    )
+    assert not malformed
+    assert len(findings) == 1
+    summary = findings[0].summary
+    assert "[truncated" in summary
+    assert str(len(" ".join(long_summary.split()).strip())) in summary
+
+
 def test_tier3_only_deferral_still_reports_fail(tmp_path: Path) -> None:
     """Loop-run bridge regression: Tier-3-only ids still fire."""
     _write_baseline(tmp_path, {})
