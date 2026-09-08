@@ -97,20 +97,82 @@ def test_landed_but_unpromoted_is_fail(tmp_path: Path) -> None:
 
 
 def test_done_but_unmerged_is_warn(tmp_path: Path) -> None:
+    """A done flip that exists only on this branch is the real defect.
+
+    Not "no merge subject names it" — the flip must be absent from the
+    ledger as committed at ``base_ref`` too. See
+    ``test_batched_pr_promotion_is_not_unmerged`` for why.
+    """
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_ledger(
         repo,
         "pyforge-marshal",
+        {"15-2-landing-promotes": "in-progress"},
+    )
+    _commit(repo, "seed ledger on main")
+    _git(repo, "checkout", "-q", "-b", "work")
+    _write_ledger(
+        repo,
+        "pyforge-marshal",
         {"15-2-landing-promotes": "done"},
     )
-    _commit(repo, "seed ledger only")
+    _commit(repo, "flip to done on the branch only")
 
     findings = ledger.gather_direction(repo)
 
     warns = [f for f in findings if f.status == DoctorStatus.WARN]
     assert len(warns) == 1
     assert warns[0].evidence["direction"] == ledger.DIRECTION_DONE_UNMERGED
+    assert warns[0].evidence["base_evidence"] == "ledger-at-base"
+
+
+def test_batched_pr_promotion_is_not_unmerged(tmp_path: Path) -> None:
+    """Regression: a key promoted by a PR whose subject names no story.
+
+    The fleet lands most work in batched ``chore/``/``docs/``/``dispatch/``
+    PRs. Judged on merge subjects alone this shape produced 383 false
+    ``done-but-unmerged`` findings across the eight tracked ledgers — 53% of
+    all done stories — while ``main``'s own ledger said ``done`` for every
+    one of them.
+    """
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-marshal", {"32-1-consistency": "done"})
+    _commit(repo, "seed")
+    _commit(
+        repo,
+        "Merge pull request #1082 from rxm7706/chore/fleet-consistency-2026-09-07",
+        allow_empty=True,
+    )
+    _git(repo, "checkout", "-q", "-b", "work")
+
+    findings = ledger.gather_direction(repo)
+
+    assert [f for f in findings if f.status == DoctorStatus.WARN] == []
+    assert findings[0].status == DoctorStatus.OK
+
+
+def test_ledger_new_on_branch_falls_back_to_subjects(tmp_path: Path) -> None:
+    """No base evidence either way must not silence the check.
+
+    A ledger that does not exist at ``base_ref`` yields ``None``, not an
+    empty set — otherwise a brand-new file would read as "nothing was done
+    at base", which is indistinguishable from real absence.
+    """
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    (repo / "README.md").write_text("seed\n", encoding="utf-8")
+    _commit(repo, "seed without any ledger")
+    _git(repo, "checkout", "-q", "-b", "work")
+    _write_ledger(repo, "pyforge-marshal", {"1-1-first": "done"})
+    _commit(repo, "add the ledger on this branch")
+
+    findings = ledger.gather_direction(repo)
+
+    warns = [f for f in findings if f.status == DoctorStatus.WARN]
+    assert len(warns) == 1
+    assert warns[0].evidence["base_evidence"] == "absent-at-base"
 
 
 def test_agreement_is_ok(tmp_path: Path) -> None:
