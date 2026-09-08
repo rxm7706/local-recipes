@@ -135,7 +135,11 @@ _CONVENTIONAL_FILENAMES = frozenset({
     "README.md",
     "PROJECTS.md",
     "epics.md",
-    "epics-with-stories.md",
+    # "epics-with-stories.md" removed 2026-09-07 with the artifact itself (marshal
+    # Story 32.4, spec-fleet-consistency-standard CAP-3): BMAD 6.12 produces it
+    # nowhere, and a line-diff audit of all eight stations confirmed nothing
+    # normative lived only there. A file by that name reappearing is now correctly
+    # an orphan, not a conventional planning artifact.
     "test-architecture.md",
     "test-design-architecture.md",
     "test-design-qa.md",

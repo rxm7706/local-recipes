@@ -3,7 +3,8 @@
 
 Produces ``planning-artifacts/test-architecture.md`` for each station from:
 
-* epics sources (``epics.md`` and/or ``epics-with-stories.md``)
+* epics source (``epics.md`` -- canonical per AD-72; the `epics-with-stories.md`
+  fallback was retired 2026-09-07, marshal Story 32.4)
 * the live test inventory under ``src/shared/packages/pyforge-<slug>/tests/``
 
 A drafted document containing the literal token ``TBD`` is a failed run
@@ -141,15 +142,18 @@ def station_slug(project: str) -> str:
 
 
 def _read_epics_corpus(planning_dir: Path) -> str:
+    # `epics-with-stories.md` was retired fleet-wide 2026-09-07 (marshal Story 32.4,
+    # spec-fleet-consistency-standard CAP-3): BMAD 6.12 produces it nowhere, it was
+    # frozen at 2026-08-08 in six of eight stations while epics.md kept moving, and a
+    # line-diff audit of all eight confirmed nothing normative lived only there. It was
+    # only ever a fallback here; epics.md is and was the canonical source (AD-72).
     parts: list[str] = []
-    for name in ("epics.md", "epics-with-stories.md"):
+    for name in ("epics.md",):
         path = planning_dir / name
         if path.is_file():
             parts.append(path.read_text(encoding="utf-8"))
     if not parts:
-        raise FileNotFoundError(
-            f"No epics.md or epics-with-stories.md under {planning_dir}"
-        )
+        raise FileNotFoundError(f"No epics.md under {planning_dir}")
     return "\n\n".join(parts)
 
 

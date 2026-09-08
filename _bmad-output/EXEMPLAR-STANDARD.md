@@ -318,7 +318,7 @@ Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics 
 - **UX** — User experience design (UI mockups, flows, component specs) — optional per surface
 - **Arch** — Architecture and API specifications with implementation contracts
 - **Context** — Project context, assumptions, and dependencies documentation
-- **Epics** — Epic breakdown, epics-with-stories, acceptance criteria per story
+- **Epics** — Epic breakdown and acceptance criteria per story, in `epics.md` (canonical per AD-72; the derived `epics-with-stories.md` this line used to name was retired fleet-wide 2026-09-07, Story 32.4 — BMAD 6.12 produces it nowhere)
 - **Sprint** — Sprint planning with velocity estimates and story-to-epic mapping
 - **TEA** — Test Architecture: test strategy, coverage targets, test-per-story specs
 - **Gates** — Implementation readiness gates (spec-complete, architecture-final, tests-passing)

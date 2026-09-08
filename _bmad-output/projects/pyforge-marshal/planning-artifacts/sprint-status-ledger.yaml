@@ -174,7 +174,7 @@ development_status:
   32-1-the-operating-model-standard-is-6-12-accurate-and-derives-what-it-can: done
   32-2-declared-python-floor-equals-the-tested-floor: done
   32-3-dated-planning-artifacts-are-machine-classifiable: done
-  32-4-no-artifact-survives-that-the-toolchain-no-longer-produces: backlog
+  32-4-no-artifact-survives-that-the-toolchain-no-longer-produces: done
   32-5-one-test-suite-vocabulary-across-the-fleet: backlog
   32-6-governance-documents-cannot-go-stale-silently: backlog
   32-7-coverage-is-measured-on-all-eight-stations-before-any-floor-is-enforced: backlog

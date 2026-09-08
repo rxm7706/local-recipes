@@ -319,13 +319,11 @@ def station_epics_paths(repo_root: Path, slug: str) -> tuple[Path, ...]:
     )
     if not planning.is_dir():
         return ()
-    return tuple(
-        sorted(
-            p
-            for p in planning.glob("epics*.md")
-            if p.name != "epics-with-stories.md"
-        )
-    )
+    # The glob stays: it also matches chain-scoped epics (this station's own
+    # epics-regenerable-factory.md, mason's epics-presenton-pixi-image.md). The
+    # epics-with-stories.md exclusion was dropped 2026-09-07 with the file itself
+    # (Story 32.4, spec-fleet-consistency-standard CAP-3).
+    return tuple(sorted(planning.glob("epics*.md")))
 
 
 def _story_key_from_dep_num(epic: int, num: str) -> StoryKey | None:

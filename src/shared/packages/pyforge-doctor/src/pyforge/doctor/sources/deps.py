@@ -165,11 +165,13 @@ def find_epics_files(project_dir: Path) -> list[Path]:
     pa = project_dir / "planning-artifacts"
     if not pa.is_dir():
         return []
-    return sorted(
-        p
-        for p in pa.glob("epics*.md")
-        if p.name != "epics-with-stories.md"  # derived summary, no Deps field
-    )
+    # The glob stays: it also matches chain-scoped epics (marshal's
+    # epics-regenerable-factory.md, mason's epics-presenton-pixi-image.md). The
+    # epics-with-stories.md exclusion was dropped 2026-09-07 with the file itself
+    # (marshal Story 32.4, spec-fleet-consistency-standard CAP-3) -- it was a derived
+    # summary carrying no Deps field, retired fleet-wide once an audit of all eight
+    # confirmed nothing normative lived only there.
+    return sorted(pa.glob("epics*.md"))
 
 
 def story_deps(epics_file: Path) -> list[tuple[int, str, str, str]]:
