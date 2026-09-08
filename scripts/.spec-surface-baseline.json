@@ -2757,11 +2757,11 @@
  },
  "pyforge-marshal/spec-fleet-consistency-standard": {
   "files": {
-   "scripts/.ad-citation-baseline.json": "ace4ecb53d1dbc87f9870ab3413a96b2ee07ddf2",
+   "scripts/.ad-citation-baseline.json": "b1eaf9d59a1d3f55ca5e9381368922856e9a3dbe",
    "scripts/ad_citation_check.py": "9d220118e6c609616f5af8f6ae086fdf86c53eee",
    "scripts/governance_currency_check.py": "cc997d7455cedadd9ded2ba21d922bb80bbee9de"
   },
-  "memlog": "b99e775cf6ef0fb32a1b125191cac570adbf3bdf"
+  "memlog": "a29ad86550c3de80f085ee18430dad14b2bbeb4d"
  },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {

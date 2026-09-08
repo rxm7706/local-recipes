@@ -13,6 +13,12 @@ sources:
   - '../../epics.md §§ Epic 10-12 (the 11 consuming stories)'
   - '../../../../../../docs/dreams/python-agent-platform.md (owner Dream; Realization log carries the decision trail)'
 ---
+> **Qualified `pap:` 2026-09-08.** These ids are now written `pap:AD-n`, matching how every
+> cross-Spec citation already spells them — this document's own line below demanded exactly
+> that ("Unifying Strategy must not treat these as canopy AD-1.."). It leaves the bare `AD-n`
+> namespace inside pyforge-steward to the station spine alone, so a bare citation there is
+> unambiguous. No citation changes meaning: `pap:AD-2` meant this document before and still does.
+
 
 # Architecture Spine — python-agent-platform (companion to SPEC.md)
 
@@ -22,43 +28,43 @@ Epics 10–12 binds to one stable set. Cross-Spec citations use **`pap:AD-1`..`p
 
 ## Invariants & Rules
 
-**AD-1 — Infrastructure is exactly PostgreSQL + Redis + Kubernetes.** A component that
+**pap:AD-1 — Infrastructure is exactly PostgreSQL + Redis + Kubernetes.** A component that
 demands a fourth piece of infrastructure has failed its design review. pgvector rides inside
-the same PostgreSQL instance (AD-5) and Redis carries both cache and Celery-broker duty —
+the same PostgreSQL instance (pap:AD-5) and Redis carries both cache and Celery-broker duty —
 neither is a licence for a fourth piece.
 
 **Re-affirmed, 2026-09-05.** Re-examined against the 2026-09-05 BaaS capability review (seed
-Dream `foundry-baas-capability-gaps` § *Reopening AD-1*, folded into
+Dream `foundry-baas-capability-gaps` § *Reopening pap:AD-1*, folded into
 `docs/dreams/pyforge-unifying-strategy.md` the same day; record: `pyforge-steward`
 `sprint-change-proposal-2026-09-05-ad-1-reopen.md`). This rule is design-review discipline — a
 bound on operational surface — and has never rested on air-gap parity (that is pap:AD-13). Lane 1
 media stays on a `ReadWriteMany` PVC (canopy:AD-13, storage-class prerequisite added the same
 day). No exception granted. Exception procedure: canopy spine § *Conflict, not override —
-parent AD-1*.
+parent pap:AD-1*.
 
-**AD-2 — The platform roots at `src/platform/` and never imports `pyforge.*`.** The
+**pap:AD-2 — The platform roots at `src/platform/` and never imports `pyforge.*`.** The
 factory/platform boundary is an import rule, not a repo wall: `src/platform/` consumes the
 factory's published conda packages only. A lint/test enforces the rule (story 10.1); a
 `pyforge.*` import anywhere under `src/platform/` is a review-blocking finding.
 
-**AD-3 — The host is the accelerator shape, rendered — not hand-grown.** One
+**pap:AD-3 — The host is the accelerator shape, rendered — not hand-grown.** One
 cookiecutter-django service with FastAPI integration: `env()`-split settings, health
 endpoints wired to K8s liveness/readiness probes, mirror endpoints (conda/pypi/registry)
 parameterized at render time, static assets vendored zero-CDN. Anything the render didn't
 produce joins as a Django app, never as a second service.
 
-**AD-4 — One ASGI process; the dispatch order is fixed.** Django is the default handler;
+**pap:AD-4 — One ASGI process; the dispatch order is fixed.** Django is the default handler;
 `/api/v1/`, `/health`, and `/langflow/` forward to the mounted Langflow app; `/api/dbgpt/`
 routes to the DB-GPT app with the prefix stripped. No engine gets its own server process or
 public port — the one Django front door is the only public edge.
 
-**AD-5 — Three schemas in one PostgreSQL; `search_path` by migration + connection string,
+**pap:AD-5 — Three schemas in one PostgreSQL; `search_path` by migration + connection string,
 never by convention.** `public` is Django's; `langflow_schema` is provisioned by a `RunSQL`
 migration and bound via the `LANGFLOW_DATABASE_URL` `search_path` suffix; `dbgpt_schema` is
 provisioned by a Django data migration — Django's ORM never crosses in, and DB-GPT's Alembic
 never touches `public`. If a vector store is needed, pgvector lives in this same instance.
 
-**AD-6 — Statelessness is mandatory; any pod is disposable.** All state lives in PostgreSQL
+**pap:AD-6 — Statelessness is mandatory; any pod is disposable.** All state lives in PostgreSQL
 or Redis; every engine local-disk state path is forced off (`DBGPT_SESSION_STORAGE_TYPE=db`;
 no Langflow local-disk state survives); replicas = capacity. Kill-and-replace losing any
 flow, session, or state is a failing test, not a bug report.
@@ -70,30 +76,30 @@ only SQLite/MySQL/OceanBase, its migration path (`_cli.py::_get_migration_config
 SQLite-only outright, and its SQLAlchemy models declare MySQL-only `TEXT(length)` columns that
 do not parse as PostgreSQL DDL. That store holds real state (chat history, knowledge
 documents, RAG chunks, flow/plugin configs) — not disposable cache — so it cannot simply be
-dropped. AD-9 forbids forking `dbgpt-app` to add Postgres dialect support; the operator files
+dropped. pap:AD-9 forbids forking `dbgpt-app` to add Postgres dialect support; the operator files
 that gap upstream with `eosphoros-ai/DB-GPT` directly, not gated on it landing. The exception
 is narrow: a Kubernetes-native `PersistentVolumeClaim` mounted on the `dbgpt` sidecar
 container's real resolved SQLite path (confirmed live, not the misleadingly-configured one),
 verified to survive a kill-and-restart (Story 10.5's two-boot persistence test). This still
-satisfies AD-6's actual guarantee — state is never silently lost on redeploy — through a PVC
+satisfies pap:AD-6's actual guarantee — state is never silently lost on redeploy — through a PVC
 instead of PostgreSQL; the one real cost is that the `dbgpt` container cannot be horizontally
 replicated the way a genuinely stateless component could (SQLite has no safe concurrent-writer
 story), so it stays a singleton. No other engine or platform component is exempted by this;
 it is scoped to `dbgpt-app`'s own metadata store alone.
 
-**AD-7 — Celery over Redis is the only async path.** LLM/AWEL and other long-running work
+**pap:AD-7 — Celery over Redis is the only async path.** LLM/AWEL and other long-running work
 dispatches to Celery workers; workers call the engines in-process or over the internal
 network — never through the public edge. Each async task's failure mode (timeout / partial
 result) is named and handled up front, not discovered.
 
-**AD-8 — One conda-space environment, lockfile-pinned; py3.12 env-scoped now, 3.14 as a
+**pap:AD-8 — One conda-space environment, lockfile-pinned; py3.12 env-scoped now, 3.14 as a
 release gate.** A single `[feature.python-agent-platform]` pixi feature+env pins
 `python = "3.12.*"` env-scoped (the rest of the repo stays 3.14) and carries langflow,
 dbgpt, dbgpt-serve, django and all host deps in one solve; the pin flips to 3.14 the release
 after the langflow-base `bcrypt ==4.0.1` prerequisite clears (release gate, not entry gate).
 The lockfile must solve reproducibly from a mirror-only channel config.
 
-**AD-9 — The factory is the package source: consume and file upstream, never fork.** Engine
+**pap:AD-9 — The factory is the package source: consume and file upstream, never fork.** Engine
 fixes travel as upstream issues/PRs or as runtime-validated feedstock maintenance in this
 factory (e.g., the bcrypt loosening) — never as vendored patches or forks inside
 `src/platform/`.
@@ -179,15 +185,15 @@ rewrite.
 
 | AD | Stories |
 |---|---|
-| AD-1 | 10.1, 10.3, 11.1, 11.2, 11.3, 12.1, 12.3 |
-| AD-2 | 10.1, 11.1, 11.2, 11.3 |
-| AD-3 | 10.1 |
-| AD-4 | 10.1, 11.1, 11.2, 11.4 |
-| AD-5 | 11.1, 11.2, 11.4 |
-| AD-6 | 10.1, 11.1, 11.2, 11.3, 11.4, 12.1 |
-| AD-7 | 11.3 |
-| AD-8 | 10.2, 10.3, 10.4, 12.3 |
-| AD-9 | 10.4 |
+| pap:AD-1 | 10.1, 10.3, 11.1, 11.2, 11.3, 12.1, 12.3 |
+| pap:AD-2 | 10.1, 11.1, 11.2, 11.3 |
+| pap:AD-3 | 10.1 |
+| pap:AD-4 | 10.1, 11.1, 11.2, 11.4 |
+| pap:AD-5 | 11.1, 11.2, 11.4 |
+| pap:AD-6 | 10.1, 11.1, 11.2, 11.3, 11.4, 12.1 |
+| pap:AD-7 | 11.3 |
+| pap:AD-8 | 10.2, 10.3, 10.4, 12.3 |
+| pap:AD-9 | 10.4 |
 | pap:AD-10 | 10.3, 12.1, 12.3 |
 | pap:AD-11 | 12.1, 12.2 |
 | pap:AD-12 | 10.3, 12.1, 12.3 |
