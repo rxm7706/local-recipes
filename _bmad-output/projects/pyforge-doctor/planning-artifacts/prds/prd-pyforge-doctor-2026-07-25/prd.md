@@ -627,7 +627,7 @@ traceability).** The 2026-08-24 Canopy and operating-model passes bound Doctor a
 pulse — landed 2026-08-26 via `PortalClient` only), service face `POST
 /stations/doctor/mcp` on the host ASGI, SKF domain skill + `bmad-agent-doctor` persona
 (Epic 18), and gather/prescribe hook specs with default plugins on the shared
-`pyforge.core.hooks` contract (Epic 17 / FR-45, canopy AD-21). Per the Unifying
+`pyforge.core.hooks` contract (Epic 17 / FR-45, canopy:AD-21). Per the Unifying
 Strategy (`spec-pyforge-unifying-strategy`), Doctor's role is fleet vitals and
 prescriptions; the §2.1 "Operability exit code" framing above is now a fleet-wide
 constraint: **findings stay advisory or Warden inputs — never a second PR-gate

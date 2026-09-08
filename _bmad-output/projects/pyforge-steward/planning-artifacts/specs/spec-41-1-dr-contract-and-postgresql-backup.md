@@ -54,7 +54,7 @@ in the contract, not built here.
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `41-1-dr-contract-and-postgresql-backup`. Host never imports `pyforge.*`. Backups run on the platform image (no second image). Secrets by reference only (AD-12). Steward duty exit domain unchanged.
+Ledger key `41-1-dr-contract-and-postgresql-backup`. Host never imports `pyforge.*`. Backups run on the platform image (no second image). Secrets by reference only (canopy:AD-12). Steward duty exit domain unchanged.
 
 **Block If:** Implementation would add a PostgreSQL operator, a second Postgres image, or MinIO as a required kind; or would claim PITR without a WAL archive.
 

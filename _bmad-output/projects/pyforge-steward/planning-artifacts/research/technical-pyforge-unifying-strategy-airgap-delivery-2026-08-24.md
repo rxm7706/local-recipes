@@ -73,7 +73,7 @@ the seam RFC-5 asks for:
 Three things follow.
 
 **CAP-9 modifies an existing hook rather than introducing a chart pattern.** Story 12.1's chart
-contract is `done` and `spec-platform-fifteen-factors` declares AD-4/AD-17 topology HARD; this was
+contract is `done` and `spec-platform-fifteen-factors` declares AD-4/pap:AD-17 topology HARD; this was
 the risk convergence flagged. It is smaller than feared — Liquibase becomes a second hook Job at
 weight `-1`, and this Job's args change from `migrate --noinput` to `migrate --fake`.
 

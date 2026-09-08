@@ -10,14 +10,14 @@ updated: "2026-09-06"
 The PRD states capabilities. This states mechanisms — the technical-how it keeps out — and the
 rationale behind decisions already made, so the architecture pass confirms them.
 
-## Provisioning paths (FR-2, FR-5, FR-6)
+## Provisioning paths (suite:FR-2, suite:FR-5, suite:FR-6)
 
 - `steward provision --module {utility-skills,tea,bmb,cis}` → `provision.py` `_SUPPORTED_MODULES`:
   `CondaInstallBackend(installer="bmad-<x>-install", …)` for utility-skills/TEA/CIS,
   `SetupSkillBackend` for bmb. Re-provision of an installed module is idempotent; skill-name
   collisions are checked before first wire. The bmb backend deliberately never passes
   `--legacy-dir` and never invokes `cleanup-legacy.py` (it would `rmtree` this repo's
-  `_bmad/core/config.yaml`); FR-2's acceptance test pins that.
+  `_bmad/core/config.yaml`); suite:FR-2's acceptance test pins that.
 - Manticore: `steward provision --module manticore` exists but installs into the repo; the studio
   path is the documented native one — `npx bmad-method install --custom-source
   https://github.com/bmad-code-org/bmad-manticore` run from the studio root, `[modules.manticore]`
@@ -25,15 +25,15 @@ rationale behind decisions already made, so the architecture pass confirms them.
   steward is a later story only if the native path proves clumsy.
 - labs: `npx skills add bmad-labs/skills --skill <name>` per consented skill; never the marketplace.
 
-## The TEA equivalence check (FR-4)
+## The TEA equivalence check (suite:FR-4)
 
 Before deleting `_bmad/scripts/bmad_tea_playwright.py`: run the generator once more (`--all`),
 keep its eight outputs; run TEA's `bmad-testarch-test-design` / `-framework` per station; diff
 section-by-section (story-id coverage, test-inventory rows, the `TBD`-free invariant). The check
 passes when every story id and test path the generator emitted is present in the TEA output.
-If it fails, FR-4 narrows to the review lens and the generator stays (Spec assumption 1).
+If it fails, suite:FR-4 narrows to the review lens and the generator stays (Spec assumption 1).
 
-## The `--no-shims` apply (FR-10)
+## The `--no-shims` apply (suite:FR-10)
 
 Steward Story 14.9 adds `--no-shims` to `steward upgrade bmad-core --apply`: one argv element
 after `--modules …`, a report line naming the shims the CAP-1 pre-flight lists, an argv assertion
@@ -43,7 +43,7 @@ installed 6.12.0 — accepted with a note, `upgrade.py:1284`) on a named review 
 re-applies the seven local customizations by three-way merge. Order: harness flip + 8 re-renders +
 caller gloss first (Story 30.5), then the apply, then `prove-landed`.
 
-## The `@next` rehearsal (FR-8)
+## The `@next` rehearsal (suite:FR-8)
 
 Throwaway worktree; `--installer` pointed at `npx bmad-method@next` (`6.12.1-next.0` on
 2026-09-06); one planted conflicting edit in an installer-owned skill file; `PATH` without `node`.

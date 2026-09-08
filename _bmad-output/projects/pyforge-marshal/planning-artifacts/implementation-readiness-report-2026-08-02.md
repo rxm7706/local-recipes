@@ -32,7 +32,7 @@ directly (parallel-agent / physical-path convention).
 | Spec (retirement record, new) | `specs/spec-pyforge-marshal-loop-orchestrator/SPEC.md` | **new this session** |
 | Spec (new capability, standalone) | `specs/spec-pyforge-testing-charter/SPEC.md` + `station-tea-status.md` | **new this session, status: ready** |
 | PRD | `prds/prd-pyforge-marshal-2026-07-25/prd.md` | final, FR-1..65, **unchanged** — see Non-Decomposition below |
-| Architecture | `architecture/architecture-pyforge-marshal-2026-07-25/architecture.md` | final, AD-1..50, unchanged |
+| Architecture | `architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md` | final, AD-1..50, unchanged |
 | Epics & Stories | `epics.md` | 6 epics / 50 stories, **1 story amended this session** (2.1, drift fix) |
 | UX | — | correctly absent (unchanged rationale, see 2026-08-01 report) |
 

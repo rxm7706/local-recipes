@@ -8,7 +8,7 @@ lastSaved: '2026-09-07'
 workflowType: 'testarch-test-design'
 inputDocuments:
   - 'prds/prd-pyforge-marshal-2026-07-25/prd.md'
-  - 'architecture/architecture-pyforge-marshal-2026-07-25/architecture.md'
+  - 'architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md'
   - 'epics.md'
   - 'test-architecture.md'
   - 'test-design-architecture.md'

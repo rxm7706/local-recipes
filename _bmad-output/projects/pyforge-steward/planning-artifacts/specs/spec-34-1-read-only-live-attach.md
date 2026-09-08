@@ -8,7 +8,7 @@ baseline_commit: 784ca512df6a9fba6b7b0fd1843003d53b23b33e
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - docs/dreams/pyforge-unifying-strategy.md
 warnings: []
 deferred: []
@@ -18,7 +18,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Atlas DuckDB cannot yet federate a multi-schema Postgres read-only. Mode A (CAP-19 / FR-46) has no attach path. Agents and scans still have a hole toward OLTP.
+**Problem:** Atlas DuckDB cannot yet federate a multi-schema Postgres read-only. Mode A (CAP-19 / canopy:FR-46) has no attach path. Agents and scans still have a hole toward OLTP.
 
 **Approach:** In `pyforge-atlas`, open the plane writer (FR-27 / `duckdb_writer`) and `ATTACH` a fixture Postgres **READ_ONLY**. Prove a federated SELECT across two schemas; prove a write is refused; prove the path is not pandas `SQLQueryDataSet`; prove consumer boot does not `INSTALL` extensions (AD-13: `LOAD` only).
 
@@ -49,7 +49,7 @@ deferred: []
 
 - Default OQ `query-plane-face`: **in-process DuckDB**. Do not block on Mosaic.
 - Reuse `connect_writer` / `connect_reader` for `atlas.duckdb`. Do not mint a second writable file in this story. Filename generalization is later if 34.3 needs it.
-- `LOAD postgres` from the pre-provisioned extension cache only (canopy AD-22; same
+- `LOAD postgres` from the pre-provisioned extension cache only (canopy:AD-22; same
   LOAD-only shape as Atlas `vss` in `rag/store.py`). If postgres extension is
   missing, fail loud — do not `INSTALL`.
 - Steward owns the through-line; Atlas owns the engine. Tests live under `pyforge-atlas/tests/`.

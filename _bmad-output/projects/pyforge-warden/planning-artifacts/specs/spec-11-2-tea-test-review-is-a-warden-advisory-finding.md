@@ -9,13 +9,13 @@ context: []
 warnings: ['oversized']
 deferred:
   - summary: >-
-      Whether the AD-9 roster lacking a `tea` entry entirely (never
+      Whether the suite:AD-9 roster lacking a `tea` entry entirely (never
       provisioned via `steward provision --module tea`) should make the
       advisory scanner loudly refuse, distinct from today's silent fail-open
       when only the binary is absent from PATH.
     evidence: |-
-      The lifecycle architecture spine (ARCHITECTURE-SPINE.md AD-10) says
-      "31.1 / 11.2 refuse when the AD-9 roster lacks tea," and its cited
+      The lifecycle architecture spine (ARCHITECTURE-SPINE.md suite:AD-10) says
+      "31.1 / 11.2 refuse when the suite:AD-9 roster lacks tea," and its cited
       template (steward Story 14.9's `--no-shims` flag) implements "refuse"
       as a real runtime CLI refusal, not a one-time dispatch-time check --
       weighing toward a genuine runtime-behavior gap in this diff (the
@@ -26,9 +26,9 @@ deferred:
       specific, story-level acceptance text this spec was built from.
       Resolving requires an operator/architect call on which text governs;
       shipping either reading here without that call risks contradicting
-      the other. If AD-10's runtime-refusal reading is correct, the real
+      the other. If suite:AD-10's runtime-refusal reading is correct, the real
       gap is medium (an architecture-mandated distinction never
-      implemented; does not affect AD-4's no-competing-verdict invariant
+      implemented; does not affect suite:AD-4's no-competing-verdict invariant
       either way).
     location: >-
       src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py:TeaAdvisoryScanPlugin._contribute
@@ -52,7 +52,7 @@ the `tea-test-review` binary and writes a non-`Finding` advisory note into
 `context["advisory_notes"]` -- mirroring 11.1's vocabulary but, unlike 11.1,
 shipping real production wiring since this lens (unlike the persona-routed
 utility skills) has a runnable CLI. Surface the note two ways: (1) a new
-`--doctor` self-check reporting TEA's presence (binary on PATH + the AD-9
+`--doctor` self-check reporting TEA's presence (binary on PATH + the suite:AD-9
 `_bmad/custom/config.toml [modules.tea]` roster entry), fail-open (`ok=True`
 either way, mirroring the existing feed-absent convention); (2) a new
 `advisory` slot on `ComplianceReport`, additive and defaulted `None` exactly
@@ -111,7 +111,7 @@ returns `None` there for real).
 **Execution:**
 - `tea_advisory.py` (new) -- implement `TeaAdvisoryResult`/`run_tea_test_review`/`TeaAdvisoryScanPlugin` -- the fail-open advisory wrapper.
 - `scanner_plugins.py` -- register the new optional plugin -- opt-in only, never default bundle.
-- `engines.py` -- add `_doctor_check_tea` to `run_doctor_checks` -- AD-9 roster + binary presence, always `ok=True`.
+- `engines.py` -- add `_doctor_check_tea` to `run_doctor_checks` -- suite:AD-9 roster + binary presence, always `ok=True`.
 - `models.py` + `report.py` + `data/report-schema.json` -- add the additive `advisory` slot end-to-end -- mirrors the `actuation` precedent, no schema bump.
 - `cli.py` -- thread `advisory_notes` through `plugin_context` into the report/render calls -- the note actually reaches output.
 - `tests/unit/test_tea_advisory.py` + `tests/unit/test_cli_doctor.py` -- cover the I/O matrix -- proves fail-open and no-verdict-influence.
@@ -128,7 +128,7 @@ returns `None` there for real).
 ### 2026-09-07 — Review pass
 - verdicts: 21 findings — high 0, medium 2, low 10, false 8, maybe-false 1
 - findings:
-  - `[maybe-false]` `[defer]` (Blind Hunter) AD-10's architecture spine says "31.1 / 11.2 refuse when the AD-9 roster lacks tea"; the diff's scanner/doctor check both fail-open identically whether the roster lacks `tea` entirely or the binary is merely absent from PATH — never a runtime refusal — evidence: the spine's own cited template (steward 14.9's `--no-shims`) implements "refuse" as a real runtime CLI refusal, weighing toward a real gap; but Story 11.2's own Given/When/Then explicitly requires "the scanner is fail-open when TEA is absent," the more specific text this spec was built from. Genuinely undecidable from the text alone — deferred with full evidence in frontmatter `deferred[0]`.
+  - `[maybe-false]` `[defer]` (Blind Hunter) suite:AD-10's architecture spine says "31.1 / 11.2 refuse when the suite:AD-9 roster lacks tea"; the diff's scanner/doctor check both fail-open identically whether the roster lacks `tea` entirely or the binary is merely absent from PATH — never a runtime refusal — evidence: the spine's own cited template (steward 14.9's `--no-shims`) implements "refuse" as a real runtime CLI refusal, weighing toward a real gap; but Story 11.2's own Given/When/Then explicitly requires "the scanner is fail-open when TEA is absent," the more specific text this spec was built from. Genuinely undecidable from the text alone — deferred with full evidence in frontmatter `deferred[0]`.
   - `[low]` `[patch]` (Blind Hunter) `render_text`'s new `[advisory]` line writes `note.get('tool')`/`note.get('recommendation')` without `_single_line()`, unlike every other free-text field this renderer touches (including the same note's own `summary`) — action: wrap both in `_single_line(str(...))`.
   - `[low]` `[patch]` (Blind Hunter) no test exercises the `[advisory]` line in `render_text`'s `--format text` output (only `--format json` is covered) — action: add a `render_text` case in `tests/unit/test_report.py` asserting the rendered line. (Same root cause as the Verification Gap layer's matching finding below.)
   - `[low]` `[patch]` (Blind Hunter) a missing score/recommendation renders as `"unknown"` inside `TeaAdvisoryResult.summary` but as the bare Python literal `None` in the `[advisory]` text line (the two paths format the same missing value differently) — action: apply the same `"unknown"` fallback convention in `render_text`'s `[advisory]` block. (Same root cause as the Edge Case Hunter's matching finding below.)
@@ -171,7 +171,7 @@ binary when explicitly enabled (`WARDEN_OPTIONAL_SCANNERS=tea-test-review`),
 writing a non-`Finding` note into a new additive `advisory` report slot
 (mirroring Story 6.9's `actuation` precedent exactly) -- never touching
 `plugin_findings`, `rungs`, `compose()`, or the exit code. A new `--doctor`
-check reports TEA's presence (AD-9 roster entry + binary on PATH) as purely
+check reports TEA's presence (suite:AD-9 roster entry + binary on PATH) as purely
 informational, always `ok=True`. The review pass caught and fixed two real
 `medium`-severity fail-open-contract violations (an uncaught
 `UnicodeDecodeError` that could crash `--doctor` on a corrupted config file,
@@ -184,7 +184,7 @@ its answer.
 **Files changed:**
 - `src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py` (new) -- `TeaAdvisoryResult`, `run_tea_test_review` (fail-open subprocess wrapper; exit `{0,1}` trusted, anything else + any parse/binary problem degrades to `ran=False`; `math.isfinite()`-guarded score parsing), `TeaAdvisoryScanPlugin` (optional PR-gate scanner appending only to `context["advisory_notes"]`).
 - `src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py` -- registered the new plugin as optional-only (`OPTIONAL_SCANNER_IDS` + `scanner_plugin_registry()`), never in the default bundle.
-- `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py` -- new `_doctor_check_tea` (AD-9 roster + binary presence, always `ok=True`; now also catches `UnicodeDecodeError` on a malformed config file), wired into `run_doctor_checks`.
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py` -- new `_doctor_check_tea` (suite:AD-9 roster + binary presence, always `ok=True`; now also catches `UnicodeDecodeError` on a malformed config file), wired into `run_doctor_checks`.
 - `src/shared/packages/pyforge-warden/src/pyforge/warden/models.py` -- added the additive `advisory: object | None = None` slot to `ComplianceReport`, threaded into `to_json_dict()`.
 - `src/shared/packages/pyforge-warden/src/pyforge/warden/report.py` -- `assemble_report()`/`render_text()` thread the new `advisory` parameter through; `render_text` renders a sanitized, consistently-labeled `[advisory] tool=... score=... recommendation=... -- ...` line per note.
 - `src/shared/packages/pyforge-warden/src/pyforge/warden/data/report-schema.json` -- added the additive `"advisory": {"type": ["array", "null"], ...}` property (deliberately `array`, not `object`, matching the real `list[dict]` payload -- see the Intent Alignment rejection above).
@@ -197,7 +197,7 @@ its answer.
 
 **Review findings breakdown** (full evidence in `## Review Triage Log` above; 21 findings total across 4 review layers):
 - Patched (8 entries, 12 rows incl. grouped duplicates): `_single_line`-sanitize the `[advisory]` line's `tool`/`recommendation` fields (low); label the `tool` value (low); align the missing-value "unknown" convention between `TeaAdvisoryResult.summary` and the rendered line (low); add a `--format text` test for `[advisory]` (low, 2 reporting layers); add the 2 untested `_doctor_check_tea` message branches (low, 2 reporting layers); catch `UnicodeDecodeError` in `_doctor_check_tea`'s config parse (**medium** -- verified live, would have crashed `--doctor` on a corrupted config file); check the runner's exit code, trusting only `{0,1}` (low -- verified the real binary's documented exit-2/3 paths never leave a JSON file behind, but this hardens against a future custom `--agent-cmd`); guard the `int(qualityScore)` conversion with `math.isfinite()` (**medium** -- verified live: `json.load` parses a literal `NaN`/`Infinity`, and `int(float('nan'))` raises `ValueError`, violating the function's own documented never-raises contract).
-- Deferred (1): whether AD-10's "31.1 / 11.2 refuse when the AD-9 roster lacks tea" requires a genuine runtime refusal (distinct from today's uniform fail-open) when the roster entry itself is absent, versus the story's own Given/When/Then which requires fail-open with no roster/binary distinction -- both textual sources are internal to the governing architecture documents and genuinely conflict; resolving needs an operator/architect call, not a guess. Full evidence in frontmatter `deferred[0]`.
+- Deferred (1): whether suite:AD-10's "31.1 / 11.2 refuse when the suite:AD-9 roster lacks tea" requires a genuine runtime refusal (distinct from today's uniform fail-open) when the roster entry itself is absent, versus the story's own Given/When/Then which requires fail-open with no roster/binary distinction -- both textual sources are internal to the governing architecture documents and genuinely conflict; resolving needs an operator/architect call, not a guess. Full evidence in frontmatter `deferred[0]`.
 - Rejected as false (6): the discarded-per-finding-detail claim (this spec's own AC only requires "a note with the score," already satisfied by the shipped `violations(...)` breakdown); the missing schema `items` sub-schema claim (matches the `actuation` precedent, which also has none); the schema-type-should-be-`object` claim (would break `render_json`'s self-validation against the real `list` payload); the "both render_text call sites" claim (only one exists, and it's wired); the "AC2 names `compose()`" claim (the parameter was deliberately never threaded into `compose()`; the shipped tests prove the same claim more rigorously at two real surfaces); the Tier-3-ledger-invisible-in-diff and test-suite-not-diff-verifiable and spec-not-yet-promoted observations (all expected by construction, independently confirmed).
 - Rejected as low (1): the hardcoded `--agent claude` / no config knob -- not worth the added complexity for an opt-in, S-effort advisory lens.
 
@@ -210,6 +210,6 @@ its answer.
 - Matrix Test Audit: all three I/O & Edge-Case Matrix rows covered by passing, ran tests, both pre- and post-patch.
 - Live-verified (not just asserted) two of the patched claims directly in a Python REPL before dispatching the patch: `json.loads('{"qualityScore": NaN}')` parses to `float('nan')` and `int(float('nan'))` raises `ValueError`; `tomllib.load` on a hand-crafted non-UTF-8 file raises `UnicodeDecodeError`, uncaught by the original `except (OSError, tomllib.TOMLDecodeError)`.
 
-**Residual risks:** The deferred AD-10 roster-refusal question (above) is the primary open item -- it does not affect AD-4's no-competing-verdict invariant either way, but leaves a possible architecture-conformance gap unresolved pending an operator/architect decision. The follow-up-review-recommended risk (exit-code-boundary re-scrutiny) is named above. No other residual risks identified: every Acceptance Criterion, I/O matrix row, and Code Map file was implemented, tested, and independently re-verified by this reviewing pass.
+**Residual risks:** The deferred suite:AD-10 roster-refusal question (above) is the primary open item -- it does not affect suite:AD-4's no-competing-verdict invariant either way, but leaves a possible architecture-conformance gap unresolved pending an operator/architect decision. The follow-up-review-recommended risk (exit-code-boundary re-scrutiny) is named above. No other residual risks identified: every Acceptance Criterion, I/O matrix row, and Code Map file was implemented, tested, and independently re-verified by this reviewing pass.
 
 **Process note:** the patch round (findings above) was sent to a freshly-launched subagent rather than re-engaging the original step-03 implementation subagent by id, deviating from this workflow's "re-engage the same one" instruction. The patch prompt was fully self-contained (each finding included its own evidence and exact fix instruction), and the resulting diff was independently re-verified line-by-line against the triage log above rather than trusted on the new agent's report alone -- but this is flagged here for the record.

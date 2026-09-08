@@ -157,7 +157,7 @@ stories, epics 7–12) — unchanged. *(Revised 2026-08-02, explicit user
 override.)* Its brief, PRD, architecture, and Spec were **consolidated** into
 this station's own single brief / PRD / architecture / Spec
 (`product-brief-pyforge-marshal.md`, `prds/prd-pyforge-marshal-2026-07-25/prd.md`,
-`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`,
+`architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md`,
 `specs/spec-pyforge-marshal/SPEC.md`), each carrying a clearly labelled
 "Satellite: Genesis Installer" section (brief/PRD) or continued `AD-`/`CAP-`
 numbering (architecture: `AD-51..AD-65`; Spec: `CAP-10..CAP-18`) rather than

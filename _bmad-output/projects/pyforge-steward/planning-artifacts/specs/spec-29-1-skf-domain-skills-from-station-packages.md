@@ -6,7 +6,7 @@ status: ready
 updated: '2026-08-25'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - .claude/skills/skf-create-skill/SKILL.md
   - .claude/skills/skf-export-skill/SKILL.md
   - src/shared/packages/pyforge-scribe/
@@ -17,7 +17,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Eight **03** stations owe a CAP-15 domain skill. The estate has an atlas-adjacent SKF skill (`cf-atlas-legacy`) and no `pyforge-<station>` skill compiled from `src/shared/packages/pyforge-<station>/`. FR-37 forbids proving the pattern on a station that already has a skill.
+**Problem:** Eight **03** stations owe a CAP-15 domain skill. The estate has an atlas-adjacent SKF skill (`cf-atlas-legacy`) and no `pyforge-<station>` skill compiled from `src/shared/packages/pyforge-<station>/`. canopy:FR-37 forbids proving the pattern on a station that already has a skill.
 
 **Approach:** Compile one agentskills.io-compliant, version-pinned, provenance-backed content skill from a station package that has **no** skill today (`pyforge-scribe` — smallest CLI-complete station, no `.claude/skills/pyforge-scribe/`). Use the existing SKF module (`_bmad/skf/`, `.claude/skills/skf-*`, `skf-extract-public-api` / `skf-validate-frontmatter` / `skf-validate-output`). Do not invent a second compiler. Do not compile CAP-16 personas. Do not replace `conda-forge-expert`. Do not write `CLAUDE.md` / `AGENTS.md` except via `skf-export-skill` (this story skips export).
 
@@ -59,7 +59,7 @@ warnings: []
 - `.claude/skills/skf-create-skill/` + `_bmad/skf/skf-create-skill/` — existing compiler (read-only)
 - `.claude/skills/shared/scripts/skf-extract-public-api.py` — extraction used at compile
 - `.claude/skills/shared/scripts/skf-validate-frontmatter.py` / `skf-validate-output.py` — validators tests invoke
-- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — FR-37 / canopy AD-17 gates
+- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — canopy:FR-37 / canopy:AD-17 gates
 - `src/shared/packages/pyforge-scribe/` — compile source (read-only)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 
@@ -81,7 +81,7 @@ warnings: []
 
 Proof station is **scribe**, not atlas (`cf-atlas-legacy` already exists) and not a persona. Public contract is the `scribe` CLI (package AD-7): `__init__.py` exports only `__version__`. SKF extract of `__init__.py` + `cli.py` yields `capture_cmd`, `graph_compile`, `recall_cmd`, `main`.
 
-Export is optional this story: AD-17 says export is the **only** allowed write into CLAUDE.md/AGENTS.md; skipping export keeps those files clean.
+Export is optional this story: canopy:AD-17 says export is the **only** allowed write into CLAUDE.md/AGENTS.md; skipping export keeps those files clean.
 
 Personas (CAP-16) consult this content skill later; they are BMAD launcher skills, not SKF output.
 

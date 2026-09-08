@@ -145,17 +145,49 @@ def _station_shape(cell: str) -> tuple[str, str | None]:
     return ("single", station)
 
 
+def _mention_re(name: str) -> re.Pattern[str]:
+    """Word-boundary matcher for a skill name, honouring the glob-prefix form.
+
+    Two defects this closes, both found by the 2026-09-08 deferred-work sweep and
+    recorded as `pyforge-steward` DW-FU-46-1-2 / DW-FU-46-1-6 and `pyforge-atlas`
+    DW-FU-24-1 (one helper, indicted from three ledger rows):
+
+    * **Plain substring matching produced real false passes.** Verifying
+      DW-FU-42-2-11 the sweep found `revoke` present twice in a persona card --
+      both times as the CREDENTIAL duty (`steward keys {...,revoke}`), never the
+      run duty being looked for. A substring test cannot tell those apart.
+    * ``-`` must count as a word character here, or `bmad-os-changelog` matches
+      inside `bmad-os-changelog-social` and a routing line for one skill would
+      satisfy the check for its sibling.
+
+    A glob name (`bmad-cis-*`) keeps its prefix semantics -- boundary required
+    before the stem only, since the stem is deliberately open-ended.
+    """
+    term = _claude_md_search_term(name)
+    tail = "" if name.endswith("*") else r"(?![\w-])"
+    return re.compile(r"(?<![\w-])" + re.escape(term) + tail)
+
+
+#: Files a persona skill may carry its routing text in. `SKILL.md` and
+#: `customize.toml` were the original two; `reference/*.md` and `README.md` were
+#: added 2026-09-08 (DW-FU-46-1-2) -- a persona that documented its routing in a
+#: reference file read as un-routed to this check.
+_PERSONA_ROUTING_FILES = ("SKILL.md", "customize.toml", "README.md")
+
+
 def _persona_mentions(root: Path, station: str, name: str) -> bool:
     persona_dir = root / ".claude" / "skills" / f"bmad-agent-{station}"
-    for filename in ("SKILL.md", "customize.toml"):
-        path = persona_dir / filename
-        if path.is_file() and name in path.read_text(encoding="utf-8"):
+    rx = _mention_re(name)
+    candidates = [persona_dir / f for f in _PERSONA_ROUTING_FILES]
+    candidates += sorted(persona_dir.glob("reference/*.md"))
+    for path in candidates:
+        if path.is_file() and rx.search(path.read_text(encoding="utf-8")):
             return True
     return False
 
 
 def _claude_md_mentions(claude_md_text: str, name: str) -> bool:
-    return _claude_md_search_term(name) in claude_md_text
+    return bool(_mention_re(name).search(claude_md_text))
 
 
 # ── § 1 status-cell hygiene (AD-6) ──────────────────────────────────────────

@@ -9,7 +9,7 @@ baseline_revision: '4cf8ae53138727263af60c6b94c9c3a359668021'
 final_revision: 'bb1d7319b6'
 context:
   - '{project-root}/_bmad-output/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md'
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md'
+  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/planning-artifacts/specs/spec-pyforge-marshal/extraction-manifest.md'
   - '{project-root}/AGENTS.md'
 warnings: ['oversized']

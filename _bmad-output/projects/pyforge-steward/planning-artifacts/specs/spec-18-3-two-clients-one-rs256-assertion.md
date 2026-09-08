@@ -92,7 +92,7 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/django-pyforge/src/django_pyforge/assertion/` -- schema, golden vector, sign, verify, portal client, mint view, middleware -- CAP-6 / canopy AD-7
+- `src/shared/packages/django-pyforge/src/django_pyforge/assertion/` -- schema, golden vector, sign, verify, portal client, mint view, middleware -- CAP-6 / canopy:AD-7
 - `src/shared/packages/django-pyforge/pyproject.toml` -- declare PyJWT+cryptography -- crypto stays with chrome package
 - `src/shared/packages/pyforge-core/src/pyforge/core/assertion.py` -- urllib host-mint client -- leaf-safe CLI emitter
 - `src/platform/config/settings/base.py` + `urls.py` -- wire middleware + mint URL -- host consumes chrome client

@@ -185,7 +185,7 @@ ownership), OQ-9 (minimum CFE version — none declared, no adapter break observ
    Containerfile convention); Epic 9 (workflow_call CI + the air-gap distribution contract
    socket, `airgap_contract.py`, empty backend registry by design); Epic 10 (the replaceable
    build-engine hook `engines/build_hooks.py`, default = the CFE-native path, conda-build
-   registered but never spawned — canopy AD-21); Epic 11 (the `bmad-agent-mason` persona that
+   registered but never spawned — canopy:AD-21); Epic 11 (the `bmad-agent-mason` persona that
    consults conda-forge-expert, and the `/stations/mason/` last-diagnose portal slice via
    PortalClient — canopy FR-38/FR-10). Those bind to their own spec/canopy contracts; this
    kernel remains the contract for the mason CLI itself.

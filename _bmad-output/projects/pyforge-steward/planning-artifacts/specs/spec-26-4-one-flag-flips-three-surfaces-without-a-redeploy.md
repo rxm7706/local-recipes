@@ -8,8 +8,8 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
 warnings: []
 ---
 
@@ -17,7 +17,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Flag behaviour is not yet evaluated in-process from one JSON tree, so Django, MCP, and CLI cannot observe the same flip without a Deployment rollout (FR-34, canopy AD-11).
+**Problem:** Flag behaviour is not yet evaluated in-process from one JSON tree, so Django, MCP, and CLI cannot observe the same flip without a Deployment rollout (canopy:FR-34, canopy:AD-11).
 
 **Approach:** Ship one flagd-schema JSON tree at `src/platform/config/flags.json`. The Helm ConfigMap is built from that file and mounted read-only. The OpenFeature flagd FILE provider (0.5.0) watches/polls the mount in-process. Django, MCP, and the steward CLI evaluate those same bytes with no egress.
 
@@ -33,7 +33,7 @@ warnings: []
 
 **Always:** flagd JSON schema (`flags` object). `FlagdProvider(resolver_type=ResolverType.FILE, offline_flag_source_path=…)`. Polling is 5s and unconfigurable. In-cluster path `/etc/pyforge/flags.json`. Physical spec path under `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
-**Block If:** Reloader, flagd daemon, or any flags sidecar (parent AD-14). A second JSON tree. Loosening `openfeature-provider-flagd` off `>=0.5.0,<0.5.1`. Recipe authoring. Story 27.x or 12-7.
+**Block If:** Reloader, flagd daemon, or any flags sidecar (parent canopy:AD-14). A second JSON tree. Loosening `openfeature-provider-flagd` off `>=0.5.0,<0.5.1`. Recipe authoring. Story 27.x or 12-7.
 
 **Never:** `import pyforge` under `src/platform/`. WASM/`wasmtime`. Per-surface homemade flag formats. Env promotion overlays (Deferred).
 

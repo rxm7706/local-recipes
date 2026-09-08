@@ -8,7 +8,7 @@ baseline_revision: 4b88f3f1245e770b9427447991f7d0510b640fca
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred: []
 ---
@@ -59,7 +59,7 @@ deferred: []
 
 **Execution:**
 - `django_pyforge/mcp_http.py` -- `asgi_for_station` pattern -- one dual-era wrapper for seven faces
-- seven station `apps.py` -- register MCP ASGI via AppConfig -- canopy AD-1
+- seven station `apps.py` -- register MCP ASGI via AppConfig -- canopy:AD-1
 - `src/platform/tests/test_seven_mcp_faces.py` -- I/O matrix
 
 **Acceptance Criteria:**

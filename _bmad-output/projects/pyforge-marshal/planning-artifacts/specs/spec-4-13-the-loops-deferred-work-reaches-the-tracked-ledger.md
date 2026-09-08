@@ -7,7 +7,7 @@ review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'effe2a3127'
 final_revision: '45812b19'
-context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md']
+context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md']
 warnings: ['oversized']
 ---
 

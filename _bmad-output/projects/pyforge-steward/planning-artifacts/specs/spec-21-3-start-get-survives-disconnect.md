@@ -8,7 +8,7 @@ baseline_revision: 24f670472b44e412cd718a8a05e57d14b5a1c8fe
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred: []
 ---
@@ -46,7 +46,7 @@ deferred: []
 
 - `src/shared/packages/django-pyforge/src/django_pyforge/models.py` — add `RunState.result` JSONField (nullable) and `McpHandle.subject` (IdP `sub` bound at start); keep `db_table` names
 - `src/shared/packages/django-pyforge/src/django_pyforge/migrations/0002_run_result_and_handle_subject.py` — Django AddField only; no CREATE SCHEMA; not Liquibase
-- `src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py` — **new** `publish_start` / `complete_run` / `get_run`; only publisher of run rows (AD-12)
+- `src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py` — **new** `publish_start` / `complete_run` / `get_run`; only publisher of run rows (canopy:AD-12)
 - `src/shared/packages/django-pyforge/src/django_pyforge/tasks.py` — **new** Celery `execute_supervised_run`; autodiscover via AppConfig
 - `src/shared/packages/django-pyforge/src/django_pyforge/mcp_start_get.py` — **new** register `start_run_pipeline` + `get_run` on an official `MCPServer` (assertion + handle args)
 - `src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py` — after `build_server()`, register start/get; domain work stays `pyforge.atlas.mcp.tools` (lazy, not at host import in platform tests)
@@ -60,7 +60,7 @@ deferred: []
 **Execution:**
 - `django_pyforge/models.py` + `migrations/0002_*.py` — persist result + subject — get without recompute
 - `django_pyforge/supervisor.py` + `tasks.py` — one ledger + Celery after commit — start returns first
-- `django_pyforge/mcp_start_get.py` + `django_atlas_portal/mcp_asgi.py` — atlas MCP tools — FR-12 surface
+- `django_pyforge/mcp_start_get.py` + `django_atlas_portal/mcp_asgi.py` — atlas MCP tools — canopy:FR-12 surface
 - `src/platform/tests/test_start_get_survives_disconnect.py` — I/O matrix
 
 **Acceptance Criteria:**

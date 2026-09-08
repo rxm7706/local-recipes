@@ -41,8 +41,8 @@ moving the pin to `>=5.2.17,<6` once the feedstock publishes it (scanners key on
 | `celery`, `redis-py`, `grpcio`, `protobuf`, `pyyaml`, `pydantic` | current | CAP-8, CAP-11, CAP-13 | No work. |
 | `python-duckdb` | current (pixi / atlas) | CAP-19 | Library, not a fourth infra kind. **Single writer on RWO** — one process owns ``atlas.duckdb``; Parquet is the cross-pod shared artifact (Story 41.2 / BS-5). `vss` / `postgres` extensions: LOAD-only consumer (AD-13). |
 | `duckdb-server` | reciped (`recipes/duckdb-server`) | CAP-19 face | Optional HTTP/Arrow face. Not in `pixi.toml` until `query-plane-face` is answered. Not a Helm backing store. |
-| `kedro`, `kedro-datasets`, `kedro-dagster` | current (atlas env) | CAP-19, atlas | One Kedro *home* (atlas). Not eight projects (AD-21). |
-| `kedro-mcp`, `kedro-skills` | current | authoring | Skills: 34.2 catalog shipped. MCP: wrapped, never load-bearing (atlas FR-7). |
+| `kedro`, `kedro-datasets`, `kedro-dagster` | current (atlas env) | CAP-19, atlas | One Kedro *home* (atlas). Not eight projects (canopy:AD-21). |
+| `kedro-mcp`, `kedro-skills` | current | authoring | Skills: 34.2 catalog shipped. MCP: wrapped, never load-bearing (atlas canopy:FR-7). |
 | `kedro-viz` | current | atlas 12.2 | Pipeline DAG publish. Not Lane 3. |
 | `vizro` | `>=0.1.60` | Lane 3, CAP-7 | Runtime boards over BSL + plane. Not imported into Django. |
 | `vizro-mcp`, `vizro-e2e-flow` | current | Lane 3 authoring | Replaces Vizro-AI. 36.2 is a grounded page; MCP authoring is still a later story. |
@@ -53,7 +53,7 @@ moving the pin to `>=5.2.17,<6` once the feedstock publishes it (scanners key on
 
 Pins already in `pixi.toml`. This is **not** a shopping list and **not** eight new stations.
 It is the 2026-08-26 schedule for using what we already lock. Kedro/Vizro rules: option
-for pipelines, Vizro for Lane 3, one Atlas Kedro home (see AD-21 / AD-22).
+for pipelines, Vizro for Lane 3, one Atlas Kedro home (see canopy:AD-21 / canopy:AD-22).
 
 | Pin | Station | Bind | Status |
 |---|---|---|---|
@@ -66,9 +66,9 @@ for pipelines, Vizro for Lane 3, one Atlas Kedro home (see AD-21 / AD-22).
 | `boring-semantic-layer` | atlas | Metrics on the plane (`package_download_velocity`, `ecosystem_cve_risk_score`, new CAP-19 relations) | **36.1 reads estate cache** |
 | `markitdown` | herald, scribe | docx/xlsx/pptx/pdf → markdown for Wagtail / Scribe memory | **bind** |
 | `graphviz2drawio` | herald | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
-| `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (FR-27). Same primitive for worktrees / scribe files | **extend** |
+| `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (canopy:FR-27). Same primitive for worktrees / scribe files | **extend** |
 | `go-sops` + `age` | steward | Offline X25519 vaulting — in-estate path | **landed / keep** |
-| HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
+| HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy:AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
 | `pandera` | warden, mason | Schema contracts on lockfiles / CycloneDX feeds | **bind** |
 | `taplo`, `sqlfluff`, `yamllint` | doctor, warden | `pixi.toml` / `recipe.yaml` / DuckDB SQL preflight (`doctor check --syntax`) | **bind** (sqlfluff also lints CAP-19 SQL) |
 | `playwright` + `playwright-python` | herald, testing-kit | `.dc.html` + Vizro board PNG/PDF; both pins required (CLI ≠ Python module) | **extend** (herald already; Vizro thumbs after Lane 3 plane board) |

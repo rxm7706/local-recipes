@@ -19,10 +19,10 @@ warnings:
   - oversized
 deferred:
   - summary: >-
-      Canopy AD-20 also names audit write and role-built navigation; this
+      Canopy canopy:AD-20 also names audit write and role-built navigation; this
       story's board is JSON filter-then-search only.
     evidence: |-
-      Story 23.1 ACs and FR-16 name same-URL row isolation via
+      Story 23.1 ACs and canopy:FR-16 name same-URL row isolation via
       filter_by_role / AccessDeclaration. Audit and build_navigation are
       already in pyforge.steward.dashboard from Epic 9 and were not wired
       onto /stations/atlas/board/.
@@ -35,13 +35,13 @@ deferred:
 
 ## Intent
 
-**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. FR-16 / canopy AD-20.
+**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. canopy:FR-16 / canopy:AD-20.
 
-**Approach:** Serve one board URL on the atlas portal. Load the unfiltered master via `get_master_dataset`, then `filter_by_role` / `AccessDeclaration` and `search`. Identity is this request's IdP token roles (18.2), not trusted headers (FR-15).
+**Approach:** Serve one board URL on the atlas portal. Load the unfiltered master via `get_master_dataset`, then `filter_by_role` / `AccessDeclaration` and `search`. Identity is this request's IdP token roles (18.2), not trusted headers (canopy:FR-15).
 
 ## Boundaries & Constraints
 
-**Always:** Isolation is only `pyforge.steward.dashboard` filter-then-search. Server-side. Same path for every role. Portal may import `pyforge.steward.dashboard` (not `pyforge.atlas`). `src/platform/` and `src/platform/tests/` never import `pyforge.*`. Cache stores the master only. `Cache-Control: no-store`. Cite canopy AD-20. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
+**Always:** Isolation is only `pyforge.steward.dashboard` filter-then-search. Server-side. Same path for every role. Portal may import `pyforge.steward.dashboard` (not `pyforge.atlas`). `src/platform/` and `src/platform/tests/` never import `pyforge.*`. Cache stores the master only. `Cache-Control: no-store`. Cite canopy:AD-20. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
 **Block If:** Implementation would require Vizro/Dash/Flask as the isolation mechanism, trusted-header identity on the host, CloudEvents/Epic 24, Epic 30 console deletion, MinIO, or Liquibase 27-1.
 
@@ -130,6 +130,6 @@ Files:
 - `tests/test_host_board_row_isolation.py` — HTTP + AST matrix
 - `tests/test_station_portal_shells.py` — atlas allowlist for steward dashboard
 - `src/platform/pyproject.toml` + `Containerfile` — test/image import path
-Review: 5 patches applied (3 medium, 2 low; follow-up score 11); 1 deferred (AD-20 audit/navigation); 18 rejected.
+Review: 5 patches applied (3 medium, 2 low; follow-up score 11); 1 deferred (canopy:AD-20 audit/navigation); 18 rejected.
 Verification: 18 passed under platform-ci-test (`DATABASE_URL=postgres://postgres:platform@127.0.0.1:5432/platform`); ruff clean on touched Python.
 Residual: image COPY of `pyforge-steward` not rebuilt in this run; fixture master not live atlas analytics.

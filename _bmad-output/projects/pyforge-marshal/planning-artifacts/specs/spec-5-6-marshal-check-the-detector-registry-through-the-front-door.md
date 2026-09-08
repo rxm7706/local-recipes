@@ -5,7 +5,7 @@ created: '2026-08-07'
 status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md']
+context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md']
 warnings: []
 baseline_revision: '3195f8c292d581a2433b02dac159323d8a126f27'
 ---

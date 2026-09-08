@@ -111,7 +111,7 @@ interleaving in tests.
   (importlib from the patched copy) for the in-process interleaving test.
 - READ-ONLY precedent: `src/shared/packages/pyforge-herald/src/pyforge/herald/locking.py`
   (sidecar-lock rationale), `pyforge.marshal.adapters.fs_local::acquire_advisory_lock`
-  (raw-fd flock shape, AD-42). Ledger record: atlas `deferred-work-ledger.md`
+  (raw-fd flock shape, marshal:AD-42). Ledger record: atlas `deferred-work-ledger.md`
   `DW-13-5-3` (and `DW-13-5-2` context).
 
 ## Tasks & Acceptance

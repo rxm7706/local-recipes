@@ -59,7 +59,7 @@ deferred:
 ## Intent
 
 **Problem:** `POST /assertion/mint/` is the root of the whole delegation chain
-(unifying CAP-6, canopy AD-7, RFC-3 revised). It is `csrf_exempt`, reads the
+(unifying CAP-6, canopy:AD-7, RFC-3 revised). It is `csrf_exempt`, reads the
 `Authorization: Bearer` header, and calls `identity_from_idp_bearer`, which
 splits the token on `.`, base64-decodes segment 2, and returns `sub` and
 `groups` **without verifying the signature, issuer, audience, expiry, or

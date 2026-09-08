@@ -8,8 +8,8 @@ baseline_revision: 9d6df2e39f5
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
 warnings: []
@@ -19,7 +19,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Concurrent writers can corrupt `atlas.duckdb`. Production atlas still defaults to in-memory `duckdb.connect()` / `ibis.duckdb.connect()`; file handles never pass `read_only=True` (FR-27, BS-5, canopy AD-15).
+**Problem:** Concurrent writers can corrupt `atlas.duckdb`. Production atlas still defaults to in-memory `duckdb.connect()` / `ibis.duckdb.connect()`; file handles never pass `read_only=True` (canopy:FR-27, BS-5, canopy:AD-15).
 
 **Approach:** One atlas-local opener for the existing `atlas.duckdb` filename. A second writer is refused (filelock, already in atlas). Readers connect with `read_only=True`. Tests fail if that boundary is removed.
 
@@ -38,7 +38,7 @@ warnings: []
 | Second writer | Live `atlas.duckdb`; writer held | `connect_writer` refuses the second | `SecondWriterRefused`; no second RW handle |
 | Reader | Same file after a writer created it | `connect_reader` opens `read_only=True` | Readers do not take the writer lock |
 | Wrong filename | Path whose name is not `atlas.duckdb` | Refused | `ValueError` — no second store file |
-| Mechanism absent | AST of opener without lock / `read_only` | Test fails (AD-15) | Documents the unguarded `duckdb.connect` trap |
+| Mechanism absent | AST of opener without lock / `read_only` | Test fails (canopy:AD-15) | Documents the unguarded `duckdb.connect` trap |
 
 </intent-contract>
 
@@ -49,14 +49,14 @@ warnings: []
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/admission.py` -- existing `filelock` is Kedro *Parquet* admission, a different surface
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py` -- NEW: `connect_writer` / `connect_reader` / `SecondWriterRefused`
 - `src/shared/packages/pyforge-atlas/tests/test_one_duckdb_writer.py` -- NEW: live file ACs
-- `src/platform/tests/test_one_duckdb_writer.py` -- NEW: estate AD-15 AST gate (no `pyforge.*` import)
+- `src/platform/tests/test_one_duckdb_writer.py` -- NEW: estate canopy:AD-15 AST gate (no `pyforge.*` import)
 - Never: `src/platform/**` shipping `pyforge.*`; Epic 25.3 HTMX / 25.4 reconcile; pixi.toml
 
 ## Tasks & Acceptance
 
 **Execution:**
 - `pyforge/atlas/duckdb_writer.py` -- exclusive writer + `read_only=True` readers on `atlas.duckdb`
-- atlas + platform tests -- live refuse + AD-15 absence
+- atlas + platform tests -- live refuse + canopy:AD-15 absence
 
 **Acceptance Criteria:**
 - Given a live `atlas.duckdb`, when a second writer appears, then it is refused or serialized.
@@ -95,7 +95,7 @@ Files changed:
 - `pyforge/atlas/duckdb_writer.py` -- `connect_writer` / `connect_reader` / `LockedDuckDB`
 - `pyforge/atlas/rag/store.py` -- comment pointing file-backed opens at the opener
 - `pyforge-atlas/tests/test_one_duckdb_writer.py` -- live ACs
-- `src/platform/tests/test_one_duckdb_writer.py` -- AD-15 AST
+- `src/platform/tests/test_one_duckdb_writer.py` -- canopy:AD-15 AST
 - this spec
 
 Review findings: 1 low patch (lock release wrapper). Deferred 0. Rejected 0. Follow-up review: false (score 1).

@@ -14,7 +14,7 @@ context:
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md"
-  - "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md"
+  - "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md"
   - "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-era-isolation/SPEC.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-13-1-langflow-base-onnxruntime-pin-admits-python-3-14.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14.md"
@@ -96,7 +96,7 @@ interpreter shim.
 
 ## Tasks
 
-- [x] AD in `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`.
+- [x] AD in `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`.
 - [x] `scripts/pixi_env_matrix.py` + test; Dream table replaced.
 - [x] Review report S-5 / R-16 + readiness wording (done 2026-09-02 with this amendment; verify).
 - [x] Dream Grounding "Python floor" bullet (done 2026-09-02; verify).
@@ -110,13 +110,13 @@ Baseline: `8ace5673f950bce88b6253cc46e6dc3cdc4abb4c`
 
 ### Summary
 
-Recorded canopy **AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-SDK isolation), replaced the Dream's Multi-Python claims with a lock-derived matrix (`scripts/pixi_env_matrix.py`), added Grounding **Python floor** bullet, and wired `bmad-drift` `pixi-env-matrix-stale` detection.
+Recorded canopy **canopy:AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-SDK isolation), replaced the Dream's Multi-Python claims with a lock-derived matrix (`scripts/pixi_env_matrix.py`), added Grounding **Python floor** bullet, and wired `bmad-drift` `pixi-env-matrix-stale` detection.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `architecture/.../ARCHITECTURE-SPINE.md` | AD-23 + stack Python row |
+| `architecture/.../ARCHITECTURE-SPINE.md` | canopy:AD-23 + stack Python row |
 | `scripts/pixi_env_matrix.py` | New lock → markdown matrix generator |
 | `tests/scripts/test_pixi_env_matrix.py` | Unit tests (stdlib + PyYAML) |
 | `docs/dreams/pyforge-unifying-strategy.md` | Grounding Python floor + measured matrix |
@@ -134,7 +134,7 @@ Recorded canopy **AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-S
 - addressed_findings:
   - none
 
-Deferred: archive Fleet conventions row still lists pre-43.5 Python floor split — living Grounding + AD-23 supersede it; archive edit out of scope for 43.5.
+Deferred: archive Fleet conventions row still lists pre-43.5 Python floor split — living Grounding + canopy:AD-23 supersede it; archive edit out of scope for 43.5.
 
 Rejected: dream line-count creep (~446 lines) — matrix block is generated and required by AC.
 

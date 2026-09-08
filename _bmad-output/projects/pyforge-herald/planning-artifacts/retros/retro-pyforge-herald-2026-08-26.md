@@ -59,8 +59,7 @@ executed against.
    Pillow real-font-measured autofit — the densest six-act appendix slide fits, measured
    not guessed. Two adversarial review passes landed 16 patch findings same-day.
 4. **Epic 16 — exporter hook spec (2026-08-24).** Marp, PPTX and `.dc.html` export
-   re-registered as default plugins on the shared `pyforge.core.hooks` contract (canopy
-   AD-21); no station-local plugin loader, and export success can never publish a PR
+   re-registered as default plugins on the shared `pyforge.core.hooks` contract (canopy:AD-21); no station-local plugin loader, and export success can never publish a PR
    quality-gate verdict (`SecondVerdictError`) — the never-a-second-verdict invariant
    held in code, not just prose.
 5. **Epic 17 — the station owns its skill, persona, and one portal job (2026-08-25/26).**

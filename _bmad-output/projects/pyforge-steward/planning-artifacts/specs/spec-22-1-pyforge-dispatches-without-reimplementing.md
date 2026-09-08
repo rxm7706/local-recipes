@@ -31,7 +31,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Operators must memorize eight station console scripts. FR-13 / canopy AD-14 require one grammar `pyforge <station> <noun> <verb>` that reaches the same behaviour as each station binary, without absorbing those CLIs.
+**Problem:** Operators must memorize eight station console scripts. canopy:FR-13 / canopy:AD-14 require one grammar `pyforge <station> <noun> <verb>` that reaches the same behaviour as each station binary, without absorbing those CLIs.
 
 **Approach:** Add a `pyforge` console script on `pyforge-core` that maps the station token to that package's primary console script and forwards the remaining argv through `PosixProcess`. CI generates a verb-parity matrix from sibling sources; drift fails the build. Unintrospectable CLIs are named preparatory stories, never silent skips.
 
@@ -82,7 +82,7 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — add dispatch-only front door — FR-13
+- `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — add dispatch-only front door — canopy:FR-13
 - `src/shared/packages/pyforge-core/pyproject.toml` — declare `pyforge` script
 - `src/shared/packages/pyforge-core/README.md` — grammar + no-reimplement + prep-story
 - `src/shared/packages/pyforge-core/tests/unit/test_dispatch.py` — I/O matrix rows except CI matrix

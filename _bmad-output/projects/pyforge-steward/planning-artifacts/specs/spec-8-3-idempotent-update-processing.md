@@ -66,10 +66,10 @@ byte-identical — to the state captured immediately after the first call.
 - If a test surfaces a genuine local defect in `reconcile()`'s existing logic, fix it in
   `sync.py` in this story.
 
-**Block If:** the tests reveal the AD-5/AD-9/AD-10 mechanism is structurally unable to
+**Block If:** the tests reveal the AD-5/AD-9/jira:AD-10 mechanism is structurally unable to
 guarantee idempotency for some case regardless of local fixes (an architecture-level defect,
 the same class of finding that halted 8.1's first pass) — HALT rather than paper over it; do
-not re-litigate AD-5/AD-9/AD-10 unilaterally.
+not re-litigate AD-5/AD-9/jira:AD-10 unilaterally.
 
 **Never:**
 - Never mock or patch `reconcile()`'s internals; observe only through `DutyResult` and the
@@ -183,7 +183,7 @@ every call), fixture literals not factored into a shared helper with 8.2's tests
 this file's own pre-existing, inconsistent precedent; fixing would touch unrelated 8.2 tests),
 the AD-9-rule-2 test's premise re-litigated as "not a distinct code path" (already settled by
 the operator-authored contract with full awareness reconcile() is payload-less — Boundaries'
-"Block If" forbids re-litigating AD-5/AD-9/AD-10 unilaterally), the raw dict-mutation
+"Block If" forbids re-litigating AD-5/AD-9/jira:AD-10 unilaterally), the raw dict-mutation
 technique for the intervening change (exactly the frozen Design Notes' specified shape), no
 `result.summary` substring assertion (matches the file's existing convention of only
 asserting summary text on failure paths, not success/no-op paths), and three subjective

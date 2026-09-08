@@ -47,7 +47,7 @@ _bmad-output/projects/pyforge-atlas/
 - **PRD** (Tier 2): Product requirements
 - **Architecture** (Tier 2): Design specifications
 - **Epics** (Tier 2): Epic breakdown (epics.md)
-- **Stories** (Tier 2): Stories with acceptance criteria (epics.md — canonical per AD-72; the derived epics-with-stories.md was retired 2026-09-07, marshal Story 32.4)
+- **Stories** (Tier 2): Stories with acceptance criteria (epics.md — canonical per marshal:AD-72; the derived epics-with-stories.md was retired 2026-09-07, marshal Story 32.4)
 - **Test Architecture** (Tier 2): Test strategy, coverage targets, fixtures
 - **Sprint Status** (Tier 3): Sprint plan with epic/story tracking
 

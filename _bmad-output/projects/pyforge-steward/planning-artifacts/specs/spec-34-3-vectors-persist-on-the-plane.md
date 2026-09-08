@@ -7,7 +7,7 @@ updated: '2026-08-26'
 baseline_commit: 9d3ad9105b
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred: []
 ---
@@ -16,7 +16,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** RAG still defaults to in-memory DuckDB. FR-48 needs HNSW on the CAP-19 plane writer.
+**Problem:** RAG still defaults to in-memory DuckDB. canopy:FR-48 needs HNSW on the CAP-19 plane writer.
 
 **Approach:** Extract `REAL[]` (or list) rows onto `atlas.duckdb` via `connect_writer`. Cast to `FLOAT[N]`, `LOAD vss` only, nearest-neighbor returns the planted row. Production opener injects that writer.
 

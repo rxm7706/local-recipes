@@ -7,7 +7,7 @@ own `.github/workflows/`**; this repo (`local-recipes`) only ships `steward`
 and this documentation, it is not itself a sync participant.
 
 See `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/
-architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md` for
+_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` for
 the binding invariants (AD-1 through AD-9) referenced throughout this
 document.
 

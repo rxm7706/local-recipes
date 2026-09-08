@@ -8,11 +8,11 @@ baseline_revision: 4dc8d8abda7b57691e7311ceff571415dff8b3c3
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred:
   - summary: >-
-      Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42
+      Timing, heartbeat, and ingest-at-completion columns for canopy:FR-41/canopy:FR-42
       are not on RunState yet.
     evidence: |-
       Story 21.1 lands the two public tables only; 21.5 owns front-door
@@ -131,7 +131,7 @@ Status: done
 - `src/platform/tests/test_supervisor_tables.py` — I/O matrix
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md` — tracked spec
 
-**Review:** 6 patches applied; 3 deferred; 18 rejected (21.3/21.5 runtime, FR-12 disconnect, replica alias vs same-DB second connection). Follow-up recommended: patched medium 3 + low 3 → score 12 (≥ 5).
+**Review:** 6 patches applied; 3 deferred; 18 rejected (21.3/21.5 runtime, canopy:FR-12 disconnect, replica alias vs same-DB second connection). Follow-up recommended: patched medium 3 + low 3 → score 12 (≥ 5).
 
 **Verification:** `pixi run -e platform-ci-test pytest tests/test_supervisor_tables.py tests/meta/test_no_pyforge_import.py -q` — 8 passed. `ruff check` on new files — clean.
 

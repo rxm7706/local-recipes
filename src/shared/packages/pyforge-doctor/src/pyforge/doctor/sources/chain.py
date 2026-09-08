@@ -2884,18 +2884,53 @@ def frontmatter_deferral_in_tracked(finding: SpecDeferredFinding, tracked_text: 
     return _source_spec_cited_in(finding.spec_rel, tracked_text)
 
 
+#: What an intake entry's `location:` says when the entry cites no code at
+#: all. The entry is still admitted -- an uncited deferral is real work, and
+#: refusing it would simply push the backlog somewhere unmeasured -- but the
+#: gap is named in the artifact rather than left to be rediscovered.
+#:
+#: Measured 2026-09-08, the fleet's first full sweep: 144 of 183 due entries
+#: cited no extractable path, which is why CAP-2's churn filter skipped ZERO
+#: of them. An uncitable entry costs an agent read every sweep, forever.
+NO_LOCATION_MARKER = "(none cited)"
+
+
+def _block_names_no_path(text: str) -> bool:
+    """Does ``text`` name no file at all?
+
+    Uses the churn filter's OWN extraction rules -- `_PATH_TOKEN_RE` plus
+    `_is_path_token`, minus `source_spec:` lines -- so "flagged as uncited"
+    and "invisible to CAP-2" are the same predicate by construction, not two
+    hand-synced approximations.
+    """
+    body = _SOURCE_SPEC_LINE_RE.sub("", text)
+    return not any(
+        _is_path_token(m.group(1)) for m in _PATH_TOKEN_RE.finditer(body)
+    )
+
+
 def format_frontmatter_intake_entry(
     new_id: str,
     finding: SpecDeferredFinding,
     *,
     promoted_date: date | None = None,
 ) -> str:
-    """One tracked-ledger block for a frontmatter-deferred finding."""
+    """One tracked-ledger block for a frontmatter-deferred finding.
+
+    An entry that cites no resolvable code is still admitted, but its
+    `location:` is stamped `NO_LOCATION_MARKER` so the gap is visible in the
+    ledger and countable by the caller.
+    """
     promoted = promoted_date or date.today()
     origin = f"{HARVEST_ORIGIN} {finding.fingerprint}"
     source_spec = f"`{finding.spec_rel}`"
     sev_line = f"  severity: {finding.severity}\n" if finding.severity else ""
-    loc_line = f"  location: {finding.location}\n" if finding.location else ""
+    location = finding.location
+    if not location and _block_names_no_path(
+        f"{finding.summary}\n{finding.evidence}\n"
+    ):
+        location = NO_LOCATION_MARKER
+    loc_line = f"  location: {location}\n" if location else ""
     return (
         f"### {new_id}: {finding.summary}\n"
         f"\n"
@@ -3467,19 +3502,81 @@ def _parse_verified_date(raw: str) -> date | None:
 # reshapes a Finding (Boundaries).
 
 #: A backtick-quoted token that names a code path: a bare word (an id, a
-#: flag, a function name) is ambiguous prose, but a `.`-extension or a `/`
-#: path separator is not -- optionally followed by a `:<LINE>` locator
+#: flag, a function name) is ambiguous prose, but a `/` path separator or a
+#: known file extension is not -- optionally followed by a `:<LINE>` locator
 #: (`foo.py:10`), captured OUTSIDE the path group and discarded, since git
 #: operates on files, never on lines within one. Matching only WITHIN
 #: backticks (never bare prose) mirrors how every ledger entry already
-#: cites code today. Over-matching (e.g. a dotted version string) is safe
-#: by design: an extracted token that is not a real path simply fails to
-#: resolve in `_churn_since`'s own step 1 and falls back to "not skipped"
-#: -- the same fail-safe direction as every other edge case here
-#: (Boundaries), so this pattern does not need to be exhaustively precise.
+#: cites code today. Candidates are then filtered by `_is_path_token`.
 _PATH_TOKEN_RE = re.compile(
     r"`([\w][\w./-]*(?:\.[A-Za-z0-9]+|/[\w.-]+))(?::\d+)?`"
 )
+
+#: Trailing segments that mark a dotless-but-dotted token as a real FILE
+#: rather than an attribute access. DERIVED, not invented: every one of
+#: these was measured (2026-09-08) against all eight tracked ledgers as a
+#: trailing segment that resolves to a real file, and the set is held
+#: honest by `test_path_extensions_cover_every_cited_tracked_file`.
+#:
+#: This pattern used to accept ANY `.<alnum>` tail on the reasoning that
+#: over-matching was "safe by design" -- a non-path simply fails to resolve
+#: in `_churn_since` step 1 and falls back to "not skipped". Safe, but
+#: measured useless: of 1,450 dotted-only tokens, 471 were attribute
+#: accesses and version strings (`os.replace`, `Finding.path`,
+#: `CurrencyEngine.run`, `0.73.0`, `github.com`), and the resulting
+#: unresolvable candidates are why the churn filter skipped ZERO entries
+#: across the fleet's first full sweep. Rejecting them up front is what
+#: makes a "not skipped" verdict mean "this code moved" instead of "this
+#: token was never a path".
+#:
+#: `db` and `jsonl` name real artifacts here (`cf_atlas.db`,
+#: `journal.jsonl`) that are gitignored runtime state rather than tracked
+#: files, so the meta-test cannot see them; they are listed deliberately.
+#: `csv`, `j2`, `mjs`, `patch` and `tpl` were added BY that meta-test on its
+#: first run -- a hand-written list omits the rarest thing, which is the
+#: whole reason the guard exists.
+_PATH_EXTENSIONS = frozenset(
+    {
+        "bat",
+        "cfg",
+        "css",
+        "csv",
+        "db",
+        "html",
+        "ini",
+        "j2",
+        "js",
+        "json",
+        "jsonl",
+        "lock",
+        "md",
+        "mjs",
+        "parquet",
+        "patch",
+        "py",
+        "sh",
+        "sql",
+        "toml",
+        "tpl",
+        "txt",
+        "xml",
+        "yaml",
+        "yml",
+    }
+)
+
+
+def _is_path_token(token: str) -> bool:
+    """Does ``token`` name a file, rather than an attribute access?
+
+    A `/` settles it outright -- no Python expression carries one. Without
+    a slash, only a known file extension does; `pyforge.doctor.sources`
+    and `Path.glob` are module and method paths that no `git log` can
+    follow to a file.
+    """
+    if "/" in token:
+        return True
+    return token.rsplit(".", 1)[-1].lower() in _PATH_EXTENSIONS
 
 #: Any physical line carrying a `source_spec:` field, bulleted (`-
 #: source_spec: ...`) or plain (`source_spec: ...`) -- both shapes occur
@@ -3496,8 +3593,10 @@ def _entry_named_paths(path: Path) -> list[tuple[str, list[str]]]:
     extracting a shared primitive (Design Notes: neither `_entries()` nor
     `_verification()` is touched by this story).
 
-    ``paths`` are the entry's own body's `_PATH_TOKEN_RE` matches, in
-    first-seen order with duplicates removed, computed AFTER stripping any
+    ``paths`` are the entry's own body's `_PATH_TOKEN_RE` matches that
+    `_is_path_token` accepts as naming a file (rather than an attribute
+    access), in first-seen order with duplicates removed, computed AFTER
+    stripping any
     `source_spec:` line from the body (`_SOURCE_SPEC_LINE_RE`) so that
     field's own path-shaped value is never a candidate. The strip removes
     the WHOLE physical line, not just the field's value (review finding:
@@ -3516,7 +3615,7 @@ def _entry_named_paths(path: Path) -> list[tuple[str, list[str]]]:
         seen: list[str] = []
         for m in _PATH_TOKEN_RE.finditer(body):
             token = m.group(1)
-            if token not in seen:
+            if token not in seen and _is_path_token(token):
                 seen.append(token)
         out.append((ident, seen))
     return out

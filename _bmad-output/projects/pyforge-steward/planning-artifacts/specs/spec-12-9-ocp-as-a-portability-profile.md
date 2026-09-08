@@ -17,7 +17,7 @@ shipped_ref: 'fa1436585c06e6750f1cdeffba78cb41b2c5a6e4'
 
 ## Intent
 
-**Problem:** Story 12.1 OCP overlay exists but Platform CI has no OCP portability proof — AD-11 half open; deploy README still says no live OCP verification.
+**Problem:** Story 12.1 OCP overlay exists but Platform CI has no OCP portability proof — pap:AD-11 half open; deploy README still says no live OCP verification.
 
 **Approach:** Add optional `ocp-portability-smoke` job to `.github/workflows/platform-ci.yml` (default off, workflow_dispatch / repo var), mirroring gke-portability-smoke pattern: real OpenShift API (CRC/OpenShift Local), internal-registry push, helm install core+overlay, curl via admitted Route. Update deploy README honesty line.
 

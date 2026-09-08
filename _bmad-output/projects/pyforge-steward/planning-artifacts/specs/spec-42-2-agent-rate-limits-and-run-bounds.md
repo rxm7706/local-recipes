@@ -96,7 +96,7 @@ deferred:
       (inherited from Story 42.1), so the limiter is unreachable in a deployed run.
     evidence: |-
       The rate limiter sits behind the transport gate, which answers 503 when no
-      public key resolves. Until the AD-19 keypair Secret lands (Story 40.1
+      public key resolves. Until the canopy:AD-19 keypair Secret lands (Story 40.1
       territory), no deployed MCP call gets far enough to be counted. Recorded here
       only because it now also gates this story's AC 1; the underlying gap and its
       remedy are already tracked on `spec-42-1-mcp-transport-authorization.md`.
@@ -358,7 +358,7 @@ task tagged with `sub` so one command revokes a runaway subject.
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `42-2-agent-rate-limits-and-run-bounds`. Host never imports `pyforge.*`. Limits live in `redis-cache` (evictable, AD-10). Numbers are settings with documented defaults.
+Ledger key `42-2-agent-rate-limits-and-run-bounds`. Host never imports `pyforge.*`. Limits live in `redis-cache` (evictable, canopy:AD-10). Numbers are settings with documented defaults.
 
 **Block If:** Implementation would put limiter state on the broker, or gate humans and agents by client name instead of `sub`.
 
@@ -409,7 +409,7 @@ against a baseline worktree, never read as this story's regression.
 
 - **Limiter** — `django_pyforge/rate_limit.py`. A token bucket per `sub` per
   scope (`mcp`, `start`), keyed `pyforge:ratelimit:<scope>:<sub>` in
-  `CACHES["default"]` — redis-cache in a deployed profile (AD-10), evictable,
+  `CACHES["default"]` — redis-cache in a deployed profile (canopy:AD-10), evictable,
   never the `noeviction` broker whose exhaustion the bound exists to prevent.
   Wall-clock, not monotonic, because the bucket is shared across web pods.
   **Fail-closed is the load-bearing detail:** `django_redis` runs with
@@ -440,7 +440,7 @@ against a baseline worktree, never read as this story's regression.
   `ok=False` when the broker was unreachable rather than claiming success.
   `manage.py revoke_subject` is the write; `pyforge steward revoke --sub <id>`
   is the operator grammar and shells to it, because `run_state` has one writer
-  (AD-12) and `pyforge-steward` imports no Django.
+  (canopy:AD-12) and `pyforge-steward` imports no Django.
 - **Retention** — `prune_run_state` is two passes: age (the policy) and a hard
   row cap (the guarantee). Age alone bounds nothing, since a burst inside the
   window is exactly the shape that fills the table. Live rows are never pruned.
@@ -528,7 +528,7 @@ one that decided this pass.
     terminalises before the exception propagates.
   - `[high]` `[patch]` **`revoke_subject("")` would cancel the whole legacy estate**
     (migration 0004 defaults `subject=""`). The guard moved into the single
-    writer (AD-12); the management command projects it to a `CommandError`.
+    writer (canopy:AD-12); the management command projects it to a `CommandError`.
   - `[medium]` `[patch]` `RUN_STATE_PRUNE_INTERVAL_SECONDS` bypassed validation and could
     ship `0` into beat's `schedule` as a hot loop. Now validated at
     settings-load (where beat consumes it) and covered by the documented-knob
@@ -640,7 +640,7 @@ Blocking condition: none
 
 **Implemented change.** `POST /stations/<name>/mcp` and supervisor `start` are
 now bounded per verified `sub`. A token bucket in `CACHES["default"]`
-(redis-cache, AD-10 — never the `noeviction` broker) charges the MCP route after
+(redis-cache, canopy:AD-10 — never the `noeviction` broker) charges the MCP route after
 the 42.1 transport gate; `publish_start` enforces three bounds *before* its
 transaction, so "429 and no `RunState` row" is a property of ordering rather
 than of a rollback. `RunState` gained `subject`, `celery_task_id` and a terminal
@@ -655,7 +655,7 @@ keeps the table finite.
   with an `ERROR` log when the store does not answer.
 - `django_pyforge/supervisor.py` — `enforce_run_bounds`, the `RunBoundExceeded`
   family carrying its own HTTP shape, `revoke_subject`, `prune_run_state`; still
-  the only writer of `run_state` / `mcp_handles` (AD-12).
+  the only writer of `run_state` / `mcp_handles` (canopy:AD-12).
 - `django_pyforge/mcp_http.py` — charges the verified `sub`; 429 + `Retry-After`.
 - `django_pyforge/mcp_auth.py` — `TransportRefusal` grew `retry_after`/`headers()`.
 - `django_pyforge/models.py` — `subject`, `celery_task_id`, `CANCELLED`, two
@@ -697,7 +697,7 @@ fails → 136, with exactly six new rows, all mechanical "added" entries under
 three other specs (deferred above). `pixi_version_check` fails identically at
 baseline (`ModuleNotFoundError: pixi_version_registry`) — environmental.
 
-**Residual risks.** AC 1 is unreachable in a deployed run until the AD-19 keypair
+**Residual risks.** AC 1 is unreachable in a deployed run until the canopy:AD-19 keypair
 Secret lands, since the limiter sits behind the 42.1 gate (deferred, inherited).
 The retention sweep has no `beat` process deployed, so it is operator-run until
 Story 42.4. Both ceilings and the bucket itself are approximate under

@@ -5,7 +5,7 @@ created: '2026-08-07'
 status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
-context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md', '{project-root}/_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-6-5-conformance-smoke-in-an-ephemeral-home.md']
+context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md', '{project-root}/_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-6-5-conformance-smoke-in-an-ephemeral-home.md']
 warnings: []
 baseline_revision: 'HEAD as of 2026-08-07, immediately after S-6.5 (merged)'
 ---

@@ -14,7 +14,7 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
-  - ../../architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform  # pap:CAP-1..6 + pap:AD-1..17 (shipped host). Unifying CAP-1..19 are a different set. Pixi env id stays python-agent-platform.
 surface:
@@ -290,7 +290,7 @@ they are why this is not merely a UI project.
     read-only Postgres attach, Kedro-written Parquet cache, `vss` / HNSW.
     Domain ports stay (Scribe store port, Atlas catalog prefixes, BSL
     metrics). Private stores (in-memory RAG, Chroma for estate knowledge,
-    autonomous SQL on OLTP) are rebuilt onto the plane. FR-27's *writer*
+    autonomous SQL on OLTP) are rebuilt onto the plane. canopy:FR-27's *writer*
     intent applies to the plane; the filename `atlas.duckdb` may be
     generalized. Rebuild of shipped 25.2 / 28.x / agent DSN wiring is in
     scope.
@@ -298,7 +298,7 @@ they are why this is not merely a UI project.
     read-only; Kedro writes a Parquet cache on a *named* pipeline; HNSW
     ranking runs on the plane; DB-GPT / Langflow estate reads use the plane
     DSN or HTTP face, not the OLTP DSN; Scribe semantic recall hits the plane
-    (or a store-port driver that is the plane) and still satisfies FR-36.
+    (or a store-port driver that is the plane) and still satisfies canopy:FR-36.
     Tests fail if a second writable analytical engine or an agent OLTP DSN
     is reintroduced.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
@@ -331,14 +331,14 @@ they are why this is not merely a UI project.
   fourth backing service has failed its design review. DuckDB is a **library / query face**
   (in-process or an optional `duckdb-server` process on the platform image), not a fourth
   Helm backing store.
-- **Always:** CAP-19 is one analytical engine and one writer (FR-27 intent). `ATTACH` joins
+- **Always:** CAP-19 is one analytical engine and one writer (canopy:FR-27 intent). `ATTACH` joins
   sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
   and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.
   Mode A is declared operational views for humans, not DB-GPT exploring OLTP.
 - **Always:** CAP-19 extract/transform is Kedro on a **named** Atlas pipeline (or an
   explicit reopen of the closed set). Not a silent `01_raw` tree. Not Airflow.
   Federation does not pull OLTP through pandas. Kedro is **optional** for new
-  extracts; Atlas is the one Kedro *home* (AD-21). Not eight Kedro projects.
+  extracts; Atlas is the one Kedro *home* (canopy:AD-21). Not eight Kedro projects.
 - **Always:** Lane 3 is Vizro over BSL over the plane (after 34.2). `vizro-ai`
   is deprecated. Do not import Kedro or Vizro into Django views.
 - **Never:** a station or agent opens a private DuckDB, Chroma, or the OLTP DSN for
@@ -417,7 +417,7 @@ they are why this is not merely a UI project.
   implements or replaces a layer without a fork (**CAP-18** is the shared contract).
   [Kedro's architecture](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
   names the spec-vs-plugin split; it does not require every package to be a Kedro
-  project (canopy AD-21). Contracts (Pixi task names, Golden Path artifact identity,
+  project (canopy:AD-21). Contracts (Pixi task names, Golden Path artifact identity,
   parent infra kinds, host import boundary, Warden as the sole PR-gate verdict) are
   not plugin surfaces.
 - **Always:** Warden is the only PR quality-gate verdict on the Golden Path. External scanners
@@ -601,7 +601,7 @@ OLTP.
   deployment images and already admits non-conda third-party images. See
   `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
 - ~~**query-plane-face**~~ — **answered 2026-08-26 (operator): both, one boot script.**
-  Library-first stands for every consumer that can reach the file (AD-16 local-first;
+  Library-first stands for every consumer that can reach the file (pap:AD-16 local-first;
   DuckDB stays a query face, never a fourth backing store), AND the Mosaic
   `duckdb-server` HTTP/Arrow face is committed now behind the same single boot
   script — raised only when the platform stack is up, pixi-sourced. The two faces
@@ -619,7 +619,7 @@ OLTP.
   pipeline reads their outputs without modifying them. No silent `01_raw`.
 - ~~**query-plane-scribe-cutover**~~ — residual **answered 2026-08-26 (operator):
   dual-write for now.** The plane (via the 34.5 store-port driver) is primary and
-  satisfies FR-36; `scribe_schema` pgvector stays written as the safety net until the
+  satisfies canopy:FR-36; `scribe_schema` pgvector stays written as the safety net until the
   plane has operating history, then retirement becomes its own explicit decision.
   Lexical recall may stay local. There is still no `GraphStore` class in
   `pyforge-scribe`.

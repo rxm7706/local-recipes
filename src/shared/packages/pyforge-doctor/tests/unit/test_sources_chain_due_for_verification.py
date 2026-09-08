@@ -2050,3 +2050,108 @@ def test_gather_due_for_verification_carries_verification_coverage_item(
     assert finding.message == (
         "proj: 33% of 3 tracked entries verified within 30 days."
     )
+
+
+# --- Path-token precision (2026-09-08): a dotted symbol is not a file ----------
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "src/pyforge/doctor/sources/chain.py",
+        "scripts/detectors.py",
+        "pixi.toml",
+        "AGENTS.md",
+        "pixi.lock",
+        "docs/dreams/pyforge-marshal",  # slash, no extension
+    ],
+)
+def test_is_path_token_accepts_real_files(token: str) -> None:
+    assert chain._is_path_token(token) is True
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "os.replace",
+        "Path.glob",
+        "Finding.path",
+        "CurrencyEngine.run",
+        "pyforge.doctor.sources",
+        "json.dumps",
+        "github.com",
+        "0.73.0",
+    ],
+)
+def test_is_path_token_rejects_attribute_access(token: str) -> None:
+    """These are what the old any-`.<alnum>` pattern swept in: 471 of 1,450
+    dotted-only tokens across the eight tracked ledgers were attribute
+    accesses or version strings. None can resolve to a file, so admitting
+    them made every churn verdict read 'not skipped' for the wrong reason."""
+    assert chain._is_path_token(token) is False
+
+
+def test_dotted_symbol_is_never_a_churn_candidate(tmp_path: Path) -> None:
+    """End-to-end twin of ``test_source_spec_path_is_never_a_churn_candidate``:
+    an entry citing BOTH a real file and a dotted symbol must be skipped on
+    the real file alone, with the symbol absent from the checked set."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Code: `src/foo.py` calls `os.replace` on `Finding.path`\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    assert findings[0].get("skip_reason") == "no-churn"
+    assert findings[0]["churn_checked_paths"] == ["src/foo.py"]
+
+
+def test_path_extensions_cover_every_cited_tracked_file() -> None:
+    """`_PATH_EXTENSIONS` is derived from measurement, so it must not silently
+    fall behind the ledgers it was derived from.
+
+    Sweeps the live tracked ledgers for dotted-only citations whose trailing
+    segment names a real tracked file, and asserts the set admits it. A new
+    file type cited in a future entry fails HERE rather than silently
+    dropping out of the churn check.
+    """
+    root = Path(__file__).resolve().parents[6]
+    ledgers = sorted(
+        root.glob("_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md")
+    )
+    if not ledgers:
+        pytest.skip("tracked ledgers unavailable (packaged install)")
+    # `git ls-files`, not `rglob` -- the working tree carries `.pixi`
+    # environments that dwarf the repo, and "tracked" is the set this
+    # assertion actually means.
+    listing = subprocess.run(
+        ["git", "ls-files"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if listing.returncode != 0:
+        pytest.skip("git unavailable")
+    tracked_basenames = {line.rsplit("/", 1)[-1] for line in listing.stdout.split()}
+    missing: dict[str, str] = {}
+    for ledger in ledgers:
+        text = ledger.read_text(encoding="utf-8", errors="replace")
+        for m in chain._PATH_TOKEN_RE.finditer(text):
+            token = m.group(1)
+            if "/" in token or "." not in token:
+                continue
+            ext = token.rsplit(".", 1)[-1].lower()
+            if ext in chain._PATH_EXTENSIONS:
+                continue
+            if token in tracked_basenames:
+                missing[ext] = token
+    assert not missing, (
+        "cited real files whose extension _PATH_EXTENSIONS omits: "
+        f"{missing} — add the extension (and say why in its comment)"
+    )

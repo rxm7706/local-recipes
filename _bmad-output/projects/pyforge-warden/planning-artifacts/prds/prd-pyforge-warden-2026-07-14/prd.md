@@ -754,18 +754,18 @@ as-built `pyforge.warden.tea_advisory` module.*
 (Story 11.1) and TEA's `tea-test-review` (Story 11.2) are now warden-wielded advisory
 lenses, per `spec-bmad-suite-lifecycle` CAP-3/CAP-4. Both stay inside the FR20/J9 verdict
 contract this PRD already states: a lens produces `warn`-severity findings only, never
-moves the exit code or the seven-rung status (AD-4), test-enforced. No FR text requires
+moves the exit code or the seven-rung status (suite:AD-4), test-enforced. No FR text requires
 correction — this is new advisory surface layered on the unchanged gate, the same shape
 Epic 9's hook-book plugin bundle already established.
 
 **One judgment call resolved in the same pass (DW-FU-11-2, 2026-09-07):** Story 11.2's own
-GWT text conflicted with the architecture spine (AD-10) on what the TEA advisory scanner
-should do when the AD-9 roster lacks a `tea` entry entirely — silently fail-open (as
+GWT text conflicted with the architecture spine (suite:AD-10) on what the TEA advisory scanner
+should do when the suite:AD-9 roster lacks a `tea` entry entirely — silently fail-open (as
 originally implemented) or hard-refuse. Resolved fail-closed for that specific case
 (`TeaRosterMissingError`, surfaced as a real `config-validation` ERROR rung — not a
 finding-schema change, not a second verdict), keeping fail-open only for the narrower
 "roster has tea but its binary is merely unreachable on PATH" case. `epics.md`'s Story 11.2
-GWT was the stale side and is now corrected; AD-10 needed no edit. This is a compliance-tool
+GWT was the stale side and is now corrected; suite:AD-10 needed no edit. This is a compliance-tool
 posture decision (fail-closed on an unverifiable prerequisite), not a scope or FR change —
 recorded here for the PRD's own audit trail, not as new product surface.
 

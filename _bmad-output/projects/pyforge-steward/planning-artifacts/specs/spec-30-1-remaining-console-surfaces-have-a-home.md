@@ -19,7 +19,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** The Marshal console still exists as a baked `data.js` blob. FR-7 cannot delete that path until every runtime-reproducible and mixed surface has a named Canopy home, or deletion drops a live view.
+**Problem:** The Marshal console still exists as a baked `data.js` blob. canopy:FR-7 cannot delete that path until every runtime-reproducible and mixed surface has a named Canopy home, or deletion drops a live view.
 
 **Approach:** Encode the 23-surface inventory as a machine-checked map. Give each runtime-reproducible and mixed row a Lane 1 URL or station portal. Cache detector verdicts from a scheduled job with visible age. Keep editorial copy on Wagtail. Keep live run state and timing on the existing supervisor board.
 

@@ -70,7 +70,7 @@ them names any `bmad-*` package.
 
 ## Code Map
 
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-python-foundry-cutover-2026-09-04/ARCHITECTURE-SPINE.md`
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`
   - § Stack table: new row, `| bmad-* suite floor | bmad-method >=6.12.0,
     bmad-loop >=0.11.1, bmad-module-skill-forge >=2.1.0 (linux-64 only),
     bmad-creative-intelligence-suite, bmad-method-test-architecture-enterprise,

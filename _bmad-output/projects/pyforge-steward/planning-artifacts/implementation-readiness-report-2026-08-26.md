@@ -19,7 +19,7 @@ block 34.1.
 | `query-plane-face` unanswered | SPEC OQ | Default: in-process DuckDB. Mosaic is later. |
 | `query-plane-catalog` unanswered | SPEC OQ | Default: named new pipeline — **34.2**. |
 | `query-plane-scribe-cutover` unanswered | SPEC OQ | **34.5**. Store port, not a `GraphStore` class. |
-| Story **12.9** ledger `done` vs AD-11 honesty | Grounding | Optional CI. Not a stamp gate. |
+| Story **12.9** ledger `done` vs pap:AD-11 honesty | Grounding | Optional CI. Not a stamp gate. |
 | Isolated `mfa` sqlmigrate still fake | CAP-9 leftover | Not Epic 34. |
 | `django-lasuite` still in `pixi.toml` | unused pin | Host does not import it. Drop is hygiene, not 34.1. |
 | Bind-now pins unwired | `stack.md` | Not Epic 34 except Kedro on 34.2. |
@@ -28,13 +28,13 @@ block 34.1.
 
 | Intent | Story | Spec |
 |---|---|---|
-| FR-46 live attach | 34.1 | `spec-34-1-read-only-live-attach.md` |
-| FR-47 Parquet cache | 34.2 | write at dispatch |
-| FR-48 vectors | 34.3 | write at dispatch |
-| FR-49 agent OLTP shield | 34.4 | write at dispatch |
-| FR-50 Scribe on plane | 34.5 | write at dispatch |
+| canopy:FR-46 live attach | 34.1 | `spec-34-1-read-only-live-attach.md` |
+| canopy:FR-47 Parquet cache | 34.2 | write at dispatch |
+| canopy:FR-48 vectors | 34.3 | write at dispatch |
+| canopy:FR-49 agent OLTP shield | 34.4 | write at dispatch |
+| canopy:FR-50 Scribe on plane | 34.5 | write at dispatch |
 
-Architecture: canopy **AD-22**. No UX artifact required (no new Lane 2 chrome).
+Architecture: canopy **canopy:AD-22**. No UX artifact required (no new Lane 2 chrome).
 
 ## First dispatch
 

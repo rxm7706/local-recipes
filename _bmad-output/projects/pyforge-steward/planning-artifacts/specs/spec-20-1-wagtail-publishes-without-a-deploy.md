@@ -5,7 +5,7 @@ created: '2026-08-24'
 status: done
 updated: '2026-08-24'
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md
 warnings:
   - oversized
@@ -44,7 +44,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Estate `/` is a cookiecutter `TemplateView`. Editors cannot publish a runbook without a new image and a Deployment rollout (canopy FR-4 / CAP-2).
+**Problem:** Estate `/` is a cookiecutter `TemplateView`. Editors cannot publish a runbook without a new image and a Deployment rollout (canopy:FR-4 / CAP-2).
 
 **Approach:** Mount Wagtail on the existing Django host at `/`. Page rows live in PostgreSQL. Admin login is `WAGTAILADMIN_LOGIN_URL` through the existing allauth OIDC path. IdP group `wagtail-admin` maps to `wagtailadmin.access_admin`.
 
@@ -58,7 +58,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Always:** Lane 1 at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Pages are Django/Wagtail ORM on the existing `DATABASES["default"]`. `WAGTAILADMIN_LOGIN_URL` = existing `openid_connect_login`. `WAGTAILUSERS_PASSWORD_ENABLED = False`. `WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False`. Search backend is PostgreSQL FTS (`django.contrib.postgres`), not Elasticsearch. Cite canopy AD-13 vs parent AD-n.
+**Always:** Lane 1 at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Pages are Django/Wagtail ORM on the existing `DATABASES["default"]`. `WAGTAILADMIN_LOGIN_URL` = existing `openid_connect_login`. `WAGTAILUSERS_PASSWORD_ENABLED = False`. `WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False`. Search backend is PostgreSQL FTS (`django.contrib.postgres`), not Elasticsearch. Cite canopy:AD-13 vs parent AD-n.
 
 **Block If:** Adding Wagtail requires MinIO/S3, Elasticsearch, or a second public ASGI process; or platform-ci-test cannot import `wagtail` after the pin.
 

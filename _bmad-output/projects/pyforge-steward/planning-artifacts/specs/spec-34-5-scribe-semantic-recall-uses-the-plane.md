@@ -15,7 +15,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Semantic recall ranks on PostgreSQL/pgvector (28.2). FR-50 moves ranking onto the CAP-19 plane behind the store port.
+**Problem:** Semantic recall ranks on PostgreSQL/pgvector (28.2). canopy:FR-50 moves ranking onto the CAP-19 plane behind the store port.
 
 **Approach:** A `PlaneGraphStore` driver writes embeddings to `atlas.duckdb` and ranks with DuckDB SQL. `recall.answer(..., mode="semantic")` still calls `query_similar` only. Callers do not `isinstance` the driver. Lexical recall is unchanged.
 

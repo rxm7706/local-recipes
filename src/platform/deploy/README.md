@@ -225,7 +225,7 @@ capability-naming reason where helm/PyYAML are absent.
   keys fall through to the image's baked TOML defaults). LLM API keys, when
   wired, come from the same pre-created `existingSecret` via
   `sidecar.llm.apiKeySecretKey` — the chart never renders Secrets (AD-12).
-- No HPA/PDB. Media is a `ReadWriteMany` PVC (Story 20.2, canopy AD-13) mounted by every
+- No HPA/PDB. Media is a `ReadWriteMany` PVC (Story 20.2, canopy:AD-13) mounted by every
   platform Deployment (web, worker, worker-builds, beat, consume-events); on a multi-node
   cluster set `media.persistence.storageClassName` to an RWX-capable class or the claim stays
   `Pending` and nothing that mounts it schedules. Proven on CRC (`crc-csi-hostpath-provisioner`,

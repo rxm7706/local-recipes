@@ -62,7 +62,7 @@ deferred:
 ## Intent
 
 **Problem:** Nothing in platform CI proves the python-agent-platform stack can build and deploy
-without internet access, even though AD-13/CAP-6 require it as a shipped constraint, not an
+without internet access, even though pap:AD-13/CAP-6 require it as a shipped constraint, not an
 aspiration.
 
 **Approach:** Add a new paths-filtered CI job, `air-gap-parity`, that (a) builds a local
@@ -79,11 +79,11 @@ warning.
 disk-reclaim step, `prefix-dev/setup-pixi@v0.10.0` with `environments: platform-dev`, pinned
 `kind` install, `docker build -f src/platform/Containerfile -t platform:air-gap-smoke .` (repo
 root context, unchanged Containerfile), `kind load docker-image` (no push), the
-`platform-secrets` K8s Secret pattern (AD-12: chart never renders a Secret), `--set
+`platform-secrets` K8s Secret pattern (pap:AD-12: chart never renders a Secret), `--set
 image.tag=air-gap-smoke --set django.secureSslRedirect=False` with NO `--wait` (the documented
 migrate-Job deadlock fix -- see that job's own comment), and `if: always()` teardown. New job is
 `paths: [src/platform/**]`-filtered with `working-directory: src/platform` where applicable
-(AD-15); this PR takes the `maintenance` label. Build the local mirror
+(pap:AD-15); this PR takes the `maintenance` label. Build the local mirror
 (`scripts/build-pixi-mirror.py`, new) by reading `pixi.lock` directly (package name/url/sha256
 per platform) for the `platform-dev` environment's `linux-64` subset, downloading each artifact
 into `<dest>/<channel-name>/<subdir>/<filename>` (channel-name = last path segment of the
@@ -137,7 +137,7 @@ or promote this spec -- that is the coordinating session's job after PR review.
 
 ## Code Map
 
-- `.github/workflows/platform-ci.yml` -- add new `air-gap-parity` job after `gke-portability-smoke` (~line 930); model directly on that job's structure (lines 692-930): checkout, "Verify src/platform exists", disk-reclaim, `setup-pixi` (`environments: platform-dev`), pinned `kind` v0.32.0 install, kind cluster create (no ingress-nginx needed -- this job uses `kubectl port-forward`, not the Ingress path), docker build (network ON, unchanged), `docker builder prune`, `kind load docker-image`, namespace+secret creation (AD-12 pattern), helm install (`--set image.tag=... --set django.secureSslRedirect=False`, no `--wait`), migrate-Job wait, teardown `if: always()`.
+- `.github/workflows/platform-ci.yml` -- add new `air-gap-parity` job after `gke-portability-smoke` (~line 930); model directly on that job's structure (lines 692-930): checkout, "Verify src/platform exists", disk-reclaim, `setup-pixi` (`environments: platform-dev`), pinned `kind` v0.32.0 install, kind cluster create (no ingress-nginx needed -- this job uses `kubectl port-forward`, not the Ingress path), docker build (network ON, unchanged), `docker builder prune`, `kind load docker-image`, namespace+secret creation (pap:AD-12 pattern), helm install (`--set image.tag=... --set django.secureSslRedirect=False`, no `--wait`), migrate-Job wait, teardown `if: always()`.
 - `.github/workflows/platform-ci.yml` lines 330-390 (`container` job) -- the `/static/` asset-fetch pattern the new CDN-reference-scan step extends (same "derive URLs from the rendered body, never hardcode" discipline).
 - NEW `scripts/build-pixi-mirror.py` -- reads `pixi.lock` (YAML), extracts `platform-dev`/`linux-64` package records (name, url, sha256), downloads each into `<dest>/<channel>/<subdir>/<filename>`, verifies sha256, skips already-valid files (idempotent).
 - `pixi.lock` -- source of package URLs/hashes for the mirror builder; confirmed live that `SelfExplainML`-hosted packages (e.g. `slowapi`) appear alongside `conda-forge` ones for this environment (`pixi.toml` lines 150-156 comment).
@@ -151,7 +151,7 @@ or promote this spec -- that is the coordinating session's job after PR review.
 
 **Execution:**
 - `scripts/build-pixi-mirror.py` -- new script -- parses `pixi.lock`, downloads + hash-verifies the `platform-dev`/`linux-64` package set into a local channel-shaped mirror directory; CLI args for lockfile path, environment, platform, dest.
-- `.github/workflows/platform-ci.yml` -- add `air-gap-parity` job -- proves AD-13/CAP-6 end-to-end per the Boundaries above.
+- `.github/workflows/platform-ci.yml` -- add `air-gap-parity` job -- proves pap:AD-13/CAP-6 end-to-end per the Boundaries above.
 - Unit-test coverage for `build-pixi-mirror.py`'s URL-to-mirror-path derivation and sha256 verification logic (a small fixture lockfile, no real network needed for the test itself).
 
 **Acceptance Criteria:**
@@ -219,7 +219,7 @@ evaluated first regardless of the order these lines run in.
 ## Auto Run Result
 
 **Summary:** Added a new `air-gap-parity` CI job (`.github/workflows/platform-ci.yml`) proving
-AD-13/CAP-6: a `platform-dev`/`linux-64` pixi mirror is built from `pixi.lock` while egress is
+pap:AD-13/CAP-6: a `platform-dev`/`linux-64` pixi mirror is built from `pixi.lock` while egress is
 still on, then a fresh pixi cache + env prefix is proven to resolve the entire environment from
 that mirror alone with all non-private-network egress blocked (IPv4 AND IPv6), the platform
 image plus the chart's own postgres/redis default images are all kind-loaded with no registry
@@ -290,7 +290,7 @@ trusted from the implementation subagent's self-report):**
   "no live-cluster deploy claim" precedent, not glossed over. The first live PR run is the real
   test of the iptables ordering, the kind-cluster networking assumptions, and the 40-minute
   timeout budget.
-- Scope is deliberately narrower than a maximalist reading of AD-13: the Containerfile's own
+- Scope is deliberately narrower than a maximalist reading of pap:AD-13: the Containerfile's own
   PyPI pip-install layer and its build-time-only `pyforge-steward` secrets-scan env are not
   air-gapped by this job (stated explicitly in Design Notes, not silently omitted).
 - `ip6tables`/`unique-local-address` blocking assumes the standard GitHub-hosted `ubuntu-latest`

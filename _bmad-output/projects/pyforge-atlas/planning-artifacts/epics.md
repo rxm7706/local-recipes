@@ -12,7 +12,7 @@ updated: "2026-09-07"
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
@@ -1703,7 +1703,7 @@ not copy steward stories.
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -1738,7 +1738,7 @@ As an atlas maintainer,
 I want existing pipeline/project hooks to implement the shared registration shape,
 So that atlas does not grow a second plugin API or a pipeline PR-gate.
 
-**Type:** chore • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** chore • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** the live Kedro hook surfaces **When** the audit completes **Then** each named point is mapped to the FR-43 contract (or an explicit N/A with reason)
 **And** today's backends remain the default plugins
 **And** no atlas job publishes a PR pass/fail beside Warden
@@ -1753,7 +1753,7 @@ As an autonomous agent,
 I want an atlas SKF skill from `pyforge-atlas/` and a `bmad-agent-atlas` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29.1 compiled the shape on another station **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-atlas/` if missing
 **And** the persona uses only `pyforge atlas …` and `POST /stations/atlas/mcp`
 **And** `conda-forge-expert` is not replaced
@@ -1764,7 +1764,7 @@ As an atlas operator,
 I want HTMX on `/stations/atlas/` to show one factory inventory or run-state row,
 So that Lane 2 does a real job without Vizro or La Suite.
 
-**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated atlas-role session **When** the operator opens `/stations/atlas/` **Then** one row renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no DW-H3 REST
 
@@ -2030,7 +2030,7 @@ heading or status change:
   plugin API) matches AD-1; Epic 19's ACs (persona uses only `pyforge atlas …` +
   `POST /stations/atlas/mcp`; portal renders via PortalClient only) match the
   spine's two-MCP-faces note and the canopy contract.
-- **Foreign AD/FR namespaces are cited correctly.** The `canopy AD-21` / `canopy
+- **Foreign AD/FR namespaces are cited correctly.** The `canopy:AD-21` / `canopy
   FR-37/38/10` references in Epics 18–19 belong to the unifying-strategy
   architecture, not this project's AD-1..AD-23/FR-1..FR-22 — disambiguated in the
   spine's reconciliation section; the epic text needs no edit.
@@ -2038,7 +2038,7 @@ heading or status change:
   minted here** although their code lands in this station's surface — they are
   tracked on the steward chain (one story in flight per station; the strategy SPEC
   forbids re-dispatching 18–37). This file remains the canonical story source for
-  atlas-keyed ledger stories only (AD-72 role unchanged).
+  atlas-keyed ledger stories only (marshal:AD-72 role unchanged).
 - **Numbering is as intended:** Epic 11 does not exist (10 → 12 by design — Epic
   10 was the post-audit insertion, 12+ the post-migration chains), and the earlier
   duplicate-Epic-16 numbering was resolved by the 2026-08-22 correct-course

@@ -42,7 +42,7 @@ the executed suite (308 passed).
 | 2 Deploy (4) | 2.1, 2.2, 2.4 | `deploy.py` + `test_deploy_build/reconcile/dry_run/status.py` |
 | 3 Provision (4) | 3.1, 3.2, 3.4 | `test_provision_env/list/verify.py`; 3.2's slice later retired by 5.1 (recorded there — supersession, not contradiction) |
 | 4 Budget (3) | all | `budget.py` + `test_budget_set/show/check.py` |
-| 5 Marshal seam (2) | all | Retirement real: `provision.py:17-22`, legacy wrapper GONE (`test_provision_runner.py:45`), reports `marshal init` (`:52`); ledger consumed not derived: `deploy.py:262-264` (AD-71 banner) |
+| 5 Marshal seam (2) | all | Retirement real: `provision.py:17-22`, legacy wrapper GONE (`test_provision_runner.py:45`), reports `marshal init` (`:52`); ledger consumed not derived: `deploy.py:262-264` (marshal:AD-71 banner) |
 | 6 Modules (3) | all | `test_provision_module.py:146-261` incl. named failures (6.3); `test_provision_list_modules.py` |
 | 7 Container (5) | 7.3, 7.4, 7.5 | secrets-scan gate `Containerfile:122-152` (7.3 + 7.5 build-time proof); `VOLUME` triple `Containerfile:216` (7.4) |
 | 8 Sync (1) | 8.1 | `reconcile()` `sync.py:713` + 26 propagation tests; landed `553ecc9e79` (PR #397, merge `e3155a32e7`). **Held as narrowed**: done per its frozen spec's status-only slice — see AF-5 for the un-owned remainder |

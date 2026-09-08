@@ -9,7 +9,7 @@ companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
   - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against
   - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-65 / NFR-1..NFR-14 with testable consequences, incl. the folded-in Satellite: Genesis Installer PRD (FR1..FR62, own numbering)
-  - ../../architecture/architecture-pyforge-marshal-2026-07-25/architecture.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in Satellite: Genesis Installer Architecture (AD-51..AD-65)
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in Satellite: Genesis Installer Architecture (AD-51..AD-65)
   - ../../epics.md                                           # adopted (chain): 6 epics / 40 stories, FR coverage map, story DAG (marshal's own FR-1..65 range only)
   - ../../epics-genesis-installer.md                         # adopted (chain, UNCHANGED / out of scope for this consolidation): the installer's own 6 epics / 36 stories (epics 7-12), still a SEPARATE document per explicit instruction
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions

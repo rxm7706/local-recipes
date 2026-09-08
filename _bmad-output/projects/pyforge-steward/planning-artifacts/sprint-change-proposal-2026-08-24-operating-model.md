@@ -26,7 +26,7 @@ This is a **new requirement / strategic bind**, not a failed implementation. Sco
 
 Evidence: Dream Grounding bullets Q1–Q8; SPEC notes on CAP-1/3/8/15/16; companions
 updated in this pass (`convergence.md` residual 20, `architecture-diagrams.md`,
-`stack.md`). PRD §3 glossary + §4.13 FR-37/38/39 + SM-5; `epics.md` Epic 29 title and
+`stack.md`). PRD §3 glossary + §4.13 canopy:FR-37/38/39 + SM-5; `epics.md` Epic 29 title and
 Story 29.3.
 
 ## 2. Impact analysis
@@ -43,10 +43,10 @@ Story 29.3.
 | 2.3 | Done | Epics 18–28, 30 stay scoped; wording only where they assert five-tier-for-all-work or a second PR gate. |
 | 2.4 | Done | No epic obsolete. No new epic for scorecard (sibling Dream). Warden hooks are a **Warden-station** story, not Epic 31. |
 | 2.5 | Done | Do not resequence. Packaging gates (26.3, 27.1) unchanged. |
-| 3.1 | Done | PRD glossary “Five-tier symmetry”, FR-37/38/39, SM-5, SM-C3 conflict with Q2. FR-1/2 miss owner/`work_class`. Event FRs miss `spec_id`. |
+| 3.1 | Done | PRD glossary “Five-tier symmetry”, canopy:FR-37/38/39, SM-5, SM-C3 conflict with Q2. FR-1/2 miss owner/`work_class`. Event FRs miss `spec_id`. |
 | 3.2 | Done | Spine has no “five-tier” string; add a short AD note pointing at Grounding/SPEC. No stack swap. |
 | 3.3 | N/A | No UX artifact (readiness report already recorded this). |
-| 3.4 | Done | Warden station spec + optional CI “Warden verdict is the gate” later. `test-architecture.md` only if FR-39 check changes. |
+| 3.4 | Done | Warden station spec + optional CI “Warden verdict is the gate” later. `test-architecture.md` only if canopy:FR-39 check changes. |
 | 4.1 | Viable | Direct Adjustment. Effort: Medium. Risk: Low. |
 | 4.2 | Not viable | Nothing to roll back; canopy implementation not started on these FRs. |
 | 4.3 | Not viable | MVP stays the eight 03 stations + Canopy residual. Do not shrink CAP-15/16. |
@@ -60,7 +60,7 @@ Story 29.3.
 | **19** Eight portals | No URL-scheme change. AC: Guildhall/switcher does not tile `work_class` 01/02 as a station. |
 | **21** Agents survive | No Tasks/MCP change. Note Path B = canopy + CAP-16; Tachyon is not this epic. |
 | **24** Stations tell each other | Story 24.1 envelope: `spec_id`, git sha, SBOM purl, optional work-item id. **Never** require Jira. |
-| **29** Every station is five tiers | **Rename/scope:** five tiers are the **03 station** shape. FR-39 check: fail if an **03** station misses a tier; do **not** fail 01/02 work. FR-37/38 stay “each of the eight stations” (they are 03). |
+| **29** Every station is five tiers | **Rename/scope:** five tiers are the **03 station** shape. canopy:FR-39 check: fail if an **03** station misses a tier; do **not** fail 01/02 work. canopy:FR-37/38 stay “each of the eight stations” (they are 03). |
 | 20, 22, 23, 25–28, 30 | No scope change. |
 | New | None. Scorecard board = sibling Dream. Warden hook plugins = Warden correct-course, not a steward epic. |
 
@@ -91,7 +91,7 @@ Rationale: Grounding does not add a capability; it **scopes** CAP-15/16 and adds
 invariants the plan already had seams for (registration, CloudEvents, Warden).
 Rollback is empty. MVP review would wrongly drop agent tiers.
 
-Effort: one steward edit pass after approval. Risk: low if FR-39’s check is rewritten
+Effort: one steward edit pass after approval. Risk: low if canopy:FR-39’s check is rewritten
 before anyone implements Story 29.3.
 
 **Eight station runs:** **not all eight.** See §6.
@@ -111,7 +111,7 @@ complete at spec+script or spec+skill. The eight stations are 03.
 `work_class`, promotion date; 01/02 must not appear as station tiles; SLA text is
 not a chrome field.
 
-**§4.13 / FR-37–39 / SM-5** — prefix “each **03** station”; FR-39 check denominator
+**§4.13 / canopy:FR-37–39 / SM-5** — prefix “each **03** station”; canopy:FR-39 check denominator
 remains 8×5 for the eight stations; **Never** count 01/02 tasks in that check.
 SM-C3 unchanged (do not optimize for shallow skill count).
 
@@ -155,8 +155,8 @@ None.
 |---|---|
 | Operator | Approve or revise this proposal (correct-course step 5). |
 | Steward / PO-DEV | Apply §4 edits to PRD + `epics.md` + spine note; append realization log. |
-| Developer | Do not implement Story 29.3 until FR-39 text is applied. |
-| Eight station correct-courses | Record OM Nevers + AD-21 (hooks/plugins as replaceable layers) on every spoke. Warden owns PR-gate hook *specs*; plugins implement them. Not a Kedro re-template of any station. |
+| Developer | Do not implement Story 29.3 until canopy:FR-39 text is applied. |
+| Eight station correct-courses | Record OM Nevers + canopy:AD-21 (hooks/plugins as replaceable layers) on every spoke. Warden owns PR-gate hook *specs*; plugins implement them. Not a Kedro re-template of any station. |
 | Scorecard sibling | Later; human + agent + team; no unpublished metrics. |
 
 Success: PRD/epics/SPEC/Dream agree that five-tier completeness is 03-only; one
@@ -167,7 +167,7 @@ the operating-model block.
 
 **First recommendation (Warden-only) is withdrawn.** It treated hooks as a
 scanner-implementation detail. **Hooks and plugins are an architecture
-principle** (canopy AD-21): as far as possible every layer is replaceable —
+principle** (canopy:AD-21): as far as possible every layer is replaceable —
 process-owned hook specs, plugins that implement or replace a layer without a
 fork. Kedro *names* the split; it does not require a Kedro project. Atlas
 already *is* Kedro (pipeline hooks = one instantiation, not Warden's PR-gate

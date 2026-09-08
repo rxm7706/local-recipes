@@ -23,7 +23,7 @@ companions:
   # `pyforge-steward[dashboard]` extra, never a base dep) and fixes the Mode L / Mode I
   # boundary. Answers Q2 by ratifying the baked checkout, and bounds Q3/Q4 without
   # designing Mode I. Q1's second tier is deferred there with a named trigger.
-  - ../../architecture/architecture-unified-container-2026-08-09/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/unified-container.md
   - ../../research/technical-steward-pixi-workspace-member-research-2026-07-25.md   # Addendum A3/A4 — the feasibility study this Spec formalizes

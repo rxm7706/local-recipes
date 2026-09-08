@@ -3794,7 +3794,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-  verified: 2026-09-08 — still-open — CONFIRMED. `pyforge-steward/tests/meta/test_adoption_register.py:148-152`'s `_persona_mentions` still does `name in path.read_text(...)` -- a bare substring test, so deleting the grammar-constraint sentence while leaving any stray mention of the skill name still passes. SCOPE REFINEMENT: it scans BOTH `SKILL.md` and `customize.toml` (the entry names only SKILL.md), so the false-pass surface is slightly wider than recorded, not narrower.
+  verified: 2026-09-08 — still-open — PARTIALLY ADDRESSED, and the remaining half is named. The shared helper this entry and steward/DW-FU-46-1-2 both indict was fixed 2026-09-08: `_persona_mentions` gained word-boundary matching and a widened scan (README.md + reference/*.md). But THIS entry's own claim is the other half -- that the check verifies only that the skill NAME appears, never that the routing line's stated grammar-constraint text is present -- and that is still true: `_mention_re` matches the name alone. Asserting constraint text needs a per-skill expected-constraint source that does not exist yet, so it stays open rather than being closed on a fix that did not do it.
 
 ### DW-FU-24-1-2: The eventual integration PR for this branch needs the `maintenance` label (none of this diff's three changed files are under recipes/).
 

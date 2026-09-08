@@ -34,7 +34,7 @@ deferred:
       the mason/doctor portals already call `crypto.verify_assertion`, whose
       `_setting_pem` raises on an empty key — but this story widens the blast radius
       from "the supervisor tools and portals" to "every JSON-RPC method on every
-      station". Wiring the keypair Secret is AD-19 / Story 40.1 territory; the
+      station". Wiring the keypair Secret is canopy:AD-19 / Story 40.1 territory; the
       matching chart invariant and a `REQUIRED_SETTINGS` entry belong with it.
     location: >-
       src/platform/deploy/charts/platform/templates/_helpers.tpl (platform.djangoEnv)
@@ -417,7 +417,7 @@ on `PATH` for helm and an ephemeral PostgreSQL 17 for the DB-marked tests.
 
 **Residual risks.** The high-severity deferral dominates: as shipped, nothing outside
 `config/settings/test.py` supplies `PYFORGE_ASSERTION_PUBLIC_KEY`, so a real deployment
-or a laptop `runserver` answers 503 on every station MCP route until the AD-19 keypair
+or a laptop `runserver` answers 503 on every station MCP route until the canopy:AD-19 keypair
 Secret lands. The gate is correct and fails closed; it simply has no key to verify
 against outside pytest. Secondary: the NetworkPolicy may block kubelet httpGet probes on
 strict CNIs, and out-of-repo MCP clients now need a header no documentation mentions.
@@ -469,7 +469,7 @@ the story does not re-enter review.
 
 **Residual risks.** Unchanged and still dominated by the `PYFORGE_ASSERTION_PUBLIC_KEY`
 deferral: outside pytest nothing supplies the key, so every station MCP route
-fail-closes to 503 until the AD-19 keypair Secret lands. Newly recorded this pass: the
+fail-closes to 503 until the canopy:AD-19 keypair Secret lands. Newly recorded this pass: the
 keep-alive frame cannot fire against a `json_response=True` sidecar, so a long JSON
 tool call is still bounded by the ingress idle timeout rather than the 300s budget.
 

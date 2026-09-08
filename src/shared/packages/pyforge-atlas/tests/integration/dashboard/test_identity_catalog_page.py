@@ -144,13 +144,20 @@ def test_identity_catalog_parity_with_write_canvas(tmp_path, write_parquet):
 
     assert len(loader_df) == len(decoded["rows"])
 
-    canvas_by_bucket: dict[str, list] = {}
-    for row in decoded["rows"]:
-        canvas_by_bucket.setdefault(row[1], []).append(row)
+    # Pair the two sides by PACKAGE NAME, not by position within a bucket.
+    # This previously grouped by bucket and compared `canvas_rows[0]` against
+    # `loader_df.loc[...].iloc[0]`, which only agrees when the canvas ordering
+    # and the parquet/pandas ordering happen to coincide *inside* a bucket.
+    # The fixture puts two records in P2 (`beta-pkg`, `gamma-pkg`), so whenever
+    # the two orderings differed the name assertion failed -- an intermittent
+    # red observed once in six full-suite runs, passing in isolation every
+    # time. Keying by name makes the comparison order-independent and checks
+    # every row rather than one per bucket.
+    loader_by_name = {row["Core_Python_Package_Name"]: row for _, row in loader_df.iterrows()}
+    assert loader_by_name.keys() == {row[0] for row in decoded["rows"]}
 
-    for bucket, canvas_rows in canvas_by_bucket.items():
-        canvas_row = canvas_rows[0]
-        loader_row = loader_df.loc[loader_df["P"] == bucket].iloc[0]
+    for canvas_row in decoded["rows"]:
+        loader_row = loader_by_name[canvas_row[0]]
         assert loader_row["P"] == canvas_row[1]
         assert loader_row["Work"] == canvas_row[13]
         assert loader_row["Core_Python_Package_Name"] == canvas_row[0]

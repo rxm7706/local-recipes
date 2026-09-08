@@ -8,7 +8,7 @@ final_revision: 'ae47cd512cfc1ca4e5b613519e7826216be3a223'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-8-1-bidirectional-propagation.md'
 warnings: ['oversized']
 ---
@@ -47,7 +47,7 @@ handling -- no new exception-handling plumbing.
   `update_project_item_field` function).
 - A `None` target value (an explicit clear, e.g. `test_field_cleared_on_jira_side_is_a_genuine_
   change_pushed_to_github`) bypasses the mapping lookup and writes `None` straight through
-  unchanged -- a clear is not a status word to translate (matches AD-10's existing "an absent
+  unchanged -- a clear is not a status word to translate (matches jira:AD-10's existing "an absent
   key and an explicit null mean opposite things" precedent for treating `None` specially).
 - A non-null target value with no `status_mapping` entry raises `SyncUnmappedStatusError`
   (new `SyncError` subclass, defined beside `SyncUnlinkedError` at `sync.py:221-224`) BEFORE

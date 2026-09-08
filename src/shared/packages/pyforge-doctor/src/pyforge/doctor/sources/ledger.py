@@ -478,6 +478,41 @@ def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
     return out
 
 
+def _base_done_ids(target: Path, rel_path: str, base_ref: str) -> set[str] | None:
+    """Story ids already terminal in the ledger **as committed at
+    ``base_ref``** — or ``None`` when the ledger does not exist there.
+
+    This is the authoritative answer to "did this key's promotion land?",
+    and it is why ``done-but-unmerged`` is no longer decided by merge-subject
+    naming alone. A merge subject only names a story when the branch happened
+    to be shaped ``<station>/<epic>-<seq>-…``; the fleet also lands work in
+    batched ``chore/``, ``docs/``, ``dispatch/`` and ``maintenance/`` PRs
+    whose subjects carry no story key at all. Judged on subjects alone, every
+    key promoted by such a PR reads as never-merged: the check reported **383
+    of 724 done stories** that way, all of them false, while the ledger at
+    ``main`` said ``done`` for all 917 of them.
+
+    Reading the committed blob keeps FR-138 intact — the oracle is still git,
+    and still never ``implementation-artifacts/sprint-status.yaml``. It is in
+    fact the stronger git evidence: the tracked artifact at the base commit,
+    rather than a string heuristic over commit messages.
+
+    ``None`` (ledger absent at ``base_ref``) is deliberately distinct from an
+    empty set (ledger present, nothing done there): a ledger added on this
+    branch has no base evidence either way, so the caller falls back to merge
+    subjects rather than accusing every key in a brand-new file.
+    """
+    blob = _git(target, "show", f"{base_ref}:{rel_path}")
+    if blob is None:
+        return None
+    out: set[str] = set()
+    for raw_key, status in _parse_statuses(blob).items():
+        sid = _story_id(raw_key)
+        if sid is not None and status in TERMINAL:
+            out.add(sid)
+    return out
+
+
 def gather_direction(
     target: Path, *, base_ref: str = "main"
 ) -> tuple[Finding, ...]:
@@ -488,8 +523,11 @@ def gather_direction(
 
     * ``landed-but-unpromoted`` — a story id appears in ``main``'s merge
       subjects for this station but is not ``done`` in the twin (FAIL).
-    * ``done-but-unmerged`` — a twin ``done`` key has no matching merge
-      subject (WARN; absence of a match is not proof of never-merged).
+    * ``done-but-unmerged`` — a twin ``done`` key is **not** ``done`` in the
+      ledger as committed at ``base_ref``, and no merge subject names it
+      (WARN). The base-ref half is what makes this survivable: judged on
+      merge subjects alone it fired on 383 of 724 done stories, every one of
+      them landed by a batched PR whose subject named no story.
 
     Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
     to WARN when git is unavailable; OK when every twin agrees with git.
@@ -599,7 +637,18 @@ def gather_direction(
                 )
             )
 
-        for sid in sorted(done_ids - merged_ids):
+        # A key counts as landed on either evidence: the ledger at base_ref
+        # already says done, or a merge subject names it. The first is
+        # authoritative and covers batched PRs; the second still catches a
+        # story landed by a scoped PR whose promote commit has not been
+        # published to base_ref yet.
+        base_done = _base_done_ids(
+            target, path.relative_to(target).as_posix(), base_ref
+        )
+        landed_ids = merged_ids | (base_done or set())
+        base_evidence = "absent-at-base" if base_done is None else "ledger-at-base"
+
+        for sid in sorted(done_ids - landed_ids):
             findings.append(
                 Finding(
                     source=Source.LEDGER_DIRECTION,
@@ -608,8 +657,8 @@ def gather_direction(
                     message=(
                         f"{project}/{raw_by_id.get(sid, sid)}: "
                         f"{DIRECTION_DONE_UNMERGED} — tracked ledger says "
-                        "done, but no scoped merge subject was found on "
-                        f"{base_ref!r}"
+                        f"done, but the ledger at {base_ref!r} does not and "
+                        "no scoped merge subject names it"
                     ),
                     evidence={
                         "project": project,
@@ -617,6 +666,8 @@ def gather_direction(
                         "key": raw_by_id.get(sid, sid),
                         "direction": DIRECTION_DONE_UNMERGED,
                         "path": str(path.relative_to(target)),
+                        "base_ref": base_ref,
+                        "base_evidence": base_evidence,
                     },
                 )
             )

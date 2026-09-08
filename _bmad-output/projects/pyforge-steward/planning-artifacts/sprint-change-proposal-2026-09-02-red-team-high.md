@@ -37,7 +37,7 @@ HIGH story needs them or a consumer exists.
 | 2.4 | New epics needed | Done | Three. No epic for R-17 … R-25 (ledger entries). |
 | 2.5 | Order | Done | 40 → 41 → 42 → 43. All before cutover Phase 1. Inside an epic stories are parallel-safe unless `Deps` says otherwise. |
 | 3.1 | PRD | Done | No FR text changes. FR-20/26/27/28/29/30/31 each gain a story that carries their consequence to code. PRD § 14 dated paragraph. |
-| 3.2 | Architecture | Done | No AD changed. 43.5 will **add** one AD (interpreter topology). 42.5's role prefixes refine AD-15's "roles re-read from token"; 43.2 refines AD-7's client rule; both recorded in the SPEC Constraints block rather than by editing the spine now. |
+| 3.2 | Architecture | Done | No AD changed. 43.5 will **add** one AD (interpreter topology). 42.5's role prefixes refine canopy:AD-15's "roles re-read from token"; 43.2 refines AD-7's client rule; both recorded in the SPEC Constraints block rather than by editing the spine now. |
 | 3.3 | UI/UX | N/A | 43.2's `PydanticFormErrorBridge` is a portal error pattern, already specified as BS-7. |
 | 3.4 | Other artifacts | Action-needed | Chart (41.1, 42.1, 42.3, 42.4, 43.4), settings (41.4, 42.4, 43.3), workflows (43.4), Dream (43.1, 43.5, 41.2), changelog (41.3), `pyforge-core` + testing-kit (43.2). All named per story. |
 | 4.1 | Direct adjustment | Viable | Fourteen stories, effort S–L, risk **Medium** (42.1, 42.4 and 43.2 change behavior on hot paths; each carries a fail-without/pass-with test). |

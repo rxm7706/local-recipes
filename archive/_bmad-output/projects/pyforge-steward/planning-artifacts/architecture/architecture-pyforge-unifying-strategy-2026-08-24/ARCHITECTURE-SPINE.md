@@ -37,7 +37,7 @@ an MCP app mounted on the same process. Station *logic* stays in the factory pac
 completeness is the **03** shape of the eight stations; Lane 2 remains HTMX (no
 DRF JSON:API on portals); CAP-8 envelopes carry `spec_id` + git sha + SBOM purl
 (Jira optional); **hooks and plugins are the replaceable-layer principle**
-(canopy AD-21); Warden is the sole PR-gate *verdict* (scanners are plugins on
+(canopy:AD-21); Warden is the sole PR-gate *verdict* (scanners are plugins on
 Warden-owned hook specs — an instance of AD-21, not the whole of it). Tachyon is
 a production LLM provider adapter, not Path B. No CAP-18. Scorecard measures
 remain unpublished.
@@ -82,26 +82,26 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 | Inherited | Binds here |
 |---|---|
-| parent AD-1 PostgreSQL + Redis + Kubernetes only | No Elasticsearch, no Vault-as-app-dep, no RQ, no fourth *kind*. Two Redis Deployments still count as Redis. Lane 1 media is a Kubernetes RWX volume (canopy AD-13), not MinIO/S3. |
+| parent AD-1 PostgreSQL + Redis + Kubernetes only | No Elasticsearch, no Vault-as-app-dep, no RQ, no fourth *kind*. Two Redis Deployments still count as Redis. Lane 1 media is a Kubernetes RWX volume (canopy:AD-13), not MinIO/S3. |
 | parent AD-2 `src/platform/` never imports `pyforge.*` | Portal→service client cannot live in host code. |
 | parent AD-3 host is rendered accelerator + Django apps | Wagtail and station portals join as apps, not services. |
-| parent AD-4 one ASGI process, fixed dispatch | MCP mounts here. Eight FastAPI ports are forbidden. CAP-11 independent scale is Celery workers, not a second web Deployment (canopy AD-10). |
-| parent AD-5 three schemas + `search_path` | **Isolation still binds.** Provisioning *mechanism* is superseded by canopy AD-9. **Schema count is amended** to four (canopy AD-9). |
+| parent AD-4 one ASGI process, fixed dispatch | MCP mounts here. Eight FastAPI ports are forbidden. CAP-11 independent scale is Celery workers, not a second web Deployment (canopy:AD-10). |
+| parent AD-5 three schemas + `search_path` | **Isolation still binds.** Provisioning *mechanism* is superseded by canopy:AD-9. **Schema count is amended** to four (canopy:AD-9). |
 | parent AD-6 stateless pods | Wagtail media leaves ephemeral pod disk (RWX); supervisor does not read local disk. |
 | parent AD-7 Celery over Redis is the only async path | Wagtail work goes through Celery, not django-tasks' DB/RQ backends. |
 | parent AD-8 one conda-space, Python 3.12.* | Unchanged. |
 | parent AD-9 consume factory packages, never fork | django-* and pyforge-* arrive as conda packages into the platform env. |
-| parent AD-10..AD-17 image, chart, secrets-at-boundary, air-gap check, sidecars, CI paths, local-first, engine pattern switch | Unchanged. Secrets still enter the pod as env/secret mounts (parent AD-12); cluster secret manager is outside this chain (canopy AD-19). |
+| parent AD-10..AD-17 image, chart, secrets-at-boundary, air-gap check, sidecars, CI paths, local-first, engine pattern switch | Unchanged. Secrets still enter the pod as env/secret mounts (parent AD-12); cluster secret manager is outside this chain (canopy:AD-19). |
 
 **Conflict, not override — parent AD-5:** named Django `RunSQL` / data migrations as how `langflow_schema` / `dbgpt_schema` are provisioned. This chain's CAP-9 moves production DDL to Liquibase. Isolation, `search_path`, and "ORM never crosses schemas" remain; only the producer of the SQL changes. Cardinality: parent said three schemas; this chain adds one tracking schema `liquibase`. CAP-4 / CAP-17 stores are **tables in `public`**, not extra schemas.
 
 **Conflict, not override — parent AD-1:** Lane 1 multi-replica media cannot live on ephemeral pod disk (parent AD-6). Object storage (MinIO/S3) would be a fourth *kind*. The compatible path is a Kubernetes `ReadWriteMany` PVC — still Kubernetes-the-kind. An in-cluster object-store Deployment is a review-blocking finding until parent AD-1 is formally excepted. **Formal exception (defined 2026-09-05):** a dated, bounded paragraph appended under the parent AD in `spec-python-agent-platform/ARCHITECTURE-SPINE.md` in the AD-6 style — what is excepted, why the three kinds cannot carry it, its scope, its cost — preceded by a dated entry in the owner Dream and a correct-course proposal recording the operator ruling. Re-examined 2026-09-05 (`sprint-change-proposal-2026-09-05-ad-1-reopen.md`): **re-affirmed, not excepted.**
 
-**Conflict, not override — parent AD-6:** pods stay disposable. Shared RWX is the replica-safe media store (same *kind* of exception as the dated dbgpt SQLite PVC). Ephemeral pod-local media and MinIO remain forbidden (parent AD-1 / canopy AD-13).
+**Conflict, not override — parent AD-6:** pods stay disposable. Shared RWX is the replica-safe media store (same *kind* of exception as the dated dbgpt SQLite PVC). Ephemeral pod-local media and MinIO remain forbidden (parent AD-1 / canopy:AD-13).
 
-**Conflict, not override — RFC-1 (resilience companion):** two HTTP process pools would violate parent AD-4. Bound by canopy AD-10.
+**Conflict, not override — RFC-1 (resilience companion):** two HTTP process pools would violate parent AD-4. Bound by canopy:AD-10.
 
-**Conflict, not override — RFC-3 HMAC:** a shared HMAC secret on CLI laptops is the finding canopy AD-7 prevents. Assertion is RS256 JWT; RFC-3 claim names map onto that JWT.
+**Conflict, not override — RFC-3 HMAC:** a shared HMAC secret on CLI laptops is the finding canopy:AD-7 prevents. Assertion is RS256 JWT; RFC-3 claim names map onto that JWT.
 
 ## Invariants & Rules
 
@@ -163,7 +163,7 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 - **Binds:** CAP-11, parent AD-1, parent AD-4, parent AD-7
 - **Prevents:** a shared `maxmemory` policy dropping Celery tasks; splitting the task story onto RQ; RFC-1's two HTTP pools becoming a second public process
-- **Rule:** chart ships `redis-cache` (evicts) and `redis-broker` (does not). Same image class. Celery and Channels use the broker. Django cache + Wagtail `renditions` alias use the cache. Filling the cache to eviction must lose no queued task. Wagtail background work uses a Celery `BaseTaskBackend` — not django-tasks' database or RQ backends, and **not** PyPI `django-tasks-celery` (Django 6.0+ only). **Process topology:** one public ASGI Deployment (parent AD-4). Independent scale of work is a Celery worker Deployment on redis-broker — not a second web Deployment, not a FastAPI process, not an extra public port. HTMX REST and MCP share that one ASGI process; operations over ~30s use canopy AD-6 `start`/`get`, not a dedicated streaming HTTP pool. gunicorn/uvicorn worker *count* inside the one Deployment is replica capacity, not a second pool kind.
+- **Rule:** chart ships `redis-cache` (evicts) and `redis-broker` (does not). Same image class. Celery and Channels use the broker. Django cache + Wagtail `renditions` alias use the cache. Filling the cache to eviction must lose no queued task. Wagtail background work uses a Celery `BaseTaskBackend` — not django-tasks' database or RQ backends, and **not** PyPI `django-tasks-celery` (Django 6.0+ only). **Process topology:** one public ASGI Deployment (parent AD-4). Independent scale of work is a Celery worker Deployment on redis-broker — not a second web Deployment, not a FastAPI process, not an extra public port. HTMX REST and MCP share that one ASGI process; operations over ~30s use canopy:AD-6 `start`/`get`, not a dedicated streaming HTTP pool. gunicorn/uvicorn worker *count* inside the one Deployment is replica capacity, not a second pool kind.
 
 ### AD-11 — Flags are OpenFeature FILE, in-process `[ADOPTED]`
 
@@ -217,7 +217,7 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 
 - **Binds:** CAP-12, parent AD-12, parent AD-1, parent AD-14
 - **Prevents:** CAP-12's "no long-lived secret in the pod spec" being read as a Vault client, injector sidecar, or CSI driver inside this chain
-- **Rule:** CAP-12 *authorization* is IdP-on-request (canopy AD-15). CAP-12 *delivery* is parent AD-12: env and secret mounts (`secretKeyRef`, secret volume). Rendered Helm/Kustomize contains names and keys, never secret *values* — that is the success test. A cluster secret manager (External Secrets or equivalent) may materialize Kubernetes Secrets **outside** the platform image; wiring it is out of this chain. The app does not call a secrets HTTP API at runtime. Vault-in-app, Vault injector, secrets CSI driver, or an extra sidecar for secrets is a fourth kind / parent AD-14 sidecar and requires a dated Dream entry *before* it lands — not a CAP-12 story.
+- **Rule:** CAP-12 *authorization* is IdP-on-request (canopy:AD-15). CAP-12 *delivery* is parent AD-12: env and secret mounts (`secretKeyRef`, secret volume). Rendered Helm/Kustomize contains names and keys, never secret *values* — that is the success test. A cluster secret manager (External Secrets or equivalent) may materialize Kubernetes Secrets **outside** the platform image; wiring it is out of this chain. The app does not call a secrets HTTP API at runtime. Vault-in-app, Vault injector, secrets CSI driver, or an extra sidecar for secrets is a fourth kind / parent AD-14 sidecar and requires a dated Dream entry *before* it lands — not a CAP-12 story.
 
 ### AD-20 — CAP-7 consumes the estate secure-dashboard pattern only `[ADOPTED]`
 
@@ -237,7 +237,7 @@ are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
 - **Binds:** CAP-19; FR-27 intent; FR-46..50; Atlas Kedro catalog; Scribe store port; parent AD-2 host import boundary
 - **Prevents:** a sibling HTAP spec; a ninth station; a second writable `.duckdb`; Airflow; pandas-as-federation; boot `INSTALL`; autonomous SQL on OLTP; `uv` Mosaic runtime; silent `01_raw` tree
 - **Rule:** DuckDB is the only analytical engine. Live Postgres is `ATTACH … READ_ONLY`. Kedro writes Parquet on a **named** pipeline. Vectors are `vss` on the plane writer. Mosaic `duckdb-server` is an optional pixi-sourced *face*, not a fourth infra kind. Atlas owns the engine; steward owns the through-line. Rebuild of Atlas RAG defaults, Scribe 28.2 semantic path, and agent DSNs is in scope. BSL remains the dashboard contract. CAP-7 / AD-20 still isolate rows on Mode A.
-- **Realization 2026-08-26:** Epic 34.1–34.5 + 36.1–36.2 shipped (`estate-cache` Vizro page over BSL). Scribe **driver** is on the plane; retiring `scribe_schema` pgvector is still `query-plane-scribe-cutover`. Five-tier roster is 40/40 (Epic 37.1); mason skill cell is `conda-forge-expert` (canopy AD-17 exception), not `.claude/skills/pyforge-mason/`.
+- **Realization 2026-08-26:** Epic 34.1–34.5 + 36.1–36.2 shipped (`estate-cache` Vizro page over BSL). Scribe **driver** is on the plane; retiring `scribe_schema` pgvector is still `query-plane-scribe-cutover`. Five-tier roster is 40/40 (Epic 37.1); mason skill cell is `conda-forge-expert` (canopy:AD-17 exception), not `.claude/skills/pyforge-mason/`.
 
 ### AD-23 — One interpreter `3.14.*`; `mcp-host` isolates MCP-SDK major, not Python `[ADOPTED]`
 
@@ -263,7 +263,7 @@ Cite **`pap:AD-n`** / **parent AD-n** (python-agent-platform spine) vs **canopy 
 
 | Name | Version |
 |---|---|
-| Python (platform env) | `3.12.*` today; **`3.14.*` target** (canopy AD-23; flip in steward 43.6 after Mason 13.1 / 13.2) |
+| Python (platform env) | `3.12.*` today; **`3.14.*` target** (canopy:AD-23; flip in steward 43.6 after Mason 13.1 / 13.2) |
 | Django | `>=5.2.15,<6` (recommend `>=5.2.17,<6` once feedstock `5.x` catches up) |
 | Wagtail | `7.4.3` |
 | `mcp` (service faces) | `>=2.0.0` |
@@ -331,26 +331,26 @@ flowchart LR
 
 | Capability | Lives in | Governed by |
 |---|---|---|
-| CAP-1 chrome | `django-pyforge` | canopy AD-1, AD-3 |
-| CAP-2 Lane 1 | Wagtail on host | canopy AD-13, AD-10; `lane1-serves-dw-h3` **no** (2026-08-25) |
-| CAP-3 portals | `django-<station>` | canopy AD-1, AD-2, AD-4, AD-18 |
-| CAP-4 MCP | `mcp` SDK on host ASGI | canopy AD-5, AD-6, AD-12, AD-10 |
-| CAP-5 CLI grammar | `pyforge-core` | canopy AD-14, AD-18 |
-| CAP-6 identity client | `django-pyforge` + `pyforge.core` | canopy AD-7 |
-| CAP-7 boards | `pyforge.steward.dashboard` on host | canopy AD-20 |
-| CAP-8 events | Redis Streams on redis-broker | canopy AD-8, AD-10 |
-| CAP-9 governed DDL | Liquibase Job + roles | canopy AD-9, AD-16 |
-| CAP-10 containment | wrapper + tests | canopy AD-15; BS-5/BS-7/BS-8 Deferred |
-| CAP-11 cache ≠ broker | two Redis Deployments + Celery workers | canopy AD-10 |
-| CAP-12 IdP roles + secrets | allauth + parent AD-12 mounts | canopy AD-19, AD-15 |
-| CAP-13 flags | OpenFeature FILE | canopy AD-11, AD-16 |
-| CAP-14 Scribe graph | Port + lexical path; semantic recall on CAP-19 plane driver (34.5). `scribe_schema` pgvector retirement is OQ | parent AD-1, parent AD-5 isolation; canopy AD-22 |
-| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `conda-forge-expert`** | canopy AD-14, AD-17 |
-| CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy AD-14, AD-17 |
-| CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy AD-12, AD-6 |
-| CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy AD-21 |
-| CAP-19 query plane | Atlas DuckDB + Kedro; stations as clients. First slice shipped; OQs remain | canopy AD-22 |
-| Cross-cutting | replaceable layers (hook specs + plugins) | canopy AD-21 |
+| CAP-1 chrome | `django-pyforge` | canopy:AD-1, AD-3 |
+| CAP-2 Lane 1 | Wagtail on host | canopy:AD-13, AD-10; `lane1-serves-dw-h3` **no** (2026-08-25) |
+| CAP-3 portals | `django-<station>` | canopy:AD-1, AD-2, AD-4, AD-18 |
+| CAP-4 MCP | `mcp` SDK on host ASGI | canopy:AD-5, AD-6, AD-12, AD-10 |
+| CAP-5 CLI grammar | `pyforge-core` | canopy:AD-14, AD-18 |
+| CAP-6 identity client | `django-pyforge` + `pyforge.core` | canopy:AD-7 |
+| CAP-7 boards | `pyforge.steward.dashboard` on host | canopy:AD-20 |
+| CAP-8 events | Redis Streams on redis-broker | canopy:AD-8, AD-10 |
+| CAP-9 governed DDL | Liquibase Job + roles | canopy:AD-9, AD-16 |
+| CAP-10 containment | wrapper + tests | canopy:AD-15; BS-5/BS-7/BS-8 Deferred |
+| CAP-11 cache ≠ broker | two Redis Deployments + Celery workers | canopy:AD-10 |
+| CAP-12 IdP roles + secrets | allauth + parent AD-12 mounts | canopy:AD-19, AD-15 |
+| CAP-13 flags | OpenFeature FILE | canopy:AD-11, AD-16 |
+| CAP-14 Scribe graph | Port + lexical path; semantic recall on CAP-19 plane driver (34.5). `scribe_schema` pgvector retirement is OQ | parent AD-1, parent AD-5 isolation; canopy:AD-22 |
+| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `conda-forge-expert`** | canopy:AD-14, AD-17 |
+| CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy:AD-14, AD-17 |
+| CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy:AD-12, AD-6 |
+| CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy:AD-21 |
+| CAP-19 query plane | Atlas DuckDB + Kedro; stations as clients. First slice shipped; OQs remain | canopy:AD-22 |
+| Cross-cutting | replaceable layers (hook specs + plugins) | canopy:AD-21 |
 
 ## Deferred
 
@@ -365,10 +365,10 @@ flowchart LR
 | Scribe dual-driver internals | Port already exists; backing store is PostgreSQL | Story for CAP-14; no cross-station invariant beyond parent AD-1 |
 | Ledger shape for reopening 11.1 / 11.2 | `bmad-correct-course`, not this spine | Phase 5 steward run |
 | Keycloak Token Exchange / `RESOURCE_INDICATORS` | RFC-8707 flag is experimental; audience mapper is the documented interim | First CAP-6 client story that mints delegated tokens (BS-3) |
-| Additional CloudEvents extension attributes beyond `pyforgeloopdepth`, `spec_id`, git sha, SBOM purl, optional work-item id | Stream, DLQ, ceiling, `dataschema`, and Q4 identity fields are bound (canopy AD-8 + operating-model Q4) | First producer that needs a *further* extension |
+| Additional CloudEvents extension attributes beyond `pyforgeloopdepth`, `spec_id`, git sha, SBOM purl, optional work-item id | Stream, DLQ, ceiling, `dataschema`, and Q4 identity fields are bound (canopy:AD-8 + operating-model Q4) | First producer that needs a *further* extension |
 | Supervisor ingest wire from bmad-loop | Topology is bound; Marshal hook details are station-local | Marshal + CAP-17 story |
-| FILE flag env promotion overlays | canopy AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story |
+| FILE flag env promotion overlays | canopy:AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story |
 | Liquibase `DATABASECHANGELOGLOCK` stuck-lock runbook | Companion already names the need; owner is ops not a second DDL path | Before first production CAP-9 Job |
-| BS-5 single DuckDB writer / `read_only=True` | Mechanism is atlas-local; absence-test still required (canopy AD-15) | First CAP-10 story that opens `atlas.duckdb` |
+| BS-5 single DuckDB writer / `read_only=True` | Mechanism is atlas-local; absence-test still required (canopy:AD-15) | First CAP-10 story that opens `atlas.duckdb` |
 | BS-7 `PydanticFormErrorBridge` | Lands in `django-pyforge`; not a cross-station fork if chrome owns it | First CAP-10 / CAP-1 HTMX form story |
-| BS-8 Mason boot re-index | Bound off MinIO (canopy AD-13 / parent AD-1). PostgreSQL remains canonical. Object-store scan is blocked until parent AD-1 is excepted. | First CAP-10 Mason restart story — reconcile against PG + RWX, not MinIO |
+| BS-8 Mason boot re-index | Bound off MinIO (canopy:AD-13 / parent AD-1). PostgreSQL remains canonical. Object-store scan is blocked until parent AD-1 is excepted. | First CAP-10 Mason restart story — reconcile against PG + RWX, not MinIO |

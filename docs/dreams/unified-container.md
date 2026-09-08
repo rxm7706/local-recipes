@@ -58,5 +58,5 @@ once this gets pressure-tested via `bmad-spec`.
   Q1 as **one lean image**, with `pyforge-factory-full` deferred behind a named trigger ("when
   recipe builds need to run inside the container"); the ASGI stack ships as the
   `pyforge-steward[dashboard]` extra rather than a base dependency, so the container never
-  carries it. Evidence: `architecture-unified-container-2026-08-09/ARCHITECTURE-SPINE.md` (AD-1
+  carries it. Evidence: `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` (AD-1
   through AD-6) and steward's `sprint-status-ledger.yaml` Epic 7.

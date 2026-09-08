@@ -19,7 +19,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Marp, PPTX, and `.dc.html` export live as in-tree backends. Adding a format would fork Herald instead of registering a plugin on the shared `pyforge.core.hooks` contract (FR-45, canopy AD-21).
+**Problem:** Marp, PPTX, and `.dc.html` export live as in-tree backends. Adding a format would fork Herald instead of registering a plugin on the shared `pyforge.core.hooks` contract (FR-45, canopy:AD-21).
 
 **Approach:** Publish Herald's deck-export hook spec on that contract and register today's three exporters as the default plugins. Export success is a station result, never a PR quality-gate / Warden verdict.
 

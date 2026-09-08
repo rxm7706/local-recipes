@@ -281,7 +281,7 @@ seven to ten packages — `upstream_discovery`, `artifactory_downloads`, and
 recommendation — the unifiable asset is not the stack but *Atlas as the fleet's
 single data platform*; stations consume Atlas datasets/MCP tools, never sibling
 Kedro deployments — was ratified by the pyforge-unifying-strategy chain
-(2026-08-24/26) as canopy AD-21: **Atlas is the estate's one Kedro home.** The same
+(2026-08-24/26) as canopy:AD-21: **Atlas is the estate's one Kedro home.** The same
 chain made Atlas the **CAP-19 HTAP query-plane engine owner** (first slice shipped
 2026-08-26: read-only live Postgres attach, the named `query_plane_cache` pipeline
 writing the estate Parquet cache, vectors persisted on the plane via `vss`/HNSW,

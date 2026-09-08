@@ -6,7 +6,7 @@ updated: "2026-08-24"
 status: "ready"
 answers:
   - console-parity-inventory
-gates: "FR-7 (removal of the old build path) — this artifact is its precondition"
+gates: "canopy:FR-7 (removal of the old build path) — this artifact is its precondition"
 inputs:
   - "pyforge.doctor.sources.fleet_scan"
   - "docs/dashboard/index.html"
@@ -15,7 +15,7 @@ inputs:
 
 # Console parity inventory
 
-Answers the SPEC open question `console-parity-inventory` and satisfies PRD **FR-6**. The supersede
+Answers the SPEC open question `console-parity-inventory` and satisfies PRD **canopy:FR-6**. The supersede
 ruling of 2026-08-24 settled *that* Marshal's console is retired; this settles *what has to exist
 first*.
 
@@ -101,6 +101,10 @@ local-only. **Absorbed into CAP-17 by the 2026-08-24 ruling:** the supervisor in
 journal at completion, which is the durable-store half of this problem and the only version that
 survives the workstation that produced the run.
 
+This inventory RECORDS that ruling; it never implements the ingest. The supervisor and its
+journal ingest belong to Marshal, and no Canopy story may add a second one — the constraint
+`tests/meta/test_27_2_portal_loop_homes.py` enforces on every changed document.
+
 ### The committed-snapshot model itself
 
 The published board is a baked blob regenerated on deploy. **Even the fourteen runtime-reproducible
@@ -114,7 +118,7 @@ environment and a normalization pass, emitting ~195 content-hashed assets. Not s
 request-time query under any design.
 
 **But it is not linked from the console**, so it is not a parity obligation — it is a co-published
-neighbour on the same origin. FR-7 must therefore be careful: retiring the console's build path
+neighbour on the same origin. canopy:FR-7 must therefore be careful: retiring the console's build path
 must not silently delete a tree that has its own separate publishing workflow and its own consumer.
 
 ## The three uncertain ones
@@ -130,9 +134,9 @@ generator sees more than CI does — and they should be resolved during CAP-2's 
 
 ## Consequences for the chain
 
-1. **FR-6 is satisfied by this document.** FR-7's precondition is met and the cutover may be
+1. **canopy:FR-6 is satisfied by this document.** canopy:FR-7's precondition is met and the cutover may be
    scheduled.
-2. **FR-7 gains a boundary.** "Remove the old build path" means `generate.py`, its pixi tasks
+2. **canopy:FR-7 gains a boundary.** "Remove the old build path" means `generate.py`, its pixi tasks
    (`dashboard-gen`, `dashboard-watch`, `dashboard-check`, `dashboard-drift-check`), its workflow
    trigger, and the committed `data.js`. It does **not** mean the Kedro-Viz tree, which has its own
    workflow and no inbound link from the console.
@@ -146,7 +150,7 @@ generator sees more than CI does — and they should be resolved during CAP-2's 
    mitigate but the point of the exercise.
 4. **Over 100 inbound references to `docs/dashboard` exist across the repo** — dreams, specs,
    presentations, pixi tasks, workflows, tests, scripts, and the Charter's own accountability gate.
-   FR-7's "no inbound reference remains" consequence is therefore substantially more work than
+   canopy:FR-7's "no inbound reference remains" consequence is therefore substantially more work than
    deleting a directory, and the epic pass should size it as its own story rather than as cleanup.
 5. **A downstream parser exists.** Tooling reads `data.js` by stripping the
    `window.DASHBOARD_DATA =` prefix. Removing the file breaks those consumers; they need finding

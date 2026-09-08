@@ -50,7 +50,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Never:** AD-4/AD-17 topology or chart 12.1 rewrites (factors as seams only). Never `scripts/bmad-switch`. Never auto-merge. Finalize steward ledger only. Do not touch marshal. Skip 12-7 forever.
+**Never:** AD-4/pap:AD-17 topology or chart 12.1 rewrites (factors as seams only). Never `scripts/bmad-switch`. Never auto-merge. Finalize steward ledger only. Do not touch marshal. Skip 12-7 forever.
 
 </intent-contract>
 

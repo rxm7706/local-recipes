@@ -344,7 +344,7 @@ already gives `ACTIONABLE_STATUSES`.
    by doctor Story 20.4; currently `blocked` in the shared ledger convention (R-8).
 2. `docs/foundry/manifest.*` capability ledger's real shape — required by Story 20.3;
    not yet observed live in this repo (pre-cutover), so its fixture must be
-   hand-constructed from the cutover spine's own documented shape (`fnd:AD-11`/`AD-22`).
+   hand-constructed from the cutover spine's own documented shape (`fnd:AD-11`/`fnd:AD-22`).
 
 #### Risks to Plan
 

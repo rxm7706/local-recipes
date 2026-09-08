@@ -19,7 +19,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, and Jira are named as Steward deploy-profile backends, but they are not plugins on the FR-43 contract. Swapping a vendor would fork the Golden Path instead of registering a replacement.
+**Problem:** Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, and Jira are named as Steward deploy-profile backends, but they are not plugins on the canopy:FR-43 contract. Swapping a vendor would fork the Golden Path instead of registering a replacement.
 
 **Approach:** Publish Steward's deploy-profile `HookSpec` on `pyforge.core.hooks`. Register today's six backends as default plugins. Optional vendors (including Tachyon) stay off the Golden Path Pixi task and local/CI. None of these plugins publishes a PR quality-gate verdict (Warden owns that).
 
@@ -46,7 +46,7 @@ deferred: []
 
 ## Code Map
 
-- `src/shared/packages/pyforge-core/src/pyforge/core/hooks.py` — **read-only** FR-43 API.
+- `src/shared/packages/pyforge-core/src/pyforge/core/hooks.py` — **read-only** canopy:FR-43 API.
 - `src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py` — **read-only**; no parallel steward group.
 - `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py` — **read-only**. Today's dashboard/perimeter/static duty stays; this story does not fork it into vendor CD.
 - `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py` — **new**. `DEPLOY_PROFILE_HOOK_SPEC`, six default plugins, `register_default_deploy_profile_plugins`, `select_deploy_profile_plugin`, `run_golden_path`. Record-only `around` unless `context["backends"][plugin_id]` is a callable inject.
@@ -58,12 +58,12 @@ deferred: []
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py` -- hook spec + six default plugins + Golden Path runner -- FR-45 surface
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py` -- hook spec + six default plugins + Golden Path runner -- canopy:FR-45 surface
 - `src/shared/packages/pyforge-steward/pyproject.toml` -- declare six plugins on `pyforge.core.hooks`
 - `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py` -- I/O matrix + optional-vendor Golden Path pins
 
 **Acceptance Criteria:**
-- Given today's deploy/profile backends, when they are extracted, then each registers as a default plugin on the FR-43 contract (`pyforge.core.hooks`, spec `pyforge.steward.deploy_profile`).
+- Given today's deploy/profile backends, when they are extracted, then each registers as a default plugin on the canopy:FR-43 contract (`pyforge.core.hooks`, spec `pyforge.steward.deploy_profile`).
 - Given an optional vendor plugin disabled, when the Golden Path Pixi task / `run_golden_path` runs, then it does not fail.
 - Given local/CI, when Tachyon is absent, then the Golden Path still succeeds (Tachyon remains a production LLM adapter plugin).
 - Given any of these plugins, when they would publish a PR quality-gate verdict, then `SecondVerdictError` is raised and sources never call `publish_verdict`.

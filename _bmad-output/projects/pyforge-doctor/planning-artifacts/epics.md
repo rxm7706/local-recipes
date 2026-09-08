@@ -11,7 +11,7 @@ inputDocuments:
 updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
 currency_review: "Reviewed 2026-09-06 (Epic 20 added: spec-bmad-suite-lifecycle doctor relays — suite drift 7→13, render-HALT + frozen-path-changed detectors, RCA routing, version-drift write-back; Stories 20.1–20.5). Reviewed 2026-08-29 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Currency validation — 2026-08-29): tracked ledger re-measured at 67/67 done across 18/18 epics (the 2026-08-26 note's 82 figure was not re-verified before now), the four sources/ modules PRs #903/#904/#906/#907 touched map to already-decomposed Stories 8.5/8.6 or spec-pyforge-doctor's already-described scope, no epic/story restructuring. Prior: Reviewed 2026-08-26 (chain-currency sweep) — validation note appended at end of file (§ Currency validation — 2026-08-26): tracked ledger 82/82 done across Epics 1-18, Epics 17/18 checked against the reconciled architecture spine, no epic/story restructuring. Prior: Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
 ---
 
@@ -445,7 +445,7 @@ So that the check is something I see, not something that merely exists.
 caller** — `__main__.py:47` imports `atlas` and `warden`, not `marshal`. Marking 5.1
 done while the source is unreachable would be the "merged, marked done, never became the
 runtime" shape this repo already carries as the Atlas Kedro precedent and forbids in
-Marshal's AD-67. Splitting states the truth: the verdict is built and provably
+Marshal's marshal:AD-67. Splitting states the truth: the verdict is built and provably
 independent, and it is not yet rendered.
 
 **Sequenced behind a profile, not blocked on nothing.** `doctor check` is measured at
@@ -1441,7 +1441,7 @@ Skill, persona, and the first portal job are **Epic 18**. Cite **parent AD-n** v
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -1455,7 +1455,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
@@ -1475,7 +1475,7 @@ As a doctor operator,
 I want diagnosis sources and remedy actuators as plugins on the shared contract,
 So that swapping a linter or gather source does not fork doctor.
 
-**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** today's gather/prescribe backends **When** the hook spec lands **Then** they are the default plugins
 **And** findings remain advisory or Warden *inputs*, never a competing PR verdict
 
@@ -1489,7 +1489,7 @@ As an autonomous agent,
 I want a doctor SKF skill from `pyforge-doctor/` and a `bmad-agent-doctor` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-17.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-17.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-doctor/` if missing
 **And** the persona uses only `pyforge doctor …` and `POST /stations/doctor/mcp`
 **And** findings stay advisory — not a second PR gate
@@ -1500,7 +1500,7 @@ As a doctor operator,
 I want `/stations/doctor/` to show the last `doctor monitor --fleet` summary,
 So that one operator job works in HTMX on the host.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated doctor-role session **When** the operator opens `/stations/doctor/` **Then** the pulse summary renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 
@@ -1544,7 +1544,7 @@ read-only gathers; the detectors join `detectors` only after their fixtures prov
 **Given** `render_skill.py` HALTs with "ambiguous config value" when the same key sits at two paths across the four `_bmad/config*.toml` + `_bmad/custom/config*.toml` layers (seen live 2026-09-06) **When** the detector merges the layers the way `load_central_config()` does and scans for a key present at two different paths **Then** it reports `warn` naming the key and both paths, `ok` on today's tree, a fixture with a planted `[core] user_skill_level` beside `[modules.bmm] user_skill_level` fires, and a missing layer file is fail-open
 
 ### Story 20.3: `frozen-path-changed` exists
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (G11) • cutover spine `fnd:AD-11`, `AD-22`
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-9 (G11) • cutover spine `fnd:AD-11`, `fnd:AD-22`
 **Surface:** a new source under `sources/` (reads `docs/foundry/manifest.*` capability ledger states when present; `ok` with "no ledger" otherwise), `tests/unit/`, `pixi.toml` (`detectors-ci` membership), cutover memlog relay note
 **Given** `fnd:AD-22` freezes a capability's source paths once it enters `rebuilding` or `moving`, and the spine names a `frozen-path-changed` detector nothing built **When** the detector reads the capability ledger's frozen path sets and diffs `origin/main..HEAD` against them **Then** a change under a frozen path is a `fail` naming the capability and the path, an absent ledger is `ok` (pre-cutover), and the fixture plants one frozen-path edit; `cutover-readiness.md` G11 flips to landed by steward memlog relay
 
@@ -1576,7 +1576,7 @@ spine as reconciled 2026-08-26 and the tracked ledger:
   orphan keys.
 - **Epics 17/18 conform to the reconciled spine:** Story 17.1's hook extraction
   landed as `hooks.py` on the shared `pyforge.core.hooks` contract with today's
-  gather/prescribe backends as default plugins (canopy AD-21, spine § Currency
+  gather/prescribe backends as default plugins (canopy:AD-21, spine § Currency
   reconciliation); Story 18.1's persona/skill and 18.2's portal slice
   (`/stations/doctor/` fleet pulse via PortalClient, landed 2026-08-26) respect the
   Canopy-obligations constraints recorded above — no second chrome, no `pyforge.*`

@@ -26,7 +26,7 @@ open_questions:
 The platform's first deployment target is Red Hat OpenShift. Story 12.1
 shipped the vanilla Kubernetes core chart and a thin OCP Route overlay;
 Story 12.2 proved the vanilla Ingress path on a GKE-shaped `kind` profile;
-Story 12.3 proved air-gap parity. AD-11's OCP half remains honestly open:
+Story 12.3 proved air-gap parity. pap:AD-11's OCP half remains honestly open:
 `deploy/README.md` still names "No OCP live-cluster verification in this
 repo," and Platform CI has no `ocp-portability-smoke` job. This Spec
 closes that gap the same way 12.2 closed GKE: an optional CI profile on
@@ -39,7 +39,7 @@ a real OpenShift API, overlay-only. Owner: **steward**. Vehicle: existing
   `ocp-portability-smoke`, default **off** (repo variable
   `PLATFORM_CI_OCP_PORTABILITY_SMOKE=true` or `workflow_dispatch`),
   reusing `build-platform-image`'s artifact (P1 fan-in), helm/kubectl
-  from `platform-dev` (AD-16), CRC / OpenShift Local as a named
+  from `platform-dev` (pap:AD-16), CRC / OpenShift Local as a named
   system-level exception — never `kind`. *Success:* the job exists and
   is skippable; a dispatch with the variable set reaches cluster-up or
   fails naming why the cluster never started.
@@ -59,11 +59,11 @@ a real OpenShift API, overlay-only. Owner: **steward**. Vehicle: existing
 
 ## Constraints
 
-- AD-11: core chart unchanged; OCP kinds only via the existing overlay
+- pap:AD-11: core chart unchanged; OCP kinds only via the existing overlay
   (`overlays/ocp/core-overrides.yaml` + `platform-ocp` Route chart).
-- AD-16: helm/kubectl from pixi; CRC/`oc` are explicit named system
+- pap:AD-16: helm/kubectl from pixi; CRC/`oc` are explicit named system
   exceptions alongside `kind`.
-- AD-15: paths-filtered Platform CI; non-`recipes/` PRs carry the
+- pap:AD-15: paths-filtered Platform CI; non-`recipes/` PRs carry the
   `maintenance` label.
 - Default off on PR push — CRC is slow (~30–90 min), disk-heavy
   (~35 GiB), and needs `CRC_PULL_SECRET`.

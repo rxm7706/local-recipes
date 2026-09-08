@@ -138,14 +138,14 @@ Defined once. The rest of the document uses these exactly, and no synonyms.
 - **Governed changeset** — a reviewed, versioned schema-change unit applied by an authority holding
   DDL privilege, distinct from the application's own migration bookkeeping.
 - **Feedstock** — a conda-forge recipe. Six are new work in this chain.
-- **Hooks and plugins** — architecture principle (canopy AD-21): a process owns
+- **Hooks and plugins** — architecture principle (canopy:AD-21): a process owns
   hook specifications; a plugin replaces or extends a layer without a fork.
   Kedro names the split; it does not require a Kedro project. **CAP-18** is the
   shared contract (not a scorecard). Q8 is the PR-gate instance (Warden owns
   those specs; scanners are plugins).
 - **Query plane** — the one DuckDB analytical engine (live read-only Postgres
   attach, Kedro Parquet cache, `vss` vectors). Stations and agents are clients.
-  Platform Postgres stays OLTP / app state. **CAP-19**, canopy AD-22.
+  Platform Postgres stays OLTP / app state. **CAP-19**, canopy:AD-22.
 
 ## 4. Features
 
@@ -169,7 +169,7 @@ npm/React against a service-list endpoint unreachable in an air gap. This packag
 
 **Functional Requirements:**
 
-#### FR-1: Chrome is installable, and singular
+#### canopy:FR-1: Chrome is installable, and singular
 
 A portal author installs one package and receives the estate's chrome. Realizes UJ-1. **CAP-1.**
 
@@ -181,7 +181,7 @@ A portal author installs one package and receives the estate's chrome. Realizes 
 - Registration carries owner station slug, backup, `work_class`, and promotion date. The SLA
   body is not a chrome / AppConfig field (it stays in the 03 BMAD spec).
 
-#### FR-2: A portal registers itself without host edits
+#### canopy:FR-2: A portal registers itself without host edits
 
 Adding or removing a station portal changes no host code outside that portal's own registration.
 **CAP-1, CAP-3.**
@@ -195,7 +195,7 @@ Adding or removing a station portal changes no host code outside that portal's o
 - The switcher and Guildhall do **not** tile a registration with `work_class` 01 or 02 as a
   first-class station surface.
 
-#### FR-3: The switcher shows only what the user may reach
+#### canopy:FR-3: The switcher shows only what the user may reach
 
 The app switcher renders the stations the signed-in user is authorized for. **CAP-1, CAP-12.**
 
@@ -206,7 +206,7 @@ The app switcher renders the stations the signed-in user is authorized for. **CA
 
 **Notes:** The estate's existing portal (`compliance_face`) mounts at `/compliance/`, not under a
 `/stations/` prefix. **Decided 2026-08-24: uniform prefix, and `compliance_face` moves** — see
-FR-9a. The pre-audit draft asserted `/stations/{station}/` as an inherited convention; it was not,
+canopy:FR-9a. The pre-audit draft asserted `/stations/{station}/` as an inherited convention; it was not,
 and choosing it now is a decision with a migration attached rather than a free default.
 
 ---
@@ -223,7 +223,7 @@ Wagtail carries it alone. CodeRed CMS was ruled out on maintenance evidence.
 
 **Functional Requirements:**
 
-#### FR-4: Content publishes without a deploy
+#### canopy:FR-4: Content publishes without a deploy
 
 An editor changes a page and the change is live with no code deploy and no pod restart.
 Realizes UJ-1. **CAP-2.**
@@ -232,7 +232,7 @@ Realizes UJ-1. **CAP-2.**
 - A page edit is visible to an anonymous-within-estate request without a new image or a rollout.
 - Content survives a pod restart and is visible identically from every replica.
 
-#### FR-5: The CMS admin is behind the estate identity provider
+#### canopy:FR-5: The CMS admin is behind the estate identity provider
 
 An unauthenticated request to the CMS admin is redirected to the identity provider, not to a local
 login form. **CAP-2, CAP-12.**
@@ -248,7 +248,7 @@ permission rather than a generic staff flag, and OIDC users arrive with no group
 authenticated user is refused by default until claim-to-group mapping exists. There is no
 first-party guidance for this; treat it as real work, not configuration.
 
-#### FR-6: Console parity is inventoried before anything is removed
+#### canopy:FR-6: Console parity is inventoried before anything is removed
 
 Every view the retired console offers is enumerated and classified as runtime-reproducible or
 build-time-only **before** the cutover. **CAP-2. Satisfied 2026-08-24** by
@@ -259,13 +259,13 @@ build-time-only **before** the cutover. **CAP-2. Satisfied 2026-08-24** by
   **Done:** 23 surfaces — 14 runtime-reproducible, 7 build-time-only, 3 mixed.
 - Any view classified build-time-only is escalated as a scope decision rather than silently
   dropped. **Done:** the seven reduce to four decisions, recorded in the inventory.
-- The inventory is the cutover's precondition: FR-7 cannot start until it is complete.
+- The inventory is the cutover's precondition: canopy:FR-7 cannot start until it is complete.
 
 **Notes:** The four decisions are live run state (three surfaces, one decision), detector verdicts,
 curated editorial content, and journal-derived timing. The fifth build-time-only item — the
 committed-snapshot delivery model — is not a loss to mitigate; removing it is the point of CAP-2.
 
-#### FR-7: The old build path is removed, not unlinked
+#### canopy:FR-7: The old build path is removed, not unlinked
 
 After parity, the console's generation pipeline is deleted — not merely delisted from navigation.
 **CAP-2.**
@@ -287,7 +287,7 @@ Charter's own accountability gate. The reference sweep is its own story, not cle
 another one. The inventory recommends splitting this feature's retirement into three stories:
 inventory (done), parity build, removal.
 
-#### FR-8: Media and cache survive multiple replicas
+#### canopy:FR-8: Media and cache survive multiple replicas
 
 Lane 1 operates correctly with more than one replica. **CAP-2.**
 
@@ -312,7 +312,7 @@ today. Realizes UJ-1.
 
 **Functional Requirements:**
 
-#### FR-9: All eight stations resolve behind one session
+#### canopy:FR-9: All eight stations resolve behind one session
 
 Eight portal URLs resolve, and a single authentication covers all of them. **CAP-3.**
 
@@ -322,7 +322,7 @@ Eight portal URLs resolve, and a single authentication covers all of them. **CAP
 - All eight mount under `/stations/<name>/`.
 - The existing compliance portal is one of the eight and is not re-implemented.
 
-#### FR-9a: The moved portal does not break its old URL
+#### canopy:FR-9a: The moved portal does not break its old URL
 
 `compliance_face` relocates from `/compliance/` to `/stations/warden/` and the old path keeps
 working. **CAP-3.**
@@ -334,7 +334,7 @@ working. **CAP-3.**
   removal in this chain.
 - No inbound reference to `/compliance/` anywhere in the repo is left pointing at a 404.
 
-#### FR-9b: Station portals are reusable Django apps under one naming scheme
+#### canopy:FR-9b: Station portals are reusable Django apps under one naming scheme
 
 `compliance_face` is repackaged as a reusable Django app following
 [Django's reusable-app convention](https://docs.djangoproject.com/en/6.0/intro/reusable-apps/), and
@@ -367,7 +367,7 @@ The triple, for warden:
 `label = "compliance_face"`, so renaming it is a table rename plus content-type and
 migration-history updates. Today that is an ordinary Django migration. Once CAP-9 lands the
 application role loses DDL rights and the same rename becomes a governed Liquibase changeset — so
-this must precede §4.9, and folding it into FR-9a's move costs one disruption instead of two.
+this must precede §4.9, and folding it into canopy:FR-9a's move costs one disruption instead of two.
 
 Two properties of the scheme are load-bearing and should not be simplified away later:
 
@@ -390,12 +390,12 @@ One editorial change followed: CAP-8's backbone was called the "event fabric" in
 would have read confusingly beside `warden_fabric` in the same architecture diagram. It is now
 uniformly the **event backbone**, which was already the dominant term.
 
-#### FR-10: A portal holds no station logic
+#### canopy:FR-10: A portal holds no station logic
 
 A portal renders and dispatches; the station's behaviour stays in the station. **CAP-3, CAP-6.**
 
 **Consequences (testable):**
-- A portal reaches its station only through the shared client (FR-14).
+- A portal reaches its station only through the shared client (canopy:FR-14).
 - No portal imports station internals directly.
 - A test asserts no portal constructs a raw HTTP request to a service.
 
@@ -413,7 +413,7 @@ A single POST endpoint on the official SDK is the target.
 
 **Functional Requirements:**
 
-#### FR-11: Eight stations answer on a current-specification endpoint
+#### canopy:FR-11: Eight stations answer on a current-specification endpoint
 
 Each station exposes a service face implementing the current MCP specification. **CAP-4.**
 
@@ -438,7 +438,7 @@ The echo rule earns its own consequence because the failure it prevents is count
 client receiving a revision it does not recognize aborts **even when that revision is newer**.
 Asserting the newest is a self-inflicted rejection, not a forward-compatible default.
 
-#### FR-12: A long operation survives a disconnect
+#### canopy:FR-12: A long operation survives a disconnect
 
 An operation exceeding the ingress idle timeout completes and its result is retrievable after the
 client reconnects. Realizes UJ-2. **CAP-4.**
@@ -484,7 +484,7 @@ this is a front door, not an absorption.
 
 **Functional Requirements:**
 
-#### FR-13: Every station verb is reachable through one entry point
+#### canopy:FR-13: Every station verb is reachable through one entry point
 
 `pyforge <station> <noun> <verb>` reaches the same behaviour as the station's own binary.
 **CAP-5.**
@@ -510,7 +510,7 @@ lands before the portals that will use it.
 
 **Functional Requirements:**
 
-#### FR-14: A service can verify on whose behalf it was called
+#### canopy:FR-14: A service can verify on whose behalf it was called
 
 A station service independently verifies the end-user identity behind a portal call. **CAP-6.**
 
@@ -520,7 +520,7 @@ A station service independently verifies the end-user identity behind a portal c
 - An expired assertion is refused.
 - No portal-to-service path exists that does not carry one.
 
-#### FR-15: The trusted-header path does not exist
+#### canopy:FR-15: The trusted-header path does not exist
 
 Identity is never asserted by an unverified header. **CAP-6.**
 
@@ -538,7 +538,7 @@ pattern rather than inventing a second one. Realizes UJ-1.
 
 **Functional Requirements:**
 
-#### FR-16: Two roles, same URL, different rows
+#### canopy:FR-16: Two roles, same URL, different rows
 
 Users with different roles requesting the same board receive provably different row sets.
 **CAP-7.**
@@ -562,7 +562,7 @@ groups, poison-message quarantine, and a ceiling on how deep a cascade may run. 
 
 **Functional Requirements:**
 
-#### FR-17: Events are durable and consumed in groups
+#### canopy:FR-17: Events are durable and consumed in groups
 
 A published event reaches its consumers and survives a consumer restart. **CAP-8.**
 
@@ -572,7 +572,7 @@ A published event reaches its consumers and survives a consumer restart. **CAP-8
 - The envelope carries `spec_id`, git sha, and SBOM purl, plus an optional work-item id. A
   missing Jira key does **not** fail publish or drop the event (Dream Grounding Q4).
 
-#### FR-18: A poisoned event is quarantined, not retried forever
+#### canopy:FR-18: A poisoned event is quarantined, not retried forever
 
 A message that cannot be processed lands in a dead-letter queue after its retry budget.
 Realizes UJ-3. **CAP-8, CAP-10.**
@@ -582,7 +582,7 @@ Realizes UJ-3. **CAP-8, CAP-10.**
 - It does not block the consumer group.
 - An operator can enumerate quarantined messages.
 
-#### FR-19: Cascades halt at a declared depth
+#### canopy:FR-19: Cascades halt at a declared depth
 
 A cyclic publish chain stops at the declared ceiling. **CAP-8.**
 
@@ -590,7 +590,7 @@ A cyclic publish chain stops at the declared ceiling. **CAP-8.**
 - A deliberately cyclic chain halts at the configured depth rather than running away.
 - The halt is observable, not silent.
 
-#### FR-20: Validation happens in the domain adapter
+#### canopy:FR-20: Validation happens in the domain adapter
 
 Event payload validation occurs in the consuming domain adapter, not at the stream boundary.
 **CAP-8.**
@@ -615,7 +615,7 @@ execute DDL. That is also the only version of this an auditor can verify, which 
 
 **Functional Requirements:**
 
-#### FR-21: Liquibase is available inside the boundary
+#### canopy:FR-21: Liquibase is available inside the boundary
 
 The governed-changeset tool resolves from conda-forge like every other Python/pixi dependency.
 **CAP-9.**
@@ -639,7 +639,7 @@ against the rotated signing key**, which decides the recipe's verification step.
 consequence exists because the fix is currently verified by a reviewer's report rather than by our
 own observation — cheap to close, and CAP-9 rests on it.
 
-#### FR-21a: Schema resolution cannot fail silently
+#### canopy:FR-21a: Schema resolution cannot fail silently
 
 Schema targeting is configured so that a misresolution is impossible rather than merely unlikely.
 **CAP-9.**
@@ -657,7 +657,7 @@ then applies silently to `public`. Silent wrong-schema DDL is the worst availabl
 this feature, and the mitigation costs nothing because Django's naming conventions already produce
 lowercase. Do not let a later story turn this flag on for a formatting reason.
 
-#### FR-22: The application role cannot alter its own schema
+#### canopy:FR-22: The application role cannot alter its own schema
 
 The role the application connects with holds no DDL privilege. Realizes UJ-4. **CAP-9.**
 
@@ -666,7 +666,7 @@ The role the application connects with holds no DDL privilege. Realizes UJ-4. **
 - A separate migration role holds DDL and is used only by the governed step.
 - The refusal is a privilege error from PostgreSQL, not an application-level guard.
 
-#### FR-23: A schema change without a governed changeset fails the build
+#### canopy:FR-23: A schema change without a governed changeset fails the build
 
 Authoring a model change without its corresponding changeset breaks CI. **CAP-9.**
 
@@ -677,7 +677,7 @@ Authoring a model change without its corresponding changeset breaks CI. **CAP-9.
 **Notes:** `[NOTE FOR PM]` No prior art exists for this — no team is documented running Liquibase as
 schema authority for a Django application. Size this as invention, not integration.
 
-#### FR-24: The deploy sequence keeps framework bookkeeping working
+#### canopy:FR-24: The deploy sequence keeps framework bookkeeping working
 
 The governed step runs before the application's migration step, and the latter still fires
 framework post-migration hooks. **CAP-9.**
@@ -691,7 +691,7 @@ framework post-migration hooks. **CAP-9.**
   readiness.
 - The chart contract from the shipped story is not rewritten; this is a seam beside it.
 
-#### FR-25: Test databases are carved out
+#### canopy:FR-25: Test databases are carved out
 
 The governed authority does not apply to test databases. **CAP-9.**
 
@@ -712,7 +712,7 @@ passes with it present. A suite that goes green proves nothing about any one of 
 
 **Functional Requirements:**
 
-#### FR-26: A failing dependency degrades its caller
+#### canopy:FR-26: A failing dependency degrades its caller
 
 A dependency failing repeatedly opens a circuit and the caller degrades rather than hanging.
 **CAP-10.**
@@ -730,17 +730,17 @@ state transitions are not atomic]`, read from source rather than documentation, 
 threshold is coarse protection and not exact-count semantics. Do not write an FR that depends on an
 exact count.
 
-#### FR-27: Concurrent writers cannot corrupt shared analytical state
+#### canopy:FR-27: Concurrent writers cannot corrupt shared analytical state
 
 A single-writer boundary is enforced for the columnar analytical store. **CAP-10.**
-CAP-19 names that store as the **query plane** (FR-27 *intent* survives if the
+CAP-19 names that store as the **query plane** (canopy:FR-27 *intent* survives if the
 file is no longer literally `atlas.duckdb`).
 
 **Consequences (testable):**
 - A second concurrent writer is refused or serialized; no corruption occurs.
 - The test fails if the boundary is removed.
 
-#### FR-28: Validation errors reach the user inline
+#### canopy:FR-28: Validation errors reach the user inline
 
 A validation failure is rendered in place rather than lost or thrown as an opaque error.
 **CAP-10.**
@@ -749,7 +749,7 @@ A validation failure is rendered in place rather than lost or thrown as an opaqu
 - A rejected submission renders its errors inline in the originating surface.
 - The test fails if the inline path is removed.
 
-#### FR-29: A restart reconciles rather than duplicates
+#### canopy:FR-29: A restart reconciles rather than duplicates
 
 Work interrupted by a restart is reconciled, not re-applied. **CAP-10, CAP-8.**
 
@@ -757,7 +757,7 @@ Work interrupted by a restart is reconciled, not re-applied. **CAP-10, CAP-8.**
 - An operation interrupted mid-flight and resumed produces one effect, not two.
 - The test fails if reconciliation is removed.
 
-#### FR-30: Queue and cache cannot evict each other
+#### canopy:FR-30: Queue and cache cannot evict each other
 
 Broker and cache are separate resources with separate eviction policies. **CAP-11.**
 
@@ -777,7 +777,7 @@ Realizes UJ-5.
 
 **Functional Requirements:**
 
-#### FR-31: Revoking a role at the IdP removes access
+#### canopy:FR-31: Revoking a role at the IdP removes access
 
 A role revoked centrally takes effect on the user's next request. **CAP-12.**
 
@@ -786,7 +786,7 @@ A role revoked centrally takes effect on the user's next request. **CAP-12.**
   not after a cache expiry.
 - Local group state is not the authority.
 
-#### FR-32: No long-lived secret appears in a pod specification
+#### canopy:FR-32: No long-lived secret appears in a pod specification
 
 Runtime secrets are delivered by a secret manager. **CAP-12.**
 
@@ -794,7 +794,7 @@ Runtime secrets are delivered by a secret manager. **CAP-12.**
 - No secret value appears in any pod specification or chart value.
 - A check over rendered manifests fails if one does.
 
-#### FR-33: Flag packages are available inside the boundary
+#### canopy:FR-33: Flag packages are available inside the boundary
 
 The flag interface and its provider resolve from conda-forge. **CAP-13.**
 
@@ -807,10 +807,10 @@ The flag interface and its provider resolve from conda-forge. **CAP-13.**
 **Notes:** The four OpenFeature packages are absent from anaconda.org **entirely** — a global
 search returns zero results. `cachebox` is a different task: the feedstock exists at the wrong
 version, so it is a **downgrade build, not a new recipe**, and sizing it as a fifth new recipe
-overstates it. Per repo Rule 1 each of these stories invokes `conda-forge-expert`. Like FR-21, this
+overstates it. Per repo Rule 1 each of these stories invokes `conda-forge-expert`. Like canopy:FR-21, this
 FR **gates the rest of its feature**.
 
-#### FR-34: One flag flips three surfaces, offline
+#### canopy:FR-34: One flag flips three surfaces, offline
 
 A single flag change alters behaviour across web, service and CLI. Realizes UJ-5. **CAP-13.**
 
@@ -830,7 +830,7 @@ driver, not a second.
 
 **Functional Requirements:**
 
-#### FR-35: The same operations pass against both drivers
+#### canopy:FR-35: The same operations pass against both drivers
 
 Graph operations behave identically against the durable store and the local path. **CAP-14.**
 
@@ -839,7 +839,7 @@ Graph operations behave identically against the durable store and the local path
 - The existing port is unchanged — callers are unaware which driver is active.
 - Concurrent writers do not corrupt the durable store.
 
-#### FR-36: Semantic recall returns what lexical recall cannot
+#### canopy:FR-36: Semantic recall returns what lexical recall cannot
 
 Recall finds a semantically relevant result that token-overlap search misses. **CAP-14.**
 
@@ -860,7 +860,7 @@ the check reports **40/40**; mason's skill cell is `conda-forge-expert` (no
 
 **Functional Requirements:**
 
-#### FR-37: Each station carries a domain skill
+#### canopy:FR-37: Each station carries a domain skill
 
 Every **03** station has an agent-loadable skill encoding how its work is actually done. **CAP-15.**
 
@@ -869,17 +869,17 @@ Every **03** station has an agent-loadable skill encoding how its work is actual
 - Demonstrated for a station that has **no** skill today — not for the one that already does.
 - Each skill follows the shape the existing one proves.
 
-#### FR-38: Each station is addressable as a persona
+#### canopy:FR-38: Each station is addressable as a persona
 
 Every **03** station exposes a persona that acts only through that station's grammar and service
 face. **CAP-16.** 01/02 work does not mint a persona.
 
 **Consequences (testable):**
 - A persona completes a station task end to end.
-- Its transcript shows **no** direct filesystem access and **no** ad-hoc HTTP calls — only FR-13's
-  grammar and FR-11's service face.
+- Its transcript shows **no** direct filesystem access and **no** ad-hoc HTTP calls — only canopy:FR-13's
+  grammar and canopy:FR-11's service face.
 
-#### FR-39: Five-tier completeness is checkable
+#### canopy:FR-39: Five-tier completeness is checkable
 
 **03** station completeness is mechanically verifiable, not asserted. **CAP-15, CAP-16.**
 
@@ -906,7 +906,7 @@ replaces**, and that is deliberate.
 
 **Functional Requirements:**
 
-#### FR-40: Live run state is queryable, not scraped
+#### canopy:FR-40: Live run state is queryable, not scraped
 
 The front door obtains run state from a service. **CAP-17.**
 
@@ -916,7 +916,7 @@ The front door obtains run state from a service. **CAP-17.**
 - No front-door code path reads a filesystem for run state, and no fallback to scraping exists.
 - A run started on one machine is visible to a front door running on another.
 
-#### FR-41: A run's timing survives the workstation that produced it
+#### canopy:FR-41: A run's timing survives the workstation that produced it
 
 Completed-run timing is ingested into durable storage rather than left in a local journal.
 **CAP-17.**
@@ -926,7 +926,7 @@ Completed-run timing is ingested into durable storage rather than left in a loca
 - Ingestion happens at run completion, not at page-generation time.
 - Timing history is queryable across runs, not only for the most recent.
 
-#### FR-42: The supervisor degrades honestly
+#### canopy:FR-42: The supervisor degrades honestly
 
 When the supervisor is unreachable, the surface says so rather than implying staleness is
 liveness. **CAP-17, CAP-10.**
@@ -936,7 +936,7 @@ liveness. **CAP-17, CAP-10.**
   data presented as current.
 - Any displayed run state carries its age.
 - The front door does not hang waiting on the supervisor — it degrades within its budget, per
-  FR-26.
+  canopy:FR-26.
 
 **Notes:** `[NOTE FOR PM]` this feature was added after the capability set was otherwise settled,
 and it is the one place this chain grew rather than converged. It is worth a deliberate look during
@@ -956,7 +956,7 @@ store, exporter, deploy profile, LLM provider); today's backend is the default p
 
 **Functional Requirements:**
 
-#### FR-43: Shared hook-spec and plugin registration
+#### canopy:FR-43: Shared hook-spec and plugin registration
 
 `pyforge-core` publishes one registration API and one documentation shape for hook
 specifications. Station packages consume it; they do not ship a second plugin loader.
@@ -969,9 +969,9 @@ specifications. Station packages consume it; they do not ship a second plugin lo
 - Named hook points are before / after / around (or an equivalent documented set). A plugin
   must not publish a second verdict for a process another owner specified.
 
-#### FR-44: Warden owns PR-gate hooks; scanners are optional plugins
+#### canopy:FR-44: Warden owns PR-gate hooks; scanners are optional plugins
 
-Warden owns the PR-gate hook specifications on the FR-43 contract. Existing scanners become
+Warden owns the PR-gate hook specifications on the canopy:FR-43 contract. Existing scanners become
 plugins. A missing named scanner (including Checkmarx) is not a failed Warden run.
 **CAP-18.** Q8.
 
@@ -980,9 +980,9 @@ plugins. A missing named scanner (including Checkmarx) is not a failed Warden ru
 - Enabling an optional scanner plugin can change findings; it cannot replace the Warden verdict
   with a second pass/fail published beside it.
 
-#### FR-45: Each 03 station extracts one process hook spec
+#### canopy:FR-45: Each 03 station extracts one process hook spec
 
-Each 03 station identifies a replaceable process layer, publishes a hook spec on the FR-43
+Each 03 station identifies a replaceable process layer, publishes a hook spec on the canopy:FR-43
 contract, and registers today's backend as the default plugin. Atlas **audits** existing Kedro
 hooks against the contract; it does not rebuild the pipeline or grow a pipeline PR-gate.
 **CAP-18.**
@@ -992,7 +992,7 @@ hooks against the contract; it does not rebuild the pipeline or grow a pipeline 
 - Steward deploy-profile adapters (Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira) are
   plugins on this FR, not core stack.
 
-**Notes:** Order is FR-43, then FR-44, then FR-45 on the next process change (Warden first).
+**Notes:** Order is canopy:FR-43, then canopy:FR-44, then canopy:FR-45 on the next process change (Warden first).
 Epics 18–30 must not violate CAP-18; they are not its implementation.
 
 ---
@@ -1004,7 +1004,7 @@ serves Kedro Parquet, and ranks vectors. Agents do not get the OLTP DSN. Rebuild
 Atlas RAG defaults, Scribe semantic recall, and Langflow/DB-GPT estate reads is
 authorized. Realizes UJ-6.
 
-#### FR-46: Live federation is read-only attach
+#### canopy:FR-46: Live federation is read-only attach
 
 DuckDB attaches a multi-schema Postgres as `READ_ONLY`. No `pgvector` is required on
 that database. **CAP-19.**
@@ -1014,7 +1014,7 @@ that database. **CAP-19.**
 - A write against the attach is refused.
 - The test fails if the path goes through pandas SQL or a writable attach.
 
-#### FR-47: Analytical scans hit the Parquet cache
+#### canopy:FR-47: Analytical scans hit the Parquet cache
 
 Kedro writes compressed Parquet on a named catalog pipeline. Dashboards and
 autonomous SQL read the cache, not OLTP. **CAP-19.**
@@ -1024,7 +1024,7 @@ autonomous SQL read the cache, not OLTP. **CAP-19.**
   against it does not open the OLTP writer role.
 - The test fails if Airflow or an `01_raw` tree is the refresh mechanism.
 
-#### FR-48: Vectors live on the plane
+#### canopy:FR-48: Vectors live on the plane
 
 `REAL[]` (or equivalent) casts to `FLOAT[N]` and HNSW / `vss` ranking runs in
 DuckDB SQL. Dimension is a parameter. Consumer `LOAD`s `vss`. **CAP-19.**
@@ -1034,7 +1034,7 @@ DuckDB SQL. Dimension is a parameter. Consumer `LOAD`s `vss`. **CAP-19.**
 - The consumer path does not `INSTALL` on the network.
 - The test fails if a second writable `.duckdb` file is the index home.
 
-#### FR-49: Agents cannot use the OLTP DSN
+#### canopy:FR-49: Agents cannot use the OLTP DSN
 
 DB-GPT Text-to-SQL and Langflow estate RAG are configured at the plane (cache,
 declared views, or the HTTP/Arrow face). **CAP-19.**
@@ -1044,14 +1044,14 @@ declared views, or the HTTP/Arrow face). **CAP-19.**
   enterprise OLTP.
 - A mis-aimed OLTP DSN for Text-to-SQL fails the gate.
 
-#### FR-50: Stations reimplement onto the plane
+#### canopy:FR-50: Stations reimplement onto the plane
 
 Scribe semantic recall uses `GraphStore.query_similar` backed by the plane (or a
 driver that is the plane). Atlas RAG persist uses the plane writer. BSL remains
 the dashboard contract. **CAP-19.** Rebuild of 28.2 / in-memory RAG is in scope.
 
 **Consequences (testable):**
-- FR-36 still holds after the Scribe path moves.
+- canopy:FR-36 still holds after the Scribe path moves.
 - Callers do not `isinstance` the driver.
 - The test fails if semantic recall is aliased back to lexical or to a private
   Chroma / in-memory DuckDB.
@@ -1065,11 +1065,11 @@ the dashboard contract. **CAP-19.** Rebuild of 28.2 / in-memory RAG is in scope.
 - **Not a ninth station or a ninth project.** The roster stays at eight.
 - **Not a re-decision of the monolith-versus-microservices topology.** That trail is closed
   elsewhere and reopening it is out of scope.
-- **Not a replacement for any station CLI.** FR-13 dispatches; station binaries remain first-class.
+- **Not a replacement for any station CLI.** canopy:FR-13 dispatches; station binaries remain first-class.
 - **Not atlas's own Wagtail Spec.** CAP-2 may end up serving one of its waiting consumers (OQ-5),
   but does not absorb, re-mint or supersede it.
 - **Not CodeRed CMS.** Ruled out on maintenance evidence.
-- **Not a general-purpose multi-tenancy model.** FR-16 is row isolation for boards, nothing more.
+- **Not a general-purpose multi-tenancy model.** canopy:FR-16 is row isolation for boards, nothing more.
 - **Not atlas's adoption of the secure-dashboard pattern.** Consumed here; adopting it in atlas's
   own board is atlas's story.
 - **Not an external API contract.** The service faces are for estate callers; no third-party
@@ -1083,27 +1083,27 @@ gated on external packaging, one because it is a migration that should not be ru
 
 ### 6.1 In Scope
 
-- Shared chrome (FR-1..FR-3) — everything visual depends on it.
-- Eight portals behind one session (FR-9, FR-10).
-- The identity-carrying client (FR-14, FR-15) — before its consumers, or the first integration
+- Shared chrome (canopy:FR-1..canopy:FR-3) — everything visual depends on it.
+- Eight portals behind one session (canopy:FR-9, canopy:FR-10).
+- The identity-carrying client (canopy:FR-14, canopy:FR-15) — before its consumers, or the first integration
   becomes a trusted header nobody removes.
-- Service faces on a current specification (FR-11), with resumability (FR-12) as the risk item.
-- One command grammar (FR-13).
-- Queue/cache separation (FR-30) — cheap, and it prevents a whole class of production surprise.
-- IdP-derived authorization and delivered secrets (FR-31, FR-32).
+- Service faces on a current specification (canopy:FR-11), with resumability (canopy:FR-12) as the risk item.
+- One command grammar (canopy:FR-13).
+- Queue/cache separation (canopy:FR-30) — cheap, and it prevents a whole class of production surprise.
+- IdP-derived authorization and delivered secrets (canopy:FR-31, canopy:FR-32).
 
 ### 6.2 Out of Scope for MVP
 
 - **Governed schema change (§4.9)** — gated on a feedstock, reopens shipped stories, and has no
   prior art. Deferring it does not weaken the MVP's demonstration; rushing it risks the estate's
   database.
-- **Flags (§4.11 FR-33, FR-34)** — gated on four absent feedstocks plus a downgrade build.
+- **Flags (§4.11 canopy:FR-33, canopy:FR-34)** — gated on four absent feedstocks plus a downgrade build.
   `[NOTE FOR PM]` this is the one deferral most likely to be regretted, because flags would
   de-risk every other rollout in the chain. If packaging lands early, pull it forward.
 - **Lane 1 supersession (§4.2)** — the front door itself is MVP-adjacent, but retiring the console
   is a migration with a parity precondition. The build may land in MVP; **the removal may not**.
-- **Semantic recall (FR-36)** — durability (FR-35) is the urgent half of CAP-14.
-- **Personas (FR-38)** — depend on FR-13 and FR-11 both existing first.
+- **Semantic recall (canopy:FR-36)** — durability (canopy:FR-35) is the urgent half of CAP-14.
+- **Personas (canopy:FR-38)** — depend on canopy:FR-13 and canopy:FR-11 both existing first.
 
 ## 7. Success Metrics
 
@@ -1116,44 +1116,44 @@ external constraint, not a goal we chose.
 **Primary**
 
 - **SM-1 — One session spans the estate.** An operator traverses Lane 1 → a station portal → an
-  analytical board with a single authentication and no origin change. Binary. Validates FR-4, FR-9,
-  FR-16.
+  analytical board with a single authentication and no origin change. Binary. Validates canopy:FR-4, canopy:FR-9,
+  canopy:FR-16.
 - **SM-2 — An agent survives the proxy.** A multi-minute operation completes across a simulated
-  ingress disconnect and its result is retrieved. Binary. Validates FR-11, FR-12.
+  ingress disconnect and its result is retrieved. Binary. Validates canopy:FR-11, canopy:FR-12.
 - **SM-3 — The application cannot alter its own schema.** `CREATE`/`ALTER`/`DROP` as the
   application role are refused by PostgreSQL. Binary, and verifiable by an auditor without reading
-  application code. Validates FR-22.
+  application code. Validates canopy:FR-22.
 - **SM-4 — The egress-blocked deploy succeeds.** A build and deploy with external egress blocked
   completes end to end, carrying only PostgreSQL, Redis and the platform images. Binary; already
-  the estate's existing gate. Validates FR-21, FR-33, and the air-gap constraint generally.
+  the estate's existing gate. Validates canopy:FR-21, canopy:FR-33, and the air-gap constraint generally.
 - **SM-5 — Five tiers, eight 03 stations.** The completeness check reports all eight **03**
   stations with all five tiers present. Countable, with a known denominator: 8 × 5 = 40.
-  01/02 work is outside the denominator. Validates FR-37, FR-38, FR-39.
+  01/02 work is outside the denominator. Validates canopy:FR-37, canopy:FR-38, canopy:FR-39.
 
 **Secondary**
 
 - **SM-6 — Each containment invariant fails without itself.** Each of the four invariants has a
   test demonstrated individually to fail when the invariant is removed. Count: 4 of 4. Validates
-  FR-26..FR-29.
+  canopy:FR-26..canopy:FR-29.
 - **SM-7 — Chrome is not duplicated.** The duplication check finds zero portal-local copies of
-  chrome. Count: 0. Validates FR-1.
+  chrome. Count: 0. Validates canopy:FR-1.
 - **SM-8 — CLI parity holds.** The generated matrix shows every station verb reachable both ways,
-  and CI fails on divergence. Validates FR-13.
+  and CI fails on divergence. Validates canopy:FR-13.
 - **SM-9 — One plugin API.** A dummy plugin loads through `pyforge-core`; a station-local second
   registration API fails the check; default Warden is green with no named commercial scanner.
-  Validates FR-43, FR-44, FR-45.
+  Validates canopy:FR-43, canopy:FR-44, canopy:FR-45.
 
 **Counter-metrics (do not optimize)**
 
 - **SM-C1 — Do not optimize portal count.** Eight portals that render but hold station logic is a
-  worse outcome than six that are properly thin. Counterbalances SM-1; enforced by FR-10.
+  worse outcome than six that are properly thin. Counterbalances SM-1; enforced by canopy:FR-10.
 - **SM-C2 — Do not optimize event throughput.** The backbone's value is durability, ordering and
   quarantine. A faster backbone that drops or double-applies has failed. Counterbalances the CAP-8
-  work; enforced by FR-17, FR-18, FR-29.
+  work; enforced by canopy:FR-17, canopy:FR-18, canopy:FR-29.
 - **SM-C3 — Do not optimize for the skill/persona count.** Eight shallow skills that no agent
-  actually follows satisfies SM-5 and delivers nothing. Counterbalances SM-5; enforced by FR-37's
+  actually follows satisfies SM-5 and delivers nothing. Counterbalances SM-5; enforced by canopy:FR-37's
   "demonstrated for a station that has no skill today".
-- **SM-C4 — Do not optimize migration speed.** FR-23's build gate will slow schema authoring. That
+- **SM-C4 — Do not optimize migration speed.** canopy:FR-23's build gate will slow schema authoring. That
   cost is the feature. Counterbalances SM-3.
 
 ## 8. Cross-Cutting NFRs
@@ -1165,7 +1165,7 @@ external constraint, not a goal we chose.
   has failed design review. DuckDB is a library / optional query face on the platform image,
   not a fourth Helm kind (CAP-19).
 - **Statelessness.** Replicas are capacity; any pod is disposable. This rules out pod-local media
-  (FR-8) and per-process caches.
+  (canopy:FR-8) and per-process caches.
 - **Runtime floor.** Django `>=5.2.15,<6` and Python `3.12.*`. Zero headroom — conda-forge ships
   exactly one qualifying build, two **security** patch releases behind upstream. Audited
   2026-08-24: seven CVEs across 5.2.16 and 5.2.17, one rated high, and **every affected path is
@@ -1185,42 +1185,42 @@ external constraint, not a goal we chose.
 **Sequencing constraints** — facts about the work, not preferences. Each dictates ordering, and the
 epic pass must honour rather than rediscover them.
 
-1. **Packaging precedes platform in two features.** FR-21 gates §4.9; FR-33 gates FR-34. Both
+1. **Packaging precedes platform in two features.** canopy:FR-21 gates §4.9; canopy:FR-33 gates canopy:FR-34. Both
    epics open with `conda-forge-expert` sessions.
-2. **FR-1 precedes FR-4 and FR-9.** Chrome first, or portals grow their own.
-3. **FR-14 precedes FR-9's integrations.** The client before its consumers.
-4. **FR-6 precedes FR-7.** Inventory before removal, unconditionally.
-5. **FR-13 and FR-11 precede FR-38.** A persona has nothing to act through otherwise.
+2. **canopy:FR-1 precedes canopy:FR-4 and canopy:FR-9.** Chrome first, or portals grow their own.
+3. **canopy:FR-14 precedes canopy:FR-9's integrations.** The client before its consumers.
+4. **canopy:FR-6 precedes canopy:FR-7.** Inventory before removal, unconditionally.
+5. **canopy:FR-13 and canopy:FR-11 precede canopy:FR-38.** A persona has nothing to act through otherwise.
 
-6. **The inventory (FR-6) precedes the parity build, which precedes the removal (FR-7).** Three
+6. **The inventory (canopy:FR-6) precedes the parity build, which precedes the removal (canopy:FR-7).** Three
    stories, in that order. The inventory is done; the removal carries the 100+ reference sweep and
    the spec correction, and must not start until the parity build proves the reproducible surfaces.
 7. **Phase 5 is eight `bmad-correct-course` runs, not one** — one per station, recording each
    station's Canopy obligations, with Marshal's additionally retiring `spec-factory-console`. That
    skill, not the epic pass, also decides the ledger shape for reopening the two `done` stories
-   FR-22 contradicts: a new superseding epic, or a reopened Epic 11.
+   canopy:FR-22 contradicts: a new superseding epic, or a reopened Epic 11.
 
-**Change-management guardrail.** §4.2 removes something that works today. The guardrail is FR-6's
-inventory as a hard precondition and FR-7's requirement that removal be real. A "temporarily keep
+**Change-management guardrail.** §4.2 removes something that works today. The guardrail is canopy:FR-6's
+inventory as a hard precondition and canopy:FR-7's requirement that removal be real. A "temporarily keep
 both" outcome is the failure mode to guard against — it is how a supersession becomes a permanent
 second console.
 
-**Audit guardrail.** FR-22 is deliberately enforced at the database rather than in application
+**Audit guardrail.** canopy:FR-22 is deliberately enforced at the database rather than in application
 code, because a control an auditor can verify without reading source is worth more than a stricter
 control they cannot.
 
 ## 10. Integration and Dependencies
 
-- **Identity provider** — OIDC, already live. FR-5, FR-31 and the CAP-6 assertion chain all depend
-  on it. Group/claim mapping for CMS admin (FR-5) is **new work with no first-party guidance**.
-- **The shipped chart** — FR-24 adds a Job beside the existing migration hook, on the same image.
+- **Identity provider** — OIDC, already live. canopy:FR-5, canopy:FR-31 and the CAP-6 assertion chain all depend
+  on it. Group/claim mapping for CMS admin (canopy:FR-5) is **new work with no first-party guidance**.
+- **The shipped chart** — canopy:FR-24 adds a Job beside the existing migration hook, on the same image.
   The existing chart contract is not rewritten.
-- **The existing compliance portal** — becomes one of the eight (FR-9). URL scheme is bound:
-  `/stations/<name>/` with `/compliance/` redirect (FR-9a). OQ-4 is answered.
-- **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
+- **The existing compliance portal** — becomes one of the eight (canopy:FR-9). URL scheme is bound:
+  `/stations/<name>/` with `/compliance/` redirect (canopy:FR-9a). OQ-4 is answered.
+- **Atlas's MCP server** — brought to the current specification by canopy:FR-11 rather than duplicated.
 - **Atlas's waiting CMS consumer** — OQ-5 / `lane1-serves-dw-h3` **answered 2026-08-25: no.**
   Host Wagtail `/cms/` does not satisfy `LaSuiteClient` Docs REST. DW-H3 stays atlas.
-- **Packaging (FR-21, FR-33)** — operator-owned conda-forge recipes (canopy AD-16; Stories 26.3
+- **Packaging (canopy:FR-21, canopy:FR-33)** — operator-owned conda-forge recipes (canopy:AD-16; Stories 26.3
   and 27.1 stay blocked). Not in-chain CFE sessions for Canopy implementation.
 
 ## 11. Open Questions
@@ -1236,12 +1236,12 @@ control they cannot.
 
 **Answered 2026-08-24:**
 
--3. ~~**MCP runtime base (FastMCP vs official `mcp` SDK)**~~ — **hybrid, canopy AD-5.** Service
+-3. ~~**MCP runtime base (FastMCP vs official `mcp` SDK)**~~ — **hybrid, canopy:AD-5.** Service
    faces on the host are the official `mcp` SDK (`>=2.0.0`) on the one ASGI process. Stopgap in
    `local-recipes` only: `fastmcp >=3.4.7,<4` + `mcp >=1.24,<2.0` until those faces land; lift the
-   `mcp` ceiling in the FR-11 story. The pairing outage is contained, not reopened.
+   `mcp` ceiling in the canopy:FR-11 story. The pairing outage is contained, not reopened.
 -4. ~~**One Liquibase tracking schema or one per application?**~~ — **one tracking schema**,
-   canopy AD-9: `liquibaseSchemaName=liquibase`. Four PostgreSQL schemas in this instance
+   canopy:AD-9: `liquibaseSchemaName=liquibase`. Four PostgreSQL schemas in this instance
    (`public`, `langflow_schema`, `dbgpt_schema`, `liquibase`). A fifth schema is a review-blocking
    finding. Concurrent migrate of two applications shares that global changelog lock; that is
    the bound cost.
@@ -1249,22 +1249,22 @@ control they cannot.
 -2. ~~**MCP client revision**~~ — **accept `2025-03-26` through `2026-07-28`**, which `mcp` 2.0.0
    already serves dual-era with no configuration. The fleet is split (Copilot and Zed at
    `2025-11-25`, Gemini CLI at `2025-06-18`, Codex already at `2026-07-28`), so both ends are load
-   bearing. Bound into FR-11, along with two invariants the research surfaced: echo the client's
+   bearing. Bound into canopy:FR-11, along with two invariants the research surfaced: echo the client's
    requested revision, and never branch on client name.
 -1. ~~**MCP resumable-operation runtime**~~ — **no, and blocked upstream.** The Tasks extension is
    listed under the SDK's *Known gaps*; the only runtime in any language is a beta on an unreleased
-   FastMCP 4, absent from conda-forge along with its own dependency. FR-12 ships a `start`/`get`
+   FastMCP 4, absent from conda-forge along with its own dependency. canopy:FR-12 ships a `start`/`get`
    pair over a durable store instead — the same lifecycle SEP-2663 standardizes, so adopting it
    later is a wire-layer swap. Worth a scheduled re-check rather than treating as closed.
 0. ~~**Liquibase multi-schema regression**~~ — **fixed in 5.0.4**, corroborated by both the merged
    PR and the release notes. The question was framed too broadly: the defect only affected
    `runInTransaction="false"` changesets, never in-transaction ones. It surfaced a worse hazard in
    its place — an **open** issue where `preserveSchemaCase` causes DDL to land silently in
-   `public` — now bound as FR-21a.
+   `public` — now bound as canopy:FR-21a.
 
 5. ~~**Portal URL scheme**~~ — **uniform `/stations/<name>/` for all eight**, with
    `compliance_face` moving from `/compliance/` behind a permanent redirect. One rule beats eight
-   exceptions, and the registration seam enforces it (FR-2, FR-9, FR-9a). The cost is a migration
+   exceptions, and the registration seam enforces it (canopy:FR-2, canopy:FR-9, canopy:FR-9a). The cost is a migration
    of a shipped URL, which the redirect absorbs.
 6. ~~**Django patch-level exposure**~~ — **audited 2026-08-24: a currency gap, not an exposure.**
    5.2.16 and 5.2.17 are both security releases carrying seven CVEs, one rated high — and every
@@ -1273,7 +1273,7 @@ control they cannot.
    bumped it, so moving the pin to `>=5.2.17,<6` is a one-file PR rather than the seventh packaging
    item it was sized as. Recommended, not required: scanners read version strings, not
    reachability.
-7. ~~**Console parity classification**~~ — answered by the FR-6 inventory, and the question it
+7. ~~**Console parity classification**~~ — answered by the canopy:FR-6 inventory, and the question it
    raised in turn is **also** answered: live run state and journal-derived timing **stay on the
    front door**, which means building the supervisor that makes them deployable. That is
    **CAP-17 / §4.14**, new scope taken deliberately.
@@ -1291,26 +1291,26 @@ Every capability has at least one FR; every FR names a capability.
 
 | CAP | FRs | CAP | FRs |
 |---|---|---|---|
-| CAP-1 | FR-1, FR-2, FR-3 | CAP-10 | FR-18, FR-26..FR-29, FR-42 |
-| CAP-2 | FR-4..FR-8 | CAP-11 | FR-30 |
-| CAP-3 | FR-2, FR-9, FR-9a, FR-9b, FR-10 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
-| CAP-4 | FR-11, FR-12 | CAP-13 | FR-33, FR-34 |
-| CAP-5 | FR-13 | CAP-14 | FR-35, FR-36 |
-| CAP-6 | FR-10, FR-14, FR-15 | CAP-15 | FR-37, FR-39 |
-| CAP-7 | FR-16 | CAP-16 | FR-38, FR-39 |
-| CAP-8 | FR-17..FR-20, FR-29 | CAP-17 | FR-40, FR-41, FR-42 |
-| CAP-9 | FR-21, FR-21a, FR-22..FR-25 | CAP-18 | FR-43, FR-44, FR-45 |
-| CAP-19 | FR-46, FR-47, FR-48, FR-49, FR-50 | | |
+| CAP-1 | canopy:FR-1, canopy:FR-2, canopy:FR-3 | CAP-10 | canopy:FR-18, canopy:FR-26..canopy:FR-29, canopy:FR-42 |
+| CAP-2 | canopy:FR-4..canopy:FR-8 | CAP-11 | canopy:FR-30 |
+| CAP-3 | canopy:FR-2, canopy:FR-9, canopy:FR-9a, canopy:FR-9b, canopy:FR-10 | CAP-12 | canopy:FR-3, canopy:FR-5, canopy:FR-31, canopy:FR-32 |
+| CAP-4 | canopy:FR-11, canopy:FR-12 | CAP-13 | canopy:FR-33, canopy:FR-34 |
+| CAP-5 | canopy:FR-13 | CAP-14 | canopy:FR-35, canopy:FR-36 |
+| CAP-6 | canopy:FR-10, canopy:FR-14, canopy:FR-15 | CAP-15 | canopy:FR-37, canopy:FR-39 |
+| CAP-7 | canopy:FR-16 | CAP-16 | canopy:FR-38, canopy:FR-39 |
+| CAP-8 | canopy:FR-17..canopy:FR-20, canopy:FR-29 | CAP-17 | canopy:FR-40, canopy:FR-41, canopy:FR-42 |
+| CAP-9 | canopy:FR-21, canopy:FR-21a, canopy:FR-22..canopy:FR-25 | CAP-18 | canopy:FR-43, canopy:FR-44, canopy:FR-45 |
+| CAP-19 | canopy:FR-46, canopy:FR-47, canopy:FR-48, canopy:FR-49, canopy:FR-50 | | |
 
 ## 13. Assumptions Index
 
-- **§4.5 FR-13** — the eight station CLIs expose a surface stable enough to dispatch to without
+- **§4.5 canopy:FR-13** — the eight station CLIs expose a surface stable enough to dispatch to without
   modification. Unverified per-station; a station that cannot be introspected needs a preparatory
   story.
-- **§4.10 FR-26** — the circuit breaker's cross-replica state transitions are not atomic. Read from
+- **§4.10 canopy:FR-26** — the circuit breaker's cross-replica state transitions are not atomic. Read from
   source, not documentation. Consequence: no FR may depend on an exact failure count.
 - **§4.2** — Marshal's console views are re-creatable as CMS pages plus portal routes. Under test
-  by the FR-6 inventory; a build-time-only view forces a scope conversation.
+  by the canopy:FR-6 inventory; a build-time-only view forces a scope conversation.
 - **§2** — the agent is a first-class user, weighted equally with the three human roles. Derived
   from the capability set rather than from a stated requirement.
 
@@ -1332,7 +1332,7 @@ MCP slice 3 (retire ImportError skip) stays parked.
 **2026-08-31 reconciliation (chain-currency sweep, brief refresh):** re-derived against the brief's
 2026-08-31 update, which folded in `technical-pyforge-station-dossier-2026-08-30.md` (fleet-wide,
 all eight stations plus `pyforge-core`). No FR, CAP, or scope change — the dossier corroborates
-rather than contradicts: FR-43..45's CAP-18 hook-spec is confirmed already live in `pyforge-core`
+rather than contradicts: canopy:FR-43..45's CAP-18 hook-spec is confirmed already live in `pyforge-core`
 today (`core.hooks`, one entry-point group) and used by all seven non-core stations with no
 station-specific alternative, and the doc-drift pattern it found (Marshal's skill documents 4 of
 ~40 commands, Doctor's and Steward's READMEs understate their real duty/story count, Scribe's
@@ -1342,7 +1342,7 @@ not new scope.
 **2026-09-02 correct-course (red-team CRITICALs):** the adversarial review found the CAP-6
 mint root unverified (X-1) and the CAP-11 broker volatile and unbounded (S-1). Steward
 **Epic 40** (40.1 verified mint, 40.2 durable bounded broker) dispatches **before** any
-further story on this chain and before cutover Phase 1. No FR changes; FR-30's consequence
+further story on this chain and before cutover Phase 1. No FR changes; canopy:FR-30's consequence
 now also reads "a broker restart loses no queued task". The review's HIGH set is a later
 correct-course. Record: `sprint-change-proposal-2026-09-02-red-team-critical.md`.
 

@@ -49,7 +49,7 @@ definition 1330-1483, plus cross-refs at 1418, 1433, 1479, 1497, 1498, 1526, 155
 `K-01..03` at 1038 (header), 1042, 1044, 1047 (definitions). Literal "genesis-installer" at 5,
 867, 930, 932-948.
 
-**Architecture** (`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`):
+**Architecture** (`architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md`):
 satellite starts line 661, zero bare-FR before it (clean boundary). Bare `FRn` at 711, 739-745
 (L-0N table), 795, 832, 840, 877, 887-905 (code comments), 946-1070 (AD-52..63 rules),
 1105-1114 (coverage matrix), 1121, 1207. `NFR-O1` at 1133 only. `SC-0N` at 826, 915, 1039-1040,

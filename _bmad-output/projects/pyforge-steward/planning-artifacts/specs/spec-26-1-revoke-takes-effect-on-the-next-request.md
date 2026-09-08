@@ -30,13 +30,13 @@ deferred:
 
 ## Intent
 
-**Problem:** Portal access still follows the login-time session role snapshot. A security officer who revokes an IdP role must not wait for the user to log in again (FR-31, CAP-12, canopy AD-15).
+**Problem:** Portal access still follows the login-time session role snapshot. A security officer who revokes an IdP role must not wait for the user to log in again (canopy:FR-31, CAP-12, canopy:AD-15).
 
 **Approach:** Re-read IdP roles from the token claims on each request. Switcher and station gates from 18.2 honor that fresh token. Django group tables and the login-time `idp_token_roles` session list are not the authority.
 
 ## Boundaries & Constraints
 
-**Always:** Authorization is the current request's IdP token claims (test double: `IDP_CLAIMS_SNAPSHOT` / `idp_token_claims`; production hook: `IDP_USERINFO`). Cite canopy AD-15. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only.
+**Always:** Authorization is the current request's IdP token claims (test double: `IDP_CLAIMS_SNAPSHOT` / `idp_token_claims`; production hook: `IDP_USERINFO`). Cite canopy:AD-15. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only.
 
 **Block If:** Implementation would require a live Keycloak cluster, Token Exchange, or renaming `compliance_face`.
 

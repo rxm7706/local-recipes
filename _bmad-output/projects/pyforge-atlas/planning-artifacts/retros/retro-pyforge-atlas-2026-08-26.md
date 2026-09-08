@@ -134,7 +134,7 @@ The 2026-08-08 cross-station research argued the unifiable asset is not the
 Kedro/Dagster/DuckDB stack but **Atlas as the fleet's single data platform** —
 stations consume Atlas datasets and tools; nobody stands up a sibling Kedro
 deployment. The pyforge-unifying-strategy chain (2026-08-24/26) ratified exactly
-that as canopy AD-21 (**one Kedro home**) and then gave the position teeth:
+that as canopy:AD-21 (**one Kedro home**) and then gave the position teeth:
 Atlas owns the **CAP-19 HTAP query plane** (one engine, one writer on
 `atlas.duckdb`; live attach + Parquet cache + vectors; both faces — in-process
 library and the Mosaic `duckdb-server` HTTP face — behind one boot script),

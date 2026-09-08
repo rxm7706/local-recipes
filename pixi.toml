@@ -981,6 +981,14 @@ cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
 description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Compares origin/main..HEAD."
 cmd = "python -m pyforge.doctor.sources ledger-regression"
 
+[feature.local-recipes.tasks.ad-citation-check]
+description = "Detector: every architecture-decision citation resolves to exactly one spine. FAILs on an `AD-n` that names no AD anywhere in the fleet; reports (advisory) any project whose several spines share an id range, which makes a bare `AD-n` there unresolvable without reading the citing file. Measured 2026-09-08 at first run: 11,198 citations across 935 files, ZERO broken, 172 legitimately cross-project, and steward the one project with overlapping spines. The graph being healthy is exactly why a bulk renumber is dangerous -- it can only subtract correctness."
+cmd = "python scripts/ad_citation_check.py"
+
+[feature.local-recipes.tasks.ledger-direction-check]
+description = "Detector: the tracked sprint ledger versus git merge history, WITH DIRECTION (marshal FR-137/FR-138). `landed-but-unpromoted` — merge history names a story the ledger has not marked done — is the FAIL half and the incident this exists for. `done-but-unmerged` is advisory (WARN, never reds the run): a done flip absent from the ledger at the base ref AND unnamed by any merge subject. Both read git only, never the gitignored Tier-3 sprint-status.yaml — a statement of intent is not evidence of landing."
+cmd = "python -m pyforge.doctor.sources ledger-direction"
+
 [feature.local-recipes.tasks.dashboard-layout-check]
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
 cmd = "python -m pyforge.doctor.sources check-layout"

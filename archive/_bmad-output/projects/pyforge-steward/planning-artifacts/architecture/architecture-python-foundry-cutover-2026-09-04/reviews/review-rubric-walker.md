@@ -219,11 +219,11 @@ row or OQ **`cfe-wrapper-tier-home`**: where the 63 public-wrapper entrypoints a
 (their import floor — `conda-forge-metadata`, `ruamel.yaml`, `requests` — is island-side, per
 `cfe.py`'s interpreter-selection docstring).
 
-### H-4 — AD-5 collides with canopy AD-17 (SKF output shape) and exempts the persona tier from moving
+### H-4 — AD-5 collides with canopy:AD-17 (SKF output shape) and exempts the persona tier from moving
 
 **Problem, part 1 (SKF).** AD-5: estate skills live *only* at `skills/{stations,personas,domain}
 /<x>/SKILL.md`; `.claude/skills/<x>` is a per-skill relative symlink; "a regular directory for
-an estate skill under an adapter is a detector finding." But canopy AD-17 makes
+an estate skill under an adapter is a detector finding." But canopy:AD-17 makes
 `skf-export-skill` the **writer** of station skills, and SKF's on-disk shape is not
 `<x>/SKILL.md`.
 
@@ -239,15 +239,14 @@ from moving to `skills/personas/<station>/`. They are estate-authored (they carr
 `customize.toml` and dated station transcripts), they are the fifth face in cutover.md's face
 map, and `five_tier.py:118` reads `repo_root/.claude/skills/bmad-agent-<station>/SKILL.md` as
 the persona tier — so an exempted persona and a moved persona are two stories' worth of
-divergence against canopy AD-14 (five tiers or the 03 station is not done).
+divergence against canopy:AD-14 (five tiers or the 03 station is not done).
 
 **Fix.** Split AD-5's carve-out on **who writes**, not on the name prefix: *installer-**written**
 trees (`_bmad/`-regenerated launchers, `skf-*` tooling skills) stay where their installer
 writes; estate-**authored** skills move, including `bmad-agent-<station>` personas → `skills/
 personas/<station>/`.* State whether SKF's compile target becomes `skills/stations/<station>/`
 (preferred — it keeps one writer, one tree) or stays `.claude/skills/`, and route
-`.export-manifest.json` explicitly. Record the collision as a "Conflict, not override — canopy
-AD-17" note rather than leaving the inherited row reading "unchanged".
+`.export-manifest.json` explicitly. Record the collision as a "Conflict, not override — canopy:AD-17" note rather than leaving the inherited row reading "unchanged".
 
 ### H-5 — The operational/environmental envelope of the *new repo* is largely undecided
 
@@ -277,7 +276,7 @@ AD-17" note rather than leaving the inherited row reading "unchanged".
 **Fix.** New **AD-14 — "the foundry control plane is declared, not inherited"**: visibility,
 required checks, branch protection, environments, and the secret/variable inventory are a
 declared artifact created in 44.3 (a checked-in `docs/foundry/control-plane.md` naming every
-secret *by name and consumer*, never a value — consistent with canopy AD-19's
+secret *by name and consumer*, never a value — consistent with canopy:AD-19's
 "references, never values"), and CAP-1 is not done until every declared item exists in the new
 repo. Add **OQ `foundry-visibility`** and bind `actions-minutes` to it explicitly.
 
@@ -292,7 +291,7 @@ Tracked content sits **outside** those three prefixes and is load-bearing.
   `harness-profiles/cursor.toml`, `EXEMPLAR-STANDARD.md`, `POLICY_COMPOSITION_README.md`,
   `brainstorming/`, plus five dated fleet reports.
 - **`docs/governance/spec-pyforge-charter/`** — the constitutive governance kernel, cited by
-  canopy AD-21 and by Charter §6 (the rule that moves detector verdicts to Doctor) — appears in
+  canopy:AD-21 and by Charter §6 (the rule that moves detector verdicts to Doctor) — appears in
   **no AD, no Deferred row, and no Structural Seed line**, and is spec-surface-allowlisted
   (`spec_surface_allowlist.txt:8`), so C-1 means the manifest will not classify it either.
 - Structural Seed omissions vs. the companion's own target tree: `config/`, root
@@ -434,7 +433,7 @@ cutover.md already forbids blending 44.4 and 44.5, and this is comparable in siz
 | 4 | Named tech verified-current | **Partial** — pixi 0.78.0, conda-build, conda-smithy verified; `rattler-build 0.72.2` is wrong (M-1); env count wrong (M-2); `.cursor/skills` unverified and absent (M-4) |
 | 5 | Ratifies rather than contradicts the brownfield | **No** — the pap:AD-2 row asserts a zero-import boundary the host already breaks in 8 places, and miscounts the Containerfile drift 5 vs 10 (C-3) |
 | 6 | Covers CAP-1..7 | **Yes for placement, partial for success criteria** — CAP-3's and CAP-6's success tests are string-level and no AD owns strings (H-1) |
-| 7 | No new AD weakens an inherited one | **One collision** — AD-5 vs canopy AD-17 (SKF is the writer; its output shape and shared export manifest defeat the symlink model) (H-4); AD-7 vs pap:AD-2 needs a stated conflict note (C-3) |
+| 7 | No new AD weakens an inherited one | **One collision** — AD-5 vs canopy:AD-17 (SKF is the writer; its output shape and shared export manifest defeat the symlink model) (H-4); AD-7 vs pap:AD-2 needs a stated conflict note (C-3) |
 | 8 | Every owned dimension decided/deferred/open — esp. the operational envelope | **No** — visibility, secrets, branch protection, environments and the rest of `.github/` are unaddressed (H-5) |
 
 ## Suggested minimal delta for iteration 2

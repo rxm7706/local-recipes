@@ -10,7 +10,7 @@ preserved_ref: 'attempt-preserve/8-7-assignee-and-identity-link-propagation-inte
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-8-1-bidirectional-propagation.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-8-6-explicit-status-vocabulary-translation.md'
 warnings: ['oversized']
@@ -289,7 +289,7 @@ triage, not taken at face value from either reviewer's report.
     persists whichever field(s) already succeeded before a later field's failure, via a
     `_persist_merged_baseline()` closure invoked on the failure path too, excluding only the
     field that actually failed.
-  - `[medium]` `[patch]` (Edge Case Hunter) the AD-10 "missing baseline key on an established
+  - `[medium]` `[patch]` (Edge Case Hunter) the jira:AD-10 "missing baseline key on an established
     pair" backfill check was gated per-SIDE independently rather than per-PAIR, contradicting
     this spec's own Design Notes ("a statement about the PAIR... not about each field in
     isolation"). A reachable asymmetric state (one side's baseline wholly `{}`, e.g. via the
@@ -622,13 +622,13 @@ downgrade to `no_op` via the convergence check, and leave the genuinely broken s
 forever. A stateless, unconditional, independent-per-side repair has no such failure mode.
 
 **Why a missing baseline key IS a first-sync decision, per field (revised 2026-08-15, escalation
-findings 1+2).** AD-10 rule 1 ("absent baseline is a first link") was written when status was the
+findings 1+2).** jira:AD-10 rule 1 ("absent baseline is a first link") was written when status was the
 only tracked field, so "baseline is `{}`" and "the status key is absent" were identical
 conditions. Adding assignee exposes the case they never had to distinguish: a pair with an
-ESTABLISHED history for `status` but no `assignee` key. The prior design read AD-10 rule 1 as a
+ESTABLISHED history for `status` but no `assignee` key. The prior design read jira:AD-10 rule 1 as a
 statement about the PAIR ("has this pair ever converged") and silently adopted a missing-key
 field's current value without comparing sides -- reproduced live as a permanent dead feature
-(finding 1) and a silent-failure-heals-itself bug (finding 2). AD-10 rule 1 is instead read PER
+(finding 1) and a silent-failure-heals-itself bug (finding 2). jira:AD-10 rule 1 is instead read PER
 FIELD: a missing `"assignee"` key -- whether the pair's baseline is wholly empty or just missing
 that one key -- is a first-sync AD-4 decision for assignee alone, exactly parallel to how a
 wholly-new pair is decided today. If the two sides already agree, AD-4's comparison finds nothing

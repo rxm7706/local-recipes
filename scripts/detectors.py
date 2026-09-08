@@ -203,6 +203,14 @@ def _doctor_sources() -> tuple[bool, list[dict]]:
 # has no other home, is.
 _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     ("ledger-regression", "ledger-regression-check"),
+    # Wired 2026-09-08, after the false-positive class that kept it out was
+    # fixed. Judged on merge subjects alone it reported 383 done-but-unmerged
+    # findings -- 53% of every done story in the fleet -- because batched
+    # `chore/`/`docs/`/`dispatch/` PRs name no story in their merge subject.
+    # `_base_done_ids` now consults the ledger as committed at the base ref;
+    # the live count is 0 and the FAIL half (landed-but-unpromoted) is what
+    # actually gates. Offline and deterministic, like its neighbours here.
+    ("ledger-direction", "ledger-direction-check"),
     ("story-status", "story-status-check"),
     ("chain-completeness", "chain-completeness-check"),
     ("dashboard-drift", "retired-console-check"),

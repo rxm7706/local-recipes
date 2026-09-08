@@ -9,8 +9,8 @@ review_loop_iteration: 0
 followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py
 warnings: []
 deferred: []
@@ -20,7 +20,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** "Done" can still mean CLI-only. FR-39 requires 03 completeness to be mechanically verifiable across eight stations × five tiers (denominator 40), failing only when an 03 station is *declared* complete with fewer than five.
+**Problem:** "Done" can still mean CLI-only. canopy:FR-39 requires 03 completeness to be mechanically verifiable across eight stations × five tiers (denominator 40), failing only when an 03 station is *declared* complete with fewer than five.
 
 **Approach:** Land a pytest/CI check in `pyforge.steward` that always reports the 8×5 matrix and fails on false-complete 03 declarations. 01/02 fixtures (spec+script or spec+skill) stay outside the denominator and do not fail. Do not mint the missing personas/skills for the other seven stations.
 
@@ -55,7 +55,7 @@ deferred: []
 
 ## Code Map
 
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — **new** FR-39 check: `TIERS`, `STATIONS`, `DECLARED_COMPLETE`, `detect_tiers`, `report`, `check`, `FiveTierCompleteError`
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — **new** canopy:FR-39 check: `TIERS`, `STATIONS`, `DECLARED_COMPLETE`, `detect_tiers`, `report`, `check`, `FiveTierCompleteError`
 - `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — **read-only** `script_map_from_packages_root` for the CLI cell
 - `src/shared/packages/django-{station}/` — **read-only** portal tree; warden is `django_warden_fabric`
 - `src/shared/packages/django-scribe/src/django_scribe_portal/apps.py` — **read-only** real `mcp_asgi_app` (service cell pattern)
@@ -67,7 +67,7 @@ deferred: []
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — add the report+fail-on-false-complete check — FR-39 / canopy AD-14
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — add the report+fail-on-false-complete check — canopy:FR-39 / canopy:AD-14
 - `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` — cover the I/O matrix; fail if the module is gone
 
 **Acceptance Criteria:**

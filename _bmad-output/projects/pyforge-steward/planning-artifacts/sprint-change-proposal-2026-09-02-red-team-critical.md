@@ -25,7 +25,7 @@ living chain already claims closed:
   host mints from it. Every downstream gate (supervisor `start`, Lane 3 row
   slicing, MCP tool leasing) trusts the result. The module docstring says
   "Live token-exchange is deferred"; the deferral shipped as the live path.
-- **S-1 / A-3 (CAP-11 / AD-10 / RFC-2, CAP-8 / AD-8).** `redis-broker` is
+- **S-1 / A-3 (CAP-11 / canopy:AD-10 / RFC-2, CAP-8 / AD-8).** `redis-broker` is
   `noeviction` **without `maxmemory`** (unlimited), on `emptyDir`, unlimited
   resources, and it carries Celery queue + results, Channels, the event
   stream, the PEL, the DLQ and the idempotency keys. One restart loses all
@@ -49,7 +49,7 @@ these two land.
 | 2.4 | New epics needed | Done | Yes: Epic 40. The review's HIGH set (R-4…R-16) is **not** minted here — one CRITICAL epic first, then a second correct-course. |
 | 2.5 | Priority / order | Done | Epic 40 dispatches **before** any further story on this chain and before cutover Phase 1 (`python-foundry`). 40.1 and 40.2 are independent (different files) and may run in parallel. |
 | 3.1 | PRD conflicts | Done | No FR changes. FR-30 wording holds; its *consequence* gains one testable line (broker restart loses nothing). FR-31/CAP-12 intent is what 40.1 restores. PRD § 14 gets a dated paragraph. MVP unaffected. |
-| 3.2 | Architecture conflicts | Done | No AD changes. AD-7 already requires an IdP-verified root; AD-10 already says broker does not evict; AD-15 requires a per-invariant test. Both stories are AD-compliant implementations. |
+| 3.2 | Architecture conflicts | Done | No AD changes. AD-7 already requires an IdP-verified root; canopy:AD-10 already says broker does not evict; canopy:AD-15 requires a per-invariant test. Both stories are AD-compliant implementations. |
 | 3.3 | UI/UX | N/A | No portal surface changes. |
 | 3.4 | Other artifacts | Action-needed | Helm chart, values, `deploy/README.md`, `cluster-bringup.md`, `resilience-invariants.md` RFC-2/RFC-3 rows, sibling `spec-local-ocp-hybrid-environment` CAP-3 (broker supersession), Dream sizing table, two chart invariant tests re-scoped. All named in the story specs. |
 | 4.1 | Direct adjustment | Viable | Two stories, effort **M** each, risk **Low** (both are additive; the only behavior change is a fake bearer now refused and a broker that persists). |
@@ -145,7 +145,7 @@ NEW:  (unchanged) + Superseded for the BROKER role 2026-09-02 by steward Story 4
 - Realization log: dated 2026-09-02 entry (review landed; option 1 chosen;
   Epic 40 minted; HIGH set routed to a later correct-course).
 
-### PRD (`prd-pyforge-unifying-strategy-2026-08-24/prd.md` § 14)
+### PRD (`_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md` § 14)
 
 - Dated paragraph: Epic 40 precedes any further dispatch and cutover Phase 1.
 

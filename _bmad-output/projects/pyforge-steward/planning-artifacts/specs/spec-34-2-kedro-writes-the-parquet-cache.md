@@ -8,7 +8,7 @@ baseline_commit: 9d3ad9105b
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - docs/dreams/pyforge-unifying-strategy.md
 warnings: []
 deferred: []
@@ -18,9 +18,9 @@ deferred: []
 
 ## Intent
 
-**Problem:** Mode B (FR-47) has no named Kedro extract. Dashboards and autonomous SQL still have a hole toward OLTP for heavy tables.
+**Problem:** Mode B (canopy:FR-47) has no named Kedro extract. Dashboards and autonomous SQL still have a hole toward OLTP for heavy tables.
 
-**Approach:** In Atlas (the one Kedro home, AD-21), register named pipeline `query_plane_cache`. Catalog writes compressed Parquet under `data/primary/`. A scan of that file does not use an OLTP writer role. Refresh is Kedro, not Airflow, not `01_raw`.
+**Approach:** In Atlas (the one Kedro home, canopy:AD-21), register named pipeline `query_plane_cache`. Catalog writes compressed Parquet under `data/primary/`. A scan of that file does not use an OLTP writer role. Refresh is Kedro, not Airflow, not `01_raw`.
 
 ## Acceptance Criteria
 

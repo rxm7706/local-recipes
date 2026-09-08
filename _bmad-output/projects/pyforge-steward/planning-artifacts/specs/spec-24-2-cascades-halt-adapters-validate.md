@@ -7,7 +7,7 @@ baseline_commit: 07a6c360edf
 baseline_revision: 07a6c360edf
 review_loop_iteration: 0
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
 warnings: []
@@ -17,13 +17,13 @@ warnings: []
 
 ## Intent
 
-**Problem:** A buggy producer can fan out forever, event `type` can be a story-local string, and payload shape can be rejected at the stream (killing transport) instead of in the domain (FR-19, FR-20, canopy AD-8).
+**Problem:** A buggy producer can fan out forever, event `type` can be a story-local string, and payload shape can be rejected at the stream (killing transport) instead of in the domain (canopy:FR-19, canopy:FR-20, canopy:AD-8).
 
 **Approach:** Enforce `pyforgeloopdepth` ceiling 8 on publish in `django-pyforge`, register event `type` as dotted verbs in that same chrome, and reject payload shape only in consuming domain adapters. Keep CloudEvents on redis-broker Streams from 24-1.
 
 ## Boundaries & Constraints
 
-**Always:** Halt publish when `pyforgeloopdepth` reaches 8; the halt is observable (typed error, no `XADD`). Event `type` must be a dotted verb in the `django-pyforge` registry (adding a type is a chrome change). Stream boundary remains a transport: invalid `data` still `XADD`s and parses. Cite canopy AD-8 / AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
+**Always:** Halt publish when `pyforgeloopdepth` reaches 8; the halt is observable (typed error, no `XADD`). Event `type` must be a dotted verb in the `django-pyforge` registry (adding a type is a chrome change). Stream boundary remains a transport: invalid `data` still `XADD`s and parses. Cite canopy:AD-8 / canopy:AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
 
 **Block If:** Implementation would re-split Redis (20-2 already split redis-broker vs redis-cache), move CloudEvents off redis-broker, start Epic 25, or require a live cluster Redis that tests cannot replace with the in-process stream backend.
 

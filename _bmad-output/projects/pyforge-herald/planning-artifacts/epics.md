@@ -1,7 +1,7 @@
 ---
 epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
-# 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (AD-72).
+# 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
 epicCount: 18  # 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
 storyCount: 50  # 2026-09-06: 47 + Stories 18.1–18.3 (dated snapshot; the ledger enumerates).
@@ -489,7 +489,7 @@ pipeline) remain **done**. Canopy integration is additive — no rollback of shi
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -503,7 +503,7 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
 - Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
 - Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
-- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- Design station processes as hook specs + plugins (canopy:AD-21). Do not fork a process to swap a vendor.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
@@ -523,7 +523,7 @@ As a herald operator,
 I want Marp, PPTX, and `.dc.html` as exporter plugins on the shared contract,
 So that adding an export format does not fork herald.
 
-**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** today's exporters **When** the hook spec lands **Then** they are the default plugins
 **And** export success is not published as a PR quality-gate verdict
 
@@ -537,7 +537,7 @@ As an autonomous agent,
 I want a herald SKF skill from `pyforge-herald/` and a `bmad-agent-herald` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-16.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-16.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-herald/` if missing
 **And** the persona uses only `pyforge herald …` and `POST /stations/herald/mcp`
 
@@ -547,7 +547,7 @@ As a herald operator,
 I want `/stations/herald/` to show `herald deck status` for one slug,
 So that stale-mirror state is visible in HTMX without leaving the host.
 
-**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated herald-role session **When** the operator opens `/stations/herald/` **Then** one slug's status renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 

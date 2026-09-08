@@ -82,7 +82,7 @@ Summary: SKF Quick-tier content skill `pyforge-steward` compiled from `src/share
 Files:
 - `.claude/skills/pyforge-steward/` — brief, version-nested package, provenance, `active` symlink
 - `.claude/skills/bmad-agent-steward/` — launcher SKILL.md, customize.toml, golden provision-list transcript
-- `tests/meta/test_skf_steward_skill.py` / `test_steward_persona.py` — FR-37/FR-38 station-owned gates
+- `tests/meta/test_skf_steward_skill.py` / `test_steward_persona.py` — canopy:FR-37/canopy:FR-38 station-owned gates
 - `planning-artifacts/specs/spec-33-1-….md` — tracked story spec
 
 Review: 1 low patch applied; follow-up score 1 → false.

@@ -8,8 +8,8 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-27-2-pre-upgrade-job-and-dml-only-app-role.md
 warnings: []
 deferred: []
@@ -89,7 +89,7 @@ Tests: `pytest tests/policy` → 53 passed (cwd src/platform); `python -m db.sql
 
 ## Design Notes
 
-First-party = migration modules whose path sits under `src/platform/` or `src/shared/packages/django-*`. Test-only `django_pyforge.probe_portal` / `workclass_probe` are excluded. Framework apps stay Django-authored; FR-23 is the authoring gate for *our* models. Coverage is statement-subset (normalized), so langflow and dbgpt `0001` share `:1`.
+First-party = migration modules whose path sits under `src/platform/` or `src/shared/packages/django-*`. Test-only `django_pyforge.probe_portal` / `workclass_probe` are excluded. Framework apps stay Django-authored; canopy:FR-23 is the authoring gate for *our* models. Coverage is statement-subset (normalized), so langflow and dbgpt `0001` share `:1`.
 
 ## Verification
 

@@ -9,7 +9,7 @@ extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-1..7 
 surface: []
 companions:
   - cutover.md
-  - ../../architecture/architecture-python-foundry-cutover-2026-09-04/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
@@ -45,7 +45,7 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
   - **success:** The clone exists; CI is green on the empty estate; no `recipes/`
     directory; the `environment.yaml` export is automated or absent, never by hand.
     The green run is a real workflow run on a registered runner — GitHub-hosted, or the
-    remote host as self-hosted fallback (spine AD-23); a fresh-clone run of the estate
+    remote host as self-hosted fallback (spine fnd:AD-23); a fresh-clone run of the estate
     gates is provisional evidence only.
 
 - **CAP-2 — Realize the estate (Phase 1).**
@@ -139,7 +139,7 @@ the contract Epic 44 realizes, and the gate Phase 0 waits on.
 - Foundry is private, permanently (operator 2026-09-04, iteration 4): Pages and the win-64
   leg ride the paid plan; Actions minutes are a standing budget; nothing Mason submits
   carries a foundry URL.
-- CI evidence is a real run (spine AD-23): GitHub-hosted, or the remote host as self-hosted
+- CI evidence is a real run (spine fnd:AD-23): GitHub-hosted, or the remote host as self-hosted
   fallback; a fresh-clone run is provisional; with no evidence path 44.3 does not dispatch,
   and `steward budget check` (CAP-10) reports the minutes state at the confirmation.
 - Fresh repo (operator 2026-09-04): no history import; source SHAs live in the
@@ -188,10 +188,10 @@ is archived with its last SHA pinned in the foundry manifest.
 - No detector enforces a line-count cap on the living Dream; the Dream section grows
   the file past 43.1's 400-line target by design.
 - Stock Windows developers (no WSL, no Developer Mode) are a real population; the estate
-  is native for them and the host is remote (spine AD-19).
+  is native for them and the host is remote (spine fnd:AD-19).
 
 ## Open Questions
 
 None. `actions-minutes` answered 2026-09-04 (iteration 4): the evidence ladder and the
-minutes guard are spine AD-23 and CAP-10 (Story 44.15). `repo-visibility` answered the same
-day: private, permanently (spine AD-14).
+minutes guard are spine fnd:AD-23 and CAP-10 (Story 44.15). `repo-visibility` answered the same
+day: private, permanently (spine fnd:AD-14).

@@ -65,7 +65,7 @@ and research" was already physically inaccurate by this point (they had lived un
 2026-08-02 there is no separate installer PRD, architecture, brief, or Spec at all. All four
 were **consolidated** into `pyforge-marshal`'s own single brief / PRD / architecture / Spec
 (`product-brief-pyforge-marshal.md`, `prds/prd-pyforge-marshal-2026-07-25/prd.md`,
-`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`,
+`architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md`,
 `specs/spec-pyforge-marshal/SPEC.md`, each carrying a "Satellite: Genesis Installer" section
 or continued `CAP-`/`AD-` numbering) — a direct user override of the "kept separate on
 purpose" decision that had stood since the split. Only the installer's **epics** stay a

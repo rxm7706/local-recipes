@@ -8,8 +8,8 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-27-2-pre-upgrade-job-and-dml-only-app-role.md
 warnings: []
 deferred: []
@@ -45,7 +45,7 @@ deferred: []
 
 ## Code Map
 
-- `src/platform/config/settings/test.py` -- `TEST_RUNNER = django.test.runner.DiscoverRunner`; comment the FR-25 carve-out; do not set `TEST["MIGRATE"] = False`
+- `src/platform/config/settings/test.py` -- `TEST_RUNNER = django.test.runner.DiscoverRunner`; comment the canopy:FR-25 carve-out; do not set `TEST["MIGRATE"] = False`
 - `src/platform/conftest.py` -- session env only; must not invoke Liquibase
 - `src/platform/pyproject.toml` -- `addopts` `--ds=config.settings.test --reuse-db`; must not add `--nomigrations`
 - `src/platform/compose/compose.yml` -- local `manage.py migrate --noinput` (no `--fake`)
@@ -59,7 +59,7 @@ deferred: []
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/platform/config/settings/test.py` -- annotate FR-25; keep DiscoverRunner
+- `src/platform/config/settings/test.py` -- annotate canopy:FR-25; keep DiscoverRunner
 - `src/platform/tests/policy/test_test_databases_still_migrate.py` -- matrix rows (happy + four reds)
 
 **Acceptance Criteria:**
@@ -90,7 +90,7 @@ Tests: `pytest tests/policy/test_test_databases_still_migrate.py` → 9 passed (
 
 ## Design Notes
 
-Governed production DDL does not capture ephemeral DBs (FR-25, canopy AD-9 last sentence). Proof is source + settings inspection plus synthetic drift — not creating a second test database or rewriting `tests/`. Compose remains the local real-migrate path; Helm remains the fake-after-Liquibase path.
+Governed production DDL does not capture ephemeral DBs (canopy:FR-25, canopy:AD-9 last sentence). Proof is source + settings inspection plus synthetic drift — not creating a second test database or rewriting `tests/`. Compose remains the local real-migrate path; Helm remains the fake-after-Liquibase path.
 
 ## Verification
 

@@ -8,7 +8,7 @@ final_revision: '518e3747d226c9b2920f50f070338ff875e31e5f'
 review_loop_iteration: 0  # reset — contract re-issued 2026-08-10, this is a fresh build
 followup_review_recommended: false
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md'
   - '{project-root}/docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md'
 warnings: ['oversized', 'contract-reissued-2026-08-10']
@@ -33,7 +33,7 @@ item or its linked Jira Cloud issue never reaches the other side without a human
 **Approach:** Add a fifth Steward duty, `sync`, whose `reconcile` verb re-reads both linked
 items' current state (never trusts a webhook payload as the change itself), asks of each side
 **"does its current value differ from the baseline it was last synced to?"** (AD-5, with the
-baseline's shape and lifecycle fixed by AD-10), and converges the divergent side — a GitHub
+baseline's shape and lifecycle fixed by jira:AD-10), and converges the divergent side — a GitHub
 GraphQL client and a Jira REST client built on the existing `_http.py`/`keys.py` auth delegate,
 wired to a **`on: schedule`** GitHub Actions workflow template by default (zero
 infrastructure), with an OPT-IN near-real-time path in BOTH directions via
@@ -54,9 +54,9 @@ detectable at all.
   `_http.py`'s `auth_headers_for` — never build new credential/header logic (AD-2/AD-8, mirrors
   `keys.py`'s own delegate pattern exactly).
 - Control-plane state (the entity link and the per-field **baseline**) lives only as configured
-  fields on the items themselves — no sidecar store of any kind (AD-2, AD-10).
-- The baseline is a **per-field map of last-synced values, per side** (AD-10), not a timestamp.
-  Three lifecycle rules are fixed by AD-10 and are not this story's to re-decide:
+  fields on the items themselves — no sidecar store of any kind (AD-2, jira:AD-10).
+- The baseline is a **per-field map of last-synced values, per side** (jira:AD-10), not a timestamp.
+  Three lifecycle rules are fixed by jira:AD-10 and are not this story's to re-decide:
   - an **absent baseline is a first link**, not a loop candidate — reconcile it, and if both
     sides already hold differing values AD-4 decides;
   - a **missing key and a null value mean opposite things** — "field cleared on this side" is an
@@ -82,7 +82,7 @@ detectable at all.
 - No new runtime dependency beyond stdlib + the already-declared PyYAML; argparse only —
   `tests/meta/test_invariants.py::test_no_cli_framework_dependency` forbids click/typer.
 
-**Block If:** none. Q2/Q3/Q4 are resolved (AD-1 through AD-10, architecture `status: final`,
+**Block If:** none. Q2/Q3/Q4 are resolved (AD-1 through jira:AD-10, architecture `status: final`,
 amended 2026-08-10). This run's environment has no live external GitHub Projects V2 board, no
 live Jira Cloud project, and no credentials for either — expected for an unattended build of a
 greenfield external-system integration, not an intent gap. It is handled below as an
@@ -137,7 +137,7 @@ operator-executed manual verification step, not a mid-build decision to halt on.
 | Field cleared on one side | `gh.base` holds a value, `gh.value` is the explicit null sentinel | Treated as a genuine change to "empty" and propagated — never confused with "never synced", which is the key's absence | No error expected |
 | `--dry-run` on any of the above | same as above + `dry_run=True` | Same decision computed and reported; zero write calls made | No error expected |
 | Link unresolvable | the item passed on the CLI has an empty/missing identity-link field value | `reconcile` returns `ok=False` naming the unlinked item; no write attempted | Named, logged failure — never crashes, never a silent skip |
-| Baseline exceeds the vendor field-size ceiling | the serialized baseline map will not fit the configured field | Named, logged failure pointing at Mode B (AD-2/AD-10) — never falls back to a sidecar store | Named, logged failure |
+| Baseline exceeds the vendor field-size ceiling | the serialized baseline map will not fit the configured field | Named, logged failure pointing at Mode B (AD-2/jira:AD-10) — never falls back to a sidecar store | Named, logged failure |
 | Target API rejects the pushed value | e.g. Jira has no transition matching the GitHub status string | The API call's error propagates as a duty-level failure | Named, logged failure — never swallowed or reported as success |
 
 </intent-contract>
@@ -151,16 +151,16 @@ snapshot (byte-identical to review-pass-3's `4953d427...`) that still carries th
 broken timestamp loop guard (PR #389 corrected the sprint-status ledger from `done` back to
 `backlog` for exactly this reason). Nothing here is a fresh scaffold; every item below is a
 targeted MODIFY of already-landed code, replacing the timestamp mechanism with the amended
-AD-5/AD-10 per-field baseline-value mechanism. No cherry-pick is needed or performed.
+AD-5/jira:AD-10 per-field baseline-value mechanism. No cherry-pick is needed or performed.
 
 - `src/pyforge/steward/sync.py` -- MODIFY (already landed, 874 lines). Replace the timestamp
-  loop guard (`updated_at` vs. a `sync_point` field) with the AD-10 per-field baseline map:
+  loop guard (`updated_at` vs. a `sync_point` field) with the jira:AD-10 per-field baseline map:
   rename `SyncConfig`'s `*_sync_point_field_id` → `*_baseline_field_id`; replace
   `GitHubItemState`/`JiraIssueState`'s `updated_at: datetime` / `sync_point: datetime | None`
   with `baseline: dict[str, object]`; drop `_parse_timestamp` and the now-unused
   `datetime`/`timezone` imports and GraphQL/REST timestamp fields; rewrite `reconcile`'s
   decision logic and post-write refresh to compare and record values, never timestamps; add
-  `SyncBaselineTooLargeError` + the field-size-ceiling check (AD-2/AD-10's escape hatch to
+  `SyncBaselineTooLargeError` + the field-size-ceiling check (AD-2/jira:AD-10's escape hatch to
   Mode B). See Design Notes for the full algorithm.
 - `src/pyforge/steward/cli.py` -- unchanged. Already wires `sync` as the fifth duty; nothing
   here is mechanism-specific.
@@ -170,7 +170,7 @@ AD-5/AD-10 per-field baseline-value mechanism. No cherry-pick is needed or perfo
   existing bridge (`locate_http_module`); not modified.
 - `.steward/sync-config.example.yaml` -- MODIFY (already landed). Rename both
   `sync_point_field_id` keys to `baseline_field_id`; rewrite their comments to describe the
-  AD-10 per-field baseline map, not a sync-point timestamp.
+  jira:AD-10 per-field baseline map, not a sync-point timestamp.
 - `.gitignore` -- unchanged (already ignores the operator's real `.steward/sync-config.yaml`).
 - `docs/reference/sync-jira-github-workflow-templates/README.md` -- MODIFY (already landed).
   Update the two field-provisioning bullets and the manual-verification step's language from
@@ -200,7 +200,7 @@ AD-5/AD-10 per-field baseline-value mechanism. No cherry-pick is needed or perfo
 - [x] `src/pyforge/steward/sync.py` -- replace `GitHubItemState`/`JiraIssueState`'s
   `updated_at`/`sync_point` with `baseline: dict[str, object]`; add `_parse_baseline(raw, *,
   side, identifier)` (absent/empty → `{}`; malformed JSON or non-dict → `SyncAPIError`) -- the
-  AD-10 per-field baseline map read.
+  jira:AD-10 per-field baseline map read.
 - [x] `src/pyforge/steward/sync.py` -- drop `updatedAt` from `_GET_PROJECT_ITEM_QUERY` and
   `"updated"` from Jira's requested fields (unused once nothing compares against a timestamp);
   remove `_parse_timestamp` and the `datetime`/`timezone` imports.
@@ -210,7 +210,7 @@ AD-5/AD-10 per-field baseline-value mechanism. No cherry-pick is needed or perfo
 - [x] `src/pyforge/steward/sync.py` -- rewrite `reconcile`'s loop guard: `gh_changed`/
   `jira_changed` = the side's current tracked-field ("status") value differs from its own
   baseline map entry for that field, where an absent key (`dict.get(field, _MISSING)`) counts
-  as changed (AD-10 rule 1, first link — never collapsed with an explicit `None`, AD-10 rule
+  as changed (jira:AD-10 rule 1, first link — never collapsed with an explicit `None`, jira:AD-10 rule
   2). Neither changed → no-op, no writes. Exactly one changed → propagate it. Both changed →
   AD-4 conflict authority.
 - [x] `src/pyforge/steward/sync.py` -- keep the value-equality convergence check downstream of
@@ -224,12 +224,12 @@ AD-5/AD-10 per-field baseline-value mechanism. No cherry-pick is needed or perfo
   ceiling)`; add `SyncBaselineTooLargeError` and `_GITHUB_BASELINE_FIELD_CEILING` (1024,
   documented as an unverified conservative placeholder — no public GitHub Projects V2 text-field
   limit was found) / `_JIRA_BASELINE_FIELD_CEILING` (255, Jira Cloud's documented
-  "Text Field (single line)" database-level cap) enforcing AD-2/AD-10's escape hatch to Mode B.
-- [x] `src/pyforge/steward/sync.py` -- update the module docstring for the AD-5(amended)/AD-10
+  "Text Field (single line)" database-level cap) enforcing AD-2/jira:AD-10's escape hatch to Mode B.
+- [x] `src/pyforge/steward/sync.py` -- update the module docstring for the AD-5(amended)/jira:AD-10
   mechanism; remove the two now-obsolete "Design Notes correction" callouts (timestamp captured
   after the write; item-level vs. field-level staleness) that described the retired mechanism.
 - [x] `.steward/sync-config.example.yaml` -- rename both `sync_point_field_id` keys to
-  `baseline_field_id`; rewrite their comments for the AD-10 baseline map.
+  `baseline_field_id`; rewrite their comments for the jira:AD-10 baseline map.
 - [x] `docs/reference/sync-jira-github-workflow-templates/README.md` -- update the two
   field-provisioning bullets and the manual-verification step's language accordingly.
 - [x] `src/shared/packages/pyforge-steward/tests/conformance/test_sync_reconcile_propagation.py`
@@ -881,12 +881,12 @@ is gone. `FIELD = "status"` is this story's one tracked field throughout (matche
 gh, jira = read_both_sides(github_item_id, jira_issue_key, config)   # resolves the missing id via the link field
 if gh.link is empty or jira.link is empty: return ok=False, "unlinked: <which side>"
 
-# AD-5 (amended) / AD-10: a side has changed when its current tracked-field value differs from
+# AD-5 (amended) / jira:AD-10: a side has changed when its current tracked-field value differs from
 # the value its OWN baseline map records for that field. _MISSING is a sentinel distinct from
-# None -- an absent key means "never synced" (AD-10 rule 1: not a loop candidate, reconcile as
-# a first link); a present key holding None means "synced, and was an explicit clear" (AD-10
+# None -- an absent key means "never synced" (jira:AD-10 rule 1: not a loop candidate, reconcile as
+# a first link); a present key holding None means "synced, and was an explicit clear" (jira:AD-10
 # rule 2). Collapsing those two would make a deliberate clear indistinguishable from a field the
-# engine has never seen -- exactly the trap AD-10 exists to name.
+# engine has never seen -- exactly the trap jira:AD-10 exists to name.
 gh_base    = gh.baseline.get(FIELD, _MISSING)
 jira_base  = jira.baseline.get(FIELD, _MISSING)
 gh_changed   = gh_base   is _MISSING or gh.status   != gh_base
@@ -938,7 +938,7 @@ write new_jira_map to jira's baseline field
     # -- the cross-system VALUE write above may already have committed even if this step fails)
 ```
 
-**Baseline serialization & field-size ceiling** (AD-2/AD-10's documented escape hatch to Mode
+**Baseline serialization & field-size ceiling** (AD-2/jira:AD-10's documented escape hatch to Mode
 B): `serialize_baseline` is `json.dumps(map, sort_keys=True, separators=(",", ":"))`, then
 compared against a per-vendor ceiling constant before any write is attempted:
 - `_JIRA_BASELINE_FIELD_CEILING = 255` — Jira Cloud's "Text Field (single line)" custom field
@@ -1144,7 +1144,7 @@ run's `baseline_revision` was corrected from the stale `c8503d9def...` to reflec
 
 **What this session did.** No cherry-pick was needed or performed (the code already existed on
 this branch). Modified the already-landed `sync.py` (and its example config, docs, and three
-test files) in place: replaced the timestamp-based loop guard with the amended AD-5/AD-10
+test files) in place: replaced the timestamp-based loop guard with the amended AD-5/jira:AD-10
 per-field baseline-value mechanism per the re-issued `<intent-contract>` and this file's rewritten
 Design Notes. Full detail in `## Code Map` / `## Tasks & Acceptance` / `## Design Notes` above,
 and the exact diff is commit `518e3747d2` (single commit, 6 files, +531/-293).

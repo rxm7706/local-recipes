@@ -8,8 +8,8 @@ review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred: []
 ---
@@ -18,15 +18,15 @@ deferred: []
 
 ## Intent
 
-**Problem:** FR-32 / canopy AD-19 require that rendered Helm (and the OCP overlay) carry Secret *names and keys*, never secret *values*. Chart templates already wire `secretKeyRef` (parent AD-12), but nothing fails a render when a value is injected — a git-diff of the chart could still leak credentials.
+**Problem:** canopy:FR-32 / canopy:AD-19 require that rendered Helm (and the OCP overlay) carry Secret *names and keys*, never secret *values*. Chart templates already wire `secretKeyRef` (parent canopy:AD-12), but nothing fails a render when a value is injected — a git-diff of the chart could still leak credentials.
 
 **Approach:** Add a check over `helm template` YAML that fails if a secret value appears (canary `--set-string` plus secret-named env `value:`). Pods keep env / secret mounts. The app must not call a secrets HTTP API. Vault injector, secrets CSI, and an extra secrets sidecar stay out of this chain.
 
 ## Boundaries & Constraints
 
-**Always:** Success test is rendered Helm/Kustomize contains names and keys, never values. Cite FR-32, canopy AD-19, parent AD-12. Spec lives at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Guard-removed companions (Story 9.6) for every assertion helper.
+**Always:** Success test is rendered Helm/Kustomize contains names and keys, never values. Cite canopy:FR-32, canopy:AD-19, parent canopy:AD-12. Spec lives at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Guard-removed companions (Story 9.6) for every assertion helper.
 
-**Block If:** Implementation would add Vault-in-app, Vault injector, secrets CSI, or an extra secrets sidecar (parent AD-14 / fourth kind — needs a dated Dream first).
+**Block If:** Implementation would add Vault-in-app, Vault injector, secrets CSI, or an extra secrets sidecar (parent canopy:AD-14 / fourth kind — needs a dated Dream first).
 
 **Never:** Start 26.3, 26.4, 27-x, or 28-1. Author OpenFeature or Liquibase recipes. Cluster secret-manager wiring (External Secrets) inside the platform image. `import pyforge` under `src/platform/`. `scripts/bmad-switch`. Other stations' ledgers.
 
@@ -45,7 +45,7 @@ deferred: []
 
 ## Code Map
 
-- `src/platform/deploy/charts/platform/` -- AD-12 chart: `existingSecret` name only; `platform.djangoEnv` / postgres / redis / sidecar `secretKeyRef`; chart must not grow `kind: Secret` or credential defaults
+- `src/platform/deploy/charts/platform/` -- canopy:AD-12 chart: `existingSecret` name only; `platform.djangoEnv` / postgres / redis / sidecar `secretKeyRef`; chart must not grow `kind: Secret` or credential defaults
 - `src/platform/deploy/charts/platform/templates/_helpers.tpl` -- `platform.existingSecretName`, `platform.djangoEnv` (DJANGO_SECRET_KEY, DATABASE_URL, REDIS_PASSWORD via `secretKeyRef`; REDIS_*_URL uses `$(REDIS_PASSWORD)` expansion)
 - `src/platform/deploy/overlays/ocp/` -- thin Route overlay; same secret contract via core chart
 - `src/platform/tests/test_chart_invariants.py` -- reuse `_render`, `_pod_specs_by_component`, `requires_helm`; add 26.2 helpers + helm proof + ungated guard-removed companions
@@ -55,7 +55,7 @@ deferred: []
 
 **Execution:**
 - `src/platform/tests/test_chart_invariants.py` -- helpers + helm/canary proof + guard-removed companions + app-source HTTP-API scan
-- `src/platform/deploy/charts/platform/values.yaml` -- comment that values hold names/keys only (canopy AD-19); no credential defaults
+- `src/platform/deploy/charts/platform/values.yaml` -- comment that values hold names/keys only (canopy:AD-19); no credential defaults
 
 **Acceptance Criteria:**
 - Given `helm template` (or overlay) output, when the secret check runs, then it fails if a secret *value* appears.
@@ -76,9 +76,9 @@ deferred: []
 - addressed_findings:
   - `[low]` `[patch]` ruff S105/PT018/PLC0207/B007 on the canary constant and helpers
   - `[low]` `[patch]` split secretKeyRef name vs key assertions so a missing key is not masked
-  - `[low]` `[defer]` no Secret volume file-mount in the chart today — delivery is env `secretKeyRef`; adding unused volumes is speculative (parent AD-12 allows either)
+  - `[low]` `[defer]` no Secret volume file-mount in the chart today — delivery is env `secretKeyRef`; adding unused volumes is speculative (parent canopy:AD-12 allows either)
   - `[reject]` Kustomize render — this chain ships Helm (+ OCP Helm overlay), not Kustomize
-  - `[reject]` wire External Secrets / cluster manager — canopy AD-19, out of chain
+  - `[reject]` wire External Secrets / cluster manager — canopy:AD-19, out of chain
   - `[reject]` scan compose.yml placeholders — not a pod spec
   - `[medium]` `[reject]` "must add Vault to prove the helper" — guard-removed companions already inject vault/CSI/sidecar synthetics
 
@@ -99,7 +99,7 @@ Summary: Helm-render check fails if a secret value (canary or inline env) appear
 
 Files changed:
 - `src/platform/tests/test_chart_invariants.py` -- 26.2 helpers, helm/canary proof, guard-removed companions
-- `src/platform/deploy/charts/platform/values.yaml` -- AD-19 comment
+- `src/platform/deploy/charts/platform/values.yaml` -- canopy:AD-19 comment
 - this spec
 
 Review: 2 low patches, 1 deferred (unused secret volumes), 4 rejected.

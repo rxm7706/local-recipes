@@ -27,7 +27,7 @@ baseline_revision: 0e1a41be0f
 
 ## Boundaries & Constraints
 
-**Never:** AD-4 / AD-17 topology or chart 12.1 rewrites (factors as seams only). Never `scripts/bmad-switch`. Never auto-merge. Finalize steward ledger only. Do not touch marshal 20-6 / PR #691. Skip 12-7 forever.
+**Never:** AD-4 / pap:AD-17 topology or chart 12.1 rewrites (factors as seams only). Never `scripts/bmad-switch`. Never auto-merge. Finalize steward ledger only. Do not touch marshal 20-6 / PR #691. Skip 12-7 forever.
 
 </intent-contract>
 

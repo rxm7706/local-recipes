@@ -8,7 +8,7 @@ baseline_revision: 844a4ff461376678408bba63fbed19dfeb29f91c
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred:
   - summary: >-
@@ -67,8 +67,8 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` -- official SDK registration -- FR-11 bring-not-duplicate
-- `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` -- dual-era POST face helpers -- canopy AD-5
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` -- official SDK registration -- canopy:FR-11 bring-not-duplicate
+- `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` -- dual-era POST face helpers -- canopy:AD-5
 - `src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py` -- lazy atlas server mount -- host must not import `pyforge.*`
 - `src/platform/config/asgi.py` -- pattern dispatch + lifespan -- one ASGI process
 - `pixi.toml` -- platform/atlas `mcp` 2.x -- dual-era needs `mcp` 2

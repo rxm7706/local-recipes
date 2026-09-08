@@ -15,7 +15,7 @@ surface: []          # Governs nothing, DELIBERATELY — and no longer because t
 companions:
   # The architecture that answers Q2/Q3/Q4 below. Load-bearing: its ADs are the
   # build contract Epic 8's stories are written against.
-  - ../../architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/jira-github-projects-sync.md
   - ../../../../../../docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md
@@ -92,7 +92,7 @@ accidentally DDoS itself.
     `last_sync_timestamp`). **Neither survived**: the time-based check is unimplementable under
     AD-2 (proven by trace, steward 8-1), and the identity check does not exist under
     `trigger=schedule` or in Mode B. AD-5 now fixes the mechanism as a value comparison against
-    a per-field baseline (AD-10); this Spec no longer leaves it open.
+    a per-field baseline (jira:AD-10); this Spec no longer leaves it open.
   - **success:** a demonstrated (not merely claimed) test in which a synced update provably
     does not echo: N round-trips of a single human change produce exactly one propagation, not
     N. Under AD-5 this holds **by construction** — after one propagation both sides equal the

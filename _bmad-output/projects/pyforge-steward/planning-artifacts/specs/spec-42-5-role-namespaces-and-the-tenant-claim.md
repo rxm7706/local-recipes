@@ -54,7 +54,7 @@ reads the tenant prefix, not a bare group.
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `42-5-role-namespaces-and-the-tenant-claim`. Host never imports `pyforge.*`. Roles are re-read from the token per request (AD-15). Mint (40.1) reads the same parser.
+Ledger key `42-5-role-namespaces-and-the-tenant-claim`. Host never imports `pyforge.*`. Roles are re-read from the token per request (canopy:AD-15). Mint (40.1) reads the same parser.
 
 **Block If:** Implementation would store roles in Django groups as the authority, or leave bare names accepted silently.
 

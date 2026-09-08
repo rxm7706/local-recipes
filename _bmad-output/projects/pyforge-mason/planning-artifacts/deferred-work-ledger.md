@@ -726,7 +726,7 @@ status: open
 
 - source_spec: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
   summary: Mason mounts as Canopy station 3. Portal (`/stations/mason/`), MCP face, SKF domain skill (`pyforge-mason`), `Agent-Mason` persona, CloudEvents producer/consumer wiring, and PostgreSQL-first boot reconcile (steward S-25.4) are steward-delivered — not new mason epics beyond Epic 9.
-  evidence: Phase-5 `bmad-correct-course` 2026-08-24 (headless-express). Mason Epics 1–9 cover the CLI packaging factory only. Five-tier symmetry gaps (portal, MCP, persona; SKF skill additive to hand-authored CFE) bind to steward Epics 19, 21, 24, 29. MinIO/object-store boot scan is explicitly forbidden for mason (parent AD-1 amended; steward S-25.4: reconcile PostgreSQL + RWX files). `conda-forge-expert` remains hand-authored per canopy AD-17. Liquibase/OpenFeature/cachebox packaging is operator-owned (steward S-26.3), outside mason epic chain.
+  evidence: Phase-5 `bmad-correct-course` 2026-08-24 (headless-express). Mason Epics 1–9 cover the CLI packaging factory only. Five-tier symmetry gaps (portal, MCP, persona; SKF skill additive to hand-authored CFE) bind to steward Epics 19, 21, 24, 29. MinIO/object-store boot scan is explicitly forbidden for mason (parent AD-1 amended; steward S-25.4: reconcile PostgreSQL + RWX files). `conda-forge-expert` remains hand-authored per canopy:AD-17. Liquibase/OpenFeature/cachebox packaging is operator-owned (steward S-26.3), outside mason epic chain.
   location: `_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md` § Canopy obligations (2026-08-24)
   origin: bmad-correct-course Phase 5 headless-express 2026-08-24
   severity: medium
@@ -1427,10 +1427,12 @@ status: open
   origin: spec-deferred c0fc10a4d69f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md:2547 (Story 43.6) — the story this entry defers to
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md (Story 43.7) — the story this entry defers to
   status: open
 
   verified: 2026-09-08 — still-open — CORRECTED POINTER: the story this entry defers to has CLOSED WITHOUT DOING IT. steward `43-6-platform-image-moves-to-python-3-14` reads `done` in the tracked ledger (`sprint-status-ledger.yaml:150`), but its acceptance criteria (`epics.md:2547-2556`) are pin-flip, `pixi lock` resolution, regenerated `environment.yaml`, and an `import pyforge.atlas, pyforge.doctor` smoke inside the image -- none of which is the Celery REST round-trip or SQLite metadata-store runtime validation this entry describes. Searched steward's epics for `Celery REST` / `round-trip` / `SQLite metadata`: zero hits in any story. So the validation is not merely late, it is unowned: 43.6 can never pick it up again. Re-homing it to a named story is the action this entry now needs.
+
+  re-homed: 2026-09-08 — steward **Story 43.7** ("Sidecar runtime validation on Python 3.14") was authored to own this, and `43-7-sidecar-runtime-validation-on-python-3-14: backlog` added to steward's tracked ledger. `location:` above now points at it. ALSO: this entry's recorded blocker is STALE and no longer applies -- it says `dbgpt-ext-rag`'s `onnxruntime <=1.18.1` cap has no cp314 build, but `pixi list -e dbgpt-sidecar` resolves `python 3.14.7`, `dbgpt-app 0.8.2`, `dbgpt-ext-rag 0.8.2` and `onnxruntime 1.28.0 py314h112547c_0_cpu` (verified live 2026-09-08). 43.7 is not blocked on a solve; the missing thing is runtime coverage -- `platform-ci`'s `container-dbgpt` job polls `/api/health` for 200 and asserts nothing else.
 
 ### DW-13-2-3: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
 

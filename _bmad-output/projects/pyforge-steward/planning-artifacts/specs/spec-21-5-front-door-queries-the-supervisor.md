@@ -8,7 +8,7 @@ baseline_revision: e52e6203512b1de3ea67202562bfc8a9bc0f9183
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred:
   - summary: >-
@@ -23,7 +23,7 @@ deferred:
       load_board_rows has no LIMIT; a large run_state table can miss the
       500ms budget.
     evidence: |-
-      FR-42 budget vs unbounded SELECT; retention is not this story.
+      canopy:FR-42 budget vs unbounded SELECT; retention is not this story.
     location: >-
       src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
     severity: low
@@ -39,7 +39,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Always:** Query `django_pyforge.supervisor.query_board` only. Ingest timing in `complete_run`, not at page generation. Cross-machine visibility is the same PostgreSQL (second DB connection). FR-26 budget is 500ms (`QUERY_BUDGET_SECONDS`). Live board is not a Wagtail field. Parent AD-2: no `import pyforge` under `src/platform/`. Physical writes under `_bmad-output/projects/pyforge-steward/` plus the Code Map. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
+**Always:** Query `django_pyforge.supervisor.query_board` only. Ingest timing in `complete_run`, not at page generation. Cross-machine visibility is the same PostgreSQL (second DB connection). canopy:FR-26 budget is 500ms (`QUERY_BUDGET_SECONDS`). Live board is not a Wagtail field. Parent AD-2: no `import pyforge` under `src/platform/`. Physical writes under `_bmad-output/projects/pyforge-steward/` plus the Code Map. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
 **Block If:** Implementation would need MinIO, Liquibase 27-1, a fifth PostgreSQL schema, or `pyforge.*` under `src/platform/`.
 
@@ -59,7 +59,7 @@ deferred:
 
 ## Code Map
 
-- `src/shared/packages/django-pyforge/src/django_pyforge/models.py` — add `station`, `started_at`, `heartbeat_at`, `completed_at`, `duration_ms` on `RunState` (21.1 deferred FR-41 columns here)
+- `src/shared/packages/django-pyforge/src/django_pyforge/models.py` — add `station`, `started_at`, `heartbeat_at`, `completed_at`, `duration_ms` on `RunState` (21.1 deferred canopy:FR-41 columns here)
 - `src/shared/packages/django-pyforge/src/django_pyforge/migrations/0003_run_state_timing.py` — Django AddField only; no CREATE SCHEMA
 - `src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py` — persist station/timestamps in `publish_start` / `complete_run`; add `query_board` (live + completed timing), `SupervisorUnavailableError`, 500ms statement timeout, cache last-ok
 - `src/platform/platformapp/front_door/views.py` — **new** `runs_board` calls `query_board` only
@@ -73,9 +73,9 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `django_pyforge/models.py` + `migrations/0003_*.py` — timing columns — FR-41
-- `django_pyforge/supervisor.py` — `query_board` + ingest in `complete_run` — AD-12
-- `platformapp/front_door/views.py` + `urls.py` + template + `config/urls.py` — `/runs/` — FR-40/FR-42
+- `django_pyforge/models.py` + `migrations/0003_*.py` — timing columns — canopy:FR-41
+- `django_pyforge/supervisor.py` — `query_board` + ingest in `complete_run` — canopy:AD-12
+- `platformapp/front_door/views.py` + `urls.py` + template + `config/urls.py` — `/runs/` — canopy:FR-40/canopy:FR-42
 - `src/platform/tests/test_front_door_queries_supervisor.py` — I/O matrix
 
 **Acceptance Criteria:**

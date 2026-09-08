@@ -26,7 +26,7 @@ warnings: []
 - Internal-registry push is the canonical image path (`podman login/tag/push` → ImageStream); never `--docker-image` / host-socket shortcuts.
 - Platform image build uses repo-root context: `podman|docker build -f src/platform/Containerfile -t … .` (Story 10.3 contract).
 - Keys inventory stores metadata only — never pull-secret JSON, kubeadmin password, or PAT values.
-- helm/kubectl from `platform-dev` pixi env (AD-16).
+- helm/kubectl from `platform-dev` pixi env (pap:AD-16).
 
 **Block If:** none — documentation + inventory seeding only; live cluster not required for this story.
 

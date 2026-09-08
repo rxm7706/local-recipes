@@ -17,7 +17,7 @@ final_revision: 'c0c66f86daccf383ab628230d7130852c73eba76'
 
 **Problem:** `steward deploy dashboard` (`deploy.py::build_dashboard`) triggers a full
 `docs/dashboard/` rebuild with no precondition on Steward's own tracked
-`sprint-status-ledger.yaml`. Per AD-71, Marshal produces that ledger and owns its
+`sprint-status-ledger.yaml`. Per marshal:AD-71, Marshal produces that ledger and owns its
 currency; Steward must only ever publish what it says, never invent a fallback when it
 can't be read — today nothing checks the ledger exists before building, so a missing or
 unreadable ledger is silently invisible rather than a named refusal.

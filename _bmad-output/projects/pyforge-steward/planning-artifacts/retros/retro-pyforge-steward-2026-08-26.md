@@ -141,7 +141,7 @@ explicitly evergreen: CAP-1..18 closeout is a dated slice, not the end of the co
 ## Rule-2 / conda-forge posture (stated, not skipped)
 
 This period's packaging touchpoints — the OpenFeature four + `cachebox` 5.x (26.3) and
-Liquibase ≥5.0.4 (27.1) — were **operator-owned feedstock work** per canopy AD-16; the
+Liquibase ≥5.0.4 (27.1) — were **operator-owned feedstock work** per canopy:AD-16; the
 station's stories pinned and consumed, they did not author recipes, so no CFE-skill retro
 is owed *by this retro*. The feedstock efforts themselves carry their own Rule-2
 obligations where they were executed. (Recorded explicitly per the repo rule that a retro

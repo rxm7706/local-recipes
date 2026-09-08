@@ -26,7 +26,7 @@ needed for DB-GPT's FastAPI mount, including the AgenticData text-to-SQL router 
 against both `dbgpt-app`'s conda-forge metadata and DB-GPT's own upstream `pyproject.toml`
 (both the `v0.8.1` tag and unreleased `main`).
 
-**Resolution already recorded:** per AD-14 ("sidecar fallback only on demonstrated
+**Resolution already recorded:** per pap:AD-14 ("sidecar fallback only on demonstrated
 pluggability failure, Dream first"), DB-GPT moves to `db-gpt-django-plugin`'s existing
 **Pattern B** (Celery + `docker-compose.yml`-managed microservice) for this integration.
 Dated in `docs/dreams/db-gpt-django-plugin.md` + `docs/dreams/python-agent-platform.md`
@@ -71,7 +71,7 @@ addition, which is why this is a correct-course pass rather than a direct spec t
 - **SPEC.md (CAP-3 — "DB-GPT joins as a pluggable app"):** intent currently assumes Pattern A
   universally. Needs rewording to describe pattern selection as configurable; CAP-3's actual
   goal (DB-GPT usable from the platform) is unchanged and still fully achievable.
-- **ARCHITECTURE-SPINE.md (status: final, AD-1..AD-16):** needs a new **AD-17** formalizing the
+- **ARCHITECTURE-SPINE.md (status: final, AD-1..pap:AD-16):** needs a new **pap:AD-17** formalizing the
   config-driven, per-engine pattern-selection seam, plus updates to the "Consumed by" table for
   11.2/11.3/11.4 (and 10.3's extension). This is the one genuinely new piece of architecture.
 - **Dream files:** already updated (PR #573) — no further action.
@@ -90,7 +90,7 @@ addition, which is why this is a correct-course pass rather than a direct spec t
 
 ## 3. Recommended Approach
 
-**Option 1 — Direct Adjustment (RECOMMENDED).** Modify 11-2/11-3/11-4's specs, add AD-17, add
+**Option 1 — Direct Adjustment (RECOMMENDED).** Modify 11-2/11-3/11-4's specs, add pap:AD-17, add
 one new story for the sidecar image. Effort: **Medium** — 11-2's ASGI-dispatcher design is
 discarded, but the schema-migration and settings-wiring groundwork already built (preserved on
 the backup branch) is pattern-agnostic per the Dream's storage-rule constraint and is largely
@@ -109,7 +109,7 @@ would misrepresent what was actually built and verified.
 
 ## 4. Detailed Change Proposals
 
-**New — AD-17 (ARCHITECTURE-SPINE.md):** "Engine integration pattern (A vs. B) is a per-engine
+**New — pap:AD-17 (ARCHITECTURE-SPINE.md):** "Engine integration pattern (A vs. B) is a per-engine
 configuration switch, not a hardcoded fork." A named config seam (e.g. a
 `PLATFORM_ENGINE_PATTERN` registry/setting keyed per engine) that the ASGI dispatcher and
 Celery routing consult to decide whether an engine is in-process-mounted (Pattern A) or
@@ -122,10 +122,10 @@ OLD: Given the dbgpt_integration app, Then a Django data migration provisions db
 (...); the dispatcher routes /api/dbgpt/ (stripped); (...) a text-to-SQL round-trip succeeds
 through the mount.
 
-NEW: Given the dbgpt_integration app configured for Pattern B (AD-17), Then a Django data
+NEW: Given the dbgpt_integration app configured for Pattern B (pap:AD-17), Then a Django data
 migration provisions dbgpt_schema (Django ORM never crosses in; DB-GPT's Alembic never
 touches public) exactly as before; the sidecar (docker-compose-managed, its own FastAPI/AWEL
-process) is registered in the AD-17 pattern registry as dbgpt: B; requests route to it via
+process) is registered in the pap:AD-17 pattern registry as dbgpt: B; requests route to it via
 the Celery/Redis path (11.3) rather than an in-process ASGI mount; DBGPT_SESSION_STORAGE_TYPE
 =db plus disabled local paths still apply inside the sidecar; a text-to-SQL round-trip
 succeeds end-to-end through the sidecar.
@@ -140,7 +140,7 @@ OLD: Given Celery over Redis, Then LLM/AWEL work dispatches to workers that call
 internally (never through the public edge) (...)
 
 NEW: Given Celery over Redis, Then LLM/AWEL work dispatches to workers that call each engine
-per its AD-17 pattern — Pattern-A engines in-process, Pattern-B engines (DB-GPT) via a REST
+per its pap:AD-17 pattern — Pattern-A engines in-process, Pattern-B engines (DB-GPT) via a REST
 call to the sidecar's AWEL endpoint (never through the public edge) — the host stays
 responsive under a long-running agent task, and the new failure mode (timeout / partial
 result, now including a sidecar-unreachable case) is named and handled.
@@ -164,13 +164,13 @@ not assume Pattern A universally.
 
 **New — Story 10.5: The DB-GPT sidecar image + docker-compose wiring:**
 ```
-Type: infra • Effort: M • Deps: S-10.3, S-11.2 • FR/AD: spec-python-agent-platform CAP-6, AD-17
+Type: infra • Effort: M • Deps: S-10.3, S-11.2 • FR/AD: spec-python-agent-platform CAP-6, pap:AD-17
 Surface: src/platform/compose/dbgpt/, platform CI
 
-Given DB-GPT's Pattern-B deviation (AD-14, dated in db-gpt-django-plugin.md), Then a
+Given DB-GPT's Pattern-B deviation (pap:AD-14, dated in db-gpt-django-plugin.md), Then a
 docker-compose service builds and runs DB-GPT as its own container (model worker + API
 server), rootless-clean under the same Docker∩Podman intersection discipline as Story 10.3's
-image, wired into the local-dev tiers (AD-16) and CI so 11.2's sidecar integration is
+image, wired into the local-dev tiers (pap:AD-16) and CI so 11.2's sidecar integration is
 testable end-to-end without a manual DB-GPT setup step.
 
 Rationale: 10.3 shipped "one image, both engines" before this deviation existed; this is the
@@ -189,7 +189,7 @@ started, revisit at kickoff), PRD, UX.
 unattended story work) — once this proposal is approved and the artifact edits below land.
 
 **Action items on approval:**
-1. Add AD-17 to `ARCHITECTURE-SPINE.md`; update its "Consumed by" table.
+1. Add pap:AD-17 to `ARCHITECTURE-SPINE.md`; update its "Consumed by" table.
 2. Update CAP-3 in `SPEC.md` to describe configurable pattern selection.
 3. Re-scope 11-2/11-3/11-4 in `epics.md` per the diffs above.
 4. Add Story 10.5 to `epics.md`; add its ledger entry (`backlog`).
@@ -200,5 +200,5 @@ unattended story work) — once this proposal is approved and the artifact edits
 
 **Success criteria:** 11-2 lands a working DB-GPT sidecar integration verified end-to-end
 (text-to-SQL round-trip through the sidecar), 11-3/11-4 extend cleanly onto the same seam,
-and the AD-17 config switch is exercised by at least one real pattern flip in review (proving
+and the pap:AD-17 config switch is exercised by at least one real pattern flip in review (proving
 it's genuinely a config change, not vaporware).
