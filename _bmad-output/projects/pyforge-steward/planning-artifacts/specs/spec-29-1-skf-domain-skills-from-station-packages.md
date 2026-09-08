@@ -81,7 +81,7 @@ warnings: []
 
 Proof station is **scribe**, not atlas (`cf-atlas-legacy` already exists) and not a persona. Public contract is the `scribe` CLI (package AD-7): `__init__.py` exports only `__version__`. SKF extract of `__init__.py` + `cli.py` yields `capture_cmd`, `graph_compile`, `recall_cmd`, `main`.
 
-Export is optional this story: AD-17 says export is the **only** allowed write into CLAUDE.md/AGENTS.md; skipping export keeps those files clean.
+Export is optional this story: canopy:AD-17 says export is the **only** allowed write into CLAUDE.md/AGENTS.md; skipping export keeps those files clean.
 
 Personas (CAP-16) consult this content skill later; they are BMAD launcher skills, not SKF output.
 

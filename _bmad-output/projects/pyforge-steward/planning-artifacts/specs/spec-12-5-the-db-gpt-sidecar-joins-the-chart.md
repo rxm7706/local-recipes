@@ -29,9 +29,9 @@ final_revision: a16e8686f0687f946be2f319d5ca09e5eaf48af6
 
 ## Boundaries & Constraints
 
-**Always:** Reuse compose/10.5 sidecar image reference patterns. Chart never renders Secrets with credential defaults (AD-12).
+**Always:** Reuse compose/10.5 sidecar image reference patterns. Chart never renders Secrets with credential defaults (pap:AD-12).
 
-**Never:** Live-cluster deploy claims (AD-16 Tier-3 attended-only). No Redis hardening (12.6) or OCP Route changes in this story.
+**Never:** Live-cluster deploy claims (pap:AD-16 Tier-3 attended-only). No Redis hardening (12.6) or OCP Route changes in this story.
 
 </intent-contract>
 

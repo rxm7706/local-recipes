@@ -31,7 +31,7 @@ neither is a licence for a fourth piece.
 Dream `foundry-baas-capability-gaps` § *Reopening AD-1*, folded into
 `docs/dreams/pyforge-unifying-strategy.md` the same day; record: `pyforge-steward`
 `sprint-change-proposal-2026-09-05-ad-1-reopen.md`). This rule is design-review discipline — a
-bound on operational surface — and has never rested on air-gap parity (that is AD-13). Lane 1
+bound on operational surface — and has never rested on air-gap parity (that is pap:AD-13). Lane 1
 media stays on a `ReadWriteMany` PVC (canopy:AD-13, storage-class prerequisite added the same
 day). No exception granted. Exception procedure: canopy spine § *Conflict, not override —
 parent AD-1*.
@@ -98,41 +98,41 @@ fixes travel as upstream issues/PRs or as runtime-validated feedstock maintenanc
 factory (e.g., the bcrypt loosening) — never as vendored patches or forks inside
 `src/platform/`.
 
-**AD-10 — The image is the Docker∩Podman intersection: UBI-minimal, multi-stage,
+**pap:AD-10 — The image is the Docker∩Podman intersection: UBI-minimal, multi-stage,
 rootless-clean.** One UBI-minimal multi-stage Containerfile: secrets only via the
 `--mount=type=secret` form both BuildKit and `podman build --secret`/buildah honor, OCI
 manifests, no Docker-only extensions. It runs rootless under an arbitrary UID (the OCP
 `restricted-v2` predictor), CI builds and runs it under BOTH engines, and rootless Podman is
 the reference posture.
 
-**AD-11 — The chart core is vanilla Kubernetes; OCP is a thin Route overlay; GKE is a
+**pap:AD-11 — The chart core is vanilla Kubernetes; OCP is a thin Route overlay; GKE is a
 profile.** The core chart holds only plain Deployment/Service/Ingress (or Gateway API)
 resources — nothing OCP-specific in it; OCP specifics live in a thin overlay, and GKE runs
 as a CI smoke profile, never a second implementation.
 
-**AD-12 — Credentials enter only via env and secret mounts.** Build-time: the
-`--mount=type=secret` form (AD-10); run-time: K8s Secrets surfaced through the
+**pap:AD-12 — Credentials enter only via env and secret mounts.** Build-time: the
+`--mount=type=secret` form (pap:AD-10); run-time: K8s Secrets surfaced through the
 `env()`-split settings. No credential is committed, baked into an image layer, or read
 through a bespoke config channel.
 
-**AD-13 — Air-gap parity is a failing check, not a warning.** A build + deploy executed with
+**pap:AD-13 — Air-gap parity is a failing check, not a warning.** A build + deploy executed with
 external egress blocked must succeed end-to-end — image from an internal registry, lockfile
 resolved from mirror-only channels, zero CDN references in served assets. Any external
 reference FAILS the check.
 
-**AD-14 — Sidecar fallback only on demonstrated pluggability failure, Dream first.** Pattern
+**pap:AD-14 — Sidecar fallback only on demonstrated pluggability failure, Dream first.** Pattern
 A (pluggable Django application) is the default for every engine; a per-engine sidecar
 container is admissible only after a demonstrated dependency- or lifecycle-isolation
 failure, and the deviation is recorded as a dated entry in the owner Dream *before* the
 sidecar lands.
 
-**AD-15 — Platform CI is paths-filtered; repo ripples reconcile in the causing PR.**
+**pap:AD-15 — Platform CI is paths-filtered; repo ripples reconcile in the causing PR.**
 Platform jobs filter on `paths: [src/platform/**]` with `working-directory: src/platform`
 defaults — factory and platform jobs never pay for each other; platform PRs take the
 `maintenance` label; the env-count ripple (environment.yaml export, llms-full catalog,
 bmad-drift baseline) reconciles in the same PR that adds or changes the env.
 
-- **AD-16 — Local-first development on the guaranteed baseline.** The guaranteed developer
+- **pap:AD-16 — Local-first development on the guaranteed baseline.** The guaranteed developer
   baseline is exactly: pixi, conda-forge (or an internal Artifactory conda mirror), VS Code,
   and GitHub Copilot — on Windows the posture is WSL2. Every development dependency ships as
   a conda package through pixi: a `platform-dev` feature provisions per-user `postgresql` +
@@ -153,20 +153,20 @@ stand in; a real Redis needs WSL2 or a remote. The bmad-loop machinery (tmux) is
 Tier 2 is moot natively: Docker Desktop and Podman machine both arrive on a WSL2 backend, so
 containers on Windows imply WSL2 regardless.
 
-**AD-17 — Engine integration pattern is a per-engine configuration switch, never a fork
-(2026-08-21).** AD-14's Pattern A / Pattern B choice is a named, per-engine setting — e.g. a
+**pap:AD-17 — Engine integration pattern is a per-engine configuration switch, never a fork
+(2026-08-21).** pap:AD-14's Pattern A / Pattern B choice is a named, per-engine setting — e.g. a
 `PLATFORM_ENGINE_PATTERN` registry keyed by engine (`{"langflow": "A", "dbgpt": "B"}`) — that
 the ASGI dispatcher and the Celery routing layer (Story 11.3) both consult to decide whether
 an engine is in-process-mounted or sidecar-dispatched. Switching an engine's pattern is a
 config change, never a code fork or a rewrite: the same dispatcher/routing code paths serve
 both patterns, branching only on the registry lookup. First triggered by DB-GPT's Pattern-B
-deviation (dated in `docs/dreams/db-gpt-django-plugin.md`, AD-14) after the `dbgpt-app` /
+deviation (dated in `docs/dreams/db-gpt-django-plugin.md`, pap:AD-14) after the `dbgpt-app` /
 `langflow-base` `fastapi` pin conflict — this AD generalizes the mechanism so the next engine
 that hits a Pattern-A pluggability conflict reuses the switch instead of re-deriving one, and
 so DB-GPT can revert to Pattern A later (once its upstream conflict resolves) without a
 rewrite.
 
-## Local development tiers (AD-16 in practice)
+## Local development tiers (pap:AD-16 in practice)
 
 | Tier | Requires | Covers |
 |---|---|---|
@@ -188,11 +188,11 @@ rewrite.
 | AD-7 | 11.3 |
 | AD-8 | 10.2, 10.3, 10.4, 12.3 |
 | AD-9 | 10.4 |
-| AD-10 | 10.3, 12.1, 12.3 |
-| AD-11 | 12.1, 12.2 |
-| AD-12 | 10.3, 12.1, 12.3 |
-| AD-13 | 10.1, 10.2, 10.3, 12.3 |
-| AD-14 | 11.1, 11.2 |
-| AD-15 | 10.1, 10.2, 10.3, 12.2, 12.3 |
-| AD-16 | 10.2 (env), 11.1 (platform-dev feature AC), 10.3, 11.3, 11.4, 12.1, 12.2, 12.3 |
-| AD-17 | 11.2, 11.3, 11.4, 10.5 (new) |
+| pap:AD-10 | 10.3, 12.1, 12.3 |
+| pap:AD-11 | 12.1, 12.2 |
+| pap:AD-12 | 10.3, 12.1, 12.3 |
+| pap:AD-13 | 10.1, 10.2, 10.3, 12.3 |
+| pap:AD-14 | 11.1, 11.2 |
+| pap:AD-15 | 10.1, 10.2, 10.3, 12.2, 12.3 |
+| pap:AD-16 | 10.2 (env), 11.1 (platform-dev feature AC), 10.3, 11.3, 11.4, 12.1, 12.2, 12.3 |
+| pap:AD-17 | 11.2, 11.3, 11.4, 10.5 (new) |

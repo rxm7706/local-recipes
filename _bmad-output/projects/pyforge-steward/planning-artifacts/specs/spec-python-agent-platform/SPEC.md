@@ -8,7 +8,7 @@ surface:
   - pixi.toml
   - environment.yaml
   # CAP-6 realization, Story 12.3 (spec-12-3-air-gap-parity-is-a-failing-check,
-  # AD-13): the pixi-mirror builder the air-gap-parity CI job runs before
+  # pap:AD-13): the pixi-mirror builder the air-gap-parity CI job runs before
   # blocking egress. Never governed here until this reconciliation pass.
   - scripts/build-pixi-mirror.py
   # CAP-6 realization, Story 43.4 (spec-43-4-golden-path-cd-by-digest, `done`):
@@ -76,10 +76,10 @@ Bare `CAP-n` below is the local heading in this file only. Unifying Strategy’s
     `langflow_schema` (verified by schema inspection), and killing/replacing the pod loses no
     state.
 - **CAP-3 — DB-GPT joins the platform through its configured integration pattern.**
-  - **intent:** DB-GPT integrates via whichever pattern AD-17's per-engine config switch
+  - **intent:** DB-GPT integrates via whichever pattern pap:AD-17's per-engine config switch
     selects — Pattern A of db-gpt-django-plugin (ASGI-mounted, in-process) by default, or
     Pattern B (Celery-dispatched sidecar, `docker-compose.yml`-managed) where Pattern A is
-    demonstrably not pluggable (AD-14). As of 2026-08-21, DB-GPT is configured to Pattern B —
+    demonstrably not pluggable (pap:AD-14). As of 2026-08-21, DB-GPT is configured to Pattern B —
     `dbgpt-app`'s `fastapi<0.113.0` ceiling is disjoint from `langflow-base`'s
     `fastapi>=0.135.0` floor in the shared environment, confirmed live. `dbgpt_schema` in the
     shared PostgreSQL is provisioned by Django data migration (Django ORM never crosses in;
@@ -94,7 +94,7 @@ Bare `CAP-n` below is the local heading in this file only. Unifying Strategy’s
     pattern is configured; `dbgpt_schema` state (Django-provisioned, pgvector) loses nothing on
     pod/container replacement; DB-GPT's own metadata store survives a kill-and-restart via its
     PVC (Story 10.5's two-boot persistence test), not via PostgreSQL. Switching DB-GPT's
-    configured pattern later requires no code change, only a registry update (AD-17); the AD-6
+    configured pattern later requires no code change, only a registry update (pap:AD-17); the AD-6
     exception is independent of that switch and stays scoped to `dbgpt-app`'s own metadata
     store regardless of pattern.
 - **CAP-4 — Async work never blocks Django.**
@@ -130,7 +130,7 @@ Bare `CAP-n` below is the local heading in this file only. Unifying Strategy’s
   failure (dependency or lifecycle isolation), recorded as a dated deviation in the Dream.
 - **Always:** development is local-first on the guaranteed baseline (pixi + conda-forge/
   Artifactory mirror + VS Code + Copilot; WSL2 on Windows) — every dev dependency resolves
-  via pixi; only the container engine and `kind` are system-level installs (AD-16, tiers
+  via pixi; only the container engine and `kind` are system-level installs (pap:AD-16, tiers
   table in the SPINE companion).
 - **Always:** images build and run under BOTH Docker and Podman (operator, 2026-08-14) — the
   Containerfile stays in the engines' intersection (secret mounts via the

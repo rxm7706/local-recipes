@@ -40,7 +40,7 @@ planning — solutioning — reviewed and refined multiple times before implemen
 | 2.4 | New epics needed | Done | One. R-18..R-22 are an **Epic 45 candidate**, not minted. |
 | 2.5 | Order | Done | 44.1 ∥ 44.2 → operator flips 44.3 → 44.4 → 44.5 → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. **Nothing dispatches until the operator flips a story.** |
 | 3.1 | PRD | Done | No FR change; § 14 dated paragraph. The cutover is layout, not product scope. |
-| 3.2 | Architecture | Done | New spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..16`, `status: draft`, iteration 1, gate PASS-WITH-FIXES applied) inheriting canopy:AD-1..23 and `pap:AD-1..17` read-only; no conflict found. Reviewer gate (lint + rubric walker + reality-check + adversarial-pairs, `reviews/`): **PASS-WITH-FIXES** — 3+1+4 CRITICAL findings, all applied as AD-2/3/4/5/6/7/8 tightenings and new AD-13..16; nine open questions carried |
+| 3.2 | Architecture | Done | New spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..16`, `status: draft`, iteration 1, gate PASS-WITH-FIXES applied) inheriting canopy:AD-1..23 and `pap:AD-1..17` read-only; no conflict found. Reviewer gate (lint + rubric walker + reality-check + adversarial-pairs, `reviews/`): **PASS-WITH-FIXES** — 3+1+4 CRITICAL findings, all applied as AD-2/3/4/5/6/7/8 tightenings and new fnd:AD-13..16; nine open questions carried |
 | 3.3 | UI/UX | N/A | No UI. |
 | 3.4 | Other artifacts | Done | Dream § Cutover + Grounding + Realization; Spec `spec-python-foundry-cutover` (+ `cutover.md`, spine adopted as companion); `marshal-policy.toml` `[epic_surfaces] "44"`; deferred-work ledger dispositions; specs README. |
 | 4.1 | Direct adjustment | Viable | Additive; no code. |
@@ -64,12 +64,12 @@ dispatch (`fnd:AD-9`). Story specs are not drafted before a flip.
 | — | 44.2 document fixes (R-23/24/25 + Python-floor pins) | Spec Constraints | — |
 | 0 | 44.3 open the foundry | fnd:AD-1, AD-3, AD-8, AD-9 | **outward** |
 | 1a | 44.4 fold the packages | fnd:AD-2, AD-6, AD-7 | deps 44.1, 44.3 |
-| 1b | 44.5 move the estate | fnd:AD-2, AD-5, AD-12 | deps 44.4 |
+| 1b | 44.5 move the estate | fnd:AD-2, AD-5, fnd:AD-12 | deps 44.4 |
 | 2 | 44.6 CFE comes home | fnd:AD-4, AD-5 | **Mason** (Rules 1 + 2) |
 | 3 | 44.7 factory island (R-17) | fnd:AD-3, AD-4, AD-8 | deps 44.3 |
-| 4 | 44.8 working set | fnd:AD-2, AD-10 | deps 44.7 |
-| 5 | 44.9 Mason → conda-forge | fnd:AD-4, AD-9, AD-11 | **outward + Mason** |
-| 6 | 44.10 archive local-recipes | fnd:AD-1, AD-8, AD-9, AD-11 | **outward, irreversible** |
+| 4 | 44.8 working set | fnd:AD-2, fnd:AD-10 | deps 44.7 |
+| 5 | 44.9 Mason → conda-forge | fnd:AD-4, AD-9, fnd:AD-11 | **outward + Mason** |
+| 6 | 44.10 archive local-recipes | fnd:AD-1, AD-8, AD-9, fnd:AD-11 | **outward, irreversible** |
 
 **Decisions taken by the operator (2026-09-04):** fresh empty repo (history stays in the
 archive at a pinned SHA); fold docs / carry ops for R-18..R-25; the plan lives in the Dream.
@@ -162,7 +162,7 @@ per-machine, tool-detected adapters and SKF writing into `skills/`.
 **Still open:** `planning-history-scope`, `repo-visibility`, `ingest-keys-import`,
 `actions-minutes`.
 
-**Applied:** spine (AD-2, AD-5, AD-11, AD-12, AD-13 amended; AD-17..19 added), SPEC.md
+**Applied:** spine (AD-2, AD-5, fnd:AD-11, fnd:AD-12, fnd:AD-13 amended; fnd:AD-17..19 added), SPEC.md
 (CAP-8, Constraints), `cutover.md`, `epics.md` (heading cites CAP-8; 44.1, 44.3, 44.4, 44.5
 updated; 44.11, 44.12 added, `blocked`), Dream § Cutover + Realization, `marshal-policy.toml`
 `"44"` (+ `var/**`, `flags.json`), ledger (12 keys). Order: 44.1 ∥ 44.2 → 44.3 → 44.11 ∥ 44.12 →
@@ -175,8 +175,8 @@ spine `.memlog.md`; every rendered document is re-derived there. Each capability
 `rebuild` (regeneration drill: Dream + memlog → Spec → spine → epics → Marshal drain, the archived
 suite as oracle) or `move` (replay), or `retire`; decided per row on four scored signals. A
 capability entering `rebuilding` or `moving` freezes its source at once; the one global flag
-flips only when its dependencies are `verified-in-foundry`. Spine `fnd:AD-20` (seed), `AD-21`
-(oracle), `AD-22` (per-capability state and freeze); AD-2, AD-11, AD-17, AD-18 amended. Spec
+flips only when its dependencies are `verified-in-foundry`. Spine `fnd:AD-20` (seed), `fnd:AD-21`
+(oracle), `fnd:AD-22` (per-capability state and freeze); AD-2, fnd:AD-11, fnd:AD-17, fnd:AD-18 amended. Spec
 `fnd:CAP-9`; CAP-2 reworded to *realize*. Stories **44.13** memlog fidelity (before Phase 0, in
 `local-recipes`) and **44.14** rebuild harness + oracle gate (pilot: Scribe).
 
@@ -210,7 +210,7 @@ is unchanged, so the guards stand.
 
 **Answered:** `repo-visibility`, `actions-minutes`. **Still open:** none.
 
-**Applied:** spine (AD-14 amended; AD-23 added; capability map; open-questions section),
+**Applied:** spine (fnd:AD-14 amended; fnd:AD-23 added; capability map; open-questions section),
 SPEC.md (`open_questions: []`; CAP-1 success; CAP-10; Constraints; Assumptions), `cutover.md`
 (envelope section; 44.3 and 44.15 rows; order), `epics.md` (heading cites CAP-10; 44.3 and
 44.14 updated; 44.15 added, `blocked`), Dream § Cutover + Realization, ledger (15 keys, 256).

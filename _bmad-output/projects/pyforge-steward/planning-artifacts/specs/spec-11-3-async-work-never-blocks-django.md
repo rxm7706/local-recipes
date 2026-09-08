@@ -62,7 +62,7 @@ warnings: []
 - Given a long-running task in flight on the worker, when a concurrent request hits `/ht/` on the `platform` web process, then it returns 200 promptly, proving the host is not blocked (AC2)
 - Given the `dbgpt` sidecar is unreachable, when `text_to_sql` is dispatched, then it raises `DbgptSidecarUnreachableError` -- a distinctly named, catchable failure mode -- not a raw/hung/undocumented exception (AC3)
 - Given `text_to_sql`'s real duration profile, when it runs on the real worker, then it is not killed by the (unedited, too-low) global 60s `CELERY_TASK_SOFT_TIME_LIMIT` before its own logic completes (AC4)
-- Given the AD-17 registry, when a Pattern-A task is dispatched via `.delay()`, then it executes in-process inside the worker (no REST hop), proving dispatch is symmetric across both patterns (AC5)
+- Given the pap:AD-17 registry, when a Pattern-A task is dispatched via `.delay()`, then it executes in-process inside the worker (no REST hop), proving dispatch is symmetric across both patterns (AC5)
 
 ## Spec Change Log
 

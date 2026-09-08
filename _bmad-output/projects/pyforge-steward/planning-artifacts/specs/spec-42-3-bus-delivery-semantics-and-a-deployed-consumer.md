@@ -74,7 +74,7 @@ deferred:
     evidence: |-
       `config/settings/base.py` defaults both `REDIS_BROKER_URL` and
       `REDIS_CACHE_URL` to `REDIS_URL`; the chart sets distinct Service URLs,
-      compose does not. That refusal is AD-10 doing its job (one Redis serving
+      compose does not. That refusal is canopy:AD-10 doing its job (one Redis serving
       both roles is the canopy anti-pattern), and it lands on the same compose
       gap already recorded above (no `consume-events` service). Running the
       consumer locally needs `REDIS_CACHE_URL` pointed at a second database or
@@ -397,7 +397,7 @@ Red-team review: `research/architecture-review-pyforge-unifying-strategy-red-tea
   - `[medium]` `[patch]` P3 — SIGTERM was checked only between passes (a pass can run 200 handlers against a 310 s grace), the idle sleep was uninterruptible, and the signal handler logged; `consume(should_stop=)` now stops claiming/reading between entries, `StopFlag` wraps a `threading.Event` (set-only handler, interruptible wait), test `test_run_passes_stops_after_pass_harvests_on_schedule_and_waits_only_when_idle`.
   - `[medium]` `[patch]` P4 — `MemoryRedis` idle times rode `time.monotonic`, making the backoff/no-spin tests load-sensitive; the clock is now purely logical (moves only via `advance_ms`).
   - `[medium]` `[patch]` P5 — `list_event_dlq` printed only the `event` field, hiding `reason`/`error`/`attempts`/`group`/`stream_id`/`quarantined_at`; it now prints the metadata, test extended.
-  - `[low]` `[patch]` P6 — `consume_events` built its Redis client directly, bypassing `connect_event_broker`'s AD-10 guard; now goes through it (`test_consume_events_binds_the_broker_through_the_ad10_guard`).
+  - `[low]` `[patch]` P6 — `consume_events` built its Redis client directly, bypassing `connect_event_broker`'s canopy:AD-10 guard; now goes through it (`test_consume_events_binds_the_broker_through_the_ad10_guard`).
   - `[low]` `[patch]` P7 — a station with no `SUBSCRIPTIONS` entry consumed and ACKed the whole stream while looking healthy, and nothing tied `events.consumers` to `SUBSCRIPTIONS`; the command refuses a non-subscribing station and an ungated parity test was added.
   - `[low]` `[patch]` P8 — an exhausted entry trimmed from the stream was ACKed silently, and `_pending_rows` failed open on a broker without `xpending_range`; now an ERROR log before the ACK and a `TypeError`, both tested.
   - `[low]` `[patch]` P9 — `bound_trace` unbound outer structlog keys instead of restoring them and left the contextvar/OTel attach outside the `finally`; uses `bound_contextvars` under `try/finally`, tested.
@@ -442,4 +442,4 @@ Blocking condition: none
 - Full platform suite (implementation agent, fresh DB): 13 failed / 642 passed / 6 skipped / 5 errors — the 18 FAILED/ERROR ids are exactly the pre-existing baseline set (baseline 611 passed + 31 story tests).
 - The intent contract has no I/O & Edge-Case Matrix; matrix audit not applicable.
 
-**Residual risks.** See the `deferred` list: CI proves the delivery semantics only against the in-memory double (no `redis-server` in `platform-ci-test`); same-group crash-mid-handler remains at-most-once (A-3, out of scope); the handler timeout is a budget, not an enforced limit; consumer names are pod names (dead consumers accumulate); no in-process broker reconnect and no liveness probe on the consumer Deployment; compose has no consumer service and, with one `REDIS_URL`, the AD-10 guard would refuse one there. The ledger key stays at `review`; `done` follows landing via the marshal's promotion.
+**Residual risks.** See the `deferred` list: CI proves the delivery semantics only against the in-memory double (no `redis-server` in `platform-ci-test`); same-group crash-mid-handler remains at-most-once (A-3, out of scope); the handler timeout is a budget, not an enforced limit; consumer names are pod names (dead consumers accumulate); no in-process broker reconnect and no liveness probe on the consumer Deployment; compose has no consumer service and, with one `REDIS_URL`, the canopy:AD-10 guard would refuse one there. The ledger key stays at `review`; `done` follows landing via the marshal's promotion.

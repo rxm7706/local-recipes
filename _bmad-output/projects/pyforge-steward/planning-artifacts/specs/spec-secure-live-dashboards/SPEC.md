@@ -5,7 +5,7 @@ owner-dream: docs/dreams/secure-live-dashboards.md
 surface: []          # frontier — no implementation exists (verified 2026-08-09: zero hits for dashboard_audit_trail, ROLE_HEADER, USER_ID_HEADER, allowed_roles, SECURITY_WEBHOOK_URL, ENCRYPT_EXPORT_FILE outside docs/dreams+docs/intake; the Flask-Caching hits are conda recipes and warden fixtures, not code)
 companions:
   # The architecture that answers every open question this Spec was holding.
-  # Load-bearing: its AD-1..AD-14 are the build contract any decomposition binds to.
+  # Load-bearing: its AD-1..sld:AD-14 are the build contract any decomposition binds to.
   - ../../architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/secure-live-dashboards.md
@@ -38,9 +38,9 @@ sources:
 #       -> AD-6: the API shape. The library exposes no entry point that can search the
 #          master set, so the ordering is not a matter of caller discipline.
 # Later ADs from the same run bind the host and delivery: AD-8 (binds at the ASGI
-# boundary, never to a dashboard framework), AD-10 (static export and role isolation
-# are mutually exclusive), AD-11/AD-12 (protocol-specific identity; per-message
-# isolation and audit), AD-13 (ships as a reusable Django app), AD-14 (SQLite dev /
+# boundary, never to a dashboard framework), sld:AD-10 (static export and role isolation
+# are mutually exclusive), sld:AD-11/sld:AD-12 (protocol-specific identity; per-message
+# isolation and audit), sld:AD-13 (ships as a reusable Django app), sld:AD-14 (SQLite dev /
 # PostgreSQL deploy, contention proven not inferred).
 open_questions: []
 ---

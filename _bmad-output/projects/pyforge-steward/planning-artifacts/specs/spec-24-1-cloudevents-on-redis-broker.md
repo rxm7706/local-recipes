@@ -17,7 +17,7 @@ deferred:
       Applied-id keys on redis-broker have no TTL, so
       pyforge.events.applied:* grows on a noeviction instance.
     evidence: |-
-      EventFabric._mark_applied uses SET NX with no EXPIRE. Canopy AD-10
+      EventFabric._mark_applied uses SET NX with no EXPIRE. Canopy canopy:AD-10
       binds redis-broker as noeviction. Story 24.1 ACs do not require a
       retention policy for idempotency keys.
     location: >-
@@ -35,7 +35,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Always:** `XADD` CloudEvents `specversion=1.0` to `pyforge.events` on redis-broker only. DLQ is `pyforge.events.dlq`. Group name is a station token. `dataschema` is required. Envelope carries `specid`, `gitsha`, `sbompurl`; `workitemid` is optional. Missing Jira is not a fail. Idempotency key is CloudEvents `id`. Cite canopy:AD-8 / AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
+**Always:** `XADD` CloudEvents `specversion=1.0` to `pyforge.events` on redis-broker only. DLQ is `pyforge.events.dlq`. Group name is a station token. `dataschema` is required. Envelope carries `specid`, `gitsha`, `sbompurl`; `workitemid` is optional. Missing Jira is not a fail. Idempotency key is CloudEvents `id`. Cite canopy:AD-8 / canopy:AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
 
 **Block If:** Implementation would re-split Redis, add MinIO, start Liquibase 27-1, or require a live cluster Redis that tests cannot replace with an in-process stream backend.
 

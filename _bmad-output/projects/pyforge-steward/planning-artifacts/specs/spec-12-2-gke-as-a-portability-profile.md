@@ -28,7 +28,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Story 12.1 shipped a vanilla-Kubernetes core chart (`src/platform/deploy/charts/platform/`) verified only by `helm template`/lint against parsed manifests -- `deploy/README.md`'s own "Honest limitations" names "No live-cluster verification in this repo" as an open gap. AD-11's portability clause ("GKE runs as a CI smoke profile, never a second implementation") is unproven.
+**Problem:** Story 12.1 shipped a vanilla-Kubernetes core chart (`src/platform/deploy/charts/platform/`) verified only by `helm template`/lint against parsed manifests -- `deploy/README.md`'s own "Honest limitations" names "No live-cluster verification in this repo" as an open gap. pap:AD-11's portability clause ("GKE runs as a CI smoke profile, never a second implementation") is unproven.
 
 **Approach:** Add a job to `.github/workflows/platform-ci.yml` that spins up an ephemeral `kind` cluster (a GKE-shaped, non-OCP target), builds+loads the platform image, installs the SAME core chart unmodified (only scalar `--set` value overrides, never a new chart/overlay), and curls the app through a real `Ingress` resource + `ingress-nginx` controller -- proving the chart's vanilla-K8s Ingress path actually works end-to-end.
 
@@ -36,8 +36,8 @@ deferred:
 
 **Always:**
 - Deploy the exact chart at `src/platform/deploy/charts/platform/` unchanged -- only Helm `--set` overrides at install time (the same pattern the chart's own README already documents for a bare-HTTP dev install).
-- helm and kubectl come from the `platform-dev` pixi environment (AD-16: "never a system helm") via `prefix-dev/setup-pixi@v0.10.0`, `environments: platform-dev` -- mirrors `dashboard.yml`'s existing usage.
-- `kind` (pin `v0.32.0`, verified latest release) is installed as a system-level binary -- AD-16's explicit, named exception ("the ONLY system-level installs permitted are the container engine and the kind binary it hosts").
+- helm and kubectl come from the `platform-dev` pixi environment (pap:AD-16: "never a system helm") via `prefix-dev/setup-pixi@v0.10.0`, `environments: platform-dev` -- mirrors `dashboard.yml`'s existing usage.
+- `kind` (pin `v0.32.0`, verified latest release) is installed as a system-level binary -- pap:AD-16's explicit, named exception ("the ONLY system-level installs permitted are the container engine and the kind binary it hosts").
 - The smoke assertion goes THROUGH the chart's `Ingress` + an ingress controller (`ingress-nginx`'s `kind` provider manifest, pin `controller-v1.15.1`) -- never a `kubectl port-forward` or a direct Service curl, or the job proves nothing beyond 12.1's parsed-manifest tests.
 - Build the image locally from `src/platform/Containerfile` (repo-root build context, matching the `container` job) and `kind load docker-image` it -- no registry push. Tag it something other than `latest`.
 - One engine (Docker) for `kind` -- the `container` job already matrices docker+podman for the image build; duplicating that matrix here is out of scope for a portability profile.
@@ -46,7 +46,7 @@ deferred:
 **Block If:** none identified -- the chart, pixi env, and CI patterns this story needs already exist.
 
 **Never:**
-- Never add a second chart or a checked-in `gke-overrides.yaml` mirroring the OCP overlay's shape -- AD-11 is explicit that GKE is a profile (inline `--set` at install time), not a parallel implementation.
+- Never add a second chart or a checked-in `gke-overrides.yaml` mirroring the OCP overlay's shape -- pap:AD-11 is explicit that GKE is a profile (inline `--set` at install time), not a parallel implementation.
 - Never touch `overlays/ocp/` or `test_chart_invariants.py`'s existing assertions -- this story's surface is CI only (epics.md: "Surface: platform CI").
 - Never add TLS/cert-manager wiring -- deliberately bare-HTTP (`django.secureSslRedirect=False` via `--set`, the same override the README documents for TLS-less installs and the `container` job's own `DJANGO_SECURE_SSL_REDIRECT=False` convention).
 
@@ -72,7 +72,7 @@ deferred:
 - `.github/workflows/platform-ci.yml`'s `container` job (~lines 186-263) -- sibling pattern to mirror: build → run → poll-for-readiness → progressively deeper curls → `if: always()` teardown, numbered retry loops, `::error::` annotations
 - `.github/workflows/dashboard.yml` -- existing `prefix-dev/setup-pixi@v0.10.0` usage (`pixi-version: v0.77.0`, `environments:`, `locked: true`, `cache: true`) to mirror with `environments: platform-dev`
 - `pixi.toml` (~line 226) -- `platform-dev` feature already declares `kubernetes-helm >=4.2.4` + `kubernetes-client >=1.34.3`; no pixi.toml change needed
-- `spec-python-agent-platform/ARCHITECTURE-SPINE.md` -- AD-11 (GKE-as-profile), AD-15 (paths-filtered CI, `maintenance` label), AD-16 (pixi-only + kind/engine exception) are the binding constraints this story executes
+- `spec-python-agent-platform/ARCHITECTURE-SPINE.md` -- pap:AD-11 (GKE-as-profile), pap:AD-15 (paths-filtered CI, `maintenance` label), pap:AD-16 (pixi-only + kind/engine exception) are the binding constraints this story executes
 
 ## Tasks & Acceptance
 
@@ -115,7 +115,7 @@ deferred:
   - `[low]` `[reject]` Blind Hunter: "no `permissions:` block scopes GITHUB_TOKEN." False — `permissions: contents: read` is already set at workflow level (line 88) and applies to every job in the file, including this one; no job overrides it.
   - `[low]` `[reject]` Blind Hunter (5 findings): no artifact-upload of cluster diagnostics before teardown; no checksum/signature verification for curl'd kind binary or `kubectl apply -f`'d ingress-nginx manifest; no drift-tracking for the kind/ingress-nginx version pins; `kubectl create namespace` has no `|| true` guard; 45-minute timeout justified only against image-build cost. None have any precedent elsewhere in this file (podman isn't even version-pinned; no job uploads artifacts; teardown-only commands use `|| true`, not setup commands); namespace collision is structurally unreachable given the fresh-cluster-per-run design; the timeout value itself is generous, only the comment's stated justification is incomplete. Out of scope for an Effort:S CI-smoke story with no established convention to match.
   - `[low]` `[reject]` Blind Hunter: "`platform.internal` duplicated as a literal in two steps (DRY)." No precedent for job-level `env:` extraction elsewhere in this file for similarly-repeated short literals (`platform-smoke`, `gke-smoke` also repeat many times); not worth the added indirection for two occurrences.
-  - `[low]` `[reject]` Intent Alignment Auditor (4 observations, none prescribing a fix): GKE-in-name-only is confirmed by the auditor itself as intentional per AD-11; the diff carrying no persisted CI-run proof and the test surface being self-referential are both inherent to any first-time CI-job addition (unfixable pre-merge — the real proof is the job's first actual run after this PR opens); no independent second review before this pass is moot, since this review pass is that independent check.
+  - `[low]` `[reject]` Intent Alignment Auditor (4 observations, none prescribing a fix): GKE-in-name-only is confirmed by the auditor itself as intentional per pap:AD-11; the diff carrying no persisted CI-run proof and the test surface being self-referential are both inherent to any first-time CI-job addition (unfixable pre-merge — the real proof is the job's first actual run after this PR opens); no independent second review before this pass is moot, since this review pass is that independent check.
 
 ## Design Notes
 

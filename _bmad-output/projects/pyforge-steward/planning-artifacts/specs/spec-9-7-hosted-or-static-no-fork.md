@@ -19,7 +19,7 @@ warnings: ['oversized']
 
 **Problem:** CAP-8 requires that the same dashboard definition publish either hosted
 (role-isolated) or as a static GitHub Pages export — never both, never a fork — but no verb in
-`pyforge.steward.deploy` produces a static export today, and AD-10's refusal ("a board that has
+`pyforge.steward.deploy` produces a static export today, and sld:AD-10's refusal ("a board that has
 declared an access column may not be delivered by static export... refuses rather than warns")
 has no owner.
 
@@ -36,7 +36,7 @@ reuses for the exact same reason) — no new git plumbing or GitHub Pages workfl
 
 **Always:**
 - `_run_static` refuses — never warns, never writes anything, never reads a `--panel` path —
-  when `ns.access_column` (stripped) is non-empty, before any other validation (AD-10).
+  when `ns.access_column` (stripped) is non-empty, before any other validation (sld:AD-10).
 - Output always lands at `docs/dashboard/<board>/index.html`, never a caller-chosen path, so the
   existing `steward deploy dashboard` reconciled-push mechanism picks it up unchanged.
 - `--board` is validated as a filesystem-safe slug (`^[A-Za-z0-9_-]+$`) before being joined into
@@ -51,7 +51,7 @@ reuses for the exact same reason) — no new git plumbing or GitHub Pages workfl
 - No new third-party dependency: panels arrive as pre-rendered HTML strings, so `pyforge-steward`
   never imports `plotly` and the `[dashboard]` extra gains no new pin.
 
-**Block If:** none identified — CAP-8/AD-10 fully bound the scope; no undecided cross-cutting
+**Block If:** none identified — CAP-8/sld:AD-10 fully bound the scope; no undecided cross-cutting
 question remains.
 
 **Never:**
@@ -71,7 +71,7 @@ question remains.
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
 | Happy path | `--board demo --panel "East=east.html" --panel "West=west.html"`, no `--access-column` | `docs/dashboard/demo/index.html` written, both panels' HTML verbatim in call order | No error expected |
-| Access column declared | same as above plus `--access-column region` | refused before any panel path is read; `docs/dashboard/demo/` untouched | `DutyResult(ok=False, ...)` naming AD-10 |
+| Access column declared | same as above plus `--access-column region` | refused before any panel path is read; `docs/dashboard/demo/` untouched | `DutyResult(ok=False, ...)` naming sld:AD-10 |
 | Duplicate panel labels | two `--panel` entries with the same label | refused; nothing written | Names the duplicate label |
 | Malformed `--panel` | value with no `=`, or an empty label | refused; nothing written | Names the malformed entry |
 | Unreadable `--panel` path | path does not exist / unreadable | refused; nothing written | `OSError` caught, path named |
@@ -587,7 +587,7 @@ moot for this pass per the review protocol — restated on the next pass if they
   story's untracked-file addition merely inherits it for newly-created files reaching the same
   state. Recorded as `DW-FU-9-7` in the deferred-work ledger (station `pyforge-steward` resolved
   and cross-checked against the Tier-3 path; no existing `DW-FU-9-7` token collided).
-- `[low]` `[reject]` AD-10 enforcement is entirely caller-asserted (`--access-column` is a plain
+- `[low]` `[reject]` sld:AD-10 enforcement is entirely caller-asserted (`--access-column` is a plain
   flag, never independently verified against a board's real `AccessDeclaration`) — already an
   explicit, documented architectural tradeoff (this spec's own Design Notes, mirroring Story 9.5's
   `DeploymentTopology` precedent), forced by the import-boundary invariant this module may never
@@ -855,7 +855,7 @@ Rejected this pass (restated only if a future pass finds the disposition wrong):
   `<intent-contract>` Never clause ("Never build or export a Plotly figure itself... this story
   ships the mechanism") and its Design Notes, which name `fig.to_html()` as the literal mechanism
   CAP-8's success criterion describes. A deliberate, documented scope boundary, not a defect.
-- `[medium]` `[reject]` AD-10 is caller-asserted — `--access-column` is never verified against a
+- `[medium]` `[reject]` sld:AD-10 is caller-asserted — `--access-column` is never verified against a
   board's real `AccessDeclaration`. Exact restatement of pass 3's rejected finding. One reviewer
   added a new rebuttal (that `declarations.py` imports only `re`/`dataclasses`/`datetime`, so the
   import-boundary rationale is weak) — re-verified rather than inherited, but the Boundaries clause
@@ -930,7 +930,7 @@ Rejected this pass (restated only if a future pass finds the disposition wrong):
     and a new regression test. Cannot change behavior for any conforming `Sequence` input.
   - `[low]` `[patch]` **The `.gitignore` refusal added in pass 7 was undocumented in both places
     a reader would look.** Both reviewers noted it independently. `_run_static`'s docstring walks
-    the reader through the full ordered pipeline (AD-10 → slug → panels → render → safety check →
+    the reader through the full ordered pipeline (sld:AD-10 → slug → panels → render → safety check →
     atomic write) and never mentioned `_is_path_gitignored`, which pass 7 inserted between the
     safety check and the write; `cli.py`'s `--board` help still advertised `^[A-Za-z0-9_-]+$` as
     the only constraint. In a module where every other branch is narrated, a refusal a reader
@@ -1126,7 +1126,7 @@ practice, not anything inside `deploy.py` itself.
 Status: `done` (follow-up review pass 8 of a `done` spec; no loopback).
 
 **Implemented change (cumulative, unchanged in shape by this pass).** `steward deploy static`
-— a fourth `deploy` verb that refuses outright on a declared `--access-column` (AD-10), then
+— a fourth `deploy` verb that refuses outright on a declared `--access-column` (sld:AD-10), then
 assembles caller-supplied pre-rendered HTML panel fragments verbatim into one self-contained
 `docs/dashboard/<board>/index.html` (CAP-8), written atomically behind a filesystem-identity
 safety check. The pre-existing `dashboard_diff()` was extended to see untracked files so a
@@ -1167,7 +1167,7 @@ this pass — no new entry was warranted, and no existing entry was read, modifi
 **Residual risks.** Unchanged from pass 7 and all deliberately accepted, each with a Design Note:
 the check-then-write TOCTOU window (now marginally wider, since pass 7's `git check-ignore`
 subprocess sits inside it) and the shared fixed `.tmp` name under concurrent same-board runs,
-both matching `_run_perimeter`'s identical file-wide unlocked posture; AD-10 enforcement being
+both matching `_run_perimeter`'s identical file-wide unlocked posture; sld:AD-10 enforcement being
 caller-asserted, forced by the import-boundary invariant; a lone hand-authored `index.html` being
 a trusted overwrite target, which an AC inside `<intent-contract>` requires; and
 `dashboard_diff()`'s staged-but-uncommitted blind spot, carried as `DW-FU-9-7`.

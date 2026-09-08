@@ -4,7 +4,7 @@ date: 2026-09-05
 project: pyforge-steward
 chain: pyforge-unifying-strategy (extends spec-python-agent-platform)
 status: approved — Option A, applied 2026-09-05 in the same PR
-trigger: docs/dreams/foundry-baas-capability-gaps.md § "Reopening AD-1" (seed Dream, PR #1053, 2026-09-05) — its recommendation 6 asks for a formal correct-course on `pap:AD-1` and canopy `AD-13` instead of a silent reversal
+trigger: docs/dreams/foundry-baas-capability-gaps.md § "Reopening AD-1" (seed Dream, PR #1053, 2026-09-05) — its recommendation 6 asks for a formal correct-course on `pap:AD-1` and canopy `canopy:AD-13` instead of a silent reversal
 mode: batch
 scope: minor — architecture prose amendments plus three doc lines; no new infra kind, no story, no ledger change (under Option A)
 operator: Rxm7706
@@ -16,7 +16,7 @@ follows: sprint-change-proposal-2026-09-04-foundry-cutover.md
 ## 1. Issue summary
 
 The seed Dream `foundry-baas-capability-gaps.md` (merged 2026-09-05) claims that parent
-`AD-1` ("Infrastructure is exactly PostgreSQL + Redis + Kubernetes") and canopy `AD-13`
+`AD-1` ("Infrastructure is exactly PostgreSQL + Redis + Kubernetes") and canopy `canopy:AD-13`
 (Lane 1 media on a `ReadWriteMany` PVC) "were asserted with a weaker justification than
 their own documentation claims", on two legs:
 
@@ -38,9 +38,9 @@ correction; what survives is a different, narrower finding.
 > same PostgreSQL instance (AD-5) and Redis carries both cache and Celery-broker duty —
 > neither is a licence for a fourth piece.
 
-There is no air-gap clause. Air-gap parity is a *separate* decision (parent `AD-13` /
+There is no air-gap clause. Air-gap parity is a *separate* decision (parent `canopy:AD-13` /
 `pap:CAP-6`), and neither the canopy's inherited-AD table (canopy spine line 85), its
-conflict paragraph (line 98), nor canopy `AD-13` itself (line 184) cites air-gap as the
+conflict paragraph (line 98), nor canopy `canopy:AD-13` itself (line 184) cites air-gap as the
 reason for the media rule — all three justify it by kind-count alone. The rule's own
 documentation presents exactly what it is: a design-review discipline the operator
 ratified, a judgment call and never a physics claim. The Artifactory precedent is real
@@ -83,14 +83,14 @@ architecture (the RWX storage-class prerequisite; the undefined exception proced
 |---|---|---|---|
 | 1.1 | Triggering story | Done | None red. Trigger is the seed Dream's recommendation 6. Story 20.2 is `done` and its bind is proven on CRC. |
 | 1.2 | Problem type | Done | Misread requirements + missing architecture. Not a technical limitation; not a strategic pivot. |
-| 1.3 | Evidence | Done | Parent spine AD-1 / AD-6 / AD-13; canopy spine 85 / 98 / 100 / 184; 12.1 verification § Proofs + finding 1; `values.yaml` 11 / 250–256; `media-pvc.yaml`; the five mounting templates; `test_chart_invariants.py` 1999 / 2052; `deploy/README.md:211`; `DR.md:15`; `resilience-invariants.md:106`; `epics.md:1343` (NFR-C2), `:1583` (20.2). |
+| 1.3 | Evidence | Done | Parent spine AD-1 / AD-6 / canopy:AD-13; canopy spine 85 / 98 / 100 / 184; 12.1 verification § Proofs + finding 1; `values.yaml` 11 / 250–256; `media-pvc.yaml`; the five mounting templates; `test_chart_invariants.py` 1999 / 2052; `deploy/README.md:211`; `DR.md:15`; `resilience-invariants.md:106`; `epics.md:1343` (NFR-C2), `:1583` (20.2). |
 | 2.1 | Current epic completable | Done | Epic 20 stays `done`; nothing reopens. |
 | 2.2 | Epic-level change | Done | None. |
 | 2.3 | Remaining epics | Done | Epic 44 inherits `pap:AD-1..17` and canopy `AD-1..23` read-only; the `fnd` spine carries no media or storage decision. Unaffected. |
 | 2.4 | New epics | Done | None. Object-storage as a product (seed Scopes B / C) is outside this chain by the seed's own verdict. |
 | 2.5 | Order / priority | N/A | — |
 | 3.1 | PRD | Done | FR-8 ("media and cache survive multiple replicas") and NFR-C2 stand as written. No FR change. |
-| 3.2 | Architecture | Action-needed | Canopy AD-13 gains the storage-class prerequisite and the multi-mount reason; the canopy conflict paragraph defines the exception procedure; parent AD-1 gets a dated re-affirmation in the AD-6 style. |
+| 3.2 | Architecture | Action-needed | Canopy canopy:AD-13 gains the storage-class prerequisite and the multi-mount reason; the canopy conflict paragraph defines the exception procedure; parent AD-1 gets a dated re-affirmation in the AD-6 style. |
 | 3.3 | UI/UX | N/A | — |
 | 3.4 | Other artifacts | Action-needed | Dream Grounding bullet + Realization entry; seed Dream § Reopening gets a dated correction so the later fold carries the corrected finding; `deploy/README.md:211`, `values.yaml:250`, `NOTES.txt:22`. |
 | 4.1 | Direct adjustment | Viable | Prose plus three doc lines. Effort **Low**. Risk **Low**. |
@@ -102,7 +102,7 @@ architecture (the RWX storage-class prerequisite; the undefined exception proced
 
 ## 3. Options and recommended approach
 
-**Option A — Re-affirm AD-1 and AD-13; amend AD-13's prerequisite; define the exception
+**Option A — Re-affirm AD-1 and canopy:AD-13; amend canopy:AD-13's prerequisite; define the exception
 procedure. (Recommended.)** Scope minor. No new kind, no story, applied in one PR. The two
 decisions stand on the justification they actually gave; the real gap (an RWX-capable storage
 class is a deploy prerequisite nobody wrote down) closes as prose in the spine and three doc
@@ -111,22 +111,22 @@ restart this analysis.
 
 **Option B — Except parent AD-1 for a self-hosted, in-cluster S3-compatible store for Lane 1
 media.** What it costs, so the price is on record: a `django-storages` S3 backend with
-credentials through parent AD-12; a MinIO / ODF-RGW workload (Helm, an image mirror for
+credentials through parent canopy:AD-12; a MinIO / ODF-RGW workload (Helm, an image mirror for
 air-gap parity, SCC posture, a DR.md row, a backup path); BS-8's Mason boot re-index revisited
 against an object store; `test_chart_templates_forbid_minio_s3_and_elasticsearch` inverted;
-canopy:AD-13 rewritten; a dated Dream entry *first* (the parent AD-14 pattern). No evidence in
+canopy:AD-13 rewritten; a dated Dream entry *first* (the parent canopy:AD-14 pattern). No evidence in
 this pass says it is needed — RWX binds on the only target that exists, and the seed itself
 disclaims MinIO as the answer. Not recommended now. If chosen: one steward story, `blocked`
 until the Dream entry lands.
 
-**Option C — Amend AD-13 to `ReadWriteOnce` while `replicaCount: 1`.** Rejected on
+**Option C — Amend canopy:AD-13 to `ReadWriteOnce` while `replicaCount: 1`.** Rejected on
 evidence: five Deployments mount the volume, and RWO works only if all five are co-scheduled
 on one node, which nothing in the chart enforces. Choosing C would make the next multi-node
 install fail in a new way.
 
 ## 4. Detailed change proposals (Option A)
 
-### 4.1 Canopy spine — `AD-13` Rule (line 184)
+### 4.1 Canopy spine — `canopy:AD-13` Rule (line 184)
 
 **OLD (tail):** `… is a fourth infra kind (parent AD-1) and a review-blocking finding until
 that parent AD is formally excepted.`
@@ -159,7 +159,7 @@ Rationale: three artifacts gate on a procedure none of them defines.
 **Append:** `**Re-affirmed, 2026-09-05.** Re-examined against
 `docs/dreams/foundry-baas-capability-gaps.md` § *Reopening AD-1*. This rule is design-review
 discipline — a bound on operational surface — and has never rested on air-gap parity (that is
-AD-13). Lane 1 media stays on a `ReadWriteMany` PVC (canopy:AD-13, prerequisite added the same
+canopy:AD-13). Lane 1 media stays on a `ReadWriteMany` PVC (canopy:AD-13, prerequisite added the same
 day). No exception granted. Exception procedure: canopy spine § *Conflict, not override —
 parent AD-1*.`
 
@@ -172,7 +172,7 @@ AD-6's exception was recorded, and it is where the next reader of AD-1 will look
   MinIO as a fourth core kind (re-affirmed 2026-09-05; Lane 1 media is RWX, and a multi-node
   target names its RWX storage class).`
 - Realization log, new entry **2026-09-05** — the correct-course ran; both seed legs
-  corrected against primary sources; AD-1 / AD-13 re-affirmed; prerequisite and exception
+  corrected against primary sources; AD-1 / canopy:AD-13 re-affirmed; prerequisite and exception
   procedure recorded; seed fold still pending.
 
 ### 4.5 Seed Dream `docs/dreams/foundry-baas-capability-gaps.md`
@@ -218,7 +218,7 @@ the same PR. The five follow-up-review branches (41.3, 41.4, 42.1, 42.2, 43.2) l
 
 ## 7. Applied (2026-09-05)
 
-- Canopy spine: AD-13 Rule prerequisite (4.1); "Conflict, not override — parent AD-1" exception
+- Canopy spine: canopy:AD-13 Rule prerequisite (4.1); "Conflict, not override — parent AD-1" exception
   procedure + re-affirmation (4.2); `updated: 2026-09-05`.
 - Parent spine: dated re-affirmation paragraph under AD-1 (4.3).
 - Dream `pyforge-unifying-strategy.md`: Grounding infra-kinds bullet; Realization entry (4.4).

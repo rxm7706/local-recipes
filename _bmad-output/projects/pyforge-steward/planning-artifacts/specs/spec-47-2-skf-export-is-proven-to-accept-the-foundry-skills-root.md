@@ -13,7 +13,7 @@ deferred:
     evidence: "Confirmed empirically (scratch worktree run) and independently re-confirmed by Blind Hunter reading skf-export-skill's full source directly; relayed to spec-python-foundry-cutover's own memlog as a finding for that project to close"
     location: "_bmad/skf/skf-export-skill/ (no file -- an absence, not a bug in an existing file)"
     severity: medium
-  - summary: "Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the AD-12 config-key flip"
+  - summary: "Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the fnd:AD-12 config-key flip"
     evidence: "Empirically confirmed (Run 1 halted exit 3 resolution-failure); independently re-confirmed by Blind Hunter reading load-skill.md's resolution logic directly"
     location: "_bmad/skf/skf-export-skill/references/load-skill.md (resolution ladder)"
     severity: medium
@@ -35,7 +35,7 @@ skills root (`skills/stations`, per `spec-python-foundry-cutover/cutover.md`'s
 target layout), in a throwaway scratch git worktree, and observe — for real —
 whether the exported package lands where the cutover spine assumes and
 whether anything in SKF generates the `.claude/skills/<x>` "adapter" the
-cutover's target tree diagram calls "generated per-machine links" (AD-19).
+cutover's target tree diagram calls "generated per-machine links" (fnd:AD-19).
 Investigation already read every relevant `skf-export-skill` reference file
 in this repo's own installed copy (`references/package.md`,
 `generate-snippet.md`, `update-context.md`, `preflight-snippet-root-probe.md`)
@@ -55,10 +55,10 @@ re-verified against CAP-7's actual restore mechanism (already read:
 catalog, snapshotted before the core installer runs and restored verbatim
 after — a live filesystem snapshot, not literally `git checkout`, though
 functionally equivalent for a clean tree since the file is git-tracked). The
-single AD-12 declaring key for the foundry's planned re-render approach
+single fnd:AD-12 declaring key for the foundry's planned re-render approach
 (`_bmad/custom/config.toml [modules.skf].skills_output_folder`, confirmed
 already present in this repo) is recorded, alongside the observation that
-TODAY's mechanism is snapshot-restore, not the AD-12-target re-render — a
+TODAY's mechanism is snapshot-restore, not the fnd:AD-12-target re-render — a
 gap between today's mechanism and the foundry's target, recorded, not
 built.
 
@@ -88,7 +88,7 @@ built.
   mechanism, or `_bmad/custom/config.toml`.** The Surface line names no
   code file — only `_bmad/skf/config.yaml` (in the scratch copy),
   the scratch worktree itself, and `cutover-readiness.md` G5/P10. Recording
-  the AD-12 declaring key and the snapshot-vs-re-render gap is a FINDING
+  the fnd:AD-12 declaring key and the snapshot-vs-re-render gap is a FINDING
   (memlog), never an implementation.
 - **If SKF genuinely lacks the link-generation step** (the expected,
   investigation-grounded outcome): this is recorded as a
@@ -109,7 +109,7 @@ built.
 | `skf-export-skill --headless <one-skill-name>` run in the scratch worktree | Exported package lands at `skills/stations/<skill-name>/<version>/<skill-name>/` (confirmed present); `.export-manifest.json` lands at `skills/stations/.export-manifest.json` |
 | CLAUDE.md / AGENTS.md managed sections in the scratch worktree, after the run | Gain a context-snippet row citing the new `skills/stations/...` location — but NO `.claude/skills/<skill-name>/SKILL.md` file is created anywhere by this run (the expected, investigation-grounded finding — confirmed empirically, not assumed) |
 | `cutover-readiness.md` G5 | State cell updated: dated, records whether the export-to-custom-root claim held (yes) and whether the link-generation adapter exists (no — recorded as the precise gap) |
-| `cutover-readiness.md` P10 | State cell updated: the AD-12 declaring key named, CAP-7's actual snapshot-restore mechanism confirmed (not re-render), the gap between the two recorded |
+| `cutover-readiness.md` P10 | State cell updated: the fnd:AD-12 declaring key named, CAP-7's actual snapshot-restore mechanism confirmed (not re-render), the gap between the two recorded |
 | `.memlog.md` (spec-bmad-suite-lifecycle) | One event recording both findings |
 | `.memlog.md` (spec-python-foundry-cutover, if it has one — confirm before assuming) | One finding entry naming the missing link-generation step as that project's own gap to close |
 
@@ -142,7 +142,7 @@ built.
      captured — nothing from it is committed or kept.
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md`
   - G5 row: state cell updated with the dated finding.
-  - P10 row: state cell updated with the AD-12 key + snapshot-vs-re-render
+  - P10 row: state cell updated with the fnd:AD-12 key + snapshot-vs-re-render
     gap.
 - `.memlog.md` for `spec-bmad-suite-lifecycle`: one event.
 - `spec-python-foundry-cutover`'s own memlog (path confirmed before
@@ -171,7 +171,7 @@ built.
      `.claude/skills/<skill>` file/symlink in the scratch copy is recorded
      as an explicit yes/no with evidence (`find`/`ls` output), never
      assumed from the prose investigation alone.
-4. **Record the AD-12 declaring key and CAP-7's actual mechanism for P10.**
+4. **Record the fnd:AD-12 declaring key and CAP-7's actual mechanism for P10.**
    - AC: `cutover-readiness.md`'s P10 cell names
      `_bmad/custom/config.toml [modules.skf].skills_output_folder`
      verbatim and states plainly that CAP-7 today snapshots/restores
@@ -307,7 +307,7 @@ envelope (constructed per `references/result-envelope.md`, this
 branch's shape is fully deterministic from the prose — no agent
 judgment call was needed to fill it in):
 `SKF_EXPORT_RESULT_JSON: {"status":"error","skills":["pyforge-herald"],"context_files_updated":[],"manifest_path":null,"headless_decisions":[],"exit_code":3,"halt_reason":"resolution-failure"}`.
-**This is a genuine, previously-unnamed finding**: flipping the AD-12
+**This is a genuine, previously-unnamed finding**: flipping the fnd:AD-12
 declaring key alone does not migrate or even make discoverable an
 already-exported package that physically lives at the old root — there
 is no cross-root fallback anywhere in `version-paths.md`'s documented
@@ -366,7 +366,7 @@ assumption:**
   entirely) and the `preflight-snippet-root-probe.md` mismatch gate is
   *skipped entirely* whenever the override is already set (`load-skill.md`
   §1b), so nothing ever inspected or flagged the drift. This is a live,
-  concrete instance of the exact adapter gap AD-19 assumes away, not a
+  concrete instance of the exact adapter gap fnd:AD-19 assumes away, not a
   hypothetical.
 
 **Task 4 — re-verified against live code, not re-stated from the spec's
@@ -383,7 +383,7 @@ present, confirmed, but **not yet wired to anything**: no code path
 reads this key to regenerate `_bmad/skf/config.yaml`. The two files are
 independent today; CAP-7 preserves whatever bytes were already in
 `config.yaml` verbatim, regardless of what config.toml says. This is the
-snapshot-vs-re-render gap AD-12 targets — recorded, not built (zero
+snapshot-vs-re-render gap fnd:AD-12 targets — recorded, not built (zero
 `upgrade.py` edits this story, per boundary 9).
 
 **Health-check step (the real terminal step, not skipped).** Reflecting

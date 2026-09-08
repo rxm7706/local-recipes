@@ -16,7 +16,7 @@ warnings: ['oversized']
 
 ## Intent
 
-**Problem:** CAP-2 (zero-loop guarantee) claims the AD-5/AD-10 value-baseline mechanism 8.1
+**Problem:** CAP-2 (zero-loop guarantee) claims the AD-5/jira:AD-10 value-baseline mechanism 8.1
 implemented prevents a synced update from ever echoing back — "holds by construction" — but no
 test has ever called `reconcile()` more than once against the same stateful transport. The claim
 is undemonstrated, and FR-28 requires it be proven by test, never asserted.
@@ -38,14 +38,14 @@ case.
   resetting the log (the log accumulates across the whole test by design).
 - `dry_run` stays `False` for every round in these tests — `dry_run=True` reports a decision
   without persisting state, which breaks the stateful-convergence premise being proven.
-- If a round-trip test surfaces a genuine local defect in `reconcile()`'s existing AD-5/AD-10
+- If a round-trip test surfaces a genuine local defect in `reconcile()`'s existing AD-5/jira:AD-10
   logic (not an architecture-level gap), fix it in `sync.py` in this story — this is proof work
   over an already-final, already-implemented mechanism, not new design.
 
-**Block If:** the tests reveal the AD-5/AD-10 baseline mechanism is structurally unable to
+**Block If:** the tests reveal the AD-5/jira:AD-10 baseline mechanism is structurally unable to
 guarantee zero-loop for some case regardless of local fixes (an architecture-level defect, the
 same class of finding that halted 8.1 the first time) — HALT rather than paper over it; do not
-re-litigate AD-5/AD-10 unilaterally.
+re-litigate AD-5/jira:AD-10 unilaterally.
 
 **Never:**
 - Never mock or patch `reconcile()`'s internals to fake the property — observe it only through
@@ -290,7 +290,7 @@ justified in the Spec Change Log's KEEP instructions rather than applied silentl
   convergent-same-value test where round 1 is itself already a no-op. 2 `defer` (1 medium, 1
   low — a GH-side mirror of the baseline-refresh-failure direction; a pre-existing,
   incidentally-surfaced gap where no test anywhere exercises a first-link item with an unset
-  CURRENT status value, the `_MISSING`-vs-`None` distinction AD-10 exists to protect). 9
+  CURRENT status value, the `_MISSING`-vs-`None` distinction jira:AD-10 exists to protect). 9
   `reject` (low noise, largely re-litigating constraints the frozen intent-contract already
   settles explicitly — N>=5, `dry_run=False`, snapshot-and-compare idiom).
 - Total: 6 items appended to `deferred-work.md` across both passes (all `[low]`/`[medium]`,

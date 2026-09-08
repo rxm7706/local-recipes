@@ -38,7 +38,7 @@ warnings: []
 | Second writer | Live `atlas.duckdb`; writer held | `connect_writer` refuses the second | `SecondWriterRefused`; no second RW handle |
 | Reader | Same file after a writer created it | `connect_reader` opens `read_only=True` | Readers do not take the writer lock |
 | Wrong filename | Path whose name is not `atlas.duckdb` | Refused | `ValueError` — no second store file |
-| Mechanism absent | AST of opener without lock / `read_only` | Test fails (AD-15) | Documents the unguarded `duckdb.connect` trap |
+| Mechanism absent | AST of opener without lock / `read_only` | Test fails (canopy:AD-15) | Documents the unguarded `duckdb.connect` trap |
 
 </intent-contract>
 
@@ -49,14 +49,14 @@ warnings: []
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/admission.py` -- existing `filelock` is Kedro *Parquet* admission, a different surface
 - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py` -- NEW: `connect_writer` / `connect_reader` / `SecondWriterRefused`
 - `src/shared/packages/pyforge-atlas/tests/test_one_duckdb_writer.py` -- NEW: live file ACs
-- `src/platform/tests/test_one_duckdb_writer.py` -- NEW: estate AD-15 AST gate (no `pyforge.*` import)
+- `src/platform/tests/test_one_duckdb_writer.py` -- NEW: estate canopy:AD-15 AST gate (no `pyforge.*` import)
 - Never: `src/platform/**` shipping `pyforge.*`; Epic 25.3 HTMX / 25.4 reconcile; pixi.toml
 
 ## Tasks & Acceptance
 
 **Execution:**
 - `pyforge/atlas/duckdb_writer.py` -- exclusive writer + `read_only=True` readers on `atlas.duckdb`
-- atlas + platform tests -- live refuse + AD-15 absence
+- atlas + platform tests -- live refuse + canopy:AD-15 absence
 
 **Acceptance Criteria:**
 - Given a live `atlas.duckdb`, when a second writer appears, then it is refused or serialized.
@@ -95,7 +95,7 @@ Files changed:
 - `pyforge/atlas/duckdb_writer.py` -- `connect_writer` / `connect_reader` / `LockedDuckDB`
 - `pyforge/atlas/rag/store.py` -- comment pointing file-backed opens at the opener
 - `pyforge-atlas/tests/test_one_duckdb_writer.py` -- live ACs
-- `src/platform/tests/test_one_duckdb_writer.py` -- AD-15 AST
+- `src/platform/tests/test_one_duckdb_writer.py` -- canopy:AD-15 AST
 - this spec
 
 Review findings: 1 low patch (lock release wrapper). Deferred 0. Rejected 0. Follow-up review: false (score 1).

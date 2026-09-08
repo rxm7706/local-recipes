@@ -23,7 +23,7 @@ warnings: []
 
 ## Boundaries & Constraints
 
-**Always:** Halt publish when `pyforgeloopdepth` reaches 8; the halt is observable (typed error, no `XADD`). Event `type` must be a dotted verb in the `django-pyforge` registry (adding a type is a chrome change). Stream boundary remains a transport: invalid `data` still `XADD`s and parses. Cite canopy:AD-8 / AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
+**Always:** Halt publish when `pyforgeloopdepth` reaches 8; the halt is observable (typed error, no `XADD`). Event `type` must be a dotted verb in the `django-pyforge` registry (adding a type is a chrome change). Stream boundary remains a transport: invalid `data` still `XADD`s and parses. Cite canopy:AD-8 / canopy:AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
 
 **Block If:** Implementation would re-split Redis (20-2 already split redis-broker vs redis-cache), move CloudEvents off redis-broker, start Epic 25, or require a live cluster Redis that tests cannot replace with the in-process stream backend.
 

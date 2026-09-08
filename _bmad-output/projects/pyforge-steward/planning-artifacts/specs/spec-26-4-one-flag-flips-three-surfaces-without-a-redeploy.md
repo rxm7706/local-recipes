@@ -33,7 +33,7 @@ warnings: []
 
 **Always:** flagd JSON schema (`flags` object). `FlagdProvider(resolver_type=ResolverType.FILE, offline_flag_source_path=…)`. Polling is 5s and unconfigurable. In-cluster path `/etc/pyforge/flags.json`. Physical spec path under `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
-**Block If:** Reloader, flagd daemon, or any flags sidecar (parent AD-14). A second JSON tree. Loosening `openfeature-provider-flagd` off `>=0.5.0,<0.5.1`. Recipe authoring. Story 27.x or 12-7.
+**Block If:** Reloader, flagd daemon, or any flags sidecar (parent canopy:AD-14). A second JSON tree. Loosening `openfeature-provider-flagd` off `>=0.5.0,<0.5.1`. Recipe authoring. Story 27.x or 12-7.
 
 **Never:** `import pyforge` under `src/platform/`. WASM/`wasmtime`. Per-surface homemade flag formats. Env promotion overlays (Deferred).
 

@@ -19,7 +19,7 @@ warnings:
   - oversized
 deferred:
   - summary: >-
-      Canopy AD-20 also names audit write and role-built navigation; this
+      Canopy canopy:AD-20 also names audit write and role-built navigation; this
       story's board is JSON filter-then-search only.
     evidence: |-
       Story 23.1 ACs and FR-16 name same-URL row isolation via
@@ -130,6 +130,6 @@ Files:
 - `tests/test_host_board_row_isolation.py` — HTTP + AST matrix
 - `tests/test_station_portal_shells.py` — atlas allowlist for steward dashboard
 - `src/platform/pyproject.toml` + `Containerfile` — test/image import path
-Review: 5 patches applied (3 medium, 2 low; follow-up score 11); 1 deferred (AD-20 audit/navigation); 18 rejected.
+Review: 5 patches applied (3 medium, 2 low; follow-up score 11); 1 deferred (canopy:AD-20 audit/navigation); 18 rejected.
 Verification: 18 passed under platform-ci-test (`DATABASE_URL=postgres://postgres:platform@127.0.0.1:5432/platform`); ruff clean on touched Python.
 Residual: image COPY of `pyforge-steward` not rebuilt in this run; fixture master not live atlas analytics.

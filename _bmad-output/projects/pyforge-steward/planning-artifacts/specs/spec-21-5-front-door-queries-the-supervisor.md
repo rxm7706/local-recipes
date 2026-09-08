@@ -74,7 +74,7 @@ deferred:
 
 **Execution:**
 - `django_pyforge/models.py` + `migrations/0003_*.py` — timing columns — FR-41
-- `django_pyforge/supervisor.py` — `query_board` + ingest in `complete_run` — AD-12
+- `django_pyforge/supervisor.py` — `query_board` + ingest in `complete_run` — canopy:AD-12
 - `platformapp/front_door/views.py` + `urls.py` + template + `config/urls.py` — `/runs/` — FR-40/FR-42
 - `src/platform/tests/test_front_door_queries_supervisor.py` — I/O matrix
 

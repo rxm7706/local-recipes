@@ -1583,13 +1583,13 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-23-1: Canopy AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+### DW-FU-23-1: Canopy canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
 
 - source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
-  summary: Canopy AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+  summary: Canopy canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
   evidence: Story 23.1 ACs and FR-16 name same-URL row isolation via filter_by_role / AccessDeclaration. Audit and build_navigation are already in pyforge.steward.dashboard from Epic 9 and were not wired onto /stations/atlas/board/.
   location: src/shared/packages/django-atlas/src/django_atlas_portal/board.py
-  origin: spec-deferred edb30b7864b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred 02b35407712b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
@@ -4343,7 +4343,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   summary: Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the AD-12 config-key flip
   evidence: Empirically confirmed (Run 1 halted exit 3 resolution-failure); independently re-confirmed by Blind Hunter reading load-skill.md's resolution logic directly
   location: _bmad/skf/skf-export-skill/references/load-skill.md (resolution ladder)
-  origin: spec-deferred 5dfb7cb8aeb2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred 57f5db250e7f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

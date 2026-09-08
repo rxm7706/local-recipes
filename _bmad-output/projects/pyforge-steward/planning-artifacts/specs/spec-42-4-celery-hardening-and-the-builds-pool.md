@@ -70,7 +70,7 @@ task is gone as FAILED (BS-8 partial).
 
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
-Ledger key `42-4-celery-hardening-and-the-builds-pool`. Host never imports `pyforge.*`. Celery + redis-broker (AD-10). One image, entrypoint args differ.
+Ledger key `42-4-celery-hardening-and-the-builds-pool`. Host never imports `pyforge.*`. Celery + redis-broker (canopy:AD-10). One image, entrypoint args differ.
 
 **Block If:** Implementation would move to RQ or django-tasks, or raise the default queue limit to hours.
 

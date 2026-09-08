@@ -92,7 +92,7 @@ a declared trim policy, DLQ retention is declared. Prove it with a real
   `dataMountPath` note is mirrored for the Redis image's `/data`.
 - Given production settings, when loaded, then `CELERY_TASK_IGNORE_RESULT`
   is `True` and `CELERY_RESULT_EXPIRES` is set (for tasks that opt in with
-  `ignore_result=False`); `CELERY_RESULT_BACKEND` remains the broker (AD-10
+  `ignore_result=False`); `CELERY_RESULT_BACKEND` remains the broker (canopy:AD-10
   letter unchanged) but is empty in steady state — a test enqueues
   `execute_supervised_run` and asserts no `celery-task-meta-*` key exists
   after completion.
@@ -112,7 +112,7 @@ a declared trim policy, DLQ retention is declared. Prove it with a real
   server process is **killed and restarted** on the same dir, then the
   stream entry, the PEL entry (`XPENDING` shows it), the DLQ (after a
   poison harvest), and the `applied:` key all survive. This is the CAP-11
-  / AD-15 per-invariant test: it must fail with `--appendonly no`.
+  / canopy:AD-15 per-invariant test: it must fail with `--appendonly no`.
 - Given the Dream's sizing table, when updated, then the "Redis AOF 20–50 GB
   RWO" storage row points at `redis.broker.persistence`, and the cache row
   says ephemeral.
@@ -122,7 +122,7 @@ a declared trim policy, DLQ retention is declared. Prove it with a real
 **Always:** Write under `_bmad-output/projects/pyforge-steward/planning-artifacts/`
 literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only — never `scripts/bmad-switch`.
 Ledger key `40-2-redis-broker-is-durable-and-bounded`. Broker and cache URLs
-stay distinct (AD-10; `connect_event_broker` refuses a shared URL). Official
+stay distinct (canopy:AD-10; `connect_event_broker` refuses a shared URL). Official
 `redis:7` image under `restricted-v2` with overlay-nulled UID (12.7 evidence).
 No new pixi dependency (`django-celery-results` is not pinned; not needed).
 
@@ -151,7 +151,7 @@ broker and cache. Deleting the DLQ on restart.
 - [x] `deploy/README.md` + `overlays/ocp/cluster-bringup.md`: broker PVC,
       AOF, DLQ retention procedure.
 - [x] `config/settings/base.py`: `CELERY_TASK_IGNORE_RESULT = True`,
-      `CELERY_RESULT_EXPIRES = 3600`; comment citing AD-12 (RunState is the
+      `CELERY_RESULT_EXPIRES = 3600`; comment citing canopy:AD-12 (RunState is the
       record) and this story.
 - [x] `django_pyforge/events/fabric.py` + `constants.py`: `applied:` TTL,
       publish-time `maxlen` trim, both env-configurable with documented
@@ -170,7 +170,7 @@ broker and cache. Deleting the DLQ on restart.
 
 ## Design notes
 
-- **Why keep results on the broker URL at all?** AD-10's rule text says
+- **Why keep results on the broker URL at all?** canopy:AD-10's rule text says
   "Celery and Channels use the broker". Ignoring results globally satisfies
   the intent (nothing accumulates) without re-litigating the AD or adding
   `django-celery-results` to the lock. Every call site is `.delay()` with no

@@ -15,13 +15,13 @@ warnings: []
 
 ## Intent
 
-**Problem:** Story 11.2's correct AD-17/Pattern-B implementation was already built and live-verified twice but never merged — it stalled because AC3 as originally written required DB-GPT's own metadata store to land in real PostgreSQL, which is structurally impossible for `dbgpt-app` 0.8.1 (SQLite-only migration path; MySQL-only `TEXT(length)` columns fail as PostgreSQL DDL). That's now resolved as a bounded, dated AD-6 exception (PR #592, merged): the store stays on the PersistentVolumeClaim/SQLite path Story 10.5 already built.
+**Problem:** Story 11.2's correct pap:AD-17/Pattern-B implementation was already built and live-verified twice but never merged — it stalled because AC3 as originally written required DB-GPT's own metadata store to land in real PostgreSQL, which is structurally impossible for `dbgpt-app` 0.8.1 (SQLite-only migration path; MySQL-only `TEXT(length)` columns fail as PostgreSQL DDL). That's now resolved as a bounded, dated AD-6 exception (PR #592, merged): the store stays on the PersistentVolumeClaim/SQLite path Story 10.5 already built.
 
 **Approach:** Recover the complete implementation wholesale onto a new branch from `origin/backup/steward-11-2-blocked-847ed9ec24` (verified: one commit, clean merge, zero conflicts with current `main` in `src/platform`, content already matches the corrected AC3 as-is — no PostgreSQL assumption anywhere for DB-GPT's own metadata store). Confirm alignment against the corrected AC3, verify via the real test surface, prove the live round trip, then land.
 
 ## Boundaries & Constraints
 
-**Always:** DB-GPT's own metadata store stays on the PVC/SQLite path, never PostgreSQL. `dbgpt_schema` migration provisions the schema only (`RunSQL`; Django ORM never registers models under it). `config/engine_patterns.py` (AD-17 registry) is the single source of truth for Pattern A vs Pattern B and sidecar URLs; `asgi.py` consults it to prove no ASGI mount is built for Pattern-B engines. Sidecar calls go through the registry's `get_sidecar_base_url` (never a hardcoded URL) via the Celery/Redis path, never the public edge.
+**Always:** DB-GPT's own metadata store stays on the PVC/SQLite path, never PostgreSQL. `dbgpt_schema` migration provisions the schema only (`RunSQL`; Django ORM never registers models under it). `config/engine_patterns.py` (pap:AD-17 registry) is the single source of truth for Pattern A vs Pattern B and sidecar URLs; `asgi.py` consults it to prove no ASGI mount is built for Pattern-B engines. Sidecar calls go through the registry's `get_sidecar_base_url` (never a hardcoded URL) via the Celery/Redis path, never the public edge.
 
 **Block If:** the recovered branch's content contradicts the corrected AC3 text in `epics.md`/`ARCHITECTURE-SPINE.md`/`SPEC.md` (re-diff before merging if so) — investigation already confirmed it does not.
 
@@ -39,7 +39,7 @@ warnings: []
 
 ## Code Map
 
-- `src/platform/config/engine_patterns.py` -- NEW: AD-17 registry (`ENGINE_PATTERNS`, `SIDECAR_BASE_URLS`, `get_sidecar_base_url`)
+- `src/platform/config/engine_patterns.py` -- NEW: pap:AD-17 registry (`ENGINE_PATTERNS`, `SIDECAR_BASE_URLS`, `get_sidecar_base_url`)
 - `src/platform/config/asgi.py` -- registry-consult touchpoint; asserts no ASGI mount for `dbgpt`
 - `src/platform/config/settings/base.py` -- registers `dbgpt_integration` in `LOCAL_APPS` (migration-only); adds unused-today `DBGPT_DATABASE_URL`
 - `src/platform/dbgpt_integration/apps.py` -- migration-only `AppConfig`
@@ -61,7 +61,7 @@ warnings: []
 
 **Acceptance Criteria:**
 - Given a fresh `migrate`, when `dbgpt_schema` is inspected, then it exists with zero Django ORM tables registered under it (AC1)
-- Given the AD-17 registry, when `config/asgi.py` is imported with `dbgpt` set to Pattern B, then no ASGI mount is built for `dbgpt` (AC2)
+- Given the pap:AD-17 registry, when `config/asgi.py` is imported with `dbgpt` set to Pattern B, then no ASGI mount is built for `dbgpt` (AC2)
 - Given the recovered settings/compose wiring, when DB-GPT's own metadata store is inspected, then it persists via the dedicated PersistentVolumeClaim/SQLite path (Story 10.5), never PostgreSQL/`dbgpt_schema` (AC3, corrected 2026-08-21)
 - Given the Celery `text_to_sql` task, when invoked with a real prompt against the live sidecar, then it returns a real SQL query and result data round-tripped through the sidecar's own REST API (AC4)
 
@@ -79,7 +79,7 @@ warnings: []
   - `[medium]` `[patch]` `tasks.py`: `json.loads` at both call sites (chart-view content, `chat/completions` SSE body) and `_register_datasource`'s `response.json()` could raise a raw, uncaught `json.JSONDecodeError` on a malformed sidecar response instead of the module's own documented `DbgptRequestError` contract -- added a shared `_json_or_raise` helper and routed all three call sites through it.
   - `[medium]` `[patch]` `tasks.py::text_to_sql`: `final_chunk["choices"][0]["message"]["content"]` could raise a raw `IndexError`/`KeyError` on an empty `choices` list or a missing `message`/`content` key -- added an explicit guard that raises `DbgptRequestError` instead.
   - `[medium]` `[patch]` `tasks.py`: both non-2xx error paths interpolated the sidecar's raw `response.text` into the propagated exception message (a plausible credential-echo channel into Celery/task logs, since the datasource-registration request body carries a real DB password) -- trimmed to `status_code` only, and added `logger.error` calls at both raise sites plus `logger.info` at task start/registration-success/completion (the module's own `logger` was created but never called).
-  - `[medium]` `[patch]` `config/asgi.py`: the AD-17 registry-consult touchpoint was a bare `assert`, which `python -O`/`PYTHONOPTIMIZE` strips -- converted to an explicit `if`/`raise RuntimeError` so the safety check survives an optimized interpreter; updated `tests/test_engine_patterns.py`'s docstring to match the new exception type.
+  - `[medium]` `[patch]` `config/asgi.py`: the pap:AD-17 registry-consult touchpoint was a bare `assert`, which `python -O`/`PYTHONOPTIMIZE` strips -- converted to an explicit `if`/`raise RuntimeError` so the safety check survives an optimized interpreter; updated `tests/test_engine_patterns.py`'s docstring to match the new exception type.
   - `[low]` `[patch]` `tasks.py`: `_HTTP_STATUS_SUCCESS_CLASS`/`status_code // 100` reinvented `httpx.Response.is_success` -- replaced both call sites with the real property.
   - `[low]` `[patch]` `config/settings/base.py`: `os.environ["DBGPT_DATABASE_URL"] = ...` mirrored `LANGFLOW_CONFIG_DIR`'s pattern, but DB-GPT is Pattern B (a separate container) so nothing in this process could ever read this process's `os.environ` -- removed the dead mutation; the Django setting itself (already assigned) is the real, consumable form.
   - `[low]` `[patch]` `config/settings/base.py`: `_dbgpt_db['NAME']` used direct dict access, a hard crash risk at settings-import time if `DATABASES["default"]` were ever missing `NAME` -- changed to `.get('NAME', '')`.
@@ -105,10 +105,10 @@ warnings: []
 
 ## Auto Run Result
 
-**Summary:** Recovered Story 11.2's complete, twice-live-verified AD-17/Pattern-B DB-GPT integration wholesale from `origin/backup/steward-11-2-blocked-847ed9ec24` onto branch `steward/11-2-dbgpt-pattern-b`, confirmed it already matches the corrected AC3 (DB-GPT's own metadata store on PVC/SQLite, never `dbgpt_schema`/PostgreSQL), then hardened it through an adversarial + edge-case review pass.
+**Summary:** Recovered Story 11.2's complete, twice-live-verified pap:AD-17/Pattern-B DB-GPT integration wholesale from `origin/backup/steward-11-2-blocked-847ed9ec24` onto branch `steward/11-2-dbgpt-pattern-b`, confirmed it already matches the corrected AC3 (DB-GPT's own metadata store on PVC/SQLite, never `dbgpt_schema`/PostgreSQL), then hardened it through an adversarial + edge-case review pass.
 
 **Files changed:**
-- `src/platform/config/engine_patterns.py` (new) -- AD-17 pattern registry (`ENGINE_PATTERNS`, `SIDECAR_BASE_URLS`, `get_sidecar_base_url`)
+- `src/platform/config/engine_patterns.py` (new) -- pap:AD-17 pattern registry (`ENGINE_PATTERNS`, `SIDECAR_BASE_URLS`, `get_sidecar_base_url`)
 - `src/platform/config/asgi.py` -- registry-consult touchpoint (assert -> explicit `if`/`raise` during review)
 - `src/platform/config/settings/base.py` -- `dbgpt_integration` app registration, `DBGPT_DATABASE_URL` (dead `os.environ` mutation removed, defensive `.get('NAME', '')` added during review)
 - `src/platform/dbgpt_integration/apps.py`, `tasks.py` (new), `tests.py` (new), `migrations/0001_create_dbgpt_schema.py` (new) -- migration-only app, the `text_to_sql` Celery task (logging + defensive JSON parsing added during review), schema-isolation + task tests

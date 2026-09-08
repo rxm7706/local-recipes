@@ -40,7 +40,7 @@ on the existing `sync reconcile` verb.
   (`ProjectV2.items(first, after)`), following `pageInfo.hasNextPage`/`endCursor` until
   exhausted. Factor the existing `ProjectV2ItemFieldTextValue` field-parsing loop out of
   `get_project_item` into a shared helper reused by both -- do not duplicate it.
-- A candidate is every item whose parsed link-field value is non-empty (AD-10 rule 1: an absent
+- A candidate is every item whose parsed link-field value is non-empty (jira:AD-10 rule 1: an absent
   baseline is a first link, not a loop candidate -- still reconciled). Never read or compare
   baseline values during enumeration itself.
 - Deliberately do NOT gate candidacy on `updated_at` -- fetch and surface it per candidate in
@@ -65,7 +65,7 @@ on the existing `sync reconcile` verb.
 
 **Never:**
 - Never invent a persisted watermark, sidecar state file, or new baseline-map field to narrow
-  the candidate filter -- AD-2 forbids a new sidecar store and AD-10 forbids branching on the
+  the candidate filter -- AD-2 forbids a new sidecar store and jira:AD-10 forbids branching on the
   optional "last converged at" telemetry timestamp. Narrowing the filter for efficiency is
   future optimization, not this story's scope.
 - Never build Jira-side (JQL) candidate discovery -- every linked pair is reachable from its
@@ -304,7 +304,7 @@ while True:
 ```
 
 **Why not gate on `updated_at`:** the tempting design -- compare each item's `updatedAt` against
-some "last checked" value to skip obviously-untouched items -- has no AD-2/AD-10-compliant place
+some "last checked" value to skip obviously-untouched items -- has no AD-2/jira:AD-10-compliant place
 to store that value (no sidecar store; the baseline's optional telemetry timestamp is explicitly
 non-load-bearing) and would silently miss Jira-only changes, which never move a GitHub item's
 `updatedAt` at all. Treating every linked item as a candidate is simpler, has zero false-negative
@@ -327,7 +327,7 @@ shared by `get_project_item` and the new lister; (2) `_LIST_PROJECT_ITEMS_QUERY`
 GraphQL query over `ProjectV2.items(first, after)`; (3) `list_linked_github_items(*, config,
 credential, transport)`, which follows `pageInfo.hasNextPage`/`endCursor` to exhaustion and
 returns one `{"github_item_id", "updated_at"}` dict per node whose parsed link-field value is
-non-empty -- candidacy is gated on the link field ONLY, never the baseline (AD-10 rule 1) and
+non-empty -- candidacy is gated on the link field ONLY, never the baseline (jira:AD-10 rule 1) and
 never `updated_at` (fetched for observability only, per the Design Notes rationale); (4)
 `reconcile_schedule_batch(*, config, dry_run=False, transport=None)`, which calls the lister once
 then dispatches the existing, byte-for-byte-unchanged `reconcile()` once per candidate inside a
@@ -411,7 +411,7 @@ candidate's error is only visible via `details["candidates"][i]["summary"]`, not
 line; that is Story 8.5's job, not a defect here. This story also does not narrow the candidate
 filter for efficiency (every linked item is a candidate on every schedule tick, matching the
 Design Notes' explicit rationale) -- a future story may add a compliant efficiency narrowing once
-a persisted comparand exists, but AD-2/AD-10 forbid inventing one now. The 7 rejected review
+a persisted comparand exists, but AD-2/jira:AD-10 forbid inventing one now. The 7 rejected review
 findings (retry/backoff, concurrency/rate-limiting, page-streaming) are real production-hardening
 considerations for a large board but were not part of this story's Effort-M decomposition scope;
 worth a future story if a deployed board proves large enough to need them.

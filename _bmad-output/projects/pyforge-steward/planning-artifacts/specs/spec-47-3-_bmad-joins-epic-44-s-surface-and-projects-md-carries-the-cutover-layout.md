@@ -21,23 +21,23 @@ Two small, mechanical gaps closed. First: `marshal-policy.toml`'s
 `[epic_surfaces] "44"` entry (the marshal scope-fence every dispatched
 Epic 44 story's diff is checked against, `MRS-GATE-007`) omits `_bmad/**` —
 verified live, the entry's own 30+ globs cover `src/`, `docs/dreams/`,
-`skills/`, `.claude/skills/`, `pixi.toml`, etc., but never `_bmad/`. AD-12
+`skills/`, `.claude/skills/`, `pixi.toml`, etc., but never `_bmad/`. fnd:AD-12
 (architecture spine, already `[ADOPTED]`) explicitly assigns Story 44.5 the
 job of moving `_bmad/`, `_bmad-output/projects/`, and `docs/dreams/` "as one
 unit" — without `_bmad/**` in the surface list, that exact move would trip
 `MRS-GATE-007`'s hard scope-violation refusal the moment 44.5 actually runs.
 Second: `_bmad-output/PROJECTS.md`'s two sections describing the marker +
 symlink mechanism (§ Config layering, § Adding a new project) are written
-as permanent, local-recipes-only facts with no acknowledgment that AD-12
+as permanent, local-recipes-only facts with no acknowledgment that fnd:AD-12
 moves the ENTIRE mechanism (marker, both planning symlinks, the whole
 `_bmad/` + `_bmad-output/projects/` tree) into the foundry as one unit at
-the cutover flip (AD-17) — a reader has no way to know from PROJECTS.md
+the cutover flip (fnd:AD-17) — a reader has no way to know from PROJECTS.md
 itself that this same mechanism keeps working, unchanged in its own logic,
 just re-rooted, rather than being replaced or left behind.
 
 ## Boundaries & Constraints
 
-- **This story does not implement the AD-12 move itself** (that is Story
+- **This story does not implement the fnd:AD-12 move itself** (that is Story
   44.5's own job, still `blocked` in the ledger pending solutioning
   review) — it only makes the SCOPE FENCE ready to accept that future
   change without tripping a gate, and makes the DOCUMENTATION honest about
@@ -46,15 +46,15 @@ just re-rooted, rather than being replaced or left behind.
   `marshal-policy.toml` — no other epic's surface list is touched (verified
   live: no other epic's own move/relocation story needs this glob today).
 - **The new PROJECTS.md subsection is descriptive of a FUTURE state gated
-  on the AD-17 flip**, never phrased as already true — it must not read as
+  on the fnd:AD-17 flip**, never phrased as already true — it must not read as
   if the marker/symlinks already point at a foundry root today (they do
   not; `bmad-switch`'s own behavior is completely unchanged by this
   story).
-- **"Never copied" is the load-bearing phrase from AD-12 itself** (verified
+- **"Never copied" is the load-bearing phrase from fnd:AD-12 itself** (verified
   by reading the architecture spine directly): the marker and both
   planning symlinks are per-working-tree state, RECREATED by
   `bmad-switch` / `bmad-loop-worktree` in whatever root is active — this
-  story's new subsection states this explicitly, mirroring AD-19's own
+  story's new subsection states this explicitly, mirroring fnd:AD-19's own
   "generated per-machine links, gitignored" convention for
   `.claude/skills`/`.cursor/skills` (the cutover's target-tree diagram,
   read directly) so a reader sees the SAME principle applied to both
@@ -72,7 +72,7 @@ just re-rooted, rather than being replaced or left behind.
 |---|---|
 | `marshal-policy.toml`'s `[epic_surfaces] "44"` list | Gains `"_bmad/**"` as one new entry; every existing entry unchanged |
 | A hypothetical future diff touching `_bmad/**` under Epic 44 | Would now pass `MRS-GATE-007`'s scope check (previously would have hard-refused as `SCOPE_VIOLATION`) |
-| `PROJECTS.md` | Gains one new subsection (placed after § Adding a new project, before § Reading another project's artifacts) describing the AD-12 cutover-target layout; the two existing sections (§ Config layering, § Adding a new project) are otherwise unchanged — this story adds context, it does not rewrite them |
+| `PROJECTS.md` | Gains one new subsection (placed after § Adding a new project, before § Reading another project's artifacts) describing the fnd:AD-12 cutover-target layout; the two existing sections (§ Config layering, § Adding a new project) are otherwise unchanged — this story adds context, it does not rewrite them |
 | `cutover-readiness.md` G1 | State cell: `_bmad/**` added, dated |
 | `cutover-readiness.md` G8 | State cell: PROJECTS.md subsection added, dated, naming the two sections no longer left silently un-cross-referenced |
 | `.memlog.md` (spec-bmad-suite-lifecycle) | One new event |
@@ -89,24 +89,24 @@ just re-rooted, rather than being replaced or left behind.
     readability, not functionally required since TOML array order doesn't
     matter).
 - `_bmad-output/PROJECTS.md`
-  - New subsection, "## Cutover target (foundry, AD-12)", inserted after
+  - New subsection, "## Cutover target (foundry, fnd:AD-12)", inserted after
     § Adding a new project (line ~85) and before § Reading another
     project's artifacts (line ~87). Content: states that `_bmad/`,
     `_bmad-output/projects/`, and `docs/dreams/` move whole into
     `python-foundry` as one unit at Story 44.5 (cited, not restated in
-    depth — points at the architecture spine's own AD-12); the marker
+    depth — points at the architecture spine's own fnd:AD-12); the marker
     file and BOTH planning symlinks are per-working-tree state, recreated
     fresh by `bmad-switch`/`bmad-loop-worktree` in whichever root is
-    active, NEVER copied as static content — mirroring AD-19's own
+    active, NEVER copied as static content — mirroring fnd:AD-19's own
     generated-per-machine-links principle for `.claude/skills`/
     `.cursor/skills`; `bmad-switch`'s own command surface and semantics
     (§ Active project switching, above) are completely unchanged by the
     move — only the root it operates against changes, and only at the
-    AD-17 flip, not before.
+    fnd:AD-17 flip, not before.
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/cutover-readiness.md`
   - G1 row: state cell dated, records the glob addition.
   - G8 row: state cell dated, records the new subsection and that the two
-    cited PROJECTS.md sections no longer contradict AD-12/AD-19 (they were
+    cited PROJECTS.md sections no longer contradict fnd:AD-12/fnd:AD-19 (they were
     never WRONG, just silent about the future move — this story adds the
     missing cross-reference, it does not correct an error in the existing
     two sections).
@@ -120,7 +120,7 @@ just re-rooted, rather than being replaced or left behind.
      inside the `"44"` array (not any other epic's array); every other
      epic's `[epic_surfaces]` array is byte-identical before/after.
 2. **Write the new PROJECTS.md subsection.**
-   - AC: the subsection exists, is placed correctly, cites AD-12 and AD-19
+   - AC: the subsection exists, is placed correctly, cites fnd:AD-12 and fnd:AD-19
      by name, uses the word "never copied" (or equivalent) for both the
      marker and the two planning symlinks, and does not claim the foundry
      root is active today.
@@ -133,7 +133,7 @@ just re-rooted, rather than being replaced or left behind.
 
 - 2026-09-07: initial draft, written directly (no fork) after reading
   `marshal-policy.toml`'s full `[epic_surfaces] "44"` list (confirming
-  `_bmad/**` genuinely absent), the architecture spine's AD-12/AD-17/AD-19
+  `_bmad/**` genuinely absent), the architecture spine's fnd:AD-12/fnd:AD-17/fnd:AD-19
   text directly, `PROJECTS.md` in full (confirming the exact line ranges
   G8 cites), and `dispatch_verify.py`'s own consumption of
   `effective.epic_surfaces.value` (confirming this is a real, live
@@ -157,7 +157,7 @@ that predates this story.
   semantics — `_bmad/**` translates identically to `_bmad/*` — but this
   is pre-existing, identical behavior for every other `**` entry in the
   file, not something this story introduces or needs to fix); read
-  AD-12/AD-17/AD-19's actual spine text directly and confirmed the new
+  fnd:AD-12/fnd:AD-17/fnd:AD-19's actual spine text directly and confirmed the new
   PROJECTS.md subsection's paraphrases are accurate, not distorted;
   confirmed the future-state disclaimer is unambiguous and live-checked
   against this worktree's actual marker/symlink state; confirmed
@@ -200,8 +200,8 @@ Blocking condition: none
 
 Implementation delivered all 4 tasks cleanly: `"_bmad/**"` added to epic
 44's marshal-policy surface array (verified as the sole change to that
-array); a new "## Cutover target (foundry, AD-12)" subsection added to
-PROJECTS.md at the correct location, citing AD-12/AD-19 accurately and
+array); a new "## Cutover target (foundry, fnd:AD-12)" subsection added to
+PROJECTS.md at the correct location, citing fnd:AD-12/fnd:AD-19 accurately and
 explicitly disclaiming present-tense truth. `cutover-readiness.md`'s G1/G8
 rows resolved with dated notes; no other row touched. A 2-reviewer pass
 (Blind Hunter + Verification Gap, documented reduction given the doc-only

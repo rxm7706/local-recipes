@@ -38,8 +38,8 @@ warnings: []
 | Interrupted then resume | RWX with 3 files; first boot stops after 1 upsert | Second boot → 3 rows, not 4+; keys unique | `BootInterrupted` on first pass |
 | PG-only (no RWX) | Store already has keys; `rwx_root` missing | Reconcile is a no-op upsert; row count unchanged | No error |
 | RWX files present | Empty store; two files on RWX | Two rows keyed by relative path | Directories skipped |
-| Naive insert (mechanism absent) | Same interrupted+resume against `insert_always` | Duplicate rows | Documents the trap; AD-15 |
-| Reconcile removed | AST of `boot.py` without unique-key `ON CONFLICT` upsert | Test fails | Canopy AD-15 |
+| Naive insert (mechanism absent) | Same interrupted+resume against `insert_always` | Duplicate rows | Documents the trap; canopy:AD-15 |
+| Reconcile removed | AST of `boot.py` without unique-key `ON CONFLICT` upsert | Test fails | Canopy canopy:AD-15 |
 | No object store | `boot.py` AST import graph | No `boto3`/`minio`/`s3` | Review-blocking if present |
 
 </intent-contract>
@@ -48,7 +48,7 @@ warnings: []
 
 - `src/shared/packages/pyforge-mason/src/pyforge/mason/boot.py` -- NEW: `SqliteIndexStore` (PG-shaped unique key), `reconcile_boot`, `scan_rwx`, `insert_always` trap, `BootInterrupted`
 - `src/shared/packages/pyforge-mason/tests/unit/test_boot_reconcile.py` -- NEW: live matrix (interrupt+resume, PG-only, RWX, naive trap)
-- `src/platform/tests/test_restarts_reconcile.py` -- NEW: estate AD-15 AST + no MinIO/boto3/S3 (no `pyforge.*` import)
+- `src/platform/tests/test_restarts_reconcile.py` -- NEW: estate canopy:AD-15 AST + no MinIO/boto3/S3 (no `pyforge.*` import)
 - `src/shared/packages/django-mason/` -- read-only chrome; do not add a second indexer
 - `src/shared/packages/pyforge-mason/src/pyforge/mason/models.py` -- read-only leaf; do not park behaviour here
 - Never: `src/platform/**` importing `pyforge.*`; Epic 26; pixi.toml; boto3/MinIO
@@ -58,7 +58,7 @@ warnings: []
 **Execution:**
 - `pyforge/mason/boot.py` -- unique-key upsert reconcile + optional RWX scan
 - mason unit tests -- interrupt+resume applies once
-- `src/platform/tests/test_restarts_reconcile.py` -- AD-15 + no object-store client
+- `src/platform/tests/test_restarts_reconcile.py` -- canopy:AD-15 + no object-store client
 
 **Acceptance Criteria:**
 - Given work interrupted mid-flight, when the process restarts, then the effect applies once.
@@ -77,11 +77,11 @@ warnings: []
 - reject: 4
 - addressed_findings:
   - `[medium]` `[patch]` platform gate now executes `_UPSERT` SQL (interrupt one row, resume three unique keys) so CI proves once-only without `import pyforge`
-  - `[low]` `[patch]` AD-15 binds `ON CONFLICT` / `PRIMARY KEY` to `_UPSERT` / `_CREATE_INDEX` constants, not a source-wide substring
+  - `[low]` `[patch]` canopy:AD-15 binds `ON CONFLICT` / `PRIMARY KEY` to `_UPSERT` / `_CREATE_INDEX` constants, not a source-wide substring
 
 ## Design Notes
 
-`SqliteIndexStore` uses stdlib `sqlite3` with `PRIMARY KEY` and `ON CONFLICT DO NOTHING` — the same SQL PostgreSQL accepts. Tests do not require a live cluster. Artifact key is the POSIX relative path under the RWX root. `insert_always` is the AD-15 trap: append-only INSERT with no unique key. `interrupt_after` is a test seam that raises `BootInterrupted` after N upserts; production callers omit it.
+`SqliteIndexStore` uses stdlib `sqlite3` with `PRIMARY KEY` and `ON CONFLICT DO NOTHING` — the same SQL PostgreSQL accepts. Tests do not require a live cluster. Artifact key is the POSIX relative path under the RWX root. `insert_always` is the canopy:AD-15 trap: append-only INSERT with no unique key. `interrupt_after` is a test seam that raises `BootInterrupted` after N upserts; production callers omit it.
 
 ## Verification
 
@@ -92,12 +92,12 @@ warnings: []
 
 Status: done
 
-Summary: Mason boot re-index upserts RWX files into a PostgreSQL-shaped unique-key table (`ON CONFLICT DO NOTHING`). Interrupted boot plus restart yields one row per artifact. Naive append store duplicates (AD-15 trap). No MinIO/boto3/S3.
+Summary: Mason boot re-index upserts RWX files into a PostgreSQL-shaped unique-key table (`ON CONFLICT DO NOTHING`). Interrupted boot plus restart yields one row per artifact. Naive append store duplicates (canopy:AD-15 trap). No MinIO/boto3/S3.
 
 Files changed:
 - `pyforge/mason/boot.py` -- `SqliteIndexStore`, `reconcile_boot`, `scan_rwx`, `NaiveAppendStore`
 - `pyforge-mason/tests/unit/test_boot_reconcile.py` -- interrupt+resume, PG-only, RWX, naive trap, second full boot
-- `src/platform/tests/test_restarts_reconcile.py` -- live SQL once-only + AD-15 AST + no object-store imports
+- `src/platform/tests/test_restarts_reconcile.py` -- live SQL once-only + canopy:AD-15 AST + no object-store imports
 - this spec
 
 Review findings: 2 patches (medium SQL-in-CI, low AST constants). Deferred 0. Rejected 4 (live PG cluster, concurrent boots, size refresh on same key, django-mason AppConfig.ready). Follow-up review: false (score 4).

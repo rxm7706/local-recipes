@@ -110,13 +110,13 @@ Baseline: `8ace5673f950bce88b6253cc46e6dc3cdc4abb4c`
 
 ### Summary
 
-Recorded canopy **AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-SDK isolation), replaced the Dream's Multi-Python claims with a lock-derived matrix (`scripts/pixi_env_matrix.py`), added Grounding **Python floor** bullet, and wired `bmad-drift` `pixi-env-matrix-stale` detection.
+Recorded canopy **canopy:AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-SDK isolation), replaced the Dream's Multi-Python claims with a lock-derived matrix (`scripts/pixi_env_matrix.py`), added Grounding **Python floor** bullet, and wired `bmad-drift` `pixi-env-matrix-stale` detection.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `architecture/.../ARCHITECTURE-SPINE.md` | AD-23 + stack Python row |
+| `architecture/.../ARCHITECTURE-SPINE.md` | canopy:AD-23 + stack Python row |
 | `scripts/pixi_env_matrix.py` | New lock → markdown matrix generator |
 | `tests/scripts/test_pixi_env_matrix.py` | Unit tests (stdlib + PyYAML) |
 | `docs/dreams/pyforge-unifying-strategy.md` | Grounding Python floor + measured matrix |
@@ -134,7 +134,7 @@ Recorded canopy **AD-23** (one interpreter `3.14.*` target + `mcp-host` as MCP-S
 - addressed_findings:
   - none
 
-Deferred: archive Fleet conventions row still lists pre-43.5 Python floor split — living Grounding + AD-23 supersede it; archive edit out of scope for 43.5.
+Deferred: archive Fleet conventions row still lists pre-43.5 Python floor split — living Grounding + canopy:AD-23 supersede it; archive edit out of scope for 43.5.
 
 Rejected: dream line-count creep (~446 lines) — matrix block is generated and required by AC.
 
