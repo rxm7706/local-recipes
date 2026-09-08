@@ -2583,7 +2583,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/SPEC.md`
   summary: Worktree residue on the `local-recipes` checkout — 268 registered git worktrees (58 `.worktrees/`, 66 `.cursor/worktrees`, 33 `.claude/worktrees`, 93 retired under loop homes, 8 loop homes, 3 `local-recipes-wt-*`) and 85 GB under `.claude/worktrees/` — retired at Phase 6, never moved (fnd:AD-1).
   evidence: `git worktree list --porcelain | grep -c '^worktree '` = 268 on 2026-09-04; `du -sh .claude/worktrees` = 85G.
+  location: git worktree list (live measurement)
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED and holding. The entry recorded 268 registered worktrees and 85 GB. `git worktree list | wc -l` today returns **10** (primary + 8 loop homes + 1). marshal's `DW-HYGIENE-2026-09-05-1` records the sweep that did it (262 -> 12, 29 GB reclaimed, `scripts/worktree_sweep.py`), and the count has stayed low in the three days since rather than re-growing. The residue this entry describes is gone.
 
 ### DW-FU-40-1: Structured-log assertions for assertion.mint_refused (caplog on 401/403, no bearer echo) — AC requires logging but tests only check HTTP status.
 
@@ -2593,7 +2596,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 03d7c6b1f3a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py; tests at src/platform/tests/test_django_pyforge_assertion.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED by measurement, not by reading the entry back: structured-log assertions for `assertion.mint_refused` is still absent. `grep -rl mint_refused src/platform/tests/` returns **0 files** — no test asserts the refusal log line at all, so the AC's logging requirement is still covered only by HTTP status. A `location:` was added — this entry had none, which is exactly why the churn filter could never reach it.
 
 ### DW-FU-40-1-2: HTTPS JWKS fetch path integration test (production urlopen contract).
 
@@ -2603,7 +2609,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred d58ee2121818 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py; tests at src/platform/tests/test_django_pyforge_assertion.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED by measurement, not by reading the entry back: an HTTPS JWKS fetch integration test is still absent. `urlopen` appears in only 3 platform test files and none exercises the production HTTPS fetch contract for `django_pyforge.assertion.jwks`. A `location:` was added — this entry had none, which is exactly why the churn filter could never reach it.
 
 ### DW-FU-40-1-3: Import-time no-network invariant test for django_pyforge.assertion.jwks.
 
@@ -2613,7 +2622,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 02a2d7cd20e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py; tests at src/platform/tests/test_django_pyforge_assertion.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED by measurement, not by reading the entry back: an import-time no-network invariant test is still absent. `grep -rl 'no_network|no-network' src/platform/tests/` returns **0 files** — nothing pins that importing `django_pyforge.assertion.jwks` performs no network I/O. A `location:` was added — this entry had none, which is exactly why the churn filter could never reach it.
 
 ### DW-FU-40-1-4: Full 503 matrix for every _require_verifier_settings() failure mode beyond empty OIDC_JWKS_URL (http:// scheme, blank issuer/audience/algorithms).
 
@@ -2623,7 +2635,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 9247533f1e37 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/jwks.py; tests at src/platform/tests/test_django_pyforge_assertion.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED by measurement, not by reading the entry back: the full 503 matrix for `_require_verifier_settings()` is still absent. `503` appears in 3 platform test files, but no test covers the non-empty-URL failure modes the entry names (http:// scheme, blank issuer/audience/algorithms). A `location:` was added — this entry had none, which is exactly why the churn filter could never reach it.
 
 ### DW-FU-41-2: Reconcile `resilience-invariants.md` BS-5 row to Story 41.2 single-writer-on-RWO / Parquet model (still describes read-only shared mounts).
 
@@ -2633,7 +2648,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred cd1c82a2f0e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md (BS-5 row)
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: the BS-5 row still describes read-only shared mounts rather than Story 41.2's single-writer-on-RWO / Parquet model. A `location:` was added — this entry had none, which is why the churn filter could never reach it. 41-2-3 in particular is pending-on-precondition in substance: its blocker is a PVC that has not shipped, not a decision anyone owes.
 
 ### DW-FU-41-2-2: Extend estate DuckDB policy gate to cover file-backed `ibis.duckdb.connect` and aliased `duckdb` imports.
 
@@ -2643,7 +2661,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred b3fdec19aaea — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/shared/packages/pyforge-atlas/tests/unit/policy_gate/ (estate DuckDB policy gate)
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: the gate still does not cover file-backed `ibis.duckdb.connect` or aliased `duckdb` imports. A `location:` was added — this entry had none, which is why the churn filter could never reach it. 41-2-3 in particular is pending-on-precondition in substance: its blocker is a PVC that has not shipped, not a decision anyone owes.
 
 ### DW-FU-41-2-3: Add positive Helm fixture when writer plane PVC lands (`pyforge.io/query-plane`, RWO).
 
@@ -2653,7 +2674,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 00bfc74ef4eb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: src/platform/deploy/charts/platform/ (Helm fixtures)
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: no positive Helm fixture exists, because the `pyforge.io/query-plane` RWO writer-plane PVC it depends on has not landed. A `location:` was added — this entry had none, which is why the churn filter could never reach it. 41-2-3 in particular is pending-on-precondition in substance: its blocker is a PVC that has not shipped, not a decision anyone owes.
 
 ### DW-FU-41-2-4: Run duckdb-boundary chart live-render proofs in platform-ci-test (helm currently platform-dev only).
 
@@ -2663,7 +2687,10 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred b0f3185e8c6f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: pixi.toml (platform-ci-test) / .github/workflows/platform-ci.yml
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: the duckdb-boundary chart live-render proofs still run only under platform-dev, not in platform-ci-test. A `location:` was added — this entry had none, which is why the churn filter could never reach it. 41-2-3 in particular is pending-on-precondition in substance: its blocker is a PVC that has not shipped, not a decision anyone owes.
 
 ### DW-FU-41-3: db.changelog-master.yaml's include order does not satisfy its own FK dependencies: python-agent-platform:18 adds a socialaccount FK to django_site, which :10 (sites.0001) creates later.
 
@@ -2676,6 +2703,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED present: `src/platform/db/changelog/db.changelog-master.yaml` still carries the include set this entry indicts (25 matches for the sites/socialaccount/python-agent-platform ordering it names). The FK-before-creator ordering defect is unchanged; the entry's own reproduction (`liquibase update` stopping at `Run: 10` with `relation "django_site" does not exist`) is a runtime proof this sweep cannot re-run offline, so the file-level confirmation is what is asserted here.
+
 ### DW-FU-41-3-2: No CI workflow runs the scribe suite, so this story's behavioural proofs (DDL-revoked role, named error, changeset-provisioned database) gate nothing.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -2686,6 +2715,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: high
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED — the CI gap this entry names has been closed since authoring. `.github/workflows/pyforge-station-tests.yml` now runs every station's own suite, scribe included: `src/shared/packages/pyforge-scribe/**` is in its `paths:` filter (`:29`, `:45`), `scribe` is a `changes` output (`:71`) and is in the per-station loop (`:103`). This story's behavioural proofs live in `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` — inside that suite — so they now gate. RESIDUAL, recorded honestly: `platform-ci.yml` still has no `pyforge-scribe` path filter, so the entry's literal location remains true; what changed is that a DIFFERENT workflow now covers the proofs.
 
 ### DW-FU-41-3-3: platform_app's real grant set is never executed by any test; the DML-revoked-role test hand-writes equivalent grants instead.
 
@@ -2698,6 +2729,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: platform_app's real grant set is still never executed by a test; the DML-revoked-role test still hand-writes equivalent grants. Evidence: `changes/pyforge-scribe-3-app-role-grants.sql` exists and carries its GRANT statements, but nothing executes them under test.
+
 ### DW-FU-41-3-4: Red-team B-1 is only half-addressed — numbering is per-distribution, but scribe's changesets still ship inside the single master changelog, so a scribe schema change still rides the platform release.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -2708,6 +2741,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: scribe's changesets still ship inside the single master changelog, so a scribe schema change still rides the platform release. Evidence: `db.changelog-master.yaml` still includes the `pyforge-scribe` changesets directly (5 matches).
 
 ### DW-FU-41-3-5: graph_nodes.embedding is declared without a dimension, so no ivfflat or hnsw index is possible and query_similar sequentially scans the table.
 
@@ -2720,6 +2755,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED precisely. `changes/pyforge-scribe-2-graph-nodes.sql:14` still declares `embedding vector,` with NO dimension, so neither an ivfflat nor an hnsw index can be built and `query_similar` still sequentially scans. Unchanged since authoring.
+
 ### DW-FU-41-3-6: Every django_db test in src/platform errors at test-database setup on `ValidationError: slug 'home' is already in use`.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -2730,6 +2767,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: every `django_db` test in `src/platform` still errors at test-database setup on the duplicate `home` slug. Evidence: `platformapp/front_door/lane1_seed.py` still carries the seeding path the entry names.
 
 ### DW-FU-41-3-7: Two test_openfeature_channel_policy tests are red on main from a cachebox pin drift.
 
@@ -2742,6 +2781,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — pending-on-precondition — COULD NOT BE REPRODUCED IN THIS SWEEP, and the reason is itself the finding. `src/platform/tests/policy/test_openfeature_channel_policy.py` requires pytest-django's `--ds=config.settings.test --reuse-db`, which the `local-recipes` env does not provide (`error: unrecognized arguments`), and no station env carries the platform test harness. So the red/green state of the two cachebox-drift tests cannot be established from any environment this sweep can reach. Blocker named: the entry needs a run in the platform test environment (`platform-ci-local`) to settle. Recorded as pending rather than forced to still-open, because asserting either verdict here would be a guess.
+
 ### DW-FU-41-3-8: GraphSchemaMissing is not re-exported from pyforge.scribe, and no scribe doc records that the durable graph store now requires Liquibase to have run.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -2752,6 +2793,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: `GraphSchemaMissing` is still not re-exported from `pyforge.scribe`, and no scribe doc records the Liquibase precondition. Evidence: the symbol exists in `graph_store_pg.py` but only there.
 
 ### DW-FU-41-4: An explicit COMPONENT_BROKER_CA_BUNDLE cannot override a resolving OS trust store, so the operator knob is unreachable on any host that ships a default CA file.
 
@@ -2764,6 +2807,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `config/broker_tls.py`'s `resolve_ca_trust()` is present and unchanged, so an explicit `COMPONENT_BROKER_CA_BUNDLE` still cannot override a resolving OS trust store and the operator knob stays unreachable wherever a default CA file exists.
+
 ### DW-FU-41-4-2: CHANNEL_LAYERS (channels_redis) and REDIS_CACHE_URL (django-redis) share the Redis URL but get none of this TLS posture.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -2774,6 +2819,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: `config/settings/production.py` still references `CHANNEL_LAYERS`/`REDIS_CACHE_URL` (3 matches) with none of the broker TLS posture applied to them.
 
 ### DW-FU-41-4-3: The Helm chart still wires plaintext redis://, so no deployed component takes the new code path and nothing refuses unencrypted broker traffic.
 
@@ -2786,6 +2833,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED, with the LOCATION CORRECTED. The entry cites `deploy/charts/platform/templates/_helpers.tpl`, which does not exist at that path; the chart lives at `src/platform/deploy/charts/platform/templates/_helpers.tpl`. There, lines **318, 320 and 322** still emit plaintext `redis://...` for the broker, cache and a third consumer — so no deployed component takes the new TLS code path and nothing refuses unencrypted broker traffic. The stale path is why this could read as unverifiable.
+
 ### DW-FU-41-4-4: mypy cannot run at all, so the new modules got no type check.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -2796,6 +2845,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — the Platform CI mypy step still cannot run, so these modules remain untyped-checked.
 
 ### DW-FU-41-4-5: configure_observability() now materializes Django settings even when OTel is disabled, and config/__init__.py imports celery_app at module scope.
 
@@ -2808,6 +2859,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — `configure_observability()` still materialises Django settings even when OTel is disabled, and `config/__init__.py` still imports `celery_app` at module scope.
+
 ### DW-FU-41-4-6: REDIS_SSL in base settings has no readers anywhere in the tree.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -2819,6 +2872,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED by exhaustive grep, which is the only way this claim can be settled. `REDIS_SSL` appears exactly ONCE in the whole `src/platform` tree — its own assignment at `config/settings/base.py:396` (`REDIS_SSL = is_tls_broker(REDIS_BROKER_URL)`). Zero readers, so the setting is computed and discarded.
+
 ### DW-FU-41-4-7: scripts/.spec-surface-baseline.json needs a scoped stamp for the changed and new config/** files.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -2829,6 +2884,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED. The scoped stamp this entry asks for has been performed: `scripts/.spec-surface-baseline.json` now carries current entries for the specs governing `src/platform/config/**`, and `python -m pyforge.doctor.sources spec-surface` reports `ok -- every tracked file governed or allowlisted; no drift`. Whatever config/** drift existed at authoring is stamped and clean.
 
 ### DW-FU-42-1: Nothing outside the pytest settings supplies PYFORGE_ASSERTION_PUBLIC_KEY, so a deployed or laptop run now answers 503 on every station MCP route.
 
@@ -3351,6 +3408,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: the GitOps/Argo deploy profile remains unbuilt. Nothing in the tree contradicts the entry's own evidence, and no story since has claimed this surface.
+
 ### DW-FU-43-4-2: golden-path-promotion rebuilds all three images after the container job — extra CI minutes per platform-ci run.
 
 - source_spec: `planning-artifacts/specs/spec-43-4-golden-path-cd-by-digest.md`
@@ -3361,6 +3420,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: `golden-path-promotion` still rebuilds all three images after the container job, so the extra CI minutes per `platform-ci` run persist. Nothing in the tree contradicts the entry's own evidence, and no story since has claimed this surface.
 
 ### DW-FU-41-3-9: The chart and compose ship stock `postgres:17`, which has no pgvector, so `pyforge-scribe:1` moves a CREATE EXTENSION failure out of scribe's own process and into the platform's pre-upgrade hook Job.
 
@@ -3373,6 +3434,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED, and found by reading the values rather than grepping the literal. `src/platform/deploy/charts/platform/values.yaml:175-179` declares `postgres: image: {repository: postgres, tag: "17"}` — stock postgres:17, still no pgvector — so `pyforge-scribe:1`'s CREATE EXTENSION still fails in the pre-upgrade hook Job. (A literal `postgres:17` grep returns zero hits because repository and tag are separate keys; that is exactly the shape that makes this kind of claim look resolved when it is not.)
+
 ### DW-FU-41-3-10: `_assert_provisioned` names only the relation-absent and no-schema-USAGE cases; column drift and a table-privilege gap still leak raw psycopg errors with no changeset named.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -3383,6 +3446,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: `_assert_provisioned` still names only the relation-absent and no-schema-USAGE cases, so column drift and table-privilege gaps still surface as raw psycopg errors. Evidence: `_assert_provisioned` is present in `graph_store_pg.py` with that same narrow coverage.
 
 ### DW-FU-41-3-11: Master-changelog include order is load-bearing for scribe (`:1` before `:2` before `:3`) but only set membership and duplicates are asserted.
 
@@ -3395,6 +3460,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: the master-changelog include ORDER is still asserted only as set membership and duplicate-freedom, never as sequence. Evidence: `tests/policy/test_liquibase_ddl_governance.py` still tests the membership shape.
+
 ### DW-FU-41-3-12: `load_map`'s new "default distribution not registered" ValueError is untested and reaches CI as a traceback, and no path migrates a pre-41.3 `sqlmigrate-map.yaml`.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -3405,6 +3472,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, with the quoted message CORRECTED. The entry quotes a `default distribution not registered` ValueError; that exact string returns zero hits. The check survives with different wording — `db/sqlmigrate_extraction.py:197-200` raises `ValueError` on `sqlmigrate-map.yaml default distribution {default!r} has no ...`. So the defect is intact and only the entry's quotation was stale; nothing tests that path, and no migration exists for a pre-41.3 `sqlmigrate-map.yaml`.
 
 ### DW-FU-41-3-13: `MigrationMap.lookup` resolves a migration key claimed by two distributions by YAML insertion order, while db/README.md calls the map a register that "cannot silently collide".
 
@@ -3417,6 +3486,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: `MigrationMap.lookup` still resolves a doubly-claimed migration key by YAML insertion order, contradicting db/README.md's 'cannot silently collide'. Evidence: `def lookup` is present in `db/sqlmigrate_extraction.py` unchanged.
+
 ### DW-FU-41-3-14: Scribe's test suite now hard-depends on the platform tree, so the package can no longer be tested standalone.
 
 - source_spec: `planning-artifacts/specs/spec-41-3-scribe-ddl-moves-into-the-changelog.md`
@@ -3427,6 +3498,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED against the live file: scribe's suite still hard-depends on the platform tree via a `parents[N]`-relative path, so the package cannot be tested standalone. Evidence: `tests/unit/conftest.py` still resolves a `parents[...]` path out of the package.
 
 ### DW-FU-41-4-8: load_django_settings() makes Django construct its Settings object twice, re-entrantly, on every process that imports config.*.
 
@@ -3439,6 +3512,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — `load_django_settings()` still makes Django construct its Settings object twice, re-entrantly, on every process importing `config.*`.
+
 ### DW-FU-41-4-9: A CA path that is readable but not parseable as PEM passes the boot gate and fails at first connect.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -3449,6 +3524,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — a CA path that is readable but not PEM-parseable still passes the boot gate and fails at first connect.
 
 ### DW-FU-41-4-10: config.settings.production with COMPONENT_RUNTIME=local composes CERT_NONE and no stage 1 runs to refuse it.
 
@@ -3461,6 +3538,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — `config.settings.production` with `COMPONENT_RUNTIME=local` still composes CERT_NONE with no stage-1 run to refuse it.
+
 ### DW-FU-41-4-11: config.asgi -- the entrypoint the production image actually runs -- is covered by nothing in the env CI uses.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -3471,6 +3550,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — `config/asgi.py` — the entrypoint the production image runs — is still covered by nothing in the env CI uses.
 
 ### DW-FU-41-4-12: LANGFLOW_REDIS_URL is a third consumer of the shared Redis URL with no TLS posture, alongside CHANNEL_LAYERS and the django-redis caches.
 
@@ -3483,6 +3564,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `config/settings/base.py:645` still sets `LANGFLOW_REDIS_URL` from `REDIS_CACHE_URL` with no TLS posture, making it the third untreated consumer of the shared Redis URL alongside `CHANNEL_LAYERS` and the django-redis caches.
+
 ### DW-FU-41-4-13: test_production_leaf_source_wires_stage_one is still a source-substring assertion, and the call-position requirement it sits next to is unguarded.
 
 - source_spec: `planning-artifacts/specs/spec-41-4-broker-tls-is-verified.md`
@@ -3493,6 +3576,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: the cited file is present and unchanged in the respect named — `test_production_leaf_source_wires_stage_one` is still a source-substring assertion and the adjacent call-position requirement is still unguarded.
 
 ### DW-FU-42-1-7: Every station app is built `json_response=True`, so the keep-alive frame never fires against the real sidecar and the raised budget stays capped by the ~30s ingress idle timeout.
 
@@ -3549,6 +3634,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED. `grep -rn 'urllib' src/shared/packages/pyforge-core/tests/` returns nothing — `PyForgeStationClient`'s default urllib transport still has no executing test, so the default path ships unexercised while injected-transport paths are covered.
+
 ### DW-FU-43-2-2: Langflow /langflow/api/v1/ prefix-preserving redirect not gated in platform-ci-test.
 
 - source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
@@ -3559,6 +3646,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, and the mechanism verified. `test_langflow_mount.py` is named in `.github/workflows/platform-ci.yml:569` only inside a COMMENT ('see tests/test_langflow_mount.py's module docstring'), never as a gated run step, and no pixi task invokes it. The prefix-preserving redirect remains ungated.
 
 ### DW-FU-43-2-3: Server-side X-PyForge-API-Version header enforcement not implemented.
 
@@ -3571,6 +3660,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against live code. `grep -rn 'X-PyForge-API-Version' src/platform/config/station_api.py` returns nothing — server-side enforcement of the version header is still unimplemented; the header remains advisory.
+
 ### DW-FU-43-2-4: django-warden portal has not adopted StationHttpClient for host calls.
 
 - source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
@@ -3581,6 +3672,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: django-warden's portal still calls hosts directly rather than through `StationHttpClient`. Nothing in the tree contradicts the entry's own evidence, and no story since has claimed this surface.
+
 ### DW-FU-43-2-5: OpenAPI documents are not schema-validated beyond path-key presence.
 
 - source_spec: `planning-artifacts/specs/spec-43-2-station-api-contract.md`
@@ -3590,6 +3683,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: OpenAPI documents are still checked for path-key presence only, with no schema validation. Nothing in the tree contradicts the entry's own evidence, and no story since has claimed this surface.
 
 ### DW-FU-45-2: No automated test exists for most of driver.py's subprocess-orchestration logic (resolve_model's fallback chain, prepare_shared, the isolation-manifest/digest plumbing) beyond the two pure helpers (cites_planted, parse_review_envelope) that test_driver.py now covers.
 
@@ -3602,6 +3697,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — most of `driver.py`'s subprocess-orchestration logic (resolve_model's fallback chain, prepare_shared, the isolation-manifest/digest plumbing) has no automated test. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
+
 ### DW-FU-45-2-2: A non-zero eval-quality preflight exit only prints a warning; the same verdict_path is still passed on to eval-quality score for that arm.
 
 - source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
@@ -3612,6 +3709,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium (unverified)
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — a non-zero eval-quality preflight exit still only warns, and the same `verdict_path` is still passed on to `eval-quality score`. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
 
 ### DW-FU-45-2-3: No version pin or check on the claude -p CLI flags the driver depends on (--json-schema, --max-budget-usd, --no-session-persistence, etc.), and eval-quality-smoke never exercises the actual claude -p invocation path.
 
@@ -3624,6 +3723,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — no version pin or check guards the `claude -p` CLI flags the driver depends on, and `eval-quality-smoke` still never exercises the real `claude -p` path. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
+
 ### DW-FU-45-2-4: driver.py's eq()-routed subprocess.run calls (compile/seal/preflight/score) pass no explicit timeout, unlike the claude -p call which has timeout=630.
 
 - source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
@@ -3634,6 +3735,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — the `eq()`-routed subprocess calls still pass no explicit timeout, unlike the `claude -p` call's `timeout=630`. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
 
 ### DW-FU-45-2-5: Static asset reads (system_prompt/diff/schema .read_text() calls in invoke_review) have no existence/decode guard.
 
@@ -3646,6 +3749,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — the static asset reads in `invoke_review` still have no existence/decode guard. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
+
 ### DW-FU-45-2-6: evaluator-configuration.json's sealedBriefDigest is a hand-computed value baked into the static template file; nothing recomputes or validates it at runtime.
 
 - source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
@@ -3657,6 +3762,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED: `evals/review-catches-planted-defect/driver.py` is present and unchanged in the respect this entry names — `evaluator-configuration.json`'s `sealedBriefDigest` is still a hand-computed constant nothing recomputes or validates at runtime. This is eval-harness hardening with no owning story since; the deferral stands on its original reasoning.
+
 ### DW-FU-45-2-7: Six near-identical "Surface reconcile" memlog paragraphs were pasted across unrelated specs (pyforge-atlas, pyforge-doctor, pyforge-marshal, three pyforge-steward specs) because each spec's blanket pixi.toml glob makes it a co-governor of this one three-task addition, and this is a recurring class of churn with no structural fix.
 
 - source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
@@ -3667,6 +3774,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, and this sweep is fresh evidence for it rather than against it. The six near-identical 'Surface reconcile' memlog paragraphs remain, and the underlying cause — blanket pixi.toml globs forcing every governing spec to record the same reconcile — is live: this session had to append that same shaped note to spec-pyforge-core, spec-pyforge-unifying-strategy and spec-pixi-candidate-currency for one pixi.toml change. The pattern is still generating duplicates.
 
 ### DW-FU-46-1: The fixture test for the single-station branch checks the _claude_md_mentions helper directly rather than driving the real top-level `assert not _claude_md_mentions(...)` through an actual violation.
 
@@ -4042,6 +4151,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — resolved — RESOLVED — the entry's predicted staleness materialised exactly as forecast, and has now settled. It warned that P13's '5 of 9 ungoverned' was already stale against an unmerged sibling branch governing 3 of the 5. Measured live today, file by file: `generate-tracking.md`, `sprint_plan.py` and `test_sprint_plan.py` are all now claimed by `spec-marshal-single-story-dispatch`'s `surface:`; only `brain-methods.csv` and `_bmad/scripts/resolve_config.py` remain ungoverned. CORRECTED NUMBER, recorded per CAP-4: the figure is now **2 of 9 ungoverned**, not 5. The re-verification this entry asked for is done.
+
 ### DW-FU-47-2: SKF has no link-generation step of any kind -- the .claude/skills/ 'generated per-machine links' the cutover target-tree diagram assumes does not exist anywhere in SKF today; a dedicated link-generator (or an SKF feature) must be built before any station's live IDE skill discovery can rely on a skills/stations/ canonical root
 
 - source_spec: `planning-artifacts/specs/spec-47-2-skf-export-is-proven-to-accept-the-foundry-skills-root.md`
@@ -4052,6 +4163,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: SKF still has no link-generation step of any kind. These are SKF-upstream capabilities, not repo-local defects, so they remain pending on an SKF change rather than on work this fleet can schedule.
 
 ### DW-FU-47-2-2: Changing skills_output_folder alone does not migrate or discover an already-exported package at the OLD root -- SKF's resolution ladder (manifest / active symlink / flat path) has no cross-root fallback, so a real cutover needs an explicit move/re-forge step per already-exported skill, not just the AD-12 config-key flip
 
@@ -4064,6 +4177,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: SKF's resolution ladder still has no cross-root fallback, so changing `skills_output_folder` alone still neither migrates nor discovers an already-exported package at the old root. These are SKF-upstream capabilities, not repo-local defects, so they remain pending on an SKF change rather than on work this fleet can schedule.
+
 ### DW-FU-47-2-3: With snippet_skill_root_override left set, a re-exported skill's managed-section root: pointer can silently drift from its package's real new location with no warning from SKF
 
 - source_spec: `planning-artifacts/specs/spec-47-2-skf-export-is-proven-to-accept-the-foundry-skills-root.md`
@@ -4075,6 +4190,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED unchanged: a re-exported skill's managed-section `root:` pointer can still drift silently while `snippet_skill_root_override` is set. These are SKF-upstream capabilities, not repo-local defects, so they remain pending on an SKF change rather than on work this fleet can schedule.
+
 ### DW-FU-47-5: cutover-readiness.md P11/P12's own state cells still read 'not done' (2026-09-06 snapshot) even though their producers (marshal 30.5/30.2, steward 14.9) are all confirmed done -- correcting those cells is each producer's own job, out of this story's Surface line
 
 - source_spec: `planning-artifacts/specs/spec-47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines.md`
@@ -4085,3 +4202,5 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-09-08 — resolved — RESOLVED HERE. Verified the premise first: all three producers read `done` in their tracked ledgers — marshal `30-2-the-project-context-surface-follows-6-12-d1` and `30-5-the-harness-and-every-live-caller-follow-the-shim-retirement`, and steward `14-9-the-apply-retires-deprecation-shims-on-purpose-no-shims` — while `cutover-readiness.md` rows P11 and P12 still read **not done**. Both cells are corrected in this commit to record producer-done, each keeping an explicit 're-confirm the live count before the flip' caveat so a corrected cell is not mistaken for a fresh measurement.
