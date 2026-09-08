@@ -27,6 +27,17 @@ class TestValidateRecipe:
         )
         assert "Recipe validation passed" in out, f"out={out}\nerr={err}"
 
+    def test_v1_go_nocgo_passes_without_stdlib(self, script_runner, recipes_dir):
+        """CFE retro G101: compiler("go-nocgo") does not link the C stdlib,
+        so a recipe using only that compiler must not be flagged for a
+        missing stdlib() -- mirrors recipe_optimizer.py's STD-001 exemption."""
+        rc, out, err = script_runner(
+            "validate_recipe.py", str(recipes_dir / "v1-go-nocgo")
+        )
+        assert "Recipe validation passed" in out, f"out={out}\nerr={err}"
+        assert "stdlib" not in out.lower(), f"out={out}"
+        assert rc == 0
+
     def test_broken_recipe_fails(self, script_runner, recipes_dir):
         rc, out, err = script_runner(
             "validate_recipe.py", str(recipes_dir / "v1-broken")
