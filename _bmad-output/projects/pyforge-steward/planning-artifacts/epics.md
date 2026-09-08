@@ -2556,6 +2556,19 @@ So that laptop and cluster run one interpreter and Atlas/Doctor import inside th
 **And** `python -c "import pyforge.atlas, pyforge.doctor"` succeeds inside the platform image
 **And** `platform-ci` is green on both engines; `mcp-host` is unchanged
 
+### Story 43.7: Sidecar runtime validation on Python 3.14
+
+As a platform operator,
+I want the `dbgpt-sidecar` image proven on 3.14 by a Celery REST round-trip and a SQLite metadata-store read/write, not by liveness alone,
+So that the interpreter move is validated against the work the sidecar actually does, not just its ability to answer `/api/health`.
+
+**Type:** feature • **Effort:** M • **Deps:** S-43.6 • **FR/AD:** pap:CAP-5, pap:CAP-6
+**Re-homed 2026-09-08 from mason `DW-13-2-2`,** which deferred this validation to Story 43.6. 43.6 closed `done` without it — its acceptance criteria are the pin flip, the re-lock, the regenerated `environment.yaml` and an `import pyforge.atlas, pyforge.doctor` smoke, none of which exercise Celery or the metadata store. The work was not late, it was unowned; this story owns it.
+**The blocker that deferred it is cleared.** `DW-13-2-2` recorded `dbgpt-ext-rag`'s `onnxruntime <=1.18.1` cap as having no cp314 build. Verified live 2026-09-08: `pixi list -e dbgpt-sidecar` resolves `python 3.14.7`, `dbgpt-app 0.8.2`, `dbgpt-ext-rag 0.8.2` and `onnxruntime 1.28.0 py314h112547c_0_cpu`. Nothing here is waiting on a solve.
+**Given** the `dbgpt-sidecar` env locked on 3.14 as above **When** `platform-ci`'s `container-dbgpt` job runs **Then** it asserts a Celery task submitted over the sidecar's REST surface is accepted, executed, and its result retrieved — beyond the `/api/health` 200 poll that job does today, which proves liveness only
+**And** the SQLite metadata store is exercised end to end: the sidecar writes and reads back at least one row, with the database file's in-container path asserted rather than assumed
+**And** both assertions run under docker AND podman, matching `container-dbgpt`'s existing engine matrix
+
 ## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
 
 The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
