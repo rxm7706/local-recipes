@@ -40,7 +40,7 @@ altitude: feature
 
 ## Architecture Decision Records
 
-### AD-1: Single Immutable Design Prototype per Station
+### AD-1 — Single Immutable Design Prototype per Station
 
 **Binds**: Each of the 9 stations (Marshal, Warden, Atlas, Mason, Steward, Scribe, Genesis, Doctor, Herald) has exactly one Design prototype file (`.dc.html`) as the source of truth.
 
@@ -55,7 +55,7 @@ altitude: feature
 
 ---
 
-### AD-2: Etagged Safety on All Design ↔ Code Transfers
+### AD-2 — Etagged Safety on All Design ↔ Code Transfers
 
 **Binds**: Every pull operation includes etag validation. Write operations require matching etag or fail explicitly.
 
@@ -73,7 +73,7 @@ altitude: feature
 
 ---
 
-### AD-3: Multi-Format Export Pipeline with Explicit Ownership
+### AD-3 — Multi-Format Export Pipeline with Explicit Ownership
 
 **Binds**: Artifact derivation follows a single pipeline: Design (source) → Markdown → PPTX, Narration, SVG → HTML deck engine, Video scripts (finals). Each format has a clear owner and regenerability status.
 
@@ -95,7 +95,7 @@ altitude: feature
 
 ---
 
-### AD-4: Aggressive Artifact Tracking Strategy (62% Footprint Reduction)
+### AD-4 — Aggressive Artifact Tracking Strategy (62% Footprint Reduction)
 
 **Binds**: Track source + final deliverables; gitignore regenerable intermediates. Total tracked footprint: ~144 files (9 stations × ~16 files) vs. ~270 unoptimized.
 
@@ -113,7 +113,7 @@ altitude: feature
 
 ---
 
-### AD-5: Modernist Design Tokens as Single Authority
+### AD-5 — Modernist Design Tokens as Single Authority
 
 **Binds**: One source of truth for design tokens (Figma variables). Tokens round-trip through: Figma → design-tokens.json → PPTX templates → deck engine → video production bibles.
 
@@ -132,7 +132,7 @@ altitude: feature
 
 ---
 
-### AD-6: Nine-Station Replication with Identical Framework
+### AD-6 — Nine-Station Replication with Identical Framework
 
 **Binds**: Framework (Design-Code-Bridge, Deckcraft, Video-Scripts, Modernist-Identity) is identical across all 9 stations. Per-station content varies: thesis, pain point, solution pillars, ecosystem vision, personas.
 
@@ -150,7 +150,7 @@ altitude: feature
 
 ---
 
-### AD-7: Narration Script Extraction from Design Speaker Notes
+### AD-7 — Narration Script Extraction from Design Speaker Notes
 
 **Binds**: Narration scripts are extracted mechanically from Design speaker notes, generating `{station}-narration-YYYY-MM-DD.md` per deck. Extraction is deterministic and tracked.
 
@@ -169,7 +169,7 @@ altitude: feature
 
 ---
 
-### AD-8: Video Pipeline Boundary — Herald Orchestrates, Manticore Renders
+### AD-8 — Video Pipeline Boundary — Herald Orchestrates, Manticore Renders
 
 **Binds**: Herald orchestrates narration extraction and real screen-recording sourcing. BMad-Manticore is downstream, consuming narration + real footage to render video.
 
@@ -188,7 +188,7 @@ altitude: feature
 
 ---
 
-### AD-9: No Fabricated Demos — Real Footage Only
+### AD-9 — No Fabricated Demos — Real Footage Only
 
 **Binds**: All screen recordings fed to video pipeline are real, recorded from actual product or system behavior. No AI-generated mockups, synthetic UI, or fabricated product demos.
 
@@ -207,7 +207,7 @@ altitude: feature
 
 ---
 
-### AD-10: Narration Voice Identity — Consistency Enforced by Linter
+### AD-10 — Narration Voice Identity — Consistency Enforced by Linter
 
 **Binds**: Narration must match a published voice character (WPM, speech patterns, tone markers). Linter enforces consistency; blacklist blocks non-matching narration.
 
@@ -360,7 +360,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 **Control plane**: Automation rules (webhooks, cron, gates) dispatch to Moment-specific handlers; operators author/approve.
 **UI plane**: One web layout (4 tabs + unified nav); each tab shows Moment-specific content.
 
-### AD-11 (was AD-1): CLI — Single Dispatcher with Subcommands
+### AD-11 — CLI — Single Dispatcher with Subcommands (was AD-1)
 
 **Rule**: One `herald` entry point; subcommands `progress`, `success`, `notice` dispatch to Moment logic. Shared global flags: `--help`, `--json`, `--date-range <start>..<end>`, `--station <name>`.
 
@@ -370,7 +370,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ADOPTED]** — Herald v0.1.0 uses this pattern; extend it.
 
-### AD-12 (was AD-2): Web Surface — Unified 4-Tab Navigation
+### AD-12 — Web Surface — Unified 4-Tab Navigation (was AD-2)
 
 **Rule**: Single Herald web app; header nav with 4 tabs: **Pitch** (Moment 1, external link), **Progress**, **Success**, **Operations**. Unified sidebar: station filter, date range selector, search box. Responsive layout (desktop ≥ tablet ≥ mobile support).
 
@@ -380,7 +380,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ADOPTED]** — Herald v0.1.0 web surface integrates existing Pitch tab; extend with Progress, Success, Operations tabs.
 
-### AD-13 (was AD-3): Data Model — Moment-Owned Records with Evidence Links
+### AD-13 — Data Model — Moment-Owned Records with Evidence Links (was AD-3)
 
 **Rule**: Each Moment owns its record type — Progress (Moment 2), Claim (Moment 3), Notice (Moment 4) — with fields per its PRD. Cross-linking via evidence protocol (URL + type pairs). No shared database schema across Moments; each owns its schema.
 
@@ -390,7 +390,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ADOPTED]** — Spec defines three record types; stories implement independently.
 
-### AD-14 (was AD-4): Automation — Webhook + Cron + Gate Dispatch
+### AD-14 — Automation — Webhook + Cron + Gate Dispatch (was AD-4)
 
 **Rule**: Automation rules are **data**, not code. Stored in Herald config: per-Moment trigger rules (event type + handler name). Moment 2: on-ship webhook + Thursday 2300 UTC cron. Moment 3: on-PR-close webhook (extract) + operator gate (publish). Moment 4: manual author (no auto-trigger).
 
@@ -400,7 +400,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **Implementation layers**: Dispatcher (webhook receiver + cron executor, shared); Handlers (Moment-specific logic — progress-extract, success-extract, notice-author); Config (Herald config file — trigger rules + event-to-handler mappings).
 
-### AD-15 (was AD-5): Evidence Protocol — Shared Link Schema & Validation
+### AD-15 — Evidence Protocol — Shared Link Schema & Validation (was AD-5)
 
 **Rule**: Evidence links follow schema: `{ type: "test_results|metrics|adoption|other", url: "https://...", label: "short description" }`. Validation: sync (404 on publish) + async (weekly stale-link check). No evidence ↔ claims allowed (enforced at publish gate).
 
@@ -410,7 +410,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **Storage**: Evidence links stored inline (claim/notice fields), not as separate records. Versioning: immutable published claims; editable drafts.
 
-### AD-16 (was AD-6): Operator Authorization — Role-Based Write Gates
+### AD-16 — Operator Authorization — Role-Based Write Gates (was AD-6)
 
 **Rule**: Write operations require `operator` role (publish claim, author notice, update progress). Read operations are public (no auth). Role verified at CLI + web layer (same auth source: Herald app session or CLI token).
 
@@ -420,7 +420,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ASSUMPTION]**: Herald app has existing session/auth model; CLI uses implicit auth (from machine identity or user session). Confirm with ops team.
 
-### AD-17 (was AD-7): Storage Strategy — Database-Backed, Archive-Friendly
+### AD-17 — Storage Strategy — Database-Backed, Archive-Friendly (was AD-7)
 
 **Rule**: Progress records and Success claims stored in database (queryable, indexed). Moment 4 notices stored as markdown files in archive folder structure (YYYY-MM/category/name.md), with database index for quick discovery. Redirects stored in database.
 
@@ -430,7 +430,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **Backup strategy**: Database nightly, archive files tracked in git (or synced to S3).
 
-### AD-18 (was AD-8): State Machine — Claim/Notice Lifecycle
+### AD-18 — State Machine — Claim/Notice Lifecycle (was AD-8)
 
 **Rule**: Progress records are **immutable** (once published, not edited — new record for next update). Success claims: Draft → Published → Closed (optionally versioned if thesis is edited). Notices: Draft → Published → Closed (with edit history preserved).
 
@@ -438,7 +438,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **Prevents**: Retroactive edits confusing readers (mutable records); loss of notices post-deadline (closed state preserves data).
 
-### AD-19 (was AD-9): Resilience — Automation Reliability & Fallback
+### AD-19 — Resilience — Automation Reliability & Fallback (was AD-9)
 
 **Rule**: Webhook failures trigger exponential backoff + max 3 retries (configurable). If exhausted, logged to operator dashboard + alert sent. Cron jobs run in dedicated queue (no blocking web requests). If automation fails, operator can manually trigger via CLI (`herald progress --update`, `herald success publish`).
 
@@ -448,7 +448,7 @@ Herald Moments 2–4 share a single paradigm: one CLI, one web surface, many ind
 
 **[ASSUMPTION]**: Herald has existing queue/job infrastructure (from Moment 1 or v0.1.0). Reuse it; don't build new.
 
-### AD-20 (was AD-10): Extensibility — Future Moments
+### AD-20 — Extensibility — Future Moments (was AD-10)
 
 **Rule**: Paradigm and dispatcher are extensible: new Moments add a new subcommand + handler without touching existing Moment logic or CLI structure. Evidence protocol and automation framework designed for 10+ Moments without rearchitecture.
 
