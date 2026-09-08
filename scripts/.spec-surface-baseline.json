@@ -2757,6 +2757,10 @@
   },
   "memlog": "f1f1f95bc1c46c1716ffb9ad043e0bd0718267dc"
  },
+ "pyforge-marshal/spec-fleet-consistency-standard": {
+  "files": {},
+  "memlog": "f6871518b27df71114dfbdda7b3bdc4a048ba6e0"
+ },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "cd68faf433a7738c6f6682d8ec25ed2e4c4e98f6",
