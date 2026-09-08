@@ -8,7 +8,7 @@ final_revision: '518e3747d226c9b2920f50f070338ff875e31e5f'
 review_loop_iteration: 0  # reset — contract re-issued 2026-08-10, this is a fresh build
 followup_review_recommended: false
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md'
   - '{project-root}/docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md'
 warnings: ['oversized', 'contract-reissued-2026-08-10']

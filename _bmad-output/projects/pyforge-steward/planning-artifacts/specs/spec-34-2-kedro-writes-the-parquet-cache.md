@@ -8,7 +8,7 @@ baseline_commit: 9d3ad9105b
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - docs/dreams/pyforge-unifying-strategy.md
 warnings: []
 deferred: []

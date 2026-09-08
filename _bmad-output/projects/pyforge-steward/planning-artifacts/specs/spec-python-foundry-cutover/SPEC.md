@@ -9,7 +9,7 @@ extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-1..7 
 surface: []
 companions:
   - cutover.md
-  - ../../architecture/architecture-python-foundry-cutover-2026-09-04/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
   - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md

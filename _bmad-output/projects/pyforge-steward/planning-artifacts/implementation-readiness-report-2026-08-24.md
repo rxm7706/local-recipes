@@ -60,8 +60,8 @@ whole steward sprint feed.
 | Dream | `docs/dreams/pyforge-unifying-strategy.md` | specified (this pass) |
 | Spec | `specs/spec-pyforge-unifying-strategy/SPEC.md` + 5 companions + 4 research files + architecture spine | ready (this pass) |
 | Brief | `briefs/brief-pyforge-unifying-strategy-2026-08-24/brief.md` | ready |
-| PRD | `prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md` | ready (this pass) |
-| Architecture | `architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` | final (prior pass) |
+| PRD | `_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md` | ready (this pass) |
+| Architecture | `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` | final (prior pass) |
 | Epics | `epics.md` Epics 18–32 (Epic 31 suite-install + Epic 32 CAP-18) | 18–30 unchanged in scope |
 | Phase 5 | eight `sprint-change-proposal-2026-08-24-canopy.md` + Canopy obligations + `DW-CANOPY-2026-08-24` | approved |
 | Operating model | steward SCP + PRD/epic/spine edits; eight station OM SCPs + `DW-OM-2026-08-24` | approved (same day; §6 revisited to all eight) |

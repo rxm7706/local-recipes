@@ -8,7 +8,7 @@ baseline_revision: 152a0f3cc1c0907b7ae1600c38b70b50af68a13d
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue.md
 warnings:
   - oversized

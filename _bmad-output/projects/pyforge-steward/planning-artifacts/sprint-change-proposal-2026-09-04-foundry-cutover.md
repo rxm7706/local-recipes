@@ -141,7 +141,7 @@ then let `bmad-build` draft its story spec.
 - `architecture/architecture-python-foundry-cutover-2026-09-04/{ARCHITECTURE-SPINE.md,.memlog.md,reviews/*}`
 - `epics.md` Epic 44 + addendum; `sprint-status-ledger.yaml` (10 + 2 keys)
 - `deferred-work-ledger.md` dispositions + `DW-CC-2026-09-04-1`
-- `marshal-policy.toml` `"44"`; `prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md` § 14
+- `marshal-policy.toml` `"44"`; `_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md` § 14
 - this proposal
 
 ## 7. Iteration 2 — 2026-09-04 (operator review of PR #1041)

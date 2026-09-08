@@ -15,7 +15,7 @@ surface: []          # Governs nothing, DELIBERATELY — and no longer because t
 companions:
   # The architecture that answers Q2/Q3/Q4 below. Load-bearing: its ADs are the
   # build contract Epic 8's stories are written against.
-  - ../../architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/jira-github-projects-sync.md
   - ../../../../../../docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md

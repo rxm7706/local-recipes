@@ -613,7 +613,7 @@ flag flip (fnd:AD-17), not by a date; until a capability freezes (fnd:AD-22) `lo
 
 ### Inherited Invariants
 
-Parent: `../architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`
+Parent: `## Satellite: Canopy — pyforge-unifying-strategy` (this document; was `../architecture-pyforge-unifying-strategy-2026-08-24/` before the 2026-09-08 fold)
 (canopy:AD-1..23) and, through it, `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
 (`pap:AD-1..17`). Read-only; original ids; never re-derived.
 
@@ -1995,7 +1995,7 @@ the Canopy host (`src/platform/`), and the strategy chain's own spine. Deltas:
 - **The "own architecture pass" this spine demanded for OpenShift/air-gap happened.**
   The Deferred entry for `presenton-pixi-image`/air-gap deploy said any future epic needs
   its own spine rather than an AD-4 extension — that is exactly what occurred:
-  `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` (with
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` (with
   `architecture-unified-container-2026-08-09` and siblings) governs the Canopy, the Helm
   chart + OCP overlay (Epic 12, `/ht/` 200 on CRC 2026-08-25), and the platform image.
   **This spine remains authoritative for the CLI package only** (scope line unchanged:

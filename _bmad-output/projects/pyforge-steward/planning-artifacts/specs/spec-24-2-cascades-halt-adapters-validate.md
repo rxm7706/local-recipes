@@ -7,7 +7,7 @@ baseline_commit: 07a6c360edf
 baseline_revision: 07a6c360edf
 review_loop_iteration: 0
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
 warnings: []

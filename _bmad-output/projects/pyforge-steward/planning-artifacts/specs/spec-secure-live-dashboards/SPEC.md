@@ -6,7 +6,7 @@ surface: []          # frontier — no implementation exists (verified 2026-08-0
 companions:
   # The architecture that answers every open question this Spec was holding.
   # Load-bearing: its AD-1..sld:AD-14 are the build contract any decomposition binds to.
-  - ../../architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/secure-live-dashboards.md
   - ../../../../../../docs/intake/secure-live-dashboards/role-based-live-dashboard-blueprint.md

@@ -156,7 +156,7 @@ story.
 Atlas's client speaks La Suite Docs REST, not Wagtail `/cms/`. Epic 20 can proceed; this chain
 does not absorb `spec-wagtail-corporate-brain`. DW-H3 stays atlas attended bring-up. MCP Tasks has
 **no** SDK runtime; CAP-4 ships `start`/`get` over PostgreSQL (research closed that OQ). Portal URL
-scheme is closed (FR-9a).
+scheme is closed (canopy:FR-9a).
 
 ## What this is not
 

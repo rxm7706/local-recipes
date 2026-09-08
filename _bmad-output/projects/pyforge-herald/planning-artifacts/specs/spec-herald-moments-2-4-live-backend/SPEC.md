@@ -15,7 +15,7 @@ companions:
   # backend. Both are load-bearing: the Spec supplies the perimeter and identity contract,
   # the spine's AD-8/AD-9 bind how Herald may consume it.
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
-  - ../../../../pyforge-steward/planning-artifacts/architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/herald-moments-2-4-live-backend.md
   - ../research/technical-herald-shipped-architecture-research-2026-08-08.md

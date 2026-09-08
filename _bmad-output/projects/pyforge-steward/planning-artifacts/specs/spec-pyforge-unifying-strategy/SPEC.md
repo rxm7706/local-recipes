@@ -14,7 +14,7 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
-  - ../../architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform  # pap:CAP-1..6 + pap:AD-1..17 (shipped host). Unifying CAP-1..19 are a different set. Pixi env id stays python-agent-platform.
 surface:
@@ -290,7 +290,7 @@ they are why this is not merely a UI project.
     read-only Postgres attach, Kedro-written Parquet cache, `vss` / HNSW.
     Domain ports stay (Scribe store port, Atlas catalog prefixes, BSL
     metrics). Private stores (in-memory RAG, Chroma for estate knowledge,
-    autonomous SQL on OLTP) are rebuilt onto the plane. FR-27's *writer*
+    autonomous SQL on OLTP) are rebuilt onto the plane. canopy:FR-27's *writer*
     intent applies to the plane; the filename `atlas.duckdb` may be
     generalized. Rebuild of shipped 25.2 / 28.x / agent DSN wiring is in
     scope.
@@ -331,7 +331,7 @@ they are why this is not merely a UI project.
   fourth backing service has failed its design review. DuckDB is a **library / query face**
   (in-process or an optional `duckdb-server` process on the platform image), not a fourth
   Helm backing store.
-- **Always:** CAP-19 is one analytical engine and one writer (FR-27 intent). `ATTACH` joins
+- **Always:** CAP-19 is one analytical engine and one writer (canopy:FR-27 intent). `ATTACH` joins
   sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
   and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.
   Mode A is declared operational views for humans, not DB-GPT exploring OLTP.

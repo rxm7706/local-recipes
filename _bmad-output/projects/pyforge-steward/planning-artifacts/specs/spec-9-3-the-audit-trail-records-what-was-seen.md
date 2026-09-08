@@ -9,7 +9,7 @@ review_loop_iteration: 0
 followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md'
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
 warnings: ['oversized']
 ---
 

@@ -8,7 +8,7 @@ baseline_revision: e52e6203512b1de3ea67202562bfc8a9bc0f9183
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 warnings: []
 deferred:
   - summary: >-

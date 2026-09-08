@@ -20,7 +20,7 @@ inputs:
 
 This PRD decomposes `spec-bmad-suite-lifecycle` into functional requirements an epic pass can
 group and a `bmad-build` session can implement. **The SPEC is the contract; this document is its
-decomposition.** FR-1..FR-10 map 1:1 to CAP-1..CAP-10. Features are grouped by delivery seam —
+decomposition.** suite:FR-1..suite:FR-10 map 1:1 to CAP-1..CAP-10. Features are grouped by delivery seam —
 the same seams the epics use. Mechanisms (provisioning backends, the equivalence-check method,
 the `--no-shims` apply, the studio layout, the rehearsal recipe) live in `addendum.md`, so the
 architecture pass confirms them rather than reopening them. Station relays are named inside each
@@ -87,26 +87,26 @@ unblocked on the BMAD side.
 
 ### 4.1 Wielding — every member has a verdict, a path and a station
 
-#### FR-1: The adoption register governs wiring *(CAP-1)*
+#### suite:FR-1: The adoption register governs wiring *(CAP-1)*
 The register holds thirteen rows (verdict, wielder, provisioning path, hazards, status) and is the
 only place wiring changes. Acceptance: pipeline-truth's `wired` column agrees with the register
 13/13; the channel-product "never wire-everything" constraint and the one-front-door row-6 triage
 are superseded/closed by memlog; the register's posture section names both.
 
-#### FR-2: The module wave lands by install class *(CAP-2)*
+#### suite:FR-2: The module wave lands by install class *(CAP-2)*
 utility-skills, TEA and bmad-builder are provisioned through `steward provision --module`, and CIS
 is re-provisioned. Acceptance: `--list-modules` reports the four installed; the retired-ID guard and
 integrity meta-tests stay green; the ten CIS `SKILL.md` carry `--project-root`; a test proves bmb's
 `cleanup-legacy.py` is never invoked. Relays: steward 46.2, 46.3, 46.4, 46.8.
 
-#### FR-3: Every adopted skill has one wielding station *(CAP-3)*
+#### suite:FR-3: Every adopted skill has one wielding station *(CAP-3)*
 The routing table (register § 2) maps each adopted skill to one station; that station's persona
 skill and the AGENTS.md managed block cite it; CLAUDE.md carries none of it. Relays: herald 18.2,
 doctor 20.4, warden 11.1, scribe 7.1, marshal 31.6, atlas 24.1, steward 46.2/46.4/46.5.
 
 ### 4.2 TEA — the test-architecture module replaces the generator
 
-#### FR-4: TEA is fully adopted *(CAP-4)*
+#### suite:FR-4: TEA is fully adopted *(CAP-4)*
 TEA's `bmad-testarch-*` workflows produce every station's `planning-artifacts/test-architecture.md`;
 `tea-test-review` runs as a Marshal review lens and a Warden advisory finding; the repo generator
 `_bmad/scripts/bmad_tea_playwright.py`, its two marshal meta-tests and its two pixi tasks retire.
@@ -117,14 +117,14 @@ Relays: steward 46.3, marshal 31.1–31.3, warden 11.2.
 
 ### 4.3 Herald's studio and the consented labs skills
 
-#### FR-5: Herald renders through a manticore studio *(CAP-5)*
+#### suite:FR-5: Herald renders through a manticore studio *(CAP-5)*
 Manticore is installed in a dedicated studio root outside this repo's `_bmad/`, configured in the
 studio's own `_bmad/custom/config.toml`; one station video renders from a deck's speaker notes and
 is gitignored. Acceptance: this repo's `_bmad/` is byte-identical before and after; the studio
 root is recorded in the register (open question: in-repo gitignored vs `~/pyforge-studio/`).
 Relays: steward 46.6, herald 18.1.
 
-#### FR-6: labs-skills arrive by name and by consent *(CAP-6)*
+#### suite:FR-6: labs-skills arrive by name and by consent *(CAP-6)*
 Exactly `mcp-builder` (Atlas), `slides-generator` (Herald), `multi-repo-git-ops` (Marshal) and
 `release-please` (Steward) are installed via `npx skills add bmad-labs/skills --skill <name>`.
 Acceptance: each has a register row; no other labs skill is present in `.claude/skills/`.
@@ -132,7 +132,7 @@ Relays: steward 46.5, atlas 24.1, herald 18.3, marshal 31.6.
 
 ### 4.4 Measurement — the reviewer is measured
 
-#### FR-7: The eval-quality pilot runs *(CAP-7)*
+#### suite:FR-7: The eval-quality pilot runs *(CAP-7)*
 Story 45.2 is unblocked: `eval-quality-smoke`, `eval-quality-review-twin-run` and
 `eval-quality-review-replay` exist as pixi tasks; one trial cites `pkg/discount.py:17` on the
 mutated arm and not on the clean arm; a per-trial `--max-budget-usd` ceiling applies; none of the
@@ -140,7 +140,7 @@ three joins `detectors`. Relays: steward 45.2, mason 14.1 (the `__win` variant).
 
 ### 4.5 Cadence — one runbook per release
 
-#### FR-8: The release cadence is one runbook *(CAP-8)*
+#### suite:FR-8: The release cadence is one runbook *(CAP-8)*
 `release-cadence.md` orders detect → catalog → pre-flight → apply → prove-landed → era round →
 suite refresh → flips → record, with an owner per step; the `@next` prerelease rehearsal is its
 optional dry-run. Acceptance: the next release is processed with zero improvised steps; the
@@ -149,7 +149,7 @@ Relays: steward 46.10.
 
 ### 4.6 Cutover readiness — the estate the foundry assumes
 
-#### FR-9: The BMAD estate is provably cutover-ready *(CAP-9)*
+#### suite:FR-9: The BMAD estate is provably cutover-ready *(CAP-9)*
 `cutover-readiness.md` lists P1–P17 with an owner and G1–G11 with a relay; the gate is every P line
 green before Story 44.3. Acceptance: `steward upgrade bmad-core` pre-flight reports zero ungoverned
 local customizations; `skf-export` is proven to accept `skills/stations/<x>/`; `_bmad/**` is in
@@ -158,7 +158,7 @@ floor row; Epic 44 depends on 14.9 / 30.x; loop-home readiness is defined; the r
 `frozen-path-changed` detectors exist. Relays: steward 47.1–47.5, marshal 31.4–31.5, doctor
 20.2–20.3, and marshal 30.2 (rulebooks).
 
-#### FR-10: The shims are retired *(CAP-10)*
+#### suite:FR-10: The shims are retired *(CAP-10)*
 The harness policy names `bmad-build-auto`; the eight loop homes re-render and validate clean;
 callers are glossed; the retired-ID guard is widened to the harness file; one `--no-shims` apply
 lands `installShims: false` with 21 fewer skill dirs. Acceptance: `bmad-loop validate` 8/8;
@@ -190,12 +190,12 @@ lands `installShims: false` with 21 fewer skill dirs. Acceptance: `bmad-loop val
 ## 6. MVP Scope
 
 ### 6.1 In Scope (first implementation session — the era tail)
-FR-10 (harness flip, callers, `--no-shims` apply) with marshal Epic 30 (30.1–30.5) and steward
-14.9; FR-2's CIS re-provision and the skf catalog pin (46.7/46.8); FR-8's rehearsal recipe.
+suite:FR-10 (harness flip, callers, `--no-shims` apply) with marshal Epic 30 (30.1–30.5) and steward
+14.9; suite:FR-2's CIS re-provision and the skf catalog pin (46.7/46.8); suite:FR-8's rehearsal recipe.
 
 ### 6.2 Out of Scope for MVP (later sessions, drained by Marshal)
-FR-2's three module provisions, FR-3 routing, FR-4 TEA, FR-5 studio, FR-6 labs, FR-7 pilot,
-FR-9 readiness stories.
+suite:FR-2's three module provisions, suite:FR-3 routing, suite:FR-4 TEA, suite:FR-5 studio, suite:FR-6 labs, suite:FR-7 pilot,
+suite:FR-9 readiness stories.
 
 ## 7. Success Metrics (binary gates)
 
@@ -219,7 +219,7 @@ FR-9 readiness stories.
 
 ## 9. Assumptions Index
 
-- TEA's workflows can cover the generator's output; the equivalence check decides, else FR-4
+- TEA's workflows can cover the generator's output; the equivalence check decides, else suite:FR-4
   narrows to the review lens.
 - `steward provision --module manticore` cannot target a studio root; the native `--custom-source`
   path is used until a `--studio` flag earns its keep.

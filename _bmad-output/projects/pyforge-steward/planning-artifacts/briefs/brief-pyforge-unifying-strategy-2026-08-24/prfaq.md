@@ -14,7 +14,7 @@ inputs:
 > Written 2026-08-23, before the convergence audit found `src/platform/` already shipped and before
 > Phase-2 research invalidated four Dream directives. Its narrative value survives; several of its
 > technical claims do not. Specifically wrong here: `pyforge_host` is a role name, not an artifact;
-> Lane 2 portals do not live at `/stations/{station}/` (warden's is at `/compliance/` until FR-9a);
+> Lane 2 portals do not live at `/stations/{station}/` (warden's is at `/compliance/` until canopy:FR-9a);
 > the `:8001–:8008` port assignments were never real; Wagtail **CRX** was dropped when CodeRed proved
 > unmaintained; and the BS-1 answer below describes a SQLite/PostgreSQL dual driver that does not
 > exist — Scribe ships a single flat JSON file. Five-tier symmetry in this FAQ is the **03** station

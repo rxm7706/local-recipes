@@ -145,7 +145,7 @@ NEW:  (unchanged) + Superseded for the BROKER role 2026-09-02 by steward Story 4
 - Realization log: dated 2026-09-02 entry (review landed; option 1 chosen;
   Epic 40 minted; HIGH set routed to a later correct-course).
 
-### PRD (`prd-pyforge-unifying-strategy-2026-08-24/prd.md` § 14)
+### PRD (`_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md` § 14)
 
 - Dated paragraph: Epic 40 precedes any further dispatch and cutover Phase 1.
 

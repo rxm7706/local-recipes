@@ -27,7 +27,7 @@ errors are the kind a downstream pass would reintroduce from the Dream's own pro
 |---|---|---|
 | Greenfield platform to be built | `src/platform/` is live; steward epics 10/11/12/16 `done` | The chain is an extension binding `spec-python-agent-platform`, minting nothing that duplicates CAP-1..6 |
 | `pyforge_host` / `pyforge-agent-platform` are the artifacts | Role names only; the artifact is `src/platform/` | No rename story is minted |
-| Lane 2 portals at `/stations/{station}/` | Warden's mounts at `/compliance/` | Asserted as inherited convention; it never was. **Decided 2026-08-24:** uniform `/stations/<name>/`, and the shipped portal moves behind a permanent redirect (FR-9a) and is repackaged as a reusable app (FR-9b) |
+| Lane 2 portals at `/stations/{station}/` | Warden's mounts at `/compliance/` | Asserted as inherited convention; it never was. **Decided 2026-08-24:** uniform `/stations/<name>/`, and the shipped portal moves behind a permanent redirect (canopy:FR-9a) and is repackaged as a reusable app (canopy:FR-9b) |
 | Eight FastAPI services on ports `:8001–:8008` | No port assignments exist anywhere in `src/platform/` | Invented. Port/binding topology is an architecture decision, not an inherited fact |
 | Wagtail CRX (CodeRed) carries Lane 1 | CodeRed dropped 2026-08-24 on maintenance evidence | Wagtail alone |
 | MCP over `/mcp/sse` | Deprecated twice over; a compliant server answers GET with `405` | Single POST `/mcp` on the official SDK; long work is `start`/`get` over PostgreSQL until Tasks ships in the SDK |

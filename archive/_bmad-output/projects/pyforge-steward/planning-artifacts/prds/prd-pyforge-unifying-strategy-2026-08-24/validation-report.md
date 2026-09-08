@@ -30,7 +30,7 @@ None.
 
 Integration still says the compliance portal “may need to move if OQ-4 chooses a uniform prefix”; §14 says architecture must fix the URL scheme. §11 already answers OQ-4.
 
-Fix: PRD Update — rewrite those bullets; point at FR-9a and Epic 18.
+Fix: PRD Update — rewrite those bullets; point at canopy:FR-9a and Epic 18.
 
 **Scope honesty** — Packaging authorship disagrees with the brief and canopy:AD-16 (§10)
 
@@ -64,7 +64,7 @@ Fix: drop the hedge on PRD Update.
 
 **Done-ness** — UJs do not mention `work_class` or Golden Path (§2.3)
 
-Optional. OM lives in glossary + FR-2.
+Optional. OM lives in glossary + canopy:FR-2.
 
 Fix: one clause on UJ-1 that 01/02 is not a switcher tile — or ignore.
 

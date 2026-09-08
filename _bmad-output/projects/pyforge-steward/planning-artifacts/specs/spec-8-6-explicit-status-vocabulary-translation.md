@@ -8,7 +8,7 @@ final_revision: 'ae47cd512cfc1ca4e5b613519e7826216be3a223'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md'
+  - '{project-root}_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-8-1-bidirectional-propagation.md'
 warnings: ['oversized']
 ---
