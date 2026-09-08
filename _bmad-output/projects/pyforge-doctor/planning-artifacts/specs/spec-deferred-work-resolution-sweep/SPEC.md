@@ -4,6 +4,7 @@ owner-dream: docs/dreams/deferred-work-resolution-sweep.md
 companions:
   - precedent-2026-07-30-campaign.md
   - implementation-precedents.md
+  - sweep-tooling-effectiveness-2026-09-08.md   # measured: CAP-2/CAP-3/CAP-6 are inert against these ledgers
 sources:
   - docs/dreams/deferred-work-resolution-sweep.md
 ---
