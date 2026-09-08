@@ -13,7 +13,7 @@ invisible there and only bit locally: 18 tests fail with
     postgres://postgres:scribe@127.0.0.1:5433/scribe_graph: connection refused
 
 and the only local recourse was hand-rolling a container -- which contradicts
-the estate's own local-first posture (`platform-dev`'s AD-16 note: "all
+the estate's own local-first posture (`platform-dev`'s pap:AD-16 note: "all
 pixi-provisioned, zero containers or managed services").
 
 WHY A SEPARATE ENVIRONMENT. `pgvector` has NO win-64 conda-forge build, and the

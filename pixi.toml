@@ -2301,7 +2301,7 @@ pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP
 # suite -- but nothing in this repo provisioned one. CI supplies a
 # `pgvector/pgvector:pg16` service container, so the gap was invisible there and
 # only bit locally, where the sole recourse was hand-rolling a container. That
-# contradicts `platform-dev`'s own AD-16 posture: "all pixi-provisioned, zero
+# contradicts `platform-dev`'s own pap:AD-16 posture: "all pixi-provisioned, zero
 # containers or managed services".
 #
 # A SEPARATE feature, deliberately not folded into `pyforge-scribe`, for one hard
