@@ -32,7 +32,10 @@ artifacts of an over-specific pattern:
      named decisions (`### GAP A`) instead -- an absence, not a defect.
   5. Requiring the line to START with `#`/`**` missed python-agent-platform's
      `- **AD-16 — ...`, a definition inside a list item, which made AD-16 look
-     like a gap in an otherwise contiguous 1..17.
+     like a gap in an otherwise contiguous 1..17. Admitting list items then
+     over-matched bold PROSE (`- **AD-7/AD-8 scaled far past...**`), so the two
+     forms are now split: a heading is a definition whatever follows the id; a
+     bold run must carry the em dash to count as one.
 
 Hence `_AD_DEF` anchors on the heading (or bold run) and the number and assumes
 NOTHING about what follows. Verify the detector, not just the artifact.
@@ -41,6 +44,7 @@ NOTHING about what follows. Verify the detector, not just the artifact.
 from __future__ import annotations
 
 import collections
+import json
 import pathlib
 import re
 import sys
@@ -50,10 +54,29 @@ DETECTOR = {"scope": "repo"}
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PROJECTS = ROOT / "_bmad-output" / "projects"
 
+#: Known-broken bare citations, recorded 2026-09-08 so the debt is visible and
+#: BOUNDED without a false red. A ratchet, not an amnesty: anything new fails.
+#:
+#: These 151 are pre-existing imprecision, not damage -- a bare `AD-9` in warden
+#: that means steward's suite spine. They resolve for a human who knows the
+#: chain and for nobody else. Four attribution methods were measured against
+#: labeled data before settling for a baseline: per-file keyword 47%, per-
+#: citation context 45%, epic->chain 80% with systematic bias, and verbatim
+#: title-run 100% precise but covering only 12 of the 151. The rest need
+#: reading, so they are recorded rather than guessed at.
+_BASELINE_PATH = ROOT / "scripts" / ".ad-citation-baseline.json"
+
 #: An AD DEFINITION: a markdown heading (any depth) or a bold run, then the id.
 #: Optionally inside a list item. Deliberately assumes nothing about the
 #: separator or trailing text -- see the five bugs in the module docstring.
-_AD_DEF = re.compile(r"^(?:[-*+]\s+)?(?:#{1,6}\s*|\*\*)AD-(\d+)\b", re.M)
+_AD_DEF = re.compile(
+    r"^(?:"
+    r"#{1,6}\s*(?P<hp>[a-z][\w-]*:)?AD-(?P<h>\d+)\b"          # a heading IS a definition
+    r"|"
+    r"(?:[-*+]\s+)?\*\*(?P<bp>[a-z][\w-]*:)?AD-(?P<b>\d+)\s*[—–]"  # bold form needs the em dash
+    r")",
+    re.M,
+)
 
 #: An AD CITATION, unprefixed. The lookbehind rejects `fnd:AD-1` / `pap:AD-1`
 #: and hyphenated ids, so a prefixed (already unambiguous) citation is not
@@ -82,8 +105,24 @@ def _spines(project: pathlib.Path) -> list[pathlib.Path]:
 
 
 def _defined_ads(project: pathlib.Path) -> dict[pathlib.Path, set[int]]:
-    """Per-spine AD ids defined in ``project``."""
-    return {sp: {int(n) for n in _AD_DEF.findall(_read(sp))} for sp in _spines(project)}
+    """Per-spine BARE AD ids defined in ``project``.
+
+    A qualified definition (`#### canopy:AD-7`) deliberately does NOT count: it
+    lives in its own namespace and cannot collide with a bare `AD-7`. That is
+    the whole mechanism behind steward's 2026-09-08 fold -- six satellite spines
+    became `## Satellite:` sections whose ids stay qualified, so the bare
+    namespace holds only the station's own AD-1..9 and a bare citation is
+    unambiguous again, with not one reference rewritten.
+    """
+    out: dict[pathlib.Path, set[int]] = {}
+    for sp in _spines(project):
+        ids: set[int] = set()
+        for m in _AD_DEF.finditer(_read(sp)):
+            if m.group("hp") or m.group("bp"):
+                continue  # qualified -- separate namespace
+            ids.add(int(m.group("h") or m.group("b")))
+        out[sp] = ids
+    return out
 
 
 def main() -> int:
@@ -148,7 +187,18 @@ def main() -> int:
                         f"`{(m.group(1) + m.group(2)).strip()}` -- AD headings read `AD-<n> — <Title>`"
                     )
 
-    # --- FAIL: a citation that names no AD anywhere in the fleet ------------
+    # --- FAIL: a bare citation that does not resolve IN ITS OWN PROJECT -----
+    #
+    # Resolving fleet-wide was a FALSE GREEN and it hid a real regression. When
+    # steward's six satellite spines were folded and their ids qualified, 677
+    # bare citations in steward stopped resolving locally -- and this check
+    # still passed them, because AD-10..AD-23 happen to exist in atlas and
+    # marshal. A number matching in an unrelated project is a coincidence, not
+    # a reference.
+    #
+    # So the rule is: a BARE `AD-n` must resolve inside its own project. A
+    # citation that means another project's decision has to say so
+    # (`suite:AD-9`), which is exactly what the qualified form is for.
     for proj in projects:
         slug = proj.name
         for path in sorted(proj.rglob("*.md")):
@@ -158,10 +208,10 @@ def main() -> int:
                 n = int(raw)
                 if n in defined[slug]:
                     continue
-                if any(n in ads for ads in defined.values()):
-                    cross_project += 1
-                    continue
-                unresolvable.append(f"{slug}: {path.relative_to(ROOT)} cites AD-{n}, defined nowhere in the fleet")
+                unresolvable.append(
+                    f"{slug}: {path.relative_to(ROOT)} cites bare AD-{n}, which this "
+                    f"project does not define -- qualify it (`<spine>:AD-{n}`) or fix the id"
+                )
 
     # --- WARN: one project, several spines, overlapping id ranges -----------
     for slug, spine_map in per_spine.items():
@@ -180,8 +230,10 @@ def main() -> int:
                 f"resolved without reading the citing file's subject"
             )
 
-    for line in unresolvable:
+    for line in unresolvable[:15]:
         print(f"[ad-citation] broken: {line}")
+    if len(unresolvable) > 15:
+        print(f"[ad-citation] broken: ... and {len(unresolvable) - 15} more")
     for line in misnamed:
         print(f"[ad-citation] misnamed-spine: {line}")
     for line in malformed:
@@ -193,15 +245,50 @@ def main() -> int:
     print(
         f"[ad-citation] {total_defined} AD(s) defined across "
         f"{sum(len(v) for v in per_spine.values())} spine(s) in {len(projects)} project(s); "
-        f"{cross_project} cross-project citation(s) resolved"
+        f"{cross_project} qualified cross-project citation(s)"
     )
 
-    if unresolvable or misnamed or malformed:
+    # One ratchet over every FAIL class. `unresolvable` is deduplicated first:
+    # the same file citing the same id five times is ONE issue to fix, and
+    # counting occurrences would make the baseline shrink or grow on edits that
+    # change nothing.
+    findings = sorted(set(unresolvable) | set(misnamed) | set(malformed))
+
+    if "--write-baseline" in sys.argv:
+        _BASELINE_PATH.write_text(
+            json.dumps({"recorded": "2026-09-08", "known": findings}, indent=1) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[ad-citation] baseline written: {len(findings)} known issue(s)")
+        return 0
+
+    baseline: set[str] = set()
+    if _BASELINE_PATH.is_file():
+        try:
+            baseline = set(json.loads(_BASELINE_PATH.read_text(encoding="utf-8")).get("known", []))
+        except (OSError, ValueError):
+            print(f"[ad-citation] cannot run: {_BASELINE_PATH.name} is unreadable", file=sys.stderr)
+            return 2
+
+    new = [f for f in findings if f not in baseline]
+    healed = sorted(baseline - set(findings))
+    if baseline:
+        print(
+            f"[ad-citation] {len(findings)} distinct issue(s) "
+            f"({len(unresolvable)} citation occurrence(s)); {len(baseline)} baselined"
+            + (f", {len(healed)} since fixed" if healed else "")
+        )
+    if new:
+        print(f"[ad-citation] {len(new)} NEW issue(s), not in the baseline:")
+        for line in new[:10]:
+            print(f"[ad-citation]   NEW: {line}")
         return 1
+    if findings:
+        # Known debt: reported every run, bounded by the baseline, never a
+        # false green. Re-stamp with --write-baseline only when it SHRINKS.
+        print("[ad-citation] ok: no new issues; the baselined set is unchanged or smaller")
+        return 0
     if ambiguous:
-        # Ambiguity is real but is a consolidation task, not a broken link --
-        # reported every run, never a red gate, matching how `warn` findings
-        # behave elsewhere in the detector suite.
         print("[ad-citation] ok: every citation resolves; ambiguity above is advisory")
         return 0
     print("[ad-citation] ok: every AD citation resolves to exactly one spine")

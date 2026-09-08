@@ -5,6 +5,7 @@ owner-dream: docs/dreams/pyforge-marshal.md   # § The frontier — "Fleet consi
 surface:
   - scripts/governance_currency_check.py    # CAP-6, net-new — the staleness detector
   - scripts/ad_citation_check.py            # CAP-6, net-new — architecture-decision citation integrity
+  - scripts/.ad-citation-baseline.json      # CAP-6 — the ratchet's recorded debt; shrinks only
 companions:
   - ../../../../../EXEMPLAR-STANDARD.md     # adopted-then-rewritten: the reviewable enumeration behind this Spec's normative claims
   - coverage-baseline-2026-09-07.md         # the fleet's first coverage measurement — what the ratchet ratchets FROM

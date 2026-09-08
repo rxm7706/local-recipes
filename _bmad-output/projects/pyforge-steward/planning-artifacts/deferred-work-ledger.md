@@ -1381,7 +1381,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   summary: Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
   evidence: OIDC login writes group-claim names into session idp_token_roles until the next successful pre_social_login. 18.3 JWT re-verify is out of scope. Epic 21 / FR-31 owns next-request revoke.
   location: src/platform/config/authorization/adapters.py
-  origin: spec-deferred 47f46e0ea931 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred 48ebd974a4a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
