@@ -16,7 +16,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** RAG still defaults to in-memory DuckDB. FR-48 needs HNSW on the CAP-19 plane writer.
+**Problem:** RAG still defaults to in-memory DuckDB. canopy:FR-48 needs HNSW on the CAP-19 plane writer.
 
 **Approach:** Extract `REAL[]` (or list) rows onto `atlas.duckdb` via `connect_writer`. Cast to `FLOAT[N]`, `LOAD vss` only, nearest-neighbor returns the planted row. Production opener injects that writer.
 

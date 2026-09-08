@@ -19,7 +19,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Lane 1 (Wagtail at `/`) stores media on pod-local `MEDIA_ROOT` and shares one Redis for cache and Celery. Scaling replicas loses uploads; filling the cache can evict queued work (canopy FR-8, FR-30, canopy:AD-13, canopy:AD-10, NFR-C7).
+**Problem:** Lane 1 (Wagtail at `/`) stores media on pod-local `MEDIA_ROOT` and shares one Redis for cache and Celery. Scaling replicas loses uploads; filling the cache can evict queued work (canopy:FR-8, FR-30, canopy:AD-13, canopy:AD-10, NFR-C7).
 
 **Approach:** Mount a ReadWriteMany PVC for Django filesystem media. Split Redis into `redis-cache` (evicts) and `redis-broker` (does not). Renditions use the `renditions` cache alias. Wagtail `django_tasks` runs on an in-tree Celery `BaseTaskBackend`. Independent work scale remains the existing Celery worker Deployment.
 

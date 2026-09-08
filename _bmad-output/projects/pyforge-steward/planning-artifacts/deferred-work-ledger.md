@@ -1492,13 +1492,13 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-21-1: Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42 are not on RunState yet.
+### DW-FU-21-1: Timing, heartbeat, and ingest-at-completion columns for canopy:FR-41/canopy:FR-42 are not on RunState yet.
 
 - source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
-  summary: Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42 are not on RunState yet.
+  summary: Timing, heartbeat, and ingest-at-completion columns for canopy:FR-41/canopy:FR-42 are not on RunState yet.
   evidence: Story 21.1 lands the two public tables only; 21.5 owns front-door query and completed-run timing ingest.
   location: src/shared/packages/django-pyforge/src/django_pyforge/models.py
-  origin: spec-deferred 2967d8a34b8a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred d6c73ff81f92 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
@@ -1561,7 +1561,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
 - source_spec: `planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md`
   summary: load_board_rows has no LIMIT; a large run_state table can miss the 500ms budget.
-  evidence: FR-42 budget vs unbounded SELECT; retention is not this story.
+  evidence: canopy:FR-42 budget vs unbounded SELECT; retention is not this story.
   location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
   origin: spec-deferred 903873aaade3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
@@ -2348,10 +2348,10 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-34-1: Federated-read and write-refused tests skip when the DuckDB `postgres` extension is not already in the local cache, so a CI image without that cache can stay green without proving FR-46 live ATTACH.
+### DW-FU-34-1: Federated-read and write-refused tests skip when the DuckDB `postgres` extension is not already in the local cache, so a CI image without that cache can stay green without proving canopy:FR-46 live ATTACH.
 
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md`
-  summary: Federated-read and write-refused tests skip when the DuckDB `postgres` extension is not already in the local cache, so a CI image without that cache can stay green without proving FR-46 live ATTACH.
+  summary: Federated-read and write-refused tests skip when the DuckDB `postgres` extension is not already in the local cache, so a CI image without that cache can stay green without proving canopy:FR-46 live ATTACH.
   evidence: `requires_postgres_ext` skipif in `test_read_only_live_attach.py`. Spec allowed AST/string gates for INSTALL; live ATTACH still needs a provisioned cache. Not a 34.1 product-path change.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
   status: open

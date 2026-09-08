@@ -30,7 +30,7 @@ mints **CAP-18 for hook specs**, which is not a scorecard.
 | Artifact | Change |
 |---|---|
 | SPEC | CAP-18 |
-| PRD | FR-43, FR-44, FR-45; SM-9; §2/§10/§14 stale-tail fixes |
+| PRD | canopy:FR-43, canopy:FR-44, canopy:FR-45; SM-9; §2/§10/§14 stale-tail fixes |
 | Spine | canopy:AD-21 binds CAP-18 |
 | Steward epics | **Epic 32** (S-32.1 shared contract, S-32.2 deploy-profile plugins) |
 | Warden | **Epic 9** (S-9.1–9.3) |

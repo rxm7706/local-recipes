@@ -20,7 +20,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** An agent asked to do scribe work can freelance against the filesystem or call random HTTP. FR-38 / CAP-16 require each **03** station to be addressable as a persona that acts only through FR-13 grammar and FR-11 MCP.
+**Problem:** An agent asked to do scribe work can freelance against the filesystem or call random HTTP. canopy:FR-38 / CAP-16 require each **03** station to be addressable as a persona that acts only through FR-13 grammar and FR-11 MCP.
 
 **Approach:** Author one BMAD launcher/agent skill for the 29.1 proof station (`scribe`). It consults the CAP-15 `pyforge-scribe` content skill and may only emit grammar (`pyforge scribe …`) and MCP (`POST /stations/scribe/mcp`). Demonstrate one end-to-end station task as a checked transcript. Do not SKF-compile the persona.
 
@@ -61,14 +61,14 @@ deferred: []
 - `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` — CAP-15 consult target (read-only)
 - `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — FR-13 grammar (read-only; `pyforge scribe …`)
 - `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` — FR-11 `asgi_for_station` / `POST /stations/<name>/mcp` (read-only)
-- `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — **new** FR-38 / canopy:AD-17 gates (I/O matrix)
+- `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — **new** canopy:FR-38 / canopy:AD-17 gates (I/O matrix)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 - `src/platform/` — do not add `pyforge.*`
 
 ## Tasks & Acceptance
 
 **Execution:**
-- `.claude/skills/bmad-agent-scribe/SKILL.md` — author BMAD persona that consults CAP-15 — FR-38
+- `.claude/skills/bmad-agent-scribe/SKILL.md` — author BMAD persona that consults CAP-15 — canopy:FR-38
 - `.claude/skills/bmad-agent-scribe/customize.toml` — launcher config; grammar + MCP menu only
 - `.claude/skills/bmad-agent-scribe/transcripts/scribe-recall-e2e.json` — one station task end to end
 - `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — I/O matrix; fail on FS/HTTP freelance
@@ -107,7 +107,7 @@ Summary: BMAD launcher `bmad-agent-scribe` consults the CAP-15 `pyforge-scribe` 
 
 Files:
 - `.claude/skills/bmad-agent-scribe/` — launcher SKILL.md, customize.toml, golden transcript
-- `tests/meta/test_station_persona.py` — FR-38 contract
+- `tests/meta/test_station_persona.py` — canopy:FR-38 contract
 - `planning-artifacts/specs/spec-29-2-….md` — tracked story spec
 
 Review: 2 low patches applied; follow-up score 2 → false.

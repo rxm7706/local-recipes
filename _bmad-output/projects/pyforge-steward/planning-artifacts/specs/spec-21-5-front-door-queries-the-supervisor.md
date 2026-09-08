@@ -23,7 +23,7 @@ deferred:
       load_board_rows has no LIMIT; a large run_state table can miss the
       500ms budget.
     evidence: |-
-      FR-42 budget vs unbounded SELECT; retention is not this story.
+      canopy:FR-42 budget vs unbounded SELECT; retention is not this story.
     location: >-
       src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
     severity: low
@@ -59,7 +59,7 @@ deferred:
 
 ## Code Map
 
-- `src/shared/packages/django-pyforge/src/django_pyforge/models.py` — add `station`, `started_at`, `heartbeat_at`, `completed_at`, `duration_ms` on `RunState` (21.1 deferred FR-41 columns here)
+- `src/shared/packages/django-pyforge/src/django_pyforge/models.py` — add `station`, `started_at`, `heartbeat_at`, `completed_at`, `duration_ms` on `RunState` (21.1 deferred canopy:FR-41 columns here)
 - `src/shared/packages/django-pyforge/src/django_pyforge/migrations/0003_run_state_timing.py` — Django AddField only; no CREATE SCHEMA
 - `src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py` — persist station/timestamps in `publish_start` / `complete_run`; add `query_board` (live + completed timing), `SupervisorUnavailableError`, 500ms statement timeout, cache last-ok
 - `src/platform/platformapp/front_door/views.py` — **new** `runs_board` calls `query_board` only
@@ -73,9 +73,9 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `django_pyforge/models.py` + `migrations/0003_*.py` — timing columns — FR-41
+- `django_pyforge/models.py` + `migrations/0003_*.py` — timing columns — canopy:FR-41
 - `django_pyforge/supervisor.py` — `query_board` + ingest in `complete_run` — canopy:AD-12
-- `platformapp/front_door/views.py` + `urls.py` + template + `config/urls.py` — `/runs/` — FR-40/FR-42
+- `platformapp/front_door/views.py` + `urls.py` + template + `config/urls.py` — `/runs/` — canopy:FR-40/canopy:FR-42
 - `src/platform/tests/test_front_door_queries_supervisor.py` — I/O matrix
 
 **Acceptance Criteria:**

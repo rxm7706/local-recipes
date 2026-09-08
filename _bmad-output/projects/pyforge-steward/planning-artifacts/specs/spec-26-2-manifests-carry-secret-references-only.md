@@ -18,13 +18,13 @@ deferred: []
 
 ## Intent
 
-**Problem:** FR-32 / canopy:AD-19 require that rendered Helm (and the OCP overlay) carry Secret *names and keys*, never secret *values*. Chart templates already wire `secretKeyRef` (parent canopy:AD-12), but nothing fails a render when a value is injected — a git-diff of the chart could still leak credentials.
+**Problem:** canopy:FR-32 / canopy:AD-19 require that rendered Helm (and the OCP overlay) carry Secret *names and keys*, never secret *values*. Chart templates already wire `secretKeyRef` (parent canopy:AD-12), but nothing fails a render when a value is injected — a git-diff of the chart could still leak credentials.
 
 **Approach:** Add a check over `helm template` YAML that fails if a secret value appears (canary `--set-string` plus secret-named env `value:`). Pods keep env / secret mounts. The app must not call a secrets HTTP API. Vault injector, secrets CSI, and an extra secrets sidecar stay out of this chain.
 
 ## Boundaries & Constraints
 
-**Always:** Success test is rendered Helm/Kustomize contains names and keys, never values. Cite FR-32, canopy:AD-19, parent canopy:AD-12. Spec lives at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Guard-removed companions (Story 9.6) for every assertion helper.
+**Always:** Success test is rendered Helm/Kustomize contains names and keys, never values. Cite canopy:FR-32, canopy:AD-19, parent canopy:AD-12. Spec lives at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Guard-removed companions (Story 9.6) for every assertion helper.
 
 **Block If:** Implementation would add Vault-in-app, Vault injector, secrets CSI, or an extra secrets sidecar (parent canopy:AD-14 / fourth kind — needs a dated Dream first).
 

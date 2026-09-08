@@ -28,7 +28,7 @@ Type: **new capability on a shipped chain** — not a rollback of 18–32, not a
 | 1.1 | Done | Trigger is operator evergreen ruling, not a red story. |
 | 2.1 | Done | Epics 18–32 stay `done`. New **Epic 34**. |
 | 2.2 | Done | No rewrite of 18–32 stories. |
-| 3.1 | Done | SPEC CAP-19 + constraints + OQs. PRD FR-46..50. Spine canopy:AD-22. Dream status `specified`. |
+| 3.1 | Done | SPEC CAP-19 + constraints + OQs. PRD canopy:FR-46..50. Spine canopy:AD-22. Dream status `specified`. |
 | 4.1 | Viable | Direct Adjustment. Risk: medium (rebuild of private stores is explicit). |
 
 ## 3. Recommended approach
@@ -38,7 +38,7 @@ Type: **new capability on a shipped chain** — not a rollback of 18–32, not a
 ## 4. Applied
 
 - SPEC `shipped` → `in-progress`; CAP-19; Why / Always / Non-goals / success signal.
-- PRD `shipped` → `in-progress`; FR-46..50; FR-27 note; traceability.
+- PRD `shipped` → `in-progress`; canopy:FR-46..50; FR-27 note; traceability.
 - `epics.md` Epic 34 (34.1–34.5).
 - Architecture spine canopy:AD-22.
 - Dream Grounding: evergreen; CAP-19 now on the SPEC.

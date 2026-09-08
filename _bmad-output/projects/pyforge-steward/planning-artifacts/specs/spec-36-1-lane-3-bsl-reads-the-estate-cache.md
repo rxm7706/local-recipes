@@ -15,7 +15,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Vizro/BSL still has no declared model over the CAP-19 estate Parquet (FR-47). Lane 3 cannot prove it reads the plane cache.
+**Problem:** Vizro/BSL still has no declared model over the CAP-19 estate Parquet (canopy:FR-47). Lane 3 cannot prove it reads the plane cache.
 
 **Approach:** Add a BSL model + dashboard loader over `query_plane_estate`. Query returns planted rows. No OLTP DSN. No vizro-ai.
 

@@ -44,7 +44,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Estate `/` is a cookiecutter `TemplateView`. Editors cannot publish a runbook without a new image and a Deployment rollout (canopy FR-4 / CAP-2).
+**Problem:** Estate `/` is a cookiecutter `TemplateView`. Editors cannot publish a runbook without a new image and a Deployment rollout (canopy:FR-4 / CAP-2).
 
 **Approach:** Mount Wagtail on the existing Django host at `/`. Page rows live in PostgreSQL. Admin login is `WAGTAILADMIN_LOGIN_URL` through the existing allauth OIDC path. IdP group `wagtail-admin` maps to `wagtailadmin.access_admin`.
 

@@ -359,7 +359,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | Unit coverage | ≥80% | Story 19.3 CI gate |
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
-| Idempotent regen | byte-identical on unchanged tree | FR-132 |
+| Idempotent regen | byte-identical on unchanged tree | canopy:FR-132 |
 | Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration

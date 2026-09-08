@@ -15,7 +15,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Ledgers show every station story done, but FR-39 still treated the roster as undeclared. Mason's skill cell stayed empty because the detector required `pyforge-mason/`, which Epic 11 forbids.
+**Problem:** Ledgers show every station story done, but canopy:FR-39 still treated the roster as undeclared. Mason's skill cell stayed empty because the detector required `pyforge-mason/`, which Epic 11 forbids.
 
 **Approach:** Count `conda-forge-expert` as mason's skill. Set `DECLARED_COMPLETE` to the eight-station roster so a missing cell fails CI.
 

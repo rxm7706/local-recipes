@@ -20,7 +20,7 @@ followup_review_recommended: false
 
 ## Intent
 
-**Problem:** Scribe `recall` is deterministic token overlap. A query with no shared tokens misses a meaning-equivalent node (FR-36 / CAP-14).
+**Problem:** Scribe `recall` is deterministic token overlap. A query with no shared tokens misses a meaning-equivalent node (canopy:FR-36 / CAP-14).
 
 **Approach:** Add semantic recall on the existing GraphStore port. Persist embeddings on the durable PostgreSQL/pgvector driver and rank by vector distance. Keep the lexical path unchanged. Callers select a recall mode, not a driver.
 
@@ -29,7 +29,7 @@ followup_review_recommended: false
 **Always:**
 - Stay behind `GraphStore`. `recall.py` / CLI must not `isinstance` the driver or import `psycopg` / `graph_store_pg`.
 - Lexical `answer()` stays pure token overlap. Semantic ranking uses stored embeddings, not that overlap loop.
-- Prove FR-36 on the durable driver: query with no lexical overlap hits the target; the same query on the lexical path does not.
+- Prove canopy:FR-36 on the durable driver: query with no lexical overlap hits the target; the same query on the lexical path does not.
 - Tests fail if the semantic path is removed or aliased to lexical.
 - Local JSON (`FlatFileGraphStore`) may stay lexical-only because embeddings live in pgvector. Document that; `query_similar` on JSON returns no hits.
 - Implementation lives in `pyforge-scribe`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. This spec is tracked at `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-28-2-semantic-recall.md`.
@@ -40,7 +40,7 @@ followup_review_recommended: false
 - Do not start Story 29.1 or later.
 - Do not put `pyforge.*` under `src/platform/`. No MinIO. No SQLite dual-driver.
 - Do not change FlatFile JSON document shape to carry vectors.
-- Do not teach the lexical path synonym expansion so it accidentally passes FR-36.
+- Do not teach the lexical path synonym expansion so it accidentally passes canopy:FR-36.
 
 ## I/O & Edge-Case Matrix
 
@@ -62,7 +62,7 @@ followup_review_recommended: false
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — on `commit()`, write `embedding` from title+text. `query_similar` = `ORDER BY embedding <=> query::vector` for current rows with non-null embeddings. Engine imports stay here.
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py` — add `mode="lexical"|"semantic"`. Semantic calls `store.query_similar` then existing citation filter. Do not import the PG adapter.
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py` — `--semantic` on `recall`; still `open_graph_store` + `answer`.
-- `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` — **new** FR-36 + anti-alias + JSON-empty + no `src/platform/` pyforge modules.
+- `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` — **new** canopy:FR-36 + anti-alias + JSON-empty + no `src/platform/` pyforge modules.
 - `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` — keep caller-unaware AST checks; they must still pass.
 - `src/shared/packages/pyforge-scribe/tests/unit/test_recall.py` — lexical suite unchanged.
 
@@ -71,10 +71,10 @@ followup_review_recommended: false
 **Execution:**
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py` — synonym-cluster vectors — meaning without token overlap
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py` — `query_similar` on the port; JSON returns empty — callers unaware
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — persist + kNN embeddings — FR-36 durable path
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — persist + kNN embeddings — canopy:FR-36 durable path
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py` — semantic mode via port method — no driver branch
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py` — `--semantic` — operator surface
-- `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` — no-overlap hit, lexical miss, anti-alias, JSON empty, host boundary — FR-36
+- `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` — no-overlap hit, lexical miss, anti-alias, JSON empty, host boundary — canopy:FR-36
 - this spec — include in the implementation PR
 
 **Acceptance Criteria:**
@@ -86,7 +86,7 @@ followup_review_recommended: false
 
 ## Design Notes
 
-Embeddings are synonym clusters, not a downloaded model: `canine` and `dog` map to the same concept so cosine is high while `_tokenize` overlap is empty. That is enough to prove FR-36 offline. Production can later swap the embedder; the port stays `query_similar`.
+Embeddings are synonym clusters, not a downloaded model: `canine` and `dog` map to the same concept so cosine is high while `_tokenize` overlap is empty. That is enough to prove canopy:FR-36 offline. Production can later swap the embedder; the port stays `query_similar`.
 
 JSON does not grow a vector field. Semantic proof is on PostgreSQL. `query_similar` on FlatFile is empty so `recall.py` never `isinstance`s.
 
@@ -121,7 +121,7 @@ Files changed:
 - `graph_store.py` — `query_similar` on the port; FlatFile returns `[]`
 - `graph_store_pg.py` — write embeddings on commit; kNN with `<=>`
 - `recall.py` / `cli.py` — `--semantic` / `mode="semantic"`
-- `test_recall_semantic.py` — FR-36, anti-alias, JSON-empty, host boundary
+- `test_recall_semantic.py` — canopy:FR-36, anti-alias, JSON-empty, host boundary
 - this spec
 
 Review findings breakdown: patches applied 0, deferred 0, rejected 5.

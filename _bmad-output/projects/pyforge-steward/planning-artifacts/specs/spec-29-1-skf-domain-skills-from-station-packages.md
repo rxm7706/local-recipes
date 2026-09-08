@@ -17,7 +17,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Eight **03** stations owe a CAP-15 domain skill. The estate has an atlas-adjacent SKF skill (`cf-atlas-legacy`) and no `pyforge-<station>` skill compiled from `src/shared/packages/pyforge-<station>/`. FR-37 forbids proving the pattern on a station that already has a skill.
+**Problem:** Eight **03** stations owe a CAP-15 domain skill. The estate has an atlas-adjacent SKF skill (`cf-atlas-legacy`) and no `pyforge-<station>` skill compiled from `src/shared/packages/pyforge-<station>/`. canopy:FR-37 forbids proving the pattern on a station that already has a skill.
 
 **Approach:** Compile one agentskills.io-compliant, version-pinned, provenance-backed content skill from a station package that has **no** skill today (`pyforge-scribe` — smallest CLI-complete station, no `.claude/skills/pyforge-scribe/`). Use the existing SKF module (`_bmad/skf/`, `.claude/skills/skf-*`, `skf-extract-public-api` / `skf-validate-frontmatter` / `skf-validate-output`). Do not invent a second compiler. Do not compile CAP-16 personas. Do not replace `conda-forge-expert`. Do not write `CLAUDE.md` / `AGENTS.md` except via `skf-export-skill` (this story skips export).
 
@@ -59,7 +59,7 @@ warnings: []
 - `.claude/skills/skf-create-skill/` + `_bmad/skf/skf-create-skill/` — existing compiler (read-only)
 - `.claude/skills/shared/scripts/skf-extract-public-api.py` — extraction used at compile
 - `.claude/skills/shared/scripts/skf-validate-frontmatter.py` / `skf-validate-output.py` — validators tests invoke
-- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — FR-37 / canopy:AD-17 gates
+- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — canopy:FR-37 / canopy:AD-17 gates
 - `src/shared/packages/pyforge-scribe/` — compile source (read-only)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 

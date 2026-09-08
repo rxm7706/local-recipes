@@ -45,7 +45,7 @@ deferred:
 
 **Block If:** A change would add a third-party runtime dep (pluggy, setuptools) to pyforge-core, or `import pyforge.<station>`.
 
-**Never:** Warden Epic 9 scanners; steward 32.2 deploy-profile plugins; peer FR-45 extractions (atlas 18.1 Kedro audit, mason 10.1, marshal 26.1, doctor 17.1, herald 16.1, scribe 4.1); scorecard/metrics; chrome (18-1 already shipped). Do not drain other stories.
+**Never:** Warden Epic 9 scanners; steward 32.2 deploy-profile plugins; peer canopy:FR-45 extractions (atlas 18.1 Kedro audit, mason 10.1, marshal 26.1, doctor 17.1, herald 16.1, scribe 4.1); scorecard/metrics; chrome (18-1 already shipped). Do not drain other stories.
 
 ## I/O & Edge-Case Matrix
 
@@ -75,7 +75,7 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-core/src/pyforge/core/hooks.py` — add stdlib loader + hook-spec types + dummy — FR-43 surface
+- `src/shared/packages/pyforge-core/src/pyforge/core/hooks.py` — add stdlib loader + hook-spec types + dummy — canopy:FR-43 surface
 - `src/shared/packages/pyforge-core/pyproject.toml` — declare dummy entry point; keep `dependencies = []`
 - `src/shared/packages/pyforge-core/README.md` — contract docs (shape, non-plugin surfaces, no second verdict)
 - `src/shared/packages/pyforge-core/tests/unit/test_hooks.py` — cover I/O matrix rows
@@ -139,4 +139,4 @@ Review: 6 patches applied (3 medium, 3 low; follow-up score 12). 1 deferred (pre
 
 Verification: focused hooks/conformance/leaf tests 49 passed. Full `pyforge-core-test` still has 9 pre-existing sibling sole-ownership failures.
 
-Residual: stations do not yet consume the API (32.2 / FR-45 / Warden 9).
+Residual: stations do not yet consume the API (32.2 / canopy:FR-45 / Warden 9).

@@ -12,7 +12,7 @@ context:
 warnings: []
 deferred:
   - summary: >-
-      Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42
+      Timing, heartbeat, and ingest-at-completion columns for canopy:FR-41/canopy:FR-42
       are not on RunState yet.
     evidence: |-
       Story 21.1 lands the two public tables only; 21.5 owns front-door

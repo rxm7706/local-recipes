@@ -19,7 +19,7 @@ followup_review_recommended: false
 
 ## Intent
 
-**Problem:** Scribe's compiled graph is one JSON file (`FlatFileGraphStore`). The unifying-strategy Dream treated dual-driver Scribe as already shipped; ground truth is a single local adapter. Production cannot use that file as the durable backend (FR-35 / CAP-14).
+**Problem:** Scribe's compiled graph is one JSON file (`FlatFileGraphStore`). The unifying-strategy Dream treated dual-driver Scribe as already shipped; ground truth is a single local adapter. Production cannot use that file as the durable backend (canopy:FR-35 / CAP-14).
 
 **Approach:** Add the first durable driver — PostgreSQL with `pgvector` in `scribe_schema` — as a steward-owned plugin behind the existing `GraphStore` port. Keep the JSON local path. One operation suite must pass against both. Callers stay on the protocol.
 
@@ -73,12 +73,12 @@ followup_review_recommended: false
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — PostgreSQL/pgvector adapter + steward plugin — FR-35 durable driver
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_pg.py` — PostgreSQL/pgvector adapter + steward plugin — canopy:FR-35 durable driver
 - `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py` — env owner + DSN context; no engine import — callers unaware
 - `src/shared/packages/pyforge-scribe/pyproject.toml` — register `scribe-graphstore-pg` — CAP-18
 - `pixi.toml` — `psycopg` on pyforge-scribe feature — tests can connect
-- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_operations.py` — same suite vs JSON and PG — FR-35
-- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` — concurrency, isolation, anti-JSON, host boundary — FR-35 / parent AD-1 / AD-5
+- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_operations.py` — same suite vs JSON and PG — canopy:FR-35
+- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_pg.py` — concurrency, isolation, anti-JSON, host boundary — canopy:FR-35 / parent AD-1 / AD-5
 - `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py` — PG entry point present; factory still engine-free
 - this spec — tracked under steward `planning-artifacts/specs/` — include in the implementation PR
 

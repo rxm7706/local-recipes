@@ -28,11 +28,11 @@ block 34.1.
 
 | Intent | Story | Spec |
 |---|---|---|
-| FR-46 live attach | 34.1 | `spec-34-1-read-only-live-attach.md` |
-| FR-47 Parquet cache | 34.2 | write at dispatch |
-| FR-48 vectors | 34.3 | write at dispatch |
-| FR-49 agent OLTP shield | 34.4 | write at dispatch |
-| FR-50 Scribe on plane | 34.5 | write at dispatch |
+| canopy:FR-46 live attach | 34.1 | `spec-34-1-read-only-live-attach.md` |
+| canopy:FR-47 Parquet cache | 34.2 | write at dispatch |
+| canopy:FR-48 vectors | 34.3 | write at dispatch |
+| canopy:FR-49 agent OLTP shield | 34.4 | write at dispatch |
+| canopy:FR-50 Scribe on plane | 34.5 | write at dispatch |
 
 Architecture: canopy **canopy:AD-22**. No UX artifact required (no new Lane 2 chrome).
 

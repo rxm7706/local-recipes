@@ -18,7 +18,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** Atlas DuckDB cannot yet federate a multi-schema Postgres read-only. Mode A (CAP-19 / FR-46) has no attach path. Agents and scans still have a hole toward OLTP.
+**Problem:** Atlas DuckDB cannot yet federate a multi-schema Postgres read-only. Mode A (CAP-19 / canopy:FR-46) has no attach path. Agents and scans still have a hole toward OLTP.
 
 **Approach:** In `pyforge-atlas`, open the plane writer (FR-27 / `duckdb_writer`) and `ATTACH` a fixture Postgres **READ_ONLY**. Prove a federated SELECT across two schemas; prove a write is refused; prove the path is not pandas `SQLQueryDataSet`; prove consumer boot does not `INSTALL` extensions (AD-13: `LOAD` only).
 

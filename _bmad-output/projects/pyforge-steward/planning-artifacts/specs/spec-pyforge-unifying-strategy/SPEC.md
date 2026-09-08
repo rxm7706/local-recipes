@@ -298,7 +298,7 @@ they are why this is not merely a UI project.
     read-only; Kedro writes a Parquet cache on a *named* pipeline; HNSW
     ranking runs on the plane; DB-GPT / Langflow estate reads use the plane
     DSN or HTTP face, not the OLTP DSN; Scribe semantic recall hits the plane
-    (or a store-port driver that is the plane) and still satisfies FR-36.
+    (or a store-port driver that is the plane) and still satisfies canopy:FR-36.
     Tests fail if a second writable analytical engine or an agent OLTP DSN
     is reintroduced.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
@@ -619,7 +619,7 @@ OLTP.
   pipeline reads their outputs without modifying them. No silent `01_raw`.
 - ~~**query-plane-scribe-cutover**~~ — residual **answered 2026-08-26 (operator):
   dual-write for now.** The plane (via the 34.5 store-port driver) is primary and
-  satisfies FR-36; `scribe_schema` pgvector stays written as the safety net until the
+  satisfies canopy:FR-36; `scribe_schema` pgvector stays written as the safety net until the
   plane has operating history, then retirement becomes its own explicit decision.
   Lexical recall may stay local. There is still no `GraphStore` class in
   `pyforge-scribe`.

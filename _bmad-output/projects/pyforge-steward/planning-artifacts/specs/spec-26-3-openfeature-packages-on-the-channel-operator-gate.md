@@ -22,7 +22,7 @@ warnings: []
 
 ## Boundaries & Constraints
 
-**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. `cachebox` must stay `>=5.1,<6` (conda-forge 5.2.3; do not take 6.x). `openfeature-provider-flagd` must stay `>=0.5.0,<0.5.1` (SelfExplainML 0.5.0 / protobuf 6.x; 0.5.2 needs protobuf 7 and cannot solve with `a2a-sdk`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite FR-33 / canopy:AD-16.
+**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. `cachebox` must stay `>=5.1,<6` (conda-forge 5.2.3; do not take 6.x). `openfeature-provider-flagd` must stay `>=0.5.0,<0.5.1` (SelfExplainML 0.5.0 / protobuf 6.x; 0.5.2 needs protobuf 7 and cannot solve with `a2a-sdk`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite canopy:FR-33 / canopy:AD-16.
 
 **Block If:** `pixi install -e python-agent-platform` cannot solve from those channels without authoring or rebuilding recipes.
 
