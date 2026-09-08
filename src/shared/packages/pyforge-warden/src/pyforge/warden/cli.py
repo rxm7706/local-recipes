@@ -352,6 +352,7 @@ from .scanner_plugins import (
     merge_plugin_findings,
     select_scanner_plugins,
 )
+from .tea_advisory import TeaRosterMissingError
 from .verdict import EXIT_SIGINT, exit_code_for
 from .waiver import (
     BaselineEntry,
@@ -1404,9 +1405,29 @@ def _run_scan(args: argparse.Namespace) -> int:
                     # helper's own docstring: exactly one of the two return
                     # slots is populated
                     _record_error(errors, rungs, **error_args)
-    invoke_pr_gate(
-        PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry
-    )
+    try:
+        invoke_pr_gate(
+            PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry
+        )
+    except TeaRosterMissingError as exc:
+        # AD-10 / DW-FU-11-2: the operator explicitly enabled
+        # tea-test-review (WARDEN_OPTIONAL_SCANNERS) but the AD-9 module
+        # roster has no `tea` entry at all -- a tool-misconfiguration
+        # refusal, not a scored advisory finding, so it is recorded the
+        # same way select_scanner_plugins' PluginError is above: a real
+        # CONFIG_VALIDATION error rung, never silently absorbed. This is
+        # the ONE way this plugin's own state can move the exit code —
+        # AD-4's "advisory lenses never gate" invariant governs SCORED
+        # findings about the scanned code, not an unmet tool prerequisite.
+        _record_error(
+            errors,
+            rungs,
+            kind=ErrorKind.CONFIG_VALIDATION,
+            owner="tea-test-review",
+            subject=args.path,
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
     # Story 11.2: TeaAdvisoryScanPlugin (the only PR_GATE_SCAN plugin that
     # writes here) already ran above -- read its notes now, before
     # plugin_context sees any further use. Coerced to None when empty so

@@ -6374,7 +6374,7 @@
    "src/shared/packages/pyforge-warden/scripts/refresh_kev_feed.py": "ea80d8414d32800d7e8fad048a6a5c9419451ec6",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "82c91c1197d2778d72eadbe6dee2ac33bdd74626",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "969cb0784c830761803fe6527d3dd6ee8029b6bc",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "8f9c5551a7346ced528c8803a8f844276220be16",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "2247b87d0ec0998899c69f118d6eeb03c1828422",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/config.py": "560de7069b7302d571dbd947912559f670ee5fd8",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/currency.py": "f6707cbfaa776a127a60c2866bfb5635deac1e78",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/data/conda_pypi_map.json": "04cbdf9d20d8e827adff06fc0a05a96e11660ce4",
@@ -6406,7 +6406,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/sbom.py": "a8615adaacfb520db00ec8040fb8b8ee4b329a1f",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py": "64141285f5b77ce97cf801a128997c7ca4d93001",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py": "a970ecb4ba445835580d01531a4e20d41d758ff0",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py": "9880a0d90c0837e01fb5fa7d51388a14b17cfe2b",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py": "ace4a47aed280b8a6a5b9e593a413d59c94ce2f7",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/verdict.py": "d297d36dc119c807cae783ded8c25f1c699c91b9",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b",
@@ -8584,12 +8584,12 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_sbom.py": "f1fa1c26da04fe477cd53ec88b740f91fd698574",
    "src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py": "ff8af98aeff7a199b4ff123856371aa4a425c5f6",
    "src/shared/packages/pyforge-warden/tests/unit/test_sources.py": "32765b01c594893700a1d24cba8052cf9911fac0",
-   "src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py": "1419788f314885df80b65be7cd22b95ef6aeefa9",
+   "src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py": "0bb5cf53b03288e91a7c820d06a762ec4df285a5",
    "src/shared/packages/pyforge-warden/tests/unit/test_verdict.py": "1a3e2985494fd71206ff7107e6a5c357c29e325b",
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "e4e17ee14876306c9ca603ce84ddc1a38eae8722",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "453f54e0821d23843825505b3894e4481461a8d5"
   },
-  "memlog": "5c7c5b918dd6435678a7a0d6d556e7048b20fba4"
+  "memlog": "cc06055ef5e61d60b5e1dc84fb7c736f21cc316c"
  },
  "pyforge-warden/spec-pyforge-warden-compliance-gates": {
   "files": {},

@@ -759,7 +759,7 @@ invariant, test-enforced by 9.3); steward 46.2 / 46.3 install the tools first.
 ### Story 11.2: `tea-test-review` is a warden advisory finding
 **Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the AD-9 roster lacks `tea`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • AD-4
 **Surface:** warden hook book (`pyforge.core.hooks` plugin bundle: one advisory scanner wrapping the `tea-test-review` pixi task), `tests/`, `--doctor` output
-**Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the score, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open when TEA is absent
+**Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the *score*, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open ONLY when the AD-9 roster carries `tea` but its binary is merely unreachable on this process's PATH; when the AD-9 roster lacks a `tea` entry entirely (`steward provision --module tea` never ran here) the scanner refuses per AD-10 — `run_tea_test_review` raises `TeaRosterMissingError`, and `cli.py` records it as a `config-validation` error (a real ERROR rung, exit code moved) rather than a silent pass. Resolved 2026-09-07, DW-FU-11-2 — see `tea_advisory.py`'s module docstring for the full rationale.
 
 ## Currency validation — 2026-08-26
 
