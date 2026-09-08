@@ -71,7 +71,7 @@ NFR-7: Credential values are never printed — `steward keys list`/`audit` outpu
 - **Starter/scaffold** (Structural Seed): `src/shared/packages/pyforge-steward/` as a pixi build workspace member mirroring `pyforge-warden` — `hatchling` build backend, `pixi-build-python` conda-package wrapper, `[project.scripts] steward = "pyforge.steward.cli:main"`, dedicated `[feature.pyforge-steward]` repo-root pixi block + lean `no-default-feature = true` environment. **This lands in Epic 1 Story 1.1** (the PRD's tentative standalone "Epic E — Packaging & Test Scaffold" is deliberately folded in here rather than kept as its own epic — see Epic Design Note below).
 - **Shared `Duty` protocol + exit-code sole ownership** (AD-7, AD-8): `interfaces.py` (`Duty` Protocol + `DutyResult`) and `cli.py`'s exit-code-owning dispatcher are established once, in Epic 1 Story 1.1, and reused unchanged by Epics 2-4.
 - **Config file locations** (Consistency Conventions): repo-root `.steward/` dotdir, tracked, independent of the active BMAD project — `budget.yaml`, `keys-inventory.yaml`, `*.age` payloads.
-- **Test-tier layout**: `tests/unit/`, `tests/conformance/` (FR-level behavioral contracts, incl. the FR-7 regression test), `tests/meta/` (invariants, e.g. NFR-7) — mirrors `pyforge-warden`'s tree, established in Story 1.1 and populated per-story thereafter.
+- **Test-tier layout**: `tests/unit/`, `tests/meta/` (invariants, e.g. NFR-7), `tests/fixtures/` (data, never collected). **Superseded 2026-09-07** (marshal Story 32.5, `spec-fleet-consistency-standard` CAP-2): established in Story 1.1 as `tests/unit/` + `tests/conformance/` (FR-level behavioural contracts, incl. the FR-7 regression test) + `tests/meta/`, mirroring `pyforge-warden`'s tree. The `conformance/` tier folded into `tests/unit/` — its 32 files are CLI-verb contract tests this station's own `test-architecture.md` already classified as unit level, and the fleet coverage gate's suite map recognised no tier by that name, so not one of them was ever measured. `pyforge-warden`, cited above as the model, folded its own `conformance/` into `tests/integration/` in the same pass — those 19 are oracle and engine gates, integration weight. Same name, two different concepts, which is why the fold is by level rather than by name.
 - **Dogfooding**: `scripts/dogfood_scan.py`-analogue — Steward auditing this repo's own credential surface / provisioning its own dev environment (surfaces in Epic 1 Story 1.6 and Epic 3 Story 3.1's acceptance criteria).
 
 ### UX Design Requirements
@@ -138,7 +138,7 @@ So that every later duty has a package, a CLI dispatcher, and a shared contract 
 **Given** the repo's pixi workspace
 **When** `src/shared/packages/pyforge-steward/` is scaffolded (`pyproject.toml` with `hatchling` backend, `[project.scripts] steward = "pyforge.steward.cli:main"`, `pixi.toml` with `[package.build.backend] name = "pixi-build-python"`) and wired into repo-root `pixi.toml` (`[feature.pyforge-steward.dependencies]` path-dependency into a lean `no-default-feature = true` `pyforge-steward` environment, plus `pyforge-steward-build-conda`/`-build-dist`/`-test`/`-dogfood` tasks mirroring `pyforge-warden`'s task names verbatim)
 **Then** `pixi run -e pyforge-steward steward --version` prints a version string and exits 0
-**And** `pixi run -e pyforge-steward pyforge-steward-test` runs a passing (if minimal) `pytest` suite under `tests/unit/`, `tests/conformance/`, `tests/meta/`
+**And** `pixi run -e pyforge-steward pyforge-steward-test` runs a passing (if minimal) `pytest` suite under `tests/unit/`, `tests/conformance/`, `tests/meta/` *(the `tests/conformance/` tier folded into `tests/unit/` on 2026-09-07, Story 32.5 — the assertion is unchanged, its file moved.)*
 
 **Given** `cli.py`'s dispatcher
 **When** an `argparse.ArgumentParser` with one subparser per duty (`keys`, `deploy`, `provision`, `budget` — the latter three accepting no verbs yet, since their duty modules land in later epics) is built
@@ -173,7 +173,7 @@ So that the exact failure that already happened twice in this repo cannot happen
 
 **Given** this story's own resolver
 **When** `pixi run -e pyforge-steward pyforge-steward-test` runs
-**Then** `tests/conformance/` contains a named test asserting the resolver's host-gating behavior fails loudly (test failure) if the gating logic is ever removed or bypassed — this is FR-7's regression test, landing here because it is a direct property of the resolver this story builds, not a separate later concern
+**Then** `tests/conformance/` contains a named test asserting the resolver's host-gating behavior fails loudly (test failure) if the gating logic is ever removed or bypassed — this is FR-7's regression test, landing here because it is a direct property of the resolver this story builds, not a separate later concern *(the `tests/conformance/` tier folded into `tests/unit/` on 2026-09-07, Story 32.5 — the assertion is unchanged, its file moved.)*
 
 ---
 
