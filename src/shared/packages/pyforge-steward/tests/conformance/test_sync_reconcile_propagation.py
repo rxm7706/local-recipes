@@ -1925,7 +1925,7 @@ def test_zero_loop_convergent_same_value_n_round_trips():
 def test_zero_loop_survives_a_baseline_refresh_failure():
     """Covers the non-atomic baseline-refresh failure path (`sync.py:869-880`),
     required by the audit's dispatch note (`epics.md:664-665`,
-    `implementation-readiness-report-20260810.md:15`). Reuses
+    `implementation-readiness-report-2026-08-10.md:15`). Reuses
     `test_baseline_exceeding_the_field_size_ceiling_is_a_named_failure_after_the_value_push`'s
     fixture shape -- a status value over Jira's 255-char baseline-field
     ceiling (`_JIRA_BASELINE_FIELD_CEILING`) -- driven through 3

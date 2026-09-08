@@ -3,7 +3,7 @@ title: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-08-26"
+updated: "2026-09-07"
 altitude: feature
 ---
 
@@ -599,3 +599,15 @@ source), 4 (notice versioning depth) and 6 (i18n) remain open and non-blocking; 
 deferred decisions 1–3 (review cadence, extraction automation, video render scheduling)
 remain open — the video pipeline (AD-8/AD-9/AD-10 boundary with Manticore) is still
 unexercised downstream.
+
+
+## Runtime floor — reconciled 2026-09-07
+
+**Python 3.14 is the only supported runtime.** `pyproject.toml` now declares
+`requires-python = ">=3.14"` (marshal Story 32.2, `spec-fleet-consistency-standard` CAP-5),
+matching `pixi.toml`'s `python = ">=3.14.7,3.14.*"` and every env-scoped `3.14.*` pin.
+
+Consequence for this spine: no deployment target, container image or CI lane may assume a
+3.12/3.13 interpreter for `pyforge-herald`, and none does today — this records the constraint
+rather than changing it. The previous `>=3.12` declaration was never exercised by any
+environment in the workspace.

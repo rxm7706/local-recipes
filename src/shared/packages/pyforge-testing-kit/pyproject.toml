@@ -7,7 +7,7 @@ name = "pyforge-testing-kit"
 version = "0.1.0"
 description = "Shared test-support kit for PyForge stations: CLI-runner, page-object, DB-factory, and auth/HTTP/time mock primitives (FR-130 / Story 19.2)."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # Test-support only — stdlib leaf. Never a station runtime dependency.

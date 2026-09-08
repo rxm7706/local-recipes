@@ -2119,9 +2119,13 @@ boring-semantic-layer = ">=0.2.0" # A boring semantic layer built with ibis
 # Floor confirmed against the solve 2026-08-27: conda-forge carries 0.27.0–0.31.0.
 duckdb-server = ">=0.31.0"
 
-[feature.pyforge-atlas.tasks.kedro-test]
-description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
+[feature.pyforge-atlas.tasks.pyforge-atlas-test]
+description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+
+[feature.pyforge-atlas.tasks.kedro-test]
+description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11). Retained as a delegating alias of `pyforge-atlas-test` (Story 32.2) so existing callers and muscle memory keep working; the canonical name is the fleet-grammar one."
+depends-on = ["pyforge-atlas-test"]
 
 [feature.pyforge-atlas.tasks.kedro-catalog-check]
 description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"

@@ -6,6 +6,7 @@ project_name: pyforge-herald
 epicCount: 18  # 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
 storyCount: 50  # 2026-09-06: 47 + Stories 18.1–18.3 (dated snapshot; the ledger enumerates).
 status: complete
+updated: "2026-09-07"
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -573,3 +574,12 @@ steward 46.6 / 46.2 / 46.5 provision first; Path B grammar stays `pyforge herald
 **Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • `docs/specs/presentation-deck.md` (the deck pipeline it must not fork)
 **Surface:** `.claude/skills/bmad-agent-herald/SKILL.md`, `adoption-register.md` § 2 row, `AGENTS.md` block
 **Given** the labs skill installed by name **When** the herald persona routes quick slide drafts to `slides-generator` while the Claude-Design deck pipeline stays the deck source of record **Then** the register names herald as sole wielder and the routing line states the boundary (draft only; never a deck head)
+
+
+## Platform floor addendum — 2026-09-07
+
+Every story in this epic set builds and tests against **Python 3.14 only**.
+`pyforge-herald`'s `requires-python` was raised `>=3.12` -> `>=3.14` by marshal Story 32.2
+(`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
+installs. No story's acceptance criteria change; recorded here so a future story is not
+written against a 3.12 assumption the estate cannot produce.

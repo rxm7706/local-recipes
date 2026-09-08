@@ -7,7 +7,7 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine -> epics) from the fleet CI health pass, PR #1043; validated against the memlog entries -- nothing moved in substance
+updated: "2026-09-07"
 currency_review: "Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
@@ -684,3 +684,15 @@ presenton-pixi-image/                    # (or wherever this lands in the repo �
 - **Exact repo landing path** for this project's build/Helm artifacts (`presenton-pixi-image/` at repo root vs. a `src/` subtree vs. a separate deployment repo) — not fixed by the PRD or Dream; assumed a self-contained top-level directory in the Structural Seed above pending an explicit placement decision, consistent with how `recipes/` and `src/shared/packages/` are already organized in this monorepo.
 - **Brand-compliance enforcement UX (three-lane), observability/`\/metrics` instrumentation detail, chargeback ledger** — these are application-layer / Presenton-patch-layer concerns the PRD scopes explicitly (auto-fix/batched-review/ignore bands; scrape-only metrics; emit-only chargeback); this spine names where the `/metrics` schema artifact ships (Structural Seed) but does not design the instrumentation itself — that's epic/story-level work downstream of this spine.
 - **Fixture-set 1/2 capture-script implementation detail** (`tests/capture_upstream.py`, `tests/drift/recapture.py`) — this spine fixes *where* they run and the network-topology enforcement (AD-22); their internal logic is downstream, epic/story-level work.
+
+
+## Runtime floor — reconciled 2026-09-07
+
+**Python 3.14 is the only supported runtime.** `pyproject.toml` now declares
+`requires-python = ">=3.14"` (marshal Story 32.2, `spec-fleet-consistency-standard` CAP-5),
+matching `pixi.toml`'s `python = ">=3.14.7,3.14.*"` and every env-scoped `3.14.*` pin.
+
+Consequence for this spine: no deployment target, container image or CI lane may assume a
+3.12/3.13 interpreter for `pyforge-mason`, and none does today — this records the constraint
+rather than changing it. The previous `>=3.12` declaration was never exercised by any
+environment in the workspace.

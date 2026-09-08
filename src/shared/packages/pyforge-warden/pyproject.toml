@@ -7,7 +7,7 @@ name = "pyforge-warden"
 version = "0.1.0"
 description = "Unified dependency-hygiene + vulnerability scanner orchestrating deptry and osv-scanner over Python/Conda/Pixi manifests."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # The scanning engines (deptry, osv-scanner) are conda run-dependencies (see

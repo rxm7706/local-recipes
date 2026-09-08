@@ -89,7 +89,7 @@ re-litigate AD-5/AD-10 unilaterally.
 - [x] `test_sync_reconcile_propagation.py` -- add
   `test_zero_loop_survives_a_baseline_refresh_failure` -- covers the non-atomic
   baseline-refresh failure path (`sync.py:869-880`), required by the audit's dispatch note
-  (`epics.md:664-665`, `implementation-readiness-report-20260810.md:15`). Reuse the existing
+  (`epics.md:664-665`, `implementation-readiness-report-2026-08-10.md:15`). Reuse the existing
   `test_baseline_exceeding_the_field_size_ceiling_is_a_named_failure_after_the_value_push`
   fixture shape (a status value over Jira's 255-char baseline-field ceiling
   `_JIRA_BASELINE_FIELD_CEILING`) driven through 3 `reconcile()` ticks against the SAME
@@ -172,7 +172,7 @@ so the zero-loop property (no repeat writes) holds even in this persistent-failu
 - addressed_findings:
   - `[high]` `[bad_spec]` Tasks & Acceptance omitted a test for the non-atomic
     baseline-refresh-failure path (`sync.py:869-880`), explicitly required by the audit's
-    dispatch note (`epics.md:664-665`, `implementation-readiness-report-20260810.md:15`).
+    dispatch note (`epics.md:664-665`, `implementation-readiness-report-2026-08-10.md:15`).
     Amended Tasks & Acceptance / Acceptance Criteria / Design Notes to add
     `test_zero_loop_survives_a_baseline_refresh_failure`; looped back to step-03 to re-derive.
 
@@ -197,7 +197,7 @@ covered only the three happy-path N-round-trip scenarios (GH-initiated, Jira-ini
 convergent-same-value) and omitted the non-atomic baseline-refresh failure path
 (`sync.py:869-880`) — a test explicitly required by the audit's dispatch note
 (`epics.md:664-665`: "8.2's test must also cover the non-atomic baseline-refresh failure path";
-`implementation-readiness-report-20260810.md:15`: "the test must also cover the non-atomic
+`implementation-readiness-report-2026-08-10.md:15`: "the test must also cover the non-atomic
 baseline-refresh failure... a happy-path-only N-cycle test proves less than the AC claims").
 Hand-tracing the existing
 `test_baseline_exceeding_the_field_size_ceiling_is_a_named_failure_after_the_value_push` fixture

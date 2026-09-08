@@ -209,7 +209,7 @@ calls (the tracked value changing again between delivery 1 and delivery 2). The 
 constructs no such intervening change — both calls observe identical state — so it demonstrates
 a real but different property (entry-branch equivalence: redelivery via the *other* identifier
 for an already-converged pair is still a no-op), not AD-9 rule 2's stale-value-convergence
-guarantee. Independently corroborated by `implementation-readiness-report-20260810.md:16`, which
+guarantee. Independently corroborated by `implementation-readiness-report-2026-08-10.md:16`, which
 narrows Story 8.3's scoped deliverable to "**the** double-invocation acceptance test" (singular,
 matching CAP-3's literal "identical payload delivered twice" wording and
 `spec-8-1-bidirectional-propagation.md:116-120`'s "identical-payload-twice idempotency proof" —
