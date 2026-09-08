@@ -1415,7 +1415,7 @@ NFR-C7: Search is PostgreSQL FTS; Wagtail work is Celery, not django-tasks DB/RQ
 
 ### Additional Requirements (Architecture)
 
-- Modular monolith: one ASGI process; MCP is a URL pattern, not a roster (canopy:AD-1, AD-5, AD-10).
+- Modular monolith: one ASGI process; MCP is a URL pattern, not a roster (canopy:AD-1, canopy:AD-5, canopy:AD-10).
 - Citation: `parent AD-n` vs `canopy AD-n`; bare `AD-n` is review-blocking.
 - JWT: RS256; claims `sub`/`roles`/`aud=mcp:<station>`/`exp`≤5m/`delegated_by=pyforge-host` (canopy:AD-7). HMAC rejected.
 - Events: `pyforge.events` + `pyforge.events.dlq`; `pyforgeloopdepth` ceiling 8 (canopy:AD-8).
@@ -1559,7 +1559,7 @@ Non-module suite pieces follow a class-keyed playbook; `wired-or-not` is class-c
 
 ### Epic 18: Chrome and the trusted client
 
-An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy:AD-1, AD-3, AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
+An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy:AD-1, canopy:AD-3, canopy:AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
 
 ### Story 18.1: django-pyforge is the only chrome
 
@@ -1567,7 +1567,7 @@ As a portal author,
 I want one installable chrome package with an AppConfig registration protocol,
 So that adding a station does not edit the host URLconf or ship a second switcher.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-1, FR-2 • canopy:AD-1, AD-3
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-1, FR-2 • canopy:AD-1, canopy:AD-3
 **Given** two portal apps in `INSTALLED_APPS` **When** they render a page **Then** chrome markup is byte-identical and sourced from `django-pyforge`
 **And** a test that enumerates portal template/static dirs **fails** if either ships a base layout, switcher, or theme copy
 **And** discovery is `apps.get_app_configs()`; host URLconf has no station roster except the later `/compliance/` redirect
@@ -1609,7 +1609,7 @@ As a compliance auditor,
 I want Warden at `/stations/warden/` with `/compliance/` still working,
 So that bookmarks survive the uniform prefix.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-9a, FR-9b • canopy:AD-2, AD-4
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-9a, FR-9b • canopy:AD-2, canopy:AD-4
 **Given** the shipped `compliance_face` **When** this story merges **Then** distribution is `django-warden`, module `django_warden_fabric`, label `warden_fabric`
 **And** `/compliance/` is a permanent redirect to `/stations/warden/` preserving path and query
 **And** no identifier `compliance_face` remains under `src/`
@@ -1623,7 +1623,7 @@ As a platform operator,
 I want every station reachable at `/stations/<name>/` in one session,
 So that I do not re-authenticate to change tools.
 
-**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** FR-9, FR-10 • canopy:AD-2, AD-18
+**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** FR-9, FR-10 • canopy:AD-2, canopy:AD-18
 **Given** chrome and the assertion client **When** I request each of the eight portals in one session **Then** none re-authenticate and all are same-origin with Lane 1
 **And** each remaining station has `django-<station>/` with the naming triple; existing models do not move between apps
 **And** portals reach stations only through `django-pyforge`'s client; no portal imports station internals or builds raw HTTP to a service
@@ -1652,7 +1652,7 @@ As an operator,
 I want uploaded media on shared storage and a cache that cannot evict Celery,
 So that scaling Lane 1 does not lose files or drop builds.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** FR-8, FR-30 • canopy:AD-13, AD-10 • NFR-C7
+**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** FR-8, FR-30 • canopy:AD-13, canopy:AD-10 • NFR-C7
 **Given** a ReadWriteMany PVC for Wagtail media and two Redis Deployments **When** replica A stores an upload **Then** replica B retrieves it
 **And** a rendition generated on A is served from redis-cache by B without regeneration
 **And** filling redis-cache to eviction loses no queued task on redis-broker
@@ -1671,7 +1671,7 @@ As an agent,
 I want handles and run rows in PostgreSQL owned by `django-pyforge`,
 So that any replica can answer `get` and the front door never reads a laptop disk.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-12, FR-40 • canopy:AD-6, AD-9, AD-12
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-12, FR-40 • canopy:AD-6, canopy:AD-9, canopy:AD-12
 **Given** the platform database **When** this story lands **Then** `run_state` and `mcp_handles` exist as tables in `public`, not new schemas
 **And** DDL is authored as Django migrations owned by `django-pyforge` (Epic 27 will extract changesets)
 **And** no front-door or MCP path reads `~/.bmad-loops`, tmux, or journals
@@ -1695,7 +1695,7 @@ As an autonomous agent,
 I want a multi-minute operation to return a handle immediately and be fetchable after a drop,
 So that a 30s idle timeout does not lose the work.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** FR-12 • canopy:AD-6, AD-12
+**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** FR-12 • canopy:AD-6, canopy:AD-12
 **Given** a simulated ingress disconnect mid-operation **When** the client reconnects with the handle and a valid assertion **Then** it receives the same result without recomputation
 **And** `start_*` returns before the work finishes and publishes through the supervisor (no second ledger)
 **And** `get_*` succeeds on a different replica; possession of the handle without the assertion is refused
@@ -1707,7 +1707,7 @@ As an autonomous agent,
 I want every station on the same POST pattern,
 So that I do not learn eight transports.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** FR-11 • canopy:AD-1, AD-5
+**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** FR-11 • canopy:AD-1, canopy:AD-5
 **Given** the atlas face **When** the remaining seven stations register MCP tokens **Then** `POST /stations/<name>/mcp` conforms to the same dual-era checks
 **And** host dispatch is a pattern, not a per-station list
 
@@ -1717,7 +1717,7 @@ As a platform operator,
 I want live runs and completed timing from the supervisor,
 So that the published board is not `unavailable` for lack of my home directory.
 
-**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** FR-40, FR-41, FR-42 • canopy:AD-12, AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** FR-40, FR-41, FR-42 • canopy:AD-12, canopy:AD-15
 **Given** a deployed egress-blocked namespace **When** the front door renders run state **Then** it uses the supervisor API only — no filesystem fallback
 **And** a run started on one machine is visible to a front door on another
 **And** timing is ingested at run completion, queryable across runs
@@ -1962,7 +1962,7 @@ As an operator,
 I want each station addressable as a persona,
 So that an agent does not freelance against the filesystem.
 
-**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** FR-38 • canopy:AD-14, AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** FR-38 • canopy:AD-14, canopy:AD-17
 **Given** a station persona **When** it completes a station task **Then** the transcript shows only FR-13 grammar and FR-11 MCP — no direct filesystem and no ad-hoc HTTP
 **And** personas are BMAD launcher/agent skills that consult the CAP-15 content skill
 
@@ -2361,7 +2361,7 @@ As a platform operator,
 I want `/assertion/mint/` to verify the presented IdP bearer (signature via the configured JWKS, `iss`, `aud`, `exp`) before signing a station assertion,
 So that nobody can mint a valid assertion for any subject and any roles by base64-encoding a JSON payload.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy:AD-7, AD-15 • RFC-3 (revised) • red-team X-1 / R-1
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy:AD-7, canopy:AD-15 • RFC-3 (revised) • red-team X-1 / R-1
 **Given** the existing fake-`.sig` bearer fixture **When** it is POSTed to `/assertion/mint/` **Then** the response is 401 and nothing is minted
 **And** wrong key / `alg=none` / HS256 / wrong `iss` / wrong `aud` / expired / missing claims are refused
 **And** an unknown `kid` refreshes the JWKS once, never twice in the cache window
@@ -2376,7 +2376,7 @@ As a platform operator,
 I want `redis-broker` on a PVC with AOF, a required `maxmemory` below a required memory limit, no stored Celery results, and TTL on applied-id keys,
 So that a broker restart loses no queued task, stream entry, pending entry, DLQ entry or idempotency key, and growth back-pressures instead of OOM-killing the pod.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy:AD-8, AD-10, AD-12, AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy:AD-8, canopy:AD-10, canopy:AD-12, canopy:AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
 **Given** `helm template` **When** rendered **Then** the broker mounts a PVC at `/data` with `--appendonly yes --appendfsync everysec --maxmemory <v> --maxmemory-policy noeviction`, and the cache is unchanged (`emptyDir`, `allkeys-lru`)
 **And** an empty `redis.broker.maxmemory`, an empty broker memory limit, or `maxmemory` ≥ the limit fails the render naming the values path
 **And** `CELERY_TASK_IGNORE_RESULT` is `True` and no `celery-task-meta-*` key exists after a supervised run completes
@@ -2442,7 +2442,7 @@ As a platform operator,
 I want the assertion verified on every MCP JSON-RPC method before routing, a streaming proxy, and `mcp-host` reachable only from web pods,
 So that no tool is reachable anonymously and long tool calls do not 502 at five seconds.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy:AD-5, AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy:AD-5, canopy:AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
 **Given** the story spec `spec-42-1-mcp-transport-authorization.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `POST /stations/atlas/mcp` with no assertion, when any JSON-RPC method is sent, then 401; with a valid assertion for `mcp:warden`, then 403 on the atlas route.
 
@@ -2452,7 +2452,7 @@ As a platform operator,
 I want per-subject token buckets on the MCP route and `start`, queue and concurrent-run ceilings, and a revoke-by-subject duty,
 So that a looping agent is throttled to 429 instead of taking the platform down.
 
-**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy:AD-10, AD-12 • red-team A-6 / B-7 / R-8
+**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team A-6 / B-7 / R-8
 **Given** the story spec `spec-42-2-agent-rate-limits-and-run-bounds.md` **When** its acceptance criteria run **Then** they pass
 **And** Given one `sub` issuing more than the configured rate, when it calls the MCP route, then 429 with `Retry-After` and a structured log; other subjects are unaffected.
 
@@ -2472,7 +2472,7 @@ As a platform operator,
 I want `acks_late`, per-station queues, and a dedicated `builds` pool with an hours-scale limit,
 So that a killed worker re-runs its task and a rattler-build is not cut off at five minutes.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy:AD-10, AD-12 • red-team S-2 / T-6 / R-10
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy:AD-10, canopy:AD-12 • red-team S-2 / T-6 / R-10
 **Given** the story spec `spec-42-4-celery-hardening-and-the-builds-pool.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a worker killed mid-task, when a replacement starts, then the task re-runs exactly once (acks_late + reject_on_worker_lost) and the supervisor row reaches a terminal state.
 
@@ -2482,7 +2482,7 @@ As a platform operator,
 I want prefixed capability, tenant and admin roles with bare station names refused, and `tenant` on runs and events,
 So that an IdP group that merely shares a station name cannot grant access.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, FR-3, FR-31 • canopy:AD-15, AD-20 • red-team X-3 / B-6 / R-13
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, FR-3, FR-31 • canopy:AD-15, canopy:AD-20 • red-team X-3 / B-6 / R-13
 **Given** the story spec `spec-42-5-role-namespaces-and-the-tenant-claim.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a group `atlas` (bare), when reachability is computed, then it is refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation.
 
@@ -2518,7 +2518,7 @@ As a platform operator,
 I want co-located portals reaching station code in-process and over HTTP only when `STATION_REMOTE=1`,
 So that a portal view never awaits its own gunicorn pool while holding a transaction.
 
-**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, FR-26 • canopy:AD-7, AD-10 • red-team T-3 / R-6
+**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, FR-26 • canopy:AD-7, canopy:AD-10 • red-team T-3 / R-6
 **Given** the story spec `spec-43-3-in-process-station-port-no-self-call.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a portal view in the default profile, when it needs station data, then no HTTP request to the host's own address is made (test asserts zero loopback calls).
 

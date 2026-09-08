@@ -60,16 +60,16 @@ dispatch (`fnd:AD-9`). Story specs are not drafted before a flip.
 
 | Phase | Story | Governed by | Gate |
 |---|---|---|---|
-| — | 44.1 move-list manifest | fnd:AD-1, AD-2 | — |
+| — | 44.1 move-list manifest | fnd:AD-1, fnd:AD-2 | — |
 | — | 44.2 document fixes (R-23/24/25 + Python-floor pins) | Spec Constraints | — |
-| 0 | 44.3 open the foundry | fnd:AD-1, AD-3, AD-8, AD-9 | **outward** |
-| 1a | 44.4 fold the packages | fnd:AD-2, AD-6, AD-7 | deps 44.1, 44.3 |
-| 1b | 44.5 move the estate | fnd:AD-2, AD-5, fnd:AD-12 | deps 44.4 |
-| 2 | 44.6 CFE comes home | fnd:AD-4, AD-5 | **Mason** (Rules 1 + 2) |
-| 3 | 44.7 factory island (R-17) | fnd:AD-3, AD-4, AD-8 | deps 44.3 |
+| 0 | 44.3 open the foundry | fnd:AD-1, fnd:AD-3, fnd:AD-8, fnd:AD-9 | **outward** |
+| 1a | 44.4 fold the packages | fnd:AD-2, fnd:AD-6, fnd:AD-7 | deps 44.1, 44.3 |
+| 1b | 44.5 move the estate | fnd:AD-2, fnd:AD-5, fnd:AD-12 | deps 44.4 |
+| 2 | 44.6 CFE comes home | fnd:AD-4, fnd:AD-5 | **Mason** (Rules 1 + 2) |
+| 3 | 44.7 factory island (R-17) | fnd:AD-3, fnd:AD-4, fnd:AD-8 | deps 44.3 |
 | 4 | 44.8 working set | fnd:AD-2, fnd:AD-10 | deps 44.7 |
-| 5 | 44.9 Mason → conda-forge | fnd:AD-4, AD-9, fnd:AD-11 | **outward + Mason** |
-| 6 | 44.10 archive local-recipes | fnd:AD-1, AD-8, AD-9, fnd:AD-11 | **outward, irreversible** |
+| 5 | 44.9 Mason → conda-forge | fnd:AD-4, fnd:AD-9, fnd:AD-11 | **outward + Mason** |
+| 6 | 44.10 archive local-recipes | fnd:AD-1, fnd:AD-8, fnd:AD-9, fnd:AD-11 | **outward, irreversible** |
 
 **Decisions taken by the operator (2026-09-04):** fresh empty repo (history stays in the
 archive at a pinned SHA); fold docs / carry ops for R-18..R-25; the plan lives in the Dream.
