@@ -147,6 +147,7 @@ def test_name_resolver_error_shape_identical():
 
 
 @pytest.mark.slow
+@pytest.mark.network
 def test_github_updater_gap_closed(tmp_path):
     """Story 6.3 gap-closure: `github_updater.py` imports Slice 2's
     `github_version_checker.py`, which was previously absent from the

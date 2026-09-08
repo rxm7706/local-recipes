@@ -213,8 +213,19 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
     flat_host = flatten_reqs(host_reqs)
     flat_run = flatten_reqs(run_reqs)
 
-    # Check for compiler without stdlib
-    has_compiler = any("compiler" in str(r) for r in flat_build)
+    # Check for compiler without stdlib. go-nocgo (pure Go, no CGO) and the
+    # legacy compiler("go") do not link against the C stdlib -- excluded, same
+    # exemption recipe_optimizer.py's STD-001 check uses (both were auditing
+    # this independently; a go-nocgo recipe true-positived here as "missing
+    # stdlib" until CFE retro G101 corrected it).
+    _NO_STDLIB_COMPILERS = (
+        'compiler("go-nocgo")', "compiler('go-nocgo')",
+        'compiler("go")', "compiler('go')",
+    )
+    has_compiler = any(
+        "compiler" in str(r) and not any(pat in str(r) for pat in _NO_STDLIB_COMPILERS)
+        for r in flat_build
+    )
     has_stdlib = any("stdlib" in str(r) for r in flat_build)
     if has_compiler and not has_stdlib:
         errors.append("Missing ${{ stdlib('c') }} - required for compiled packages with compilers")
@@ -325,11 +336,15 @@ def validate_meta_yaml(path: Path) -> ValidationResult:
         if "python_min" not in content:
             warnings.append("CFEP-25: noarch:python should use python_min variable")
 
-    # Check for compiler without stdlib (basic check)
-    if "compiler(" in content:
-        if "stdlib(" not in content:
-            # Could be false positive due to comment selectors, so warn instead of error
-            warnings.append("Compiled package may need stdlib('c') - verify requirements")
+    # Check for compiler without stdlib (basic check). go-nocgo (pure Go, no
+    # CGO) and the legacy compiler("go") do not link against the C stdlib --
+    # same exemption as the v1 structured check above and recipe_optimizer.py's
+    # STD-001 (CFE retro G101).
+    compiler_names = re.findall(r"compiler\(\s*['\"]([^'\"]+)['\"]\s*\)", content)
+    needs_stdlib_compiler = any(name not in ("go-nocgo", "go") for name in compiler_names)
+    if needs_stdlib_compiler and "stdlib(" not in content:
+        # Could be false positive due to comment selectors, so warn instead of error
+        warnings.append("Compiled package may need stdlib('c') - verify requirements")
 
     # Check for recipe-maintainers
     if "recipe-maintainers" not in content:

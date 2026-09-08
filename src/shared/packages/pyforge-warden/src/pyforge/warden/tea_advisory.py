@@ -11,22 +11,47 @@ the exit code (AD-4: advisory lenses never gate). The scanner is optional
 process; it must never run in the default bundle or inside this repo's own
 test suite.
 
-Fail-open contract: ANY subprocess/parse/binary problem (absent binary,
-non-zero exit, timeout, malformed JSON, an unreadable ``--json`` file)
-degrades to ``TeaAdvisoryResult(ran=False, ...)`` -- ``run_tea_test_review``
-never raises, and ``TeaAdvisoryScanPlugin.call`` never raises either
+Fail-open contract: ANY subprocess/parse/binary problem (a PROVISIONED tool
+whose binary happens to be absent from PATH, non-zero exit, timeout,
+malformed JSON, an unreadable ``--json`` file) degrades to
+``TeaAdvisoryResult(ran=False, ...)`` -- never raises, and
+``TeaAdvisoryScanPlugin.call`` never raises either for any of THOSE cases
 (belt-and-suspenders: a defect in this module must never crash a PR-gate
 scan).
 
-Testing seam: ``run_tea_test_review``'s ``runner`` parameter replaces ONLY
-the ``subprocess.run`` step -- the ``shutil.which`` presence probe always
-runs for real. The "TEA absent" scenario therefore needs no stub at all
-(this repo's own ``pyforge-warden`` pixi environment genuinely does not
-depend on the ``bmad-method-test-architecture-enterprise`` conda package,
-so the probe returns ``None`` for real); the "low score" / "runner errors"
-scenarios inject a ``runner`` that writes (or fails to write) the
-``--json`` file directly, without ever resolving or spawning the real
-binary.
+Fail-CLOSED exception -- ``TeaRosterMissingError`` (AD-10, resolved
+2026-09-07, DW-FU-11-2): "31.1 / 11.2 refuse when the AD-9 roster lacks
+tea" is architecture-mandated and distinct in KIND from the fail-open cases
+above. When the scanner is explicitly enabled
+(``WARDEN_OPTIONAL_SCANNERS=tea-test-review``) but the AD-9 module roster
+(``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
+``tea`` entry at all, that is not an environmental blip -- it means
+``steward provision --module tea`` never ran here, i.e. this station never
+adopted the tool the operator just asked it to run. A compliance-adjacent
+scanner must not paper over that with a silent no-op (the same reasoning
+this repo applies to an unauthenticated GitHub probe failing open as
+"ok" -- see ``feedback_unauthenticated_github_probes_fail_open``): it
+refuses loudly instead, via ``run_tea_test_review`` raising
+``TeaRosterMissingError``, which ``TeaAdvisoryScanPlugin._contribute``
+deliberately does NOT swallow (unlike every other exception) so it
+propagates out of the PR-gate scan; ``cli.py``'s ``_run_scan`` records it
+as a ``CONFIG_VALIDATION`` error (the same treatment
+``select_scanner_plugins``'s ``PluginError`` already gets), a real ERROR
+rung -- never AD-4's advisory-lens exit-code exemption, because this is a
+tool-misconfiguration refusal, not a scored finding about the scanned
+code. A roster entry that DOES name ``tea`` but whose binary is merely not
+on THIS process's PATH remains fail-open exactly as before -- that is the
+environmental case AD-10 does not govern.
+
+Testing seam: ``run_tea_test_review``'s ``runner`` parameter replaces the
+ENTIRE default-resolution path -- both the AD-9 roster check and the
+``shutil.which`` presence probe run only when ``runner is None``; an
+injected ``runner`` stands in for "TEA is present and behaves this way",
+bypassing both checks. The "TEA roster missing" / "binary absent" fail-open
+scenarios therefore exercise the real roster/PATH probes directly (no
+stub); the "low score" / "runner errors" scenarios inject a ``runner``
+that writes (or fails to write) the ``--json`` file directly, without ever
+resolving or spawning the real binary.
 """
 
 from __future__ import annotations
@@ -41,6 +66,8 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from typing import Any
+
+import tomllib
 
 from .hooks import PR_GATE_SCAN
 
@@ -59,6 +86,43 @@ _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 # runner left at json_path). A fake test runner writes its canned JSON
 # verdict to json_path as its only required side effect.
 TeaRunner = Callable[[Path, Path], "subprocess.CompletedProcess[str] | None"]
+
+
+class TeaRosterMissingError(RuntimeError):
+    """Raised by ``run_tea_test_review`` (default-resolution path only --
+    ``runner is None``) when the AD-9 module roster
+    (``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table) has no
+    ``tea`` entry at all. Fail-CLOSED by architecture mandate (AD-10:
+    "31.1 / 11.2 refuse when the AD-9 roster lacks tea", resolved
+    2026-09-07 per DW-FU-11-2) -- distinct from the fail-open case where the
+    roster DOES carry ``tea`` but the binary is merely absent from THIS
+    process's PATH (an environmental blip, not a governance gap).
+    Deliberately NOT caught by ``TeaAdvisoryScanPlugin``'s
+    belt-and-suspenders fail-open net -- it must propagate out of the
+    PR-gate scan so ``cli.py`` can record it as a loud ``CONFIG_VALIDATION``
+    error rather than a silent no-op."""
+
+
+def _ad9_roster_has_tea(target: Path) -> bool:
+    """Read the AD-9 module roster exactly as ``engines._doctor_check_tea``
+    does: ``target/_bmad/custom/config.toml``'s ``[modules.tea]`` table,
+    written by ``steward provision --module tea``. A missing, unreadable,
+    or malformed config file degrades to "no roster entry" -- the same
+    fail-open posture ``_doctor_check_tea`` uses for I/O problems; only a
+    CONFIRMED absent ``tea`` key in an actually-readable roster reports
+    ``False`` here with any confidence, but either way this function never
+    raises (the raising happens one level up, deliberately, in
+    ``run_tea_test_review``)."""
+    config_path = target / "_bmad" / "custom" / "config.toml"
+    if not config_path.is_file():
+        return False
+    try:
+        with config_path.open("rb") as handle:
+            document = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return False
+    modules = document.get("modules")
+    return isinstance(modules, Mapping) and "tea" in modules
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,23 +175,43 @@ def run_tea_test_review(
     *,
     runner: TeaRunner | None = None,
 ) -> TeaAdvisoryResult:
-    """Fail-open wrapper over the ``tea-test-review`` CLI.
+    """Wrapper over the ``tea-test-review`` CLI -- fail-open for an
+    environmental problem, fail-CLOSED for a governance gap (AD-10).
 
-    TEA absent (binary not on PATH, and no ``runner`` was injected) ->
-    ``ran=False``, no subprocess spawned. A present binary that errors
-    (an exit code outside ``{0, 1}``, a timeout, no/garbled ``--json``
-    output) ALSO degrades to ``ran=False`` -- the advisory contract is
-    "contribute nothing, never error", not "assume the tool works". Exit 0
-    and exit 1 are BOTH trusted (``test-review.js``'s own documented
-    semantics: exit 1 is a legitimate "verdict fail" -- a real score below
-    ``--min-score`` -- never a subprocess failure); only an exit code
-    outside that pair is treated as untrusted, regardless of whatever JSON
-    happens to exist at ``json_path``. A ``{"skipped": true, ...}`` or
-    ``{"promptOnly": true, ...}`` verdict (the CLI's own documented shapes
-    for "no changed test files" / ``--agent none``) is likewise treated as
-    nothing-to-report, not a failure.
+    No ``runner`` injected (the real default-resolution path): the AD-9
+    roster is checked FIRST -- a roster with no ``tea`` entry at all raises
+    ``TeaRosterMissingError`` (never caught by this function; it is meant
+    to propagate) regardless of whether a same-named binary happens to be
+    reachable on PATH anyway (a leaked/ambient copy from an unrelated
+    environment is exactly the ungoverned state AD-10 refuses, not a reason
+    to proceed). Only once the roster confirms ``tea`` is provisioned does
+    an absent binary degrade to the ordinary fail-open ``ran=False`` (no
+    subprocess spawned) -- that combination is a transient environmental
+    gap, not a governance one. A present binary that errors (an exit code
+    outside ``{0, 1}``, a timeout, no/garbled ``--json`` output) ALSO
+    degrades to ``ran=False`` -- the advisory contract for an environmental
+    problem is "contribute nothing, never error", not "assume the tool
+    works". Exit 0 and exit 1 are BOTH trusted (``test-review.js``'s own
+    documented semantics: exit 1 is a legitimate "verdict fail" -- a real
+    score below ``--min-score`` -- never a subprocess failure); only an
+    exit code outside that pair is treated as untrusted, regardless of
+    whatever JSON happens to exist at ``json_path``. A
+    ``{"skipped": true, ...}`` or ``{"promptOnly": true, ...}`` verdict
+    (the CLI's own documented shapes for "no changed test files" /
+    ``--agent none``) is likewise treated as nothing-to-report, not a
+    failure.
     """
     if runner is None:
+        if not _ad9_roster_has_tea(target):
+            raise TeaRosterMissingError(
+                "tea-test-review: the AD-9 module roster "
+                "(_bmad/custom/config.toml [modules.tea]) has no `tea` "
+                "entry -- run `steward provision --module tea` before "
+                "enabling WARDEN_OPTIONAL_SCANNERS=tea-test-review "
+                "(AD-10: an unprovisioned tool refuses loudly; a "
+                "provisioned tool merely absent from this process's PATH "
+                "still fails open)"
+            )
         binary = shutil.which(TEA_TEST_REVIEW_BINARY)
         if binary is None:
             return TeaAdvisoryResult(
@@ -227,15 +311,23 @@ class TeaAdvisoryScanPlugin:
     """Optional advisory scanner (Story 11.2). Mirrors
     ``scanner_plugins.OptionalScanPlugin.call``'s "around"-only shape, but
     appends to ``context["advisory_notes"]`` -- NEVER
-    ``context["plugin_findings"]`` -- so it can never become a ``Finding``,
-    move a rung, or change the composed status/exit code. Registered
-    OPTIONAL-only (``scanner_plugins.OPTIONAL_SCANNER_IDS``); enabled only
-    via ``WARDEN_OPTIONAL_SCANNERS=tea-test-review``.
+    ``context["plugin_findings"]`` -- so a SCORED note can never become a
+    ``Finding``, move a rung, or change the composed status/exit code.
+    Registered OPTIONAL-only (``scanner_plugins.OPTIONAL_SCANNER_IDS``);
+    enabled only via ``WARDEN_OPTIONAL_SCANNERS=tea-test-review``.
+
+    Exception to the above (AD-10, DW-FU-11-2): ``TeaRosterMissingError``
+    is deliberately let through ``_contribute``'s otherwise-total
+    fail-open net -- an unprovisioned AD-9 roster is a tool-misconfiguration
+    refusal, not a scored finding, so ``cli.py`` records it as a
+    ``CONFIG_VALIDATION`` error (a real ERROR rung) rather than swallowing
+    it. That is the only path by which this plugin's own state can ever
+    reach the exit code.
 
     ``runner`` (defaults to ``None``, forwarded verbatim to
     ``run_tea_test_review``) is the sole test-injection seam -- production
     code never supplies one, so a shipped scan always resolves the real
-    binary via ``shutil.which``."""
+    AD-9 roster + binary via ``_ad9_roster_has_tea``/``shutil.which``."""
 
     hook_spec: str = PR_GATE_SCAN.name
     owner: str = "tea-test-review"
@@ -258,15 +350,22 @@ class TeaAdvisoryScanPlugin:
         return context
 
     def _contribute(self, context: MutableMapping[str, Any]) -> None:
-        """Fail-open at the plugin boundary too (belt-and-suspenders):
-        ``run_tea_test_review`` already never raises, but a defect here
-        must still never escape into the PR-gate scan."""
+        """Fail-open at the plugin boundary too (belt-and-suspenders): any
+        subprocess/parse/binary defect degrades silently. The ONE
+        deliberate exception is ``TeaRosterMissingError`` (AD-10,
+        DW-FU-11-2) -- re-raised, not swallowed, so a genuinely
+        unprovisioned AD-9 roster propagates out of the PR-gate scan for
+        ``cli.py`` to record as a loud ``CONFIG_VALIDATION`` error instead
+        of a silent no-op."""
         target = context.get("target")
         if not isinstance(target, Path):
             return
         try:
             result = run_tea_test_review(target, runner=self._runner)
-        except Exception:  # noqa: BLE001 -- fail-open: never raise
+        except TeaRosterMissingError:
+            raise
+        except Exception:  # noqa: BLE001 -- fail-open: never raise (except
+            # the roster-missing refusal above, which AD-10 requires loud)
             return
         if not result.ran:
             return

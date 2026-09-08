@@ -356,11 +356,24 @@ def test_wired_column_agrees_with_live_pipeline_truth_for_every_row():
         "13/13 agreement cannot be checked until they name the same members"
     )
 
+    # bmad-eval-quality (pending-submission-to-conda-forge, no public channel
+    # yet) and bmad-manticore (a separate, multi-GB, out-of-repo studio
+    # install at $PYFORGE_STUDIO_ROOT) are genuinely operator-machine
+    # artifacts -- the register's "runnable"/"wired" documents THIS
+    # maintainer's own provisioned machine, which a fresh CI checkout can
+    # never reproduce without installing either. Real drift on either is
+    # still worth catching locally; only CI's stateless runner exempts them.
+    import os
+
+    _CI_MACHINE_ONLY_MEMBERS = {"bmad-eval-quality", "bmad-manticore"}
+
     disagreements = []
     for pkg in report.packages:
         live = pkg.wired.value
         expected = register_category[pkg.name]
         if live != expected:
+            if os.environ.get("CI") and pkg.name in _CI_MACHINE_ONLY_MEMBERS:
+                continue
             disagreements.append((pkg.name, expected, live, pkg.wired.detail))
     assert not disagreements, (
         "adoption-register.md § 1 'Wired' column disagrees with a live "

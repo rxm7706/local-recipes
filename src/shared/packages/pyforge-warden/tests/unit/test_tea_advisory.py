@@ -1,14 +1,16 @@
 """Unit tests — ``tea-test-review`` is a warden advisory finding (Story 11.2).
 
-Covers the intent-contract I/O matrix: TEA absent (fail-open, no note, no
-error), an injected low-scoring runner (a note appears, ``compose()``'s
-output is unaffected), and a runner that errors or returns unparsable
-output (fail-open, identical to TEA-absent). Never invokes a real
-agent-backed ``tea-test-review`` run: the "TEA absent" scenario is
-exercised via a deterministic ``shutil.which`` monkeypatch (see its own
-test's docstring for why — this repo's ambient dev shells can leak an
-unrelated pixi environment's ``tea-test-review`` copy onto ``PATH``), and
-every other scenario injects a fake ``runner`` that never shells out.
+Covers the intent-contract I/O matrix: a provisioned-but-unreachable TEA
+(fail-open, no note, no error), an unprovisioned AD-9 roster (fail-CLOSED,
+``TeaRosterMissingError`` -- AD-10, resolved 2026-09-07 per DW-FU-11-2), an
+injected low-scoring runner (a note appears, ``compose()``'s output is
+unaffected), and a runner that errors or returns unparsable output
+(fail-open, identical to the provisioned-but-unreachable case). Never
+invokes a real agent-backed ``tea-test-review`` run: the "binary absent"
+scenario is exercised via a deterministic ``shutil.which`` monkeypatch (see
+its own test's docstring for why — this repo's ambient dev shells can leak
+an unrelated pixi environment's ``tea-test-review`` copy onto ``PATH``),
+and every other scenario injects a fake ``runner`` that never shells out.
 """
 
 from __future__ import annotations
@@ -25,19 +27,86 @@ from pyforge.warden.scanner_plugins import OPTIONAL_SCANNER_IDS
 from pyforge.warden.tea_advisory import (
     TeaAdvisoryResult,
     TeaAdvisoryScanPlugin,
+    TeaRosterMissingError,
     run_tea_test_review,
 )
 
-# --- run_tea_test_review: TEA absent (fail-open) ---------------------------
+
+def _write_tea_roster(target: Path) -> None:
+    """Write a minimal AD-9 module roster naming ``tea`` as provisioned
+    (``[modules.tea]``) -- what ``steward provision --module tea`` writes.
+    Used by every test that means to exercise the "roster present, binary
+    merely unreachable" fail-open case, as distinct from "roster lacks tea
+    entirely" (fail-closed)."""
+    config_dir = target / "_bmad" / "custom"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.toml").write_text(
+        "[modules.tea]\nversion = \"1.0\"\n", encoding="utf-8"
+    )
+
+
+# --- run_tea_test_review: AD-9 roster lacks tea (fail-CLOSED, AD-10) -------
+
+
+def test_roster_missing_raises_when_scanner_would_run(tmp_path):
+    """The chosen resolution for DW-FU-11-2: a target with no AD-9 roster
+    at all (never provisioned via ``steward provision --module tea``)
+    raises ``TeaRosterMissingError`` -- a hard refusal, never a silent
+    ``ran=False`` pass -- regardless of whether a binary happens to be on
+    PATH (not stubbed here on purpose: the roster check must fire first)."""
+    try:
+        run_tea_test_review(tmp_path)
+    except TeaRosterMissingError as exc:
+        assert "modules.tea" in str(exc)
+        assert "steward provision --module tea" in str(exc)
+    else:
+        raise AssertionError("expected TeaRosterMissingError, none raised")
+
+
+def test_roster_present_but_empty_modules_table_still_refuses(tmp_path):
+    """A ``_bmad/custom/config.toml`` that exists but whose ``[modules]``
+    table has no ``tea`` key (some OTHER module was provisioned, not this
+    one) is exactly "the AD-9 roster lacks tea" -- still a hard refusal,
+    not fail-open."""
+    config_dir = tmp_path / "_bmad" / "custom"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        "[modules.skf]\nversion = \"1.0\"\n", encoding="utf-8"
+    )
+
+    try:
+        run_tea_test_review(tmp_path)
+    except TeaRosterMissingError:
+        pass
+    else:
+        raise AssertionError("expected TeaRosterMissingError, none raised")
+
+
+def test_roster_missing_never_calls_runner(tmp_path):
+    """The roster check happens BEFORE any runner would be consulted --
+    the default (``runner=None``) path raises before looking at PATH at
+    all, mirroring the old presence-probe-is-the-gate pin one level up."""
+    try:
+        run_tea_test_review(tmp_path, runner=None)
+    except TeaRosterMissingError:
+        pass
+    else:
+        raise AssertionError("expected TeaRosterMissingError, none raised")
+
+
+# --- run_tea_test_review: TEA provisioned but unreachable (fail-open) -----
 
 
 def test_fail_open_when_binary_absent(monkeypatch, tmp_path):
-    """Deterministic monkeypatch, not ambient absence: this repo's dev
-    shells can leak an unrelated pixi environment's ``tea-test-review``
-    copy onto ``PATH`` even inside a scoped ``pixi run -e pyforge-warden``
-    invocation (verified live), so relying on the pyforge-warden env's own
-    (genuinely tea-less) dependency set alone would make this test
-    environment-dependent."""
+    """Roster present (provisioned) but the binary is not on THIS
+    process's PATH -- an environmental blip, not a governance gap (AD-10
+    only governs the roster half). Deterministic monkeypatch, not ambient
+    absence: this repo's dev shells can leak an unrelated pixi
+    environment's ``tea-test-review`` copy onto ``PATH`` even inside a
+    scoped ``pixi run -e pyforge-warden`` invocation (verified live), so
+    relying on the pyforge-warden env's own (genuinely tea-less) dependency
+    set alone would make this test environment-dependent."""
+    _write_tea_roster(tmp_path)
     monkeypatch.setattr(tea_advisory.shutil, "which", lambda name: None)
 
     result = run_tea_test_review(tmp_path)
@@ -52,10 +121,11 @@ def test_fail_open_when_binary_absent(monkeypatch, tmp_path):
 
 
 def test_absent_binary_never_calls_runner(monkeypatch, tmp_path):
-    """The presence probe happens BEFORE any runner would be consulted --
-    the default (``runner=None``) path never even looks at an injected
-    runner because there isn't one; this pins that ``shutil.which`` is the
-    gate, not an incidental side effect."""
+    """With the roster present, the presence probe happens BEFORE any
+    runner would be consulted -- the default (``runner=None``) path never
+    even looks at an injected runner because there isn't one; this pins
+    that ``shutil.which`` is the gate, not an incidental side effect."""
+    _write_tea_roster(tmp_path)
     monkeypatch.setattr(tea_advisory.shutil, "which", lambda name: None)
 
     result = run_tea_test_review(tmp_path, runner=None)
@@ -340,6 +410,10 @@ def test_enabled_plugin_runner_error_never_propagates_and_adds_no_note(tmp_path)
 
 
 def test_enabled_plugin_absent_binary_contributes_nothing(monkeypatch, tmp_path):
+    """Roster present (provisioned), binary merely unreachable -- fail-open,
+    contributes nothing. Distinct from the roster-missing case below, which
+    must raise instead."""
+    _write_tea_roster(tmp_path)
     monkeypatch.setattr(tea_advisory.shutil, "which", lambda name: None)
     plugin = TeaAdvisoryScanPlugin()  # no runner injected: real presence probe
     context: dict[str, Any] = {
@@ -352,6 +426,33 @@ def test_enabled_plugin_absent_binary_contributes_nothing(monkeypatch, tmp_path)
     plugin.call("around", context)
 
     assert context["advisory_notes"] == []
+
+
+def test_enabled_plugin_roster_missing_raises_not_fail_open(tmp_path):
+    """DW-FU-11-2 / AD-10, at the plugin boundary: unlike every other
+    runner/parse/binary problem, ``TeaRosterMissingError`` is NOT absorbed
+    by ``_contribute``'s belt-and-suspenders fail-open net -- it escapes
+    ``call()`` too, so a genuinely unprovisioned AD-9 roster cannot pass
+    through this plugin silently. No runner injected -- production shape
+    (real roster/PATH resolution); the roster check gates before any
+    runner (real or injected) would ever be consulted."""
+    plugin = TeaAdvisoryScanPlugin()
+    context: dict[str, Any] = {
+        "enabled_optional": ("tea-test-review",),
+        "plugin_findings": [],
+        "advisory_notes": [],
+        "target": tmp_path,
+    }
+
+    try:
+        plugin.call("around", context)
+    except TeaRosterMissingError:
+        pass
+    else:
+        raise AssertionError("expected TeaRosterMissingError, none raised")
+
+    assert context["advisory_notes"] == []
+    assert context["plugin_findings"] == []
 
 
 def test_enabled_plugin_with_no_target_in_context_is_fail_open():
@@ -485,3 +586,65 @@ def test_full_scan_with_low_scoring_advisory_leaves_verdict_byte_identical(
         if key == "advisory":
             continue
         assert with_tea[key] == baseline[key], f"{key!r} differs with tea enabled"
+
+
+def test_full_scan_with_roster_missing_refuses_not_a_silent_pass(
+    monkeypatch, tmp_path, capsys
+):
+    """DW-FU-11-2's end-to-end proof: enabling ``tea-test-review`` via
+    ``WARDEN_OPTIONAL_SCANNERS`` against a target with NO AD-9 roster at
+    all (``tmp_path`` has no ``_bmad`` directory -- ``steward provision
+    --module tea`` never ran) must refuse loudly -- a real
+    ``config-validation`` error rung, a report that still names the
+    refusal, and an exit code distinct from the same scan with the
+    scanner left disabled. It must NOT silently pass through as if the
+    scanner had contributed nothing."""
+    import pyforge.warden.scanner_plugins as scanner_plugins_module
+    from pyforge.warden.cli import main
+    from pyforge.warden.engines import engine_factories
+    from pyforge.warden.scanner_plugins import _plugin_for_factory
+
+    def _defaults_only_registry() -> PluginRegistry:
+        registry = PluginRegistry()
+        for factory in engine_factories():
+            registry.register(_plugin_for_factory(factory))
+        return registry
+
+    def _tea_registry() -> PluginRegistry:
+        registry = _defaults_only_registry()
+        registry.register(TeaAdvisoryScanPlugin())  # no runner: real roster probe
+        return registry
+
+    monkeypatch.delenv("WARDEN_OPTIONAL_SCANNERS", raising=False)
+    monkeypatch.setattr(
+        scanner_plugins_module, "scanner_plugin_registry", _defaults_only_registry
+    )
+    rc_baseline = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
+    baseline = json.loads(capsys.readouterr().out)
+
+    monkeypatch.setenv("WARDEN_OPTIONAL_SCANNERS", "tea-test-review")
+    monkeypatch.setattr(
+        scanner_plugins_module, "scanner_plugin_registry", _tea_registry
+    )
+    rc_refused = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
+    refused = json.loads(capsys.readouterr().out)
+
+    assert not any(e["owner"] == "tea-test-review" for e in baseline["errors"]), (
+        "sanity: the scanner-disabled baseline records no tea-test-review error"
+    )
+    assert rc_refused != rc_baseline, (
+        "a missing AD-9 roster must change the exit code -- a silent pass "
+        "would leave it identical to the baseline"
+    )
+    tea_errors = [e for e in refused["errors"] if e["owner"] == "tea-test-review"]
+    assert len(tea_errors) == 1, (
+        "expected exactly one recorded tea-test-review error, found "
+        f"{tea_errors!r} in {refused['errors']!r}"
+    )
+    assert tea_errors[0]["kind"] == "config-validation"
+    assert "modules.tea" in tea_errors[0]["message"]
+    assert "steward provision --module tea" in tea_errors[0]["message"]
+    assert refused.get("advisory") is None, (
+        "a refusal contributes no advisory note -- distinguishing it from "
+        "the ordinary scored-finding path"
+    )

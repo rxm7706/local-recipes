@@ -49,6 +49,22 @@ def _load_yaml(path):
     # file. utf-8 is ruamel's current default, but the file is read back as
     # utf-8 unconditionally, so state it rather than inherit it.
     yaml.encoding = "utf-8"
+    # DW-FU-31-4-2: this factory shares its file format AND its downstream
+    # reader (`fleet_scan.parse_sprint_status`, a line-based `_ENTRY` regex
+    # requiring the whole "  key: value" pair on one line) with
+    # bmad-sprint-planning's `sprint_plan.py::_make_yaml`, but never got that
+    # module's width fix (Story 22.11, 2026-08-31). ruamel's default `width`
+    # (80) folds a `key: value` line past 80 columns onto an indented
+    # continuation line, and separately switches any key >=128 chars
+    # (`Emitter.MAX_SIMPLE_KEY_LENGTH`, a class default of 128) to explicit
+    # `? key` / `: value` block-mapping form regardless of `width` -- both
+    # invisible to the same line-based reader, so a long story key this
+    # module's own `update` subcommand touches (e.g. bumping only
+    # `last_updated`) was silently dropped from every downstream fleet-scan
+    # read. Both ceilings raised identically to `sprint_plan.py`'s, so the
+    # two writers stay compatible with the one shared reader.
+    yaml.width = 4096
+    yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096
     with open(path, "r", encoding="utf-8") as fh:
         data = yaml.load(fh)
     return yaml, data

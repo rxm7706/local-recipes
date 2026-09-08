@@ -339,6 +339,47 @@ def to_redacted(payload: Mapping[str, object]) -> Redacted:
     return Redacted(text=text)
 
 
+def redact_raw_text(text: str) -> str | None:
+    """Redact ``text`` for exposure through a WIDE, user-facing surface that
+    would otherwise carry it verbatim (DW-FU-3-2-12: ``core.journal``'s
+    quarantine used to republish an offending raw journal line into
+    ``Finding.path`` -- which flows into every ``Envelope.findings``
+    consumer, stdout JSON/CI logs/dashboards included -- unredacted).
+
+    Mirrors ``adapters/harness_bmadloop.py::BmadLoopHarness.
+    _redact_probe_output``'s own idiom, generalized to a public helper so a
+    second caller does not hand-roll a copy: ``text`` is parsed as JSON
+    first, and if it decodes to an object, redacted DIRECTLY as a
+    ``Mapping`` via ``to_redacted`` -- catching BOTH halves of AD-34's rule
+    (a secret-shaped field NAME like ``api_token``, and a known token SHAPE
+    anywhere). A ``value`` that is not itself secret-shaped or token-shaped
+    is unaffected either way, but a bare opaque-string wrap (``_redact_text``'s
+    own shape) would only ever catch the shape half, since a plain string is
+    never a ``Mapping`` for ``is_secret_key`` to walk. Text that fails to
+    parse as a JSON object -- including a totally malformed line, exactly
+    the case a quarantine exists for -- falls back to that opaque-string
+    wrap, so it is still shape-scanned rather than passed through raw.
+
+    Never raises: every failure (an adversarially deep line tripping
+    ``RecursionError``, or a redacted payload that still can't serialize,
+    e.g. a permissively-parsed ``NaN``) degrades to ``None`` rather than
+    escaping to the caller -- ``core.journal.fold``'s own "one bad line
+    never aborts the whole fold" guarantee extends to this function too,
+    since it is called from inside an ``except`` handler there.
+    """
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError, RecursionError):
+        parsed = None
+    try:
+        if isinstance(parsed, Mapping):
+            return to_redacted(parsed).text
+        wrapped = to_redacted({"text": text})
+        return json.loads(wrapped.text)["text"]
+    except (ValueError, LookupError, TypeError, RecursionError):
+        return None
+
+
 _REQUIRED_COMMAND_KEYS: frozenset[str] = frozenset({"command", "returncode", "resolvable"})
 # `stdout`/`stderr` are the only OPTIONAL keys `schemas/gate-record.json`'s
 # `commandReport` names -- matching `core.gate.classify_outcome`'s own report

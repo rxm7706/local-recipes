@@ -89,6 +89,7 @@ from types import MappingProxyType
 from pyforge.core.errors import PyforgeError
 
 from . import policy
+from .egress import redact_raw_text
 from .identity import StoryKey, normalize
 from .model import Finding, Severity
 
@@ -1230,17 +1231,28 @@ def _quarantine(
     code: str,
     message: str,
 ) -> QuarantinedRecord:
-    # `path=raw_line` mirrors `core.identity`'s own MRS-IDENT-001/002
-    # convention (Finding.path names the offending raw input) -- review
-    # finding, verified live: without it, a Finding pulled out of
+    # `path` mirrors `core.identity`'s own MRS-IDENT-001/002 convention
+    # (Finding.path names the offending raw input) -- review finding,
+    # verified live: without it, a Finding pulled out of
     # QuarantinedRecord.finding in isolation (exactly what a future
     # Envelope.findings consumer would do) carried no reference back to
     # which line it came from.
+    #
+    # DW-FU-3-2-12: `path` is `redact_raw_text(raw_line)`, NOT `raw_line`
+    # verbatim. `Finding` is the wide, user-facing surface (stdout JSON, CI
+    # logs, dashboards -- every `Envelope.findings` consumer); republishing
+    # a quarantine's offending line there in full let any credential a
+    # writer put in the payload of a line Marshal could not validate flow
+    # straight through. `QuarantinedRecord.raw` below stays the verbatim
+    # forensic copy on purpose -- it is not a `Finding` and is not the leak
+    # this entry describes.
     return QuarantinedRecord(
         raw=raw_line,
         story=story,
         kind=kind,
-        finding=Finding(code=code, severity=Severity.ERROR, message=message, path=raw_line),
+        finding=Finding(
+            code=code, severity=Severity.ERROR, message=message, path=redact_raw_text(raw_line)
+        ),
     )
 
 

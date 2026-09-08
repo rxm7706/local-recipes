@@ -194,10 +194,15 @@ def test_read_with_a_plain_file_as_a_parent_path_component_raises_herald_error(
 def test_read_of_absurdly_nested_json_raises_herald_error(tmp_path: Path):
     """Past the parser's nesting limit ``json.load`` raises
     ``RecursionError`` -- a ``ValueError`` *cousin*, not subclass, that must
-    not leak raw."""
+    not leak raw. Which HeraldError message surfaces depends on whether this
+    interpreter's C-accelerated json parser actually hits the recursion
+    limit at this depth (it did not on every CI runner observed, unlike a
+    typical local build) -- a clean parse then fails the top-level-dict
+    check instead. Both are safe, non-leaking HeraldError outcomes proving
+    the same invariant; only a raw RecursionError escaping would be a bug."""
     state_path = tmp_path / "bridge-state.json"
     state_path.write_text("[" * 100_000 + "]" * 100_000)
-    with pytest.raises(HeraldError, match="could not be read"):
+    with pytest.raises(HeraldError, match="could not be read|does not hold a JSON object"):
         read(state_path, "x")
 
 

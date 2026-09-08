@@ -39,8 +39,8 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-26 — cascade from the PRD's 2026-08-26 reconciliation (spec layer moved 2026-08-22). As-built module divergences recorded (no determinism.py; extract/ ships _identity.py, not _jinja.py/requirements.py), post-v1 surfaces added (Epics 7-10: sources/eligibility/eligibility_sbom, hooks + scanner_plugins on pyforge.core.hooks, django-warden portal, MCP face), engine-contract currency re-pinned (deptry at osprey-oss, still 0.25.1; osv-scanner 2.5.0 is Scalibr-based). See § Currency reconciliation — 2026-08-26."
+updated: '2026-09-07'
+currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
 # Architecture Decision Document
@@ -445,3 +445,28 @@ over; the v1 body above is otherwise confirmed accurate against the shipped code
   `inventory.py` / `mapping.py` / `report._canonical_subject_key` / `cli.py` — an
   "identity sole-ownership" module + meta-test would be the third wall matching the
   two that exist (verdict, subprocess). Candidate future work, not yet scheduled.
+
+## Currency reconciliation — 2026-09-07
+
+*Cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed since the prior pass).
+Grounded in the as-built `tea_advisory.py` and `hooks.py`/`scanner_plugins.py` (unchanged
+by Epic 11's own lens registrations) modules.*
+
+**Epic 11 — two advisory lenses beside the gate (both stories `done`, 2026-09-07).**
+`bmad-os-review-pr`/`bmad-os-findings-triage` (Story 11.1) and `tea-test-review` (Story
+11.2) register as two more entries in the existing `pyforge.core.hooks` plugin bundle
+this document already describes (Epic 9, above) — no new architectural surface, no new
+seam: the plugin-bundle pattern this doc already accepted for commercial scanners
+(Checkmarx, Sonar, Black Duck, GHAS) generalizes to these two advisory lenses without
+change. The sole-ownership invariant (Warden's verdict is the only PR quality-gate
+pass/fail; a plugin never publishes a competing verdict) is unchanged and holds for both.
+
+**Resolved architectural ambiguity (DW-FU-11-2, 2026-09-07):** `tea_advisory.py`'s
+behavior when the AD-9 roster lacks a `tea` entry entirely is now a hard refusal
+(`TeaRosterMissingError`, surfaced as a `config-validation` ERROR rung by `cli.py` — the
+same escalation shape `select_scanner_plugins`/`PluginError` already used one call site
+above it), not a silent fail-open. This is a posture decision inside the existing
+plugin-error-handling seam, not a new seam. Fail-open is retained for the narrower case
+of a present-but-unreachable-on-PATH `tea` binary. AD-10 (the fleet-wide architecture
+decision this implements) lives in steward's lifecycle spine, not this document — no
+edit needed here beyond recording that this project's implementation now matches it.

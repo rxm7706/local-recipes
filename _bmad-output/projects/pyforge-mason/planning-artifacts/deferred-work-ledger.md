@@ -801,6 +801,8 @@ status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-07 — resolved — this is the exact live mechanism behind cfe-regression-net's own reported "one failure out of 9096 passing tests" the same day. Fixed directly (not via mason, per this entry's own Never-boundary note): added `@pytest.mark.network` alongside the existing `@pytest.mark.slow` on `test_github_updater_gap_closed` (`.claude/skills/conda-forge-expert/tests/integration/test_slice1_equivalence.py:149`). Verified via `pytest ... -m "not network" --collect-only`: the test is now deselected (5/6 collected, 1 deselected), and `pytest ... -m "network" --collect-only` selects only it (1/6, 5 deselected) — `test-ci`'s `-m 'not network'` now actually excludes it, closing the offline-safety gap the spec's own I/O matrix required. `test`'s `-m 'not network and not slow'` and `test-all`'s unfiltered run are both unaffected (either marker alone already excluded/included it there). Ledger status mapped to resolved.
+
 ### DW-12-2-2: DW-12-2-4: cfe_rebuild_guard_check.py's clause-(b) unmirrored-retro commit scan walks every commit since a fixed baseline SHA with no rolling window or checkpoint, so its cost grows unbounded as repo history grows, and it now runs twice per PR (once inside the advisory repo-scope sweep, once more in the new dedicated blocking step).
 
 - source_spec: `planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md`

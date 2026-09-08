@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "6c3f13cfeef08c3a0a1beba0c2f4567aa6da1e8d6dce07e61754bc179259b9fe"
+source_sha256: "69163180e330a5aad270793da2fa18be5f47fce046cb6de6e321877be0ee6285"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -807,7 +807,7 @@ rows:
       - ".cmd"
     enforced_by: null
   - id: G101
-    title: "npm dists that are shims over per-platform Bun static binaries — detect via `optionalDependencies`; the native may segfault and CANNOT be built from source"
+    title: "npm dists that are shims over per-platform Bun static binaries — detect via `optionalDependencies`; NOT conda-forge-submittable, and a \"segfault\" is usually rattler-build's own relocation, not the vendor"
     symptom_signature:
       - "npm-shim.js"
       - "src/cli.js"

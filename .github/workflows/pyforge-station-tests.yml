@@ -1,0 +1,275 @@
+name: PyForge station tests
+
+# DW-14-2-1 (pyforge-herald deferred-work ledger): no CI workflow ran herald's
+# own pytest suite -- its Chromium-dependent render gate had zero CI coverage.
+# Auditing all 8 stations found the same gap almost everywhere: only
+# pyforge-marshal's full suite happens to run today, as a side effect of
+# coverage-gates.yml's coverage measurement (`coverage_gates_ci.py` invokes
+# pytest over the whole `tests/unit` tree to compute `--cov`) -- a different
+# workflow's implementation detail, not a guarantee this workflow should lean
+# on. pyforge-doctor's only CI-run task, `pyforge-doctor-scripts-test`
+# (detectors.yml), tests the repo-root detector CLI's integration with
+# doctor's registry -- NOT doctor's own package suite at
+# `src/shared/packages/pyforge-doctor/tests` (1440 tests, zero CI coverage
+# before this workflow). So every one of the 8 stations gets its own job
+# here, uniformly, each gated on that station's own changed paths so an
+# unrelated station's PR doesn't pay for eight suites. Marshal and doctor's
+# jobs are therefore intentionally redundant with coverage-gates.yml /
+# detectors.yml -- cheap insurance, not wasted work, since neither of those
+# workflows contracts to keep running the full suite forever.
+
+on:
+  pull_request:
+    paths:
+      - 'src/shared/packages/pyforge-atlas/**'
+      - 'src/shared/packages/pyforge-doctor/**'
+      - 'src/shared/packages/pyforge-herald/**'
+      - 'src/shared/packages/pyforge-marshal/**'
+      - 'src/shared/packages/pyforge-mason/**'
+      - 'src/shared/packages/pyforge-scribe/**'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-warden/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - 'src/shared/packages/pyforge-testing-kit/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.github/workflows/pyforge-station-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/shared/packages/pyforge-atlas/**'
+      - 'src/shared/packages/pyforge-doctor/**'
+      - 'src/shared/packages/pyforge-herald/**'
+      - 'src/shared/packages/pyforge-marshal/**'
+      - 'src/shared/packages/pyforge-mason/**'
+      - 'src/shared/packages/pyforge-scribe/**'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-warden/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - 'src/shared/packages/pyforge-testing-kit/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.github/workflows/pyforge-station-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pyforge-station-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      atlas: ${{ steps.filter.outputs.atlas }}
+      doctor: ${{ steps.filter.outputs.doctor }}
+      herald: ${{ steps.filter.outputs.herald }}
+      marshal: ${{ steps.filter.outputs.marshal }}
+      mason: ${{ steps.filter.outputs.mason }}
+      scribe: ${{ steps.filter.outputs.scribe }}
+      steward: ${{ steps.filter.outputs.steward }}
+      warden: ${{ steps.filter.outputs.warden }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compute per-station changed paths
+        id: filter
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${GITHUB_BASE_REF}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          else
+            BASE="$(git hash-object -t tree /dev/null)"
+          fi
+          # pyforge-core / pyforge-testing-kit / pixi.toml / pixi.lock changes
+          # are shared surface -- any of them re-runs every station, since all
+          # eight depend on pyforge-core and pixi.lock pins every env at once.
+          SHARED_CHANGED=false
+          if ! git diff --quiet "$BASE"...HEAD -- \
+              src/shared/packages/pyforge-core \
+              src/shared/packages/pyforge-testing-kit \
+              pixi.toml pixi.lock \
+              .github/workflows/pyforge-station-tests.yml 2>/dev/null; then
+            SHARED_CHANGED=true
+          fi
+          for s in atlas doctor herald marshal mason scribe steward warden; do
+            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" 2>/dev/null; then
+              echo "$s=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$s=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+  atlas-test:
+    needs: changes
+    if: needs.changes.outputs.atlas == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # test_wasm_smoke.py's _chromium_executable() reads this var itself
+      # (falling back to a hardcoded /opt/pw-browsers otherwise, which this
+      # runner does not have) -- set once, at job level, so the install step
+      # and the test run resolve the identical browser.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-atlas
+          cache: true
+      # Three of atlas's gates fail loud (never silently skip) when their
+      # prerequisite isn't provisioned: the dashboard E2E suite AND the WASM
+      # smoke test both need a real Chromium (unconditionally -- both launch
+      # Playwright's own managed browser directly, never a system one),
+      # test_emit_range.py's PUBLISH_RANGE_REQUIRED path needs the DuckDB
+      # httpfs extension, and test_wasm_smoke.py's WASM_SMOKE_REQUIRED path
+      # needs the built WASM artifact. All three provisioned here so a fresh
+      # runner has what a maintainer's already-provisioned machine has.
+      - name: Install Chromium for the dashboard E2E + WASM smoke gates
+        run: pixi run --frozen -e pyforge-atlas python -m playwright install --with-deps chromium
+      - name: Provision the DuckDB httpfs extension
+        run: pixi run --frozen -e pyforge-atlas python -c "import duckdb; duckdb.connect().execute('INSTALL httpfs')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build the WASM smoke-test artifact
+        run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/wasm/build.py
+      - run: pixi run --frozen -e pyforge-atlas kedro-test
+
+  doctor-test:
+    needs: changes
+    if: needs.changes.outputs.doctor == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-doctor
+          cache: true
+      - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
+
+  herald-test:
+    needs: changes
+    if: needs.changes.outputs.herald == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-herald
+          cache: true
+      # DW-14-2-1: the render gate's real-browser tests need Chromium.
+      # ubuntu-latest ships google-chrome; fall back to a playwright-managed
+      # chromium otherwise -- same precedent as detectors.yml's check_layout job.
+      - name: Verify a browser is present for the render gate
+        run: |
+          which google-chrome || which chromium || \
+            pixi run --frozen -e pyforge-herald python -m playwright install --with-deps chromium
+      # test_skf_validators_pass invokes `uv run` directly (not a pixi
+      # dependency -- this station's own skf-frontmatter validator script
+      # is meant to be runnable standalone via uv).
+      - uses: astral-sh/setup-uv@v5
+      - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
+
+  marshal-test:
+    needs: changes
+    if: needs.changes.outputs.marshal == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-marshal
+          cache: true
+      # Seed verbs + integration harnesses create real commits; GHA runners
+      # have no git identity by default (same precedent as coverage-gates.yml).
+      - run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
+
+  mason-test:
+    needs: changes
+    if: needs.changes.outputs.mason == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-mason
+          cache: true
+      - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
+
+  scribe-test:
+    needs: changes
+    if: needs.changes.outputs.scribe == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      # pyforge-scribe's durable GraphStore (Story 28.1) needs a real
+      # PostgreSQL + pgvector; the test suite's own conftest.py fails loudly
+      # (does not silently skip) when it can't reach one. Port/user/password/
+      # db match tests/unit/conftest.py's _DEFAULT_PG_DSN verbatim, so
+      # SCRIBE_GRAPH_DSN does not need to be set.
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: scribe
+          POSTGRES_DB: scribe_graph
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-scribe
+          cache: true
+      - name: Enable pgvector extension
+        env:
+          PGPASSWORD: scribe
+        run: psql -h 127.0.0.1 -p 5433 -U postgres -d scribe_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
+
+  steward-test:
+    needs: changes
+    if: needs.changes.outputs.steward == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-steward
+          cache: true
+      - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
+
+  warden-test:
+    needs: changes
+    if: needs.changes.outputs.warden == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-warden
+          cache: true
+      - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
