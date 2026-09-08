@@ -3804,3 +3804,168 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-20-4-5: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow... [truncated, 796 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+  summary: The "19 unshipped pages" enumeration required deriving which of the 28 legacy CLI questions are still unaddressed and reconciling that against the literal epics.md arithmetic (28 minus PAGE_INVENTORY's length of 9) -- the two numbers do not trivially agree because 2 of PAGE_INVENTORY's 9 entries (estate-cache, factory-status) are not CLI ports, leaving 21 genuinely-unaddressed CLI questions, not 19. DESIGN.md documents the derivation and the one consolidation (platform-breakdown + pyver-breakdow... [truncated, 796 chars total]
+  evidence: See DESIGN.md § 0 and § 6 (page-count reconciliation table) for the full derivation and citations (canonical script list, mcp-tools.md, atlas-phases-overview.md § 3.3).
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md#0-how-carson-and-maya-derived-19
+  origin: spec-deferred d18772973fb6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-4-6: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic... [truncated, 909 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+  summary: The vendored `bmad-cis-design-thinking/template.md` (copied into `.claude/skills/` by `bmad-cis-install`, part of the `bmad-creative-intelligence-suite` v0.3.1 conda package) renders a `{{project_name}}` title placeholder that no step of the skill's own SKILL.md ever resolves -- Step 4 "Load Config" only resolves `output_folder`/`user_name`/ `communication_language`/`date`, unlike the sibling CIS workflows (`innovation-strategy`'s `{{company_name}}`, `problem-solving`'s `{{problem_title}}`) whic... [truncated, 909 chars total]
+  evidence: `.claude/skills/bmad-cis-design-thinking/template.md` line 1 (`{{project_name}}`) against `.claude/skills/bmad-cis-design-thinking/SKILL.md` Step 4 "Load Config", which never resolves that key; confirmed the skill files are byte-identical to `.pixi/envs/local-recipes/share/bmad-creative-intelligence-suite/skills/bmad-cis-design-thinking/`, i.e. the bug is upstream in the conda package, not introduced by this story's install step.
+  location: .claude/skills/bmad-cis-design-thinking/template.md:1
+  origin: spec-deferred f26835a559b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-4-7: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c... [truncated, 804 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-4-the-cis-two-spine-specs-exist.md`
+  summary: No automated check in this repo verifies that a `sprint-status-ledger.yaml` `done` value or a `deferred-work-ledger.md` `resolution:` closure claim is actually backed by the artifact it cites -- a future single-story dispatch could mark a planning story "done" and close its DW entry on a false self-report (e.g. claiming N pages covered when fewer actually landed) and nothing in `pyforge-doctor`'s ledger source or `fleet_scan.py`'s `scan_deferred`/`parse_sprint_status` would catch it; both only c... [truncated, 804 chars total]
+  evidence: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py::gather` (lines 149-261) only flags a key that was `TERMINAL` at baseline and drops out of `TERMINAL` at head; a `backlog -> done` transition never enters that check. `scripts/fleet_scan.py`'s `scan_deferred` only requires a `resolution:`/`verified:` line to exist to count an entry `triaged`/`closed` -- it never greps the cited artifact paths for matching content.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py:149
+  origin: spec-deferred c119b5bcc31d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-8: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor... [truncated, 1090 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector radio control, click-to-filter chart segments, expand-in-place per-signal breakdowns, staged upload/submit controls). This is the single largest scope judgment call in this stor... [truncated, 1090 chars total]
+  evidence: dashboard/app.py's docstring + Code Map § "the exact pattern every new page must follow"; every new PageDef's `note` cites its DESIGN.md section for the deferred richer layout (e.g. distribution-breakdown's dimension-selector, universe-sbom's pagination, scan-project/env-inspect's upload controls).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (all 19 new `_data_page` calls)
+  origin: spec-deferred 8413b1068844 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-9: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new... [truncated, 686 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new... [truncated, 686 chars total]
+  evidence: dashboard/data.py::load_scan_project / load_env_inspect docstrings state this explicitly; PageDef notes for both pages in app.py carry the same "forward-looking work, not wired here" language, mirroring DESIGN.md's own precedent for add-handoff / library-futures' deferred multi-agent claim/lock coordination.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_scan_project, load_env_inspect); dashboard/app.py PAGE_INVENTORY notes for scan-project/env-inspect
+  origin: spec-deferred c71697e59038 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-10: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen... [truncated, 626 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen... [truncated, 626 chars total]
+  evidence: tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria docstring records exactly this; confirmed by hand against Playwright-captured DOM dumps of the rendered dashboard (`page.locator("nav").count()` == 1, matching only the empty top navbar; `role="navigation"`/`role="main"` counts == 0).
+  location: src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py; deferred-work-ledger.md DW-D2-3 resolution
+  origin: spec-deferred 4b12adaeb6ab — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-11: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da... [truncated, 1381 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da... [truncated, 1381 chars total]
+  evidence: deferred-work-ledger.md DW-D2-3's `status: open` (not closed) + its 2026-08-28 evidence-update spells out exactly this split; `ls data/` in this worktree shows no `data/` tree exists at all (nothing was or could have been materialized without a live, credentialed pipeline run).
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md (DW-D2-3)
+  origin: spec-deferred ddb289787793 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-12: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM... [truncated, 1149 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM... [truncated, 1149 chars total]
+  evidence: semantic/models.py::build_alternative_candidates_model docstring states this explicitly; semantic/metrics.py's 2 new provenance entries (release_trend_label, python_min_bump_status) cite their legacy_source verbatim.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py (build_alternative_candidates_model and the other "BSL model (NEW)" composite-score pages: mapping-gap match_confidence, universe... [truncated, 312 chars total]
+  origin: spec-deferred f4a014e9ca52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-13: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g... [truncated, 579 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g... [truncated, 579 chars total]
+  evidence: `git stash` + re-running the single test reproduces the identical AssertionError on unmodified main HEAD; `ls _bmad-output/projects/pyforge-atlas/implementation-artifacts/` in this worktree shows only `epic-20-context.md`, no `sprint-status.yaml`, while the sibling main checkout has one (dated 2026-08-26, from prior session state never synced to this worktree, by design -- gitignored Tier-3).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py (_default_paths); tests/dashboard/test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status
+  origin: spec-deferred 9c87e8586e2e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-5-14: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would... [truncated, 724 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-20-5-port-the-remaining-nineteen-vizro-pages.md`
+  summary: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would... [truncated, 724 chars total]
+  evidence: Reviewer (2026-08-28 pass) Blind Hunter finding, `[low]` `[defer]`; manually cross-checked `build_dashboard()`'s 18 new `_provenance.resolve_for_file(root / _data.X_PARQUET)` lines against their paired `_data_page(...)` loader calls -- all 18 pairings are correct as shipped.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (build_dashboard, the provenance-resolution block)
+  origin: spec-deferred 8aaf871b33bc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-3-12: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit... [truncated, 678 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-21-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit... [truncated, 678 chars total]
+  evidence: Read scripts/conda-forge-packaging-inventory-operations_metrics.py's aoss_free_candidates construction (gated on `pkg not in cf_or_pm`) and write_aoss_free_queue's own "live and irreversible" framing. Confirmed independently by one review layer (blind hunter, pass 2); not corroborated by other layers, but the underlying mechanism (cf_or_pm membership) is directly verifiable in the diff.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py (aoss_free_candidates / write_aoss_free_queue)
+  origin: spec-deferred 5f8248719a32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5-4: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-21-5-tier-2-sources.md`
+  summary: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc... [truncated, 502 chars total]
+  evidence: Confirmed by direct comparison of catalog-sources.md's Tier 2 table against this story's own intent-contract Approach/Code Map text and the actual catalog.yml/conftest.py changes. Not a code defect — the diff correctly implements the intent-contract's explicit direction — but the companion doc is now stale relative to what shipped.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md
+  origin: spec-deferred 12c8434756b5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-9: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; o... [truncated, 621 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; o... [truncated, 621 chars total]
+  evidence: `git blame` on `catalog.yml`'s `core_packages_enumerated` filepath line dates the hardcoded pattern to commit `9ce95912dc5` (2026-07-17, Wave A1/A2 scaffold), predating Epic 21 by six weeks -- pre-existing and unrelated. Reproduced live: a Story 21.8 end-to-end bootstrap run with `PYFORGE_ATLAS_DATA_ROOT=/tmp/atlas-e2e-verify-21.8` (a genuinely empty dir, `CF_ATLAS_DB` unset) exited 0, but `core_packages_enumerated.parquet` / `pypi_universe.parquet` / `pypi_conda_mapping.parquet` / `inventory_universe.parquet` / `identity_export_parquet` all landed under `src/shared/packages/pyforge-atlas/data/` instead of the override root -- confirmed by `grep -c '^\s*filepath:\s*\${globals:paths\.data_root}'` (27) vs. `grep -cE '^\s*filepath:\s*data/'` (53) over `catalog.yml`, and by direct `find` over both directories after the run. Does not block this story's bootstrap-exit-0 AC (both locations start empty on a genuinely fresh clone), but materially contradicts the README/globals.yml claim that "every store/output path resolves under" `PYFORGE_ATLAS_DATA_ROOT` for an operator who explicitly relies on the override to relocate ALL data (e.g. a CI job with a scratch data root, or two concurrent local runs). Not fixed here -- 53 catalog `filepath:` edits is far beyond a narrow surgical fix and CAP-1 is proven read-only by this story, not extended.
+  location: src/shared/packages/pyforge-atlas/conf/base/catalog.yml (53 filepath: entries, layer: intermediate|primary|derived)
+  origin: spec-deferred de771c22f707 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-10: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw... [truncated, 566 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw... [truncated, 566 chars total]
+  evidence: Reproduced live on this story's full end-to-end bootstrap run: all three staleness markers under the bootstrapped root read `{"stale": true, "reason": "refresh due but no refresher wired (offline / unattended run)", "last_good_exists": false}` with no `.parquet` ever written, while sibling Anaconda-Main (`core_anaconda_main_channeldata_raw`, an always-fetch dataset) and GAOSS-Free populated correctly (5,386 and 1,474 packages respectively, per the `--live-catalog` MD report's Per-Worksheet-Tab matrix). Confirmed by source read: `BasiliskPackagesDataset`/`AossPremiumPythonDataset`/`AnacondaDist2026Dataset` all bind `refresher=self._do_refresh if fetcher is not None else None` in `__init__`, and their shipped `catalog.yml` entries supply no `fetcher:` key -- `BasiliskPackagesDataset`'s own docstring documents this as intentional: "Injected IO (None == offline) -- NEVER imported here; supplied by the Dagster resource / an attended run (DW-B8-1)". This is the documented, intentional degrade path, not a code defect -- but the `pyforge-atlas-bootstrap` pixi task's own description names only "live GitHub/BigQuery fan-out" as its credentialed-only degrade category; this third category (Dagster-resource-only fetchers, dating to Story 21.4) is real but undocumented there. This story's AC #2 (verification-matrix.md field parity) is still satisfied for these three fields via the dedicated offline fixture test (`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py::test_parity_workbook_vs_live_catalog_universe`), which proves field-level reproduction given the data exists -- independent of whether a live, unattended bootstrap run can populate that data today.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py BasiliskPackagesDataset; src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py AossPremiumPythonDa... [truncated, 230 chars total]
+  origin: spec-deferred d41556f8b104 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-8-11: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f... [truncated, 548 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-21-8-end-to-end-verification-gate.md`
+  summary: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f... [truncated, 548 chars total]
+  evidence: Confirmed via review pass 1 (blind hunter): `DW-FU-21-8-2`/`DW-FU-21-8-3`'s ledger heading + `summary:` were both cut off at exactly 500 chars mid-word/mid-sentence, while the untruncated source text was intact in this spec's own frontmatter `deferred:` block -- confirmed by direct length/content comparison and by reading `_SUMMARY_LIMIT = 500` and the blind `[:limit]` slice in `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650`. Hand-corrected this story's own two entries in both the spec frontmatter and the ledger (review pass 1 patch); did not touch the tool itself (out of this narrow story's authorized surface) or re-derive the other backlog entries' full text (would require locating each source spec's own frontmatter individually).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:2615,2647-2650 (_flatten_deferred_scalar, _SUMMARY_LIMIT)
+  origin: spec-deferred fb74ecd35929 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
