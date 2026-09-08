@@ -46,11 +46,11 @@ development_status:
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
-  20-1-suite-drift-maps-every-active-member-derived-from-the-roster: backlog
-  20-2-the-render-halt-class-has-a-detector: backlog
-  20-3-frozen-path-changed-exists: backlog
+  20-1-suite-drift-maps-every-active-member-derived-from-the-roster: done
+  20-2-the-render-halt-class-has-a-detector: done
+  20-3-frozen-path-changed-exists: done
   20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done
-  20-5-the-version-drift-spec-s-open-questions-are-written-back: backlog
+  20-5-the-version-drift-spec-s-open-questions-are-written-back: done
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done
   3-3-root-cause-naming: done
