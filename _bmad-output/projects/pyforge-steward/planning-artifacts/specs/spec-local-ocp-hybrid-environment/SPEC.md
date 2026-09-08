@@ -85,7 +85,7 @@ shipped architecture or external reality is struck with citations in
   creation, no `?options=search_path` for Langflow, no
   `bmad-marshal-detectors-init`.
 - BMAD wiring consumes steward 15.3 — never ad-hoc installer runs.
-- Secrets: AD-12 `existingSecret` by reference + steward keys discipline;
+- Secrets: pap:AD-12 `existingSecret` by reference + steward keys discipline;
   the intake's inline `debug` credentials are placeholders only.
 - Image flow: internal-registry push is canonical; `--image` not the
   deprecated `--docker-image`; builds stay on the pixi/podman path.

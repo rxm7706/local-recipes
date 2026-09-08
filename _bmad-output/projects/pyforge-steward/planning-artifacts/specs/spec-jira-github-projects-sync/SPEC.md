@@ -92,7 +92,7 @@ accidentally DDoS itself.
     `last_sync_timestamp`). **Neither survived**: the time-based check is unimplementable under
     AD-2 (proven by trace, steward 8-1), and the identity check does not exist under
     `trigger=schedule` or in Mode B. AD-5 now fixes the mechanism as a value comparison against
-    a per-field baseline (AD-10); this Spec no longer leaves it open.
+    a per-field baseline (jira:AD-10); this Spec no longer leaves it open.
   - **success:** a demonstrated (not merely claimed) test in which a synced update provably
     does not echo: N round-trips of a single human change produce exactly one propagation, not
     N. Under AD-5 this holds **by construction** — after one propagation both sides equal the

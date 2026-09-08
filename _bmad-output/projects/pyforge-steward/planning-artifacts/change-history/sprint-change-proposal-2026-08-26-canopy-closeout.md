@@ -45,7 +45,7 @@ Evidence: CRC 2026-08-26 proofs below; PRs #856, #858, #859, #861; steward ledge
 
 ### Epic / story impact
 
-None. Story 12.9 remains the optional AD-11 CI job (ledger already `done` without the
+None. Story 12.9 remains the optional pap:AD-11 CI job (ledger already `done` without the
 job — do not flip it here). Actions minutes are a **gate**, not a story.
 
 ### Artifact conflicts
@@ -97,7 +97,7 @@ Root + published HomePage + default Site (`platform.apps-crc.testing:443`).
 - Query plane / HTAP — no CAP; sibling capture absorbed; mint only via later correct-course.
 - Q5 scorecard — parked sibling.
 - Platform CI air-gap + `platform-mcp-host` bake — when Actions minutes return.
-- Story 12.9 `ocp-portability-smoke` — AD-11 honesty, optional for this SPEC.
+- Story 12.9 `ocp-portability-smoke` — pap:AD-11 honesty, optional for this SPEC.
 
 Kernel moves:
 

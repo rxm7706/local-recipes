@@ -80,7 +80,7 @@ inputDocuments:
 ### QA Infrastructure Setup (Pre-Implementation)
 
 1. **Rehearsal clone for the Epic 44 cutover drill (R-14)** - QA/Steward
-   - A throwaway clone of the current repo state, isolated from the real cutover flag, to rehearse the AD-21 archive-restore path before Story 44.3 executes.
+   - A throwaway clone of the current repo state, isolated from the real cutover flag, to rehearse the fnd:AD-21 archive-restore path before Story 44.3 executes.
 
 2. **Test Environments**
    - Local: existing `pixi run -e pyforge-steward pyforge-steward-test` (unit/conformance/meta, no live network by default).
@@ -187,7 +187,7 @@ def test_cli_imports_cleanly_without_dashboard_extra():
 
 | NFR Category | Requirement / Threshold | Planned Validation | Tool / Level | Evidence Artifact | Priority |
 | --- | --- | --- | --- | --- | --- |
-| Security | NFR-7 (no plaintext secret ever printed); AD-2 (host-scoped credential resolution); AD-19 (secret references only in Pod specs) | Existing conformance/meta suite + NEW manifest-scan meta test (R-6) | pytest (`conformance`/`meta` tiers) | `pytest` CI run output; new meta-test result | P0 |
+| Security | NFR-7 (no plaintext secret ever printed); AD-2 (host-scoped credential resolution); canopy:AD-19 (secret references only in Pod specs) | Existing conformance/meta suite + NEW manifest-scan meta test (R-6) | pytest (`conformance`/`meta` tiers) | `pytest` CI run output; new meta-test result | P0 |
 | Performance | Query-plane staleness/latency — **UNKNOWN threshold** (R-7) | Blocked until Architecture declares a threshold | k6 or equivalent, once threshold exists | k6 summary report (future) | P2 (blocked, not droppable) |
 | Reliability | NFR-1..NFR-6 (no standing services, sole exit-code ownership, lean deps, inherited routing); DR contract scope question (Epic 41) | Existing `unit`/`conformance` suite for NFR-1..6; DR-contract scope confirmation is a documentation task, not a test | pytest + a written confirmation from Architecture | `pytest` CI run output; a one-line spine amendment confirming `.steward/` scope | P1 |
 | Maintainability | AD-1 (wrap, never reimplement); 3-tier test layout; `bmad-drift-check` currency | Existing `bmad-drift-check` pixi task + this package's own 67-file suite | CI (`pixi run -e local-recipes bmad-drift-check`) + pytest | Drift-check report; pytest CI run output | P1 |

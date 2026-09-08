@@ -16,7 +16,7 @@ hybrid (a)+(c); 43.6 added, gated on Mason 13.1 / 13.2.)**
 |---|---|---|
 | 43.5 decided (hybrid a+c). 43.6 (image flip) must not dispatch before Mason 13.1 / 13.2 are `done` | `spec-43-6` `Deps` | Order is stated; 43.5 itself has no deps |
 | 42.x assume Epic 40 shipped (verified mint root; bounded broker) | `Deps` lines | Order 40 → 42 is stated; do not dispatch 42.x on a red 40 |
-| 41.1 backup destination defaults to RWX PVC; object store is a profile plugin | `spec-41-1` | RWX exists already for media (AD-13); object store stays optional |
+| 41.1 backup destination defaults to RWX PVC; object store is a profile plugin | `spec-41-1` | RWX exists already for media (canopy:AD-13); object store stays optional |
 | 42.4 changes queue names; any Celery caller with a hard-coded queue breaks | `spec-42-4` | Routing table lives in chrome; grep for `queue=` is a task |
 | 43.2 moves Langflow off bare `/api/v1` | `spec-43-2` | `/langflow/api/v1/` already works; the prefix-preserving redirect test exists |
 | ~~`chain-completeness` CAP-6~~ | detectors | **Fixed 2026-09-02.** It was a real chain gap, not a detector bug: `spec-bmad-suite-channel-product` CAP-6 (added 2026-09-01) pointed at `spec-bmad-suite-metapackage`, but Epic 39 never cited the channel-product slug, so the slug-scoped window saw no CAP-6. Epic 39's blurb now cites it; the check is green. The steward layers-audit staleness checkpoint was a feeds-currency cascade (spec touched 2026-09-01 by the 23-1 sharded-path landing → PRD re-stamped 2026-09-02 → architecture spine re-stamped 2026-09-02, no FR or AD change); both `chain-completeness` and `chain-completeness --layers --project pyforge-steward` are green as of this commit |

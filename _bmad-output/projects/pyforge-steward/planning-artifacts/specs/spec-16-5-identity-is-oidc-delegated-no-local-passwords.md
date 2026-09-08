@@ -23,7 +23,7 @@ baseline_revision: 9b488aee70
 - User identity keyed on `idp_subject`; staff/superuser from group claims per auth.
 - Local passwords and createsuperuser doc-path retired.
 - Local-dev JWT/persona minting path exists for tests/dev.
-- AD-4/AD-17 topology and chart 12.1 preserved (factors as seams).
+- AD-4/pap:AD-17 topology and chart 12.1 preserved (factors as seams).
 - Does not implement steward 12-7 or Epic 17.
 
 ## Boundaries & Constraints

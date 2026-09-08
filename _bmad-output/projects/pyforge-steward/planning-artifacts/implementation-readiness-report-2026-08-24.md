@@ -25,7 +25,7 @@ station operating-model correct-courses (§6 revisited: not Warden-only).
 | Q5 measurement in the OM; scorecard **unpublished** | Dream Grounding; do not invent metrics |
 | Q6 Path B = Agent Canopy + persona; Tachyon = LLM adapter | SPEC CAP-16; PRD glossary |
 | Q7 HTMX portal; FastAPI compute; DRF on Atlas data-models only | SPEC CAP-3; `stack.md` |
-| Hooks/plugins as replaceable-layer principle (AD-21); Q8 is the PR-gate instance | Dream Grounding; canopy:AD-21; SPEC Always; all eight `epics.md` OM blocks |
+| Hooks/plugins as replaceable-layer principle (canopy:AD-21); Q8 is the PR-gate instance | Dream Grounding; canopy:AD-21; SPEC Always; all eight `epics.md` OM blocks |
 
 Station planning (all eight): `change-history/sprint-change-proposal-2026-08-24-operating-model.md`,
 `epics.md` § Operating-model obligations, **`DW-OM-2026-08-24`**. Warden owns PR-gate

@@ -39,7 +39,7 @@ refusals, no policy-as-tests. MIT reference implementations exist
   single authority. *Success:* CI + images build from pixi alone.
 
 ## Constraints
-AD-4/AD-17 topology untouched; chart contract (12.1) preserved — factors
+AD-4/pap:AD-17 topology untouched; chart contract (12.1) preserved — factors
 land as values/env seams, not chart rewrites; MIT notices retained on
 borrowed code.
 

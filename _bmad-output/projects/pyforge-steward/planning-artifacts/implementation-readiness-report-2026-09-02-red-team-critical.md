@@ -31,7 +31,7 @@ they must not do. No AD or FR changes. No packaging gate.
 | Intent | Story | Spec |
 |---|---|---|
 | CAP-6 / AD-7 root is IdP-verified | 40.1 | `spec-40-1-idp-bearer-is-verified-before-mint.md` |
-| CAP-11 / AD-10 broker loses nothing on restart; CAP-8 / AD-8 DLQ and applied keys survive | 40.2 | `spec-40-2-redis-broker-is-durable-and-bounded.md` |
+| CAP-11 / canopy:AD-10 broker loses nothing on restart; CAP-8 / AD-8 DLQ and applied keys survive | 40.2 | `spec-40-2-redis-broker-is-durable-and-bounded.md` |
 
 ## Dispatch order
 

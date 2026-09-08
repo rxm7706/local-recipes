@@ -338,7 +338,7 @@ they are why this is not merely a UI project.
 - **Always:** CAP-19 extract/transform is Kedro on a **named** Atlas pipeline (or an
   explicit reopen of the closed set). Not a silent `01_raw` tree. Not Airflow.
   Federation does not pull OLTP through pandas. Kedro is **optional** for new
-  extracts; Atlas is the one Kedro *home* (AD-21). Not eight Kedro projects.
+  extracts; Atlas is the one Kedro *home* (canopy:AD-21). Not eight Kedro projects.
 - **Always:** Lane 3 is Vizro over BSL over the plane (after 34.2). `vizro-ai`
   is deprecated. Do not import Kedro or Vizro into Django views.
 - **Never:** a station or agent opens a private DuckDB, Chroma, or the OLTP DSN for
@@ -601,7 +601,7 @@ OLTP.
   deployment images and already admits non-conda third-party images. See
   `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
 - ~~**query-plane-face**~~ — **answered 2026-08-26 (operator): both, one boot script.**
-  Library-first stands for every consumer that can reach the file (AD-16 local-first;
+  Library-first stands for every consumer that can reach the file (pap:AD-16 local-first;
   DuckDB stays a query face, never a fourth backing store), AND the Mosaic
   `duckdb-server` HTTP/Arrow face is committed now behind the same single boot
   script — raised only when the platform stack is up, pixi-sourced. The two faces

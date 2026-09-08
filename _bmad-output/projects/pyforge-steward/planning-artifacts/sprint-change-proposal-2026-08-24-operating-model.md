@@ -156,7 +156,7 @@ None.
 | Operator | Approve or revise this proposal (correct-course step 5). |
 | Steward / PO-DEV | Apply §4 edits to PRD + `epics.md` + spine note; append realization log. |
 | Developer | Do not implement Story 29.3 until FR-39 text is applied. |
-| Eight station correct-courses | Record OM Nevers + AD-21 (hooks/plugins as replaceable layers) on every spoke. Warden owns PR-gate hook *specs*; plugins implement them. Not a Kedro re-template of any station. |
+| Eight station correct-courses | Record OM Nevers + canopy:AD-21 (hooks/plugins as replaceable layers) on every spoke. Warden owns PR-gate hook *specs*; plugins implement them. Not a Kedro re-template of any station. |
 | Scorecard sibling | Later; human + agent + team; no unpublished metrics. |
 
 Success: PRD/epics/SPEC/Dream agree that five-tier completeness is 03-only; one

@@ -37,7 +37,7 @@ Peer stations receive their own Phase 5 proposals; Marshal additionally retires
 
 - **Epic 11 (done, 4/4):** **Not reopened.** Stories 11.1–11.4 remain `done`. Schema
   isolation (`langflow_schema`, `dbgpt_schema`, `search_path`, ORM never crosses schemas,
-  Pattern A/B per parent AD-17) is still the binding invariant. FR-22 / canopy:AD-9 changes
+  Pattern A/B per parent pap:AD-17) is still the binding invariant. FR-22 / canopy:AD-9 changes
   only the **producer** of production DDL (Liquibase pre-upgrade Job + DML-only app role) —
   superseding the mechanism in **Epic 27**, not rolling back Epic 11.
 - **Epic 10 (done):** Host image, factory-sourced environment, and sidecar wiring remain

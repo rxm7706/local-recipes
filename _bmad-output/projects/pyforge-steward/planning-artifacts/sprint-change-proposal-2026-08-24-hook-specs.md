@@ -12,7 +12,7 @@ mode: batch
 
 ## 1. Issue summary
 
-AD-21 was recorded as an invariant. Canopy Epics **18–30** do not implement it. The
+canopy:AD-21 was recorded as an invariant. Canopy Epics **18–30** do not implement it. The
 operator named the missing work:
 
 1. **Shared contract** — one hook-spec + plugin-registration shape (`pyforge-core`) so
@@ -31,7 +31,7 @@ mints **CAP-18 for hook specs**, which is not a scorecard.
 |---|---|
 | SPEC | CAP-18 |
 | PRD | FR-43, FR-44, FR-45; SM-9; §2/§10/§14 stale-tail fixes |
-| Spine | AD-21 binds CAP-18 |
+| Spine | canopy:AD-21 binds CAP-18 |
 | Steward epics | **Epic 32** (S-32.1 shared contract, S-32.2 deploy-profile plugins) |
 | Warden | **Epic 9** (S-9.1–9.3) |
 | Peers | atlas 18.1, mason 10.1, marshal 26.1, doctor 17.1, herald 16.1, scribe 4.1 |
