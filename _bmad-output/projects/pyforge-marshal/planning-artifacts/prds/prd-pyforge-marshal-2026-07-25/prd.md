@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-09-02  # FR-numbering INV-A pass (§ 18.1): both 2026-08-26 defects resolved — the FR-148..152/FR-192 overlap by scope partition (Epic 17 first slice / Epic 21 completion, no renumber), the FR-193 double-assignment by re-citing Story 19.4 to FR-132 (verified verbatim against § 16.1). FR-193 registration widened to CAP-1..7: Story 22.7 (fleet drain, backlog) minted in the same pass reconciling spec-marshal-single-story-dispatch; § 18.3 shipped state now 165/166. RE-STAMPED 2026-09-02: currency-only (a spec memlog moved in the fleet hygiene pass, PR #1009); no FR or AD changed.
+updated: "2026-09-08"
 # 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
 # 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
 # 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
@@ -2271,3 +2271,24 @@ never a repo-root process farm); the persona grammar is `pyforge marshal …`; t
 dispatch verbs served as the 2026-08-25 fleet drain-bind campaign engine — product, not
 discipline. Boundary lines recorded verbatim from the strategy pack: *never: Marshal
 stores SLAs*; the host never imports `pyforge.*` source.
+
+
+## Deferred-work verification state — reconciled 2026-09-08
+
+The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all
+eight stations** (marshal: 442 entries). Before the 2026-09-08 sweep steward sat at 61% and
+the other seven at 92–98%; 183 entries had never been re-checked against live code since
+authoring.
+
+Marshal's own 19 never-verified entries were verified in that pass — three resolutions and
+two code fixes: `cli/config.py`'s stale "9 keys" numeral removed in favour of naming
+`_UNSETTABLE_KEYS` as the authority (a literal that had gone stale three times), and
+`sources/chain.py`'s `_KNOWN_FIELD_KEYS` extended with `note`.
+
+Two marshal entries got **worse** since authoring and carry corrected numbers, not stale
+ones: `architecture-bmad-infra.md` still claims 94 skill directories against a live 129, and
+the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows (was 207 of
+208).
+
+`spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
+found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.

@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 31  # 2026-09-06: Epic 31 added (TEA replaces the generator + estate cutover-readiness, spec-bmad-suite-lifecycle CAP-3/4/9 marshal relays). 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
 storyCount: 194  # 2026-09-06: 187 + Story 30.5 (shim retirement, era-alignment CAP-12) + Stories 31.1–31.6 (spec-bmad-suite-lifecycle marshal relays). 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
-updated: "2026-09-06"  # 2026-09-06: Story 30.5 + Epic 31 added from spec-bmad-suite-lifecycle (Dream 2026-09-06); the era-alignment shim constraint and TEA non-goal were superseded by memlog the same day. Prior: arch→epics currency: validated against architecture.md's 2026-09-05 re-ground (PR #1063 — source_pin v8.86.1 + live gotcha/env counts only; no AD added, changed, or removed), so no epic or story moves. Prior stamp 2026-09-01: Stories 28.18–28.23 (drain self-resolution, Dream addendum F).
+updated: "2026-09-08"
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -4721,3 +4721,24 @@ re-minted.
 **Given** PR #1082's first full CI run went red in five lanes — three because CAP-5's `requires-python` raise made pip refuse on lanes still pinned to Python 3.12 (`Package 'pyforge-core' requires a different Python: 3.12.14 not in '>=3.14'`), one because the coverage lane collects `tests/meta/` and herald's SKF validator shells out to `uv`, and one because moving atlas's tests under `unit/` pulled three fail-loud gates into a lane that provisions none of their prerequisites **When** the three lanes move to 3.14 (matching `detectors.yml`, which already ran it), the coverage lane gains `astral-sh/setup-uv`, and atlas's `dashboard/`, `publish/` and `wasm/` move to `tests/integration/` **Then** every lane is green and no gate silently skips: the three fail-loud gates still run — in `pyforge-atlas-test`, which provisions Chromium, the DuckDB `httpfs` extension and the WASM build for exactly this reason
 **And** the ten pixi tasks naming pre-move atlas paths are repointed and the eight `test-architecture.md` regenerated from the live inventory — a green suite proved the FILES worked and said nothing about the TASKS that name them, which is why the manifest must be grepped after a tree move
 **And** CAP-5's own rationale is corrected on the record: "no environment has ever exercised 3.12" was derived from `pixi.toml` alone and never checked against `.github/workflows/` — three lanes had been exercising it
+
+
+## Deferred-work verification state — reconciled 2026-09-08
+
+The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all
+eight stations** (marshal: 442 entries). Before the 2026-09-08 sweep steward sat at 61% and
+the other seven at 92–98%; 183 entries had never been re-checked against live code since
+authoring.
+
+Marshal's own 19 never-verified entries were verified in that pass — three resolutions and
+two code fixes: `cli/config.py`'s stale "9 keys" numeral removed in favour of naming
+`_UNSETTABLE_KEYS` as the authority (a literal that had gone stale three times), and
+`sources/chain.py`'s `_KNOWN_FIELD_KEYS` extended with `note`.
+
+Two marshal entries got **worse** since authoring and carry corrected numbers, not stale
+ones: `architecture-bmad-infra.md` still claims 94 skill directories against a live 129, and
+the generator's Story Coverage Matrix now reads 394 "none observed" of 404 rows (was 207 of
+208).
+
+`spec-deferred-work-resolution-sweep`'s CAP-2/CAP-3/CAP-6 were measured during the sweep and
+found inert against these ledgers — see that Spec's `sweep-tooling-effectiveness-2026-09-08.md`.
