@@ -9,7 +9,7 @@ from pathlib import Path
 import pyforge.testing_kit as kit
 from pyforge.testing_kit import CliRunner, MockGitHubAPI
 
-_SUPPORT = Path(__file__).resolve().parents[1] / "support" / "testing_kit.py"
+_SUPPORT = Path(__file__).resolve().parents[1] / "_support" / "testing_kit.py"
 
 
 def test_marshal_imports_cli_runner_from_shared_kit() -> None:

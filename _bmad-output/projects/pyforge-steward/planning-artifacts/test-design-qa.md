@@ -437,8 +437,12 @@ pixi run -e pyforge-steward pyforge-steward-test
 # Run only P0-marked tests, once markers are adopted
 pixi run -e pyforge-steward python -m pytest -m p0 src/shared/packages/pyforge-steward/tests/
 
-# Run only the conformance tier (FR-level behavioral contracts)
-pixi run -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/conformance/
+# Run only the CLI-contract tests (FR-level behavioral contracts).
+# These were tests/conformance/ until 2026-09-07; that tier folded into tests/unit/
+# under marshal Story 32.5 (spec-fleet-consistency-standard CAP-2) because this
+# station's own test-architecture.md already classified them as unit level and the
+# fleet coverage gate recognised no tier by that name -- so none of the 32 was measured.
+pixi run -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/
 ```
 
 ---

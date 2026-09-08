@@ -7,7 +7,7 @@ name = "pyforge-marshal"
 version = "0.1.0"
 description = "Deterministic BMAD-loop supervisor: wraps bmad-loop with gates-as-objects, run supervision, landing, fleet status, and adapter portability."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # Marshal's own direct dependencies (architecture Stack table) -- declared

@@ -2,7 +2,7 @@
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: 2026-09-04
+updated: "2026-09-07"
 project: pyforge-mason
 currency_review: Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift).
 dream: docs/dreams/packaging-factory.md
@@ -1730,3 +1730,20 @@ the Lane-1 seeder, Story 42.5 claims in tests, chart digest pins, the boot guard
 and no FR moved. **Verdict:** PRD unchanged in substance; `updated:` re-stamped so the chain
 reads current. Full record:
 `_bmad-output/projects/pyforge-steward/planning-artifacts/retros/retro-pyforge-steward-2026-09-04.md`.
+
+
+## Platform floor — reconciled 2026-09-07
+
+`pyforge-mason` declares **`requires-python = ">=3.14"`**. Raised from `>=3.12` by
+marshal Story 32.2 (`spec-fleet-consistency-standard` CAP-5) and folded in here because it
+is a product-visible constraint, not an implementation detail: it states which interpreters
+this package may be installed onto.
+
+The prior `>=3.12` was an untested claim. `pixi.toml` pins
+`python = ">=3.14.7,3.14.*"` and every env-scoped pin in the workspace is `3.14.*`, so no
+environment in this repo has ever installed, built or exercised this package on 3.12 — the
+floor asserted a compatibility nothing verified. Declaring an untested floor is the same
+failure mode as a fabricated test-architecture document: it reads as verified to the next
+agent. There is no `recipes/pyforge-mason/`, so the package is built by `pixi-build-python`
+for this estate and is not published to conda-forge; no external consumer depended on the
+wider floor.

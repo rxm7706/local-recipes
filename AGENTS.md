@@ -27,7 +27,9 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 - Commit messages carry no `Co-Authored-By` line and no AI attribution. TODO: a `commit-msg` hook in the pre-commit set; this line goes when it lands.
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
 - Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
+<!-- governance-currency:ignore-start (foundry target tree, not yet built; and a path that must NEVER exist -- mason's skill tier is conda-forge-expert per five_tier.py) -->
 - New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` or `.claude/skills/pyforge-mason/` path.
+<!-- governance-currency:ignore-end -->
 
 ## Where things are
 
@@ -209,9 +211,15 @@ exits non-zero when the catalog drifts from `pixi.toml`.
 
 ## Keeping the BMAD planning docs accurate
 
-The `_bmad-output/projects/local-recipes/` artifacts are kept in sync with the live repo by a
+The `_bmad-output/projects/pyforge-marshal/` artifacts are kept in sync with the live repo by a
 detector + reconciler loop — run `pixi run -e local-recipes bmad-drift-check` and follow
-`_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md`. The detector also enforces the tier rules
+`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`. (Corrected 2026-09-07 by the CAP-6
+`governance-currency` detector on its first real run: this pointed at
+<!-- governance-currency:ignore-start (the dissolved path, quoted as the thing that was WRONG) -->
+`_bmad-output/projects/local-recipes/`, a project INV-2 dissolved — the placeholder was retired
+<!-- governance-currency:ignore-end -->
+once its Specs moved to their owning stations, so an agent following this line looked in a
+directory that does not exist. CLAUDE.md already named the right path.) The detector also enforces the tier rules
 above (e.g. it HARD-fails if a spec is git-tracked under `implementation-artifacts/`).
 
 <!-- SKF:BEGIN updated:2026-08-26 -->

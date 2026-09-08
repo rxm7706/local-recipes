@@ -14,7 +14,6 @@ atlas is a Intelligence Mapper station in the PyForge factory, responsible for m
 _bmad-output/projects/pyforge-atlas/
 ├── planning-artifacts/
 │   ├── epics.md                    — Epic breakdown
-│   ├── epics-with-stories.md       — Stories with acceptance criteria
 │   ├── test-architecture.md        — Test strategy (Unit/Integration/E2E)
 │   ├── sprint-status.yaml          — Sprint plan (epics + stories)
 │   ├── specs/                      — Story-level implementation specs
@@ -48,7 +47,7 @@ _bmad-output/projects/pyforge-atlas/
 - **PRD** (Tier 2): Product requirements
 - **Architecture** (Tier 2): Design specifications
 - **Epics** (Tier 2): Epic breakdown (epics.md)
-- **Stories** (Tier 2): Stories with acceptance criteria (epics-with-stories.md)
+- **Stories** (Tier 2): Stories with acceptance criteria (epics.md — canonical per AD-72; the derived epics-with-stories.md was retired 2026-09-07, marshal Story 32.4)
 - **Test Architecture** (Tier 2): Test strategy, coverage targets, fixtures
 - **Sprint Status** (Tier 3): Sprint plan with epic/story tracking
 

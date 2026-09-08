@@ -3,7 +3,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-08-26"
+updated: "2026-09-07"
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -951,3 +951,20 @@ preserved as the historical requirements record; the deltas below are what chang
    Metrics) remain **unmeasured** — near-zero production usage time; they are targets,
    not results. The authoritative verification record is the package test suite and the
    per-story Review Triage Logs.
+
+
+## Platform floor — reconciled 2026-09-07
+
+`pyforge-herald` declares **`requires-python = ">=3.14"`**. Raised from `>=3.12` by
+marshal Story 32.2 (`spec-fleet-consistency-standard` CAP-5) and folded in here because it
+is a product-visible constraint, not an implementation detail: it states which interpreters
+this package may be installed onto.
+
+The prior `>=3.12` was an untested claim. `pixi.toml` pins
+`python = ">=3.14.7,3.14.*"` and every env-scoped pin in the workspace is `3.14.*`, so no
+environment in this repo has ever installed, built or exercised this package on 3.12 — the
+floor asserted a compatibility nothing verified. Declaring an untested floor is the same
+failure mode as a fabricated test-architecture document: it reads as verified to the next
+agent. There is no `recipes/pyforge-herald/`, so the package is built by `pixi-build-python`
+for this estate and is not published to conda-forge; no external consumer depended on the
+wider floor.

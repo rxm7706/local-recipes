@@ -7,7 +7,7 @@ name = "pyforge-mason"
 version = "0.1.0"
 description = "The Artisan Builder's CLI — author and build conda recipes, ship packages to PyPI + conda-forge, and resolve conflicting worlds into one lockfile."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # NFR-10 / FR-41: only what `pyforge.mason` actually imports. Standard

@@ -1073,6 +1073,15 @@ def classify(path: Path, target: Path) -> str:
         return "tracked:spec"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
+    if rel.startswith("planning-artifacts/retros/"):
+        # The TRACKED home for retrospectives, and where all seven other stations
+        # already kept theirs. Added 2026-09-07 (marshal Story 32.3): marshal's four
+        # epic retros lived in gitignored implementation-artifacts/, so they were
+        # absent from every clone and one worktree teardown from the loss that cost
+        # pyforge-warden 13 story specs. Promoting them surfaced the gap -- this
+        # detector only ever scans pyforge-marshal, which was the one station with
+        # no planning-artifacts/retros/ directory for the rule to have been needed.
+        return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
         return "tracked:deferred"
     if rel == "planning-artifacts/deferred-work-ledger.md":

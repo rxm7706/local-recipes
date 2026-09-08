@@ -1,7 +1,7 @@
 ---
 title: pyforge-scribe
 created: 2026-07-25
-updated: 2026-09-04
+updated: "2026-09-07"
 status: final
 currency_review: Reviewed 2026-09-04 — chain-currency sweep (PR #1043); spec-pyforge-scribe's .memlog moved 2026-08-31 (surface reconcile, no CAP text change) and 2026-09-03 (fleet-hygiene restamp); Epic 6 landed above the FR ceiling, owned by spec-pyforge-unifying-strategy CAP-18 / stack.md and spec-marshal-token-economy CAP-13. See § Currency reconciliation — 2026-09-04. Prior — Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
 ---
@@ -296,3 +296,20 @@ pins in `spec-pyforge-unifying-strategy/stack.md` § *Estate leverage* and
 the 2026-08-26 list above of requirements owned by their own specs, not retrofitted here.
 
 **No FR/content change required.** `updated:` bumped to record that the check ran.
+
+
+## Platform floor — reconciled 2026-09-07
+
+`pyforge-scribe` declares **`requires-python = ">=3.14"`**. Raised from `>=3.12` by
+marshal Story 32.2 (`spec-fleet-consistency-standard` CAP-5) and folded in here because it
+is a product-visible constraint, not an implementation detail: it states which interpreters
+this package may be installed onto.
+
+The prior `>=3.12` was an untested claim. `pixi.toml` pins
+`python = ">=3.14.7,3.14.*"` and every env-scoped pin in the workspace is `3.14.*`, so no
+environment in this repo has ever installed, built or exercised this package on 3.12 — the
+floor asserted a compatibility nothing verified. Declaring an untested floor is the same
+failure mode as a fabricated test-architecture document: it reads as verified to the next
+agent. There is no `recipes/pyforge-scribe/`, so the package is built by `pixi-build-python`
+for this estate and is not published to conda-forge; no external consumer depended on the
+wider floor.

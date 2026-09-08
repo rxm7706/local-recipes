@@ -116,14 +116,18 @@ Rules: the **active spec is a BMAD artifact in Tier 2** (produced from a Tier-0 
 
 **Story specs are durable (tracked), NOT Tier-3 (convention since 2026-07-25).** Per-story intent-contract specs are load-bearing in a spec-driven build — the spec *is* the contract — so they must survive worktree teardown and live in every clone. bmad-loop drafts a story spec into the run's gitignored `implementation-artifacts/` (runtime scratch); **after the story merges, promote that spec into the tracked `planning-artifacts/specs/` subdir and commit it** (the source of record). Motivating incident: pyforge-warden lost 13 of 31 story specs entirely (all of Epics 3 & 4) plus 8 husks to Tier-3 worktree teardown before this convention existed — **fully recovered 2026-07-25 to 31/31 real originals.** Recovery-source hierarchy (highest fidelity first): (1) **Claude Code session transcripts** `~/.claude/projects/**/*.jsonl` — the `Write`/`Edit` tool-calls that created each spec survive there, so originals (often incl. the dev/review triage log) come back verbatim (recovered warden's last 13 this way); (2) surviving bmad-loop **run-worktree snapshots**; (3) **`epics.md` regeneration** (Intent + ACs only — the contract, not the narrative). pyforge-atlas is the cautionary counter-case: its dev-session transcripts are NOT in the local store, so only 2 of 32 originals survived (30 are epics.md contract-specs). See each project's `planning-artifacts/specs/README.md`. This supersedes the "derived per-effort specs → Tier-3" row above for **story** specs.
 
+<!-- governance-currency:ignore-start (removed/renamed skills named BECAUSE they were removed) -->
 **Dream-first (MANDATORY, always-on):** before implementing any non-trivial effort, a **Dream** must exist in `docs/dreams/<slug>.md`, and BMAD must have produced its **spec** from it — run **`bmad-spec`** to produce **the Spec** — the five-field contract, and the artifact everything downstream binds to. For product/platform scope the planning chain (`bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories`) then **decomposes** that Spec; it is *not a substitute for it* (Charter § The Lexicon §2 — the Spec is the unit of contract, the chain is its decomposition). Output lands in `_bmad-output/…/planning-artifacts/`. Marshal (`bmad-loop` / `bmad-build-auto` — the 6.11 name for `bmad-dev-auto`; bmad-loop ≥0.9.1 resolves whichever is installed) can do this unattended from a new Dream. **Keep the spec's status current** (`draft → ready → in-progress → shipped`) regardless of who did the work. Legacy `docs/specs/*.md` still carry `status:` frontmatter (read by `python scripts/bmad_drift_check.py --specs`) during the transition. Full convention: **`AGENTS.md`** (repo root).
+<!-- governance-currency:ignore-end -->
 
 ### Keeping BMAD artifacts in sync with the live repo (always-on)
 
 The `_bmad-output/projects/pyforge-marshal/` artifacts (PRD, architecture set, epics, overview, specs) hard-code volatile facts about the factory (skill version, cf_atlas schema, MCP tool / atlas-phase / pixi-env counts, gotcha range) and drift behind the fast-moving `conda-forge-expert` skill. A **two-layer sync loop** keeps them accurate and able to catch up after *any* out-of-band change (BMAD or not):
 
 - **Detector** (cheap, deterministic): `pixi run -e local-recipes bmad-drift-check` (and `bmad-groundtruth` for live facts as JSON). Reports pin drift, count/phase-list staleness, stale rules, archive-hygiene + stray files, coverage completeness (every project file must be classified), and baseline-vs-live surface change. The verdict lives in `pyforge.doctor.sources.factory::gather` (Story 6.9 ported it off the script); `pixi run -e local-recipes bmad-drift-check` now runs `python -m pyforge.doctor.sources bmad-drift`, the dispatcher entrypoint. Enforced in the test suite by `.claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py` (integrity only).
+<!-- governance-currency:ignore-start (removed/renamed skills named BECAUSE they were removed) -->
 - **Reconciler** (correctness): the **BMAD skills themselves** — `bmad-correct-course` + `bmad-create-epics-and-stories` the PRD/epics; `bmad-prd` (validate) + `bmad-sprint-planning`'s readiness gate (6.11 absorbed `bmad-check-implementation-readiness`) the gate reports. **6.11 gaps:** `bmad-document-project`'s brownfield re-grounding (living architecture/overview/source-tree/parts docs) has NO direct 6.11 equivalent — `bmad-project-context` only maintains a verified block in `AGENTS.md`; re-ground those docs by hand or with a plain agent until upstream ships the promised "explain this system" capability. `bmad-index-docs` is removed with no replacement — maintain `index.md` by hand. Then re-stamp the baseline: `python scripts/bmad_drift_check.py --write-baseline` (the read-only pixi task can't do this — that mutation-only surface survives directly in the script, run with plain `python`, no pixi task).
+<!-- governance-currency:ignore-end -->
 
 **When to run:** after every CFE retro / skill MINOR bump, and whenever the detector reports `surface-changed` (an out-of-band edit to `recipes/`, `.claude/`, `pixi.toml`, or `docs/specs/`). Full procedure + finding→remedy mapping: **`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`**. The verdict is `pyforge.doctor.sources.factory::gather`; `scripts/bmad_drift_check.py` survives as a mutation-only residual (`--fix`, `--write-baseline`, `--json`/`--groundtruth`, `--specs`) invoked with plain `python`, not pixi.
 
@@ -132,9 +136,11 @@ The `_bmad-output/projects/pyforge-marshal/` artifacts (PRD, architecture set, e
 | Skill | Purpose | When to invoke |
 |---|---|---|
 | `conda-forge-expert` | Full conda-forge recipe lifecycle (generate → validate → build → submit) | Creating/updating recipes, fixing build failures, any conda packaging |
+<!-- governance-currency:ignore-start (removed/renamed skills named BECAUSE they were removed) -->
 | `bmad-build` (6.11 name of `bmad-quick-dev`; `bmad-build-auto` = `bmad-dev-auto`) | Implement story / feature / fix from a spec — "the one official way BMad implements code" | Direct implementation requests when the story spec exists |
 | `bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories` | BMAD planning chain (deprecated forwarders — `bmad-create-prd` / `bmad-create-architecture` / `bmad-create-story` / `bmad-dev-story` — removed in v7) | Starting a new product or feature in `_bmad-output/projects/<slug>/` |
 | `bmad-project-context` | Verified agent-instructions block in `AGENTS.md`, or a subtree-scoped "child" `AGENTS.md` (own Children rule, all five conditions: subtree-exclusive, substantial, materially reduces the parent block, loading verified for every harness in use, user-approved — e.g. `src/shared/packages/pyforge-atlas/AGENTS.md`) (6.11 replacement for `bmad-document-project` + `bmad-generate-project-context`; does NOT produce brownfield docs) | "Set up / refresh / audit agent instructions"; record observed agent mistakes |
+<!-- governance-currency:ignore-end -->
 | `bmad-agent-*` (analyst/architect/dev/pm/ux-designer; tech-writer retired in 6.11) | Persona-led workflows | "Talk to John/Mary/Winston/…" requests |
 
 For full skill list and disambiguation defaults (which review skill, simplify-vs-code-simplification, schedule-vs-loop, etc.) see auto-memory entry `feedback_skill_disambiguation.md`.
@@ -208,7 +214,9 @@ For extended architectural context, please reference the centralized `docs/` fol
 One table row per spec; the **spec file itself is the source of truth** (frontmatter contract + its
 `## Current State` block where present) — long-form status detail is deliberately not duplicated here.
 List live statuses with `python scripts/bmad_drift_check.py --specs`. Unless a row says
+<!-- governance-currency:ignore-start (removed/renamed skills named BECAUSE they were removed) -->
 otherwise, run a spec via `bmad-build` (6.11 name of `bmad-quick-dev`) with the spec path + parameters named in the prompt.
+<!-- governance-currency:ignore-end -->
 
 **Active (`in-progress`):**
 

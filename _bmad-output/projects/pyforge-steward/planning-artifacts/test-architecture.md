@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 842d9d3dea156c4d
+source_fingerprint: 43d1115a8be18c1e
 story_count: 190
-test_file_count: 67
+test_file_count: 69
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 190
-- **Epics parsed:** 50
-- **Test files inventoried:** 67 under `src/shared/packages/pyforge-steward/tests/`
+- **Epics parsed:** 46
+- **Test files inventoried:** 69 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `842d9d3dea156c4d`
+- **Source fingerprint:** `43d1115a8be18c1e`
 
 ## Risk Assessment
 
@@ -35,7 +35,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 9: Secure live dashboards
 - Epic 16: The platform host earns its 15 factors
 - Epic 42: Agent and bus containment (CAP-4 / CAP-8 / CAP-11 / CAP-12)
-- Epic 1: Keys — Credential Lifecycle
 
 ### Medium-risk epics
 
@@ -77,9 +76,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 45: eval-quality joins the suite and the reviewer gets measured (spec-bmad-eval-quality CAP-1 CAP-2)
 - Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..8)
 - Epic 47: The BMAD estate is cutover-ready (spec-bmad-suite-lifecycle CAP-9)
-- Epic 2: Deploy — Reconciled Dashboard Publishing
-- Epic 3: Provision — Environment & Runner Access
-- Epic 4: Budget — Declared Resource Ceilings
 
 ### Low-risk epics
 
@@ -91,36 +87,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
-| `src/shared/packages/pyforge-steward/tests/conformance/test_bootstrap_setup_flow.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_budget_check.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_budget_set.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_budget_show.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_build.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_dry_run.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_ledger_refusal.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_perimeter.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_reconcile.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_static.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_deploy_status.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_duty_protocol.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_audit_cli.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_audit_drift.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_encrypt_decrypt.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_host_scoping.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_list.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_plaintext_secret_scan.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_revoke.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_keys_rotate.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_env.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_list.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_list_modules.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_module_installers.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_runner.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_provision_verify.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_sync_config.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_sync_duty.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/conformance/test_sync_reconcile_propagation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
@@ -129,8 +95,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup_flow.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_budget_check.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_budget_set.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_cache.py` | unit | none observed |
@@ -141,14 +112,41 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_middleware.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_build.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_dry_run.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_ledger_refusal.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_reconcile.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_audit_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_audit_drift.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_encrypt_decrypt.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_host_scoping.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_list.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_plaintext_secret_scan.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_revoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_list.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_list_modules.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_module.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_module_installers.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_plugin.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_runner.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_provision_verify.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sync_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py` | unit | none observed |

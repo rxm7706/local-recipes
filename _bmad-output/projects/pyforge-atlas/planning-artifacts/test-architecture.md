@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 214630df01054361
+source_fingerprint: 8a3aa8d5aaac7ee8
 story_count: 91
 test_file_count: 129
 coverage_target_unit: ">=80%"
@@ -20,11 +20,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 91
-- **Epics parsed:** 33
+- **Epics parsed:** 23
 - **Test files inventoried:** 129 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `214630df01054361`
+- **Source fingerprint:** `8a3aa8d5aaac7ee8`
 
 ## Risk Assessment
 
@@ -57,16 +57,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 22: Vizro parity with identity canvases
 - Epic 23: Complete inventory export — zero deferred
 - Epic 24: Atlas builds its MCP face with `mcp-builder`
-- Epic 1: Wave 0 — Legacy Translation via Skill Forge (SKF)
-- Epic 2: Wave A — `nebi` Scaffold & Catalog
-- Epic 3: Wave B — Pipeline Node Porting & MCP Integration
-- Epic 4: Wave C — Orchestration & Visualization
-- Epic 5: Wave D — Semantic Layer & Dashboards
-- Epic 6: Wave E — A2A Integration, Lineage & Observability
-- Epic 7: Wave F — The DuckDB Singularity
-- Epic 8: Wave G — WebAssembly Portability & Event-Driven Sensors
-- Epic 9: Wave H — The AI Software Factory & Karpathy Wiki
-- Epic 10: Post-Audit Remediation — Round-3 Findings
 
 ### Low-risk epics
 
@@ -76,135 +66,135 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
-| `src/shared/packages/pyforge-atlas/tests/a2a_surface/test_a2a_payloads.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/artifactory/test_aql_adapter.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/artifactory/test_identity_join.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_catalog_resolution.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_conventions.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_credential_scoping.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_no_inline_io.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_override_points.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_scale_floors.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_tracked_seeds.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/catalog/test_yaml_hygiene.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_catalog_page.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_gist_markdown.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_ops_page.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_parity.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_identity_workbook_page.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/dashboard/test_zero_deferred_e2e_gate.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_basilisk.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_bigquery_cost_gate.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_core_sources.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_identity_sources.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_incremental_parquet.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_migration_status.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_no_thirty_gb_lie.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_pypi_json_request_dataset.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_rate_limit.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_refresh_assets.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_request_datasets.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_sbom_intake.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_tier3_sources.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_upstream_discovery.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_vcs_sources.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/datasets/test_vdb_boundary.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/factory/test_crews.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/factory/test_personas.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/factory/test_wiki_scaffold.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_audit_mapping.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_kedro_mcp_absent.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_no_business_logic_in_tool_bodies.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_official_sdk_server.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_read_surface.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/mcp/test_trigger_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_parity.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_workbook_page.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_zero_deferred_e2e_gate.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
-| `src/shared/packages/pyforge-atlas/tests/nl/test_query_vizro_ai_dryrun.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/observability/test_observability_fixtures.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/orchestration/test_definitions_dryrun.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/orchestration/test_viz_loadable.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_capture_tooling.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_evidence_and_retirement_gate.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_frame_diff_bites.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_legacy_surface_scope.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_complete.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_core.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_pypi_intelligence.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_runner_fixture_mode.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_vcs_health.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/parity/test_parity_vulnerability.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/core/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_priority_assignments.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_universe.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/pypi_intelligence/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/pypi_intelligence/test_review_hardening.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/pypi_intelligence/test_serial_gate.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/seed_gaps/test_byte_identical_seed.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/seed_gaps/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/seed_gaps/test_pipeline_shape.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/semantic_packages/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/test_dag_resolves.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_schedule_fixtures.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/test_refresh_single_writer.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/universal_sbom/test_freshness.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/universal_sbom/test_match.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/universal_sbom/test_normalize.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/test_identity_parity_fixtures.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_migration_readiness.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_rate_limit_contract.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_release_velocity.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vulnerability/test_basilisk_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vulnerability/test_contracts.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/pipelines/vulnerability/test_nodes.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/policy_gate/test_policy_gate.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/publish/test_emit_range.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/query_plane/test_face_parity.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/rag/test_vss_similarity_search.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/semantic/test_bsl_metric_parity.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/semantic/test_maintainer_dimension.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/semantic/test_metric_provenance.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/singularity/test_duckdb_sole_engine.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/singularity/test_one_duckdb_server_launch_site.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_admission.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_cap18_kedro_hook_map.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_duckdb_boundary.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_estate_cache_bsl.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_hooks.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_import_smoke.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_main_version.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_one_duckdb_writer.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_query_plane_boot.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_query_plane_parquet_cache.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_query_plane_vectors.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_read_only_live_attach.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_scaffold_layout.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_scribe_plane_recall.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/test_semantic_packages_pipeline.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/trending_candidates/test_handoff.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/trending_candidates/test_main.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/trending_candidates/test_query.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/trending_candidates/test_surface_parity.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/validation/test_validation_hook.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_cli_bridge.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_live.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_registry.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_render.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_resources.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/views/test_widgets.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/wasm/test_wasm_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/a2a_surface/test_a2a_payloads.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/artifactory/test_aql_adapter.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/artifactory/test_identity_join.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_catalog_resolution.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_conventions.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_credential_scoping.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_no_inline_io.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_override_points.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_scale_floors.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_tracked_seeds.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_yaml_hygiene.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_bigquery_cost_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_migration_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_no_thirty_gb_lie.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_pypi_json_request_dataset.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_rate_limit.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_refresh_assets.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_upstream_discovery.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vdb_boundary.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/factory/test_crews.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite_live_rehearsal.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/factory/test_personas.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/factory/test_wiki_scaffold.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_audit_mapping.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_kedro_mcp_absent.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_no_business_logic_in_tool_bodies.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_official_sdk_server.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_read_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_trigger_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/nl/test_query_vizro_ai_dryrun.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/observability/test_observability_fixtures.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_definitions_dryrun.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_viz_loadable.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_capture_tooling.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_evidence_and_retirement_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_frame_diff_bites.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_legacy_surface_scope.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_complete.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_core.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_pypi_intelligence.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_runner_fixture_mode.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vcs_health.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vulnerability.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_priority_assignments.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_universe.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_review_hardening.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_serial_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_byte_identical_seed.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_pipeline_shape.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_dag_resolves.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_schedule_fixtures.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_single_writer.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/universal_sbom/test_freshness.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/universal_sbom/test_match.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/universal_sbom/test_normalize.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/upstream_discovery/test_identity_parity_fixtures.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/upstream_discovery/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_migration_readiness.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_rate_limit_contract.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_release_velocity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_basilisk_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_contracts.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/rag/test_vss_similarity_search.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_bsl_metric_parity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_maintainer_dimension.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_metric_provenance.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_duckdb_sole_engine.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_one_duckdb_server_launch_site.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_admission.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_cap18_kedro_hook_map.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_duckdb_boundary.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_import_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_main_version.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_one_duckdb_writer.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_scaffold_layout.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_handoff.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_main.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_query.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_surface_parity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/validation/test_validation_hook.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_cli_bridge.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_live.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_registry.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_render.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_resources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/views/test_widgets.py` | unit | none observed |
 
 ## Story Coverage Matrix
 

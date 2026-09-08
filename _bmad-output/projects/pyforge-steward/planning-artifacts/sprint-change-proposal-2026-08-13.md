@@ -9,7 +9,7 @@ scope: Moderate — backlog reorganization (one new story inserted, two renumber
 
 ## 1. Issue Summary
 
-The 2026-08-10 implementation-readiness audit (`implementation-readiness-report-20260810.md`)
+The 2026-08-10 implementation-readiness audit (`implementation-readiness-report-2026-08-10.md`)
 flagged Epic 8's Stories 8.4 ("Fail loud, fail alone") and 8.5 ("Explicit status-vocabulary
 translation") `NEEDS-RESPEC`, blocking dispatch (`sprint-status.yaml`: both `blocked`). This
 proposal resolves both so they can be re-dispatched.

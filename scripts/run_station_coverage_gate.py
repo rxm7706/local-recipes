@@ -30,8 +30,14 @@ from pyforge.marshal.coverage_gate import (  # noqa: E402
 
 
 def _suite_test_paths(root: Path, suite: str) -> list[Path]:
+    # Story 32.5 (spec-fleet-consistency-standard CAP-2): the fleet speaks one
+    # suite vocabulary -- unit/ + integration/ + meta/ -- so this map needs no
+    # per-station special case. It previously named `contract` (marshal-only, a
+    # one-file placeholder) and knew neither spelling of `conformance`, which is
+    # why steward's 32 CLI-contract tests and warden's 19 oracle gates were
+    # measured by nothing at all. They now live in unit/ and integration/.
     if suite == "unit":
-        names = ("unit", "meta", "contract")
+        names = ("unit", "meta")
     elif suite == "integration":
         names = ("integration",)
     else:

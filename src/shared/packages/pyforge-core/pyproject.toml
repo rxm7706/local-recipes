@@ -7,7 +7,7 @@ name = "pyforge-core"
 version = "0.1.0"
 description = "Pure-stdlib leaf package shared by every pyforge station; depends on none of them (SPEC-pyforge-core CAP-1)."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # Leaf: zero third-party runtime dependencies (SPEC-pyforge-core CAP-1).

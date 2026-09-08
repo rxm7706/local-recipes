@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 68141f0e50d8dbc7
-story_count: 208
+source_fingerprint: 2c57f2f3aff6208c
+story_count: 215
 test_file_count: 181
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 208
-- **Epics parsed:** 37
+- **Stories parsed:** 215
+- **Epics parsed:** 32
 - **Test files inventoried:** 181 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `68141f0e50d8dbc7`
+- **Source fingerprint:** `2c57f2f3aff6208c`
 
 ## Risk Assessment
 
@@ -32,7 +32,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - Epic 2: Gates you can run
 - Epic 20: The loop cannot lose work, and a landing is always recognizable
-- Epic 2: Gates you can run
 
 ### Medium-risk epics
 
@@ -61,11 +60,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 28: Token economy — the loop reads less, says less, and re-learns nothing
 - Epic 29: Done-spec dispatch does not review-loop
 - Epic 31: TEA replaces the generator, and marshal's own estate is cutover-ready
-- Epic 1: Provisioned, verified loop homes
-- Epic 3: Supervised unattended runs
-- Epic 4: Landing with a durable paper trail
-- Epic 5: Fleet visibility
-- Epic 6: Portability proven
 
 ### Low-risk epics
 
@@ -73,15 +67,16 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 24: Liveness is one command
 - Epic 25: Aligned to the installed BMAD era
 - Epic 30: Aligned to BMAD 6.12 — the second era round
+- Epic 32: The operating model matches its own instruments
 
 ## Test Inventory
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
-| `src/shared/packages/pyforge-marshal/tests/contract/test_landing_evidence_conformance.py` | contract | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_cli_contract.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_idempotence_harness.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_performance_gates.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_seed_egress_counter.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_27_2_portal_loop_homes.py` | meta | 27.2 |
@@ -131,7 +126,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_tool_surface_coverage.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py` | meta | none observed |
-| `src/shared/packages/pyforge-marshal/tests/oracle/test_local_recipes_empty_plan.py` | oracle | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py` | unit | none observed |
@@ -188,6 +182,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_journal.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_land.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
@@ -472,6 +467,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 31.4 | Every in-place-edited installer-owned file is governed by a marshal spec surface | none observed |
 | 31.5 | Loop-home readiness is defined for the cutover flip | none observed |
 | 31.6 | `bmad-os-gh-triage` and `multi-repo-git-ops` are marshal-wielded | none observed |
+| 32.1 | The operating-model standard is 6.12-accurate and derives what it can | none observed |
+| 32.2 | Declared Python floor equals the tested floor | none observed |
+| 32.3 | Dated planning artifacts are machine-classifiable | none observed |
+| 32.4 | No artifact survives that the toolchain no longer produces | none observed |
+| 32.5 | One test-suite vocabulary across the fleet | none observed |
+| 32.6 | Governance documents cannot go stale silently | none observed |
+| 32.7 | Coverage is measured on all eight stations before any floor is enforced | none observed |
 
 ## Quality Gates
 

@@ -4654,3 +4654,70 @@ changes Warden's verdict (AD-4); steward 46.3 provisions TEA first — this epic
 **Surface:** `.claude/skills/bmad-agent-marshal/SKILL.md` (routing lines), the register § 2 row (AGENTS.md carries one pointer line to the register, placed once by `bmad-project-context` — never per-skill lines, AD-2/AD-11), `adoption-register.md` § 2 rows
 **Given** the two skills installed by steward **When** the marshal persona gains "reach for `bmad-os-gh-triage` for PR/issue triage and `multi-repo-git-ops` for cross-repo landings (never for a `marshal land` the harness owns)" **Then** each skill has exactly one wielding station in the register, the register rows name both and the AD-2 meta-test passes, CLAUDE.md is untouched, and `DW-HYGIENE-2026-09-05-1`'s `marshal sweep` wish notes whether `multi-repo-git-ops` covers it
 
+
+## Epic 32: The operating model matches its own instruments
+
+**Goal:** `spec-fleet-consistency-standard` CAP-1..CAP-6 — the standard that defines the
+Dream-to-Code model is BMAD 6.12-accurate and derives what it can (CAP-1), the fleet speaks one
+test-suite vocabulary (CAP-2), no artifact survives that the toolchain no longer produces
+(CAP-3), dated artifacts are machine-classifiable (CAP-4), every package's declared Python floor
+is the floor its environment installs (CAP-5), and a detector fails when a governance document
+references something that no longer exists (CAP-6). Dream `docs/dreams/pyforge-marshal.md`
+§ *The frontier — Fleet consistency standard*. Companion `_bmad-output/EXEMPLAR-STANDARD.md`.
+**HARD boundaries:** `EXEMPLAR-STANDARD.md` keeps its path — `pixi.toml`'s `dream-chain`
+detector names it as its `Contract:` and 33 files reference it, so it is rewritten in place,
+never deleted. `AGENTS.md` is written only through `bmad-project-context`; its managed block is
+replaced on refresh, so a hand-edit inside it is destroyed. The spec-surface baseline re-stamp
+runs after every file move and after `git add`, never before. No station's own suite may be red
+at any story boundary. Coverage floors are seeded from measurement, never asserted — and the
+coverage gate itself is `spec-pyforge-testing-charter` CAP-4's capability, amended here, not
+re-minted.
+
+### Story 32.1: The operating-model standard is 6.12-accurate and derives what it can
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-fleet-consistency-standard CAP-1
+**Surface:** `_bmad-output/EXEMPLAR-STANDARD.md`
+**Given** the standard named four skills removed or renamed in 6.11–6.12 (`bmad-document-project`, `bmad-create-story`, `bmad-check-implementation-readiness`, `bmad-dev-auto`) plus three research skills 6.12 consolidated into `bmad-deep-recon`, and carried dated conformance snapshots its own text warned go stale **When** the 16-stage skill-mapping table and the conformance-status sections are removed rather than refreshed, and the file is declared a companion of this Spec **Then** no skill, script or path named in it fails to resolve, INV-0..INV-5 / the conformance table / the kernel-companion rule / the provenance rules survive intact, and the self-invalidating "pyforge-atlas is right and this document is stale" clause is replaced by a reconciliation order
+**And** the conformance table gains rows 12–14 (suite standard, hyphenated-ISO naming, tested Python floor) so each new normative claim has its enumeration in the same place as the old ones
+
+### Story 32.2: Declared Python floor equals the tested floor
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-fleet-consistency-standard CAP-5
+**Surface:** `src/shared/packages/pyforge-{herald,marshal,mason,scribe,steward,warden,core,testing-kit}/pyproject.toml`, `pixi.toml` (`[feature.pyforge-atlas.tasks.pyforge-atlas-test]`)
+**Given** `pixi.toml` pins `python = ">=3.14.7,3.14.*"` and every env-scoped pin is `3.14.*`, while eight of ten packages declare `requires-python = ">=3.12"` — a floor no environment in this repo installs and nothing has ever exercised **When** all ten are raised to `>=3.14` **Then** no package claims support for an interpreter this repo cannot produce, and the claim matches what CI actually runs
+**And** `pyforge-atlas-test` exists as the canonical task name (CLAUDE.md documents `pixi run -e pyforge-<station> pyforge-<station>-test` as the fleet grammar and atlas was the sole station where that command did not exist), with `kedro-test` retained as a delegating alias so no existing caller breaks
+
+### Story 32.3: Dated planning artifacts are machine-classifiable
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-fleet-consistency-standard CAP-4
+**Surface:** `_bmad-output/projects/pyforge-{doctor,herald,mason,scribe,steward}/planning-artifacts/implementation-readiness-report-*.md`, `_bmad-output/projects/pyforge-marshal/planning-artifacts/` (loose `PRD.md`, `retros/` vs `reviews/`)
+**Given** `implementation-readiness-report-` exists in three date formats across 27 files and `bmad_drift_check.py`'s classifier matches only `-YYYY-MM-DD.md` **When** every compact `-YYYYMMDD` name is renamed to the hyphenated ISO form **Then** pointing `bmad-drift` at any station — not only pyforge-marshal — reports zero `uncovered` files, so a real finding is never buried under a false one
+**And** marshal's directory asymmetries are resolved or recorded as deliberate in `planning-artifacts/README.md` (conformance-table row 10), never left implicit
+
+### Story 32.4: No artifact survives that the toolchain no longer produces
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-fleet-consistency-standard CAP-3
+**Surface:** `_bmad-output/projects/pyforge-*/planning-artifacts/epics-with-stories.md` (×8), `src/shared/packages/pyforge-doctor/src/pyforge/doctor/hygiene_definitions.py`, `.../doctor/sources/deps.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`, `_bmad/scripts/bmad_tea_playwright.py`, the station `README.md` files that reference it
+**Given** `epics-with-stories.md` appears nowhere in BMAD 6.12, is frozen at 2026-08-08 in six of eight stations while `epics.md` moved to 2026-09-06, and has no consumer that requires it — two exclude it explicitly as a derived summary, one is an inert allowlist entry, one reads it only as a fallback **When** all eight are audited for normative content, anything found is rehomed to the standard first (steward's suite-shape mandate at its line 61 is known; the other seven are unaudited), and only then are the files and their four code references removed **Then** no station README points at one, `pyforge-doctor` and `pyforge-marshal` suites stay green, and nothing normative was lost with the file
+**And** the audit is a gate, not a formality — steward's mandate was found by accident, which is the entire reason this story reads all eight before deleting any
+
+### Story 32.5: One test-suite vocabulary across the fleet
+**Type:** chore • **Effort:** L • **Deps:** S-32.1 • **FR/AD:** spec-fleet-consistency-standard CAP-2
+**Surface:** `src/shared/packages/pyforge-{steward,warden,marshal,herald,atlas}/tests/**`, `scripts/run_station_coverage_gate.py` (`_suite_test_paths`)
+**Given** eight suite names cover two concepts, and the coverage gate's suite map recognises neither spelling of `conformance` — leaving 51 real test files (steward 32, warden 19) measured by nothing, herald measured on 4 of 47 files and atlas on a fraction of 129 **When** each station converges on `unit/` + `integration/` + `meta/` — steward's CLI-contract conformance and marshal's `contract/` to `unit/`, warden's oracle conformance and marshal's `oracle/` to `integration/`, herald's 43 loose files to `unit/`, atlas's 15 loose files and 23 topic dirs to `unit/` with domain structure intact, and `marshal/support/` renamed `_support/` with its imports **Then** `_suite_test_paths` needs no per-station special case and every test file belongs to a measured suite
+**And** each station is a separate commit gated on its own suite passing — a green suite, never a reading of the diff — with `conftest.py` and `fixtures/` staying at each tests root so shared fixtures remain visible to both suites
+
+### Story 32.6: Governance documents cannot go stale silently
+**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** spec-fleet-consistency-standard CAP-6
+**Surface:** `scripts/governance_currency_check.py` (net-new), `pixi.toml` (`[feature.local-recipes.tasks.governance-currency]`). *(Corrected during implementation: the `SCRIPTS`-list meta-test governs the CFE skill's own `.claude/skills/conda-forge-expert/scripts/`, not repo-root `scripts/`, so a repo-root detector needs no entry there — `scripts/detectors.py` discovers it from the filesystem via its `DETECTOR = {"scope": "repo"}` declaration.)*
+**Given** the removed 16-stage table named four non-existent skills for two BMAD versions with no gate noticing — the same class of defect INV-4 identified for detectors, applied to the prose that governs them **When** a detector resolves every `bmad-*` skill name, script path and file reference in `EXEMPLAR-STANDARD.md`, `AGENTS.md`, `CLAUDE.md` and `docs/reference/test-charter.md` **Then** it exits non-zero naming each reference that no longer resolves, is discovered by `scripts/detectors.py` from the filesystem, and run against the standard as it stood on 2026-09-07 reproduces all seven staleness findings this session found by hand
+**And** deliberate historical citations (a name quoted precisely because it was removed) are exempted by an explicit `governance-currency:ignore-start/end` marker, never by a silent heuristic — an unmarked dead reference must fail
+
+### Story 32.7: Coverage is measured on all eight stations before any floor is enforced
+**Type:** feature • **Effort:** M • **Deps:** S-32.5 • **FR/AD:** spec-pyforge-testing-charter CAP-4 (amended, not re-minted) • spec-fleet-consistency-standard § Constraints
+**Surface:** `pixi.toml` (`pytest-cov` into the seven station features that lack it, per-station `-test-coverage` tasks), `environment.yaml`, the coverage thresholds TOML, `.github/workflows/coverage-gates.yml`
+**Given** `pytest-cov` is declared in 2 of 10 pixi features, so seven station environments cannot run a coverage gate at all — verified live against scribe, which exits 1 with `unrecognized arguments: --cov` — and nobody has ever measured the fleet's real coverage, which the testing charter's own assumptions state **When** `pytest-cov` is added to the seven, all eight are measured, and each station's measured value is written as its starting floor **Then** no station reds on the first PR, coverage cannot regress below where it actually is, and floors ratchet upward only
+**And** the CI matrix expands from marshal-only to all eight; extending the `--cov` target over the django/portal tier stays an open question on the Spec, not a silent inclusion
+
+### Story 32.8: Every caller and CI lane follows the convergence
+**Type:** fix • **Effort:** S • **Deps:** S-32.5, S-32.7 • **FR/AD:** spec-fleet-consistency-standard CAP-2, CAP-5 • spec-pyforge-testing-charter CAP-4
+**Surface:** `pixi.toml` (ten atlas test-path tasks), `.github/workflows/{pyforge-core,pyforge-steward-five-tier,pyforge-steward-fresh-clone}.yml` (python-version), `.github/workflows/coverage-gates.yml` (setup-uv), `src/shared/packages/pyforge-atlas/tests/{unit,integration}/**`, the eight regenerated `test-architecture.md`
+**Given** PR #1082's first full CI run went red in five lanes — three because CAP-5's `requires-python` raise made pip refuse on lanes still pinned to Python 3.12 (`Package 'pyforge-core' requires a different Python: 3.12.14 not in '>=3.14'`), one because the coverage lane collects `tests/meta/` and herald's SKF validator shells out to `uv`, and one because moving atlas's tests under `unit/` pulled three fail-loud gates into a lane that provisions none of their prerequisites **When** the three lanes move to 3.14 (matching `detectors.yml`, which already ran it), the coverage lane gains `astral-sh/setup-uv`, and atlas's `dashboard/`, `publish/` and `wasm/` move to `tests/integration/` **Then** every lane is green and no gate silently skips: the three fail-loud gates still run — in `pyforge-atlas-test`, which provisions Chromium, the DuckDB `httpfs` extension and the WASM build for exactly this reason
+**And** the ten pixi tasks naming pre-move atlas paths are repointed and the eight `test-architecture.md` regenerated from the live inventory — a green suite proved the FILES worked and said nothing about the TASKS that name them, which is why the manifest must be grepped after a tree move
+**And** CAP-5's own rationale is corrected on the record: "no environment has ever exercised 3.12" was derived from `pixi.toml` alone and never checked against `.github/workflows/` — three lanes had been exercising it

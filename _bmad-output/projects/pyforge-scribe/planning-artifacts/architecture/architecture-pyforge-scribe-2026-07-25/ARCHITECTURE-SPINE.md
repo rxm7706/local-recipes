@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: '2026-09-04'  # RE-STAMPED 2026-09-04: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1043; no AD added, changed, or removed.
+updated: "2026-09-07"
 currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
@@ -264,3 +264,15 @@ Reconciled against the re-cut PRD (updated 2026-08-26, § Currency reconciliatio
 
 **Known engineering debt this spine inherits** (2026-08-08 technical report + `deferred-work-ledger.md`): `promote.py` has never received an adversarial review (RISK-1, open); the nightly compile is unattended-by-construction but unscheduled (RISK-2, still true 2026-08-26); the transcript surface is the only compile surface with no cost bound on the unattended path (DW-FU-3-2-2); recall tie-breaks on node id ascending, which for date-ordered filenames favors the older statement (DW-FU-3-2-4).
 - **Scheduling mechanism for `scribe graph compile --nightly`** (cron vs. CI job vs. a bmad-loop-style scheduled task) — not fixed here; AD-6 only requires that whichever mechanism is chosen does not introduce a persistent network-listening daemon. *(Still genuinely open 2026-08-26 — no scheduler invokes the compile; RISK-2 in the 2026-08-08 technical report.)*
+
+
+## Runtime floor — reconciled 2026-09-07
+
+**Python 3.14 is the only supported runtime.** `pyproject.toml` now declares
+`requires-python = ">=3.14"` (marshal Story 32.2, `spec-fleet-consistency-standard` CAP-5),
+matching `pixi.toml`'s `python = ">=3.14.7,3.14.*"` and every env-scoped `3.14.*` pin.
+
+Consequence for this spine: no deployment target, container image or CI lane may assume a
+3.12/3.13 interpreter for `pyforge-scribe`, and none does today — this records the constraint
+rather than changing it. The previous `>=3.12` declaration was never exercised by any
+environment in the workspace.

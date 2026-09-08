@@ -2,7 +2,27 @@
 
 **Reference implementation: `projects/pyforge-atlas/planning-artifacts/`.**
 Established 2026-07-27, extended to the full chain 2026-07-28. Applies to every BMAD
-project in this repo under bmad-method ≥ 6.10 with bmad-loop.
+project in this repo under bmad-method ≥ 6.12 with bmad-loop.
+
+> **This file is a companion of
+> `projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-consistency-standard/SPEC.md`.**
+> That Spec is the contract; this file is the enumeration behind it — the tables and
+> invariants its normative sentences cite, per the kernel/companion rule below. It keeps this
+> path because `pixi.toml`'s `dream-chain` detector names it as its `Contract:` and 33 other
+> files reference it.
+>
+> **Rewritten 2026-09-07 (CAP-1).** Two sections were removed rather than refreshed: a
+> 16-stage table mapping each stage to a BMad skill, and dated conformance-status snapshots.
+> The first restated BMAD's own skill set and had gone two versions stale — it named
+> <!-- governance-currency:ignore-start (cited as REMOVED; these must NOT resolve) -->
+> `bmad-document-project`, `bmad-create-story`, `bmad-check-implementation-readiness` and
+> `bmad-dev-auto` (all removed or renamed in 6.11–6.12) plus three research skills 6.12
+> <!-- governance-currency:ignore-end -->
+> consolidated into `bmad-deep-recon`. The second was a hand-run measurement this document's
+> own text already warned goes stale the moment it is written. Both are now derived: the
+> skills are discoverable under `.claude/skills/`, the conformance status comes from the
+> detectors named in § *Verifying conformance*, and CAP-6's `governance-currency` detector
+> fails when any reference here stops resolving.
 
 ---
 
@@ -80,7 +100,9 @@ forbade the first to protect the second, and only the second needed protecting.
 `pyforge-charter` and `pyforge-genesis` — record the origin Dream, the Charter, the Lexicon,
 and the Guild's membership. `owner: guild` is terminal for exactly these two; a third is an
 unassigned Dream hiding behind a collective noun. Their Spec kernels live at
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 `docs/governance/spec-pyforge-charter/` and `docs/governance/spec-pyforge-genesis/` — not a
+<!-- governance-currency:ignore-end -->
 `_bmad-output/projects/<x>/planning-artifacts/` tree, since they own no product and no
 Smith-shaped scaffolding (2026-08-02: the `pyforge-genesis` *project* dissolved for exactly
 this reason — see below).
@@ -119,8 +141,10 @@ existed only to say "there is no product here." That scaffolding was real vestig
 naming mistake. The fix is not a new project; it is *no project* — the two Spec kernels move
 to `docs/governance/`, a plain documentation directory with no `.bmad-config.toml` and no
 Smith-shaped machinery to keep vestigially current. `pyforge.doctor.sources.fleet_scan` and
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 `scripts/dream_chain_check.py` both special-case this location for the two `owner: guild`
 chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
+<!-- governance-currency:ignore-end -->
 `docs/dreams/pyforge-charter.md`) are unchanged; only their Spec kernels' physical home moved.
 The rest of the old project is archived at `archive/_bmad-output/projects/pyforge-genesis/`,
 never deleted.
@@ -129,9 +153,11 @@ never deleted.
 own housekeeping): the two-kernel split above did not last either.* Commit `a3b5fefae8`
 ("charter: absorb pyforge-genesis; `owner: guild` closes at one Dream") went one step further
 than this amendment anticipated: `spec-pyforge-genesis`'s capabilities were absorbed directly
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 into `spec-pyforge-charter` as CAP-5..CAP-8, and `docs/dreams/pyforge-genesis.md` itself was
 folded into `docs/dreams/pyforge-charter.md` as "§ Satellite: The Seed" — **neither file exists
 standalone any more.** `docs/governance/spec-pyforge-genesis/` was moved to
+<!-- governance-currency:ignore-end -->
 `archive/docs/governance/spec-pyforge-genesis/` (archived, not deleted, same convention as
 everything else here). The constitutive tier is now genuinely **one Dream, one Spec kernel** —
 `docs/dreams/pyforge-charter.md` / `docs/governance/spec-pyforge-charter/` — not two files at
@@ -154,8 +180,10 @@ planning-artifacts/
 └── README.md
 ```
 
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 Flat `prd.md` / `architecture.md` is the output of `bmad-create-prd` /
 `bmad-create-architecture` — deprecated wrappers slated for removal in v7 — and is
+<!-- governance-currency:ignore-end -->
 non-conformant.
 
 *Measured at adoption: 9 of 14 projects sharded; 5 flat (local-recipes, pyforge-marshal,
@@ -190,7 +218,9 @@ the detectors grading all four.
 
 **Enforcement, stated honestly.** Half is live: the blanket glob was split into per-file
 entries on 2026-08-08, so a newly added unclaimed detector now produces `[ungoverned]`
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 (verified by mutation — a throwaway `scripts/zz_fake_detector.py` was flagged where the
+<!-- governance-currency:ignore-end -->
 glob had absorbed it). Half is **not yet enforced**: no check asserts owner ≠ subject. That
 is `pyforge-doctor` Story 6.10's meta-test, behind Epic 6's re-home of the 10 judging
 detectors — itself sequenced behind S-6.1, because `doctor check` is 7.04s against a
@@ -292,13 +322,13 @@ Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics 
 - **Dream** — Raw human aspiration / starting point, documented in `docs/dreams/`
 - **Deck** — Rendered presentation of the Dream (Herald renders via design system)
 - **Spec** — Five-field BMAD spec: Problem/Goal/Scope/Success/Constraints
-- **Rsch** — Research stage: domain, market, and technical research (runs `bmad-domain-research`, `bmad-market-research`, `bmad-technical-research`)
+- **Rsch** — Research stage: domain, market, and technical research (`bmad-deep-recon`, which BMAD 6.12 consolidated those three former skills into; its built-in types cover market, domain, technical, competitive, user-voice and academic-lit)
 - **Brief** — Research findings summary and key insights synthesized from Rsch stage
 - **PRD** — Product requirements document with features, success metrics, out-of-scope
 - **UX** — User experience design (UI mockups, flows, component specs) — optional per surface
 - **Arch** — Architecture and API specifications with implementation contracts
 - **Context** — Project context, assumptions, and dependencies documentation
-- **Epics** — Epic breakdown, epics-with-stories, acceptance criteria per story
+- **Epics** — Epic breakdown and acceptance criteria per story, in `epics.md` (canonical per AD-72; the derived `epics-with-stories.md` this line used to name was retired fleet-wide 2026-09-07, Story 32.4 — BMAD 6.12 produces it nowhere)
 - **Sprint** — Sprint planning with velocity estimates and story-to-epic mapping
 - **TEA** — Test Architecture: test strategy, coverage targets, test-per-story specs
 - **Gates** — Implementation readiness gates (spec-complete, architecture-final, tests-passing)
@@ -306,27 +336,10 @@ Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics 
 - **Tested** — **Code + Tests (per TEA) + PR + Merged + Retro** — full delivery cycle, execution complete
 - **Retro** — Retrospective capturing lessons learned, feedback, and next improvements
 
-**BMAD skill execution sequence (mapped to skills):**
-
-| Stage | Skill | Input | Output | Notes |
-|---|---|---|---|---|
-| 1. Dream | — | Raw aspiration in `docs/dreams/` | Dream file exists | Pre-BMAD; human-authored |
-| 2. Deck | Herald | Dream + spec (draft OK) | Deck HTML/PDF | Renders from Dream; runs in parallel with spec chain |
-| 3. Spec | `bmad-spec` | Dream | `SPEC.md` (5-field contract) | Problem/Goal/Scope/Success/Constraints |
-| 4. Rsch | `bmad-domain-research` + `bmad-market-research` + `bmad-technical-research` | Spec | Research artifacts in `planning-artifacts/research/` | Domain + market + technical research; outputs to `research/<topic>-research-<date>.md` |
-| 5. Brief | `bmad-prd` | Spec + Research | `prd.md` research synthesis section | Research findings summary and key insights |
-| 6. PRD | `bmad-prd` | Spec + Research + Brief | `prd.md` (full) | Features, success metrics, out-of-scope |
-| 7. UX | Surface-specific design work | Spec + PRD | UI mockups, flows, component specs | **Optional** — skipped for non-UI/backend surfaces |
-| 8. Arch | `bmad-architecture` | Spec + PRD | `ARCHITECTURE-SPINE.md` + contracts | API specs, deployment model, dependencies |
-| 9. Context | `bmad-document-project` | Spec + PRD + Arch | Project context doc | Assumptions, platform context, dependencies |
-| 10. Epics | `bmad-create-epics-and-stories` | Spec + PRD + Arch | `epics.md` + `epics-with-stories.md` | Epic definitions, story rollup |
-| 11. Sprint | `bmad-create-story` (per epic) | Epics | Story specs + velocity mapping | Story-to-epic, effort estimates |
-| 12. TEA | `bmad-create-story` or standalone | Spec + Epics | `test-architecture.md` + per-story test specs | Test strategy, coverage targets |
-| 13. Gates | `bmad-check-implementation-readiness` | All upstream artifacts | Gate report (pass/fail) | Verify readiness before implementation |
-| 14. Code | `bmad-dev-auto` / `bmad-loop` | Stories + TEA | Source code in repo | Implementation from story specs |
-| 15. Tested | `bmad-loop` (delivery cycle) | Code + TEA | PR + Merged + Tests passing | Code + Tests per TEA + PR + Merged + Retro |
-| 16. Retro | `bmad-retrospective` | Session logs + merged PRs | Retrospective + skill updates | Lessons learned + BMAD improvements |
-
+**Which skill produces each stage** is discoverable under `.claude/skills/` and in the BMad
+docs; it is deliberately not tabulated here. The table that used to sit in this spot named
+four skills that had not existed for two BMAD versions, and nothing caught it — see the
+rewrite note at the top of this file, and CAP-6's `governance-currency` detector.
 **Parallelization notes:**
 - **Deck** renders while **Spec** is being produced (can start from draft Spec)
 - **Rsch** is gathered during **PRD** workshops/interviews (collected, not a separate phase)
@@ -338,27 +351,20 @@ Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics 
 - The working tree reference when documentation and code diverge
 - The source of truth for layout, conventions, and completeness standards
 
-**Selection criteria — verified facts:**
-- **Atlas:** 14/16 stages complete (missing: tea-new, ux-n/a) ✅ EXEMPLAR
-  - All research disciplines present (3/3: domain, market, technical)
-  - Final retro delivered (2026-07-25)
-  - Sharded planning structure with dated folders
-  - Highest conformance in portfolio
-  
-- **Warden:** 13/16 stages complete (missing: retro-no, tea-new, ux-n/a)
-  - Research incomplete (2/3: domain, market; missing technical)
-  - No retro delivered yet
-  - Sharded planning structure (matches atlas pattern)
-
-- **Others:** Varying stages of completion (converging toward atlas's pattern)
-
-**Why atlas is the exemplar:** It has the most complete chain — specifically, retro is shipped (a terminal stage), all research disciplines are present, and the planning structure matches the v6.10 standard that all projects are adopting.
+**Why `pyforge-atlas`:** it carried the most complete chain when the standard was
+established — a shipped retro (a terminal stage), all three research disciplines present, and
+the sharded planning structure every project has since adopted. The per-stage tallies that
+justified the pick were a 2026-07-27 snapshot and are not restated here; `fleet-picture` and
+the detectors in § *Verifying conformance* derive current status.
 
 ## Planning-artifacts detail
 
-This document is the conformance target. When it and pyforge-atlas disagree,
-**pyforge-atlas is right and this document is stale** — the exemplar is a working tree,
-not a specification of one.
+The Spec named at the top of this file is the contract; this document is its enumeration, and
+`pyforge-atlas` is the working reference. When the three disagree that is a finding to
+reconcile, not an automatic win for any one of them: re-derive from the code or API
+(§ *Provenance rules*, rule 3), correct whichever was wrong, and leave the correction on the
+record. The previous text here made this document automatically lose to the exemplar tree,
+which is why nobody fixed it for two months.
 
 ---
 
@@ -376,7 +382,9 @@ The standard exists so that question has a mechanical answer.
 
 | # | Requirement | Why it is load-bearing |
 |---|---|---|
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 | **1** | PRD lives in `prds/prd-<slug>-<date>/` with `prd.md`, `.memlog.md`, and any `addendum.md` / `review-*.md` / `validation-report.*` | This is what `bmad-prd` binds (`{prd_output_path}/{run_folder_pattern}/`). A flat `prd.md` is pre-6.10 `bmad-create-prd` output — a deprecated wrapper slated for removal in v7. |
+<!-- governance-currency:ignore-end -->
 | **2** | Architecture lives in `architecture/architecture-<slug>-<date>/ARCHITECTURE-SPINE.md` with its `.memlog.md` and `reviews/` | Same reason: `bmad-architecture` binds a spine run folder. A flat `architecture.md` predates the spine concept. |
 | **3** | Core docs carry `status` / `created` / `updated` frontmatter | `stepsCompleted:` alone records *which workflow steps ran*, not whether the document is final. Only the former survives a reader who wasn't there. |
 | **4** | A Spec kernel exists at `specs/spec-<slug>/SPEC.md` | The Spec is the unit of contract. The planning chain decomposes it; it does not replace it. |
@@ -387,6 +395,53 @@ The standard exists so that question has a mechanical answer.
 | **9** | The deferred-work ledger is tracked in `planning-artifacts/` | The bmad-loop ledger is Tier-3 and gets truncated. If it matters after the run, it belongs in Tier-2. |
 | **10** | `planning-artifacts/README.md` explains the layout and any deliberate asymmetry | The next reader is an agent with no session context. |
 | **11** | A story's `**Deps:**` field is **machine-readable**: `S-<epic>.<num>` (story) · `S-<epic>.*` (whole epic) · `<station>:S-<epic>.<num>` (cross-station) · `—` (none). Prose is allowed only as *trailing context* after the refs, never as the whole declaration. | A dependency the harness cannot parse is a dependency it dispatches into. `bmad-loop`'s picker has no `depends_on` concept, so `epics.md` is the only place a dependency is stated — and until 2026-08-08 two stations stated theirs in prose. **Mason reported measured-and-clean with 0 of 30 declarations parseable**; atlas had 5 of 43. Enforced by `forward-dependency-check`'s coverage classes (`PARTIAL` names the ratio); it reports today and gates once the 59-declaration migration lands. |
+| **12** | A package's tests resolve to `unit/`, `integration/` or `meta/` — see § *The test-suite standard* | Eight names for two concepts left 51 real test files matched by no suite glob, so the coverage gate measured nothing at two stations and silently under-measured two more. |
+| **13** | A dated planning artifact uses the hyphenated ISO form `<name>-YYYY-MM-DD.md` | `bmad_drift_check.py`'s classifier matches only that form. The compact `-YYYYMMDD` variant lands as `uncovered` — real findings buried under false ones the moment the detector is pointed at a new station. |
+| **14** | A package's `requires-python` equals the floor its environment actually installs | `pixi.toml` pins `python = ">=3.14.7,3.14.*"`; eight of ten packages declared `>=3.12`, a compatibility claim no environment in this repo has ever exercised. Declaring an untested floor is the same failure as a fabricated test-architecture doc — it reads as verified to the next agent. |
+
+## The test-suite standard
+
+Adopted 2026-09-07 (CAP-2). **BMAD 6.12's Python default, plus exactly one addition:**
+
+```
+tests/
+├── conftest.py        shared fixtures, at the tests root
+├── unit/              fast, isolated — includes CLI-contract tests
+├── integration/       real engines, corpora, oracles, end-to-end gates
+├── meta/              the repo's own rules about itself
+├── fixtures/          data, never collected
+└── _support/          helper modules, never collected (leading underscore)
+```
+
+`unit/` and `integration/` are BMAD 6.12's defaults. `meta/` is the single justified
+addition: 8/8 station adoption and load-bearing — the spec-surface, portal and five-tier
+tests live there. `api/` is a 6.12 default this fleet does not use and does not adopt.
+
+**What this replaced, and why the names collapsed.** The fleet had grown eight names covering
+two concepts. `conformance/` was chosen independently by two stations for *different* things:
+steward's 32 files are CLI-verb contract tests, which its own `test-architecture.md` classifies
+as unit level; warden's 19 are oracle and engine gates (dogfood, corpus determinism, perf,
+parallelism), which are integration weight. Marshal had declared both concepts as `contract/`
+and `oracle/` and left each holding a single placeholder file. Herald had steward's concept
+with no directory at all — 43 of its 47 test files loose at the tests root. So the fold is by
+*level*, not by name: CLI-contract → `unit/`, oracle/engine → `integration/`.
+
+`marshal/support/` was never a suite — it holds `__init__.py` and `testing_kit.py`. The
+leading underscore keeps helper modules out of suite globs by shape rather than by exception.
+
+**Domain structure survives inside a suite.** `pyforge-atlas`'s topic directories (catalog,
+pipelines, semantic, …) are a domain taxonomy, not a suite taxonomy; they live at
+`unit/<topic>/` with their structure intact. Nesting by domain under a suite is conformant;
+inventing a sibling of `unit/` for a domain is not.
+
+**But the level still decides which suite a domain sits under.** Three of atlas's topic
+directories are `integration/<topic>/`, not `unit/`: `dashboard/` launches Playwright's
+managed Chromium, `publish/` needs the DuckDB `httpfs` extension, and `wasm/` needs a built
+WASM artifact — each fails loud rather than skipping when its prerequisite is absent (by
+design: a misconfigured CI must not pass a gate having verified nothing). A suite that cannot
+run without provisioning is not a unit suite. Found the honest way, by CI: they were placed in
+`unit/` on 2026-09-07 and moved on 2026-09-08 when the coverage lane — which provisions none
+of those three — went red.
 
 ## The kernel/companion rule
 
@@ -427,214 +482,37 @@ These are the ones most likely to be violated with good intentions.
    it used to say and why it was wrong. The exemplar's ledger and SPEC both carry dated
    corrections rather than silent edits.
 
-## Conformance status
-
-> **Conformance is measured by OWNER, and that is the only scope.** A station is answerable
-> for every Dream carrying its `owner:`, wherever those artifacts happen to sit on disk.
-> Directory layout is a filing decision; it is not an accountability boundary.
->
-> An earlier draft of this document split "project scope" from "owner scope" and reported
-> `pyforge-atlas` as **0 findings**. That was rejected 2026-07-28: it is a true statement
-> that produces a false impression, and it opens a loophole — a station can park its debt in
-> satellite projects and still show a clean table. It is the same shape as `status: shipped`
-> meaning "32 stories merged" while three attended events sat undischarged. **The station's
-> number is the sum of its Dreams.**
->
-> So: **atlas carries 5 findings** — `microsoft-org-sweep` (archived, no Spec), and
-> `unity-data-stack` / `wasm-analytics-stack` (no `owner-dream:` link, no `epics.md`).
-> Atlas is the exemplar **for the build tree** — the shape of `pyforge-atlas/planning-artifacts/`
-> is what every project migrates toward. It is *not* a clean station, and the table below is
-> about the tree, not a conformance score.
->
-> Nor was it clean when the invariants arrived: `spec-upstream-discovery/SPEC.md` had
-> frontmatter that would not parse (fixed 2026-07-28). An exemplar that survives its own new
-> detector unchanged usually means the detector is too weak.
-
-| Project | 6.10 shape | Spec kernel | Companions | Story specs | Delivery records | DW ledger | README |
-|---|---|---|---|---|---|---|---|
-| **pyforge-atlas** | ✅ | ✅ | ✅ 4 | ✅ 32 | ✅ 32/32 | ✅ 52 | ✅ |
-| pyforge-warden | ❌ flat | ✅ | ✅ 3 | ✅ 31 | ❌ | ❌ | ❌ |
-| pyforge-doctor / mason / herald / scribe / steward | ✅ | ✅ | ❌ | partial | ❌ | ❌ | mostly ✅ |
-| pyforge-marshal | ❌ flat | ✅ | ❌ | partial | ❌ | ❌ | partial |
-
-*(`deckcraft`, `presenton-pixi-image`, `unity-data-stack`, `wasm-analytics-stack` and
-`local-recipes` are omitted — all five dissolve under INV-2; their chains move to the owning
-Smith. `pyforge-genesis` is also omitted, but dissolved differently (2026-08-02): no Smith
-absorbed it — its two Spec kernels moved to `docs/governance/`, outside the project roster
-this table measures. Not a conformance row candidate; it never had epics/stories to score.)*
-
-Warden is the cheapest to finish: reshard `prd.md` → `prds/prd-pyforge-warden-<date>/`,
-regenerate `architecture.md` as an `ARCHITECTURE-SPINE.md` run folder, and back-fill delivery
-records from PR #110. Its companion pattern and story-spec fidelity already exceed the bar.
-
-Marshal is the largest debt — 11 findings, a flat tree, four Specs to author (one for
-`agent-tool-surface`, which is `realized` with **no contract at all**), and the Genesis
-installer to absorb. It also owns the console and the loop that every other station depends
-on, so its conformance is load-bearing rather than cosmetic.
-
-**The table above is dated 2026-07-28/08-08 and is now stale — kept verbatim above per this
-document's own Provenance rule 4 (corrections stay on the record), superseded by the refresh
-below.** Found stale while writing `docs/dreams/fleet-hygiene-verification-exemplar-program.md`
-(2026-08-15): its "DW ledger" column reads ❌ for every project but atlas, when in fact all 8
-now carry a real, tracked `deferred-work-ledger.md` — the two-pass promotion this session ran
-against exactly the blind spots that Dream documents (a pre-convention Tier-3 format, and a
-`#`-header-swallows-body content-diff miss).
-
-### Conformance status — 2026-08-15 refresh
-
-`scripts/dream_chain_check.py`, the detector this document names as authoritative, was
-retired 2026-08-10 (`c698d4b1ad`, "doctor: retire 8 scripts/ shims fully superseded by Doctor
-sources") — its INV-0..1 half now lives at `python -m pyforge.doctor.sources dream-chain`.
-That subcommand only covers Spec-linkage (INV-0/INV-1), not the 7-column table below — the
-2026-07-28 table's other columns were themselves hand-derived via spot checks, not a single
-tool, and this refresh follows the same method, stated per column so a future pass can judge
-what to trust vs. re-verify:
-
-| Project | 6.10 shape | Spec kernels | Story specs | Companions (spot count) | Delivery records (spot grep) | DW ledger | README | epics.md |
-|---|---|---|---|---|---|---|---|---|
-| pyforge-atlas | ✅ sharded | 8 | 47 | 9 | 32/47 | ✅ 122 | ✅ | ✅ |
-| pyforge-doctor | ✅ sharded | 4 | 28 | 0 | 5/28 | ✅ 20 | ✅ | ✅ |
-| pyforge-herald | ✅ sharded | 4 | 48 | 6 | 0/48 | ✅ 45 | ✅ | ✅ |
-| pyforge-marshal | ✅ sharded | 36 | 56 | 14 | 0/56 | ✅ 109 | ✅ | ✅ |
-| pyforge-mason | ✅ sharded | 8 | 10 | 1 | 0/10 | ✅ 48 | ✅ | ✅ |
-| pyforge-scribe | ✅ sharded | 4 | 9 | 0 | 2/9 | ✅ 7 | ✅ | ✅ |
-| pyforge-steward | ✅ sharded | 9 | 20 | 1 | 0/20 | ✅ 74 | ✅ | ✅ |
-| pyforge-warden | ✅ sharded | 2 | 31 | 3 | 0/31 | ✅ 43 | ✅ | ✅ |
-
-Method and honest caveats:
-- **6.10 shape / spec kernels / story specs / companions / README / epics.md**: mechanical
-  `find`/`ls` counts against each project's `planning-artifacts/` tree, run 2026-08-15. The
-  flat-vs-sharded gap that made warden and marshal ❌ in the 2026-07-28 table is fully closed
-  — every project now has `specs/`, `prds/`, and `architecture/` in the sharded shape.
-- **Delivery records**: `grep -l "^## Delivery Record\|^## Dev Agent Record"` across each
-  project's story specs — a **spot check, not exhaustive**. Only atlas (32/47) and doctor
-  (5/28) and scribe (2/9) show non-zero hits; every other project shows 0, which is
-  suspicious enough to be a false negative from heading-convention drift (some projects may
-  use a differently-worded section heading) rather than a true "zero stations record
-  delivery" finding — **do not treat the 0s as confirmed debt without re-checking headings
-  directly**, the same caution this document's own INV-0 section demonstrates about trusting
-  a first-cut detector's confident wrong number.
-- **DW ledger**: verified directly, not a spot check — every count above is the same number
-  this session's own `deferred-work-check` detector and duplicate/collision scan confirmed
-  clean (see `docs/dreams/deferred-work-audit-completeness.md` and
-  `docs/dreams/deferred-work-resolution-sweep.md`).
-- **Not re-measured this pass**: INV-2 station-ownership migration progress (dissolution of
-  `deckcraft`/`presenton-pixi-image`/`unity-data-stack`/`wasm-analytics-stack`/
-  `local-recipes`), INV-4/INV-5 enforcement status, and the Dream-count growth itself — the
-  fleet now carries **96 Dreams** (up from 31 at 2026-07-28), of which **16 have no Spec**
-  (`python -m pyforge.doctor.sources dream-chain`, 2026-08-15: 5 owned by steward, 3 each by
-  doctor/mason, 2 by herald, 1 each by marshal/atlas/warden) — a real INV-1 backlog nearly
-  50% larger in absolute count than the 11 the 2026-07-28 table reported, though smaller as a
-  fraction of a much bigger Dream corpus. Worth a dedicated pass, not folded into this one.
-
-**Reading this refresh:** the sharpest gap the old table named — flat trees on warden/marshal
-— is closed. The sharpest gap this refresh finds instead is delivery-record convention drift
-(real or a heading-detection artifact, undetermined) and the growing INV-1 backlog keeping
-pace with — arguably outpacing — the fleet's own Dream production rate. Both are better next
-targets than re-chasing the DW-ledger or 6.10-shape columns, which this pass shows are now
-solid.
-
-**The table above is dated 2026-08-15 and is now stale — kept verbatim above per this
-document's own Provenance rule 4 (corrections stay on the record), superseded by the refresh
-below.**
-
-### Conformance status — 2026-08-21 refresh
-
-Same 8-column mechanical count as the 2026-08-15 pass, re-run today against the live
-`_bmad-output/projects/*/planning-artifacts/` trees (still the same 8 projects — no project
-was added, removed, or renamed since 08-15), with one methodology fix: the delivery-records
-grep now unions in a third pattern, `## Auto Run Result` — `bmad-dev-auto`'s own HALT-protocol
-section name — alongside `Delivery Record` and `Dev Agent Record`. That third pattern answers
-the 08-15 section's own stated caveat ("do not treat the 0s as confirmed debt without
-re-checking headings directly"): all five of that table's 0/N rows — herald, marshal, mason,
-steward, and warden — were a heading-convention false negative, not a real "zero stations
-record delivery" finding.
-
-| Project | 6.10 shape | Spec kernels | Story specs | Companions (exhaustive count) | Delivery records (exhaustive grep, heading-level) | DW ledger | README | epics.md |
-|---|---|---|---|---|---|---|---|---|
-| pyforge-atlas | ✅ sharded | 8 | 48 | 9 | 43/48 | ✅ 138 | ✅ | ✅ |
-| pyforge-doctor | ✅ sharded | 8 | 36 | 3 | 23/36 | ✅ 29 | ✅ | ✅ |
-| pyforge-herald | ✅ sharded | 4 | 48 | 6 | 5/48 | ✅ 58 | ✅ | ✅ |
-| pyforge-marshal | ✅ sharded | 38 | 58 | 14 | 28/58 | ✅ 169 | ✅ | ✅ |
-| pyforge-mason | ✅ sharded | 8 | 11 | 3 | 9/11 | ✅ 54 | ✅ | ✅ |
-| pyforge-scribe | ✅ sharded | 4 | 9 | 0 | 3/9 | ✅ 7 | ✅ | ✅ |
-| pyforge-steward | ✅ sharded | 9 | 20 | 1 | 4/20 | ✅ 124 | ✅ | ✅ |
-| pyforge-warden | ✅ sharded | 2 | 31 | 3 | 16/31 | ✅ 46 | ✅ | ✅ |
-
-Every column above is reproduced by one of these commands, per project (`<pa>` =
-`_bmad-output/projects/<slug>/planning-artifacts`):
-
-```bash
-test -d <pa>/prds && test -d <pa>/architecture && test -d <pa>/specs            # 6.10 shape
-find <pa>/specs -maxdepth 2 -iname SPEC.md | wc -l                              # spec kernels
-find <pa>/specs -maxdepth 1 -iname 'spec-*.md' | wc -l                          # story specs
-find <pa>/specs -mindepth 2 -maxdepth 2 -type f \
-  ! -iname SPEC.md ! -iname .memlog.md | wc -l                                  # companions
-grep -rlE '^## (Delivery Record|Dev Agent Record|Auto Run Result)' \
-  <pa>/specs --include='spec-*.md' | wc -l                                      # delivery records
-grep -ohE '\bDW-[A-Za-z0-9][A-Za-z0-9-]*' <pa>/deferred-work-ledger.md \
-  | sed 's/-$//' | sort -u | wc -l                                              # DW ledger
-test -f <pa>/README.md                                                          # README
-test -f <pa>/epics.md                                                           # epics.md
-```
-
-Method and honest caveats:
-- **6.10 shape / spec kernels / story specs / companions / README / epics.md**: the commands
-  above, run 2026-08-21 — each is an exhaustive walk of the project's tree, not a sample,
-  despite the "spot count" wording the 08-15 table used for the same columns. All eight remain
-  fully sharded. Every count moved: story specs (atlas 47→48, doctor 28→36, marshal 56→58,
-  mason 10→11; herald/scribe/steward/warden unchanged), spec kernels (doctor 4→8, marshal
-  36→38, others unchanged), and companions (doctor 0→3, mason 1→3, others unchanged) — six
-  days of organic growth, not a methodology change.
-- **Delivery records — the 08-15 false negative is resolved; verification scope stated
-  honestly**: re-running the *old* two-pattern grep (`Delivery Record`/`Dev Agent Record` only)
-  today, in isolation, reproduces the 08-15 numbers exactly for every project (atlas 32, doctor
-  5, scribe 2, and 0 for herald/marshal/mason/steward/warden) — the old pattern's zero rows
-  stayed zero even where story-spec counts grew, consistent with (though not itself proof of)
-  every new story using a different heading. Adding the third pattern lifts every project's
-  count: atlas +11 (32→43), doctor +18 (5→23), herald +5 (0→5), marshal +28 (0→28), mason +9
-  (0→9), scribe +1 (2→3), steward +4 (0→4), warden +16 (0→16). Content-verified for two of the
-  eight — herald and marshal, opened file-by-file for this refresh — where every newly-matched
-  file does carry `## Auto Run Result` and nothing else; the remaining six projects' matches
-  rest on the heading-level grep only, not a per-file read. The false negative on the *zero*
-  rows is resolved, but coverage is still well below the story-spec total for several projects
-  (herald 5/48, marshal 28/58, mason 9/11, scribe 3/9, steward 4/20) — that gap is not claimed
-  to be fully explained here; it plausibly includes in-progress stories with no delivery
-  section yet, and possibly a fourth convention this pass did not check for.
-- **DW ledger — no first-time fix needed this pass**: the 08-15 refresh already corrected the
-  07-28 table's stale all-❌ column; this pass's numbers are six more days of ledger growth on
-  the same counting method (unchanged since 08-15): atlas 122→138, doctor 20→29, herald
-  45→58, marshal 109→169, mason 48→54, scribe 7→7 (flat), steward 74→124, warden 43→46. Caveat
-  inherited from the method's own shape, not new to this pass: the count is distinct `DW-*`
-  tokens found anywhere in the file — including an id one entry cites in another's `evidence:`
-  prose (e.g. "supersedes DW-X") — the same file-wide harvest `pyforge.doctor.sources.chain`
-  uses when minting new ids, so it stays consistent with the fleet's own tooling, but it means
-  the number is "distinct ids mentioned," not strictly "open items."
-- **Not re-measured this pass**: INV-2 station-ownership migration progress, INV-4/INV-5
-  enforcement status, and the Dream-count/dream-chain gap — the 08-15 section's figures and
-  caveats on these stand un-superseded; this refresh covers only the same 8 columns the 08-15
-  pass covered and adds no new information about them.
-
 ## Verifying conformance
 
+<!-- governance-currency:ignore-start (archived/retired by name -- these must NOT resolve) -->
 **`scripts/dream_chain_check.py` was retired 2026-08-10** (`c698d4b1ad`, superseded by Doctor
+<!-- governance-currency:ignore-end -->
 sources per the same pattern `bmad_drift_check.py` followed for its own verdict — CLAUDE.md
 § "Keeping BMAD artifacts in sync"). Its INV-0/INV-1 half (Spec linkage) now lives at
 `python -m pyforge.doctor.sources dream-chain`; INV-2/INV-3 (station ownership, build-tree
-shape) are **not yet ported** — the 2026-08-15 and 2026-08-21 refresh tables above measured
-those columns by hand-run `find`/`grep`, the same un-mechanized method the original 2026-07-28
-table used before this detector existed. Its findings **are** the migration backlog for INV-0/1 —
-derived, never hand-listed — but the rest of the table is still exactly the kind of
-hand-derived snapshot this document warns goes stale the moment it's written, until INV-2/3
-land in `pyforge.doctor.sources` too.
+shape) are **still not ported** — they have never been measured by anything but a hand-run
+`find`/`grep`. That gap is now a named open question on
+`spec-fleet-consistency-standard`, rather than a caveat under a table: the dated conformance
+snapshots those runs produced were removed in the 2026-09-07 rewrite precisely because a
+hand-derived measurement pinned into a document is the failure mode this file keeps
+re-learning. INV-0/1 findings **are** the migration backlog — derived, never hand-listed.
 
 ```bash
 pixi run -e local-recipes python -m pyforge.doctor.sources dream-chain            # INV-0/1 report
 pixi run -e local-recipes python -m pyforge.doctor.sources dream-chain --json     # machine-readable
+pixi run -e local-recipes governance-currency                                     # CAP-6: this file's own references resolve
 ```
 
 `scripts/bmad_drift_check.py` remains the `local-recipes`-scoped detector and owns the
 `dream-unowned` check (`GUILD_DREAMS` = the two constitutive Dreams).
+
+**This document is now checked, not trusted.** `governance-currency` (CAP-6,
+`scripts/governance_currency_check.py`) resolves every `bmad-*` skill name, script path and
+file reference in this file, `AGENTS.md`, `CLAUDE.md` and `docs/reference/test-charter.md`,
+and fails naming each one that no longer exists. It was written because the 16-stage table
+removed above named four skills that had not existed for two BMAD versions, and no gate
+noticed — the same class of defect INV-4 identified for detectors, applied to the prose that
+governs them.
 
 **Validate a new detector against a chain you already know.** The first cut of
 `dream_chain_check.py` reported 21 Dreams without a Spec; the true number was 11. Ten Specs

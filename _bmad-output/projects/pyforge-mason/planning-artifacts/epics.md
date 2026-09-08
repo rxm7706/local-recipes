@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+updated: "2026-09-07"
 currency_review: "Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -1810,3 +1810,12 @@ operator's step.
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-lifecycle CAP-7 • spec-bmad-suite-channel-product (relayed hole #2) • CFE Rule 1 + Rule 2
 **Surface:** `recipes/bmad-eval-quality/recipe.yaml` (+ `bld.bat` / `build.bat` per the `.cmd`-shim rule), `recipes/bmad-suite/suite-members.yaml` (unchanged row), `pixi.toml` (pin moves back to the shared table once solvable on win-64; `environment.yaml` regenerated), `install-matrix.md` hazard cell
 **Given** the unix-only variant on the channel **When** the recipe gains the Windows build (`call` for `.cmd` shims, `noarch_platforms` carrying win-64, `build.number` bumped for the same version) and builds green locally via `recipe-build` **Then** the pixi pin can leave the target tables, `steward suite pipeline-truth` reads the member current on all three platforms after the operator uploads, and the CFE CHANGELOG carries the retro entry
+
+
+## Platform floor addendum — 2026-09-07
+
+Every story in this epic set builds and tests against **Python 3.14 only**.
+`pyforge-mason`'s `requires-python` was raised `>=3.12` -> `>=3.14` by marshal Story 32.2
+(`spec-fleet-consistency-standard` CAP-5) to match the interpreter the workspace actually
+installs. No story's acceptance criteria change; recorded here so a future story is not
+written against a 3.12 assumption the estate cannot produce.

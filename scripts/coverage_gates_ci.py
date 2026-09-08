@@ -83,11 +83,17 @@ def _git_diff_names(base: str, head: str) -> list[str]:
 def _suite_test_paths(root: Path, suite: str) -> list[Path]:
     """Map a gate suite to the test directories that feed it.
 
-    ``unit`` covers unit + meta (+ contract when present) — the fast
-    non-integration surface. ``integration`` is tests/integration only.
+    ``unit`` covers unit + meta — the fast non-integration surface.
+    ``integration`` is tests/integration only.
+
+    Story 32.5 (spec-fleet-consistency-standard CAP-2) collapsed eight suite
+    names to three, so this needs no per-station special case. It previously
+    named ``contract`` (marshal-only, a one-file placeholder) and recognised
+    neither spelling of ``conformance`` — the reason steward's 32 CLI-contract
+    tests and warden's 19 oracle gates were measured by nothing.
     """
     if suite == "unit":
-        names = ("unit", "meta", "contract")
+        names = ("unit", "meta")
     elif suite == "integration":
         names = ("integration",)
     else:
