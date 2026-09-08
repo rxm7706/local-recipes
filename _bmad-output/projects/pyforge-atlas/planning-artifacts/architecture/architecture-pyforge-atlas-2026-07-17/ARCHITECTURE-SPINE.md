@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: '2026-09-02'  # RE-STAMPED 2026-09-02: currency-only cascade (spec memlog -> PRD -> spine) from the fleet hygiene pass, PR #1009; no AD added, changed, or removed.
+updated: "2026-09-07"
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -1370,3 +1370,25 @@ Podman volume → OCP PVC), never the mount contract.
 - **Browser-side read/dashboard surface onto Gold** — v2, would reuse
   `pyforge-atlas` G1's DuckDB-WASM/Pyodide pattern directly; no architecture
   commitment made here since it's out of this PRD's MVP scope.
+
+
+## Test-tree convergence — reconciled 2026-09-07
+
+`pyforge-atlas`'s tests moved to the fleet standard (`tests/unit/` + `tests/meta/`, with
+`tests/fixtures/` never collected) under marshal Story 32.5,
+`spec-fleet-consistency-standard` CAP-2. Fifteen loose root-level test files and **22 topic
+directories** (catalog, pipelines, wasm, publish, dashboard, …) now live at
+`tests/unit/<topic>/` with their structure intact.
+
+The domain taxonomy is preserved deliberately: nesting by domain *under* a suite is
+conformant, inventing a sibling of `unit/` for a domain is not. Atlas is the station where
+that distinction matters most — its topic directories mirror the Kedro pipeline layout, not
+a test-level split.
+
+Consequence for this chain: the coverage gate's suite map now sees atlas's whole tree. It
+previously resolved only `tests/meta/`, so the great majority of atlas's 129 test files were
+measured by nothing. 1735 tests pass, 18 skipped, after the move.
+
+Also: `pyforge-atlas-test` now exists as the canonical pixi task name (CLAUDE.md documents
+`pyforge-<station>-test` as the fleet grammar, and atlas was the one station where that
+command did not resolve); `kedro-test` is retained as a delegating alias.

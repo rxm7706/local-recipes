@@ -2,7 +2,7 @@
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-09-02"   # RE-STAMPED 2026-09-02: currency-only (a spec memlog moved in the fleet hygiene pass, PR #1009); no FR or AD changed.
+updated: "2026-09-07"
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3058,3 +3058,24 @@ at that attended bring-up), the composed `semantic_packages` store behind the
 shell pages (`DW-D2-2`, demand-driven), and the Phase-P BigQuery cost-gate routing
 (`DW-B2-4`/`DW-B4-4` — a safety item to close before any credentialed Phase-P run).
 
+
+## Test-tree convergence — reconciled 2026-09-07
+
+`pyforge-atlas`'s tests moved to the fleet standard (`tests/unit/` + `tests/meta/`, with
+`tests/fixtures/` never collected) under marshal Story 32.5,
+`spec-fleet-consistency-standard` CAP-2. Fifteen loose root-level test files and **22 topic
+directories** (catalog, pipelines, wasm, publish, dashboard, …) now live at
+`tests/unit/<topic>/` with their structure intact.
+
+The domain taxonomy is preserved deliberately: nesting by domain *under* a suite is
+conformant, inventing a sibling of `unit/` for a domain is not. Atlas is the station where
+that distinction matters most — its topic directories mirror the Kedro pipeline layout, not
+a test-level split.
+
+Consequence for this chain: the coverage gate's suite map now sees atlas's whole tree. It
+previously resolved only `tests/meta/`, so the great majority of atlas's 129 test files were
+measured by nothing. 1735 tests pass, 18 skipped, after the move.
+
+Also: `pyforge-atlas-test` now exists as the canonical pixi task name (CLAUDE.md documents
+`pyforge-<station>-test` as the fleet grammar, and atlas was the one station where that
+command did not resolve); `kedro-test` is retained as a delegating alias.

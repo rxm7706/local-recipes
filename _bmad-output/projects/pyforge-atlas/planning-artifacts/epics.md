@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
+updated: "2026-09-07"
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2074,3 +2074,25 @@ free" while `records`/`tab_packages` still came from `docs/Analysis_Dataset-2026
   23.5 → 23.6 → **23.9** → 22.2 → 22.3 → 22.4 → 22.5 → 23.7 → 22.6 → 21.9 → 21.10.
 - Epic 21's `Deps:` chain is unchanged; stories 21.4–21.10 were never blocked by scope, only by
   21.3's hold.
+
+
+## Test-tree convergence — reconciled 2026-09-07
+
+`pyforge-atlas`'s tests moved to the fleet standard (`tests/unit/` + `tests/meta/`, with
+`tests/fixtures/` never collected) under marshal Story 32.5,
+`spec-fleet-consistency-standard` CAP-2. Fifteen loose root-level test files and **22 topic
+directories** (catalog, pipelines, wasm, publish, dashboard, …) now live at
+`tests/unit/<topic>/` with their structure intact.
+
+The domain taxonomy is preserved deliberately: nesting by domain *under* a suite is
+conformant, inventing a sibling of `unit/` for a domain is not. Atlas is the station where
+that distinction matters most — its topic directories mirror the Kedro pipeline layout, not
+a test-level split.
+
+Consequence for this chain: the coverage gate's suite map now sees atlas's whole tree. It
+previously resolved only `tests/meta/`, so the great majority of atlas's 129 test files were
+measured by nothing. 1735 tests pass, 18 skipped, after the move.
+
+Also: `pyforge-atlas-test` now exists as the canonical pixi task name (CLAUDE.md documents
+`pyforge-<station>-test` as the fleet grammar, and atlas was the one station where that
+command did not resolve); `kedro-test` is retained as a delegating alias.

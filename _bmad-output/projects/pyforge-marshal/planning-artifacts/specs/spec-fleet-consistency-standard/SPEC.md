@@ -6,6 +6,7 @@ surface:
   - scripts/governance_currency_check.py    # CAP-6, net-new — the staleness detector
 companions:
   - ../../../../../EXEMPLAR-STANDARD.md     # adopted-then-rewritten: the reviewable enumeration behind this Spec's normative claims
+  - coverage-baseline-2026-09-07.md         # the fleet's first coverage measurement — what the ratchet ratchets FROM
 sources:
   - docs/dreams/pyforge-marshal.md
 open_questions:

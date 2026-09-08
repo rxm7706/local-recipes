@@ -7,8 +7,24 @@ name: Coverage gates
 # every touched source module below the station floor — never only an
 # aggregate percentage.
 #
-# Full package-wide evaluate (every module) lives on the pixi
-# `pyforge-*-test-coverage` tasks; this workflow is the PR path-filtered gate.
+# EXPANDED TO ALL EIGHT STATIONS 2026-09-07 (marshal Story 32.7,
+# spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard).
+# Until then this job installed only pyforge-marshal and gated `marshal` alone,
+# because `pytest-cov` was declared in just 2 of 10 pixi features — the other
+# seven station envs could not run a coverage gate at all (verified live against
+# scribe: exit 1, "unrecognized arguments: --cov"). That gap is closed.
+#
+# Why expanding is safe without grandfathering the fleet's legacy gaps: this
+# driver gates only the modules a PR actually TOUCHES (`touched_source_modules`),
+# so a pre-existing 0%-covered module reds nothing until someone edits it. That
+# is the ratchet — new and changed code meets the floor, existing debt is
+# reported but not weaponised. The first fleet-wide measurement (2026-09-07,
+# recorded in the Spec's coverage-baseline-2026-09-07.md companion) found station
+# totals of 84–98% with a long tail of uncovered entrypoints and adapters; a flat
+# per-station floor could express neither, which is why none was invented.
+#
+# Full package-wide evaluate (every module, not just touched) lives on the pixi
+# `pyforge-*-test-coverage` tasks — reports for an operator, never a gate.
 
 on:
   pull_request:
@@ -34,9 +50,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      stations: ${{ steps.filter.outputs.stations }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compute which stations this change touches
+        id: filter
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${GITHUB_BASE_REF}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          else
+            BASE="$(git hash-object -t tree /dev/null)"
+          fi
+          # pyforge-core, pyforge-testing-kit, pixi.toml/lock and this workflow are
+          # shared surface: all eight stations depend on core and pixi.lock pins
+          # every env at once, so a change to any of them gates the whole fleet.
+          # Same rule as pyforge-station-tests.yml, deliberately.
+          SHARED=false
+          if ! git diff --quiet "$BASE"...HEAD -- \
+              src/shared/packages/pyforge-core \
+              src/shared/packages/pyforge-testing-kit \
+              pixi.toml pixi.lock \
+              scripts/coverage_gates_ci.py \
+              scripts/run_station_coverage_gate.py \
+              .github/workflows/coverage-gates.yml 2>/dev/null; then
+            SHARED=true
+          fi
+          SELECTED=()
+          for s in atlas doctor herald marshal mason scribe steward warden; do
+            if [ "$SHARED" = "true" ]; then
+              SELECTED+=("$s")
+            elif ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" 2>/dev/null; then
+              SELECTED+=("$s")
+            fi
+          done
+          if [ ${#SELECTED[@]} -eq 0 ]; then
+            echo 'stations=[]' >> "$GITHUB_OUTPUT"
+          else
+            printf -v JOINED '"%s",' "${SELECTED[@]}"
+            echo "stations=[${JOINED%,}]" >> "$GITHUB_OUTPUT"
+          fi
+          echo "selected: ${SELECTED[*]:-(none)}"
+
   named-module-gates:
+    needs: changes
+    if: needs.changes.outputs.stations != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        station: ${{ fromJSON(needs.changes.outputs.stations) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,22 +118,25 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          environments: pyforge-marshal
+          environments: pyforge-${{ matrix.station }}
           cache: true
 
+      # The gate's own fixture proof lives in marshal (it owns coverage_gate.py),
+      # so it runs only on marshal's job rather than eight times.
       - name: Named-module fixture proof
+        if: matrix.station == 'marshal'
         run: >
           pixi run --frozen -e pyforge-marshal pytest
           src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gate_names_module.py
           -q --tb=short
 
-      - name: Coverage gates for touched stations
+      - name: Coverage gate for ${{ matrix.station }}
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
-          # This job installs only pyforge-marshal; gate that station here.
-          # Other stations use their own pixi `*-test-coverage` tasks / future
-          # matrix expansion — never false-zero-fill N/A suites.
-          COVERAGE_GATES_STATIONS: marshal
+          # This job installs one station's env; gate that station alone. The
+          # driver skips any station outside the allow-list rather than
+          # false-zero-filling a suite it cannot run.
+          COVERAGE_GATES_STATIONS: ${{ matrix.station }}
         run: |
           set -euo pipefail
           # Seed verbs + integration harnesses create commits; GHA runners
@@ -71,5 +148,5 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py \
+          pixi run --frozen -e pyforge-${{ matrix.station }} python scripts/coverage_gates_ci.py \
             --base "$BASE" --head HEAD --suites unit
