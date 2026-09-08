@@ -90,7 +90,7 @@ Tests: `pytest tests/policy/test_test_databases_still_migrate.py` → 9 passed (
 
 ## Design Notes
 
-Governed production DDL does not capture ephemeral DBs (FR-25, canopy AD-9 last sentence). Proof is source + settings inspection plus synthetic drift — not creating a second test database or rewriting `tests/`. Compose remains the local real-migrate path; Helm remains the fake-after-Liquibase path.
+Governed production DDL does not capture ephemeral DBs (FR-25, canopy:AD-9 last sentence). Proof is source + settings inspection plus synthetic drift — not creating a second test database or rewriting `tests/`. Compose remains the local real-migrate path; Helm remains the fake-after-Liquibase path.
 
 ## Verification
 

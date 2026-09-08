@@ -1441,7 +1441,7 @@ Skill, persona, and the first portal job are **Epic 18**. Cite **parent AD-n** v
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -1475,7 +1475,7 @@ As a doctor operator,
 I want diagnosis sources and remedy actuators as plugins on the shared contract,
 So that swapping a linter or gather source does not fork doctor.
 
-**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** today's gather/prescribe backends **When** the hook spec lands **Then** they are the default plugins
 **And** findings remain advisory or Warden *inputs*, never a competing PR verdict
 
@@ -1489,7 +1489,7 @@ As an autonomous agent,
 I want a doctor SKF skill from `pyforge-doctor/` and a `bmad-agent-doctor` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-17.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-17.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-doctor/` if missing
 **And** the persona uses only `pyforge doctor …` and `POST /stations/doctor/mcp`
 **And** findings stay advisory — not a second PR gate
@@ -1500,7 +1500,7 @@ As a doctor operator,
 I want `/stations/doctor/` to show the last `doctor monitor --fleet` summary,
 So that one operator job works in HTMX on the host.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated doctor-role session **When** the operator opens `/stations/doctor/` **Then** the pulse summary renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 
@@ -1576,7 +1576,7 @@ spine as reconciled 2026-08-26 and the tracked ledger:
   orphan keys.
 - **Epics 17/18 conform to the reconciled spine:** Story 17.1's hook extraction
   landed as `hooks.py` on the shared `pyforge.core.hooks` contract with today's
-  gather/prescribe backends as default plugins (canopy AD-21, spine § Currency
+  gather/prescribe backends as default plugins (canopy:AD-21, spine § Currency
   reconciliation); Story 18.1's persona/skill and 18.2's portal slice
   (`/stations/doctor/` fleet pulse via PortalClient, landed 2026-08-26) respect the
   Canopy-obligations constraints recorded above — no second chrome, no `pyforge.*`

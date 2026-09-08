@@ -153,7 +153,7 @@ that epoch marker (the pinned first-commit SHA) as an output the guards can read
 
 **44.5 does, obeying AD-5:** "Estate-authored skills live only under
 `skills/{stations,personas,domain}/<x>/SKILL.md`. `.claude/skills/<x>` and `.cursor/skills/<x>`
-are relative symlinks." `conda-forge-expert` is an estate-authored skill (canopy AD-17 names it
+are relative symlinks." `conda-forge-expert` is an estate-authored skill (canopy:AD-17 names it
 explicitly, with a `[MANUAL]`-sections exception), so 44.5 moves it and symlinks it.
 
 **44.6 does, obeying its story:** "authoritative **skill / scripts / tools** →
@@ -207,7 +207,7 @@ has **four** path literals, not one. `_packages_root` (line 73) is the one AD-6 
 `detect_tiers` additionally hardcodes `repo_root/.claude/skills/pyforge-<station>` (skill tier),
 `repo_root/.claude/skills/bmad-agent-<station>/SKILL.md` (persona tier), and
 `repo_root/.claude/skills/conda-forge-expert/SKILL.md` (mason's skill tier). 44.5 moving the
-eight `bmad-agent-*` persona skills drops eight persona tiers, taking the canopy AD-14 roster
+eight `bmad-agent-*` persona skills drops eight persona tiers, taking the canopy:AD-14 roster
 from 40/40 to 32/40 and reddening `.github/workflows/pyforge-steward-five-tier.yml` — after
 44.4, the only story licensed to touch `five_tier.py`, has already merged.
 
@@ -418,7 +418,7 @@ tracked.
 
 ---
 
-## PAIR 13 — 44.2 (document fixes) × 44.4 / 44.5 (rewrite consumer paths) × canopy AD-17 — MEDIUM
+## PAIR 13 — 44.2 (document fixes) × 44.4 / 44.5 (rewrite consumer paths) × canopy:AD-17 — MEDIUM
 
 **44.2 does, per its story:** lands document fixes (R-23/R-24/R-25, `stack.md` / `convergence.md`
 floor `3.12.*` → `3.14.*`) — verified to live at
@@ -430,18 +430,18 @@ references; `AGENTS.md` contains 7.
 
 **The incompatibility.** Three claimants and an inherited prohibition. `AGENTS.md` and
 `CLAUDE.md` are the repo's cross-tool entry points, both allowlisted (no spec owner), both
-full of paths that AD-5/AD-6/AD-12 invalidate — and **canopy AD-17 states: "Export is the only
+full of paths that AD-5/AD-6/AD-12 invalidate — and **canopy:AD-17 states: "Export is the only
 write into `CLAUDE.md` / `AGENTS.md` (`skf-export-skill`)."** So a 44.4 or 44.5 agent obeying
 AD-6's "every consumer path" hand-edits two files an inherited AD reserves for a compile step,
 while a 44.2 agent reasonably regards documentation fixes as *its* lane and edits them too.
-The spine's Inherited Invariants table cites canopy AD-17 only for "SKF compiles into `skills/`"
+The spine's Inherited Invariants table cites canopy:AD-17 only for "SKF compiles into `skills/`"
 and asserts **"Conflict, not override — none found."** That assertion is not safe for these two
 files.
 
 **AD to add — AD-6a (the entry-point documents have one owner and one mechanism).** Name
 `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md` as a
 single documentation-adapter unit with one owning story, and state explicitly how AD-6's
-path-rewrite obligation composes with canopy AD-17's `skf-export-skill` write monopoly — either
+path-rewrite obligation composes with canopy:AD-17's `skf-export-skill` write monopoly — either
 by excepting mechanical path rewrites from AD-17, or by routing them through a regeneration
 step. Leaving it to inference guarantees two agents edit the same two files from two lanes.
 
@@ -485,4 +485,4 @@ step. Leaving it to inference guarantees two agents edit the same two files from
 | 8 | **AD-2c / 2d / 2e** baseline re-stamp, manifest concurrency, untracked classes | Pairs 7, 11, 12 |
 | 9 | **AD-8** file-set not counts; `environment.yaml` decided in 44.3 | Pair 9 |
 | 10 | **AD-4** `MASON_CFE_ROOT` stays a root; name the marker | Pair 10 |
-| 11 | **AD-6a** entry-point docs: one owner, vs. canopy AD-17 | Pair 13 |
+| 11 | **AD-6a** entry-point docs: one owner, vs. canopy:AD-17 | Pair 13 |

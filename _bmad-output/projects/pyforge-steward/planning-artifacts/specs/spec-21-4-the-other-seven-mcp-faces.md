@@ -59,7 +59,7 @@ deferred: []
 
 **Execution:**
 - `django_pyforge/mcp_http.py` -- `asgi_for_station` pattern -- one dual-era wrapper for seven faces
-- seven station `apps.py` -- register MCP ASGI via AppConfig -- canopy AD-1
+- seven station `apps.py` -- register MCP ASGI via AppConfig -- canopy:AD-1
 - `src/platform/tests/test_seven_mcp_faces.py` -- I/O matrix
 
 **Acceptance Criteria:**

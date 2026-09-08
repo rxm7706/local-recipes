@@ -414,7 +414,7 @@ program was executed with unusual fidelity."
 - **Frontier modules are all real now:** `score.py` (AD-7), `fleet_surface.py` (AD-8),
   the adoption Source (AD-9), `Prescription`'s safe-upgrade pairing (AD-10) — the
   "not yet built" markers in the Capability → Architecture Map are historical.
-- **`hooks.py` (Epic 17 / FR-45, canopy AD-21, post-dating this spine):** gather and
+- **`hooks.py` (Epic 17 / FR-45, canopy:AD-21, post-dating this spine):** gather and
   prescribe are hook specs on the shared `pyforge.core.hooks` contract
   (`GATHER_HOOK_SPEC` / `PRESCRIBE_HOOK_SPEC`, owner `doctor`), with today's
   `atlas`/`warden`/`env_hygiene` gathers and `prescribe.*` as the default plugins — a

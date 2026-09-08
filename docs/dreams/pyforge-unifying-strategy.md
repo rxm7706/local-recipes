@@ -322,10 +322,10 @@ first tested against what Foundry had already decided or shipped (seed Dream
 `foundry-baas-capability-gaps`, folded here; AD-1 ruling in
 `sprint-change-proposal-2026-09-05-ad-1-reopen`).
 
-1. **Object storage for media — closed.** Parent AD-1 / canopy AD-13 re-affirmed
+1. **Object storage for media — closed.** Parent AD-1 / canopy:AD-13 re-affirmed
    2026-09-05: Lane 1 media stays on the RWX PVC (mounted by all five platform
    Deployments; bound on CRC 2026-08-25). The only real gap was the unstated RWX
-   storage-class prerequisite, now in canopy AD-13.
+   storage-class prerequisite, now in canopy:AD-13.
 2. **Realtime push — already answered.** `architecture-secure-live-dashboards-2026-08-09`:
    Django + Channels + Daphne + `channels_redis` as the optional extra
    `pyforge-steward[dashboard]`, on the `redis-broker` / `redis-cache` split (Story 20.2).

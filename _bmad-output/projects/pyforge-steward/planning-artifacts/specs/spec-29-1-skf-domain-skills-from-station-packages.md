@@ -59,7 +59,7 @@ warnings: []
 - `.claude/skills/skf-create-skill/` + `_bmad/skf/skf-create-skill/` — existing compiler (read-only)
 - `.claude/skills/shared/scripts/skf-extract-public-api.py` — extraction used at compile
 - `.claude/skills/shared/scripts/skf-validate-frontmatter.py` / `skf-validate-output.py` — validators tests invoke
-- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — FR-37 / canopy AD-17 gates
+- `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` — FR-37 / canopy:AD-17 gates
 - `src/shared/packages/pyforge-scribe/` — compile source (read-only)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 

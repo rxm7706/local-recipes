@@ -23,7 +23,7 @@ warnings: []
 
 ## Boundaries & Constraints
 
-**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. Do not rebuild published packages (`liquibase` 5.0.4; `liquibase-postgresql` 42.7.13 with JDBC under `share/liquibase/lib`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite FR-21 / canopy AD-16.
+**Always:** Pins live on `feature.python-agent-platform.dependencies` so both `python-agent-platform` and composed `platform-dev` consume them. Workspace channels stay `conda-forge` + `SelfExplainML`. Do not rebuild published packages (`liquibase` 5.0.4; `liquibase-postgresql` 42.7.13 with JDBC under `share/liquibase/lib`). Spec path is `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. After `pixi.toml` change: `pixi project export conda-environment -e build > environment.yaml` and update `pixi.lock`. Cite FR-21 / canopy:AD-16.
 
 **Block If:** `pixi install -e python-agent-platform` cannot solve from those channels without authoring or rebuilding recipes.
 

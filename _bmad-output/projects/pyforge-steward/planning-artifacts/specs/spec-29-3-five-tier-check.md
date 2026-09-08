@@ -67,7 +67,7 @@ deferred: []
 ## Tasks & Acceptance
 
 **Execution:**
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — add the report+fail-on-false-complete check — FR-39 / canopy AD-14
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — add the report+fail-on-false-complete check — FR-39 / canopy:AD-14
 - `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` — cover the I/O matrix; fail if the module is gone
 
 **Acceptance Criteria:**

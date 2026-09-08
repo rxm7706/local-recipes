@@ -35,8 +35,8 @@ errors are the kind a downstream pass would reintroduce from the Dream's own pro
 | RFC-5: zero runtime ORM DDL, as written | Not implementable — `post_migrate` and `create_test_db` both require `migrate` | Enforcement moved to the database role; test databases carved out |
 | "80% reduction", "sub-500ms", "100% deterministic" | No baseline exists for any of them | Removed. Fabricated metrics survive into a PRD as requirements and then into acceptance criteria nobody can evaluate |
 | A dated Gantt through 2026-11 | No such schedule was ever agreed | Removed. Sequencing is expressed as dependency, not calendar |
-| Five-tier completeness for any work | **03 only** (Q2). 01/02 stay spec+script or spec+skill | canopy AD-14; Epic 29. Do not fail 01/02 for missing a portal. |
-| Packaging stories in this chain author OpenFeature/Liquibase recipes | Operator-owned. S-26.3 / S-27.1 do not author recipes | canopy AD-16 |
+| Five-tier completeness for any work | **03 only** (Q2). 01/02 stay spec+script or spec+skill | canopy:AD-14; Epic 29. Do not fail 01/02 for missing a portal. |
+| Packaging stories in this chain author OpenFeature/Liquibase recipes | Operator-owned. S-26.3 / S-27.1 do not author recipes | canopy:AD-16 |
 | No `django-feedstock` 5.x branch | Branch exists. Pin catch-up is a version+sha256 PR | Currency gap, not chain packaging |
 
 ## Operating model (bound 2026-08-24, after first ready)
@@ -65,7 +65,7 @@ These are facts about the work, not preferences, and each one dictates ordering.
    `openfeature-flagd-core`, `openfeature-provider-flagd`) plus a `cachebox` 5.x build — conda-forge
    ships 6.2.5 and the provider pins `<6`, so that fifth one is a **downgrade build on an existing
    feedstock**. CAP-9 needs `liquibase` ≥5.0.4 with PostgreSQL JDBC vendored. **S-26.3 and S-27.1
-   are operator gates** (canopy AD-16): they do not author recipes. Downstream stories wait on the
+   are operator gates** (canopy:AD-16): they do not author recipes. Downstream stories wait on the
    channel. Rule 1 still applies if the *operator* authors those recipes elsewhere.
 2. **CAP-1 precedes CAP-2 and CAP-3.** Chrome lives in the shared package; a portal built before it
    exists will grow its own and violate the contract.
@@ -123,7 +123,7 @@ OIDC group-mapping one is the one that bites.
   per-process cache leaves each replica with a divergent rendition cache.
 - Search needs no new service: the database backend uses PostgreSQL full-text search and is
   documented as production-adequate. Requires `django.contrib.postgres` in `INSTALLED_APPS`.
-- Background tasks: **Celery `BaseTaskBackend`** (canopy AD-10). Do not inherit django-tasks'
+- Background tasks: **Celery `BaseTaskBackend`** (canopy:AD-10). Do not inherit django-tasks'
   database or RQ backends. PyPI `django-tasks-celery` is Django 6-only and out of pin.
 - **OIDC users land with no groups**, and Wagtail's admin gates on `wagtailadmin.access_admin`
   rather than `is_staff` — so a user authenticates successfully and is still bounced. Mapping IdP

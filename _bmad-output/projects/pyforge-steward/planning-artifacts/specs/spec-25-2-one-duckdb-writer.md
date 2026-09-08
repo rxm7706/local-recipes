@@ -19,7 +19,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Concurrent writers can corrupt `atlas.duckdb`. Production atlas still defaults to in-memory `duckdb.connect()` / `ibis.duckdb.connect()`; file handles never pass `read_only=True` (FR-27, BS-5, canopy AD-15).
+**Problem:** Concurrent writers can corrupt `atlas.duckdb`. Production atlas still defaults to in-memory `duckdb.connect()` / `ibis.duckdb.connect()`; file handles never pass `read_only=True` (FR-27, BS-5, canopy:AD-15).
 
 **Approach:** One atlas-local opener for the existing `atlas.duckdb` filename. A second writer is refused (filelock, already in atlas). Readers connect with `read_only=True`. Tests fail if that boundary is removed.
 

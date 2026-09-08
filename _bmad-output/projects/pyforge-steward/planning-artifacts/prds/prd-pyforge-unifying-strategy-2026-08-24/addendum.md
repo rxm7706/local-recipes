@@ -12,7 +12,7 @@ plus the rationale behind decisions already made so the architecture pass **conf
 than reopening them.
 
 **Operating-model bind (2026-08-24, after this addendum's first ready).** Dream Grounding Q1–Q8
-and canopy AD-21 do not reopen the mechanism choices below (MCP `start`/`get`, Liquibase Job,
+and canopy:AD-21 do not reopen the mechanism choices below (MCP `start`/`get`, Liquibase Job,
 FILE flags, PyBreaker wrapper, `django-pyforge` chrome). They **scope** five-tier completeness
 to 03, bind hooks/plugins as replaceable layers, and adapterize WFT tool names. See § Operating
 model, added the same day.
@@ -23,7 +23,7 @@ sees the outcome would reasonably wonder why the obvious thing was not done.
 
 ## Operating model (bound 2026-08-24)
 
-These are estate rules, not a second mechanism hunt. Full text: Dream Grounding; canopy AD-14
+These are estate rules, not a second mechanism hunt. Full text: Dream Grounding; canopy:AD-14
 (03-only five tiers), AD-21 (hooks/plugins).
 
 | Bind | Consequence for this chain |
@@ -178,7 +178,7 @@ a pass reading the Dream directly would re-derive them in good faith.
 | Wagtail CRX carries Lane 1 | CodeRed dropped; Wagtail alone |
 | No Wagtail anywhere in the estate | Atlas ships a client and a syncer against a **La Suite Docs** REST contract — which is not the CMS's own API, hence OQ-5 |
 | Zero runtime ORM DDL | Unimplementable; enforcement moved to the database role |
-| Five-tier completeness for any work / any station | **03 only** (Q2). 01/02 stay spec+script or spec+skill. canopy AD-14. |
+| Five-tier completeness for any work / any station | **03 only** (Q2). 01/02 stay spec+script or spec+skill. canopy:AD-14. |
 | Warden re-templated as a Kedro project so scanners can plug in | Kedro *names* the spec-vs-plugin split (AD-21). Warden owns PR-gate hook **specs**; plugins implement. Atlas already *is* Kedro. |
 | Tachyon is Path B / the Agent Canopy | Tachyon is a production LLM adapter (Q6). |
 

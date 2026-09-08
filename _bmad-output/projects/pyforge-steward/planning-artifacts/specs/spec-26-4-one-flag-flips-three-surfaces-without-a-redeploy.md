@@ -17,7 +17,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** Flag behaviour is not yet evaluated in-process from one JSON tree, so Django, MCP, and CLI cannot observe the same flip without a Deployment rollout (FR-34, canopy AD-11).
+**Problem:** Flag behaviour is not yet evaluated in-process from one JSON tree, so Django, MCP, and CLI cannot observe the same flip without a Deployment rollout (FR-34, canopy:AD-11).
 
 **Approach:** Ship one flagd-schema JSON tree at `src/platform/config/flags.json`. The Helm ConfigMap is built from that file and mounted read-only. The OpenFeature flagd FILE provider (0.5.0) watches/polls the mount in-process. Django, MCP, and the steward CLI evaluate those same bytes with no egress.
 

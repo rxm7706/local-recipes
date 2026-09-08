@@ -19,7 +19,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** FastAPI HTTP 422 JSON arrays (`loc: ["body", "version"]`) do not map onto Django form fields, so operators see a generic toast instead of the field that failed (FR-28, BS-7, canopy AD-15).
+**Problem:** FastAPI HTTP 422 JSON arrays (`loc: ["body", "version"]`) do not map onto Django form fields, so operators see a generic toast instead of the field that failed (FR-28, BS-7, canopy:AD-15).
 
 **Approach:** `PydanticFormErrorBridge` in `django-pyforge` unpacks 422 `detail` arrays into Django `ValidationError` dicts and re-renders the originating HTMX form with inline field errors. Tests fail if the bridge is removed or stubbed.
 

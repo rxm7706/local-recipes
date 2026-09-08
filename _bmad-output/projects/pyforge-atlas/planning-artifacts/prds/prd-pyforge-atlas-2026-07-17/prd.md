@@ -3015,7 +3015,7 @@ The pyforge-unifying-strategy chain ratified what the 2026-08-08 cross-station
 research recommended, and it now frames this PRD's read-surface and agent-surface
 requirements:
 
-- **One Kedro home (canopy AD-21).** Stations never stand up sibling Kedro
+- **One Kedro home (canopy:AD-21).** Stations never stand up sibling Kedro
   deployments; Kedro extract/transform for the estate lives here. The closed seven
   migration pipelines stay sealed; the package now carries ten pipeline packages —
   `upstream_discovery` (Epic 13), `artifactory_downloads` (Epic 15), and

@@ -1,5 +1,5 @@
 ---
-title: Sprint Change Proposal — parent AD-1 / canopy AD-13 reopened (object storage vs RWX media)
+title: Sprint Change Proposal — parent AD-1 / canopy:AD-13 reopened (object storage vs RWX media)
 date: 2026-09-05
 project: pyforge-steward
 chain: pyforge-unifying-strategy (extends spec-python-agent-platform)
@@ -11,7 +11,7 @@ operator: Rxm7706
 follows: sprint-change-proposal-2026-09-04-foundry-cutover.md
 ---
 
-# Sprint Change Proposal — parent AD-1 / canopy AD-13 reopened
+# Sprint Change Proposal — parent AD-1 / canopy:AD-13 reopened
 
 ## 1. Issue summary
 
@@ -114,7 +114,7 @@ media.** What it costs, so the price is on record: a `django-storages` S3 backen
 credentials through parent AD-12; a MinIO / ODF-RGW workload (Helm, an image mirror for
 air-gap parity, SCC posture, a DR.md row, a backup path); BS-8's Mason boot re-index revisited
 against an object store; `test_chart_templates_forbid_minio_s3_and_elasticsearch` inverted;
-canopy AD-13 rewritten; a dated Dream entry *first* (the parent AD-14 pattern). No evidence in
+canopy:AD-13 rewritten; a dated Dream entry *first* (the parent AD-14 pattern). No evidence in
 this pass says it is needed — RWX binds on the only target that exists, and the seed itself
 disclaims MinIO as the answer. Not recommended now. If chosen: one steward story, `blocked`
 until the Dream entry lands.
@@ -159,7 +159,7 @@ Rationale: three artifacts gate on a procedure none of them defines.
 **Append:** `**Re-affirmed, 2026-09-05.** Re-examined against
 `docs/dreams/foundry-baas-capability-gaps.md` § *Reopening AD-1*. This rule is design-review
 discipline — a bound on operational surface — and has never rested on air-gap parity (that is
-AD-13). Lane 1 media stays on a `ReadWriteMany` PVC (canopy AD-13, prerequisite added the same
+AD-13). Lane 1 media stays on a `ReadWriteMany` PVC (canopy:AD-13, prerequisite added the same
 day). No exception granted. Exception procedure: canopy spine § *Conflict, not override —
 parent AD-1*.`
 
@@ -185,7 +185,7 @@ AD-6's exception was recorded, and it is where the next reader of AD-1 will look
 ### 4.6 Doc lines under `src/platform/` (same PR; droppable without affecting 4.1–4.5)
 
 - `deploy/README.md:211` — **OLD:** `- No HPA/PDB/media PVC — out of scope for the current
-  chart stories.` **NEW:** `- No HPA/PDB. Media is an RWX PVC (Story 20.2, canopy AD-13)
+  chart stories.` **NEW:** `- No HPA/PDB. Media is an RWX PVC (Story 20.2, canopy:AD-13)
   mounted by every platform Deployment; on a multi-node cluster set
   `media.persistence.storageClassName` to an RWX-capable class or the claim stays Pending.
   Proven on CRC (`crc-csi-hostpath-provisioner`).`
@@ -212,7 +212,7 @@ chosen).
 
 ## 6. Operator ruling
 
-**2026-09-05 — Option A.** Parent AD-1 and canopy AD-13 re-affirmed; the RWX storage-class
+**2026-09-05 — Option A.** Parent AD-1 and canopy:AD-13 re-affirmed; the RWX storage-class
 prerequisite and the exception procedure are recorded; the three `src/platform` doc lines ship in
 the same PR. The five follow-up-review branches (41.3, 41.4, 42.1, 42.2, 43.2) land after this PR.
 

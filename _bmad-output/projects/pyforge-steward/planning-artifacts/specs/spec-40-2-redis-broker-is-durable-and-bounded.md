@@ -64,7 +64,7 @@ exactly as Story 12.6 shipped it. Chart: broker gets a PVC (RWO) mounted at
 `noeviction` kept. Settings: stop storing Celery results on the broker
 (`CELERY_TASK_IGNORE_RESULT = True`; every `.delay()` in the estate is
 fire-and-forget and the supervisor's `RunState` in PostgreSQL is the record of
-fact, per canopy AD-12). Fabric: `applied:*` keys carry a TTL, the stream has
+fact, per canopy:AD-12). Fabric: `applied:*` keys carry a TTL, the stream has
 a declared trim policy, DLQ retention is declared. Prove it with a real
 `redis-server` restart, not `MemoryRedis`.
 

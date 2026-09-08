@@ -31,7 +31,7 @@ FRs 1–42 carry testable consequences. FR-37/38/39 are 03-scoped. FR-12 names `
 Non-goals are explicit (no ninth station, no atlas Wagtail spec, no CAP-18 in glossary). `[NOTE FOR PM]` callouts are real tensions. Open-item density is appropriate for a chain-top PRD **if** the answered OQs stay answered in §10.
 
 ### Findings
-- **high** Packaging authorship disagrees with the brief and AD-16 (§10) — “Each is a `conda-forge-expert` session under repo Rule 1.” Brief addendum and canopy AD-16: S-26.3 / S-27.1 do not author recipes. *Fix:* PRD Update: those six builds are operator-owned gates; Rule 1 applies if recipes are authored outside this chain.
+- **high** Packaging authorship disagrees with the brief and AD-16 (§10) — “Each is a `conda-forge-expert` session under repo Rule 1.” Brief addendum and canopy:AD-16: S-26.3 / S-27.1 do not author recipes. *Fix:* PRD Update: those six builds are operator-owned gates; Rule 1 applies if recipes are authored outside this chain.
 
 ## Downstream usability — thin
 

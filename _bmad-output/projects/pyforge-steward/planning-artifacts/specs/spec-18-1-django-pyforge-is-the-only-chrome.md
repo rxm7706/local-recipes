@@ -45,7 +45,7 @@ deferred:
 
 ## Intent
 
-**Problem:** Station portals can each ship a switcher, base layout, or theme, and adding a station currently means editing the host URLconf. CAP-1 / canopy AD-1 and AD-3 require one installable chrome package.
+**Problem:** Station portals can each ship a switcher, base layout, or theme, and adding a station currently means editing the host URLconf. CAP-1 / canopy:AD-1 and AD-3 require one installable chrome package.
 
 **Approach:** Ship `django-pyforge` as a reusable Django app. Portals register via AppConfig (station name, mount token, MCP token, chrome hooks, plus owner slug, backup, `work_class`, promotion date). The host discovers them with `apps.get_app_configs()` and mounts `/stations/<name>/` as a pattern. SLA body is not a chrome field. Prove with two portals: existing `compliance_face` plus a test fixture portal (not Epic 19 shells).
 

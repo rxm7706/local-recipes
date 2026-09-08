@@ -82,7 +82,7 @@ another's input.
 Two capabilities close a gap the Dream stated and the first convergence sweep missed: **five-tier
 symmetry** (CLI, portal, service, domain skill, persona) is the **03 shape of the eight stations**.
 An 03 station missing a tier is unfinished. **01/02 work is complete at spec+script or spec+skill**
-(Q2; canopy AD-14). Estate operating model (Q1–Q8, canopy AD-21) is bound in Dream Grounding;
+(Q2; canopy:AD-14). Estate operating model (Q1–Q8, canopy:AD-21) is bound in Dream Grounding;
 the table lives in `addendum.md` so this brief stays two pages. PRD, spine, and Epics 18–30 already
 carry the operating-model wording.
 
@@ -129,7 +129,7 @@ capability is absent. An invariant with no test that fails without it is not imp
 feedstocks and Liquibase are absent from conda-forge — OpenFeature is absent from anaconda.org
 entirely — and the flag provider additionally needs a `cachebox` 5.x build, since conda-forge
 ships only 6.2.5. That last one is a downgrade build on an existing feedstock rather than a new
-recipe. Stories 26.3 and 27.1 **do not author recipes** (canopy AD-16). Downstream flag and DDL
+recipe. Stories 26.3 and 27.1 **do not author recipes** (canopy:AD-16). Downstream flag and DDL
 stories stay blocked until those packages exist on the channel the platform env consumes.
 
 **One capability reopens shipped code.** Governed DDL contradicts two `done` stories that
@@ -173,7 +173,7 @@ tenancy layer for the estate.
 ## Where this goes next
 
 The PRD traces functional requirements to the eighteen capability IDs so nothing floats. The
-architecture spine (including canopy AD-14 scoped to 03, and AD-21 hooks/plugins bound to
+architecture spine (including canopy:AD-14 scoped to 03, and AD-21 hooks/plugins bound to
 CAP-18) is the invariant set. Canopy **Epics 18–30** are written; **Epic 32** plus Warden
 **Epic 9** plus per-station process-hook stories implement CAP-18. First chrome dispatch is
 Story 18.1; first CAP-18 dispatch is Story 32.1. Do not regenerate the

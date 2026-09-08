@@ -21,15 +21,18 @@ WHY THIS EXISTS (measured 2026-09-08, before any of it was fixed):
     spines say so themselves: spec-python-agent-platform's own spine warns
     "Unifying Strategy must not treat these as canopy AD-1..".
 
-FOUR EXTRACTOR BUGS, RECORDED SO THE NEXT READER DOES NOT REPEAT THEM. The
-first four attempts at `_defined_ads` each reported large phantom defects that
-were entirely artifacts of an over-specific pattern:
+FIVE EXTRACTOR BUGS, RECORDED SO THE NEXT READER DOES NOT REPEAT THEM. Each
+attempt at `_defined_ads` reported large phantom defects that were entirely
+artifacts of an over-specific pattern:
 
   1. `#{2,4}` missed atlas's satellite ADs, written `##### AD-24` (five).
   2. Requiring an em-dash separator missed herald's `### AD-1: Title`.
   3. Requiring `AD-(\\d+)\\s*[sep]` missed herald's `### AD-11 (was AD-1):`.
   4. Treating warden's spine as malformed: it defines NO ADs at all, using
      named decisions (`### GAP A`) instead -- an absence, not a defect.
+  5. Requiring the line to START with `#`/`**` missed python-agent-platform's
+     `- **AD-16 — ...`, a definition inside a list item, which made AD-16 look
+     like a gap in an otherwise contiguous 1..17.
 
 Hence `_AD_DEF` anchors on the heading (or bold run) and the number and assumes
 NOTHING about what follows. Verify the detector, not just the artifact.
@@ -48,9 +51,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PROJECTS = ROOT / "_bmad-output" / "projects"
 
 #: An AD DEFINITION: a markdown heading (any depth) or a bold run, then the id.
-#: Deliberately assumes nothing about the separator or trailing text -- see the
-#: four bugs in the module docstring.
-_AD_DEF = re.compile(r"^(?:#{1,6}\s*|\*\*)AD-(\d+)\b", re.M)
+#: Optionally inside a list item. Deliberately assumes nothing about the
+#: separator or trailing text -- see the five bugs in the module docstring.
+_AD_DEF = re.compile(r"^(?:[-*+]\s+)?(?:#{1,6}\s*|\*\*)AD-(\d+)\b", re.M)
 
 #: An AD CITATION, unprefixed. The lookbehind rejects `fnd:AD-1` / `pap:AD-1`
 #: and hyphenated ids, so a prefixed (already unambiguous) citation is not
@@ -103,6 +106,47 @@ def main() -> int:
     unresolvable: list[str] = []
     cross_project = 0
     ambiguous: list[str] = []
+    misnamed: list[str] = []
+    malformed: list[str] = []
+
+    # --- FAIL: a spine folder that does not name its own project ------------
+    #
+    # THE ROOT CAUSE, not a symptom. `bmad-architecture`'s run_folder_pattern
+    # is `architecture-{project_name}-{date}` and upstream is explicit that the
+    # default "fits the common case (one spine per project, at the altitude
+    # above epics)". Every one of steward's extra spines exists because that
+    # skill was run with `project_name` overridden to a CHAIN slug. Nothing
+    # stopped it, which is how one project reached eight spines while the other
+    # seven held at one. Checking the folder name is what stops the ninth.
+    #
+    # A spine beside a SPEC.md that declares it in `companions:` is exempt --
+    # that is bmad-spec's own adopted-companion convention, not drift.
+    for proj in projects:
+        for spine in _spines(proj):
+            if spine.parent.parent.name != "architecture":
+                spec = spine.parent / "SPEC.md"
+                if spec.is_file() and "ARCHITECTURE-SPINE.md" in _read(spec):
+                    continue  # declared Spec companion
+            if not spine.parent.name.startswith(f"architecture-{proj.name}-"):
+                misnamed.append(
+                    f"{proj.name}: {spine.parent.name} does not match "
+                    f"architecture-{proj.name}-<date> -- a spine folder names its "
+                    f"PROJECT, never a chain"
+                )
+
+    # --- FAIL: an AD definition not written in the canonical form -----------
+    #
+    # Normalizing the form is safe (it changes no id, so no citation can
+    # break), but without a check it silently drifts back. Four separate
+    # heading shapes existed before 2026-09-08.
+    for proj in projects:
+        for spine in _spines(proj):
+            for m in re.finditer(r"^(#{1,6}\s*AD-\d+)(.{0,12})", _read(spine), re.M):
+                if not re.match(r"\s*—", m.group(2)):
+                    malformed.append(
+                        f"{proj.name}: {spine.parent.name} has "
+                        f"`{(m.group(1) + m.group(2)).strip()}` -- AD headings read `AD-<n> — <Title>`"
+                    )
 
     # --- FAIL: a citation that names no AD anywhere in the fleet ------------
     for proj in projects:
@@ -138,6 +182,10 @@ def main() -> int:
 
     for line in unresolvable:
         print(f"[ad-citation] broken: {line}")
+    for line in misnamed:
+        print(f"[ad-citation] misnamed-spine: {line}")
+    for line in malformed:
+        print(f"[ad-citation] malformed-heading: {line}")
     for line in ambiguous:
         print(f"[ad-citation] ambiguous: {line}")
 
@@ -148,7 +196,7 @@ def main() -> int:
         f"{cross_project} cross-project citation(s) resolved"
     )
 
-    if unresolvable:
+    if unresolvable or misnamed or malformed:
         return 1
     if ambiguous:
         # Ambiguity is real but is a consolidation task, not a broken link --

@@ -12,7 +12,7 @@ approach: Direct Adjustment
 ## 1. Issue summary
 
 **Trigger:** Operator revisit of steward SCP §6, then a further bind:
-**hooks and plugins are an architecture principle** (canopy AD-21). As far as
+**hooks and plugins are an architecture principle** (canopy:AD-21). As far as
 possible every layer is replaceable — process-owned hook specs; plugins that
 implement or replace a layer without a fork. Kedro *names* the split; it does
 not require a Kedro project. OM Nevers still apply to every station. **Warden

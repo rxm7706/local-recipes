@@ -61,7 +61,7 @@ deferred: []
 - `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` — CAP-15 consult target (read-only)
 - `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — FR-13 grammar (read-only; `pyforge scribe …`)
 - `src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py` — FR-11 `asgi_for_station` / `POST /stations/<name>/mcp` (read-only)
-- `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — **new** FR-38 / canopy AD-17 gates (I/O matrix)
+- `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` — **new** FR-38 / canopy:AD-17 gates (I/O matrix)
 - `.claude/skills/conda-forge-expert/` — must remain hand-authored (read-only)
 - `src/platform/` — do not add `pyforge.*`
 

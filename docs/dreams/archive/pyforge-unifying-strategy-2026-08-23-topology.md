@@ -813,7 +813,7 @@ Bare station slugs (e.g. a group named `atlas`) are refused unless `DJANGO_PYFOR
 | **Autonomous AI Agent**    | `pyforge:station:<name>` | Headless API access via Bearer Token / API Key       | Leased MCP tool execution (`mcp:tools:*`) |
 | **Multi-tenant analyst**   | `pyforge:station:atlas` + `pyforge:tenant:east` | Lane 3 board rows sliced to tenant `east`            | N/A (browser session)                     |
 
-- **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses the configured group claim on each request (`DJANGO_PYFORGE_GROUP_CLAIM`, default `groups`), re-reading prefixed roles per-request without storing local passwords (canopy AD-15).
+- **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses the configured group claim on each request (`DJANGO_PYFORGE_GROUP_CLAIM`, default `groups`), re-reading prefixed roles per-request without storing local passwords (canopy:AD-15).
 - **MCP / services-engine scope verification:** OAuth2 scopes via `Security(verify_token, scopes=["mason:build"])` on the **host** ASGI, not nine `:800x` processes.
 
 ---
@@ -1576,7 +1576,7 @@ Faces are `python-<layer>-platform`. Implementations are `python-<role>-engine`.
 - **2026-08-24** — Operator **revisit:** station operating-model correct-course is **all eight**, not Warden-only. Estate-wide: OM Nevers + spec-vs-plugin *shape* (Kedro extension model). **Warden owns** PR-gate hook specs; plugins implement them. Atlas already *is* Kedro (pipeline hooks ≠ PR gate). Not a Kedro re-template of every station. Landed: per-station `change-history/sprint-change-proposal-2026-08-24-operating-model.md`, `epics.md` Operating-model obligations, `DW-OM-2026-08-24`.
 - **2026-08-24** — Readiness re-stamp of `implementation-readiness-report-2026-08-24.md`: still **CONCERNS — proceed**. OM pass recorded (Q1–Q8 + eight `DW-OM-2026-08-24`). No new blocking concern. First dispatch remains S-18.1.
 - **2026-08-24** — Operator: hooks and plugins are an **architecture principle** (replaceable layers; hook into processes), not only a Warden/Kedro-project rule. Bound as canopy **AD-21** + Dream Grounding + SPEC Always. Q8 remains the PR-gate instance.
-- **2026-08-24** — canopy AD-14 scoped to **03** (title + rule). Matches Epic 29 / FR-39. 01/02 outside this AD.
+- **2026-08-24** — canopy:AD-14 scoped to **03** (title + rule). Matches Epic 29 / FR-39. 01/02 outside this AD.
 - **2026-08-24** — `bmad-product-brief` **Update** on `briefs/brief-pyforge-unifying-strategy-2026-08-24/` (not Create). OM table in brief addendum; first-ready five-tier and packaging lines reversed in memlog.
 - **2026-08-25** — Steward **12-7 closed** on CRC: Helm `platform` deployed, Liquibase + `migrate --fake` Complete, `https://platform.apps-crc.testing/ht/` **200**. Dated record updated. Drain queues **0** backlog. Next: pip-layer fold is Dream → spec (`NEXT-AFTER-12-7.md`), not silent Containerfile rewrite.
 - **2026-08-25** — **Fleet drain takeaways folded into Grounding** (not a second Dream). Canopy Epics 18–32 + eight peer CAP-18 hook stories landed; 08-24 “genuinely unbuilt” list is historical. Confirmed: modular monolith (no `services/` process farm); CAP-18 = hooks not scorecard; parallel-agent switch mutex; tracked story specs; `--merge` never squash; peer stations drain on one obligation, they do not clone steward 18–30. Campaign engine was worktree `bmad-build-auto` under a singleton coordinator; marshal Epic 22 verbs exist as product.
@@ -1585,8 +1585,7 @@ Faces are `python-<layer>-platform`. Implementations are `python-<role>-engine`.
 - **2026-08-26** — Query plane folded into this Dream (operator: not a sibling).
   Capture file `docs/dreams/htap-query-plane.md` marked absorbed.
 - **2026-08-26** — Operator: Dream is **evergreen**; SPEC may return
-  `in-progress`; rebuild is allowed. CAP-19 / FR-46..50 / Epic 34 / canopy
-  AD-22 landed. Dream `realized` → `specified`. First dispatch **S-34.1**.
+  `in-progress`; rebuild is allowed. CAP-19 / FR-46..50 / Epic 34 / canopy:AD-22 landed. Dream `realized` → `specified`. First dispatch **S-34.1**.
 - **2026-08-26** — Stack leverage bound: Kedro/Vizro/BSL as optional pipeline /
   Lane 3 / metric contract; original ten high-leverage pins scheduled in
   `stack.md` § Estate leverage. Vault-in-app rejected (AD-19). Vizro-AI

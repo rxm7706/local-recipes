@@ -35,13 +35,13 @@ deferred:
 
 ## Intent
 
-**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. FR-16 / canopy AD-20.
+**Problem:** Analytical boards behind the host are not row-isolated. Two authenticated roles can share a URL and still see the same slice, or a second stack (Vizro) would re-filter. FR-16 / canopy:AD-20.
 
 **Approach:** Serve one board URL on the atlas portal. Load the unfiltered master via `get_master_dataset`, then `filter_by_role` / `AccessDeclaration` and `search`. Identity is this request's IdP token roles (18.2), not trusted headers (FR-15).
 
 ## Boundaries & Constraints
 
-**Always:** Isolation is only `pyforge.steward.dashboard` filter-then-search. Server-side. Same path for every role. Portal may import `pyforge.steward.dashboard` (not `pyforge.atlas`). `src/platform/` and `src/platform/tests/` never import `pyforge.*`. Cache stores the master only. `Cache-Control: no-store`. Cite canopy AD-20. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
+**Always:** Isolation is only `pyforge.steward.dashboard` filter-then-search. Server-side. Same path for every role. Portal may import `pyforge.steward.dashboard` (not `pyforge.atlas`). `src/platform/` and `src/platform/tests/` never import `pyforge.*`. Cache stores the master only. `Cache-Control: no-store`. Cite canopy:AD-20. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`.
 
 **Block If:** Implementation would require Vizro/Dash/Flask as the isolation mechanism, trusted-header identity on the host, CloudEvents/Epic 24, Epic 30 console deletion, MinIO, or Liquibase 27-1.
 

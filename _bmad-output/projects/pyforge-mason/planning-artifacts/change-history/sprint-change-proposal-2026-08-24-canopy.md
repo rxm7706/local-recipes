@@ -25,7 +25,7 @@ copying steward 18–30, (b) introduce MinIO/boto3 boot reconciliation, or (c) t
 `pyforge-mason` as a replacement for the hand-authored `conda-forge-expert` operating skill.
 
 **Evidence:** Steward `epics.md` already binds FR-9/11/17/37–39 to Epics 19/21/24/29; Story 25.4
-names mason operators and forbids MinIO reconcile; canopy AD-17 preserves hand-authored CFE.
+names mason operators and forbids MinIO reconcile; canopy:AD-17 preserves hand-authored CFE.
 Mason's last epic is **9** (`External integration seams`); Epics 1–8 cover the CLI factory.
 
 ## 2. Impact Analysis
@@ -60,7 +60,7 @@ Mason's last epic is **9** (`External integration seams`); Epics 1–8 cover the
 - **Required pattern (steward S-25.4):** idempotent startup reconcile against **PostgreSQL**
   (canonical anchor) plus **RWX-mounted files** when present.
 - **Preserved:** `conda-forge-expert` hand-authored; SKF compiles station domain skill only.
-- **Topology:** one host ASGI process — no second chrome, no extra public port (canopy AD-1,
+- **Topology:** one host ASGI process — no second chrome, no extra public port (canopy:AD-1,
   AD-5, AD-10).
 
 ## 3. Recommended Approach
@@ -104,6 +104,6 @@ mason station continues Epics 1–9 CLI factory work unchanged.
 2. `DW-CANOPY-2026-08-24` is the durable deferred-work pointer.
 3. No mason epic numbered ≥10 appears in mason planning artifacts.
 4. Any future mason boot-reconcile design cites PostgreSQL (+ RWX files), never MinIO.
-5. SKF `pyforge-mason` and hand-authored `conda-forge-expert` coexist per canopy AD-17.
+5. SKF `pyforge-mason` and hand-authored `conda-forge-expert` coexist per canopy:AD-17.
 
 **Approval:** Direct Adjustment — **approved 2026-08-24** (headless-express / batch Phase 5).

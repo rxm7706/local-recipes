@@ -49,7 +49,7 @@ deferred: []
 
 - Default OQ `query-plane-face`: **in-process DuckDB**. Do not block on Mosaic.
 - Reuse `connect_writer` / `connect_reader` for `atlas.duckdb`. Do not mint a second writable file in this story. Filename generalization is later if 34.3 needs it.
-- `LOAD postgres` from the pre-provisioned extension cache only (canopy AD-22; same
+- `LOAD postgres` from the pre-provisioned extension cache only (canopy:AD-22; same
   LOAD-only shape as Atlas `vss` in `rag/store.py`). If postgres extension is
   missing, fail loud — do not `INSTALL`.
 - Steward owns the through-line; Atlas owns the engine. Tests live under `pyforge-atlas/tests/`.

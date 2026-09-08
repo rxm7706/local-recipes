@@ -1560,7 +1560,7 @@ Phase 5 (`bmad-correct-course`, `docs/dreams/pyforge-unifying-strategy.md`) reco
 - **Forbidden:** boto3, MinIO client, or S3-backed artifact indexing as mason runtime backing
   store. The Dream's BS-8 Mason/MinIO example does **not** apply to mason.
 
-### Domain skill (canopy AD-17)
+### Domain skill (canopy:AD-17)
 
 - **`conda-forge-expert` stays the hand-authored operating skill** — mason's recipe/build
   authority for conda-forge work (Rule 1). Do **not** compile a `pyforge-mason` SKF that
@@ -1581,7 +1581,7 @@ Phase 5 (`bmad-correct-course`, `docs/dreams/pyforge-unifying-strategy.md`) reco
 | Domain skill | `conda-forge-expert` (hand-authored) | CFE never replaced | Epic 11 Never |
 | Persona | — | `bmad-agent-mason` consults CFE; FR-13/FR-11 only | **Mason Epic 11** |
 
-No second chrome, no extra public port — one modular-monolith ASGI process (canopy AD-1, AD-5,
+No second chrome, no extra public port — one modular-monolith ASGI process (canopy:AD-1, AD-5,
 AD-10).
 
 ### Event backbone (steward Epic 24)
@@ -1602,7 +1602,7 @@ AD-10).
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -1636,7 +1636,7 @@ As a mason operator,
 I want rattler-build and conda-build as plugins on the shared contract,
 So that swapping a build engine does not fork the mason process.
 
-**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** the replaceable build-engine layer **When** the hook spec lands **Then** today's backend is the default plugin
 **And** an alternate engine plugin can register without a process fork
 **And** a successful mason build is not published as a PR quality-gate verdict
@@ -1651,7 +1651,7 @@ As an autonomous agent,
 I want a `bmad-agent-mason` persona that consults `conda-forge-expert`,
 So that Path B uses CAP-5 grammar and CAP-4 MCP without a second recipe skill.
 
-**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-38 • canopy AD-17
+**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-38 • canopy:AD-17
 **Given** CFE is the operating skill **When** this story completes **Then** the persona transcript uses only `pyforge mason …` and `POST /stations/mason/mcp`
 **And** no `skf-create-skill` output replaces CFE
 **And** 01 recipe experiments still do not mint a portal/MCP/persona (existing Never)
@@ -1662,7 +1662,7 @@ As a mason operator,
 I want `/stations/mason/` to show one `mason diagnose` (or equivalent) result,
 So that one operator job works in HTMX on the host.
 
-**Type:** feature • **Effort:** M • **Deps:** S-11.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-11.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated mason-role session **When** the operator opens `/stations/mason/` **Then** one diagnosis renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no MinIO
 

@@ -655,7 +655,7 @@ stack — all Canopy/steward concerns.
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -691,7 +691,7 @@ As a scanner author,
 I want named PR-gate hook points on the shared registration API,
 So that I implement a plugin instead of forking Warden.
 
-**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-44 • canopy AD-21
+**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-44 • canopy:AD-21
 **Given** the FR-43 contract **When** this story completes **Then** Warden documents hook specs for scan / aggregate / verdict (or equivalent named points)
 **And** plugins register through `pyforge-core`, not a Warden-only second loader
 **And** the Warden verdict remains the only PR quality-gate pass/fail
@@ -726,7 +726,7 @@ As an autonomous agent,
 I want a warden SKF skill from `pyforge-warden/` and a `bmad-agent-warden` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-9.3 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-9.3 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-warden/` if missing
 **And** the persona uses only `pyforge warden …` and `POST /stations/warden/mcp`
 **And** `conda-forge-expert` is not replaced
@@ -738,7 +738,7 @@ As a compliance operator,
 I want `/stations/warden/` to start one audit and retrieve it after disconnect,
 So that the portal uses the host MCP face instead of only local ORM lists.
 
-**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-10, FR-12 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-10, FR-12 • canopy:AD-7
 **Given** an authenticated warden-role session **When** the operator starts an audit from HTMX **Then** `start`/`get` go through PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 

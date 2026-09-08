@@ -58,7 +58,7 @@ deferred:
 
 ## Boundaries & Constraints
 
-**Always:** Lane 1 at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Pages are Django/Wagtail ORM on the existing `DATABASES["default"]`. `WAGTAILADMIN_LOGIN_URL` = existing `openid_connect_login`. `WAGTAILUSERS_PASSWORD_ENABLED = False`. `WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False`. Search backend is PostgreSQL FTS (`django.contrib.postgres`), not Elasticsearch. Cite canopy AD-13 vs parent AD-n.
+**Always:** Lane 1 at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Pages are Django/Wagtail ORM on the existing `DATABASES["default"]`. `WAGTAILADMIN_LOGIN_URL` = existing `openid_connect_login`. `WAGTAILUSERS_PASSWORD_ENABLED = False`. `WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False`. Search backend is PostgreSQL FTS (`django.contrib.postgres`), not Elasticsearch. Cite canopy:AD-13 vs parent AD-n.
 
 **Block If:** Adding Wagtail requires MinIO/S3, Elasticsearch, or a second public ASGI process; or platform-ci-test cannot import `wagtail` after the pin.
 

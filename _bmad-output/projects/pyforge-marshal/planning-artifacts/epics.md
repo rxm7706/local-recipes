@@ -4080,7 +4080,7 @@ not in marshal Canopy retirement scope.
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -4114,7 +4114,7 @@ As a marshal operator,
 I want the loop runner as a plugin on the shared contract,
 So that swapping a runner or ACP adapter does not fork marshal.
 
-**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** the current runner **When** the hook spec lands **Then** it is the default plugin
 **And** an alternate runner plugin can register without a process fork
 **And** a passed loop is not published as a Warden (PR-gate) verdict
@@ -4129,7 +4129,7 @@ As an autonomous agent,
 I want a marshal SKF skill from `pyforge-marshal/` and a `bmad-agent-marshal` persona,
 So that Path B uses CAP-5 grammar and CAP-4 MCP only.
 
-**Type:** feature • **Effort:** L • **Deps:** S-26.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-26.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-marshal/` if missing
 **And** the persona uses only `pyforge marshal …` and `POST /stations/marshal/mcp`
 
@@ -4139,7 +4139,7 @@ As a marshal operator,
 I want `/stations/marshal/` to list provisioned loop homes,
 So that one operator job works in HTMX on the host.
 
-**Type:** feature • **Effort:** M • **Deps:** S-27.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-27.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated marshal-role session **When** the operator opens `/stations/marshal/` **Then** homes list via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 **And** this story does not implement bmad-loop → supervisor ingest

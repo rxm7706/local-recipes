@@ -82,7 +82,7 @@ Not applicable — `pyforge-steward` is a CLI + backend package with no primary 
 | R-7 | PERF | 2×2=4 | Epic 34/36 | k6 (blocked) |
 | R-8 | OPS | 2×2=4 | Epic 17 | CI (ephemeral runner) |
 | R-12 | DATA | 2×2=4 | Epic 34/36 (unifying AD-6) | Config review |
-| R-15 | TECH | 2×2=4 | Epic 7/12 (unified-container AD-4) | Meta |
+| R-15 | TECH | 2×2=4 | Epic 7/12 (uc:AD-4) | Meta |
 | R-17 | BUS | 1×2=2 | Epic 4, Story 4.3 | Conformance |
 | R-18 | OPS | 1×2=2 | Epic 1, Story 1.3 | Monitor |
 | R-19 | TECH | 1×2=2 | Epic 1, Story 1.3 | Monitor |

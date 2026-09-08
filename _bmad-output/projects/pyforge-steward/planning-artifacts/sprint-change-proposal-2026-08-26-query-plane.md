@@ -40,7 +40,7 @@ Type: **new capability on a shipped chain** — not a rollback of 18–32, not a
 - SPEC `shipped` → `in-progress`; CAP-19; Why / Always / Non-goals / success signal.
 - PRD `shipped` → `in-progress`; FR-46..50; FR-27 note; traceability.
 - `epics.md` Epic 34 (34.1–34.5).
-- Architecture spine canopy AD-22.
+- Architecture spine canopy:AD-22.
 - Dream Grounding: evergreen; CAP-19 now on the SPEC.
 - `htap-query-plane.md` pointer updated (CAP lives here).
 - Hygiene 2026-08-26 (same session, later): PRD counts 16/19; UJ-6; JTBD query row;

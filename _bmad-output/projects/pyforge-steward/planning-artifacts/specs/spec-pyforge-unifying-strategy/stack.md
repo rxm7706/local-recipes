@@ -68,7 +68,7 @@ for pipelines, Vizro for Lane 3, one Atlas Kedro home (see AD-21 / AD-22).
 | `graphviz2drawio` | herald | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
 | `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (FR-27). Same primitive for worktrees / scribe files | **extend** |
 | `go-sops` + `age` | steward | Offline X25519 vaulting — in-estate path | **landed / keep** |
-| HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
+| HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy:AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
 | `pandera` | warden, mason | Schema contracts on lockfiles / CycloneDX feeds | **bind** |
 | `taplo`, `sqlfluff`, `yamllint` | doctor, warden | `pixi.toml` / `recipe.yaml` / DuckDB SQL preflight (`doctor check --syntax`) | **bind** (sqlfluff also lints CAP-19 SQL) |
 | `playwright` + `playwright-python` | herald, testing-kit | `.dc.html` + Vizro board PNG/PDF; both pins required (CLI ≠ Python module) | **extend** (herald already; Vizro thumbs after Lane 3 plane board) |

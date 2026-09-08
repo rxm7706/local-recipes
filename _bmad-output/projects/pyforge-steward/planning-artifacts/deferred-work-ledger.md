@@ -1262,7 +1262,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
 - source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
   summary: Canopy Phase 5 (`spec-pyforge-unifying-strategy`) — reconcile shipped Epic 11 with Epic 27 DDL governance without reopening engine integration stories.
-  evidence: Epic 11 Stories 11.1–11.2 provisioned `langflow_schema` / `dbgpt_schema` via Django `RunSQL` under parent AD-5; Canopy CAP-9 / FR-22 / canopy AD-9 moves production DDL to Liquibase (Epic 27). Architecture spine marks this as conflict-not-override — isolation and `search_path` remain; only the DDL producer changes.
+  evidence: Epic 11 Stories 11.1–11.2 provisioned `langflow_schema` / `dbgpt_schema` via Django `RunSQL` under parent AD-5; Canopy CAP-9 / FR-22 / canopy:AD-9 moves production DDL to Liquibase (Epic 27). Architecture spine marks this as conflict-not-override — isolation and `search_path` remain; only the DDL producer changes.
   resolution: **11.1 and 11.2 are NOT reopened** — sprint-status stays `done`; isolation shipped. **Epic 27 is the superseding forward work** (S-27.1 operator gate → S-27.2 pre-upgrade Job + DML-only app role → sqlmigrate CI gate). Do not queue rework of 11.1/11.2 when FR-22 lands.
   open_joint: `lane1-serves-dw-h3` — **answered 2026-08-25: no.** Lane 1 Wagtail `/cms/` does not
     serve atlas `LaSuiteClient` Docs REST (`POST /api/v1/documents/` etc.). DW-H3 remains atlas
@@ -1375,10 +1375,10 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-18-2: Live IdP revoke on the next request (FR-31 / canopy AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+### DW-FU-18-2: Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
 
 - source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
-  summary: Live IdP revoke on the next request (FR-31 / canopy AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+  summary: Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong reading) still waits on a per-request token, not this session snapshot.
   evidence: OIDC login writes group-claim names into session idp_token_roles until the next successful pre_social_login. 18.3 JWT re-verify is out of scope. Epic 21 / FR-31 owns next-request revoke.
   location: src/platform/config/authorization/adapters.py
   origin: spec-deferred 47f46e0ea931 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)

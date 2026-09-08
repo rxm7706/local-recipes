@@ -138,14 +138,14 @@ Defined once. The rest of the document uses these exactly, and no synonyms.
 - **Governed changeset** — a reviewed, versioned schema-change unit applied by an authority holding
   DDL privilege, distinct from the application's own migration bookkeeping.
 - **Feedstock** — a conda-forge recipe. Six are new work in this chain.
-- **Hooks and plugins** — architecture principle (canopy AD-21): a process owns
+- **Hooks and plugins** — architecture principle (canopy:AD-21): a process owns
   hook specifications; a plugin replaces or extends a layer without a fork.
   Kedro names the split; it does not require a Kedro project. **CAP-18** is the
   shared contract (not a scorecard). Q8 is the PR-gate instance (Warden owns
   those specs; scanners are plugins).
 - **Query plane** — the one DuckDB analytical engine (live read-only Postgres
   attach, Kedro Parquet cache, `vss` vectors). Stations and agents are clients.
-  Platform Postgres stays OLTP / app state. **CAP-19**, canopy AD-22.
+  Platform Postgres stays OLTP / app state. **CAP-19**, canopy:AD-22.
 
 ## 4. Features
 
@@ -1220,7 +1220,7 @@ control they cannot.
 - **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
 - **Atlas's waiting CMS consumer** — OQ-5 / `lane1-serves-dw-h3` **answered 2026-08-25: no.**
   Host Wagtail `/cms/` does not satisfy `LaSuiteClient` Docs REST. DW-H3 stays atlas.
-- **Packaging (FR-21, FR-33)** — operator-owned conda-forge recipes (canopy AD-16; Stories 26.3
+- **Packaging (FR-21, FR-33)** — operator-owned conda-forge recipes (canopy:AD-16; Stories 26.3
   and 27.1 stay blocked). Not in-chain CFE sessions for Canopy implementation.
 
 ## 11. Open Questions
@@ -1236,12 +1236,12 @@ control they cannot.
 
 **Answered 2026-08-24:**
 
--3. ~~**MCP runtime base (FastMCP vs official `mcp` SDK)**~~ — **hybrid, canopy AD-5.** Service
+-3. ~~**MCP runtime base (FastMCP vs official `mcp` SDK)**~~ — **hybrid, canopy:AD-5.** Service
    faces on the host are the official `mcp` SDK (`>=2.0.0`) on the one ASGI process. Stopgap in
    `local-recipes` only: `fastmcp >=3.4.7,<4` + `mcp >=1.24,<2.0` until those faces land; lift the
    `mcp` ceiling in the FR-11 story. The pairing outage is contained, not reopened.
 -4. ~~**One Liquibase tracking schema or one per application?**~~ — **one tracking schema**,
-   canopy AD-9: `liquibaseSchemaName=liquibase`. Four PostgreSQL schemas in this instance
+   canopy:AD-9: `liquibaseSchemaName=liquibase`. Four PostgreSQL schemas in this instance
    (`public`, `langflow_schema`, `dbgpt_schema`, `liquibase`). A fifth schema is a review-blocking
    finding. Concurrent migrate of two applications shares that global changelog lock; that is
    the bound cost.

@@ -19,13 +19,13 @@ warnings: []
 
 ## Intent
 
-**Problem:** A killed Mason boot that re-inserts index rows duplicates them. MinIO/boto3 would be a fourth infra kind (FR-29, BS-8, canopy AD-13, parent AD-1).
+**Problem:** A killed Mason boot that re-inserts index rows duplicates them. MinIO/boto3 would be a fourth infra kind (FR-29, BS-8, canopy:AD-13, parent AD-1).
 
 **Approach:** Mason boot re-index upserts by a stable artifact key against PostgreSQL (and RWX files if present). Interrupted mid-flight + resume → one row per key. Tests fail if reconciliation is removed. No MinIO.
 
 ## Boundaries & Constraints
 
-**Always:** Mechanism lives in `pyforge.mason` (`boot.py`). Canonical store is PostgreSQL-shaped unique-key upsert (`INSERT … ON CONFLICT DO NOTHING`). RWX is optional filesystem scan (canopy AD-13). Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Parent AD-2: no `pyforge.*` under `src/platform/`. Tests fail if reconcile is removed (canopy AD-15).
+**Always:** Mechanism lives in `pyforge.mason` (`boot.py`). Canonical store is PostgreSQL-shaped unique-key upsert (`INSERT … ON CONFLICT DO NOTHING`). RWX is optional filesystem scan (canopy:AD-13). Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Parent AD-2: no `pyforge.*` under `src/platform/`. Tests fail if reconcile is removed (canopy:AD-15).
 
 **Block If:** Implementation would add MinIO/S3/boto3, put `pyforge.*` under `src/platform/`, or add a pixi package for an object-store client.
 

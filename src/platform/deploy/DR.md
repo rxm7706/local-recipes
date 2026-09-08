@@ -36,7 +36,7 @@ may write authoritative state first):
 6. **Rebuild DuckDB cache** by re-running atlas pipeline phases (derived
    read model only).
 7. **Mason boot reconcile** — upsert index rows from PostgreSQL (+ RWX scan
-   when files exist); no object-store scan (canopy AD-13 / parent AD-1).
+   when files exist); no object-store scan (canopy:AD-13 / parent AD-1).
 8. **Application smoke** — `/api/health`, `/ht/`, steward `validate-fast`.
 
 ## Explicit non-goals (this contract)

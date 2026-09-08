@@ -14,7 +14,7 @@ review_loop_iteration: 0
 followup_review_recommended: true
 deferred:
   - summary: >-
-      Live IdP revoke on the next request (FR-31 / canopy AD-15 strong
+      Live IdP revoke on the next request (FR-31 / canopy:AD-15 strong
       reading) still waits on a per-request token, not this session snapshot.
     evidence: |-
       OIDC login writes group-claim names into session idp_token_roles until
@@ -38,13 +38,13 @@ deferred:
 
 ## Intent
 
-**Problem:** The chrome switcher lists every registered portal. An operator without a station's IdP role still sees a door they cannot open (FR-3, canopy AD-15).
+**Problem:** The chrome switcher lists every registered portal. An operator without a station's IdP role still sees a door they cannot open (FR-3, canopy:AD-15).
 
 **Approach:** Filter switcher entries from roles on the current request's token. Station views still refuse a direct URL. Do not treat Django groups or other durable local grants as the switcher's authority.
 
 ## Boundaries & Constraints
 
-**Always:** Land in existing `django-pyforge` chrome. Discovery stays `apps.get_app_configs()`. Roles are re-read on each request from the token (request-scoped `idp_roles` and/or session key populated from this request's IdP claims). The switcher is not enforcement. Cite canopy AD-15. Write specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only.
+**Always:** Land in existing `django-pyforge` chrome. Discovery stays `apps.get_app_configs()`. Roles are re-read on each request from the token (request-scoped `idp_roles` and/or session key populated from this request's IdP claims). The switcher is not enforcement. Cite canopy:AD-15. Write specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward` only.
 
 **Block If:** Implementation would require minting or verifying RS256 service JWTs, or renaming `compliance_face`.
 

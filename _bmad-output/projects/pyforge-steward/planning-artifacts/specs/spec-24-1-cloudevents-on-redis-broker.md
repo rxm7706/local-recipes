@@ -29,13 +29,13 @@ deferred:
 
 ## Intent
 
-**Problem:** Stations have no durable event backbone. A down consumer drops work, a poison payload can stall a group, and ad-hoc JSON has no identity envelope (FR-17, FR-18, canopy AD-8).
+**Problem:** Stations have no durable event backbone. A down consumer drops work, a poison payload can stall a group, and ad-hoc JSON has no identity envelope (FR-17, FR-18, canopy:AD-8).
 
 **Approach:** Publish CloudEvents 1.0 onto the existing redis-broker Streams split from Story 20.2. One estate stream and DLQ, consumer groups named by station token, poison harvested with XAUTOCLAIM, envelope identity required except Jira.
 
 ## Boundaries & Constraints
 
-**Always:** `XADD` CloudEvents `specversion=1.0` to `pyforge.events` on redis-broker only. DLQ is `pyforge.events.dlq`. Group name is a station token. `dataschema` is required. Envelope carries `specid`, `gitsha`, `sbompurl`; `workitemid` is optional. Missing Jira is not a fail. Idempotency key is CloudEvents `id`. Cite canopy AD-8 / AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
+**Always:** `XADD` CloudEvents `specversion=1.0` to `pyforge.events` on redis-broker only. DLQ is `pyforge.events.dlq`. Group name is a station token. `dataschema` is required. Envelope carries `specid`, `gitsha`, `sbompurl`; `workitemid` is optional. Missing Jira is not a fail. Idempotency key is CloudEvents `id`. Cite canopy:AD-8 / AD-10. Specs under `_bmad-output/projects/pyforge-steward/planning-artifacts/` literally. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical writes only under that slug.
 
 **Block If:** Implementation would re-split Redis, add MinIO, start Liquibase 27-1, or require a live cluster Redis that tests cannot replace with an in-process stream backend.
 

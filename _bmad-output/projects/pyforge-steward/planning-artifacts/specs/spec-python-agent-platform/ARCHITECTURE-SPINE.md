@@ -18,7 +18,7 @@ sources:
 
 This spine restates the SPEC's invariants as numbered ADs so every dev session across
 Epics 10–12 binds to one stable set. Cross-Spec citations use **`pap:AD-1`..`pap:AD-17`**
-(Unifying Strategy must not treat these as canopy AD-1..). On any conflict, `SPEC.md` wins.
+(Unifying Strategy must not treat these as canopy:AD-1..). On any conflict, `SPEC.md` wins.
 
 ## Invariants & Rules
 
@@ -32,7 +32,7 @@ Dream `foundry-baas-capability-gaps` § *Reopening AD-1*, folded into
 `docs/dreams/pyforge-unifying-strategy.md` the same day; record: `pyforge-steward`
 `sprint-change-proposal-2026-09-05-ad-1-reopen.md`). This rule is design-review discipline — a
 bound on operational surface — and has never rested on air-gap parity (that is AD-13). Lane 1
-media stays on a `ReadWriteMany` PVC (canopy AD-13, storage-class prerequisite added the same
+media stays on a `ReadWriteMany` PVC (canopy:AD-13, storage-class prerequisite added the same
 day). No exception granted. Exception procedure: canopy spine § *Conflict, not override —
 parent AD-1*.
 

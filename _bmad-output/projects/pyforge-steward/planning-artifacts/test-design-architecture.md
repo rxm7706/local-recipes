@@ -84,7 +84,7 @@ inputDocuments:
 ### ⚠️ HIGH PRIORITY - Team Should Validate (We Provide Recommendation, You Approve)
 
 1. **R-1: Package scope sprawl raises AD-8's blast radius** — `cli.py` is still the sole exit-code owner across all 18 duties (up from the 4 the AD was written for); recommend a dedicated dispatcher-level test asserting no duty module calls `sys.exit` directly, run once per new duty rather than only at Epic-1 time (implementation phase, owner: Dev).
-2. **R-6: Pod specs / image layers must never carry secret values (AD-19 unifying, AD-24 unified-container AD-3)** — recommend a `tests/meta` invariant scanning the container build manifest and any Helm/OCP overlay for literal secret material, mirroring the existing `test_keys_plaintext_secret_scan.py` pattern for `keys list` output (implementation phase, owner: Dev/Steward).
+2. **R-6: Pod specs / image layers must never carry secret values (AD-19 unifying, AD-24 uc:AD-3)** — recommend a `tests/meta` invariant scanning the container build manifest and any Helm/OCP overlay for literal secret material, mirroring the existing `test_keys_plaintext_secret_scan.py` pattern for `keys list` output (implementation phase, owner: Dev/Steward).
 3. **R-7: Estate query-plane (Epic 34) and Vizro estate-cache (Epic 36) NFR thresholds are undeclared** — no latency/staleness SLO is written down for the read-only live-attach path (Story 34.1) or the Parquet cache write path (34.2); recommend the architecture team set an explicit staleness budget so `nfr-assess` has something to validate against later (implementation phase, owner: Architecture).
 
 **What we need from team:** Review recommendations and approve (or suggest changes).
@@ -194,7 +194,7 @@ inputDocuments:
 2. **Base-install import isolation for the dashboard extra is unverified**
    - **Current problem**: AD-4 (unified-container) requires that Django/Channels imports never happen unconditionally at module level, but the existing `test_dashboard_*` tests all run with the extra installed — none prove the *base* install path stays clean.
    - **Required change**: A subprocess-based `tests/meta` test importing `pyforge.steward.cli` with the extra absent.
-   - **Impact if not fixed**: The lean-image tier (unified-container AD-2) silently regresses to always requiring the ASGI stack.
+   - **Impact if not fixed**: The lean-image tier (uc:AD-2) silently regresses to always requiring the ASGI stack.
    - **Owner**: Dev
    - **Timeline**: Before the next unified-container story
 

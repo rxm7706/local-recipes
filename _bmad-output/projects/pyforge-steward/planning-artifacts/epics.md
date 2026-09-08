@@ -772,7 +772,7 @@ line was the leftover that invited a duplicate story (DW-FU-8-7-7).*
 ASGI boundary, declared row-isolation, role-built navigation, a see-what-was-seen audit
 trail, server-gated export, a shipped perimeter, non-vacuous proof tests, and hosted-or-static
 without a fork. Atlas's Vizro board is the first adopter, not the subject. ASGI stack ships as
-the `pyforge-steward[dashboard]` **optional extra** per unified-container AD-1 — never a base
+the `pyforge-steward[dashboard]` **optional extra** per uc:AD-1 — never a base
 dependency.
 
 > **Operator override, recorded 2026-08-10 (in-session, "steward secure-dashboard").** The
@@ -1348,7 +1348,7 @@ container, zero improvised steps.
 
 # Chain: `spec-pyforge-unifying-strategy` (Epics 18–30)
 
-Headless/express 2026-08-24. Steward ledger already occupies Epics 1–17; this chain **appends**. Cite **parent AD-n** (python-agent-platform) vs **canopy AD-n** (unifying-strategy spine). Packaging FRs are **blocked on the operator** (canopy AD-16) — not sized as recipe stories. Phase 5 (`bmad-correct-course` × 8, Marshal retires `spec-factory-console`) is **not** an epic. Open question `lane1-serves-dw-h3` stayed out of stories and was **answered no** 2026-08-25.
+Headless/express 2026-08-24. Steward ledger already occupies Epics 1–17; this chain **appends**. Cite **parent AD-n** (python-agent-platform) vs **canopy AD-n** (unifying-strategy spine). Packaging FRs are **blocked on the operator** (canopy:AD-16) — not sized as recipe stories. Phase 5 (`bmad-correct-course` × 8, Marshal retires `spec-factory-console`) is **not** an epic. Open question `lane1-serves-dw-h3` stayed out of stories and was **answered no** 2026-08-25.
 
 ## Requirements Inventory (Canopy)
 
@@ -1415,18 +1415,18 @@ NFR-C7: Search is PostgreSQL FTS; Wagtail work is Celery, not django-tasks DB/RQ
 
 ### Additional Requirements (Architecture)
 
-- Modular monolith: one ASGI process; MCP is a URL pattern, not a roster (canopy AD-1, AD-5, AD-10).
+- Modular monolith: one ASGI process; MCP is a URL pattern, not a roster (canopy:AD-1, AD-5, AD-10).
 - Citation: `parent AD-n` vs `canopy AD-n`; bare `AD-n` is review-blocking.
-- JWT: RS256; claims `sub`/`roles`/`aud=mcp:<station>`/`exp`≤5m/`delegated_by=pyforge-host` (canopy AD-7). HMAC rejected.
-- Events: `pyforge.events` + `pyforge.events.dlq`; `pyforgeloopdepth` ceiling 8 (canopy AD-8).
-- Four PostgreSQL schemas only; `run_state`/`mcp_handles` are tables in `public` (canopy AD-9).
-- Flags: in-process FILE watches the ConfigMap; Reloader/flagd sidecar is parent AD-14 (canopy AD-11).
-- `start_*` is a supervisor publish (canopy AD-12).
-- CAP-7 consumes `pyforge.steward.dashboard` only (canopy AD-20).
-- Portal models are projections; factory package is the writer (canopy AD-18).
-- CAP-15 skills are SKF content skills; CAP-16 are BMAD launcher skills; `conda-forge-expert` stays hand-authored (canopy AD-17).
+- JWT: RS256; claims `sub`/`roles`/`aud=mcp:<station>`/`exp`≤5m/`delegated_by=pyforge-host` (canopy:AD-7). HMAC rejected.
+- Events: `pyforge.events` + `pyforge.events.dlq`; `pyforgeloopdepth` ceiling 8 (canopy:AD-8).
+- Four PostgreSQL schemas only; `run_state`/`mcp_handles` are tables in `public` (canopy:AD-9).
+- Flags: in-process FILE watches the ConfigMap; Reloader/flagd sidecar is parent AD-14 (canopy:AD-11).
+- `start_*` is a supervisor publish (canopy:AD-12).
+- CAP-7 consumes `pyforge.steward.dashboard` only (canopy:AD-20).
+- Portal models are projections; factory package is the writer (canopy:AD-18).
+- CAP-15 skills are SKF content skills; CAP-16 are BMAD launcher skills; `conda-forge-expert` stays hand-authored (canopy:AD-17).
 - FR-9b before any CAP-9 story that revokes app-role DDL.
-- One hook-spec + plugin registration in `pyforge-core` (canopy AD-21, CAP-18). Epics 18–30 must not invent a station-local plugin API.
+- One hook-spec + plugin registration in `pyforge-core` (canopy:AD-21, CAP-18). Epics 18–30 must not invent a station-local plugin API.
 
 ### UX Design Requirements
 
@@ -1559,7 +1559,7 @@ Non-module suite pieces follow a class-keyed playbook; `wired-or-not` is class-c
 
 ### Epic 18: Chrome and the trusted client
 
-An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy AD-1, AD-3, AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
+An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy:AD-1, AD-3, AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
 
 ### Story 18.1: django-pyforge is the only chrome
 
@@ -1567,7 +1567,7 @@ As a portal author,
 I want one installable chrome package with an AppConfig registration protocol,
 So that adding a station does not edit the host URLconf or ship a second switcher.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-1, FR-2 • canopy AD-1, AD-3
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-1, FR-2 • canopy:AD-1, AD-3
 **Given** two portal apps in `INSTALLED_APPS` **When** they render a page **Then** chrome markup is byte-identical and sourced from `django-pyforge`
 **And** a test that enumerates portal template/static dirs **fails** if either ships a base layout, switcher, or theme copy
 **And** discovery is `apps.get_app_configs()`; host URLconf has no station roster except the later `/compliance/` redirect
@@ -1581,7 +1581,7 @@ As a signed-in operator,
 I want the app switcher to list only stations my IdP roles permit,
 So that I am not offered doors I cannot open.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-3 • canopy AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-3 • canopy:AD-15
 **Given** a user lacking a station role **When** they load chrome **Then** that station is absent from the switcher
 **And** requesting the hidden station URL directly is still refused by that station (switcher is not enforcement)
 **And** roles are re-read from the token on the request, not a durable local grant
@@ -1592,7 +1592,7 @@ As a station service,
 I want every portal and CLI call to carry the same audience-bound JWT,
 So that I can verify the end user without trusting a header.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-14, FR-15 • canopy AD-7
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-14, FR-15 • canopy:AD-7
 **Given** the golden vector in `django-pyforge` **When** both the portal client and `pyforge.core` client emit a token **Then** both pass the same RS256 verification (`sub`, `roles`, `aud=mcp:<station>`, `exp`≤5m from `iat`, `delegated_by=pyforge-host`)
 **And** a call with a bad signature, wrong audience, or expired `exp` is refused
 **And** a request with an identity header and no valid assertion is refused
@@ -1609,7 +1609,7 @@ As a compliance auditor,
 I want Warden at `/stations/warden/` with `/compliance/` still working,
 So that bookmarks survive the uniform prefix.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-9a, FR-9b • canopy AD-2, AD-4
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-9a, FR-9b • canopy:AD-2, AD-4
 **Given** the shipped `compliance_face` **When** this story merges **Then** distribution is `django-warden`, module `django_warden_fabric`, label `warden_fabric`
 **And** `/compliance/` is a permanent redirect to `/stations/warden/` preserving path and query
 **And** no identifier `compliance_face` remains under `src/`
@@ -1623,7 +1623,7 @@ As a platform operator,
 I want every station reachable at `/stations/<name>/` in one session,
 So that I do not re-authenticate to change tools.
 
-**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** FR-9, FR-10 • canopy AD-2, AD-18
+**Type:** feature • **Effort:** L • **Deps:** S-19.1, S-18.3 • **FR/AD:** FR-9, FR-10 • canopy:AD-2, AD-18
 **Given** chrome and the assertion client **When** I request each of the eight portals in one session **Then** none re-authenticate and all are same-origin with Lane 1
 **And** each remaining station has `django-<station>/` with the naming triple; existing models do not move between apps
 **And** portals reach stations only through `django-pyforge`'s client; no portal imports station internals or builds raw HTTP to a service
@@ -1640,7 +1640,7 @@ As an editor,
 I want to change a page and have it live without a rollout,
 So that runbooks do not wait on a deploy.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-4, FR-5 • canopy AD-13
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** FR-4, FR-5 • canopy:AD-13
 **Given** an authenticated editor with the Wagtail-admin IdP group **When** they publish a page **Then** an estate request sees it with no new image and no Deployment rollout
 **And** content survives pod restart and is identical from every replica
 **And** unauthenticated admin requests redirect to the IdP; no local password or email-management surface is reachable
@@ -1652,7 +1652,7 @@ As an operator,
 I want uploaded media on shared storage and a cache that cannot evict Celery,
 So that scaling Lane 1 does not lose files or drop builds.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** FR-8, FR-30 • canopy AD-13, AD-10 • NFR-C7
+**Type:** feature • **Effort:** L • **Deps:** S-20.1 • **FR/AD:** FR-8, FR-30 • canopy:AD-13, AD-10 • NFR-C7
 **Given** a ReadWriteMany PVC for Wagtail media and two Redis Deployments **When** replica A stores an upload **Then** replica B retrieves it
 **And** a rendition generated on A is served from redis-cache by B without regeneration
 **And** filling redis-cache to eviction loses no queued task on redis-broker
@@ -1663,7 +1663,7 @@ So that scaling Lane 1 does not lose files or drop builds.
 
 ## Epic 21: Agents survive; run state is a service
 
-`start_*` is a supervisor publish (canopy AD-12). Handles live in `public.mcp_handles`; runs in `public.run_state`.
+`start_*` is a supervisor publish (canopy:AD-12). Handles live in `public.mcp_handles`; runs in `public.run_state`.
 
 ### Story 21.1: Supervisor tables in public
 
@@ -1671,7 +1671,7 @@ As an agent,
 I want handles and run rows in PostgreSQL owned by `django-pyforge`,
 So that any replica can answer `get` and the front door never reads a laptop disk.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-12, FR-40 • canopy AD-6, AD-9, AD-12
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-12, FR-40 • canopy:AD-6, AD-9, AD-12
 **Given** the platform database **When** this story lands **Then** `run_state` and `mcp_handles` exist as tables in `public`, not new schemas
 **And** DDL is authored as Django migrations owned by `django-pyforge` (Epic 27 will extract changesets)
 **And** no front-door or MCP path reads `~/.bmad-loops`, tmux, or journals
@@ -1682,7 +1682,7 @@ As an autonomous agent,
 I want atlas's service face on `POST /stations/atlas/mcp` using the official `mcp` SDK,
 So that handshake-era and modern clients both work.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.1, S-18.3 • **FR/AD:** FR-11 • canopy AD-5
+**Type:** feature • **Effort:** L • **Deps:** S-18.1, S-18.3 • **FR/AD:** FR-11 • canopy:AD-5
 **Given** the host ASGI process **When** a client posts to `/stations/atlas/mcp` **Then** the face speaks MCP revisions `2025-03-26` through `2026-07-28`
 **And** handshake `initialize` echoes the client's requested revision; unsupported revisions return `-32022` with the supported list
 **And** no code path branches on client name or user-agent; deprecated dual-endpoint SSE is not served
@@ -1695,7 +1695,7 @@ As an autonomous agent,
 I want a multi-minute operation to return a handle immediately and be fetchable after a drop,
 So that a 30s idle timeout does not lose the work.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** FR-12 • canopy AD-6, AD-12
+**Type:** feature • **Effort:** L • **Deps:** S-21.1, S-21.2 • **FR/AD:** FR-12 • canopy:AD-6, AD-12
 **Given** a simulated ingress disconnect mid-operation **When** the client reconnects with the handle and a valid assertion **Then** it receives the same result without recomputation
 **And** `start_*` returns before the work finishes and publishes through the supervisor (no second ledger)
 **And** `get_*` succeeds on a different replica; possession of the handle without the assertion is refused
@@ -1707,7 +1707,7 @@ As an autonomous agent,
 I want every station on the same POST pattern,
 So that I do not learn eight transports.
 
-**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** FR-11 • canopy AD-1, AD-5
+**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **FR/AD:** FR-11 • canopy:AD-1, AD-5
 **Given** the atlas face **When** the remaining seven stations register MCP tokens **Then** `POST /stations/<name>/mcp` conforms to the same dual-era checks
 **And** host dispatch is a pattern, not a per-station list
 
@@ -1717,7 +1717,7 @@ As a platform operator,
 I want live runs and completed timing from the supervisor,
 So that the published board is not `unavailable` for lack of my home directory.
 
-**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** FR-40, FR-41, FR-42 • canopy AD-12, AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** FR-40, FR-41, FR-42 • canopy:AD-12, AD-15
 **Given** a deployed egress-blocked namespace **When** the front door renders run state **Then** it uses the supervisor API only — no filesystem fallback
 **And** a run started on one machine is visible to a front door on another
 **And** timing is ingested at run completion, queryable across runs
@@ -1731,7 +1731,7 @@ As a packaging engineer,
 I want `pyforge <station> <noun> <verb>` to match each station binary,
 So that I do not memorize eight CLIs.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-13 • canopy AD-14
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-13 • canopy:AD-14
 **Given** the eight station console scripts **When** CI generates the parity matrix **Then** every verb is reachable through both paths
 **And** adding a station verb that the unified entry cannot reach fails the build
 **And** no station logic is copied into `pyforge-core`; dispatch only
@@ -1745,7 +1745,7 @@ As a compliance auditor,
 I want analytical boards behind the host to filter rows by my role,
 So that I never see another tenant's slice.
 
-**Type:** feature • **Effort:** L • **Deps:** S-18.2, S-19.2 • **FR/AD:** FR-16 • canopy AD-20
+**Type:** feature • **Effort:** L • **Deps:** S-18.2, S-19.2 • **FR/AD:** FR-16 • canopy:AD-20
 **Given** two authenticated users with different roles **When** they request the same board URL **Then** returned rows differ as their roles dictate
 **And** isolation is `pyforge.steward.dashboard` filter-then-search (`filter_by_role` / `AccessDeclaration`), server-side
 **And** a second isolation stack (including Vizro that filters its own rows) is a review-blocking finding
@@ -1761,7 +1761,7 @@ As a station,
 I want durable events with a DLQ,
 So that a poison payload cannot stall the group.
 
-**Type:** feature • **Effort:** L • **Deps:** S-20.2 • **FR/AD:** FR-17, FR-18 • canopy AD-8
+**Type:** feature • **Effort:** L • **Deps:** S-20.2 • **FR/AD:** FR-17, FR-18 • canopy:AD-8
 **Given** a consumer that is down **When** an event is `XADD`ed to `pyforge.events` **Then** it is delivered on return without double-apply
 **And** a malformed event lands in `pyforge.events.dlq` via `XAUTOCLAIM` and does not block the group
 **And** an operator can enumerate quarantined messages
@@ -1774,14 +1774,14 @@ As a platform operator,
 I want cyclic fan-out to stop at depth 8,
 So that a buggy producer cannot run away.
 
-**Type:** feature • **Effort:** M • **Deps:** S-24.1 • **FR/AD:** FR-19, FR-20 • canopy AD-8
+**Type:** feature • **Effort:** M • **Deps:** S-24.1 • **FR/AD:** FR-19, FR-20 • canopy:AD-8
 **Given** a deliberate cycle **When** `pyforgeloopdepth` reaches 8 **Then** publish halts observably
 **And** event `type` is a dotted verb registered in `django-pyforge`
 **And** payload shape is rejected in the consuming domain adapter, not at the stream boundary
 
 ## Epic 25: Failure stays contained
 
-Each invariant has a test that fails with the mechanism absent (canopy AD-15).
+Each invariant has a test that fails with the mechanism absent (canopy:AD-15).
 
 ### Story 25.1: Circuits trip on async too
 
@@ -1789,7 +1789,7 @@ As an operator,
 I want a dead dependency to degrade the caller,
 So that one outage does not hang the estate.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-26 • canopy AD-15
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-26 • canopy:AD-15
 **Given** repeated outbound failures **When** the circuit opens **Then** the caller returns degraded within budget
 **And** a failing asyncio call registers as a failure (in-tree PyBreaker wrapper), not a success
 **And** `fail_max` is coarse, never exact-count
@@ -1823,7 +1823,7 @@ As a mason operator,
 I want a killed boot to re-index without duplicating rows,
 So that restarts are safe.
 
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-29 • resilience BS-8 • canopy AD-13
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** FR-29 • resilience BS-8 • canopy:AD-13
 **Given** work interrupted mid-flight **When** the process restarts **Then** the effect applies once
 **And** reconcile is against PostgreSQL (and RWX files if any), **not** MinIO
 **And** the test fails if reconciliation is removed
@@ -1836,7 +1836,7 @@ As a security officer,
 I want an IdP role change to apply without a re-login wait,
 So that access is actually revocable.
 
-**Type:** feature • **Effort:** M • **Deps:** S-18.2 • **FR/AD:** FR-31 • canopy AD-15
+**Type:** feature • **Effort:** M • **Deps:** S-18.2 • **FR/AD:** FR-31 • canopy:AD-15
 **Given** a user who can open a portal **When** the role is revoked at the IdP **Then** the next request is denied
 **And** local group tables are not the authority
 
@@ -1846,7 +1846,7 @@ As a platform operator,
 I want rendered Helm to contain `secretKeyRef`s and never secret values,
 So that a git-diff of the chart cannot leak credentials.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-32 • canopy AD-19 • parent AD-12
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-32 • canopy:AD-19 • parent AD-12
 **Given** `helm template` (or Kustomize) output **When** a secret check runs **Then** it fails if a secret *value* appears
 **And** pods consume env/file mounts; the app does not call a secrets HTTP API
 **And** Vault injector / CSI / extra secrets sidecar is out of this chain without a dated Dream entry
@@ -1857,7 +1857,7 @@ As a platform operator,
 I want flag libraries from conda-forge,
 So that CAP-13 can evaluate offline.
 
-**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** FR-33 • canopy AD-16
+**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** FR-33 • canopy:AD-16
 **Blocked:** operator-owned packaging (`openfeature-sdk`, `openfeature-flagd-api`, `openfeature-flagd-core`, `openfeature-provider-flagd`, `cachebox` 5.x). This story does **not** author recipes.
 **Given** those packages on the platform channel **When** the env solves **Then** S-26.4 may start
 **And** until then S-26.4 stays blocked
@@ -1868,7 +1868,7 @@ As a platform operator,
 I want to change one JSON flag and see Django, MCP, and CLI obey,
 So that behaviour flips in an air gap without a rollout.
 
-**Type:** feature • **Effort:** L • **Deps:** S-26.3 • **FR/AD:** FR-34 • canopy AD-11
+**Type:** feature • **Effort:** L • **Deps:** S-26.3 • **FR/AD:** FR-34 • canopy:AD-11
 **Given** one JSON tree (ConfigMap from `src/platform/config/flags.json`) **When** a flag value changes on disk **Then** all three surfaces observe it with no egress
 **And** the in-process FILE provider watches the mount — no Deployment rollout, no Reloader, no flagd sidecar
 **And** two trees is a review-blocking finding
@@ -1884,7 +1884,7 @@ As a platform operator,
 I want Liquibase 5.0.4+ inside the platform image,
 So that production DDL has an auditable tool.
 
-**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** FR-21 • canopy AD-16
+**Type:** chore • **Effort:** — • **Deps:** — • **FR/AD:** FR-21 • canopy:AD-16
 **Blocked:** operator-owned packaging (`liquibase` ≥5.0.4, vendored PostgreSQL JDBC, no new image). This story does **not** author recipes.
 **Given** the package on the channel the platform env consumes **When** the env solves **Then** S-27.2 may start
 
@@ -1894,7 +1894,7 @@ As an auditor,
 I want schema change applied by a migration role before pods start,
 So that the application cannot ALTER itself.
 
-**Type:** feature • **Effort:** L • **Deps:** S-27.1, S-19.1 • **FR/AD:** FR-21a, FR-22, FR-24 • canopy AD-9
+**Type:** feature • **Effort:** L • **Deps:** S-27.1, S-19.1 • **FR/AD:** FR-21a, FR-22, FR-24 • canopy:AD-9
 **Given** a chart upgrade **When** hooks run **Then** Job weight −1 runs `liquibase update` on the platform image, then the shipped Job runs `migrate --fake`
 **And** `preserveSchemaCase` is off; schema names lowercase; Job connects directly with `currentSchema`, not through a pooling proxy
 **And** schemas are exactly `public`, `langflow_schema`, `dbgpt_schema`, `liquibase`
@@ -1907,7 +1907,7 @@ As a developer,
 I want a model change without a changeset to break the build,
 So that production DDL cannot drift from what was reviewed.
 
-**Type:** feature • **Effort:** M • **Deps:** S-27.2 • **FR/AD:** FR-23 • canopy AD-9
+**Type:** feature • **Effort:** M • **Deps:** S-27.2 • **FR/AD:** FR-23 • canopy:AD-9
 **Given** a model change with no matching Liquibase changeset **When** CI runs `sqlmigrate` extraction **Then** the check fails and names the missing changeset
 
 ### Story 27.4: Test databases still migrate
@@ -1951,7 +1951,7 @@ As an autonomous agent,
 I want a version-pinned skill compiled from `pyforge-<station>/`,
 So that I follow how the station actually works.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-37 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-37 • canopy:AD-17
 **Given** a station that has no skill today **When** SKF compiles from `src/shared/packages/pyforge-<station>/` **Then** an agent loads that skill and follows it on the station's core task
 **And** output is agentskills.io-compliant with provenance; `skf-export-skill` is the only write into `CLAUDE.md` / `AGENTS.md`
 **And** `conda-forge-expert` is not replaced
@@ -1962,7 +1962,7 @@ As an operator,
 I want each station addressable as a persona,
 So that an agent does not freelance against the filesystem.
 
-**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** FR-38 • canopy AD-14, AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-21.4, S-29.1 • **FR/AD:** FR-38 • canopy:AD-14, AD-17
 **Given** a station persona **When** it completes a station task **Then** the transcript shows only FR-13 grammar and FR-11 MCP — no direct filesystem and no ad-hoc HTTP
 **And** personas are BMAD launcher/agent skills that consult the CAP-15 content skill
 
@@ -1972,7 +1972,7 @@ As a platform operator,
 I want completeness to fail CI when a tier is missing,
 So that "done" cannot mean CLI-only.
 
-**Type:** chore • **Effort:** S • **Deps:** S-29.2 • **FR/AD:** FR-39 • canopy AD-14
+**Type:** chore • **Effort:** S • **Deps:** S-29.2 • **FR/AD:** FR-39 • canopy:AD-14
 **Given** all eight **03** stations **When** the check runs **Then** it reports each of CLI, portal, service, skill, persona
 **And** declaring an **03** station complete with fewer than five fails the check
 **And** 01/02 fixtures (spec+script or spec+skill only) do not fail the check
@@ -2017,11 +2017,10 @@ vs **canopy AD-n** (`architecture-pyforge-unifying-strategy-2026-08-24`); bare `
 review-blocking.
 
 **Shipped work stands:** Epic 11 (Stories 11.1–11.4) remains **done**. Schema isolation
-(`langflow_schema`, `dbgpt_schema`, `search_path`, Pattern A/B) is not reopened. FR-22 / canopy
-AD-9 supersedes only the **production DDL mechanism** — Epic 27, not a rollback of Epic 11.
+(`langflow_schema`, `dbgpt_schema`, `search_path`, Pattern A/B) is not reopened. FR-22 / canopy:AD-9 supersedes only the **production DDL mechanism** — Epic 27, not a rollback of Epic 11.
 
 **Sequencing:** S-19.1 (FR-9b) before Epic 27 stories that revoke app-role DDL. S-26.3 and
-S-27.1 stay **blocked** on operator-owned packaging (canopy AD-16).
+S-27.1 stay **blocked** on operator-owned packaging (canopy:AD-16).
 
 **Phase 5 scope:** This block records steward obligations. Peer stations (atlas, marshal,
 warden, doctor, herald, mason, scribe) run their own Phase 5 course-correction proposals;
@@ -2077,7 +2076,7 @@ As a station author,
 I want one registration API and one hook-spec documentation shape,
 So that eight stations do not invent eight plugin APIs.
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-43 • canopy AD-21 • CAP-18
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-43 • canopy:AD-21 • CAP-18
 **Surface:** `pyforge-core` (shared floor; do not add a ninth package)
 **Given** a dummy plugin declared against the published API **When** the loader runs **Then** the plugin is invoked at a named before/after/around (or equivalent documented) point
 **And** a conformance check **fails** if a station package ships a parallel registration mechanism for the same class of extension
@@ -2090,7 +2089,7 @@ As a platform operator,
 I want Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, and Jira as deploy-profile plugins,
 So that swapping a vendor does not fork the Golden Path.
 
-**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** today's deploy/profile backends **When** they are extracted **Then** each registers as a default plugin on the FR-43 contract
 **And** disabling an optional vendor plugin does not fail the Golden Path Pixi task
 **And** Tachyon remains a production LLM **adapter** plugin — local/CI must not require it
@@ -2100,7 +2099,7 @@ So that swapping a vendor does not fork the Golden Path.
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -2134,7 +2133,7 @@ As an autonomous agent,
 I want a steward SKF skill compiled from `pyforge-steward/` and a `bmad-agent-steward` persona,
 So that Path B uses this station's grammar and MCP instead of freelancing the filesystem.
 
-**Type:** feature • **Effort:** L • **Deps:** S-32.1, S-29.3 • **FR/AD:** FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-32.1, S-29.3 • **FR/AD:** FR-37, FR-38 • canopy:AD-17
 **Given** steward 29.1/29.2 proved the shape on one station **When** this story completes **Then** `.claude/skills/pyforge-steward/` exists (SKF from `src/shared/packages/pyforge-steward/`) with provenance
 **And** a BMAD persona consults that skill and uses only CAP-5 `pyforge steward …` and CAP-4 `POST /stations/steward/mcp`
 **And** `conda-forge-expert` is not replaced
@@ -2146,7 +2145,7 @@ As a platform operator,
 I want `GET /stations/steward/` to show the named pixi environments (`provision --list`),
 So that one operator job works in HTMX without leaving the host session.
 
-**Type:** feature • **Effort:** M • **Deps:** S-33.1, S-19.2 • **FR/AD:** FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-33.1, S-19.2 • **FR/AD:** FR-10 • canopy:AD-7
 **Given** an authenticated steward-role session **When** the operator opens `/stations/steward/` **Then** HTMX renders the environment inventory from the station via `django-pyforge`'s PortalClient only
 **And** no raw HTTP, no `pyforge.*` import under `src/platform/`, no chrome copy in `django-steward`
 
@@ -2162,7 +2161,7 @@ As an operator,
 I want DuckDB to attach a fixture multi-schema Postgres read-only,
 So that Mode A answers without writing OLTP or installing `pgvector`.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-46 • canopy AD-22
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-46 • canopy:AD-22
 **Given** a fixture Postgres with two schemas and no `pgvector` **When** the plane attaches **Then** a federated read succeeds and a write is refused
 **And** the path is not pandas `SQLQueryDataSet`
 **And** consumer boot does not `INSTALL` extensions
@@ -2173,7 +2172,7 @@ As an operator,
 I want a named Kedro pipeline to extract heavy tables to compressed Parquet,
 So that dashboards and autonomous SQL hit the cache.
 
-**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** FR-47 • canopy AD-22
+**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** FR-47 • canopy:AD-22
 **Given** the named pipeline **When** `kedro run` completes **Then** the Parquet cache exists
 **And** a scan of it does not use the OLTP writer role
 **And** refresh is not Airflow and not an `01_raw` folder tree
@@ -2184,7 +2183,7 @@ As an agent,
 I want HNSW ranking on the plane writer,
 So that RAG does not use a second `.duckdb` or an in-memory default.
 
-**Type:** feature • **Effort:** L • **Deps:** S-34.2 • **FR/AD:** FR-48, FR-27 • canopy AD-22
+**Type:** feature • **Effort:** L • **Deps:** S-34.2 • **FR/AD:** FR-48, FR-27 • canopy:AD-22
 **Given** `REAL[]` (or equivalent) rows **When** the extract runs **Then** `FLOAT[N]` + `vss` nearest-neighbor returns the planted row
 **And** the writer is the CAP-19 plane (FR-27)
 **And** the consumer only `LOAD`s `vss`
@@ -2196,7 +2195,7 @@ As a platform operator,
 I want DB-GPT and Langflow estate reads pointed at the plane,
 So that hallucinated SQL cannot hit the system of record.
 
-**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** FR-49 • canopy AD-22
+**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** FR-49 • canopy:AD-22
 **Given** platform Langflow / DB-GPT config **When** the gate runs **Then** the estate read DSN is the plane (cache / views / optional HTTP face)
 **And** an OLTP DSN for Text-to-SQL fails the test
 
@@ -2206,7 +2205,7 @@ As a teammate,
 I want `scribe recall --semantic` to rank on the plane behind the store port,
 So that FR-36 survives the rebuild.
 
-**Type:** feature • **Effort:** L • **Deps:** S-34.3 • **FR/AD:** FR-50, FR-36 • canopy AD-22
+**Type:** feature • **Effort:** L • **Deps:** S-34.3 • **FR/AD:** FR-50, FR-36 • canopy:AD-22
 **Given** the durable driver **When** semantic recall runs **Then** a no-overlap query still hits
 **And** callers do not `isinstance` the driver
 **And** lexical recall is unchanged
@@ -2242,7 +2241,7 @@ As an operator,
 I want BSL to query the named estate Parquet cache,
 So that Lane 3 dashboards do not hit OLTP.
 
-**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** FR-47 • canopy AD-22
+**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** FR-47 • canopy:AD-22
 **Given** the 34.2 Parquet cache **When** the BSL model queries it **Then** planted rows return
 **And** the loader does not use an OLTP writer role
 
@@ -2252,7 +2251,7 @@ As an operator,
 I want a Lane 3 page for the estate Parquet cache,
 So that the BSL loader is actually on a board.
 
-**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** FR-47 • canopy AD-22
+**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** FR-47 • canopy:AD-22
 **Given** `build_dashboard` **When** it runs **Then** page `estate-cache` exists with a stable id and title
 **And** a planted cache query matches an independent BSL model
 **And** Django does not import Vizro
@@ -2268,7 +2267,7 @@ As a platform operator,
 I want the five-tier check to treat the roster as complete,
 So that a missing CLI, portal, service, skill, or persona fails CI.
 
-**Type:** chore • **Effort:** S • **Deps:** S-29.3 • **FR/AD:** FR-39 • canopy AD-14
+**Type:** chore • **Effort:** S • **Deps:** S-29.3 • **FR/AD:** FR-39 • canopy:AD-14
 **Given** the eight roster stations **When** the check runs **Then** every cell is present
 **And** mason's skill cell is `conda-forge-expert` (no `pyforge-mason/` skill)
 **And** `DECLARED_COMPLETE` is the full roster
@@ -2362,7 +2361,7 @@ As a platform operator,
 I want `/assertion/mint/` to verify the presented IdP bearer (signature via the configured JWKS, `iss`, `aud`, `exp`) before signing a station assertion,
 So that nobody can mint a valid assertion for any subject and any roles by base64-encoding a JSON payload.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy AD-7, AD-15 • RFC-3 (revised) • red-team X-1 / R-1
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-6, CAP-12, FR-31 • canopy:AD-7, AD-15 • RFC-3 (revised) • red-team X-1 / R-1
 **Given** the existing fake-`.sig` bearer fixture **When** it is POSTed to `/assertion/mint/` **Then** the response is 401 and nothing is minted
 **And** wrong key / `alg=none` / HS256 / wrong `iss` / wrong `aud` / expired / missing claims are refused
 **And** an unknown `kid` refreshes the JWKS once, never twice in the cache window
@@ -2377,7 +2376,7 @@ As a platform operator,
 I want `redis-broker` on a PVC with AOF, a required `maxmemory` below a required memory limit, no stored Celery results, and TTL on applied-id keys,
 So that a broker restart loses no queued task, stream entry, pending entry, DLQ entry or idempotency key, and growth back-pressures instead of OOM-killing the pod.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy AD-8, AD-10, AD-12, AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-8, CAP-11, FR-30 • canopy:AD-8, AD-10, AD-12, AD-15 • RFC-2, RFC-4 • red-team S-1 / A-3 / R-2 • supersedes sibling `spec-local-ocp-hybrid-environment` CAP-3 for the broker role only
 **Given** `helm template` **When** rendered **Then** the broker mounts a PVC at `/data` with `--appendonly yes --appendfsync everysec --maxmemory <v> --maxmemory-policy noeviction`, and the cache is unchanged (`emptyDir`, `allkeys-lru`)
 **And** an empty `redis.broker.maxmemory`, an empty broker memory limit, or `maxmemory` ≥ the limit fails the render naming the values path
 **And** `CELERY_TASK_IGNORE_RESULT` is `True` and no `celery-task-meta-*` key exists after a supervised run completes
@@ -2397,7 +2396,7 @@ As a platform operator,
 I want a written DR contract and a scheduled PostgreSQL base backup with WAL archiving plus a restore drill,
 So that a lost volume is a recoverable incident with a known RPO/RTO, not the end of the estate.
 
-**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, FR-29 • canopy AD-1 (parent), AD-12 • BS-8 • red-team B-2 / S-8 / R-3
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** CAP-10, FR-29 • canopy:AD-1 (parent), AD-12 • BS-8 • red-team B-2 / S-8 / R-3
 **Given** the story spec `spec-41-1-dr-contract-and-postgresql-backup.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `deploy/DR.md`, when read, then every store (PostgreSQL, redis-broker, redis-cache, media RWX, DB-GPT SQLite PVC, DuckDB cache) has RPO, RTO, mechanism, owner and drill cadence, and the BS-8 reconciliation order is written down.
 
@@ -2407,7 +2406,7 @@ As a platform operator,
 I want the `.duckdb` file confined to one process on RWO storage with Parquet as the shared artifact,
 So that multi-pod readers cannot corrupt or lock the query plane.
 
-**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-19, CAP-10, FR-27, FR-47 • canopy AD-22 • BS-5 • red-team S-3 / R-11
+**Type:** fix • **Effort:** M • **Deps:** none • **FR/AD:** CAP-19, CAP-10, FR-27, FR-47 • canopy:AD-22 • BS-5 • red-team S-3 / R-11
 **Given** the story spec `spec-41-2-query-plane-process-boundary.md` **When** its acceptance criteria run **Then** they pass
 **And** Given the estate source, when the policy test runs, then every `duckdb.connect(` outside the single declared writer module passes `read_only=True` or `:memory:`; the writer module is named once in `pyforge.atlas` and the test fails if a second appears.
 
@@ -2417,7 +2416,7 @@ As a platform operator,
 I want Scribe's `CREATE EXTENSION` / schema / table DDL moved into a scribe-owned Liquibase changeset,
 So that the DML-only app role holds in production and the auditor control is not quietly widened.
 
-**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-9, CAP-14, FR-22, FR-23 • canopy AD-9 • red-team S-4 / B-1 / R-12
+**Type:** fix • **Effort:** S • **Deps:** none • **FR/AD:** CAP-9, CAP-14, FR-22, FR-23 • canopy:AD-9 • red-team S-4 / B-1 / R-12
 **Given** the story spec `spec-41-3-scribe-ddl-moves-into-the-changelog.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `platform_app`, when Scribe's PostgreSQL driver initialises, then it executes no DDL; a test with a DDL-revoked role passes and the relation-absent case raises a named error.
 
@@ -2443,7 +2442,7 @@ As a platform operator,
 I want the assertion verified on every MCP JSON-RPC method before routing, a streaming proxy, and `mcp-host` reachable only from web pods,
 So that no tool is reachable anonymously and long tool calls do not 502 at five seconds.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy AD-5, AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-4, CAP-6 • canopy:AD-5, AD-7 • BS-2 (revised) • red-team T-4 / T-5 / X-5 / R-7
 **Given** the story spec `spec-42-1-mcp-transport-authorization.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `POST /stations/atlas/mcp` with no assertion, when any JSON-RPC method is sent, then 401; with a valid assertion for `mcp:warden`, then 403 on the atlas route.
 
@@ -2453,7 +2452,7 @@ As a platform operator,
 I want per-subject token buckets on the MCP route and `start`, queue and concurrent-run ceilings, and a revoke-by-subject duty,
 So that a looping agent is throttled to 429 instead of taking the platform down.
 
-**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy AD-10, AD-12 • red-team A-6 / B-7 / R-8
+**Type:** feature • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-4, CAP-11, CAP-17 • canopy:AD-10, AD-12 • red-team A-6 / B-7 / R-8
 **Given** the story spec `spec-42-2-agent-rate-limits-and-run-bounds.md` **When** its acceptance criteria run **Then** they pass
 **And** Given one `sub` issuing more than the configured rate, when it calls the MCP route, then 429 with `Retry-After` and a structured log; other subjects are unaffected.
 
@@ -2463,7 +2462,7 @@ As a platform operator,
 I want attempt-counted retries with backoff, DLQ for well-formed failing events, a deployed consumer per station, and `traceparent` on the envelope,
 So that Warden → Doctor → Mason actually fires, poison events quarantine, and a chain is traceable end to end.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-8, FR-20 • canopy AD-8 • RFC-4 • red-team A-1 / A-2 / A-4 / A-5 / R-9
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-8, FR-20 • canopy:AD-8 • RFC-4 • red-team A-1 / A-2 / A-4 / A-5 / R-9
 **Given** the story spec `spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a well-formed event whose handler raises N times, when consumed, then it is moved to the DLQ with the last error and ACKed; the CAP-8 success clause test (poison lands in DLQ instead of retrying forever) exists and fails without the change.
 
@@ -2473,7 +2472,7 @@ As a platform operator,
 I want `acks_late`, per-station queues, and a dedicated `builds` pool with an hours-scale limit,
 So that a killed worker re-runs its task and a rattler-build is not cut off at five minutes.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy AD-10, AD-12 • red-team S-2 / T-6 / R-10
+**Type:** fix • **Effort:** M • **Deps:** S-40.2 • **FR/AD:** CAP-11, CAP-17 • canopy:AD-10, AD-12 • red-team S-2 / T-6 / R-10
 **Given** the story spec `spec-42-4-celery-hardening-and-the-builds-pool.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a worker killed mid-task, when a replacement starts, then the task re-runs exactly once (acks_late + reject_on_worker_lost) and the supervisor row reaches a terminal state.
 
@@ -2483,7 +2482,7 @@ As a platform operator,
 I want prefixed capability, tenant and admin roles with bare station names refused, and `tenant` on runs and events,
 So that an IdP group that merely shares a station name cannot grant access.
 
-**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, FR-3, FR-31 • canopy AD-15, AD-20 • red-team X-3 / B-6 / R-13
+**Type:** fix • **Effort:** M • **Deps:** S-40.1 • **FR/AD:** CAP-7, CAP-12, FR-3, FR-31 • canopy:AD-15, AD-20 • red-team X-3 / B-6 / R-13
 **Given** the story spec `spec-42-5-role-namespaces-and-the-tenant-claim.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a group `atlas` (bare), when reachability is computed, then it is refused unless `DJANGO_PYFORGE_LEGACY_BARE_ROLES=1`, which logs a deprecation.
 
@@ -2509,7 +2508,7 @@ As a platform operator,
 I want `/stations/<name>/api/v<N>/` routes, OpenAPI per station, `pyforge.core.client`, and a kit contract test,
 So that portals, the CLI and agents share one versioned contract and `/api/v1` no longer lands on Langflow.
 
-**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** CAP-6, CAP-10, FR-28 • canopy AD-7 • BS-7 • red-team T-2 / B-3 / R-5
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** CAP-6, CAP-10, FR-28 • canopy:AD-7 • BS-7 • red-team T-2 / B-3 / R-5
 **Given** the story spec `spec-43-2-station-api-contract.md` **When** its acceptance criteria run **Then** they pass
 **And** Given `/api/v1/anything`, when requested, then it is no longer Langflow; `/langflow/api/v1/...` still is, with the same prefix-preserving redirect behaviour.
 
@@ -2519,7 +2518,7 @@ As a platform operator,
 I want co-located portals reaching station code in-process and over HTTP only when `STATION_REMOTE=1`,
 So that a portal view never awaits its own gunicorn pool while holding a transaction.
 
-**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, FR-26 • canopy AD-7, AD-10 • red-team T-3 / R-6
+**Type:** fix • **Effort:** M • **Deps:** S-43.2 • **FR/AD:** CAP-6, CAP-10, FR-26 • canopy:AD-7, AD-10 • red-team T-3 / R-6
 **Given** the story spec `spec-43-3-in-process-station-port-no-self-call.md` **When** its acceptance criteria run **Then** they pass
 **And** Given a portal view in the default profile, when it needs station data, then no HTTP request to the host's own address is made (test asserts zero loopback calls).
 
@@ -2702,7 +2701,7 @@ As a platform operator,
 I want one flag that names the root of record and a harness that regenerates, appends and replays the cutover plan,
 So that `local-recipes` keeps evolving until the flip and foundry never falls behind it.
 
-**Type:** feature • **Effort:** M • **Deps:** S-44.1 • **FR/AD:** fnd:CAP-8 • fnd:AD-2, fnd:AD-17, fnd:AD-18 • canopy AD-11
+**Type:** feature • **Effort:** M • **Deps:** S-44.1 • **FR/AD:** fnd:CAP-8 • fnd:AD-2, fnd:AD-17, fnd:AD-18 • canopy:AD-11
 **Given** `src/platform/config/flags.json` **When** `pyforge.cutover_root` is read **Then** the host reads it in-process and the CLIs read it through a `pyforge-core` reader; its value alone decides the ledger of record, Mason's targets and the loop-home remotes, and flipping it back restores them
 **And** `steward cutover plan --regenerate` and `--append` both preserve `moved` rows (a test proves idempotence over status), and `steward cutover apply --phase <n>` is idempotent when re-run
 **And** a flip is refused while any loop is running and is recorded in the Dream's Realization log

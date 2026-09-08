@@ -140,13 +140,13 @@ one that matters:
   never states that AD-7 depends on a preview feature.
 - Warden's own member manifest declares `python = ">=3.12"` in both `[package.host-dependencies]`
   and `[package.run-dependencies]`, and the lock resolves `py-rattler-build …py310…` builds —
-  against canopy AD-23's "one interpreter `3.14.*`", which the spine lists as inherited and
+  against canopy:AD-23's "one interpreter `3.14.*`", which the spine lists as inherited and
   unchanged.
 
 **Fix.** Restate as "live for the ten `pyforge-*` packages; **not** live for the seven `django-*`
 packages, which Story 44.4 must author fresh"; add a Stack row for `pixi-build-python`
 (repo floor `>=0.8.6`; warden's backend pin is `version = "0.*"`) and a note that AD-7 rides the
-`pixi-build` **preview**; and either reconcile the `>=3.12` member floors with canopy AD-23 or
+`pixi-build` **preview**; and either reconcile the `>=3.12` member floors with canopy:AD-23 or
 record the divergence explicitly.
 
 ### H-4 — AD-3's "estate lock carries no solver-farm tooling" collides with live test deps

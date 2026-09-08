@@ -579,7 +579,7 @@ mostly closed by shipped code.
   row**: deckcraft's markdown→PPTX slice produced background-image slides with zero
   editable text runs (proven 2026-08-22, the unpark trigger); the editable-deliverable
   path is now the template pipeline. It coexists with, never replaces, the HTML/Marp path.
-- **Exporters as hook plugins (Epic 16, canopy AD-21)** — `exporters.py`: Marp, PPTX, and
+- **Exporters as hook plugins (Epic 16, canopy:AD-21)** — `exporters.py`: Marp, PPTX, and
   `.dc.html` export register as default plugins on the shared `pyforge.core.hooks`
   contract (HookSpec/HookPlugin/PluginRegistry); no station-local plugin loader; export
   success is a station result, never a PR quality-gate verdict (`SecondVerdictError`).

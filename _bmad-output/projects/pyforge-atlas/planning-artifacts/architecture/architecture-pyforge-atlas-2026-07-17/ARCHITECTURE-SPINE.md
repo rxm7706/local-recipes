@@ -396,7 +396,7 @@ specs (motion through 2026-08-22), and the pyforge-unifying-strategy pack
   an 8th via correct-course?") resolved to governed new pipelines; nothing joined
   the sealed seven.
 - **Canopy AD-numbering disambiguation.** Epics 18/19 and the canopy chain cite
-  "canopy AD-21" (**Atlas is the estate's one Kedro home**) and other canopy AD-n —
+  "canopy:AD-21" (**Atlas is the estate's one Kedro home**) and other canopy AD-n —
   those are the unifying-strategy architecture's numbers, **not** this spine's
   (this spine's AD-21 is the WASM read surface). Read `canopy AD-n` as a foreign
   namespace; no renumbering here.

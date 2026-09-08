@@ -417,7 +417,7 @@ they are why this is not merely a UI project.
   implements or replaces a layer without a fork (**CAP-18** is the shared contract).
   [Kedro's architecture](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
   names the spec-vs-plugin split; it does not require every package to be a Kedro
-  project (canopy AD-21). Contracts (Pixi task names, Golden Path artifact identity,
+  project (canopy:AD-21). Contracts (Pixi task names, Golden Path artifact identity,
   parent infra kinds, host import boundary, Warden as the sole PR-gate verdict) are
   not plugin surfaces.
 - **Always:** Warden is the only PR quality-gate verdict on the Golden Path. External scanners

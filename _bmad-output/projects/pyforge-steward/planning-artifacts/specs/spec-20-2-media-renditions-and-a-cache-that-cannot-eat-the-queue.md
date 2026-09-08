@@ -35,7 +35,7 @@ deferred: []
 
 ## Boundaries & Constraints
 
-**Always:** Lane 1 stays at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Media is Django `FileSystemStorage` on RWX PVC. Two Redis Deployments, same image class. `CELERY_*` and `CHANNEL_LAYERS` → broker; `CACHES['default']` and `CACHES['renditions']` → cache. Worker Deployment already in-tree is the scale unit. Cite canopy AD-13 / AD-10 vs parent AD-1 (still Redis-the-kind).
+**Always:** Lane 1 stays at `/`. Physical writes under `_bmad-output/projects/pyforge-steward/`. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Media is Django `FileSystemStorage` on RWX PVC. Two Redis Deployments, same image class. `CELERY_*` and `CHANNEL_LAYERS` → broker; `CACHES['default']` and `CACHES['renditions']` → cache. Worker Deployment already in-tree is the scale unit. Cite canopy:AD-13 / AD-10 vs parent AD-1 (still Redis-the-kind).
 
 **Block If:** Shared storage cannot be a PVC (cluster has no RWX) and the only proposed substitute is MinIO/S3; or platform-ci-test cannot import `django_tasks` / Wagtail images.
 

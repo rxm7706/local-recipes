@@ -19,7 +19,7 @@ warnings: []
 
 ## Intent
 
-**Problem:** A dead outbound dependency can hang the estate. PyBreaker's `call()` treats an un-awaited asyncio coroutine as success, so the circuit never opens (FR-26, canopy AD-15, BS-4). `pybreaker` is not in pixi; this story ships an in-tree wrapper, not a new dep.
+**Problem:** A dead outbound dependency can hang the estate. PyBreaker's `call()` treats an un-awaited asyncio coroutine as success, so the circuit never opens (FR-26, canopy:AD-15, BS-4). `pybreaker` is not in pixi; this story ships an in-tree wrapper, not a new dep.
 
 **Approach:** One asyncio-aware circuit wrapper in `django-pyforge`. A failing awaited call registers as a failure. After repeated failures the circuit opens and the caller returns degraded inside the FR-26 budget. `fail_max` is coarse protection — tests never assert an exact failure count. Stations do not ship a second wrapper (adversarial F-10).
 

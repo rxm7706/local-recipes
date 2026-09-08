@@ -20,8 +20,7 @@ This proposal records how the Canopy chain **adjusts interpretation of shipped w
 
 **Problem statement:** Shipped steward work assumed parent AD-5 (`RunSQL` / Django migrations as
 production schema authority for `langflow_schema` / `dbgpt_schema`) and a static
-`docs/dashboard/` front door. The Canopy spec binds CAP-9 (Liquibase-governed DDL, canopy
-AD-9), CAP-2 (Wagtail Lane 1), CAP-1..17 (chrome, portals, MCP, events, flags, supervisor),
+`docs/dashboard/` front door. The Canopy spec binds CAP-9 (Liquibase-governed DDL, canopy:AD-9), CAP-2 (Wagtail Lane 1), CAP-1..17 (chrome, portals, MCP, events, flags, supervisor),
 and FR-22 (app role cannot DDL). Without an explicit course correction, reviewers could treat
 FR-22 as undoing Stories 11.1/11.2 or as requiring immediate rollback of Epic 11 isolation.
 
@@ -38,15 +37,14 @@ Peer stations receive their own Phase 5 proposals; Marshal additionally retires
 
 - **Epic 11 (done, 4/4):** **Not reopened.** Stories 11.1–11.4 remain `done`. Schema
   isolation (`langflow_schema`, `dbgpt_schema`, `search_path`, ORM never crosses schemas,
-  Pattern A/B per parent AD-17) is still the binding invariant. FR-22 / canopy AD-9 changes
+  Pattern A/B per parent AD-17) is still the binding invariant. FR-22 / canopy:AD-9 changes
   only the **producer** of production DDL (Liquibase pre-upgrade Job + DML-only app role) —
   superseding the mechanism in **Epic 27**, not rolling back Epic 11.
 - **Epic 10 (done):** Host image, factory-sourced environment, and sidecar wiring remain
   valid. Canopy stories may extend `INSTALLED_APPS`, URLconf, and redis split (Epics 18–20,
   24) without revisiting 10.1–10.5 acceptance criteria.
 - **Epic 12 (done except skipped 12-7):** Vanilla chart and air-gap parity remain the
-  substrate. Canopy adds redis-cache vs redis-broker (canopy AD-10), Wagtail media PVC (canopy
-  AD-13), Liquibase hook Job (Epic 27), and OpenFeature FILE mount (Epic 26) as **forward
+  substrate. Canopy adds redis-cache vs redis-broker (canopy:AD-10), Wagtail media PVC (canopy:AD-13), Liquibase hook Job (Epic 27), and OpenFeature FILE mount (Epic 26) as **forward
   work**, not edits to merged 12.1–12.3 stories.
 - **Epics 1–9, 13–17 (done):** Unaffected except citation hygiene — new work cites **parent
   AD-n** vs **canopy AD-n**; bare `AD-n` in Canopy epics is review-blocking.
@@ -56,9 +54,9 @@ Peer stations receive their own Phase 5 proposals; Marshal additionally retires
 - **Epics 18–30:** The steward build for the Canopy. No duplicate implementation stories
   beyond what `epics.md` already lists. Packaging stories **26.3** (OpenFeature) and **27.1**
   (Liquibase) stay **blocked** until operator-owned feedstocks land on the platform channel
-  (canopy AD-16).
+  (canopy:AD-16).
 - **Epic 19 → Epic 27 sequencing:** S-19.1 (warden reusable-app triple + URL move) must
-  complete before any Epic 27 story revokes app-role DDL (FR-9b / canopy AD-4).
+  complete before any Epic 27 story revokes app-role DDL (FR-9b / canopy:AD-4).
 
 ### Artifact conflicts
 
@@ -101,7 +99,7 @@ OLD: parent AD-5 — Django RunSQL/data migrations provision langflow_schema and
      production schema authority is Django migrate.
 
 NEW: Epic 11 stories 11.1–11.4 remain done. Isolation, search_path, and engine patterns
-     unchanged. Production DDL authority moves to Epic 27 (canopy AD-9, FR-21–FR-25, FR-22).
+     unchanged. Production DDL authority moves to Epic 27 (canopy:AD-9, FR-21–FR-25, FR-22).
      Existing RunSQL migrations remain until Liquibase changesets are extracted and the
      pre-upgrade Job + DML-only app role land — not a reopen of 11.1/11.2.
 ```
@@ -132,7 +130,7 @@ NEW: Cite parent AD-n (spec-python-agent-platform spine) vs canopy AD-n
 ```
 OLD: (implicit) platform stories could start before conda packages exist.
 
-NEW: Explicit hold per canopy AD-16 — S-26.3 and S-27.1 do not start until Liquibase
+NEW: Explicit hold per canopy:AD-16 — S-26.3 and S-27.1 do not start until Liquibase
      ≥5.0.4 (+ vendored PostgreSQL JDBC) and OpenFeature FILE provider packages are on the
      channel the platform env consumes. Recipe work is operator-owned, not steward stories.
 ```

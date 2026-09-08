@@ -23,14 +23,14 @@ contact with. Details and citations below; every claim traces to a source dated 
 2026-08-24.
 
 **Later the same day — binds this research does not reopen.** The five investigations below stay
-the evidence record. After they landed, Dream Grounding Q1–Q8 and canopy AD-21 bound the
+the evidence record. After they landed, Dream Grounding Q1–Q8 and canopy:AD-21 bound the
 *operating model*. They do not reverse MCP/Liquibase/Wagtail/PyBreaker/`django-pyforge`
 verdicts. They do change how a later reader must use this file:
 
 - Five-tier completeness is the **03** shape of the eight stations, not “any work missing a
   tier is unfinished.”
 - Packaging (OpenFeature four + `cachebox` 5.x + Liquibase ≥5.0.4) is **operator-owned**.
-  Stories 26.3 / 27.1 do not author recipes (canopy AD-16).
+  Stories 26.3 / 27.1 do not author recipes (canopy:AD-16).
 - The claim that `django-feedstock` has no 5.2 maintenance branch was **wrong** — it has a
   `5.x` branch (see `technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md`
   and SPEC). Currency gap, not a missing branch.

@@ -341,7 +341,7 @@ backend and semantic recall stay **steward Epic 28** — not a scribe-local grap
 
 Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
 and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
-**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+**Hooks and plugins (canopy:AD-21):** as far as possible every layer is replaceable —
 the process owns hook specifications; a plugin implements or replaces a layer without
 a fork. Kedro
 [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
@@ -375,7 +375,7 @@ As a scribe operator,
 I want `FlatFileGraphStore` (and the Epic 28 PG driver) as plugins on the shared contract,
 So that swapping a recall store does not fork scribe.
 
-**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy:AD-21
 **Given** the existing `GraphStore` port **When** this story completes **Then** today's flat-file backend is the default plugin
 **And** the durable PG driver (steward S-28.1) registers as a second plugin, not a fork
 **And** recall completeness is not published as a PR quality-gate verdict
@@ -390,7 +390,7 @@ As an autonomous agent,
 I want scribe's domain skill and a `bmad-agent-scribe` persona owned in this station,
 So that Path B is not steward-only leftover from Epic 29.
 
-**Type:** feature • **Effort:** M • **Deps:** S-4.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Type:** feature • **Effort:** M • **Deps:** S-4.1 • **FR/AD:** canopy FR-37, FR-38 • canopy:AD-17
 **Given** steward 29.1 may already have compiled `pyforge-scribe` **When** this story completes **Then** the skill exists under `.claude/skills/` with scribe provenance (skip recompile if identical)
 **And** the persona uses only `pyforge scribe …` and `POST /stations/scribe/mcp`
 
@@ -400,7 +400,7 @@ As a scribe operator,
 I want `/stations/scribe/` to submit one recall query and show cited results,
 So that Lane 2 does a real job in HTMX.
 
-**Type:** feature • **Effort:** M • **Deps:** S-5.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Type:** feature • **Effort:** M • **Deps:** S-5.1 • **FR/AD:** canopy FR-10 • canopy:AD-7
 **Given** an authenticated scribe-role session **When** the operator submits a query **Then** results render via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
 

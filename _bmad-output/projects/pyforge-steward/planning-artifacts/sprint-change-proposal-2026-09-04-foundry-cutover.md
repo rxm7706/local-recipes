@@ -40,7 +40,7 @@ planning — solutioning — reviewed and refined multiple times before implemen
 | 2.4 | New epics needed | Done | One. R-18..R-22 are an **Epic 45 candidate**, not minted. |
 | 2.5 | Order | Done | 44.1 ∥ 44.2 → operator flips 44.3 → 44.4 → 44.5 → 44.6 ∥ 44.7 → 44.8 → operator flips 44.9 → operator flips 44.10. **Nothing dispatches until the operator flips a story.** |
 | 3.1 | PRD | Done | No FR change; § 14 dated paragraph. The cutover is layout, not product scope. |
-| 3.2 | Architecture | Done | New spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..16`, `status: draft`, iteration 1, gate PASS-WITH-FIXES applied) inheriting canopy AD-1..23 and `pap:AD-1..17` read-only; no conflict found. Reviewer gate (lint + rubric walker + reality-check + adversarial-pairs, `reviews/`): **PASS-WITH-FIXES** — 3+1+4 CRITICAL findings, all applied as AD-2/3/4/5/6/7/8 tightenings and new AD-13..16; nine open questions carried |
+| 3.2 | Architecture | Done | New spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..16`, `status: draft`, iteration 1, gate PASS-WITH-FIXES applied) inheriting canopy:AD-1..23 and `pap:AD-1..17` read-only; no conflict found. Reviewer gate (lint + rubric walker + reality-check + adversarial-pairs, `reviews/`): **PASS-WITH-FIXES** — 3+1+4 CRITICAL findings, all applied as AD-2/3/4/5/6/7/8 tightenings and new AD-13..16; nine open questions carried |
 | 3.3 | UI/UX | N/A | No UI. |
 | 3.4 | Other artifacts | Done | Dream § Cutover + Grounding + Realization; Spec `spec-python-foundry-cutover` (+ `cutover.md`, spine adopted as companion); `marshal-policy.toml` `[epic_surfaces] "44"`; deferred-work ledger dispositions; specs README. |
 | 4.1 | Direct adjustment | Viable | Additive; no code. |

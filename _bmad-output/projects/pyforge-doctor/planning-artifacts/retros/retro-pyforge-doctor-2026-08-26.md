@@ -57,7 +57,7 @@ Fourteen epics, clustering into four arcs:
   ambient finding (16.1).
 - **The Canopy arc (Epics 17–18, post the 2026-08-24 obligations).** Gather/prescribe
   became hook specs on the shared `pyforge.core.hooks` contract with today's backends
-  as the default plugins (17.1, canopy AD-21); Doctor minted its SKF domain skill and
+  as the default plugins (17.1, canopy:AD-21); Doctor minted its SKF domain skill and
   `bmad-agent-doctor` persona (18.1, closed with a CAP-15 consult guard on review) and
   landed its first portal job — `/stations/doctor/` renders the last fleet pulse via
   `PortalClient` only (18.2, landed 2026-08-26).

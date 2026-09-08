@@ -167,7 +167,7 @@ the operating-model block.
 
 **First recommendation (Warden-only) is withdrawn.** It treated hooks as a
 scanner-implementation detail. **Hooks and plugins are an architecture
-principle** (canopy AD-21): as far as possible every layer is replaceable —
+principle** (canopy:AD-21): as far as possible every layer is replaceable —
 process-owned hook specs, plugins that implement or replace a layer without a
 fork. Kedro *names* the split; it does not require a Kedro project. Atlas
 already *is* Kedro (pipeline hooks = one instantiation, not Warden's PR-gate

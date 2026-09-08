@@ -1174,7 +1174,7 @@ landing 2026-08-25/26. Reconciled against `src/shared/packages/pyforge-mason/`:
 - **Scope grew past FR-1..FR-50 under other contracts:** Epics 6–11 (CFE-rebuild pilot +
   re-scope gate under `spec-conda-forge-expert-rebuild`/amended AD-15; machine-checked recipe
   knowledge; pixi base-layer convention; workflow_call CI + air-gap contract socket; the
-  build-engine hook, canopy AD-21; the `bmad-agent-mason` persona and `/stations/mason/` portal
+  build-engine hook, canopy:AD-21; the `bmad-agent-mason` persona and `/stations/mason/` portal
   slice, canopy FR-38/FR-10). This PRD remains the contract for the mason CLI proper.
 - **D-8 (no Mason MCP server) still holds for the package.** The station's MCP face
   (`POST /stations/mason/mcp`) and portal slice are served by the Canopy platform host — they

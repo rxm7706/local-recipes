@@ -4,7 +4,7 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: "strangler-fig repository cutover: a fresh lasting root receives the estate by manifest-driven moves over a bounded two-remote interval; the recipe plant is an island with its own lock; the old root becomes a read-only archive"
-scope: "spec-python-foundry-cutover CAP-1..7 (cite fnd:CAP-n) — the move from rxm7706/local-recipes to python-foundry, Phases 0–6, decomposed as steward Epic 44 (all stories ledger-blocked). Inherits canopy AD-1..23 and pap:AD-1..17 read-only."
+scope: "spec-python-foundry-cutover CAP-1..7 (cite fnd:CAP-n) — the move from rxm7706/local-recipes to python-foundry, Phases 0–6, decomposed as steward Epic 44 (all stories ledger-blocked). Inherits canopy:AD-1..23 and pap:AD-1..17 read-only."
 status: draft
 iteration: 4
 gate: "PASS-WITH-FIXES 2026-09-04 — rubric walker + reality-check + adversarial-pairs lenses in reviews/; clear fixes applied; iteration 2 folds the review answers and the flag-gated cutover; iteration 3 makes the cutover regenerative: Dreams + memlogs seed foundry, every capability rebuilt or moved; iteration 4 closes the last two open questions: private foundry, CI evidence ladder, minutes metering"
@@ -49,7 +49,7 @@ flag flip (AD-17), not by a date; until a capability freezes (AD-22) `local-reci
 ## Inherited Invariants
 
 Parent: `../architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md`
-(canopy AD-1..23) and, through it, `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
+(canopy:AD-1..23) and, through it, `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
 (`pap:AD-1..17`). Read-only; original ids; never re-derived.
 
 | Inherited | Binds here |
@@ -57,14 +57,14 @@ Parent: `../architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE
 | pap:AD-2 host never imports `pyforge.*` | The fold (AD-6) changes paths, not this boundary. **Brownfield breach:** `src/platform/ingest/github_projects/*` imports `pyforge.steward.keys` in eight places today; AD-7 names its successor before deletion (open question `ingest-keys-import`). |
 | pap:AD-9 consume factory packages, never fork | AD-7 ratifies it: the Containerfile's ten `COPY src/shared/packages/...` lines are the brownfield drift the cutover removes. |
 | pap:AD-15 CI paths | Refined by AD-8: estate and island CI are disjoint by `paths`. |
-| canopy AD-4 reusable-app triple, one distribution per station | Distribution and import names are unchanged by the fold (AD-6). |
-| canopy AD-14 five tiers, or the 03 station is not done | `five_tier.py` retargets `_packages_root` and the skill/persona paths (AD-6, AD-5); the roster stays eight. |
-| canopy AD-16 packaging is an external gate | Foundry packages still arrive via the conda channel; the island builds them (AD-3, AD-4). |
-| canopy AD-17 station domain skills are SKF content skills; `skf-export` is the only writer into `CLAUDE.md` / `AGENTS.md` | SKF compiles into `skills/` (AD-5). Path rewrites inside `CLAUDE.md` / `AGENTS.md` after the fold go through `skf-export`, never a direct edit (AD-6). |
-| canopy AD-21 hooks and plugins are replaceable layers | Unchanged; the hook registry is the seam AD-4 keeps Mason behind. |
-| canopy AD-23 one interpreter `3.14.*`; `mcp-host` isolates MCP-SDK | Estate lock inherits it; the island lock is free to pin what recipes need. |
+| canopy:AD-4 reusable-app triple, one distribution per station | Distribution and import names are unchanged by the fold (AD-6). |
+| canopy:AD-14 five tiers, or the 03 station is not done | `five_tier.py` retargets `_packages_root` and the skill/persona paths (AD-6, AD-5); the roster stays eight. |
+| canopy:AD-16 packaging is an external gate | Foundry packages still arrive via the conda channel; the island builds them (AD-3, AD-4). |
+| canopy:AD-17 station domain skills are SKF content skills; `skf-export` is the only writer into `CLAUDE.md` / `AGENTS.md` | SKF compiles into `skills/` (AD-5). Path rewrites inside `CLAUDE.md` / `AGENTS.md` after the fold go through `skf-export`, never a direct edit (AD-6). |
+| canopy:AD-21 hooks and plugins are replaceable layers | Unchanged; the hook registry is the seam AD-4 keeps Mason behind. |
+| canopy:AD-23 one interpreter `3.14.*`; `mcp-host` isolates MCP-SDK | Estate lock inherits it; the island lock is free to pin what recipes need. |
 
-**Conflict, not override — canopy AD-17:** AD-6's "every consumer path is rewritten" would
+**Conflict, not override — canopy:AD-17:** AD-6's "every consumer path is rewritten" would
 touch `CLAUDE.md` / `AGENTS.md`, whose only sanctioned writer is `skf-export`. Resolution:
 44.4 and 44.5 re-run `skf-export` after their moves; the manifest marks those two files
 `rewritten-by: skf-export`. **Conflict, not override — pap:AD-2:** the ingest import is a
@@ -118,19 +118,19 @@ flowchart LR
 
 ### AD-5 — One skills tree; IDE directories are adapters
 
-- **Binds:** CAP-2, CAP-3; Stories 44.5, 44.6; canopy AD-17
+- **Binds:** CAP-2, CAP-3; Stories 44.5, 44.6; canopy:AD-17
 - **Prevents:** divergent `SKILL.md` copies per IDE; an edit landing in one adapter and not the other; the installer carve-out accidentally exempting the eight station personas; a symlink in git that checks out as a text file on stock Windows
 - **Rule:** Estate-authored skills live only under `skills/{stations,personas,domain}/<x>/`; SKF export writes there (`skills/stations/<x>/` is its root; 44.5 verifies `skf-export` accepts it). **No adapter is tracked in git.** Adapters are generated per machine by the link step (AD-19): `.claude/skills/<x>` always; `.cursor/skills/<x>` only where Cursor is detected or requested. Both are gitignored. Installer-**written** directories (`bmad-*` from the BMAD installer, `skf-*` from the forge) stay real directories; the eight station personas (`bmad-agent-<station>`) are estate-authored and move to `skills/personas/<station>/`. A regular directory for an estate skill under an adapter is a detector finding.
 
 ### AD-6 — The packages fold is a path rewrite, not a rename
 
-- **Binds:** CAP-2; Story 44.4; canopy AD-4, AD-14, AD-17
+- **Binds:** CAP-2; Story 44.4; canopy:AD-4, AD-14, AD-17
 - **Prevents:** a half-moved tree with two package roots; a distribution or import rename smuggled in with the move; 59 files computing paths by fixed parent depth silently resolving a wrong root; a stale spec-surface baseline after every move
-- **Rule:** `src/shared/packages/<x>` → `src/packages/<x>`; distribution and import names unchanged. Every consumer is rewritten from manifest rows in the same story: `pixi.toml` path-dependencies (103 sites), the Containerfile `COPY` lines, `five_tier._packages_root`, `script_map_from_packages_root`, `marshal-policy.toml` globs, Spec `surface:` globs, CI `paths:`, and every `parent_depth` coupling row (`parents[N]` constants; no silent wrong-root fallback survives). `CLAUDE.md` / `AGENTS.md` are rewritten by re-running `skf-export` (canopy AD-17). Every move story ends with a scoped `spec_surface_check.py --write-baseline --spec <affected>` re-stamp. After 44.4 no `src/shared/` exists and `rg src/shared/packages` returns only the manifest and the archive.
+- **Rule:** `src/shared/packages/<x>` → `src/packages/<x>`; distribution and import names unchanged. Every consumer is rewritten from manifest rows in the same story: `pixi.toml` path-dependencies (103 sites), the Containerfile `COPY` lines, `five_tier._packages_root`, `script_map_from_packages_root`, `marshal-policy.toml` globs, Spec `surface:` globs, CI `paths:`, and every `parent_depth` coupling row (`parents[N]` constants; no silent wrong-root fallback survives). `CLAUDE.md` / `AGENTS.md` are rewritten by re-running `skf-export` (canopy:AD-17). Every move story ends with a scoped `spec_surface_check.py --write-baseline --spec <affected>` re-stamp. After 44.4 no `src/shared/` exists and `rg src/shared/packages` returns only the manifest and the archive.
 
 ### AD-7 — The host consumes packages, never copies source
 
-- **Binds:** CAP-2; Story 44.4; ratifies pap:AD-9, canopy AD-16
+- **Binds:** CAP-2; Story 44.4; ratifies pap:AD-9, canopy:AD-16
 - **Prevents:** the ten `COPY src/shared/packages/...` lines (nine django portals + the `pyforge-steward` library) and the builder-stage `COPY . /app` riding into foundry; deleting a working import path with no successor
 - **Rule:** Each `src/packages/*` is a pixi-build workspace member with its own `pixi.toml`; today that is true for all ten `pyforge-*` packages (under the `pixi-build` preview flag) and for none of the seven `django-*` packages — 44.4 adds theirs. The platform image installs workspace members; the Containerfile has no `COPY src/packages`, no `COPY . /app` of package source, and no `sys.path` insert for a package (`platformapp`'s own insert is host-internal `[ASSUMPTION]`). No import path is deleted without its successor named in the story (`ingest-keys-import`).
 
@@ -166,7 +166,7 @@ flowchart LR
 
 ### AD-13 — The CFE cell is one unit with one owner
 
-- **Binds:** CAP-3; Story 44.6; canopy AD-17
+- **Binds:** CAP-3; Story 44.6; canopy:AD-17
 - **Prevents:** three claimants on `.claude/skills/conda-forge-expert` (the skills move, 44.6, and the SKF export); its siblings having no owner; both CFE detectors matching nothing after the move and reporting clean
 - **Rule:** The cell is `.claude/skills/conda-forge-expert/` + `.claude/scripts/conda-forge-expert/` + `.claude/tools/conda_forge_server.py` + the 76 `.claude/scripts/conda-forge-expert` references in `pixi.toml` (its runtime state `.claude/data/conda-forge-expert/` moves to `var/cfe/`, AD-19). It moves in **44.6 only**, to `skills/domain/conda-forge-expert/{SKILL.md,scripts,tools}`; 44.5 leaves it in place. The path literals in `cfe_rebuild_guard_check.py` and `mason_cfe_surface_check.py` are manifest consumers rewritten in 44.6.
 
@@ -192,7 +192,7 @@ flowchart LR
 
 - **Binds:** CAP-8, CAP-6, CAP-7; every story from 44.4 on
 - **Prevents:** a dated phase boundary that freezes the evergreen repo; a cutover with no rollback; three consumers deciding the root of record differently
-- **Rule:** One flag, `pyforge.cutover_root` in {`local-recipes`, `foundry`}, lives in the CAP-13 flag tree (`src/platform/config/flags.json`, canopy AD-11), read in-process by the host and by the CLIs through a `pyforge-core` reader (a 44.12 task; none exists today). It alone decides the ledger of record (AD-12), Mason's submit and update targets (AD-4), which remote the loop homes track, and which root the detectors treat as primary. The transition point is the flip, allowed once the capabilities it depends on are `verified-in-foundry` (AD-22); flipping back is the rollback. The flip is an operator act recorded in the Dream's Realization log.
+- **Rule:** One flag, `pyforge.cutover_root` in {`local-recipes`, `foundry`}, lives in the CAP-13 flag tree (`src/platform/config/flags.json`, canopy:AD-11), read in-process by the host and by the CLIs through a `pyforge-core` reader (a 44.12 task; none exists today). It alone decides the ledger of record (AD-12), Mason's submit and update targets (AD-4), which remote the loop homes track, and which root the detectors treat as primary. The transition point is the flip, allowed once the capabilities it depends on are `verified-in-foundry` (AD-22); flipping back is the rollback. The flip is an operator act recorded in the Dream's Realization log.
 
 ### AD-18 — Moves are replays; rebuilds are regeneration drills
 
@@ -252,7 +252,7 @@ flowchart LR
 |---|---|
 | pixi (both workspaces) | `0.78.0` (`requires-pixi >= 0.78.0`; registry-enforced by `pixi-version-check`) |
 | pixi-build backends (`pixi-build-python`, `pixi-build-rattler-build`) | lock-pinned; `preview = ["pixi-build"]` stays until the feature is stable |
-| Python (estate) | `3.14.*` (canopy AD-23) |
+| Python (estate) | `3.14.*` (canopy:AD-23) |
 | rattler-build (island) | `>=0.75.0` (lock `0.75.0`; conda-forge current) |
 | py-rattler-build (estate, warden test oracle) | `0.72.2` (lock) |
 | conda-smithy (island) | `>=3.44.6,<4` — the cap is deliberate (CalVer `2026.x` needs the `conda` package absent from the env); revisit in 44.7 |
@@ -265,7 +265,7 @@ flowchart LR
 ```text
 python-foundry/
   pixi.toml  pixi.lock  environment.yaml   # estate; name = pyforge; env ids unchanged (AD-15)
-  AGENTS.md  CLAUDE.md                     # written by skf-export only (canopy AD-17)
+  AGENTS.md  CLAUDE.md                     # written by skf-export only (canopy:AD-17)
   factory/                                 # island — own pixi.toml + pixi.lock
     recipes/  build-locally.py  .ci_support/  conda-forge.yml
   .github/workflows/                       # estate (paths-ignore factory/**) + island (paths factory/**)
