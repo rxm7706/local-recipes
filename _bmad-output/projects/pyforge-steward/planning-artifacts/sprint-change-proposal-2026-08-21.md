@@ -26,7 +26,7 @@ needed for DB-GPT's FastAPI mount, including the AgenticData text-to-SQL router 
 against both `dbgpt-app`'s conda-forge metadata and DB-GPT's own upstream `pyproject.toml`
 (both the `v0.8.1` tag and unreleased `main`).
 
-**Resolution already recorded:** per AD-14 ("sidecar fallback only on demonstrated
+**Resolution already recorded:** per pap:AD-14 ("sidecar fallback only on demonstrated
 pluggability failure, Dream first"), DB-GPT moves to `db-gpt-django-plugin`'s existing
 **Pattern B** (Celery + `docker-compose.yml`-managed microservice) for this integration.
 Dated in `docs/dreams/db-gpt-django-plugin.md` + `docs/dreams/python-agent-platform.md`
@@ -109,7 +109,7 @@ would misrepresent what was actually built and verified.
 
 ## 4. Detailed Change Proposals
 
-**New — AD-17 (ARCHITECTURE-SPINE.md):** "Engine integration pattern (A vs. B) is a per-engine
+**New — pap:AD-17 (ARCHITECTURE-SPINE.md):** "Engine integration pattern (A vs. B) is a per-engine
 configuration switch, not a hardcoded fork." A named config seam (e.g. a
 `PLATFORM_ENGINE_PATTERN` registry/setting keyed per engine) that the ASGI dispatcher and
 Celery routing consult to decide whether an engine is in-process-mounted (Pattern A) or
