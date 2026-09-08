@@ -267,7 +267,7 @@
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/conftest.py": "f792ac69084410deff246908e06ea772ce3902b6",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py": "986e92b68b8fedf3052780b84983d7a20399e547",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py": "c1681dd66c9d46329d6cb0d5d1d03db57d6d4c0e",
-   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py": "f5b9da113c156c2c667fc475bb18188324ea205e",
+   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py": "0bf66be8bf60ed9e458e25901bde4d57ae735e91",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": "e1d846311a8e13c50f91a1bd223ff720d215148c",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py": "09a8b0480ec6799344677b84e4d1b6ff408007ca",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_parity.py": "0461e81d3c92ae644eb049effc2939c7a0642fe5",
@@ -477,7 +477,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "b6a6882acebed947132a6b673a036d240265fc76"
+  "memlog": "711124632c1c97ef0a8b76cd188f07eacb285855"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -648,7 +648,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py": "629169ccf8121b6252adc4fd13838c5d227545b4",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_check_layout.py": "ed9f4d5fe0c933e39d4dc3ba838d81b311378ad2",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_dashboard_drift.py": "e7206e6b7d7e62357c82770b1b2e83c395519210",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "d49275d96af7a58a648f2e56efec8a2019ceacb4",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "31fa7f7772ed4890bfce6a9a596a96852772387d",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py": "e5d3256c0cfa2c237aa4114a201e2642bed2d1d9",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": "dd5f8f1ee021fd1739455ef7bb573bc6f8df6e7c",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": "17a431de45daa2394c5bb81151d1df76f39afc46",
@@ -668,7 +668,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "da4d3a1e9ac7dfa563379d2dc32f710d46105387"
+  "memlog": "874cb107460f5e443e2f85741cfb78c74e4526bd"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -6179,7 +6179,7 @@
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/conftest.py": "f792ac69084410deff246908e06ea772ce3902b6",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py": "986e92b68b8fedf3052780b84983d7a20399e547",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py": "c1681dd66c9d46329d6cb0d5d1d03db57d6d4c0e",
-   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py": "f5b9da113c156c2c667fc475bb18188324ea205e",
+   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py": "0bf66be8bf60ed9e458e25901bde4d57ae735e91",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": "e1d846311a8e13c50f91a1bd223ff720d215148c",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py": "09a8b0480ec6799344677b84e4d1b6ff408007ca",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_parity.py": "0461e81d3c92ae644eb049effc2939c7a0642fe5",
@@ -6467,7 +6467,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "13adaac3a4f0b230990bffc63fdd339f2928c5fe",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "9f7b0ee9e1a01f0c5ab3f210973e314b2b9c0fc9"
+  "memlog": "5bb12c2a0b32fc78d9c25792528deb331b383e23"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
