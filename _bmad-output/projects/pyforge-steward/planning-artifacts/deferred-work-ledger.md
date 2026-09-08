@@ -3906,7 +3906,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-  verified: 2026-09-08 — still-open — CONFIRMED, and this is a CROSS-PROJECT defect class, which is worth more than the entry alone. `_persona_mentions` still scans only `SKILL.md` and `customize.toml`, missing `reference/*.md` and README routing text. CAP-6: pyforge-atlas's `DW-FU-24-1` indicts the SAME function from the other side (bare substring matching rather than constraint-text presence). One helper, two ledgers, one fix — and neither entry references the other. This is exactly the correlation CAP-6 exists to surface.
+  verified: 2026-09-08 — resolved — FIXED. `_persona_mentions` now scans `SKILL.md`, `customize.toml`, `README.md` and every `reference/*.md` under the persona skill dir (`_PERSONA_ROUTING_FILES` + a sorted glob), and matches on a word boundary via `_mention_re` rather than a bare substring -- so `bmad-spec` no longer matches inside `bmad-spec-foo`. 8 tests pass.
 
 ### DW-FU-46-1-3: No drift guard exists for a currently-skipped § 2 skill prefix becoming provisioned later without a corresponding register update.
 
