@@ -10,6 +10,8 @@ through a Steward primitive.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
 import subprocess
@@ -18,14 +20,28 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-
+from pyforge.steward.dashboard import export as export_module
 from pyforge.steward.dashboard.export import (
-    ExportPolicy, ExportUnauthorizedError, authorize_export, maybe_encrypt_export,
+    ExportPolicy,
+    ExportUnauthorizedError,
+    WebhookSecretMissingError,
+    authorize_export,
+    maybe_encrypt_export,
+    resolve_webhook_secret,
 )
 from pyforge.steward.keys import decrypt_file
 
 AGE_MAGIC = b"age-encryption.org/v1"
 SECURITY_LOGGER = "pyforge.steward.dashboard.security"
+WEBHOOK_SECRET_ENV_VAR = "STEWARD_EXPORT_WEBHOOK_SECRET"
+
+
+def _no_dns(monkeypatch, ips=()):
+    """Stub `_resolve_hostname_ips` so a test never performs a real DNS
+    lookup for a `.test` hostname -- mirrors how these tests already
+    monkeypatch `urllib.request.urlopen` rather than hitting the network.
+    """
+    monkeypatch.setattr(export_module, "_resolve_hostname_ips", lambda hostname: list(ips))
 
 
 def _generate_identity(tmp_path: Path, name: str) -> tuple[Path, str]:
@@ -128,6 +144,58 @@ def test_export_policy_rejects_a_non_string_webhook_url():
         ExportPolicy(allowed_roles=("admin",), webhook_url=123)
 
 
+@pytest.mark.parametrize(
+    "blocked_url",
+    [
+        "http://127.0.0.1/hook",
+        "http://localhost/hook",
+        "http://[::1]/hook",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://10.0.0.5/hook",
+        "http://172.16.0.5/hook",
+        "http://192.168.1.5/hook",
+    ],
+)
+def test_export_policy_rejects_a_loopback_link_local_or_private_webhook_target(
+    blocked_url,
+):
+    """DW-9-4-4: an IP-literal webhook target (or the well-known `localhost`
+    name, which resolves to a loopback literal without any DNS lookup) that
+    is loopback/link-local/private is refused at construction time -- the
+    169.254.169.254 case is the cloud-metadata address by name.
+    """
+    with pytest.raises(ValueError, match="webhook_url"):
+        ExportPolicy(allowed_roles=("admin",), webhook_url=blocked_url)
+
+
+def test_export_policy_allows_a_private_webhook_target_when_explicitly_opted_in():
+    policy = ExportPolicy(
+        allowed_roles=("admin",),
+        webhook_url="http://127.0.0.1/hook",
+        allow_private_webhook_targets=True,
+    )
+    assert policy.webhook_url == "http://127.0.0.1/hook"
+    assert policy.allow_private_webhook_targets is True
+
+
+def test_export_policy_rejects_a_non_bool_allow_private_webhook_targets():
+    with pytest.raises(TypeError, match="allow_private_webhook_targets"):
+        ExportPolicy(
+            allowed_roles=("admin",), allow_private_webhook_targets="yes"
+        )
+
+
+def test_export_policy_accepts_a_dns_name_webhook_target_without_resolving_it():
+    """A DNS name cannot be judged at construction time without a real
+    network call -- it is re-checked fresh on every delivery instead (see
+    `test_authorize_export_refuses_a_webhook_target_that_resolves_to_a_blocked_address`).
+    """
+    policy = ExportPolicy(
+        allowed_roles=("admin",), webhook_url="https://hooks.example.test/refused"
+    )
+    assert policy.webhook_url == "https://hooks.example.test/refused"
+
+
 def test_export_policy_rejects_a_blank_encryption_recipient():
     with pytest.raises(ValueError, match="encryption_recipient"):
         ExportPolicy(allowed_roles=("admin",), encryption_recipient="")
@@ -192,10 +260,11 @@ def test_authorize_export_raises_and_logs_when_no_role_was_resolved(caplog):
     assert "alice" in caplog.records[0].getMessage()
 
 
-def test_authorize_export_never_discloses_allowed_roles_or_webhook_url():
+def test_authorize_export_never_discloses_allowed_roles_or_webhook_url(monkeypatch):
     """Mirrors `UntrustedIngressError`'s precedent (Story 9.1): the exception
     message names only the refused role, never the policy's internals.
     """
+    _no_dns(monkeypatch)
     policy = ExportPolicy(
         allowed_roles=("admin", "auditor"),
         webhook_url="https://example.test/hooks/export-refused",
@@ -210,7 +279,9 @@ def test_authorize_export_never_discloses_allowed_roles_or_webhook_url():
     assert "example.test" not in message
 
 
-def test_authorize_export_posts_a_webhook_on_refusal(monkeypatch, caplog):
+def test_authorize_export_posts_a_signed_webhook_on_refusal(monkeypatch, caplog):
+    monkeypatch.setenv(WEBHOOK_SECRET_ENV_VAR, "shared-secret")
+    _no_dns(monkeypatch)
     policy = ExportPolicy(
         allowed_roles=("admin",),
         webhook_url="https://hooks.example.test/export-refused",
@@ -232,17 +303,107 @@ def test_authorize_export_posts_a_webhook_on_refusal(monkeypatch, caplog):
     assert request.get_full_url() == "https://hooks.example.test/export-refused"
     assert timeout == 5
     assert request.get_header("Content-type") == "application/json"
-    payload = json.loads(request.data.decode("utf-8"))
+    payload_bytes = request.data
+    payload = json.loads(payload_bytes.decode("utf-8"))
     assert payload["event"] == "export_refused"
     assert payload["identity"] == "eve"
     assert payload["role"] == "guest"
     assert "occurred_at" in payload
+    # DW-9-4-3: the payload is HMAC-signed with the shared secret, so a
+    # receiver can verify this event actually came from this service.
+    signature_header = request.get_header("X-steward-signature-256")
+    assert signature_header is not None
+    assert signature_header.startswith("sha256=")
+    expected = hmac.new(
+        b"shared-secret", payload_bytes, hashlib.sha256
+    ).hexdigest()
+    assert signature_header == f"sha256={expected}"
     # Exactly one WARNING for the security event -- the webhook succeeded,
     # so no secondary failure warning is logged.
     assert len(caplog.records) == 1
 
 
+def test_authorize_export_does_not_post_an_unsigned_webhook_when_no_secret_is_configured(
+    monkeypatch, caplog
+):
+    """DW-9-4-3, fail-closed: with no `STEWARD_EXPORT_WEBHOOK_SECRET`
+    configured, the webhook is never sent unsigned -- the delivery attempt
+    is refused before `urlopen` is ever called.
+    """
+    monkeypatch.delenv(WEBHOOK_SECRET_ENV_VAR, raising=False)
+    _no_dns(monkeypatch)
+    policy = ExportPolicy(
+        allowed_roles=("admin",),
+        webhook_url="https://hooks.example.test/export-refused",
+    )
+    caplog.set_level(logging.WARNING, logger=SECURITY_LOGGER)
+    calls = []
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda *a, **k: calls.append((a, k))
+    )
+
+    with pytest.raises(ExportUnauthorizedError):
+        authorize_export(identity="eve", role="guest", policy=policy)
+
+    assert calls == []
+    # Two WARNINGs: the security event, then the webhook-refusal secondary.
+    assert len(caplog.records) == 2
+
+
+def test_authorize_export_refuses_a_webhook_target_that_resolves_to_a_blocked_address(
+    monkeypatch, caplog
+):
+    """DW-9-4-4: a DNS-name webhook target that RESOLVES to a blocked
+    address at delivery time (a rebind, or a name construction-time
+    validation cannot judge -- see
+    `test_export_policy_accepts_a_dns_name_webhook_target_without_resolving_it`)
+    is refused, not merely a literal IP declared up front.
+    """
+    monkeypatch.setenv(WEBHOOK_SECRET_ENV_VAR, "shared-secret")
+    _no_dns(monkeypatch, ips=["169.254.169.254"])
+    policy = ExportPolicy(
+        allowed_roles=("admin",),
+        webhook_url="https://hooks.example.test/export-refused",
+    )
+    caplog.set_level(logging.WARNING, logger=SECURITY_LOGGER)
+    calls = []
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda *a, **k: calls.append((a, k))
+    )
+
+    with pytest.raises(ExportUnauthorizedError):
+        authorize_export(identity="eve", role="guest", policy=policy)
+
+    assert calls == []
+    assert len(caplog.records) == 2
+    assert "resolves to" in caplog.records[1].getMessage()
+
+
+def test_authorize_export_allows_a_resolved_private_target_when_opted_in(
+    monkeypatch, caplog
+):
+    monkeypatch.setenv(WEBHOOK_SECRET_ENV_VAR, "shared-secret")
+    _no_dns(monkeypatch, ips=["169.254.169.254"])
+    policy = ExportPolicy(
+        allowed_roles=("admin",),
+        webhook_url="https://hooks.example.test/export-refused",
+        allow_private_webhook_targets=True,
+    )
+    caplog.set_level(logging.WARNING, logger=SECURITY_LOGGER)
+    calls = []
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda *a, **k: calls.append((a, k))
+    )
+
+    with pytest.raises(ExportUnauthorizedError):
+        authorize_export(identity="eve", role="guest", policy=policy)
+
+    assert len(calls) == 1
+
+
 def test_authorize_export_webhook_failure_does_not_suppress_the_raise(monkeypatch, caplog):
+    monkeypatch.setenv(WEBHOOK_SECRET_ENV_VAR, "shared-secret")
+    _no_dns(monkeypatch)
     policy = ExportPolicy(
         allowed_roles=("admin",),
         webhook_url="https://hooks.example.test/export-refused",
@@ -271,6 +432,23 @@ def test_authorize_export_makes_no_webhook_call_when_none_is_configured(monkeypa
         authorize_export(identity="eve", role="guest", policy=policy)
 
     assert calls == []
+
+
+# ── resolve_webhook_secret ───────────────────────────────────────────────
+
+
+def test_resolve_webhook_secret_reads_the_env_var():
+    assert resolve_webhook_secret({WEBHOOK_SECRET_ENV_VAR: "shared-secret"}) == b"shared-secret"
+
+
+def test_resolve_webhook_secret_raises_when_unset():
+    with pytest.raises(WebhookSecretMissingError, match=WEBHOOK_SECRET_ENV_VAR):
+        resolve_webhook_secret({})
+
+
+def test_resolve_webhook_secret_raises_when_blank():
+    with pytest.raises(WebhookSecretMissingError, match=WEBHOOK_SECRET_ENV_VAR):
+        resolve_webhook_secret({WEBHOOK_SECRET_ENV_VAR: ""})
 
 
 # ── maybe_encrypt_export ─────────────────────────────────────────────────
