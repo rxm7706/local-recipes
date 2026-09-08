@@ -653,6 +653,10 @@ def classify_resync_outcome(
 
 _MALFORMED_JOURNAL_CODE = "MRS-STATUS-002"
 
+#: A run whose journal read fine but whose harness snapshot is gone -- the
+#: retired-run shape. WARN, never a hard failure, and never `unknown`.
+_RETIRED_RUN_STATE_CODE = "MRS-STATUS-012"
+
 _ESCALATION_PAUSED_STAGE = "escalation"
 
 # The exact literal `supervisor/durability.py::_DONE_PHASE` already uses --
@@ -877,6 +881,18 @@ class FleetHomeFacts:
     branch: str
     has_run: bool = False
     journal_unreadable: bool = False
+    #: The run's own journal READ FINE, but bmad-loop's harness snapshot
+    #: for it could not be resolved -- the shape a RETIRED or cleaned run
+    #: leaves behind (`.bmad-loop/runs/.retired-*`), where `latest_run_dir`
+    #: still selects an entry whose `state.json` is gone. Distinct from
+    #: `journal_unreadable` on purpose: there, nothing could be recovered
+    #: and `unknown` is the honest answer; here the run is simply OVER and
+    #: its evidence was cleaned up, so the home is free and reports `idle`.
+    #: Conflating the two left pyforge-steward reading `unknown` from
+    #: 2026-08-22 until 2026-09-08 -- and a station stuck at `unknown` is
+    #: one whose liveness callers cannot assert, the precondition for the
+    #: duplicate-dispatch class recorded on 2026-08-27 (DW-STATUS-2026-09-08-1).
+    run_state_retired: bool = False
     finished: bool = False
     paused_stage: str | None = None
     tasks: tuple[TaskPhaseSnapshot, ...] = ()
@@ -1255,6 +1271,17 @@ def is_run_live(facts: FleetHomeFacts) -> bool:
         return False
     if facts.journal_unreadable:
         return True
+    # A RETIRED run is conservatively LIVE here, even though `build_fleet_row`
+    # reports the same home as `idle`. The two deliberately disagree, because
+    # they answer different questions: the row answers "what should an operator
+    # SEE" (the run is over, the home is free), while this predicate answers
+    # "may I delete a branch out from under it" -- and a retired run's own state
+    # is gone, so its clean finish cannot be PROVEN. This function's motivating
+    # incident was a live 9-story run nearly losing its branch; an unprovable
+    # fact is refused here, never defaulted to safe, exactly as
+    # `journal_unreadable` above already does.
+    if facts.run_state_retired:
+        return True
     return not facts.finished and facts.supervisor_alive is True
 
 
@@ -1326,6 +1353,47 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         row = _apply_dispatch_overlay(row, facts)
         return _apply_finalize_escalation(
             _apply_missing_spec_escalation(row, facts), facts
+        ), finding
+
+    # A RETIRED run: its journal read fine, but bmad-loop's own snapshot for
+    # it is gone (`.bmad-loop/runs/.retired-*`). That is not the same thing as
+    # an unreadable journal, and reporting it as `unknown` was a real defect --
+    # pyforge-steward read `unknown` from 2026-08-22 until 2026-09-08 because
+    # `latest_run_dir` kept selecting a retired entry. The run is simply OVER
+    # and its evidence was cleaned up, so the home is FREE: `idle` is the
+    # operationally true answer, and the same one this function already gives a
+    # home that never ran. The WARN still names the home, so the unresolvable
+    # run is on the record rather than silently swallowed.
+    if facts.run_state_retired:
+        row = {
+            "slug": facts.slug,
+            "branch": facts.branch,
+            "state": "idle",
+            "current_story": None,
+            "elapsed_seconds": None,
+            "budget_consumed": None,
+            "escalation_reason": None,
+            "escalation_artifact": None,
+            "escalation_preserve_ref": None,
+            "parked_stories": (),
+            "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
+        }
+        finding = Finding(
+            code=_RETIRED_RUN_STATE_CODE,
+            severity=Severity.WARN,
+            message=(
+                f"{facts.slug}: the most recent run's own state could not be "
+                "resolved (a retired or cleaned run) -- the journal itself read "
+                "fine, so this row reports 'idle' rather than 'unknown'"
+            ),
+            path=facts.slug,
+        )
+        return _apply_finalize_escalation(
+            _apply_missing_spec_escalation(
+                _apply_dispatch_overlay(row, facts), facts
+            ),
+            facts,
         ), finding
 
     if not facts.has_run:

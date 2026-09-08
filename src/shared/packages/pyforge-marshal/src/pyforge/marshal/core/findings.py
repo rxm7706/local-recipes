@@ -1487,6 +1487,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-011",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
+        # A run whose journal read fine but whose harness snapshot is gone --
+        # the retired/cleaned-run shape (DW-STATUS-2026-09-08-1). WARN: the home
+        # is reported free rather than `unknown`, and the unresolvable run is
+        # named rather than silently dropped.
+        "MRS-STATUS-012",
         "MRS-DEPLOY-024",
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",
