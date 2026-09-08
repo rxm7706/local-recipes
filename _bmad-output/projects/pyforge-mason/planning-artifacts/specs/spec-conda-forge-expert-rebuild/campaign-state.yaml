@@ -612,7 +612,15 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "068b84c67366d9fa83e24e90ee206d59b6d3ba33"
+    brief_mirrored_through: "5fdccf4a364c0787fb33f821db8874a2d5abe354"
+                                    # ADVANCED 2026-09-07 from 068b84c673 to the CI/hygiene
+                                    # sweep CFE retro 5fdccf4a36 (v8.87.0 -> v8.87.1, PATCH):
+                                    # G101's segfault diagnosis corrected (rattler-build's
+                                    # binary relocation, not the vendor Bun binary) and
+                                    # validate_recipe.py gained the go-nocgo stdlib exemption
+                                    # STD-001 already carried. validate_recipe.py is NOT
+                                    # shipped in this slice (cfe-recipe-generation) -- nothing
+                                    # to re-port here.
                                     # ADVANCED 2026-09-06 from b87a402abd to the CFE v8.87.0
                                     # renumber retro 068b84c673: review finding -- v8.86.5 was
                                     # mislabeled PATCH; renumbered to v8.87.0 (MINOR, per
@@ -913,7 +921,15 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "068b84c67366d9fa83e24e90ee206d59b6d3ba33"
+    brief_mirrored_through: "5fdccf4a364c0787fb33f821db8874a2d5abe354"
+                                    # ADVANCED 2026-09-07 from 068b84c673 to the CI/hygiene
+                                    # sweep CFE retro 5fdccf4a36 (v8.87.0 -> v8.87.1, PATCH):
+                                    # G101's segfault diagnosis corrected (no shipped-script
+                                    # change from that half). validate_recipe.py IS shipped in
+                                    # this slice -- its go-nocgo stdlib-exemption fix (mirrors
+                                    # recipe_optimizer.py's STD-001) was byte-re-ported
+                                    # (cp live -> compiled, cmp verified identical) before this
+                                    # pointer advanced.
                                     # ADVANCED 2026-09-06 from b87a402abd to the CFE v8.87.0
                                     # renumber retro 068b84c673: review finding -- v8.86.5 was
                                     # mislabeled PATCH; renumbered to v8.87.0 (MINOR, per
