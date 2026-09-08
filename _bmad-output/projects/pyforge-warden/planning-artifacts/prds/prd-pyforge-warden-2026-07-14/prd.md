@@ -14,8 +14,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-08-26"
-currency_review: Reviewed 2026-08-26 — reconciled against the 2026-08-22 spec layer (spec-package-inventory-eligibility + spec-compliance-factory-web-face, both since shipped as Epics 7-8), the Unifying Strategy contract (sole PR-gate verdict, hook book, plugins), and the as-built package. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-08-26.
+updated: "2026-09-07"
+currency_review: Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it).
 classification:
   projectType: cli_tool
   projectTypeNote: "Non-interactive CI/CD policy/quality-gate CLI; primary consumer is a pipeline, not a human terminal. report-schema.json is the data contract (an output_formats concern). developer_tool label dropped (no public SDK/IDE surface). Interactive/shell-completion UX deprioritized."
@@ -741,3 +741,33 @@ replaced) by the portal + MCP faces.
 deliberate conformance re-run; deptry lives at `osprey-oss/deptry`, still v0.25.1.
 Standing P0 debt (open in `deferred-work-ledger.md`): DW-5-2-5 (the corpus-oracle
 suite is unscheduled) and DW-5-2-7 (the 2027-07-24 baseline expiry cliff).
+
+## Currency reconciliation — 2026-09-07
+
+*Trigger: the chain-currency sweep's `spec→prd` staleness checkpoint (`spec-pyforge-warden`'s
+memlog moved 2026-09-07 for a CI/hygiene-sweep bug fix; this PRD had not moved since
+2026-08-26). Reconciled against `epics.md`'s Epic 11 (landed since the prior pass) and the
+as-built `pyforge.warden.tea_advisory` module.*
+
+**Epic 11 — two advisory lenses beside the gate** (both stories `done`,
+`sprint-status-ledger.yaml`, 2026-09-07): `bmad-os-review-pr`/`bmad-os-findings-triage`
+(Story 11.1) and TEA's `tea-test-review` (Story 11.2) are now warden-wielded advisory
+lenses, per `spec-bmad-suite-lifecycle` CAP-3/CAP-4. Both stay inside the FR20/J9 verdict
+contract this PRD already states: a lens produces `warn`-severity findings only, never
+moves the exit code or the seven-rung status (AD-4), test-enforced. No FR text requires
+correction — this is new advisory surface layered on the unchanged gate, the same shape
+Epic 9's hook-book plugin bundle already established.
+
+**One judgment call resolved in the same pass (DW-FU-11-2, 2026-09-07):** Story 11.2's own
+GWT text conflicted with the architecture spine (AD-10) on what the TEA advisory scanner
+should do when the AD-9 roster lacks a `tea` entry entirely — silently fail-open (as
+originally implemented) or hard-refuse. Resolved fail-closed for that specific case
+(`TeaRosterMissingError`, surfaced as a real `config-validation` ERROR rung — not a
+finding-schema change, not a second verdict), keeping fail-open only for the narrower
+"roster has tea but its binary is merely unreachable on PATH" case. `epics.md`'s Story 11.2
+GWT was the stale side and is now corrected; AD-10 needed no edit. This is a compliance-tool
+posture decision (fail-closed on an unverifiable prerequisite), not a scope or FR change —
+recorded here for the PRD's own audit trail, not as new product surface.
+
+No epic or story restructuring was needed; this note and the frontmatter bump are the only
+changes in this pass.
