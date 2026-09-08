@@ -1,6 +1,7 @@
 ---
 surface:
   - src/shared/packages/pyforge-scribe/**   # the CLI this Spec builds
+  - scripts/scribe_pg.py                    # the local PostgreSQL+pgvector this Spec's durable GraphStore tests require
 id: SPEC-scribe
 status: shipped
 owner-dream: docs/dreams/pyforge-scribe.md
