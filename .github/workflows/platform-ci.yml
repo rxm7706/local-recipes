@@ -843,6 +843,71 @@ jobs:
           ${{ matrix.engine }} logs dbgpt-sidecar-ci-app-${{ matrix.engine }}
           exit 1
 
+      # --- Story 43.7: runtime validation, not liveness -------------------
+      #
+      # `/api/health` returning 200 proves the process is up; it proves nothing
+      # about the work the sidecar does. These two steps close that gap, and
+      # they are deliberately the ACHIEVABLE half of what mason/DW-13-2-2 asked
+      # for. Its "Celery REST round-trip" wording is NOT this sidecar's to
+      # prove: `pixi list -e dbgpt-sidecar` carries no celery and no redis, this
+      # job starts no broker, and the Containerfile assigns that wiring to
+      # Stories 11.2/11.3 ("this story only has to make the container build,
+      # boot, and reach a healthy state on its own"). Writing a Celery step here
+      # would have produced a check that could never pass.
+      - name: SQLite metadata store was created AND migrated
+        run: |
+          set -euo pipefail
+          c=dbgpt-sidecar-ci-app-${{ matrix.engine }}
+          # A GLOB, not `find`: this image has no `find`, no `python3` and no
+          # `sqlite3` on the exec PATH (verified live in the built image, which
+          # is also how the first draft of this step was caught -- it used
+          # `find`, got "command not found", and would have failed with a
+          # MISLEADING "no store" error instead of the real one).
+          db="$(${{ matrix.engine }} exec "$c" sh -lc 'ls -1 "$HOME"/.dbgpt/workspace/pilot/meta_data/*.db 2>/dev/null | head -1' | tr -d '\r')"
+          if [ -z "$db" ]; then
+            echo "::error::no SQLite metadata store under \$HOME/.dbgpt/workspace/pilot/meta_data after a healthy boot"
+            ${{ matrix.engine }} exec "$c" sh -lc 'ls -laR "$HOME/.dbgpt/workspace" 2>/dev/null | head -40' || true
+            exit 1
+          fi
+          size="$(${{ matrix.engine }} exec "$c" sh -lc "stat -c %s '$db'" | tr -d '\r')"
+          echo "metadata store: $db ($size bytes)"
+          if [ "${size:-0}" -le 0 ]; then
+            echo "::error::metadata store exists but is empty"
+            exit 1
+          fi
+          # SQLite writes table names as plain text into the schema page, so a
+          # binary grep proves alembic really created its version table without
+          # needing sqlite3. Verified non-vacuous against a negative control:
+          # the same grep over alembic.ini in the same directory does NOT match.
+          if ! ${{ matrix.engine }} exec "$c" sh -lc "grep -aq alembic_version '$db'"; then
+            echo "::error::metadata store exists but carries no alembic_version table -- the migration did not run"
+            exit 1
+          fi
+          echo "alembic_version present -- the store was created and migrated"
+
+      - name: A real API round-trip past /api/health
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.engine }}" = "podman" ]; then
+            port="$(${{ matrix.engine }} port dbgpt-sidecar-ci-app-${{ matrix.engine }} 5670/tcp | head -1 | cut -d: -f2)"
+          else
+            port=5670
+          fi
+          url="http://127.0.0.1:${port}/openapi.json"
+          echo "GET ${url}"
+          body="$(curl -sS --fail-with-body "$url")"
+          # FastAPI's own schema endpoint: exercising it proves the ASGI app
+          # routed, serialised and answered with real content, where /api/health
+          # only proves a socket is listening. Asserting the route COUNT is what
+          # makes it a round-trip rather than a 200 -- an app that booted with no
+          # routes registered would still serve an empty schema.
+          routes="$(printf '%s' "$body" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("paths", {})))')"
+          echo "routes advertised: $routes"
+          if [ "$routes" -lt 1 ]; then
+            echo "::error::/openapi.json answered but advertises no routes -- the app is alive, not serving"
+            exit 1
+          fi
+
       # Same TWO-assertion split as `container`'s own arbitrary-UID checks,
       # and the same reason: the running-container uid only proves the
       # ENGINE honored `--user`, while the image's OWN default (no
