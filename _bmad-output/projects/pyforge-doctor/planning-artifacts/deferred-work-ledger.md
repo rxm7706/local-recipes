@@ -1602,6 +1602,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — resolved — CONFIRMED as stated, then FIXED in this sweep (the remedy was a doc edit, not code). Verified live: `python -m pyforge.doctor.sources bmad-method-version-drift --json` reports `packages_checked = 12`, while `epics.md:1539` still asserted 13; and `recipes/bmad-suite/suite-members.yaml` carries only `- name:` (plus an optional `notes:`) per member, with no registry/probe-class field anywhere in the file — so the literal Surface reading had, as the entry said, no data to read. Because the entry's own evidence establishes the recipe.yaml-derived implementation is the correct one, the imprecise text was the defect: `epics.md` Story 20.1's Surface, When and Then lines are reconciled to the shipped behaviour in this commit (12 not 13, per-`recipe.yaml` `cfe-source-kind` derivation, suite-members.yaml named as roster-only). Nothing in the code changed.
+
 ### DW-FU-20-2: pyforge-marshal/spec-pyforge-core's own declared surface glob (pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}/src/**) never matches any real path, so changes under seven of the eight stations' src/** silently evade that spec's drift detection.
 
 - source_spec: `planning-artifacts/specs/spec-20-2-the-render-halt-class-has-a-detector.md`
@@ -1626,6 +1628,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-09-08 — still-open — CONFIRMED against live code, both halves. `sources/frozen_path.py:146` still runs `git -c core.quotepath=false diff --name-only {base}..{head}` and splits with `output.splitlines()` (`:150`) — no `-z`, so a path containing a literal newline byte is still mis-split. The inherited sibling is also unchanged: `sources/ledger.py:141` runs `ls-tree -r --name-only` and `:144` splits with `.splitlines()`. Left open deliberately rather than fixed in this sweep: the entry's own reasoning still holds — fixing one without the other creates the inconsistency it warns about, and converting both to NUL-delimited output changes parsing in two modules with their own tests, which is a code change beyond a verification pass.
+
 ### DW-FU-20-4: No `## Allowed actions (CAP-16)` entry names the mechanism by which a doctor station task may consult `bmad-os-root-cause-analysis`.
 
 - source_spec: `planning-artifacts/specs/spec-20-4-bmad-os-root-cause-analysis-is-doctor-wielded.md`
@@ -1634,4 +1638,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 70d56e4ced32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  location: .claude/skills/bmad-agent-doctor/SKILL.md:67 (`## Allowed actions (CAP-16)`); the routing note that lacks a CAP-16 mechanism is at :14
   status: open
+
+  verified: 2026-09-08 — still-open — CONFIRMED, and the entry's cross-station scope claim independently re-measured and upheld. `bmad-agent-doctor/SKILL.md:14` routes `bmad-os-root-cause-analysis` as advisory-only, but the `## Allowed actions (CAP-16)` section at `:67` names no mechanism for consulting it. Re-checked all six wielding personas mechanically (warden, marshal, herald, steward, scribe, doctor): every one mentions a routed `bmad-os-*` skill outside CAP-16, and **0 of 6** name one inside their CAP-16 section — so this is steward 46.2's fleet-wide pattern exactly as the entry claims, neither narrower nor wider. A `location:` was added to this entry in the same sweep: it had none, which is why the churn filter could never reach it.
