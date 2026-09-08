@@ -760,6 +760,10 @@ detectors = { features = ["detectors"], no-default-feature = true }  # the Detec
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.
 pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
+# pyforge-scribe-pg: the scribe env PLUS the local PostgreSQL+pgvector server.
+# Separate because pgvector has no win-64 build; installing this env is how a
+# developer gets the database the durable GraphStore tests demand.
+pyforge-scribe-pg = { features = ["pyforge-scribe", "scribe-pg"], no-default-feature = true }
 # Lean core env (Story 14.1, pyforge-scribe mirror): no-default-feature
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
@@ -2289,6 +2293,44 @@ pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP
 # the build-wiring skeleton only (argparse CLI + empty `deck` subcommand
 # group, no bridge logic). Spec:
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
+[feature.scribe-pg]
+# --- scribe-pg: the local PostgreSQL + pgvector server pyforge-scribe's tests need ---
+# `pyforge-scribe` ships only the CLIENT (`psycopg`). Its durable GraphStore tests
+# (Story 28.1) fail LOUDLY rather than skipping when no server answers on
+# 127.0.0.1:5433 -- deliberate, so an absent database can never read as a green
+# suite -- but nothing in this repo provisioned one. CI supplies a
+# `pgvector/pgvector:pg16` service container, so the gap was invisible there and
+# only bit locally, where the sole recourse was hand-rolling a container. That
+# contradicts `platform-dev`'s own AD-16 posture: "all pixi-provisioned, zero
+# containers or managed services".
+#
+# A SEPARATE feature, deliberately not folded into `pyforge-scribe`, for one hard
+# reason: `pgvector` has NO win-64 conda-forge build and the scribe feature
+# inherits the workspace platform list (which includes win-64), so adding it there
+# breaks that solve outright. Composing instead leaves the lean env CI installs
+# untouched -- the same layering `platform-dev` uses over `python-agent-platform`.
+platforms = ["linux-64", "osx-arm64-min"]
+
+[feature.scribe-pg.dependencies]
+postgresql = ">=18.3,<19"         # server binaries: initdb / pg_ctl / psql / pg_isready.
+                                  # 18, NOT platform-dev's 17.11: that env pairs with
+                                  # psycopg2, whereas scribe's `psycopg >=3.3.4` pulls
+                                  # psycopg-c, which requires libpq >=18.3. Pinning <18
+                                  # here made the solve fail on libpq ==17.11 vs 18.3.
+pgvector = ">=0.8.1"              # the `vector` extension conftest.py requires by name
+
+[feature.scribe-pg.tasks.scribe-pg-up]
+description = "Start the per-user PostgreSQL+pgvector cluster pyforge-scribe's durable GraphStore tests require, on 127.0.0.1:5433 with database `scribe_graph` -- the DSN tests/unit/conftest.py hard-codes. Idempotent: re-running against a live cluster re-asserts the database and extension rather than failing. Cluster state lives under gitignored var/scribe-pg/, never a container."
+cmd = "python scripts/scribe_pg.py up"
+
+[feature.scribe-pg.tasks.scribe-pg-down]
+description = "Stop the per-user scribe PostgreSQL cluster (fast shutdown). The data directory survives, so the next scribe-pg-up starts rather than re-initialises."
+cmd = "python scripts/scribe_pg.py down"
+
+[feature.scribe-pg.tasks.scribe-pg-status]
+description = "Report whether the scribe PostgreSQL cluster is listening on 127.0.0.1:5433 and whether its data directory exists. Read-only; always exits 0."
+cmd = "python scripts/scribe_pg.py status"
+
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
