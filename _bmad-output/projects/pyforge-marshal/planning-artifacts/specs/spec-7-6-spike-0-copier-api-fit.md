@@ -8,7 +8,7 @@ followup_review_recommended: false # judged in Review Triage Log / Auto Run Resu
 baseline_revision: '5b91c62bebb3a115ac9207350dad2a6622540e86'
 final_revision: 'e236da6b9b7114e89068a9f532e7a95e13a4c45c'
 context:
-  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md'
+  - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md'
   - '{project-root}/_bmad-output/planning-artifacts/epics.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-7-context.md'

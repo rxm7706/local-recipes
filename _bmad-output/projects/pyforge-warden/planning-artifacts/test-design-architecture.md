@@ -8,7 +8,7 @@ lastSaved: '2026-09-07'
 workflowType: 'testarch-test-design'
 inputDocuments:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md
-  - _bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/architecture.md
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-warden/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md
   - _bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml
@@ -24,7 +24,7 @@ inputDocuments:
 **Status:** Architecture Review Pending
 **Project:** pyforge-warden
 **PRD Reference:** `planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md`
-**ADR Reference:** `planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/architecture.md`
+**ADR Reference:** `planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md`
 
 **Scope note:** pyforge-warden's v1 core (FR1-FR40, 6 epics, 31 stories) plus five post-v1 epics (7-11, 12 more stories) are already `done` in `sprint-status-ledger.yaml` — this is a **retrospective hardening test design** over a shipped, dogfooded system (64 existing test files under `src/shared/packages/pyforge-warden/tests/`), not a pre-implementation gate. "Blockers" below are backlog-worthy CI/process gaps, not build-blocking dependencies. Epic 11 (advisory lenses; stories 11.1/11.2) is the one epic still `blocked`/`backlog`.
 

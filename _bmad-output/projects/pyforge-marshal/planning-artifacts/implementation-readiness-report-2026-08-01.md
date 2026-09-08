@@ -24,7 +24,7 @@ this repo's parallel-agent / physical-path convention.
 | Spec (kernel) | `specs/spec-pyforge-marshal/SPEC.md` + `glossary.md` (companion) | re-rendered 2026-08-01, 9 CAPs |
 | Brief | `product-brief-pyforge-marshal.md` | updated 2026-08-01 |
 | PRD | `prds/prd-pyforge-marshal-2026-07-25/prd.md` | final, updated 2026-08-01, 60 FRs / 14 NFRs / 10 C |
-| Architecture | `architecture/architecture-pyforge-marshal-2026-07-25/architecture.md` | updated 2026-08-01, 45 ADs |
+| Architecture | `architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md` | updated 2026-08-01, 45 ADs |
 | Epics & Stories | `epics.md` | updated 2026-08-01, 6 epics / 45 stories |
 | UX | — | correctly absent; Marshal is a deterministic CLI, no UX artifact declared anywhere upstream |
 

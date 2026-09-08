@@ -1,5 +1,5 @@
 ---
-title: Herald Pitch Orchestration Architecture
+name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01

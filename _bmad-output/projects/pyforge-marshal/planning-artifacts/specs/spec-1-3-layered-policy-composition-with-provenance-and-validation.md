@@ -8,7 +8,7 @@ followup_review_recommended: true
 baseline_revision: '40df450070f32c964fccd7e59c4d5369896e7f29'
 final_revision: '43ddcd6981e5f69f20f3545b213a735583f3490b'
 context:
-  - '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md'
+  - '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md'
 warnings: ['oversized']
 ---

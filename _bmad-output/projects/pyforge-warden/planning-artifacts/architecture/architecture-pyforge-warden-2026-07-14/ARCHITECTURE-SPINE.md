@@ -1,4 +1,6 @@
 ---
+name: 'Warden (pyforge-warden)'
+altitude: feature   # added 2026-09-08 for fleet consistency; the other seven spines all declare it
 stepsCompleted:
   - step-01-init
   - step-02-context
@@ -34,7 +36,7 @@ axisDataContracts:  # added 2026-07-15 (story-0.1 replan) — the axis-3/4 + KEV
   lts-registry: "bundled src/pyforge/warden/data/lts-registry.yaml via importlib.resources; build-time snapshot_at + max_age_ok on every derived verdict (NFR-S9)"
 workflowType: 'architecture'
 lastStep: 8
-status: 'complete'
+status: 'final'   # was 'complete' (legacy workflow vocabulary); the fleet spine vocabulary is 'final'
 completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'

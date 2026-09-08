@@ -5,7 +5,7 @@ created: '2026-08-07'
 status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
-context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md', '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement.md', '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-1-3-layered-policy-composition-with-provenance-and-validation.md']
+context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md', '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement.md', '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-1-3-layered-policy-composition-with-provenance-and-validation.md']
 warnings: []
 baseline_revision: 'HEAD as of 2026-08-07, immediately after Epic 6 (S-6.1..6.5 merged)'
 ---

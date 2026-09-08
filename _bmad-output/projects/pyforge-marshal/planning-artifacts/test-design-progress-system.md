@@ -9,7 +9,7 @@ nextStep: ''
 lastSaved: '2026-09-07'
 inputDocuments:
   - '_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md'
-  - '_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/architecture.md'
+  - '_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md'
   - '_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md'
   - '_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md'
   - '.claude/skills/bmad-testarch-test-design/resources/knowledge/{risk-governance,probability-impact,nfr-criteria,adr-quality-readiness-checklist,test-levels-framework,test-quality}.md'
@@ -27,7 +27,7 @@ and `test-design-qa.md` in this directory for the generated documents themselves
 **Mode decision:** System-Level. Rule B applies ("Both PRD/ADR + Epic/Stories
 → Prefer System-Level Mode first") — pyforge-marshal has both a dedicated
 PRD (`prds/prd-pyforge-marshal-2026-07-25/prd.md`, FR-1..FR-195) and
-architecture set (`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`,
+architecture set (`architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md`,
 AD-1..AD-80) *and* a fully decomposed `epics.md` (37 epics / 208 stories).
 Per this workflow's own priority order, PRD+ADR wins over epic/story
 presence, so System-Level is correct even though `sprint-status.yaml`
