@@ -3,7 +3,7 @@
 #   - pyforge-doctor bmad_method suite watched set (Story 19.1 — all members w/ recipes)
 #   - steward suite pipeline-truth cross-check
 #
-# Active members match SelfExplainML channel + install-matrix.md (13 products;
+# Active members match PrivateChannel + install-matrix.md (13 products;
 # 2026-09-05: bmad-method-wds-expansion retired -> deprecated, bmad-eval-quality joined).
 # Deprecated members: local recipes kept in-repo but removed from the channel /
 # metapackage (parked or superseded). They stay listed here for drift/catalog
@@ -13,14 +13,13 @@
 #   - bmad-story-automator — upstream retired for bmad-loop; recipe deleted 2026-08-21
 
 members:
-  # --- Active SelfExplainML channel (included in bmad-suite metapackage) ---
+  # --- Active PrivateChannel (included in bmad-suite metapackage) ---
   - name: bmad-method
     description: '"Build More Architect Dreams" - Agile Ai Driven Development — Turn an idea or change request into working software without giving up the thinking.'
     urls:
       - https://github.com/bmad-code-org/BMAD-METHOD
       - https://bmadcode.com/
       - https://docs.bmad-method.org/
-    notes: conda-forge canonical; SelfExplainML refresh-parity optional
   - name: bmad-loop
     description: Deterministic ralph-loop orchestrator that drives the BMAD implementation phase unattended.
     urls:
@@ -79,7 +78,7 @@ members:
       - https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
     notes: bmad-ui feature; linux/osx per upstream
 
-  # --- Deprecated / removed from SelfExplainML (manifest only, not metapackage) ---
+  # --- Deprecated / removed from PrivateChannel (manifest only, not metapackage) ---
   - name: bmad-method-wds-expansion
     deprecated: true
     notes: upstream deprecated (bmad-modules.yaml deprecated=true; folded into bmm as the bmad-ux skill) — retired from the metapackage 2026-09-05, recipe kept for catalog completeness

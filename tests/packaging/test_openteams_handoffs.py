@@ -652,7 +652,12 @@ def test_main_reads_parquet_writes_csv_and_skips_gist(monkeypatch, tmp_path, cap
 
 
 def _mock_identity_gist_render(monkeypatch):
-    from pyforge.atlas.dashboard import identity_gist
+    # `pyforge-atlas` is NOT a dependency of the `local-recipes` feature this
+    # file runs under, so a bare import here is a hard ModuleNotFoundError
+    # rather than a skip. Same idiom as the module-level
+    # `pytest.importorskip("pandas")` above -- the two tests that need the
+    # atlas dashboard skip cleanly in envs that do not carry it.
+    identity_gist = pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
 
     def _render(export_path, **kwargs):
         df = pd.read_parquet(export_path)

@@ -13,10 +13,13 @@ This module centralizes the git mechanics only. Each guard's own POLICY --
 which paths, which exemptions, which content check -- stays local to the test
 file that owns it; nothing here decides what a violation looks like.
 
-``pytest`` is imported directly (skip-on-missing-base-ref is the whole point
-of this module) even though the package otherwise declares zero dependencies
--- every consumer is itself a pytest test file, so this adds nothing that
-isn't already present at import time.
+``pytest`` is needed for skip-on-missing-base-ref (the whole point of this
+module), but it is imported INSIDE ``_require_ref`` rather than at module
+scope, so this package keeps the empty ``[project.dependencies]`` it declares.
+Every consumer is itself a pytest test file, so nothing is added that isn't
+already present -- but a module-level import would still make it an undeclared
+runtime dependency, which `tests/packaging/test_dependency_completeness.py`
+correctly fails on. See the comment at the import for the full reasoning.
 """
 
 from __future__ import annotations
@@ -25,10 +28,18 @@ import ast
 import subprocess
 from pathlib import Path
 
-import pytest
-
 
 def _require_ref(root: Path, ref: str) -> None:
+    # Imported HERE, not at module scope: `pytest` is the one non-stdlib name
+    # this module touches, and it is reachable from exactly this one call. A
+    # module-level import would make it a real, undeclared dependency of a
+    # package whose `[project.dependencies]` is deliberately empty -- which is
+    # precisely what `tests/packaging/test_dependency_completeness.py` fails on
+    # (it inspects module-level imports only). Keeping it function-local lets
+    # the package stay the stdlib leaf it claims to be while `pytest.skip`
+    # still works for every consumer, all of which are pytest test files.
+    import pytest
+
     resolved = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
         cwd=root,

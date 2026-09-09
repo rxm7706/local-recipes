@@ -96,7 +96,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 Available in every environment (the `python` feature + workspace `[dependencies]`).
 
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
-- **pixi** (>=0.79.0) — the package/environment manager itself, available *inside*
+- **pixi** (>=0.80.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,
@@ -109,16 +109,16 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **uv** (>=0.12.10) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (>=24.19.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
-- **gh** (>=2.99.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
+- **gh** (>=2.100.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
-- **gitpython** (>=3.1.61) — `import git`; programmatic Git (repos, diffs, commits,
+- **gitpython** (>=3.1.62) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
 - **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
 - **bmad-method** (>=6.12.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=1.0.4) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=1.0.5) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -131,7 +131,7 @@ per the table above; all of them coexist in `local-recipes`.
 Build engines & solvers:
 - **conda-build** (>=25.3.1) — v0 recipe engine: builds `meta.yaml` recipes, renders
   Jinja2, runs tests. Never mix v0 and v1 recipes in one build run.
-- **rattler-build** (>=0.75.0) — Rust-native v1 recipe engine: builds `recipe.yaml`,
+- **rattler-build** (>=0.76.0) — Rust-native v1 recipe engine: builds `recipe.yaml`,
   much faster than conda-build, first-class cross-compilation. Primary local build tool.
 - **py-rattler** (>=0.22.0) — `import rattler`; Python bindings to the rattler libs:
   solve environments, fetch/inspect .conda artifacts, repodata handling — programmatic
@@ -174,7 +174,7 @@ Environment packaging & interop:
   environment.yml / pyproject.
 - **conda-pack** (>=0.9.2) — bundle a live conda env into a relocatable tarball
   (air-gapped deployment).
-- **conda-pypi** (>=0.11.0) — safer PyPI interop for conda envs (`conda pypi install`).
+- **conda-pypi** (>=0.12.0) — safer PyPI interop for conda envs (`conda pypi install`).
 
 Shell/CI quality:
 - **shellcheck** (>=0.10.0) — static analysis for `build.sh` and all shell scripts.
@@ -247,7 +247,7 @@ All in `local-recipes`.
 
 ## 5. Project scaffolding & templating
 
-- **copier** (>=9.18.1) — template-based project scaffolding with first-class
+- **copier** (>=9.18.2) — template-based project scaffolding with first-class
   update/recopy support; **pyforge-marshal-only** (Genesis seed installer engine,
   `marshal seed` verbs). Imported only in `seed/engine/copier.py` (P-02).
 - **cookiecutter** (>=2.7.1) — template-based project scaffolding from local or git
@@ -267,7 +267,7 @@ All in `local-recipes`.
 All in `local-recipes`.
 
 Core arrays/frames:
-- **numpy** (>=2.5.2) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
+- **numpy** (>=2.5.3) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
 - **pandas** (>=3.0.5) — DataFrames for tabular data (2.x resolved).
 - **polars** (>=1.44.1) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
@@ -285,7 +285,7 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **dbt-core** (>=1.12.3) + **dbt-duckdb** (>=1.11.0) + **dbt-postgres** (>=1.11.0) —
+- **dbt-core** (>=1.12.4) + **dbt-duckdb** (>=1.11.0) + **dbt-postgres** (>=1.11.0) —
   SQL transformation framework + adapters. Unblocked 2026-08-30: the click conflict
   that pinned the trio out fell when conda-recipe-manager (exact click==8.2.1
   feedstock pin) moved to the grayskull-only `crm` feature.
@@ -361,7 +361,7 @@ All in `local-recipes`.
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
   schemas (pandas/dask/spark).
-- **openlineage-python** (>=1.52.0) — `import openlineage.client`; emit OpenLineage
+- **openlineage-python** (>=1.53.0) — `import openlineage.client`; emit OpenLineage
   data-lineage events.
 - **opentelemetry-api / opentelemetry-sdk** (>=1.44.0) — traces/metrics/logs
   instrumentation and export (OTLP).
@@ -375,7 +375,7 @@ All in `local-recipes`.
 All in `local-recipes`.
 
 - **matplotlib** (>=3.11.1) — general-purpose static 2D plotting.
-- **plotly** (>=6.9.0) — interactive web-based charts (JSON-serializable figures).
+- **plotly** (>=7.0.0) — interactive web-based charts (JSON-serializable figures).
 - **bokeh** (>=3.9.2) — interactive HTML/JS plots and apps from Python; server mode
   for streaming.
 - **panel** (>=1.9.4) — HoloViz app framework: turn plots/widgets/dataframes into
@@ -423,10 +423,10 @@ PDF stack (pick by need):
   geometry; best for tabular PDFs.
 - **pdfminer.six** (>=20260107) — `import pdfminer`; pure-Python low-level text
   extraction (markitdown's backend).
-- **pypdf** (>=6.17.0) — pure-Python PDF read/write/merge/split/encrypt.
+- **pypdf** (>=6.18.0) — pure-Python PDF read/write/merge/split/encrypt.
 - **pdf2image** (>=1.17.0) — PDF pages → PIL images (Poppler-backed) for vision-model
   input.
-- **poppler** (>=26.7.0) — PDF rendering binaries (`pdftoppm`, `pdftotext`, …).
+- **poppler** (>=26.9.0) — PDF rendering binaries (`pdftoppm`, `pdftotext`, …).
 - **qpdf** (>=12.4.1) — `qpdf` CLI; PDF transforms: linearize, compress,
   encrypt/decrypt, split.
 
@@ -518,7 +518,7 @@ Knowledge & indexing for agents:
   2026-08-30 (needed click >=8.3.3; see conda-recipe-manager note in § 3).
   All platforms. Do NOT re-declare it as a pypi-dependency: tested 2026-08-30,
   a pypi entry evicts the pyforge-core/pyforge-doctor conda path-packages.
-- **caveman** (>=2.4.0) — Claude Code output-token compression skill installer
+- **caveman** (>=2.6.0) — Claude Code output-token compression skill installer
   (`caveman-install`; ~65% output-token cut). **linux-64 only** (SelfExplainML
   patched build 2, host nodejs held at 24.* to coexist with codegraph — see
   recipes/caveman).
@@ -542,7 +542,7 @@ Provider SDKs:
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.40.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.42.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -598,8 +598,8 @@ Model Context Protocol (MCP):
 Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
-- **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.75.0) — bridge the Claude Agent SDK to the Agent Client
+- **fasta2a** (>=2.0.0) — FastAPI-style A2A server implementation.
+- **claude-agent-acp** (>=0.75.1) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -619,9 +619,9 @@ in `CLAUDE.md` and `_bmad-output/`.
 - **bmad-module-template** (>=0.1.0) — scaffold for new BMAD modules.
 - **bmad-creative-intelligence-suite** (>=0.3.2) — CIS expansion module (creative /
   ideation workflows).
-- **bmad-method-test-architecture-enterprise** (>=1.24.0) — TEA module: enterprise
+- **bmad-method-test-architecture-enterprise** (>=1.25.0) — TEA module: enterprise
   test-architecture workflows.
-- **bmad-eval-quality** (>=0.2.0.dev0) — `eval-quality` CLI: compile / seal / preflight /
+- **bmad-eval-quality** (>=1.3.0) — `eval-quality` CLI: compile / seal / preflight /
   score Behavioral Evaluation Contracts (twin-run grading: clean vs planted-defect). Commit-pinned
   0.2.0 line from `main` — npm/tag 0.1.0 lack `score`. Bin is `eval-quality`, not `bmad-eval-quality`.
   Pinned in the linux-64 / osx-arm64 target tables only: SelfExplainML has just the `__unix`
@@ -766,7 +766,7 @@ Terminal & CLI building:
 - **typer** (>=0.27.2) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=12.3.4) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=12.4.0) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.18.0) — Yarn Berry.
 
@@ -804,11 +804,11 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **argon2-cffi** (>=25.1.0) — password hashing (Django/allauth).
 - **bmad-module-skill-forge** (>=2.1.0) — BMAD Skill Forge module (conda).
 - **cachebox** (>=5.2.3) — fast in-process cache.
-- **crispy-bootstrap5** (>=2026.3) — django-crispy-forms Bootstrap 5 template pack.
+- **crispy-bootstrap5** (>=2026.9) — django-crispy-forms Bootstrap 5 template pack.
 - **cron-descriptor** (>=2.1.0) — human-readable cron strings (django-celery-beat).
 - **cryptography** (>=50.0.1) — crypto primitives (Fernet, TLS helpers).
 - **django-allauth** (>=65.19.2) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
-- **django-anymail** (>=15.1) — Django transactional email backends.
+- **django-anymail** (>=15.2) — Django transactional email backends.
 - **django-appconf** (>=1.2.0) — Django app default-settings helper (compressor).
 - **django-celery-beat** (>=2.9.0) — periodic Celery tasks in Django DB.
 - **django-compressor** (>=4.6.0) — compress JS/CSS in Django.
@@ -823,7 +823,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **django-stubs** (>=6.1.0) — mypy/django-stubs types (`platform-ci-test`).
 - **django-timezone-field** (>=7.2.2) — timezone model field (celery-beat).
 - **django_coverage_plugin** (>=3.2.2) — coverage.py Django template plugin (conda name).
-- **djlint** (>=1.45.2) — Django/Jinja HTML linter.
+- **djlint** (>=1.46.1) — Django/Jinja HTML linter.
 - **factory_boy** (>=3.3.3) — test fixtures (conda name `factory_boy`, not factory-boy).
 - **fido2** (>=2.2.1) — WebAuthn/FIDO2 (allauth MFA extra).
 - **gunicorn** (>=26.2.0) — WSGI HTTP server.
@@ -858,7 +858,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **rjsmin** (>=1.2.5) — JS minifier (django-compressor).
 - **sphinx** (>=9.1.0) — docs generator (`platform-ci-test`).
 - **sphinx-autobuild** (>=2025.8.25) — live-reload Sphinx.
-- **sse-starlette** (>=3.4.10) — Server-Sent Events for Starlette.
+- **sse-starlette** (>=3.4.11) — Server-Sent Events for Starlette.
 - **text-unidecode** (>=1.3) — ASCII transliteration (python-slugify).
 - **uvicorn** (>=0.52.4) — ASGI server.
 - **uvicorn-worker** (>=0.4.0) — gunicorn worker class for uvicorn.

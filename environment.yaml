@@ -6,12 +6,12 @@ channels:
 dependencies:
 - python >=3.14.7,3.14.*
 - python 3.14.*
-- pixi >=0.79.0
-- gh >=2.99.0
-- gitpython >=3.1.61
+- pixi >=0.80.0
+- gh >=2.100.0
+- gitpython >=3.1.62
 - nodejs >=24.19.0,<27.0,!=25.*
 - bmad-method >=6.12.0
-- spec-kit >=1.0.4
+- spec-kit >=1.0.5
 - truststore >=0.10.4
 - conda >=26.5.0
 - conda-libmamba-solver >=24.9.0
