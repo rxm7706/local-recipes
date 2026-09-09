@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "718afb6212b86798670deab978479e8e6966ca3b212e0c9372a716fe184de1f1"
+source_sha256: "705f277b3016754c8ddb625d537507aae49ab85d96cc4e5188beee66ecfffe26"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -950,4 +950,12 @@ rows:
       - "build.bat"
       - "bin/<name>"
       - "Scripts/<name>.bat"
+    enforced_by: null
+  - id: G117
+    title: "`pixi upgrade --pinning-strategy latest-up` silently DELETES deliberate upper bounds — a cap that encodes a known-unsolvable combination is removed with no warning, and the lock still solves, so nothing goes red"
+    symptom_signature:
+      - "refresh the pins"
+      - "pixi upgrade --pinning-strategy latest-up --exclude <a long list>"
+      - "\">=X,<Y\""
+      - "\">=X\""
     enforced_by: null

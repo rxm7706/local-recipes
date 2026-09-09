@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.87.1
+version: 8.90.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4194,6 +4194,42 @@ The unused wrapper is inert on the other OS. Reserve the `__unix`/`__win` split 
 
 ---
 
+### G117. `pixi upgrade --pinning-strategy latest-up` silently DELETES deliberate upper bounds — a cap that encodes a known-unsolvable combination is removed with no warning, and the lock still solves, so nothing goes red
+
+**Symptom**: a routine "refresh the pins" pass. `pixi upgrade --pinning-strategy latest-up --exclude <a long list>` exits 0, the lock re-solves cleanly, and the manifest diff looks like a page of harmless floor bumps. Buried in it, pins that read `">=X,<Y"` now read `">=X"`. Nothing failed, because today's solve still picks a version under the old ceiling.
+
+**Why**: `latest-up` rewrites each pin to a *floor at the newly resolved version*. It has no concept of an intentional ceiling, so `,<Y` is not "preserved and raised" — it is dropped. `--exclude <pkg>` is the only protection, and it must be spelled per package: excluding `channels` does nothing for `channels_redis`, and excluding `django`/`wagtail` does nothing for the `coderedcms` pinned beside them under the same "Pin to LTS" comment.
+
+The damage is **latent**, which is what makes it dangerous. The cap existed to forbid a *future* version, so removing it breaks nothing until that version appears in the channel — at which point the failure surfaces far from the commit that caused it, in a solve nobody connects to a months-old dependency refresh.
+
+**Fix — diff the SPECIFIERS, never the version numbers.** Snapshot the manifest first, then compare only pins whose *shape* changed:
+
+```bash
+cp pixi.toml /tmp/pixi.toml.pre
+pixi upgrade --pinning-strategy latest-up --exclude ...
+# every pin that LOST a comma-clause -- the ones that matter:
+diff <(grep -oE '^[A-Za-z0-9_.-]+ *= *"[^"]*"' /tmp/pixi.toml.pre | sort -u) \
+     <(grep -oE '^[A-Za-z0-9_.-]+ *= *"[^"]*"' pixi.toml            | sort -u) \
+  | grep -E '^<.*,<' 
+```
+
+Do not read the diff with `head` — the caps are scattered, not clustered, and a truncated view is how one of the six below was missed on the first pass and only caught by a second, unfiltered read.
+
+**A cap's rationale is usually written next to it — restore from that, not from taste.** Every one of these was recoverable from its own comment or its neighbours:
+
+| pin | cap dropped | what the file itself said |
+|---|---|---|
+| `openfeature-provider-flagd` | `,<0.5.1` | *"Provider must stay 0.5.0 (protobuf 6.x): 0.5.2 needs protobuf 7 and cannot solve with langflow's a2a-sdk (protobuf <7)"* |
+| `asgiref` / `channels_redis` | `,<4.0` / `,<5.0` | *"MUST stay byte-identical to pyproject.toml's `dashboard` extra"* — enforced by a pin-sync test |
+| `coderedcms` | `,<7.0` | `# Pin to LTS version for Django`, in a four-line block whose other members were all excluded |
+| `cachebox` ×2 | `,<6` | major-version cap, no prose — restore conservatively |
+
+**Two independent signals catch it if you miss the diff** — run both before believing an upgrade: a repo pin-sync test (here `tests/meta/test_invariants.py` went red immediately on `asgiref`, the one unambiguous machine-detectable case), and the library catalog drift check ([`llms-full-check`](#atlas-intelligence-layer)), which lists every moved floor and so also surfaces **major-version jumps** worth a second look — this pass moved `plotly` 6.9→7.0 and `fasta2a` 0.6.1→2.0.0, both legitimate uncapped floors, but neither is a change you want to discover in CI.
+
+**Related**: [G113](#g113) (build.number) is the recipe-side analogue of "a mechanical bump has a rule the tool does not know". The pixi-floor discipline in [G118-adjacent practice](#g66-uploaded--indexed) also applies here — **never raise a pixi floor above the newest build actually published to the channel**, or every `pixi run --frozen` lane reds until the artifact exists; a recipe may legitimately sit ahead of its channel (here `bmad-eval-quality` built 1.4.0 while the channel served 1.3.0), and the pin tracks the *published* build, not the recipe.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -4230,6 +4266,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.90.0** (Sep 9, 2026) — **G117: `pixi upgrade --pinning-strategy latest-up` silently deletes deliberate upper bounds (MINOR).** A routine pin refresh exited 0 and re-solved cleanly while dropping `,<Y` from **six** pins, because `latest-up` rewrites every pin to a bare floor and has no concept of an intentional ceiling; `--exclude` is the only guard and must be spelled per package (excluding `channels` does nothing for `channels_redis`; excluding `django`/`wagtail` does nothing for the `coderedcms` pinned beside them under the same "Pin to LTS" comment). The damage is latent — a cap forbids a *future* version, so nothing reds until that version ships, far from the commit that caused it. One case was machine-caught immediately (`asgiref`, by a pin-sync test asserting byte-identity with a `pyproject` extra); the rest were recoverable only from the rationale written beside them, incl. `openfeature-provider-flagd ,<0.5.1` whose own comment says 0.5.2 needs protobuf 7 and cannot solve with langflow's a2a-sdk. G117 prescribes diffing the *specifiers* (not the version numbers) and warns against reading that diff through `head` — one of the six was missed on a truncated first pass. Also records the pixi-floor rule this pass exercised: **never raise a floor above the newest build actually published**, since a recipe may legitimately sit ahead of its channel (`bmad-eval-quality` built 1.4.0 while the channel served 1.3.0). Housekeeping: SKILL.md's frontmatter `version:` had drifted to 8.87.1, missing the 8.88.0/8.88.1/8.89.0 bumps that MANIFEST.yaml and skill-config.yaml did receive — all three now agree. **Files**: `SKILL.md` (G117, frontmatter version, history), `config/skill-config.yaml` (8.89.0 → 8.90.0), `MANIFEST.yaml`, `CHANGELOG.md`, `config/failure-catalog.yaml` (regenerated); `recipes/bmad-eval-quality/recipe.yaml`, `recipes/bmad-suite/*`, `pixi.toml`/`pixi.lock` and the spec memlogs in companion commits.
 - **v8.89.0** (Sep 9, 2026) — **G115 + G116: Windows variants of noarch recipes (MINOR).** **G115** — staged-recipes builds the `__win` variant of a selector-carrying noarch recipe, tests it green, then discards it: the win job publishes `D:\bld\win-64\` (empty for noarch) while `conda_pkgs_noarch` comes from the linux job, so any channel fed from PR artifacts is silently `__unix`-only. Unfixable in-PR; fix is a `windows-2022` dispatch publishing `D:\bld\noarch\*.conda`. Verified on bmad-eval-quality 1.3.0 + bmad-method 6.12.0. Includes two traps: a colon in a tracked path kills Windows `actions/checkout` entirely, and an `os error 32` teardown failure can follow passing tests. **G116** — the inverse: a noarch recipe with a `build.bat` but no `__unix`/`__win` split ships only the build platform's entry point and still installs on the other OS (7 of 13 bmad-suite members); prefer one artifact carrying both wrappers.
 - **v8.88.1** (Sep 9, 2026) — **`pr-artifacts` returned ZERO packages for every `noarch:` recipe (PATCH).** `_DEFAULT_CONDA_PKGS_RE` matched `conda_pkgs_(linux|osx|win)` only, excluding `conda_pkgs_noarch` — the sole artifact carrying a noarch recipe's package (the per-arch ZIPs hold an empty ~75 KB repodata shell). Silent: the tool reported success and built a valid-but-empty `file://` channel. Affected most of conda-forge since v8.14.0. Fixed the regex + subdir map; `_write_noarch_stub` is now correctly the no-noarch-artifact fallback. Verified live on staged-recipes #34774 / #33125, whose packages then uploaded and indexed on SelfExplainML. +5 tests; byte-re-ported into slice-2.
 - **v8.88.0** (Sep 9, 2026) — **bmad-suite member descriptions become generated, not hand-added (MINOR).** `recipes/bmad-suite/recipe.yaml`'s `run:` block is regenerated wholesale between its GENERATED markers, so a hand-added trailing `# description # urls` comment is wiped on the next `generate-bmad-suite`. `suite-members.yaml` now carries per-member `description:` + `urls:`, and `bmad_suite_metapackage.py` emits them as one column-aligned trailing comment (the selector-nested member shares the same absolute column). Descriptions come from each member recipe's own `about.*`. Regeneration is idempotent, the pins still parse as bare `name >=version`, and `_parse_existing_pins` is unaffected; +5 unit tests. Authoring trap: a value STARTING with `"` breaks YAML parsing of the manifest — single-quote it (same class as G98's `#`/`:` rule).

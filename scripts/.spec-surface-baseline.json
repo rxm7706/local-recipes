@@ -540,8 +540,8 @@
  },
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
-   "pixi.lock": "1793fa87ddc08b117e59d2da9202b1857ad4aff0",
-   "pixi.toml": "eaf6a5d85d8490707e5ae0a3a6626cae9b27b663",
+   "pixi.lock": "e3cbc3d2af30415007c68d2471f58c9bcbc91ade",
+   "pixi.toml": "10856e88b9f7fe3f1dd5e13a564003e60cc80133",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "c9ceece6aa040ac9b2d62b9dba24a91b9bf21c44",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "3788a33297571c63bfac5d0a47ec18c301a71d56",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "a60559615671ad5c1f5c16ba812a0c7c207407f8"
+  "memlog": "a1fa2d76b62b4d63151985de5bef40640fe32af8"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -2954,7 +2954,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "eaf6a5d85d8490707e5ae0a3a6626cae9b27b663",
+   "pixi.toml": "10856e88b9f7fe3f1dd5e13a564003e60cc80133",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "8a93e5e51a08423391a0da2cfb4b65cee68a3e3c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "ddaa3060c1d5985d03a96e33c8327cb328b1e2e5",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3466,7 +3466,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "2e343b161eb8249312b18fbd852a7e02cc53fc58"
+  "memlog": "0581a40254d267a7f9071d2e9b7f5745b977d97d"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3859,7 +3859,7 @@
    "src/shared/packages/pyforge-testing-kit/pyproject.toml": "baa85621f4ac0615ce7644f6e9e3d1a012858334",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/__init__.py": "0ef1a459d666c9a98d72467e103d2261f3877904",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/auth_http_time.py": "9382933eaabfae4c586deec595b41eafdeb33fa0",
-   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py": "9c123ef6ab91ac1a81a505a20b47d5953f51b985",
+   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/branch_diff_guard.py": "eca3bc68fb1e7865596d46a444499e9f54447c92",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/cli_runner.py": "afc0e8a9e1f7f76616ba73ed9de7fe03dbc11943",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/db_factory.py": "d4b33fc17f7a0fa2726f395a1512d4a3b4cbe3b6",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/page_object.py": "e141b68dd6f3ef35cf33bdec7c0cf507be3c0c7a",
@@ -3869,7 +3869,7 @@
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "820a9616c92f04d056718f3afcfb0774a2239fd2"
   },
-  "memlog": "a76949bff225c6c8a037de934b4c4c76f95a5e67"
+  "memlog": "88d8761f08d5354c9d11e1ba8b1e8e4110a78b4d"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
@@ -5278,9 +5278,9 @@
    "recipes/bmad-eval-quality/build.bat": "adb7ecf76b4e62ff4fb9f9bc581ca53626b0d4b9",
    "recipes/bmad-eval-quality/build.sh": "6f14f1f3cebfc8f07fca48daafd961393c367e17",
    "recipes/bmad-eval-quality/conda-forge.yml": "f9c4a4296a9e3d457ae11a08e9eae3d739807129",
-   "recipes/bmad-eval-quality/recipe.yaml": "85deb8ae2bde8063310e68437b1ced78a9ef34bb"
+   "recipes/bmad-eval-quality/recipe.yaml": "828bb6b05c1b30dfca12c0ea4a636b48cba9a1e9"
   },
-  "memlog": "28a678b267a0b6e994f957fbcab46c11db345b66"
+  "memlog": "193928decbe5af9ba2f65dceadf1f1678f929b42"
  },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
@@ -5314,11 +5314,11 @@
  "pyforge-steward/spec-bmad-suite-metapackage": {
   "files": {
    ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py": "bc047e2f363338b43c8dd5f5a5b573b85061837d",
-   ".claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py": "161f1e6b50dbf149241873dd319df86cc272c6ef",
-   "recipes/bmad-suite/recipe.yaml": "056f54f11a0d9db9a76d2aa37a4757087bf3871b",
-   "recipes/bmad-suite/suite-members.yaml": "a9e903d8a726f4f934fb31e87ca60edd41417529"
+   ".claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py": "c4e25616dd7053ed476558daf61d48133a3ce598",
+   "recipes/bmad-suite/recipe.yaml": "98114ceb88cfec27872b305ea528dfbc848409c8",
+   "recipes/bmad-suite/suite-members.yaml": "449192ac291d8e17eb097e6e9c9e6a257de482ca"
   },
-  "memlog": "51492715982ca64fb4bb097c84d08f3bed849e18"
+  "memlog": "dd0fcceb7809d1775dc75cf3a860dd227346b69c"
  },
  "pyforge-steward/spec-build-league-scorecard": {
   "files": {},
