@@ -38,11 +38,17 @@ _AZURE_ARTIFACTS_URL = (
     "https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/builds/"
     "{build_id}/artifacts?api-version=7.1"
 )
-_DEFAULT_CONDA_PKGS_RE = re.compile(r"^conda_pkgs_(linux|osx|win)$")
+_DEFAULT_CONDA_PKGS_RE = re.compile(r"^conda_pkgs_(linux|osx|win|noarch)$")
 _PLATFORM_FROM_NAME = {
     "conda_pkgs_linux": "linux-64",
     "conda_pkgs_osx": "osx-64",
     "conda_pkgs_win": "win-64",
+    # A `noarch:` recipe's package lands ONLY in the separate conda_pkgs_noarch
+    # artifact -- the three per-arch ZIPs carry just an empty repodata shell.
+    # Omitting this name made `pr-artifacts` return 0 .conda files for every
+    # noarch recipe, which is most of conda-forge (found 2026-09-09 on
+    # staged-recipes #34774 / #33125, both noarch, both green).
+    "conda_pkgs_noarch": "noarch",
 }
 
 
@@ -175,7 +181,8 @@ def list_azure_artifacts(
 
     Anonymous read against the public `conda-forge/feedstock-builds`
     project — no PAT, no `az login`. By default filters to
-    `conda_pkgs_(linux|osx|win)` (the documented conda-forge naming);
+    `conda_pkgs_(linux|osx|win|noarch)` (the documented conda-forge naming;
+    `noarch` is where a `noarch:` recipe's package actually lands);
     `include_all=True` returns the raw list.
 
     Each returned dict carries: `name`, `download_url`, `size`,
@@ -414,7 +421,9 @@ def _write_noarch_stub(extracted_dir: Path) -> Path:
     every standard subdir, and a missing `noarch/repodata.json` hard-fails
     channel loading: `Could not read a file:// file [...noarch/repodata.json]`
     + `Subdir noarch not loaded!`. Azure's per-platform ZIPs never carry
-    a noarch payload, so without this stub the otherwise-correctly-indexed
+    a noarch payload (the separate conda_pkgs_noarch artifact does, and is
+    extracted first when present -- this stub is the fallback for a build
+    that published none), so without it the otherwise-correctly-indexed
     `linux-64/` / `osx-64/` / `win-64/` subdirs are wasted: the solver
     refuses to consider the channel and the operator has to fall back to
     `mamba install <path>.conda`. The stub matches the repodata_version=2

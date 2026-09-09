@@ -44,6 +44,14 @@ on:
         required: false
         default: true
         type: boolean
+      upload_channel:
+        description: >-
+          anaconda.org channel to upload the built packages to (e.g.
+          SelfExplainML). Leave EMPTY to only publish the GitHub artifact.
+          Requires the ANACONDA_API_TOKEN repo secret.
+        required: false
+        default: ''
+        type: string
 
 env:
   # Match conda-forge Azure Pipelines configuration
@@ -129,7 +137,7 @@ jobs:
       - name: Install build tools
         shell: bash -el {0}
         run: |
-          conda install -y conda-build rattler-build conda-forge-ci-setup conda-index
+          conda install -y conda-build rattler-build conda-forge-ci-setup conda-index anaconda-client
 
       - name: Configure conda
         shell: bash -el {0}
@@ -206,6 +214,44 @@ jobs:
             D:\bld\noarch\*.tar.bz2
           if-no-files-found: ignore
           retention-days: 7
+
+      # Opt-in publish. Exists because a staged-recipes PR CANNOT hand us the
+      # __win variant: for a `noarch:` recipe the Windows job writes the package
+      # to D:\bld\noarch\ while its PublishPipelineArtifact step ships
+      # D:\bld\win-64\, so the win build is created, tested, and then discarded
+      # with the runner. Every package fed to a channel from staged-recipes PR
+      # artifacts is therefore __unix-only until its feedstock exists.
+      - name: Upload to anaconda.org
+        if: inputs.upload_channel != ''
+        shell: bash -el {0}
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Fail loudly rather than skip: a silent no-op here would read as a
+          # successful publish and the channel would stay quietly incomplete.
+          if [ -z "${ANACONDA_API_TOKEN:-}" ]; then
+            echo "::error::upload_channel='${{ inputs.upload_channel }}' was requested but the" \
+                 "ANACONDA_API_TOKEN repo secret is not set. Add it (Settings > Secrets and" \
+                 "variables > Actions) or leave upload_channel empty to publish only the" \
+                 "GitHub artifact."
+            exit 1
+          fi
+
+          shopt -s nullglob
+          pkgs=("${CONDA_BLD_PATH}"/noarch/*.conda "${CONDA_BLD_PATH}"/win-64/*.conda)
+          if [ ${#pkgs[@]} -eq 0 ]; then
+            echo "::error::No .conda packages found under ${CONDA_BLD_PATH} to upload."
+            exit 1
+          fi
+
+          for pkg in "${pkgs[@]}"; do
+            echo "Uploading $(basename "$pkg") -> ${{ inputs.upload_channel }}"
+            # `-s` pins the destination: the bare client blocks on an
+            # interactive anaconda.com-vs-.org prompt under a non-TTY runner.
+            anaconda -s https://api.anaconda.org -t "${ANACONDA_API_TOKEN}" \
+              upload --user "${{ inputs.upload_channel }}" "$pkg"
+          done
 
   summary:
     needs: [detect-recipes, build-win-64]

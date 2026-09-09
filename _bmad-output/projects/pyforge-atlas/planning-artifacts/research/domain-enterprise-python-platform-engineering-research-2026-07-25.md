@@ -8,7 +8,7 @@ inputDocuments:
   - "{project-root}/docs/dreams/pyforge-genesis.md"
   - "{project-root}/docs/intake/gists/spec-kit/constitution.md"
   - "{project-root}/docs/intake/gists/unity-data-stack-pixi-toml/Unity-Data-Stack-Pixi.toml"
-  - "{project-root}/docs/intake/gists/bmad-method-spec-enterprise-monorepo-cross-platform-deployme/BMAD-METHOD SPEC: Enterprise Monorepo, Cross-Platform Deployment, and Compliance Toolchain.md"
+  - "{project-root}/docs/intake/gists/bmad-method-spec-enterprise-monorepo-cross-platform-deployme/BMAD-METHOD SPEC - Enterprise Monorepo, Cross-Platform Deployment, and Compliance Toolchain.md"
   - "{planning_artifacts}/research/market-enterprise-innersource-python-platform-research-2026-07-25.md"
 workflowType: 'research'
 lastStep: 5

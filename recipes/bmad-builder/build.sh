@@ -17,3 +17,14 @@ cp CHANGELOG.md LICENSE README.md "${PREFIX}/share/bmad-builder/"
 mkdir -p "${PREFIX}/bin"
 cp "${RECIPE_DIR}/bmad_builder_install.py" "${PREFIX}/bin/bmad-builder-install"
 chmod +x "${PREFIX}/bin/bmad-builder-install"
+
+# Windows entry point, emitted from this SAME noarch build (CFE G116). A .bat is
+# just text, so ONE artifact serves every platform -- no __unix/__win split and
+# no second build. %~dp0 resolves at RUNTIME to <prefix>\Scripts\, so nothing
+# bakes a build-time prefix into the package (the old build.bat baked %PREFIX%,
+# which cannot be right for a noarch artifact built on another platform).
+mkdir -p "${PREFIX}/Scripts"
+cp "${RECIPE_DIR}/bmad_builder_install.py" "${PREFIX}/Scripts/bmad-builder-install-script.py"
+printf '@"%%~dp0..\\python.exe" "%%~dp0bmad-builder-install-script.py" %%*\r\n' \
+    > "${PREFIX}/Scripts/bmad-builder-install.bat"
+

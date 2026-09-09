@@ -58,6 +58,8 @@ class ManifestMember:
     name: str
     deprecated: bool = False
     notes: str = ""
+    description: str = ""
+    urls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,8 @@ class MemberPin:
     registry: str
     upstream: str | None
     source: str
+    description: str = ""
+    urls: tuple[str, ...] = ()
 
 
 def _repo_root(explicit: Path | None) -> Path:
@@ -91,6 +95,8 @@ def _load_manifest(root: Path) -> list[ManifestMember]:
                     name=str(entry["name"]),
                     deprecated=bool(entry.get("deprecated")),
                     notes=str(entry.get("notes") or ""),
+                    description=str(entry.get("description") or ""),
+                    urls=tuple(str(u) for u in (entry.get("urls") or [])),
                 )
             )
         elif isinstance(entry, str):
@@ -221,17 +227,40 @@ def _calver_stamp(when: date | None = None) -> str:
     return f"{today.year}.{today.month}.{today.day}"
 
 
+def _member_comment(pin: MemberPin) -> str:
+    """The trailing `# <description> # <url> # <url>` for one member, or "".
+
+    Sourced from suite-members.yaml so it survives regeneration — a comment
+    hand-added to the GENERATED block is wiped on the next run.
+    """
+    parts = [pin.description.strip()] if pin.description.strip() else []
+    parts.extend(u.strip() for u in pin.urls if u.strip())
+    return "  # " + " # ".join(parts) if parts else ""
+
+
 def _format_run_lines(pins: list[MemberPin]) -> list[str]:
-    lines: list[str] = []
+    # Align every trailing comment to one column: the widest emitted dep line
+    # plus a two-space gutter. Selector-nested members are indented deeper but
+    # share the same absolute column, so the block reads as one table.
+    rendered: list[tuple[str, MemberPin | None]] = []
     for pin in pins:
         selector = _PLATFORM_SELECTORS.get(pin.name)
-        dep = f"- {pin.name} >={pin.floor}"
         if selector:
-            lines.append(f"    - if: {selector}")
-            lines.append("      then:")
-            lines.append(f"        - {pin.name} >={pin.floor}")
+            rendered.append((f"    - if: {selector}", None))
+            rendered.append(("      then:", None))
+            rendered.append((f"        - {pin.name} >={pin.floor}", pin))
         else:
-            lines.append(f"    {dep}")
+            rendered.append((f"    - {pin.name} >={pin.floor}", pin))
+
+    width = max(
+        (len(text) for text, pin in rendered if pin is not None and _member_comment(pin)),
+        default=0,
+    )
+
+    lines: list[str] = []
+    for text, pin in rendered:
+        comment = _member_comment(pin) if pin is not None else ""
+        lines.append(f"{text.ljust(width)}{comment}" if comment else text)
     return lines
 
 
@@ -321,6 +350,8 @@ def generate(
                 registry=_member_registry(recipe),
                 upstream=floor if source != "recipe-floor" else None,
                 source=source,
+                description=member.description,
+                urls=member.urls,
             )
         )
 

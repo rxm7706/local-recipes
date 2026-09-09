@@ -183,3 +183,36 @@ class TestGhPrChecksSubprocess:
         monkeypatch.setattr(pra.subprocess, "run", fake_run)
         pra._gh_pr_checks(33693, "conda-forge/staged-recipes", timeout=30)
         assert captured["timeout"] == 30
+
+
+# ── conda_pkgs_* artifact selection (2026-09-09) ─────────────────────────────
+#
+# A `noarch:` recipe's package is published ONLY in the separate
+# `conda_pkgs_noarch` Azure artifact; the three per-arch ZIPs carry an empty
+# repodata shell (~75 KB) and zero .conda files. The default artifact regex
+# matched (linux|osx|win) only, so `pr-artifacts` silently returned 0 packages
+# for every noarch recipe — most of conda-forge. Found on staged-recipes
+# #34774 (bmad-eval-quality) and #33125 (TEA), both green, both noarch:
+# Azure listed 4 artifacts, the downloader fetched 3 empty ones.
+
+
+class TestCondaPkgsArtifactSelection:
+    def test_noarch_artifact_is_matched(self):
+        assert pra._DEFAULT_CONDA_PKGS_RE.match("conda_pkgs_noarch")
+
+    def test_per_arch_artifacts_still_matched(self):
+        for name in ("conda_pkgs_linux", "conda_pkgs_osx", "conda_pkgs_win"):
+            assert pra._DEFAULT_CONDA_PKGS_RE.match(name), name
+
+    def test_unrelated_artifacts_are_not_matched(self):
+        for name in ("conda_pkgs_", "conda_pkgs_linux_extra", "build_logs", "noarch"):
+            assert not pra._DEFAULT_CONDA_PKGS_RE.match(name), name
+
+    def test_noarch_maps_to_the_noarch_subdir(self):
+        assert pra._PLATFORM_FROM_NAME["conda_pkgs_noarch"] == "noarch"
+
+    def test_every_matched_artifact_has_a_subdir_mapping(self):
+        """A name the regex accepts but the map lacks extracts to `None/`."""
+        for name in ("conda_pkgs_linux", "conda_pkgs_osx",
+                     "conda_pkgs_win", "conda_pkgs_noarch"):
+            assert pra._PLATFORM_FROM_NAME.get(name), name

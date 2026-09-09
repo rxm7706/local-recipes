@@ -1,16 +1,83 @@
-conda_build_tool: rattler-build
-conda_install_tool: pixi
-noarch_platforms:
-- linux_64
-- win_64
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+# conda-forge.yml — pre-seeds the feedstock
 github:
   branch_name: main
   tooling_branch_name: main
 conda_build:
   error_overlinking: true
+  pkg_format: '2'
 conda_forge_output_validation: true
+workflow_settings:
+  store_build_artifacts:
+    - platform:
+        - linux_64
+        - linux_aarch64
+        - linux_ppc64le
+        - osx_64
+        - osx_arm64
+        - win_64
+      value: true
+noarch_platforms:
+  - linux_64
+  - win_64
+  - osx_64
+  - osx_arm64
+  - linux_ppc64le
+  - linux_aarch64
+build_platform:
+  linux_aarch64: linux_64
+  linux_ppc64le: linux_64
+  osx_arm64: osx_64
+provider:
+  linux_ppc64le: default
+  linux_aarch64: default
+test: native_and_emulated
 bot:
   automerge: true
   inspection: update-grayskull
   check_solvable: true
   run_deps_from_wheel: true
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+shellcheck:
+  enabled: true
+
+#### CFE metadata AND comments
+# CFE comments
+# Header:
+#    # Operator-supplied shape (2026-09-09), applied as given. Three notes the
+#    # next maintainer needs, none of which change the keys above:
+# workflow_settings.store_build_artifacts:
+#    # (1) NO-OP IN THE STAGED-RECIPES PR (G83). `.ci_support/build_all.py` reads
+#    # exactly ONE key from a per-recipe conda-forge.yml — `conda_build_tool`;
+#    # the three fixed Azure pipelines publish conda_pkgs_linux / conda_pkgs_noarch
+#    # / conda_pkgs_osx UNCONDITIONALLY, and the gated 7z "Prepare conda build
+#    # artifacts" task this key controls does not exist in staged-recipes at all.
+#    # So this key does not unlock downloads on PR #34774 — the artifacts appear
+#    # the moment the build SUCCEEDS. It is load-bearing only after the feedstock
+#    # is created, which is exactly what "pre-seeds the feedstock" means here.
+#    # conda_pkgs_noarch is the one to grab: a noarch artifact installs on every
+#    # platform incl. macos-arm64, with no per-arch build.
+#    #
+#    # (2) win_64 IS IN THE LIST DELIBERATELY, and is the one entry to suspect if
+#    # the feedstock's Windows leg ever goes red at "Prepare conda build artifacts"
+#    # while "Run Windows build" itself SUCCEEDED. That is G18: the gated 7z
+#    # archives the whole work dir and dies on AppData\...\INetCache\Content.IE5's
+#    # restricted ACLs. v8.58.1 refined it — the ConditionalValue list form is
+#    # necessary but NOT sufficient; win_64's ABSENCE from the platform list is the
+#    # actual lever. Every confirmed case is Rust/HTTPS-fetching (winhttp/wininet
+#    # writes INetCache); an npm build fetches through node's own OpenSSL stack and
+#    # may well never touch it, so this is a hazard to watch, NOT a known failure.
+#    # Remedy if it fires: delete the `- win_64` line and rerender. Nothing else.
+# noarch_platforms / build_platform / provider:
+#    # (3) noarch_platforms is REQUIRED here regardless (G111) — recipe.yaml carries
+#    # if: win / if: unix run selectors, and without this key conda-smithy's
+#    # noarch-selector lint reds the recipe and the __win variant is never built.
+#    # Widening 2 -> 6 subdirs also adds EMULATED linux_ppc64le + linux_aarch64 legs
+#    # that will run `npm ci` under qemu at the feedstock: slow, and the usual first
+#    # thing to drop if those legs prove flaky. Harmless in the staged-recipes PR,
+#    # which has 3 fixed jobs and reads none of these keys (G83/G77).
+# conda_build:
+#    # error_overlinking + pkg_format are INERT under conda_build_tool: rattler-build
+#    # (G83) — kept because they are harmless and match the operator's house shape.
+####

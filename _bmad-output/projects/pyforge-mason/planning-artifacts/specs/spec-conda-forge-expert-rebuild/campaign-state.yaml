@@ -612,7 +612,54 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "5fdccf4a364c0787fb33f821db8874a2d5abe354"
+    brief_mirrored_through: "02b104e573012b3e54d0725dd9ff7866e9ef3e18"
+                                    # ADVANCED 2026-09-09 from 2665609371 to the
+                                    # G115/G116 Windows-variant CFE retro 02b104e573
+                                    # (v8.88.1 -> v8.89.0, MINOR): two new gotchas on
+                                    # Windows variants of noarch recipes. DOCS + derived
+                                    # config only -- SKILL.md, CHANGELOG.md, MANIFEST.yaml,
+                                    # config/{skill-config,failure-catalog}.yaml (the
+                                    # catalog is generated from SKILL.md, 114 -> 116 rows).
+                                    # NO shipped script changed, so no byte re-port was
+                                    # required; both slices ship unchanged.
+                                    # ADVANCED 2026-09-09 from d09ef1640f to the
+                                    # pr-artifacts noarch CFE retro 2665609371
+                                    # (v8.88.0 -> v8.88.1, PATCH): the artifact regex
+                                    # excluded conda_pkgs_noarch, so `pr-artifacts`
+                                    # silently returned 0 packages for EVERY noarch
+                                    # recipe since v8.14.0. THIS ONE TOUCHES A SHIPPED
+                                    # SCRIPT that slice-2 carries: scripts/pr_artifacts.py
+                                    # was byte-re-ported into
+                                    # cfe-recipe-lifecycle/1.0.0/.../scripts/ in the same
+                                    # commit (cmp clean). slice-1 does not ship it and is
+                                    # unchanged; its pointer advances only because the
+                                    # guard counts every CHANGELOG-touching CFE commit.
+                                    # ADVANCED 2026-09-09 from 3cd161feee to the
+                                    # bmad-suite member-description CFE retro d09ef1640f
+                                    # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
+                                    # per-member description:/urls: and
+                                    # bmad_suite_metapackage.py now emits them as one
+                                    # column-aligned trailing comment, so the descriptions
+                                    # survive regeneration instead of being wiped with the
+                                    # rest of the GENERATED block. Touches a SHIPPED script
+                                    # (scripts/bmad_suite_metapackage.py) -- but that file is
+                                    # NOT mirrored into either compiled slice (verified by
+                                    # find over both slice script dirs), so no byte re-port
+                                    # was required and this slice ships unchanged.
+                                    # ADVANCED 2026-09-09 from 5fdccf4a36 to the
+                                    # bmad-eval-quality tag-flip CFE retro 3cd161feee
+                                    # (v8.87.1 -> v8.87.2, PATCH): G109 gained the
+                                    # "should this still be commit-pinned?" check -- a
+                                    # drift detector names a COMMIT, which frames the work
+                                    # as "bump the pin" when the flagged HEAD may itself BE
+                                    # a release tag commit (ahead 0 / behind 0), in which
+                                    # case the recipe should leave commit-pinning entirely.
+                                    # Docs + config ONLY: SKILL.md, CHANGELOG.md,
+                                    # MANIFEST.yaml, config/{skill-config,failure-catalog}
+                                    # .yaml. NO shipped script changed, so no byte re-port
+                                    # was required -- verified `git show --name-only
+                                    # 3cd161feee` yields zero paths under scripts/. This
+                                    # slice therefore still ships its scripts unchanged.
                                     # ADVANCED 2026-09-07 from 068b84c673 to the CI/hygiene
                                     # sweep CFE retro 5fdccf4a36 (v8.87.0 -> v8.87.1, PATCH):
                                     # G101's segfault diagnosis corrected (rattler-build's
@@ -921,7 +968,54 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "5fdccf4a364c0787fb33f821db8874a2d5abe354"
+    brief_mirrored_through: "02b104e573012b3e54d0725dd9ff7866e9ef3e18"
+                                    # ADVANCED 2026-09-09 from 2665609371 to the
+                                    # G115/G116 Windows-variant CFE retro 02b104e573
+                                    # (v8.88.1 -> v8.89.0, MINOR): two new gotchas on
+                                    # Windows variants of noarch recipes. DOCS + derived
+                                    # config only -- SKILL.md, CHANGELOG.md, MANIFEST.yaml,
+                                    # config/{skill-config,failure-catalog}.yaml (the
+                                    # catalog is generated from SKILL.md, 114 -> 116 rows).
+                                    # NO shipped script changed, so no byte re-port was
+                                    # required; both slices ship unchanged.
+                                    # ADVANCED 2026-09-09 from d09ef1640f to the
+                                    # pr-artifacts noarch CFE retro 2665609371
+                                    # (v8.88.0 -> v8.88.1, PATCH): the artifact regex
+                                    # excluded conda_pkgs_noarch, so `pr-artifacts`
+                                    # silently returned 0 packages for EVERY noarch
+                                    # recipe since v8.14.0. THIS ONE TOUCHES A SHIPPED
+                                    # SCRIPT that slice-2 carries: scripts/pr_artifacts.py
+                                    # was byte-re-ported into
+                                    # cfe-recipe-lifecycle/1.0.0/.../scripts/ in the same
+                                    # commit (cmp clean). slice-1 does not ship it and is
+                                    # unchanged; its pointer advances only because the
+                                    # guard counts every CHANGELOG-touching CFE commit.
+                                    # ADVANCED 2026-09-09 from 3cd161feee to the
+                                    # bmad-suite member-description CFE retro d09ef1640f
+                                    # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
+                                    # per-member description:/urls: and
+                                    # bmad_suite_metapackage.py now emits them as one
+                                    # column-aligned trailing comment, so the descriptions
+                                    # survive regeneration instead of being wiped with the
+                                    # rest of the GENERATED block. Touches a SHIPPED script
+                                    # (scripts/bmad_suite_metapackage.py) -- but that file is
+                                    # NOT mirrored into either compiled slice (verified by
+                                    # find over both slice script dirs), so no byte re-port
+                                    # was required and this slice ships unchanged.
+                                    # ADVANCED 2026-09-09 from 5fdccf4a36 to the
+                                    # bmad-eval-quality tag-flip CFE retro 3cd161feee
+                                    # (v8.87.1 -> v8.87.2, PATCH): G109 gained the
+                                    # "should this still be commit-pinned?" check -- a
+                                    # drift detector names a COMMIT, which frames the work
+                                    # as "bump the pin" when the flagged HEAD may itself BE
+                                    # a release tag commit (ahead 0 / behind 0), in which
+                                    # case the recipe should leave commit-pinning entirely.
+                                    # Docs + config ONLY: SKILL.md, CHANGELOG.md,
+                                    # MANIFEST.yaml, config/{skill-config,failure-catalog}
+                                    # .yaml. NO shipped script changed, so no byte re-port
+                                    # was required -- verified `git show --name-only
+                                    # 3cd161feee` yields zero paths under scripts/. This
+                                    # slice therefore still ships its scripts unchanged.
                                     # ADVANCED 2026-09-07 from 068b84c673 to the CI/hygiene
                                     # sweep CFE retro 5fdccf4a36 (v8.87.0 -> v8.87.1, PATCH):
                                     # G101's segfault diagnosis corrected (no shipped-script

@@ -3,7 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
-source_sha256: "69163180e330a5aad270793da2fa18be5f47fce046cb6de6e321877be0ee6285"
+source_sha256: "718afb6212b86798670deab978479e8e6966ca3b212e0c9372a716fe184de1f1"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -930,4 +930,24 @@ rows:
       - "build.bat"
       - "pixi run -e local-recipes recipe-build"
       - "cmd.exe"
+    enforced_by: null
+  - id: G115
+    title: "A staged-recipes PR SILENTLY STRANDS the `__win` variant of a noarch recipe — it is built, tested green, then discarded; the channel goes quietly unix-only"
+    symptom_signature:
+      - "noarch:"
+      - "if: win"
+      - "if: unix"
+      - "conda_pkgs_win"
+      - ".conda"
+      - "conda_pkgs_noarch"
+      - "__unix"
+    enforced_by: null
+  - id: G116
+    title: "A noarch recipe with a `build.bat` but NO `__unix`/`__win` split ships only the BUILD platform's entry point — installable on the other OS, and broken there, with nothing to say so"
+    symptom_signature:
+      - "noarch: generic"
+      - "build.sh"
+      - "build.bat"
+      - "bin/<name>"
+      - "Scripts/<name>.bat"
     enforced_by: null
