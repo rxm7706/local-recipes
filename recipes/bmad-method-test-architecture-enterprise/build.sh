@@ -46,3 +46,27 @@ EOF
 write_wrapper tea-test-review test-review.js
 write_wrapper tea-fragment-selection-runner fragment-selection-runner.js
 write_wrapper tea-trace-runner trace-runner.js
+
+
+# Windows entry points, emitted from this SAME noarch build (CFE G116). A .bat is
+# just text, so ONE artifact serves every platform -- no __unix/__win split and no
+# second build. %~dp0 resolves at RUNTIME to <prefix>\Scripts\, so nothing bakes a
+# build-time prefix (the old build.bat baked %PREFIX%, which cannot be right for a
+# noarch artifact built on another platform).
+mkdir -p "${PREFIX}/Scripts"
+cp "${RECIPE_DIR}/bmad_tea_install.py" "${PREFIX}/Scripts/bmad-tea-install-script.py"
+printf '@"%%~dp0..\\python.exe" "%%~dp0bmad-tea-install-script.py" %%*\r\n' \
+    > "${PREFIX}/Scripts/bmad-tea-install.bat"
+
+# One .bat per upstream bin entry -- keep in lockstep with package.json "bin"
+# on every version bump (CFE G110), exactly like write_wrapper above.
+write_bat_shim() {
+    local bin_name="$1" target="$2"
+    printf '@node "%%~dp0..\\share\\bmad-method-test-architecture-enterprise\\cli\\%s" %%*\r\n' \
+        "${target}" > "${PREFIX}/Scripts/${bin_name}.bat"
+}
+
+write_bat_shim tea-test-review test-review.js
+write_bat_shim tea-fragment-selection-runner fragment-selection-runner.js
+write_bat_shim tea-trace-runner trace-runner.js
+
