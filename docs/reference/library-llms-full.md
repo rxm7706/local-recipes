@@ -621,7 +621,7 @@ in `CLAUDE.md` and `_bmad-output/`.
   ideation workflows).
 - **bmad-method-test-architecture-enterprise** (>=1.25.0) — TEA module: enterprise
   test-architecture workflows.
-- **bmad-eval-quality** (>=1.3.0) — `eval-quality` CLI: compile / seal / preflight /
+- **bmad-eval-quality** (>=1.4.1) — `eval-quality` CLI: compile / seal / preflight /
   score Behavioral Evaluation Contracts (twin-run grading: clean vs planted-defect). Commit-pinned
   0.2.0 line from `main` — npm/tag 0.1.0 lack `score`. Bin is `eval-quality`, not `bmad-eval-quality`.
   Pinned in the linux-64 / osx-arm64 target tables only: SelfExplainML has just the `__unix`

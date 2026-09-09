@@ -165,13 +165,13 @@ def test_eval_quality_pin_lives_in_the_shared_table() -> None:
     pin "leaving the target tables" -- so the split has no reason to exist and
     the pin is platform-agnostic again.
 
-    The floor deliberately tracks the newest PUBLISHED build, not the newest the
-    recipe builds: ``recipes/bmad-eval-quality`` is at 1.4.0, but a floor above
-    what the channel serves reds every solve. Raise it in the same change that
-    publishes 1.4.0.
+    The floor tracks the newest PUBLISHED build, never the newest the recipe
+    builds -- a floor above what the channel serves reds every solve. 1.4.1 was
+    published (both ``__unix`` and ``__win``) in the same change that raised
+    this floor, so the two moved together.
     """
     feat = _data()["feature"]["local-recipes"]
-    assert feat["dependencies"]["bmad-eval-quality"] == ">=1.3.0"
+    assert feat["dependencies"]["bmad-eval-quality"] == ">=1.4.1"
     assert "bmad-method-wds-expansion" not in feat["dependencies"]
     for plat in ("linux-64", "osx-arm64", "win-64"):
         deps = feat["target"].get(plat, {}).get("dependencies", {})

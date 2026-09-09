@@ -4099,7 +4099,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.3.0-heeef243_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.4.1-h07402fc_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
@@ -5271,7 +5271,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.3.0-heeef243_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.4.1-h07402fc_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
@@ -6359,7 +6359,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
-      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.3.0-h2fd06db_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.4.1-h2fd06db_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.1-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-manticore-3.1.0.dev0-ha7a566d_0.conda
@@ -17427,15 +17427,6 @@ packages:
   license: MIT
   size: 4002813
   timestamp: 1784397641319
-- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.3.0-h2fd06db_0.conda
-  sha256: ed474eecbfb47be12a6a887f2b046b8054e8e7b9921e35420c70430a4629d506
-  md5: 92369bfe1fa1fed3f18cb1a53ac96a38
-  depends:
-  - nodejs >=22.20.0
-  - __win
-  license: Apache-2.0 AND MIT
-  size: 793010
-  timestamp: 1788945656280
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.3.0-heeef243_0.conda
   sha256: 54b7fba7cd3799269c691dfd49cc28b943983896f59893f7ca1a53c28726f300
   md5: 99cc2d6ebd4bddc708f679b8fa2952a7
@@ -17445,6 +17436,24 @@ packages:
   license: Apache-2.0 AND MIT
   size: 792896
   timestamp: 1788940328175
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.4.1-h07402fc_0.conda
+  sha256: ec39db3a0a0b2ebe52c78fb7694376a90c09a5269d9fb63ba7ad3c74e7c45d28
+  md5: af7a1990fce0ccbcfb49bda5aae49e53
+  depends:
+  - nodejs >=22.20.0
+  - __unix
+  license: Apache-2.0 AND MIT
+  size: 798220
+  timestamp: 1788957108529
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-1.4.1-h2fd06db_0.conda
+  sha256: 816cb63ae2c8dab4c756619fd406e4f32997ef208e3f40ddd346ddfaf80fc9dc
+  md5: e5b91e5acf88ba0c764a12ba3ee4d0ee
+  depends:
+  - nodejs >=22.20.0
+  - __win
+  license: Apache-2.0 AND MIT
+  size: 796258
+  timestamp: 1788957284824
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-labs-skills-1.0.0.dev0-ha7a566d_1.conda
   sha256: 89a8d4986a264ecee08cd5f1f380430c5f0897647109a6ddc3c9d57f03912cc8
   md5: 76139bbc3a9340da0d17f295da404641
