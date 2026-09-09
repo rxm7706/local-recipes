@@ -612,7 +612,19 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "3cd161feeeab8f62b1721974ae204d754bf2cdad"
+    brief_mirrored_through: "d09ef1640febab7dca77147a69f448436c43d109"
+                                    # ADVANCED 2026-09-09 from 3cd161feee to the
+                                    # bmad-suite member-description CFE retro d09ef1640f
+                                    # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
+                                    # per-member description:/urls: and
+                                    # bmad_suite_metapackage.py now emits them as one
+                                    # column-aligned trailing comment, so the descriptions
+                                    # survive regeneration instead of being wiped with the
+                                    # rest of the GENERATED block. Touches a SHIPPED script
+                                    # (scripts/bmad_suite_metapackage.py) -- but that file is
+                                    # NOT mirrored into either compiled slice (verified by
+                                    # find over both slice script dirs), so no byte re-port
+                                    # was required and this slice ships unchanged.
                                     # ADVANCED 2026-09-09 from 5fdccf4a36 to the
                                     # bmad-eval-quality tag-flip CFE retro 3cd161feee
                                     # (v8.87.1 -> v8.87.2, PATCH): G109 gained the
@@ -935,7 +947,19 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "3cd161feeeab8f62b1721974ae204d754bf2cdad"
+    brief_mirrored_through: "d09ef1640febab7dca77147a69f448436c43d109"
+                                    # ADVANCED 2026-09-09 from 3cd161feee to the
+                                    # bmad-suite member-description CFE retro d09ef1640f
+                                    # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
+                                    # per-member description:/urls: and
+                                    # bmad_suite_metapackage.py now emits them as one
+                                    # column-aligned trailing comment, so the descriptions
+                                    # survive regeneration instead of being wiped with the
+                                    # rest of the GENERATED block. Touches a SHIPPED script
+                                    # (scripts/bmad_suite_metapackage.py) -- but that file is
+                                    # NOT mirrored into either compiled slice (verified by
+                                    # find over both slice script dirs), so no byte re-port
+                                    # was required and this slice ships unchanged.
                                     # ADVANCED 2026-09-09 from 5fdccf4a36 to the
                                     # bmad-eval-quality tag-flip CFE retro 3cd161feee
                                     # (v8.87.1 -> v8.87.2, PATCH): G109 gained the
