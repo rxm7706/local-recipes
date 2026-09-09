@@ -612,7 +612,19 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "d09ef1640febab7dca77147a69f448436c43d109"
+    brief_mirrored_through: "266560937163ac7839fb7f3d9558219f9663f71f"
+                                    # ADVANCED 2026-09-09 from d09ef1640f to the
+                                    # pr-artifacts noarch CFE retro 2665609371
+                                    # (v8.88.0 -> v8.88.1, PATCH): the artifact regex
+                                    # excluded conda_pkgs_noarch, so `pr-artifacts`
+                                    # silently returned 0 packages for EVERY noarch
+                                    # recipe since v8.14.0. THIS ONE TOUCHES A SHIPPED
+                                    # SCRIPT that slice-2 carries: scripts/pr_artifacts.py
+                                    # was byte-re-ported into
+                                    # cfe-recipe-lifecycle/1.0.0/.../scripts/ in the same
+                                    # commit (cmp clean). slice-1 does not ship it and is
+                                    # unchanged; its pointer advances only because the
+                                    # guard counts every CHANGELOG-touching CFE commit.
                                     # ADVANCED 2026-09-09 from 3cd161feee to the
                                     # bmad-suite member-description CFE retro d09ef1640f
                                     # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
@@ -947,7 +959,19 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "d09ef1640febab7dca77147a69f448436c43d109"
+    brief_mirrored_through: "266560937163ac7839fb7f3d9558219f9663f71f"
+                                    # ADVANCED 2026-09-09 from d09ef1640f to the
+                                    # pr-artifacts noarch CFE retro 2665609371
+                                    # (v8.88.0 -> v8.88.1, PATCH): the artifact regex
+                                    # excluded conda_pkgs_noarch, so `pr-artifacts`
+                                    # silently returned 0 packages for EVERY noarch
+                                    # recipe since v8.14.0. THIS ONE TOUCHES A SHIPPED
+                                    # SCRIPT that slice-2 carries: scripts/pr_artifacts.py
+                                    # was byte-re-ported into
+                                    # cfe-recipe-lifecycle/1.0.0/.../scripts/ in the same
+                                    # commit (cmp clean). slice-1 does not ship it and is
+                                    # unchanged; its pointer advances only because the
+                                    # guard counts every CHANGELOG-touching CFE commit.
                                     # ADVANCED 2026-09-09 from 3cd161feee to the
                                     # bmad-suite member-description CFE retro d09ef1640f
                                     # (v8.87.2 -> v8.88.0, MINOR): suite-members.yaml gained
