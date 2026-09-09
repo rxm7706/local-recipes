@@ -12,7 +12,7 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
 epicCount: 31  # 2026-09-06: Epic 31 added (TEA replaces the generator + estate cutover-readiness, spec-bmad-suite-lifecycle CAP-3/4/9 marshal relays). 2026-09-05: Epic 30 added (BMAD 6.12 era round, spec-bmad-611-era-alignment CAP-8..11); Epic 29 (2026-09-02) had not bumped this from 28. 2026-08-30: Epic 28 added (token economy, decomposing spec-marshal-token-economy; Dream docs/dreams/marshal-token-economy.md).
-storyCount: 194  # 2026-09-06: 187 + Story 30.5 (shim retirement, era-alignment CAP-12) + Stories 31.1–31.6 (spec-bmad-suite-lifecycle marshal relays). 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
+storyCount: 195  # 2026-09-08: 194 + Story 5.11 (HarnessPort terminal-run capability; DW-STATUS-2026-09-08-1's residual). 2026-09-06: 187 + Story 30.5 (shim retirement, era-alignment CAP-12) + Stories 31.1–31.6 (spec-bmad-suite-lifecycle marshal relays). 2026-09-05: 183 (181 + Epic 29's two, never counted) + Stories 30.1–30.4 (spec-bmad-611-era-alignment CAP-8..11). 2026-08-30 (second pass): 179 + Stories 28.10/28.11 (spec-marshal-token-economy CAP-11/CAP-12, minted from the operator's 2026 model/cost catalog — see model-economics.md companion). The ledger's key count is the enumeration; this numeral is a dated snapshot.
 updated: "2026-09-08"
 status: complete
 mode: headless
@@ -1585,6 +1585,57 @@ step of `run_land`
 **And** this story does not retroactively relabel any ledger row already marked
 `done`/`not-loop-native` before it ships, and does not change `deploy land-story`,
 `bmad-quick-dev` (retired name), or Story 5.9's own `reconcile-completions` code
+
+---
+
+### Story 5.11: A harness-native terminal run reads as finished, not `unknown` *(added 2026-09-08 — FR-196)*
+
+As the operator,
+I want a run that bmad-loop started directly — without `marshal factory spin` — to report its
+real state once it has finished,
+So that a station is not stuck at `unknown` forever merely because Marshal did not launch it
+itself, and `fleet-picture` can assert that station's liveness again.
+
+**Type:** feature • **Effort:** M • **Deps:** S-5.1, S-5.8 • **FR/AD:** FR-196; AD-5
+**Surface:** `core/status.py`, `cli/status.py`, `ports/harness.py`, `adapters/harness_bmadloop.py`
+
+**Why now.** `pyforge-steward` has read `UNKNOWN — 18 left, needs re-spin` since 2026-08-20, and
+`DW-STATUS-2026-09-08-1` traced it end to end. Its newest loop-home run
+(`.bmad-loop/runs/20260820-140536-988f`) carries 32 journal events in bmad-loop's OWN vocabulary
+— `run-start`, `story-start`, `session-start`/`session-end`, `story-done`, and a graceful
+terminal `run-stop` — and not one `run-launch`/`run-resume`, which is the shape `cli/spin.py`
+writes and the only shape `_gather_run_journal_facts` folds for a launch pid. So
+`journal_facts.launch_pid is None`, `cli/status.py`'s FIRST `journal_unreadable` branch fires,
+and the whole row degrades — even though the same journal plainly records the run as over, and
+`state.json` agrees (`finished: true`, `stopped: true`, `crashed: false`). Marshal only
+understands runs it launched itself. This is NOT the retired-snapshot path (`run_state_retired`
++ MRS-STATUS-012), which is already fixed and is a different cause. The consequence is not
+cosmetic: a station stuck at `unknown` is a station whose liveness `fleet-picture` cannot
+assert, which is the precondition for the duplicate-dispatch class recorded against 2026-08-27.
+
+**The seam matters.** Teaching `cli/status.py` to fold bmad-loop's `run-start`/`run-stop`
+vocabulary directly would couple the CLI to the harness's journal format, bypassing
+`HarnessPort` — the seam that abstracts bmad-loop for exactly this reason. The capability
+belongs behind the port.
+
+**Acceptance Criteria:**
+
+**Given** a loop-home run whose journal carries no `run-launch`/`run-resume` entry, so no launch
+pid is recoverable
+**When** `_gather_run_journal_facts` returns `launch_pid=None`
+**Then** the derivation consults a `HarnessPort` capability that answers whether that run is
+terminal, rather than degrading the row to `journal_unreadable` on the spot
+**And** the capability is implemented in `adapters/harness_bmadloop.py` — `cli/status.py` and
+`core/status.py` learn no bmad-loop journal kind, and no harness-specific string appears outside
+the adapter
+**Given** a run the port reports terminal
+**Then** the row reports a finished state with a WARN naming the gap (mirroring Story 5.1's own
+`journal_unreadable` treatment and MRS-STATUS-012's shape), never a healthy state with no signal
+**Given** a run the port cannot classify, or reports non-terminal
+**Then** the row stays `unknown` and `is_run_live` keeps it conservatively live — this narrows a
+false positive and must not weaken any destructive guard
+**And** `pyforge-steward`'s existing home is the acceptance fixture: it reads as finished after
+this story, without a re-spin
 
 ## Epic 6: Portability proven
 
