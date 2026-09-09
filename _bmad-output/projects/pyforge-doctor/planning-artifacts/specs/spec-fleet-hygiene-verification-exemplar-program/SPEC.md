@@ -1,5 +1,8 @@
 ---
 id: SPEC-fleet-hygiene-verification-exemplar-program
+status: shipped   # added 2026-09-09: the key was absent, which silently exempted this Spec
+                  # from chain-completeness (board.py:715-716). CAP-1..5 are decomposed as
+                  # doctor Epic 12 (12.1-12.5, all done); 0 uncovered CAPs.
 owner-dream: docs/dreams/fleet-hygiene-verification-exemplar-program.md
 companions:
   - hygiene-gap-catalog.md
@@ -53,6 +56,14 @@ Tonight's deferred-work audit found a real gap (58+ Tier-3 findings invisible to
 ## Success signal
 
 The next time someone hits a "nothing actually checks for X" moment that rhymes with one of the six catalogued categories, the catalog names it as already-known rather than a fresh discovery — and the fleet's own conformance/detector surface (`EXEMPLAR-STANDARD.md`'s table, `chain-completeness`, `dream-chain` visibility, `spec-surface-check`'s race) no longer contradicts itself on the specific points this session already found wrong.
+
+## Assumptions
+
+- CAP-1's residual is live and is **not** covered by the `shipped` status: `hygiene-gap-catalog.md`
+  has not been touched since 2026-08-21 (`69ba11329f`) across doctor Epics 13–20, and two of its own
+  `Status:` tags are provably wrong (`:38` calls Story 12.4 "backlog, not yet landed" while the
+  ledger reads done). The capability shipped; keeping the catalog current is a standing maintenance
+  duty, recorded here as a companion-currency residual rather than a reason to hold the status open.
 
 ## Open Questions
 

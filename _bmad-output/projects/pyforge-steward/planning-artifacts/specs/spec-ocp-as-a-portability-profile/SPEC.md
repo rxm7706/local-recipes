@@ -11,12 +11,18 @@ sources:
 assumptions:
   - "CRC 2.63.0 / OpenShift 4.22.7 and the internal-registry push commands
     in cluster-bringup-facts.md are the baseline this job copies."
+updated: "2026-09-09"
 open_questions:
-  - "Runner class: prove ubuntu-latest + crc-org/crc-github-action, or
-    require a labeled self-hosted RHEL/Fedora runner? OpenShift Local
-    docs exclude Ubuntu/Debian for the Podman Desktop path. Decide at
-    Story 12.9 implementation; never claim verification on a cluster
-    that never started."
+  # The RUNNER-CLASS half is ANSWERED BY IMPLEMENTATION (batch row stB-B2(a)): `ubuntu-latest`
+  # with the CRC action (`.github/workflows/platform-ci.yml:1251`), a 90-minute budget and a CRC
+  # internal-registry push. The residual is not the class but the PROOF:
+  - "No `ocp-portability-smoke` run has ever started a cluster. `gh variable list` returns only
+    `ACTIONS_ENABLED=false` and `gh secret list` has no `CRC_PULL_SECRET`, so the job hard-fails at
+    `platform-ci.yml:1265-1272` — CAP-2 ('a green run records those assertions') and CAP-3 ('the
+    first implementation proves the chosen runner class') are unmet. FUNDED 2026-09-09 (batch rows
+    stB-B2(b) / C14): the operator sets `CRC_PULL_SECRET` plus
+    `PLATFORM_CI_OCP_PORTABILITY_SMOKE` and dispatches once, BEFORE Story 44.10. What remains open
+    is only the timing of that dispatch."
 ---
 
 # SPEC — OpenShift runs as a CI portability profile
@@ -88,3 +94,17 @@ Route admission + SCC-assigned UIDs through the cluster router on a
 cluster that actually started — or see a named skip/failure if it did
 not. `deploy/README.md`'s honesty line is replaced by a dated
 verification note. Story 12.7 remains the attended closeout.
+
+## First green run is funded — 2026-09-09
+
+**Decision (operator, batch rows stB-B2(b) / C14): fund ONE green `ocp-portability-smoke` run
+BEFORE Story 44.10.** Set `CRC_PULL_SECRET` plus `PLATFORM_CI_OCP_PORTABILITY_SMOKE` and dispatch
+once.
+
+Why it cannot wait: **44.10 disables this repo's CI.** Without that run, CAP-2 and CAP-3 are never
+provable in *either* repo and `deploy/README.md:134` stays permanently conditional. The rejected
+alternative was to rewrite CAP-2/CAP-3 as template-only — the "criterion says fixture" shape the
+realization gate exists to catch.
+
+This run is also the gate on any Intelligence-Hub NIC-profile story: two unproven profiles side by
+side would double the claim with zero evidence (`spec-intelligence-hub` § Constraints).

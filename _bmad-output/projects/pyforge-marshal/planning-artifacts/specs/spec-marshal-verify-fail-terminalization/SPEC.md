@@ -1,8 +1,8 @@
 ---
 id: SPEC-marshal-verify-fail-terminalization
 spec: marshal-verify-fail-terminalization
-status: ready
-updated: "2026-09-01"
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/marshal-dependency-aware-dispatch.md
 covers-dreams:
   - docs/dreams/marshal-dependency-aware-dispatch.md   # addendum E (2026-09-01)
@@ -17,9 +17,19 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
-open_questions:
-  - "Retry cap per story per campaign (default unlimited transient) — defer to policy knob."
-  - "Apply preserve patch automatically on redispatch vs fresh session reads patch — v1 leaves patch at failed/<story>/changes.patch only."
+open_questions: []
+  # ANSWERED 2026-09-09, both retired (operator, fleet-readiness batch rows mars-B-B7 / mars-B-B8):
+  # oq1 retry cap -> 3 PER STORY PER CAMPAIGN, policy-declared, default 3 -- NOT unlimited.
+  #   Unlimited transient retry is how a red repo-global gate becomes an infinite drain: the
+  #   MRS-GATE-001 pandas incident (drain-self-resolution addendum F) was a repo-global gate
+  #   28.17 would have re-hit every tick, and CAP-5's pre-existing-gate WARN narrows but does
+  #   not bound it. Rejected: keep unlimited -- defensible only once pre-existing-gate
+  #   classification is proven over a full campaign. Supersedes the v1 non-goal below.
+  # oq2 auto-apply the preserve patch -> KEEP v1. The patch is left at
+  #   `failed/<story>/changes.patch` and is NEVER auto-applied on redispatch. Fleet-wide
+  #   standing policy is non-destructive preserve-then-restore, operator-driven; the 647-line
+  #   uncommitted 28.2 diff is the motivating loss. Rejected: auto-apply -- it silently
+  #   re-bases a diff the operator has not reviewed.
 ---
 
 > **Canonical contract.** Story **28.17** (sibling to **28.13**, not a replacement).
@@ -79,9 +89,23 @@ state** so the fleet campaign supervisor's next `--once` cycle can advance.
 
 ## Explicit non-goals (v1)
 
-- No automatic `git apply` of preserve patch on redispatch
-- No retry cap policy knob (unlimited transient retries via drain ticks)
+- No automatic `git apply` of preserve patch on redispatch — **re-affirmed 2026-09-09** as
+  standing policy, not a v1 shortcut: the preserve patch is operator-restored, never
+  auto-rebased.
+- ~~No retry cap policy knob (unlimited transient retries via drain ticks)~~ **SUPERSEDED
+  2026-09-09:** the transient-retry cap is **3 per story per campaign, policy-declared,
+  default 3**. See the Constraint below.
 - No change to `judge_dispatch_completion()` global semantics (supervisor override only)
+
+## Constraints (2026-09-09)
+
+- **Transient retry is bounded:** at most **3 redispatches per story per campaign**,
+  policy-declared with default 3. An unbounded transient retry turns a red repo-global gate into
+  an infinite drain (the `MRS-GATE-001` pandas incident); CAP-5's pre-existing-gate WARN narrows
+  the blast radius but does not bound the count.
+- **The preserve patch is never auto-applied.** A terminalized story leaves
+  `failed/<story>/changes.patch` for an operator-driven restore; no redispatch path rebases it
+  silently.
 
 ## Decomposition
 

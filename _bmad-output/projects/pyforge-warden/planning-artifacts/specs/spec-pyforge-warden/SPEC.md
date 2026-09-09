@@ -146,7 +146,7 @@ codes and produced files alone.
 
 ## Assumptions
 
-- The story set is **complete** — 31 stories across 6 epics, merged 2026-07-25 — so this contract is written in the present tense as a standing description, not a plan. The Dream's "23/31 in-build" line and the legacy Tier-1 spec's `status: in-progress` both predate that completion.
+- The story set is **complete**, and has grown past v1: v1 was 31 stories across 6 epics, merged 2026-07-25; the station now carries **43 story keys, all `done`, across eleven epics** — epics 7–11 post-date the v1 scope (the eligibility union, the web face, the PR-gate hook book + scanner plugins, the skill/persona/portal slice, and the two advisory lenses) — plus a twelfth epic minted 2026-09-09 for `spec-golden-path-conda-blind-spot`. This contract is therefore written in the present tense as a standing description, not a plan. The legacy Tier-1 spec's `status: in-progress` predates that completion, and the Dream's former "23/31 in-build" line was corrected to 43/43 in the same 2026-09-09 pass.
 - The competitive wedge — pre-build source-manifest scanning plus conda dependency hygiene, where every incumbent requires an installed environment — is **time-bound**, grounded by a dated spike to be re-run before any external release. If parity arrives, the hygiene-plus-security unification and the honest-coverage contract survive it, and conda dependency hygiene still has zero incumbents.
 - The engines' output formats are a contract Warden is hostage to. The tested version range plus engine-output shape validation are the mitigations, so a working-but-drifted engine surfaces as a typed error rather than a false-green.
 

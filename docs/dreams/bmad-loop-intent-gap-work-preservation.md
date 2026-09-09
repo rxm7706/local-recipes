@@ -2,7 +2,7 @@
 title: An intent-gap revert can never discard real work without a recoverable trace
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # An intent-gap revert can never discard real work without a recoverable trace
@@ -97,3 +97,15 @@ https://github.com/bmad-code-org/bmad-loop/issues/701, register id `baseline-com
   the baseline-drift mid-flight failure mode. Register entry
   `baseline-commit-midflight-drift` in marshal `upstream-register.json`. Marshal-side preservation
   for this mode remains Stories 20.4+; no `bmad_loop` package edits.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`.**
+  Stories 20.4/20.5 are `done`: `pyforge/marshal/supervisor/intent_gap_preserve.py` parks the attempt
+  proactively, supervisor-side, **before** the halt reverts (`:38-39`), and
+  `scripts/missing_preserve_check.py` (pixi task `missing-preserve-check`, `pixi.toml:940-942`) is
+  the watchdog. Both open questions were answered by the implementation: proactive supervisor
+  snapshot (not adapter interception of `bmad_loop`'s own revert), and selective — a closed
+  intent-gap vocabulary (`intent_gap_preserve.py:28-39`, `looks_like_intent_gap` at `:68`).
+  Spec `ready` → `shipped`. **Residual:** the same observation-plane blindness as
+  [[bmad-loop-baseline-drift]] — `missing_preserve_check.py:61` reads `~/.bmad-loops` only and greens
+  over an empty set. Re-pointed by marshal **Story 33.7**. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

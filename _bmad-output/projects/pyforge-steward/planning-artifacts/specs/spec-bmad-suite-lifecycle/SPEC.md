@@ -1,6 +1,14 @@
 ---
 spec: bmad-suite-lifecycle
-status: ready   # 2026-09-06 — derived from docs/dreams/bmad-suite-lifecycle.md; decomposed the same day (steward Epics 46/47 + Story 14.9, marshal 30.5 + Epic 31, doctor 20, warden 11, herald 18, scribe 7, atlas 24, mason 14)
+status: in-progress   # 2026-09-09 (batch Class B row stA), was `ready` since 2026-09-06 and stale:
+                      # Epic 46 is 9/10 and Epic 47 5/5 `done`, and all eight station relays are
+                      # `done` (doctor 20.1-20.4, marshal 30.5, warden 11.1-11.2, herald 18.1-18.3,
+                      # scribe 7.1, atlas 24.1, mason 14.1, steward 14.9). Still open: 46.10 (CAP-8
+                      # rehearsal) and marshal 31.4 / 31.5.
+                      # Derived 2026-09-06 from docs/dreams/bmad-suite-lifecycle.md; decomposed the
+                      # same day (steward Epics 46/47 + Story 14.9, marshal 30.5 + Epic 31,
+                      # doctor 20, warden 11, herald 18, scribe 7, atlas 24, mason 14).
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-suite-lifecycle.md
 surface: []   # provisioning, upgrade and suite code stay governed by spec-pyforge-steward's surface; station relays by their own Specs
 companions:
@@ -21,11 +29,16 @@ assumptions:
     its keep."
   - "bmad-builder's five skills and skf's sixteen coexist without a name collision
     (`bmad-bmb-*` / `bmad-agent-builder` vs `skf-*`); steward's wire-time collision check decides."
-open_questions:
-  - "`tea-test-review --min-score` for the Marshal lens / Warden advisory — upstream's example 80,
-    or calibrate on the first ten PRs?"
-  - "eval-quality trial cost accounting: steward budget (Story 44.15 metering) or a local ledger
-    under `evals/` — carried from spec-bmad-eval-quality."
+open_questions: []
+  # ANSWERED 2026-09-09:
+  # - `tea-test-review --min-score` (batch row stA-B3): 80 STANDS — it already shipped
+  #   (`pixi.toml:884`, Story 46.3 `done`). The residue is a MEASUREMENT, not a decision: the task
+  #   explicitly never joins `detectors` / `detectors-ci`, so the threshold gates nothing today.
+  #   If wanted, record the score of the next ten PRs as an AC on a marshal story, then revisit.
+  # - eval-quality trial cost accounting (batch row stA-B1): DELETED from this Spec as a verbatim
+  #   duplicate — one decision, one owner. It is answered and owned on `spec-bmad-eval-quality`
+  #   (a local ledger under `evals/`, now; fold into 44.15 only if that story ships). Cite that
+  #   Spec rather than restating it here.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -150,3 +163,21 @@ cutover chain, so it owns closing all three.
 rendered from Herald's studio; the next bmad-method release processed against the runbook with
 zero improvised steps; `cutover-readiness.md` green on every line and Story 44.3 unblocked on the
 BMAD side; `_bmad/_config/manifest.yaml` reads `installShims: false`.
+
+## Cutover-readiness re-derivation — 2026-09-09
+
+The CAP-9 companion `cutover-readiness.md` was re-derived against live code (batch Class B row
+stA / steward-A § C5). It is a **hand-maintained tracked companion, edited in place** — not a
+bmad-spec-rendered artifact — so the results are recorded here rather than re-rendered:
+
+- **P1** — 130 `SPEC.md` against 153 memlogs; the "not done" verdict stands and Story 44.13 is
+  still `backlog`.
+- **P2** — the exception citation moves to `AGENTS.md:19`.
+- **P3 — flips from "satisfied (11/11)" to NOT SATISFIED.** Eight of nine architecture spines have
+  a sibling `.memlog.md`; **warden's has none**, which blocks Story 44.13 as widened by 47.5 (G6).
+- **P7** — the customization pool is 11 against the now-applied 6.12.0 baseline (10
+  `local_customizations` + `resolve_config.py`).
+- **P13** — 4 of 11 ungoverned.
+- **§ G rows** — G4 / G7 / G11 marked RESOLVED (their producers, marshal 30.2 and doctor 20.2 /
+  20.3, are all `done`); **G10 stays open** on marshal 31.5.
+- **P11 / P12** re-confirmed green live; **P16** still correctly undefined.

@@ -119,3 +119,15 @@ code before drafting" discipline)
   opener trusts the internal CA the same truststore-driven way. (4) The source's production auth
   is an internal OIDC IdP (form login only in DEBUG) — moot for the narrow Bearer-token scope,
   but any separately-decided broad scope inherits "internal IdP, no external auth callbacks."
+
+- **2026-09-09** — Fleet readiness pass (operator batch § 2.3, C16 / row atlas-B6). **DW-H1's
+  object-storage half is re-pointed off MinIO** onto the infra-kinds answer — an RWX volume, and
+  for a multi-node target the storage class that provides it. `pyforge-unifying-strategy.md:406-408`
+  is unambiguous and was re-affirmed on 2026-09-05: "No MinIO as a fourth core kind … Lane 1 media
+  is RWX, and a multi-node target names its RWX-capable storage class" — and Wagtail *is* Lane 1,
+  exactly the case that ruling anticipates. `spec-wagtail-corporate-brain/SPEC.md:24`, `:135` and
+  `:137` re-render accordingly. The Never is **not** re-opened and no scoped exemption is granted;
+  DW-H1 itself stays `open` and ATTENDED — only the storage kind it names is corrected. Neither
+  this Dream's status nor the Spec's changes: the readiness pass re-confirmed this pair as an
+  exemplar (Epic 16 `done`, DW-H3 still `open`, and the Spec correctly refusing to read `shipped`
+  on paper alone, exactly as its own Success signal demands).

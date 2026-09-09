@@ -1,8 +1,8 @@
 ---
 id: SPEC-marshal-drain-self-resolution
 spec: marshal-drain-self-resolution
-status: ready
-updated: "2026-09-01"
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/marshal-dependency-aware-dispatch.md
 covers-dreams:
   - docs/dreams/marshal-dependency-aware-dispatch.md   # addendum F (2026-09-01)
@@ -146,3 +146,7 @@ ledger-complete **without** a chat session issuing bare dispatch,
 Escalations are named `awaiting-operator` with a preserve/ref — never
 idle-with-backlog, never STUCK-on-dead-tail, never dirt-redispatch
 without a supervisor finalize attempt.
+
+## Assumptions
+
+- `status: shipped` (2026-09-09) — CAP-1..CAP-7 decompose to Stories 28.18–28.24, all `done`.

@@ -2492,6 +2492,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   status: promoted
   disposition: 2026-09-04 — promoted to steward Story 44.7 (spec-python-foundry-cutover fnd:CAP-4, Phase 3 factory island; R-17a env export in 44.3); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
+  vessel: steward Story 44.7 (`fnd:CAP-4`, Phase 3 factory island; R-17a env export in 44.3) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-2
@@ -2499,9 +2500,10 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-18** — Sizing rewrite: per-pod rows for web (memory-bound; `--preload`; Langflow RSS measured), worker (CPU-bound; separate builds pool), mcp-host, DB-GPT sidecar, Liquibase Job (JVM), Vizro; requests/limits in values; HPA on web and worker; PodDisruptionBudgets; LLM inference stated as external. (red-team S-7, T-7)
   evidence: Review § 4 (R-18); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
-  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
+  status: promoted
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); → Story 48.2 (Epic 48, `sprint-change-proposal-2026-09-09-currency-review.md`; was "Epic 45 candidate" — 45 went to eval-quality 2026-09-05); travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
+  vessel: steward Story 48.2 (Epic 48 — R-18 sizing rewrite; also gains the ASGI thread-pool clause, fleet readiness 2026-09-09) — the owed semantic re-read (below) happens at implementation (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-3
@@ -2509,9 +2511,10 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-19** — Network baseline: default-deny NetworkPolicy in the namespace with explicit allows; `automountServiceAccountToken: false`. (red-team X-4, X-6)
   evidence: Review § 4 (R-19); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
-  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
+  status: promoted
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); → Story 48.3 (Epic 48, `sprint-change-proposal-2026-09-09-currency-review.md`; was "Epic 45 candidate" — 45 went to eval-quality 2026-09-05); travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
+  vessel: steward Story 48.3 (Epic 48 — R-19 network baseline) — the owed semantic re-read (below) happens at implementation (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-4
@@ -2519,9 +2522,10 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-20** — Secrets profile: age key custody and rotation, an `ExternalSecret` example for the Vault/ESO profile, a rotation runbook for `DJANGO_SECRET_KEY`, `REDIS_PASSWORD`, the DB roles and the assertion PEM (dual-key verify during rotation). (red-team X-7)
   evidence: Review § 4 (R-20); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
-  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
+  status: promoted
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); → Story 48.4 (Epic 48, `sprint-change-proposal-2026-09-09-currency-review.md`; was "Epic 45 candidate" — 45 went to eval-quality 2026-09-05); travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
+  vessel: steward Story 48.4 (Epic 48 — R-20 secrets profile; Story 48.9's OIDC profile depends on it) — the owed semantic re-read (below) happens at implementation (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-5
@@ -2529,9 +2533,10 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-21** — Observability contract: SLOs for `/ht/`, MCP p99, queue age, event lag; alert rules; a metrics write path for Doctor's flag kill-switch. (red-team A-7, B-5)
   evidence: Review § 4 (R-21); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
-  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
+  status: promoted
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); → Story 48.5 (Epic 48, `sprint-change-proposal-2026-09-09-currency-review.md`; was "Epic 45 candidate" — 45 went to eval-quality 2026-09-05); travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
+  vessel: steward Story 48.5 (Epic 48 — R-21 observability contract) — the owed semantic re-read (below) happens at implementation (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-6
@@ -2539,9 +2544,10 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
 - source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md`
   summary: **R-22** — Live browser streaming: implement `/ws/events/` as a Channels consumer over redis-broker Streams with per-`sub` filtering, or delete the pillar from the Dream. (red-team T-8)
   evidence: Review § 4 (R-22); finding ids in parentheses map to § 2 rows with file:line citations.
-  status: open
-  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); Epic 45 candidate against src/platform/; travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
+  status: promoted
+  disposition: 2026-09-04 — carried, not a cutover blocker (operator: fold docs / carry ops); → Story 48.6 (Epic 48, `sprint-change-proposal-2026-09-09-currency-review.md`; was "Epic 45 candidate" — 45 went to eval-quality 2026-09-05); travels to python-foundry as a steward-owned entry (spec-python-foundry-cutover Non-goals)
 
+  vessel: steward Story 48.6 (Epic 48 — R-22 live browser streaming, or the pillar deleted) — the owed semantic re-read (below) happens at implementation (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-7
@@ -2552,6 +2558,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   status: promoted
   disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
+  vessel: steward Story 44.2 (document fixes) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-8
@@ -2562,6 +2569,7 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   status: promoted
   disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
+  vessel: steward Story 44.2 (document fixes) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-RT-2026-09-02-9
@@ -2572,6 +2580,8 @@ Source: `research/architecture-review-pyforge-unifying-strategy-red-team-2026-09
   status: promoted
   disposition: 2026-09-04 — promoted to steward Story 44.2 (document fixes; spec-python-foundry-cutover Constraints); held ledger `blocked` pending solutioning review (sprint-change-proposal-2026-09-04-foundry-cutover.md)
 
+  note: 2026-09-09 (fleet readiness) — **this row is the sharpest of the four gated ones.** R-25 corrects a constraint the Unifying Dream already documents as knowingly wrong ("zero domain models on portals" vs `django_warden_fabric/models.py:11` `ComplianceJob`), so a known-false constraint sits behind a `blocked` gate with no interim annotation. If 44.2 slips, annotate the constraint in place rather than leaving it read as fact.
+  vessel: steward Story 44.2 (document fixes) — **`blocked` today**, so the owed semantic re-read (below) is gated behind the cutover; annotate at dispatch, not before (fleet-readiness-decision-batch-2026-09-09, stB-D9 / Unifying SPEC § Residual 2026-09-09).
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ## Foundry cutover 2026-09-04 — carried residue (owner: steward; not a story yet)
@@ -2584,7 +2594,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   summary: Worktree residue on the `local-recipes` checkout — 268 registered git worktrees (58 `.worktrees/`, 66 `.cursor/worktrees`, 33 `.claude/worktrees`, 93 retired under loop homes, 8 loop homes, 3 `local-recipes-wt-*`) and 85 GB under `.claude/worktrees/` — retired at Phase 6, never moved (fnd:AD-1).
   evidence: `git worktree list --porcelain | grep -c '^worktree '` = 268 on 2026-09-04; `du -sh .claude/worktrees` = 85G.
   location: git worktree list (live measurement)
-  status: open
+  status: resolved
 
   verified: 2026-09-08 — resolved — RESOLVED and holding. The entry recorded 268 registered worktrees and 85 GB. `git worktree list | wc -l` today returns **10** (primary + 8 loop homes + 1). marshal's `DW-HYGIENE-2026-09-05-1` records the sweep that did it (262 -> 12, 29 GB reclaimed, `scripts/worktree_sweep.py`), and the count has stayed low in the three days since rather than re-growing. The residue this entry describes is gone.
 

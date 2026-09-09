@@ -1,6 +1,7 @@
 ---
 spec: bmad-loop-intent-gap-work-preservation
-status: ready
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-loop-intent-gap-work-preservation.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
@@ -8,9 +9,11 @@ surface:
   - scripts/missing_preserve_check.py    # Story 20.5/FR-189 CAP-3 detector, added 2026-08-29 surface reconcile
 sources:
   - ../../../../../../docs/dreams/bmad-loop-intent-gap-work-preservation.md
-open_questions:
-  - "Interception point (a story-level design decision, not resolved by the Dream): whether the adapter seam can observe the attempt before bmad_loop's internal revert executes, or whether Marshal must snapshot proactively (supervisor-side) so the preserve artifact exists by the time the revert fires -- the revert itself runs inside the unowned package."
-  - "Selectivity: whether an intent gap surfaced during DEV (no adversarial-review prompts in the transcript, so no accidental recovery path at all) is distinguishable at the seam from an ordinary retry revert -- determines if preservation can target intent-gap halts specifically or must cover every revert to be safe."
+open_questions: []
+  # ANSWERED BY THE IMPLEMENTATION, retired 2026-09-09 (fleet-readiness batch Class B, row mars-A):
+  # interception point -> PROACTIVE SUPERVISOR SNAPSHOT (not adapter interception of bmad_loop's
+  # own revert); selectivity -> SELECTIVE, via a closed intent-gap vocabulary. Full text with
+  # answers in § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -101,13 +104,32 @@ matching the attempt (branch for real commits, patch otherwise), the escalation 
 `bmad-loop resolve --restore-patch` restores it without touching any transcript, and the CAP-3
 detector reports clean; deleting the artifact and re-running the detector trips a finding.
 
-## Open Questions
+## Open questions — closed 2026-09-09
 
-- "Interception point (a story-level design decision, not resolved by the Dream): whether the
-  adapter seam can observe the attempt before bmad_loop's internal revert executes, or whether
-  Marshal must snapshot proactively (supervisor-side) so the preserve artifact exists by the
-  time the revert fires -- the revert itself runs inside the unowned package."
-- "Selectivity: whether an intent gap surfaced during DEV (no adversarial-review prompts in the
-  transcript, so no accidental recovery path at all) is distinguishable at the seam from an
-  ordinary retry revert -- determines if preservation can target intent-gap halts specifically
-  or must cover every revert to be safe."
+Both answered by Stories 20.4/20.5's implementation; question text preserved.
+
+- ~~"Interception point ... whether the adapter seam can observe the attempt before `bmad_loop`'s
+  internal revert executes, or whether Marshal must snapshot proactively (supervisor-side) so the
+  preserve artifact exists by the time the revert fires."~~ **CLOSED: proactive supervisor
+  snapshot.** `pyforge/marshal/supervisor/intent_gap_preserve.py` parks the attempt proactively,
+  supervisor-side, **before** the halt reverts (`:38-39`) — the revert itself stays inside the
+  unowned package, untouched.
+- ~~"Selectivity: whether an intent gap surfaced during DEV is distinguishable at the seam from an
+  ordinary retry revert — determines if preservation can target intent-gap halts specifically or
+  must cover every revert to be safe."~~ **CLOSED: selective.** A closed intent-gap vocabulary
+  (`intent_gap_preserve.py:28-39`, `looks_like_intent_gap` at `:68`) distinguishes an intent-gap
+  halt from an ordinary retry revert, so preservation targets intent-gap halts specifically.
+
+## Assumptions
+
+- `status: shipped` (2026-09-09) — Stories 20.4/20.5 are `done`:
+  `pyforge/marshal/supervisor/intent_gap_preserve.py` is the proactive park, and
+  `scripts/missing_preserve_check.py` (pixi task `missing-preserve-check`, `pixi.toml:940-942`) is
+  the watchdog.
+
+## Residual (2026-09-09) — the observation plane is empty
+
+`scripts/missing_preserve_check.py:61` reads `~/.bmad-loops` only — the same dormant plane as the
+baseline-drift watchdog — and it likewise exits 0 *"OK: every intent-gap halt has a present
+preserve artifact"* over an **empty set** rather than reporting could-not-observe. Re-pointing it
+at the dispatch plane is marshal **Story 33.7**.

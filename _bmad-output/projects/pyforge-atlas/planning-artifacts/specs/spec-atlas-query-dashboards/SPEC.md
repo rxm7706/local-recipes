@@ -1,7 +1,9 @@
 ---
 spec: atlas-query-dashboards
-status: in-progress
-updated: "2026-08-27"
+status: in-progress   # HELD deliberately 2026-09-09 (batch C1): CAP-1..CAP-4 are superseded at
+                      # capability grain, but CAP-5..CAP-7 are live. The Spec is NOT superseded
+                      # whole; it flips to `shipped` when atlas Story 25.1 (the retirement) lands.
+updated: "2026-09-09"
 owner-dream: docs/dreams/atlas-query-dashboards.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/  # Epic 14 landed the Panel/Bokeh views module here; Epic 20 (CAP-5..7) extends the same package surface
@@ -9,9 +11,12 @@ surface:
 sources:
   - ../../../../../../docs/dreams/atlas-query-dashboards.md
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md  # § Open Questions — the three 2026-08-26 operator query-plane rulings that bind CAP-5..CAP-7
-open_questions:
-  - "Session bridging if these views are ever hosted against Steward's dashboard surface — Steward has its own, narrower identity-at-the-boundary model; bridging is a decision made then, never assumed here."
-  - "The CIS two-spine specs (DESIGN.md + EXPERIENCE.md, DW-D2-1) — still not produced as of 2026-08-27; Story 20.4 produces them and Story 20.5 stays gated until they land."
+open_questions: []   # ANSWERED 2026-09-09. Session bridging (batch § 2.1 row atlas-B2) dies with
+                     # the C1 retirement — no route survives to mount behind an authenticated host,
+                     # and `src/platform/tests/test_host_board_row_isolation.py:26` already forbids
+                     # the shape. The CIS two-spine question was STALE (readiness finding D-3):
+                     # planning-artifacts/DESIGN.md and EXPERIENCE.md both exist, Stories 20.4 and
+                     # 20.5 read `done`, DW-D2-1 reads `status: closed`.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -38,7 +43,7 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
 
 ## Capabilities
 
-- **CAP-1**
+- **CAP-1** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** The lowest-risk rendering mode ships first: a curated catalog of views mirroring
     the existing CLIs (`staleness-report`, `feedstock-health`, `whodepends`, …), each a static
     query against `cf_atlas.db` rendered as an HTML fragment — no WebSocket, no server session.
@@ -46,7 +51,7 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** Each catalog view emits a self-contained HTML fragment from the live
     `cf_atlas.db` whose rows agree with its CLI counterpart's output on the same database
     snapshot; rendering a static view opens zero WebSocket connections.
-- **CAP-2**
+- **CAP-2** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** Genuinely interactive views (filter, drill, re-sort live) layer on Bokeh's
     WebSocket protocol through whatever ASGI host is chosen at decomposition time — host-agnostic
     by design ("a Panel/Bokeh dashboard needs an ASGI host, not specifically a CMS"); no
@@ -54,14 +59,14 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** At least one catalog view runs filter/drill/re-sort against `cf_atlas.db` over a
     live Bokeh WebSocket session on the chosen host; swapping the host touches mounting code
     only, never a view definition.
-- **CAP-3**
+- **CAP-3** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** Widget TYPES are pluggable behind a small registry, not hard-coded to a
     Tabulator/chart/pivot set — a view declares its query plus a widget-type name; the registry
     maps name → renderer for both the static-fragment and WebSocket modes.
   - **success:** Adding a new widget type is one registry entry plus one renderer, with zero
     edits to existing view definitions; the seed set is derived from atlas's own query shapes
     (open question 1), not inherited from the source dream's catalog.
-- **CAP-4**
+- **CAP-4** — **SUPERSEDED 2026-09-09** (batch C1; see § *Retirement of the second Lane-3 runtime*)
   - **intent:** The CDN-URL-rewriting concern for air-gapped deployment is carried from day one,
     for static fragments and WebSocket apps alike: Bokeh/Panel asset URLs resolve to
     locally-served or mirrored assets, composing with `_http.py`'s runtime-driven enterprise
@@ -70,6 +75,17 @@ exists — this Spec opens a NEW epic at decomposition time; it resumes nothing 
   - **success:** A page rendered under the air-gapped profile contains zero references to
     external CDN hosts (verifiable by grepping the emitted HTML); the default profile's output
     is unchanged.
+**CAP-1..CAP-4 amendment, 2026-09-09** (operator, fleet-readiness decision batch § 2.3 C1 / row
+atlas-B1). The intent of all four is superseded by the live Vizro/BSL board (`dashboard/app.py`'s
+`PAGE_INVENTORY`, reached through the D1 BSL seam, gated by `dashboard-dryrun`, served by
+`pixi run -e local-recipes dashboard-serve`). The module they shipped into —
+`src/shared/packages/pyforge-atlas/src/pyforge/atlas/views/` — has no importer outside its own
+unit tests: no CLI verb, no pixi task, no ASGI mount. It is deleted together with
+`tests/unit/views/` and the `cli_bridge` dynamic-import evasion of the F1 DuckDB-singularity gate
+(`views/cli_bridge.py:11-17`). The four texts stay on the record above as what was built and stood
+down; the widget-registry idea (CAP-3) is kept only if a Vizro page actually asks for it.
+Retirement is atlas **Story 25.1**.
+
 - **CAP-5** *(added 2026-08-27 — bound by the `query-plane-face` operator ruling, 2026-08-26)*
   - **intent:** The query plane the views read serves BOTH faces behind ONE boot script: the
     in-process library face stays the default for every consumer that can reach the file
@@ -169,18 +185,25 @@ visual passes are recorded (CAP-7) — closing DW-D2-1, DW-D2-2, and DW-D2-3 wit
   the source dream's Tabulator/Perspective/PGWalker catalog."~~ — **answered at decomposition,
   Story 14.2 (done):** the seed set was derived from the survey of the 11 mirrored CLIs' query
   shapes, per its AC; not the source dream's catalog.
-- "Session bridging if these views are ever hosted against Steward's dashboard surface — Steward
-  has its own, narrower identity-at-the-boundary model; bridging is a decision made then, never
-  assumed here." — **still open.** The 2026-08-26 rulings do not decide it; hosting stays
-  outside the Canopy host (epics Canopy obligation 3).
+- ~~"Session bridging if these views are ever hosted against Steward's dashboard surface —
+  Steward has its own, narrower identity-at-the-boundary model; bridging is a decision made then,
+  never assumed here."~~ — **CLOSED 2026-09-09** (batch § 2.1 row atlas-B2): it dies with the
+  module. C1 retires `views/`, so no route exists to mount behind an authenticated host, and the
+  estate already forbids the shape —
+  `src/platform/tests/test_host_board_row_isolation.py:26`
+  (`_SECOND_STACK_TOP = frozenset({'vizro','dash'})`, AST-asserted across all nine host/portal
+  roots).
 - ~~"ASGI host choice — the contract is 'any ASGI host'; which one actually mounts the Bokeh
   WebSocket protocol is picked at decomposition time (explicitly NOT contingent on
   DW-H3/Wagtail)."~~ — **answered at decomposition, Story 14.3 (done):** the host was chosen in
   that story's spec; swapping it touches mounting code only, per its AC.
-- *(added 2026-08-27)* "The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`, DW-D2-1) —
-  **checked 2026-08-27: still not produced** (no evidence-update since the 2026-07-30
-  verification), so the remaining-pages work stays gated. Story 20.4 is the unblock; Story
-  20.5 must not expand the page set past the live-confirmed core until it lands."
+- ~~*(added 2026-08-27)* "The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`, DW-D2-1) —
+  checked 2026-08-27: still not produced …"~~ — **STALE; CLOSED 2026-09-09** (readiness finding
+  D-3): the two spine specs DO exist (`planning-artifacts/DESIGN.md`,
+  `planning-artifacts/EXPERIENCE.md`), Stories 20.4 and 20.5 both read `done`, and DW-D2-1 reads
+  `status: closed`. The "still not produced" text was never reconciled after delivery.
+
+**No open questions remain on this Spec.**
 
 ## Decomposition & coverage record — 2026-08-27
 
@@ -197,7 +220,9 @@ chain — the `ready` status was stale:
 
 The spec is not `shipped` because the three operator rulings dated **2026-08-26** (steward
 `spec-pyforge-unifying-strategy/SPEC.md` § Open Questions) extended this spec's design space,
-decomposed here as CAP-5..CAP-7 → **Epic 20** (Stories 20.1–20.5, all `backlog`).
+decomposed here as CAP-5..CAP-7 → **Epic 20** (Stories 20.1–20.5) — *reconciled 2026-09-09: all
+five now read `done`; the "all `backlog`" text was the same missed post-delivery reconcile as the
+DW-D2-1 open question below.*
 
 **How the three rulings bind:**
 
@@ -231,9 +256,10 @@ Epic 20 owns only the atlas-side query-surface residue enumerated above.
 
 **Deferred-work cross-references (atlas `deferred-work-ledger.md`):**
 
-- **DW-D2-1** (CIS two-spine gating the full 28-page inventory) — **checked 2026-08-27: still
-  blocking**; the `DESIGN.md`/`EXPERIENCE.md` spine specs were never produced. Story 20.4
-  produces them; Story 20.5 is gated on it and says so in its own text.
+- **DW-D2-1** (CIS two-spine gating the full 28-page inventory) — **CLOSED** (*reconciled
+  2026-09-09*): Story 20.4 produced `planning-artifacts/DESIGN.md` and
+  `planning-artifacts/EXPERIENCE.md`, Story 20.5 landed against them, and the ledger entry reads
+  `status: closed`. The "checked 2026-08-27: still blocking" text was stale.
 - **DW-D2-2** (BSL-wired shell pages awaiting composed-store materialization) — Story 20.3
   materializes the stores through the named plane pipeline; the entry closes citing it.
 - **DW-D2-3** (visual verification of the rendered UI) — its 2026-08-26 evidence-update
@@ -241,3 +267,29 @@ Epic 20 owns only the atlas-side query-surface residue enumerated above.
   pass ran: `factory-status` fully live, root `feedstock-health` honestly-empty pending
   pipeline outputs). The residual (§2.1 semantic-HTML/ARIA check + a data-present visual
   pass) is folded into Story 20.5's ACs; the data-present precondition is Story 20.3.
+
+## Retirement of the second Lane-3 runtime — 2026-09-09
+
+**Decision (operator, `fleet-readiness-decision-batch-2026-09-09.md` § 2.3 C1 / row atlas-B1):
+RETIRE.** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/views/` and `tests/unit/views/`
+are deleted. Epic 14 shipped CAP-1..CAP-4 as a second Lane-3 runtime that nothing reaches, and its
+`cli_bridge` dynamic-import bridge reads the legacy SQLite store while its own docstring records
+that the DuckDB-singularity gate "stays green even though the loaded script itself imports
+`sqlite3`" — a declared evasion of CAP-19 and of `spec-pyforge-atlas`'s own Non-goal. The rejected
+alternative was to mount it (`pyforge atlas views serve`) under a recorded exemption, which would
+institutionalise a second engine against a Never.
+
+- **Effect story:** atlas **Story 25.1**, "Retire the second Lane-3 runtime", under a NEW
+  **Epic 25** (batch § 2.3 C6 — effect stories live on the owning station's epics). Epic 14 is
+  closed 4/4 `done`, so a 14.5 would reopen a completed epic; Epic 25 is the first free number
+  (Epic 11 never existed by design). Steward Epic 49 carries only the index row.
+- **Owner Dream:** `docs/dreams/atlas-query-dashboards.md` moves `specified → archived` with
+  `archived-reason: retired` — the README-sanctioned reason already used by
+  `docs/dreams/artifact-console.md` for a runtime that was built and stood down.
+- **Cross-station obligation (steward):** the matching `docs/dreams/README.md` row/status is owed,
+  or `dreams-hygiene` emits `readme-table-drift` for this slug. The Unifying Dream's Kinships line
+  (`:669`) asserting this as "a second, shipped Lane-3 runtime" is false under the realization gate
+  and is replaced with the retirement.
+- **What survives:** CAP-5 (one boot script, both plane faces), CAP-6 (the named composed-store
+  pipeline) and CAP-7 (the 28-page Vizro inventory) are the live contract; this Spec stays
+  `in-progress` until Story 25.1 lands.

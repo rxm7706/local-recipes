@@ -64,15 +64,19 @@ it is anyone being **told**.
 - **The bridge, mechanized (`pyforge-herald` CLI)** — the Design↔Code seed/pull
   loop proven manually on 7 decks in one day is being packaged as a
   deterministic CLI (`herald deck seed/pull/status/watch`, `SPEC-design-code-bridge`
-  CAP-1..5, FR-01–FR-26). This is **in progress, not finished**: as of
-  2026-08-02 the foundation is 4 of 17 stories done (package scaffold, the
-  MCP-transport spike, the bridge-core skeleton, the registry module) —
-  real code at `src/shared/packages/pyforge-herald/` (`bridge.py`, `cli.py`,
-  `errors.py`, `registry.py`, `state.py`, `transport/`), with tests. The CLI
-  parser currently exposes only the empty `deck` subcommand group; `seed`,
-  `pull`, `status` and `watch` are not wired up yet. The loop
-  (`loop/pyforge-herald`) is paused mid-story on the next one, the fallback
-  transport adapter (1.3).
+  CAP-1..5, FR-01–FR-26). **Shipped** — *corrected 2026-09-09 (fleet readiness
+  pass); the superseded 2026-08-02 reading was "in progress, not finished… the
+  foundation is 4 of 17 stories done… The CLI parser currently exposes only the
+  empty `deck` subcommand group; `seed`, `pull`, `status` and `watch` are not
+  wired up yet. The loop (`loop/pyforge-herald`) is paused mid-story on the
+  next one, the fallback transport adapter (1.3)."* Epics 1–5 are `done` and
+  `cli.py` (1764 lines) wires 26 subparsers across `deck`, `progress`,
+  `success`, `notice` and `scheduler` (`cli.py:226-700`), including the
+  `deck qa` and two `deck pptx-*` verbs added by Epics 14–15. Real code at
+  `src/shared/packages/pyforge-herald/` (`bridge.py`, `cli.py`, `errors.py`,
+  `registry.py`, `state.py`, `transport/`, `deck_qa.py`, `pptx_pipeline.py`),
+  with tests, and a CI lane that runs them
+  (`.github/workflows/pyforge-station-tests.yml:160-182`).
 - **The stage** — the program console publishes the factory's state
   ([[factory-console]], Marshal's ledger; in the persona ideal Herald
   proclaims from it).
@@ -91,12 +95,17 @@ now Herald's active, in-progress work** — not aspirational, not shipped:
   end-of-life notices with a permanent, indexed archive. A retired product
   currently just stops appearing; nobody is told it ended.
 
-As of 2026-08-02 the full planning chain for these three surfaces exists —
-Spec (`spec-herald-moments-2-4`), PRD, Architecture and Epics (7 epics,
-~12–19 stories, unified CLI + web dashboard + automation triggers, all three
-orchestration decisions locked) — but **zero stories are implemented yet**.
-This is the immediate next build target once the bridge foundation above
-clears its own remaining stories.
+**Shipped 2026-08-08** — *corrected 2026-09-09 (fleet readiness pass); the
+superseded 2026-08-02 reading was "the full planning chain for these three
+surfaces exists… but **zero stories are implemented yet**. This is the
+immediate next build target once the bridge foundation above clears its own
+remaining stories."* Epics 8–10 landed 47 stories — `herald progress`,
+`herald success`, `herald notice`, their three web tabs, and the local
+JSON/SQLite stores behind them. What was deliberately scaled down is the
+*triggering*: records are created by an operator running a CLI verb, not by a
+webhook. The live-backend version is [[herald-moments-2-4-live-backend]],
+whose Epic 13 is code-complete but has never run green in the estate — see
+that Dream's 2026-09-09 entry.
 
 ## Kinships
 
@@ -144,3 +153,19 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   as its siblings, not folded in as live station scope. Epics were
   deliberately left untouched by this pass (still Moments-2-4-only; see the
   note in "What is real" above).
+
+- **2026-09-09 (fleet readiness pass — body re-grounded, status held)** — § *What is real*
+  and § *The frontier* were both frozen at 2026-08-02 and understated the station by roughly
+  sixty stories; both are corrected above with their superseded wording quoted. Herald now
+  carries 18 epics and 64 story keys in `sprint-status-ledger.yaml`, all `done` except the
+  `epic-18` roll-up row, which reads `backlog` while 18-1/18-2/18-3 are each `done` — a
+  ledger roll-up defect, not outstanding work (folded into steward 48.1). **Status held at
+  `realized`** for Moment 1 and the bridge. Three satellite Dreams do *not* clear the
+  realization gate and say so in their own logs this date: [[herald-moments-2-4-live-backend]]
+  (never run green), [[deck-visual-qa]] (gate has no caller) and [[pptx-deck-generation]] /
+  [[pptx-custom-shapes]] (no real deck rendered). Herald **Epic 19 — "Herald in effect"** is
+  minted as their single vessel (fleet-readiness decision batch 2026-09-09, row C6); steward
+  Epic 49 carries the index row. One boundary claim is now pending elsewhere: this Dream's
+  and the Spec's "the Guildhall is Marshal's ([[factory-console]])" cites a `superseded` Spec
+  and a retired console — the referent is a Charter amendment (batch row C12), raised on
+  `docs/governance/spec-pyforge-charter/.memlog.md` this date.

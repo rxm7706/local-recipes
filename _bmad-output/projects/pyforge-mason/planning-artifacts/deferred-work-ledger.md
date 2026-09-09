@@ -304,6 +304,8 @@ status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-6-mason-recipe-build.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-09 — still-open — CONFIRMED, and now VESSELLED. The coarse per-noun granularity is unchanged, and the 2026-09-09 fleet-readiness pass hit it head-on: mason doctor in mason's own pixi env reports unavailable_verbs ('recipe',) because cfe_import_floor_missing is ('truststore', 'conda-forge-metadata') — pixi.toml:281-283 declares neither while cfe.py:180-186's CFE_IMPORT_FLOOR requires both — even though this entry's own analysis says mason recipe build needs no import floor at all. So the headline gap is the missing dependencies (mason Story 16.1, minted 2026-09-09 under fleet-readiness-decision-batch-2026-09-09 § 2.3 C6), and this entry is the narrower residual: once the floor is satisfied the per-noun-vs-per-verb question stops being load-bearing for the fleet gate, but the design question — whether doctor should report per-verb — stays open and stays doctor's to answer.
+
 ### DW-2-7-1: A malformed `MASON_CFE_TIMEOUT` environment value is silently ignored with no warning
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-7-mason-recipe-diagnose.md`
   summary: `cli.py::_resolve_optional_float` (shared, shipped in Story 1.10) falls back to `None` for any unparseable/non-finite/non-positive `MASON_CFE_TIMEOUT` value with no warning logged, even though `_configure_logging` has already run by the time this resolves -- `--cfe-timeout` itself cannot hit this path (argparse's `_parse_finite_float` validates it first), but the environment half of the same knob has no equivalent guard.
@@ -776,6 +778,8 @@ status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-09 — still-open-but-SUPERSEDED-IN-SCOPE — the staleness half of this entry is closed: both compiled slices read equivalence: green again (slice 1 re-verified 2026-09-05 after the v8.84.0 --head re-port; slice 2 fixed at source 2026-09-04 via _paths.get_repo_root()'s marker walk), and cfe-rebuild-guard-check is clean. The remaining half — that clause (a) would pass a future compiled->parallel advancement whose re-port/re-validate gate exists only as prose in next_action — is now the CLOSING story's business, not a future slice's: the endgame was declared over slices 1-2 on 2026-09-09 (fleet-readiness-decision-batch-2026-09-09 § 2.3 C2), so the only remaining status transitions are compiled -> cut-over or compiled -> retired, both carried by mason Story 15.1 with the guard as its acceptance criterion.
+
 ### DW-12-1-3: The new "retro-mirror" amendment action is outside skf consumer enums, and skill-brief.v1.json does not constrain scope.amendments at all -- "schema valid" never inspected the new entries.
 
 - source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
@@ -1075,6 +1079,8 @@ status: open
   status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-09-09 — still-open-but-MOOT — the enforcement gap this entry names is real and unclosed (clause (d) still reads only campaign.re_scope_gate.pre_conditions, never re_scope_gate_2), but the risk it guards no longer exists: the operator declared the CFE-rebuild campaign's ENDGAME over slices 1-2 on 2026-09-09 (fleet-readiness-decision-batch-2026-09-09 § 2.3 C2; campaign-state.yaml now reads endgame_declared: true), so no slice-3/4 brief_path will ever be written and there is nothing left for a clause-(d)/(e) extension to block. Do NOT open a follow-up story to extend clause (d) — close this as superseded when the closing story (mason Story 15.1) lands, or re-open it only if the campaign is ever re-scoped upward.
 
 ### DW-1-8-1: `render_text`'s shallow one-line-per-key rendering (Story 1.4) renders `mason doctor`'s default text-mode `engines` field as a raw Python tuple-of-dicts `repr()` on one unbroken line -- close to unreadable for a self-diagnosis tool whose main audience is a human troubleshooting their own setup.
 
@@ -1418,6 +1424,8 @@ status: open
   status: open
 
   verified: 2026-09-08 — still-open — CONFIRMED, with a SCOPE CORRECTION that matters. A G26 extension DID land -- `SKILL.md:2454`, re-landed by CFE v8.86.1 from an orphaned retro commit -- so a reader could easily mark this done. It is not: that extension's **Case study** is `langflow-base`/`langflow-suite` **Story 13.1**, not Story 13.2's dbgpt-client upper-bound cap. The only `dbgpt-client` material in the CFE skill (`SKILL.md:2453`, `:2468`, `:2489`) is the Jun 17 2026 G26/G27/G28 originals, unrelated to this deferral. CFE is now at v8.87.1 with no 13.2 retro entry anywhere in CHANGELOG.md. The Rule-2 retro this entry defers remains unwritten.
+
+  vessel: 2026-09-09 — mason Story 15.2 (Epic 15, "Rule-2 retro for Story 13.2 lands in the CFE skill"), minted from the fleet-readiness apply pass. CLAUDE.md Rule 2 is explicit that the retro is "not optional and not deferrable", and the 2026-09-08 verification above confirmed it has now been unwritten across four CFE releases (v8.87.1 -> v8.90.1). The story is scoped to land as a MAINTENANCE PR on the CFE surface, outside any mason story branch, which satisfies test_persona_consults_cfe.py::test_conda_forge_expert_not_replaced_or_skf_nested by construction — that meta-test is the reason this was deferred in the first place, and it is a branch-scope constraint, not a prohibition on the retro itself. Its acceptance criteria require the CHANGELOG entry to name Story 13.2 specifically (the landed G26 extension at SKILL.md:2454 carries Story 13.1's langflow-base case study — that near-miss is what the 2026-09-08 scope correction caught), a semver bump with SKILL.md / MANIFEST.yaml / config/skill-config.yaml in agreement, failure-catalog regeneration if any gotcha text moves, and the CAP-3 clause (b) mirror check. CLOSE THIS ENTRY when 15.2 lands — with a dated resolution, not another still-open line.
 
 ### DW-13-2-2: Sidecar runtime validation on Python 3.14 (Celery REST round-trip + SQLite metadata store) deferred to Steward 43.6.
 

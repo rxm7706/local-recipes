@@ -1,8 +1,8 @@
 ---
 id: SPEC-marshal-single-story-dispatch
 spec: marshal-single-story-dispatch
-status: in-progress
-updated: "2026-09-02"  # CAP-11 added (done-spec must not review-loop). Steward 41.2 / mason 13.2 incidents. Decomposed as Epic 29.
+status: shipped
+updated: "2026-09-09"  # CAP-1..11 all decomposed and `done` (Epic 22 + Epic 29); all five open questions closed by the 2026-09-09 fleet-readiness batch.
 owner-dream: docs/dreams/marshal-single-story-dispatch.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
@@ -23,12 +23,10 @@ sources:
   - ../../../../../../docs/dreams/marshal-single-story-dispatch.md
 related:
   - ../../../../../../docs/dreams/dashboard-velocity-captures-hand-driven-work.md
-open_questions:
-  - "Exact verb naming (`marshal factory dispatch` vs a `marshal dev` family) — converges with PRD Q-15's open verb-naming question; not decided here."
-  - "Concrete launch mechanism for a headless bmad-dev-auto session (binary / adapter profile) — must preserve the plain-agent requirement (bmad-dev-auto's mandatory subagents break inside a fork)."
-  - "What budget signal is actually enforceable on a dispatched session, given the loop's own token cap is known not to enforce."
-  - "Whether the cross-station disjointness advisory compares declared frozen surfaces only, or also live diff surfaces."
-  - "Whether completion detection needs a dedicated sidecar (Story 3.4 shape) or the existing supervisor generalizes to a second engine."
+open_questions: []
+  # ANSWERED 2026-09-09, all five retired (operator, fleet-readiness batch rows
+  # mars-B-OQ1 / OQ2 / B11 / B12 / OQ5). Full text with the answers in
+  # § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -264,6 +262,12 @@ mode beside `spin`, never a replacement.**
   no-op HALT in the local `.claude/skills/bmad-build-auto/` copy. The
   vendored `bmad_loop` package is still unmodified.
 
+- **HARD (fork prohibition, 2026-09-09):** a dispatched session is **never** launched from a
+  fork subagent. `bmad-build-auto`'s mandatory subagents break inside a fork, so the launch uses
+  a plain agent, never `subagent_type: fork`. CAP-8's profile mechanism (Story 22.8) does not
+  enforce this — it is a contract line, not a code guarantee, and it holds regardless of which
+  harness profile resolves.
+
 ## Non-goals
 
 - **Not** a bmad-loop replacement, fork, or absorption — and not a change to the vendored
@@ -300,29 +304,64 @@ verbs and in-repo queue state under `pyforge-marshal` (not session-local `.curso
 
 ## Assumptions
 
-- Verb naming (`marshal factory dispatch` vs a `marshal dev` family) is deliberately left to
-  PRD Q-15's verb-naming resolution; this spec binds behavior, not the name.
-- The session harness is the agent-CLI pattern validated at N=22 — a plain background agent,
-  never a fork-style subagent (bmad-dev-auto's mandatory subagents break inside a fork);
-  generality across other adapters inherits Epic 6's portability posture and is not
-  re-proven here.
+- ~~Verb naming (`marshal factory dispatch` vs a `marshal dev` family) is deliberately left to
+  PRD Q-15's verb-naming resolution; this spec binds behavior, not the name.~~
+  **Amended 2026-09-09:** decided by shipment — the verb **is** `marshal factory dispatch`, and
+  PRD Q-15 inherits that answer rather than the reverse. See § Open questions OQ-1.
+- The session harness is the agent-CLI pattern validated at N=22; generality across other
+  adapters inherits Epic 6's portability posture and is not re-proven here. **Amended
+  2026-09-09:** the plain-agent half of this assumption was promoted to a HARD Constraint (fork
+  prohibition) — it is a binding contract line, not an inference.
 - Whether dispatch-landed stories get a distinct completion-path label beyond marshal-native
   classification is a story-level design decision.
 - Escalation reuses Story 3.7's escalate/defer/resume shapes unless a downstream story shows
   a reduced ladder suffices.
 
-## Open Questions
+## Open questions — closed 2026-09-09
 
-- Exact verb naming (`marshal factory dispatch` vs a `marshal dev` family) — converges with
-  PRD Q-15; not decided here.
-- Concrete launch mechanism for a headless `bmad-dev-auto` session (binary / adapter
-  profile) — must preserve the plain-agent requirement.
-- What budget signal is actually enforceable on a dispatched session, given the loop's own
-  token cap is known not to enforce.
-- Whether the cross-station disjointness advisory compares declared frozen surfaces only, or
-  also live diff surfaces.
-- Whether completion detection needs a dedicated sidecar (Story 3.4 shape) or the existing
-  supervisor generalizes to a second engine.
+All five closed by the operator-approved fleet-readiness batch. Question text preserved; the
+answer follows each.
+
+- ~~Exact verb naming (`marshal factory dispatch` vs a `marshal dev` family) — converges with
+  PRD Q-15; not decided here.~~ **OQ-1 CLOSED:** the verb is `marshal factory dispatch`; there
+  is no `marshal dev` family. Decided by shipment (Stories 22.1/22.7/22.9/22.11 all `done`) and
+  now load-bearing **outside** marshal: the branch grammar `dispatch/<project_slug>/<key>` is a
+  constant in the shared spine (`pyforge-core` `landing_evidence.py:50`
+  `DISPATCH_BRANCH_PREFIX`, recognized at `:172` and `:305`) and consumed by doctor. Renaming
+  would break a cross-package grammar. PRD Q-15 inherits this answer.
+- ~~Concrete launch mechanism for a headless `bmad-dev-auto` session (binary / adapter
+  profile) — must preserve the plain-agent requirement.~~ **OQ-2 CLOSED:** the mechanism is
+  profile-driven and already shipped as Story 22.8 (`core/harness_profile.py` +
+  `data/harness_profiles/**`). The residue is not a closure but the fork-prohibition Constraint
+  above — nothing in the profile mechanism enforces the plain-agent rule.
+- ~~What budget signal is actually enforceable on a dispatched session, given the loop's own
+  token cap is known not to enforce.~~ **OQ-3 ANSWERED:** **wall-clock plus idle-strand,
+  enforced by the dispatch supervisor**; token ceilings stay **advisory** until Epic 33's
+  benchmark artifact exists. The dispatch supervisor terminalizes on process and git facts only
+  (`dispatch_supervisor/__main__.py`, `core/dispatch_supervisor_state.py`; Stories 22.2 and
+  28.17) and has no provider-side meter; the loop path's weighted-token ceilings are harness
+  self-reports (`core/supervise.py`) with mid-session blindness recorded as `DW-FU-3-6-6`.
+  Rejected: block dispatch budgets entirely on Epic 33 — that leaves today's unattended drain
+  with no ceiling at all.
+- ~~Whether the cross-station disjointness advisory compares declared frozen surfaces only, or
+  also live diff surfaces.~~ **OQ-4 CLOSED: declared surfaces only** — that is what shipped
+  (`cli/dispatch.py:868` `_effective_surface_for_spec` computes `policy_surface ∩ spec_surface`
+  from the candidate spec text; `core/dispatch_fleet.py:770-790` intersects pairwise; an unknown
+  surface refuses with `reason=unknown-surface` at `:772-774`). No live-diff comparison exists
+  anywhere. **Consequence, part of the closure:** within-station fan-out is impossible until
+  story specs declare their own `surface:` — Story 28.14 / token-economy CAP-16 auto-derives
+  `policy_surface` to the station's whole package tree when no `[epic_surfaces]` entry exists
+  (`core/gate.py:348-423`), so two same-station stories overlap by construction and the pairwise
+  test refuses.
+- ~~Whether completion detection needs a dedicated sidecar (Story 3.4 shape) or the existing
+  supervisor generalizes to a second engine.~~ **OQ-5 CLOSED — and the shipped answer is
+  neither option the question offered:** a **sibling** supervisor was built
+  (`marshal/dispatch_supervisor/__main__.py` beside `marshal/supervisor/**`, with its own state
+  and retry modules `core/dispatch_supervisor_state.py`, `core/dispatch_retry.py`). The existing
+  supervisor was not generalized and Story 3.4's sidecar was not reused. **Consequence, recorded
+  because it is load-bearing elsewhere:** two supervisors now write run state — which is exactly
+  why the publishing seam must be **one publisher** (`spec-marshal-token-economy` CAP-18, Epic
+  33).
 
 ## Decomposition record (2026-08-27)
 
@@ -340,16 +379,38 @@ shipped; CAP-7 is now decomposed but not implemented.
 | CAP-4 (lands through existing machinery, marshal-native) | Story 22.4 — `22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native` | done |
 | CAP-5 (one in flight per station; parallel stations; loud overlap) | Story 22.5 — `22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud` | done |
 | CAP-6 (run survives its operator; journal carries the timing signal) | Story 22.6 — `22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal` | done |
-| CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | backlog |
+| CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | done |
 | CAP-8 (profile-driven, adapter-plural session harness; one preference, both engines) | Story 22.8 — `22-8-the-session-harness-is-profile-driven-across-agent-clis` (CAP added 2026-08-27 after the live cursor-auth dispatch failure; decomposed and implemented same day) | done |
 | CAP-9 (`branch_merged` never trusts ancestry alone; requires real divergence past baseline) | Story 22.10 — `22-10-branch-merged-requires-real-divergence-not-just-ancestry` (CAP added 2026-08-28 after three live dispatches each journaled a false `completed` verdict ~2s post-launch, independently confirmed 20 of 26 real dispatch runs affected; decomposed, reviewed (2 layers, 1 medium patch + 2 low defers, 0 rejected), and landed same day; note the gap in Story 22.9, which never got a decomposition-record row here either) | done |
 | CAP-10 (station-scoped drain + `--stories`) | Story 22.11 — `22-11-station-scoped-drain-and-an-explicit-story-sequence` | done |
-| CAP-11 (done-spec must not review-loop) | Epic 29 — Stories 29.1 (`29-1-done-spec-halts-unless-followup-is-true`) and 29.2 (`29-2-harness-done-is-cap-4-only-never-another-session`) | backlog |
+| CAP-11 (done-spec must not review-loop) | Epic 29 — Stories 29.1 (`29-1-done-spec-halts-unless-followup-is-true`) and 29.2 (`29-2-harness-done-is-cap-4-only-never-another-session`) | done |
 
 Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
 `dispatch-attach` / `dispatch-resume` (PRD § 18.3), `pyforge.marshal.dispatch_supervisor`,
 `dispatch_verify`, `dispatch_land` (+ `core/dispatch_landing.py`), per-story promoted specs
 `specs/spec-22-1-*.md` … `spec-22-6-*.md`. CAP-7's interim oracle remains the companion
 `fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` (no `--fleet`/`drain` verb, no
-campaign-mode policies in `cli/dispatch.py` as of this pass). This Spec flips to `shipped`
-when Stories 22.7 and 22.8 both land.
+campaign-mode policies in `cli/dispatch.py` as of that pass). ~~This Spec flips to `shipped`
+when Stories 22.7 and 22.8 both land.~~ **Satisfied 2026-09-09:** Stories 22.1–22.11 and 29.1–29.2
+are all `done` and all five open questions are closed, so the Spec is `shipped`.
+
+## Records carried by this Spec (2026-09-09)
+
+- **One writer for the `TERMINAL` test (batch row mars-A-E3 / steward 48.1).** Marshal owns
+  `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py:55`
+  (`test_terminal_is_only_done` asserts `TERMINAL == frozenset({"done"})`), which **pins** the
+  `scripts/promote_sprint_status.py:91` bug steward Story 48.1 fixes. **No marshal story is
+  minted for the amendment**: 48.1 already names the file in its own Surface and And-clause, and
+  a second marshal story would make two writers of one test. Marshal's obligation is consent plus
+  review; this Spec — the ledger-owning one, whose CAP-4 triggers `sprint-ledger-sync` on every
+  landing — carries the record.
+- **Installer-owned in-place-edited pool is now eleven, not seven — four ungoverned** (batch
+  § 2.4 row D9). Three of the four had never been named in any artifact:
+  `.claude/skills/bmad-retrospective/scripts/sprint_status.py`, its test
+  `.claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py`, and
+  `.claude/skills/bmad-sprint-planning/sprint-status-template.yaml` — the last of which carries
+  the Epic-44 `blocked` restore, so an ungoverned in-place edit to it is a silent change to a
+  gating artifact. Story 31.4 (`backlog`) had its Surface and Given/When/Then **amended** to the
+  pool of eleven rather than re-minted; no new story, no `done` key touched. This Spec claims the
+  sprint-planning trio and the two sprint-status files when 31.4 lands;
+  `spec-marshal-token-economy` keeps the four `bmad-build-auto` files.

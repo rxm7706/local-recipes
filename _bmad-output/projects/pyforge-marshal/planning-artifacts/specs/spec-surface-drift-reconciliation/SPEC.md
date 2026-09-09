@@ -1,7 +1,8 @@
 ---
 id: SPEC-surface-drift-reconciliation
 spec: surface-drift-reconciliation
-status: in-progress
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/surface-drift-reconciliation.md
 companions: []
 sources:
@@ -21,11 +22,11 @@ assumptions:
   - "RETIRED 2026-08-09 — the assumption that the two `[ungoverned]` Charter files
     wanted a real surface was wrong on a fact. `docs/governance/spec-pyforge-charter/`
     is not discovered by `SPEC_GLOB`, so it cannot declare one. Allowlisted."
-open_questions:
-  - "RESOLVED (S-13.3) — the Charter's spec folder is allowlisted, the only
-    mechanism available to it."
-  - "RESOLVED (S-13.4) — the 34 `[drift]` split 9 archived-spec baseline lag /
-    2 genuine console change / 23 steward files whose contract was already correct."
+open_questions: []
+  # BOTH RETIRED 2026-09-09 (fleet-readiness batch Class B, row mars-B). Their own text already
+  # began RESOLVED: S-13.3 allowlisted the Charter's spec folder (the only mechanism available to
+  # it), and S-13.4 partitioned the 34 [drift] findings. Resolutions preserved in
+  # § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what to build, test, and validate. The source document in frontmatter is for traceability only.
@@ -139,7 +140,22 @@ the gate.
 
 - The two `[ungoverned]` Charter files want a real surface rather than an allowlist exemption, since the Charter defines the chain the detector polices. Unconfirmed with the operator; an allowlist entry would also clear the finding.
 
-## Open Questions
+## Open questions — closed 2026-09-09
 
-- Should `docs/governance/spec-pyforge-charter/` be governed by a surface (and whose?), or allowlisted as governance-tier content outside the station model?
-- Which of the 34 `[drift]` findings are genuine surface changes whose contract must move (steward's Epic-2/3 delivery looks like one), versus already-reconciled work that only lacks a stamp? This partition is the bulk of CAP-3's work.
+Both had already been resolved in place; the frontmatter is now caught up.
+
+- ~~"Should `docs/governance/spec-pyforge-charter/` be governed by a surface (and whose?), or
+  allowlisted as governance-tier content outside the station model?"~~ **RESOLVED (S-13.3):
+  allowlisted** — it is not discovered by `SPEC_GLOB`, so a surface is not a mechanism available
+  to it.
+- ~~"Which of the 34 `[drift]` findings are genuine surface changes whose contract must move
+  versus already-reconciled work that only lacks a stamp?"~~ **RESOLVED (S-13.4):** 9 archived-spec
+  baseline lag / 2 genuine console change / 23 steward files whose contract was already correct.
+
+## Assumptions (2026-09-09)
+
+- `status: shipped` — Epic 13 (Stories 13.1–13.7) all `done`, and the instrument is verified **in
+  effect** rather than by ledger: `pyforge.doctor.sources.chain::gather_spec_surface` over the live
+  tree returns 6 entries — five informational `[drift-presumed]` (pyforge-mason ×3, pyforge-steward
+  ×2) plus the green verdict *"every tracked file governed or allowlisted; no drift"*. Against this
+  Dream's own opening measurement (61 findings, then 994 presumed), the signal is trustworthy.

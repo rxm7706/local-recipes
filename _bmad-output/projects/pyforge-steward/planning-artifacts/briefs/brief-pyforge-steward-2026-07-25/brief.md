@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-08-31"
+updated: "2026-09-09"
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -151,3 +151,20 @@ worth recording because it lands on this exact brief's own subject:
 
 No Scope, Success Criteria, or open-question change. `updated:` bumped to close the
 `chain-currency-sweep` staleness edge; the v1 record above remains authoritative.
+
+## Currency reconciliation — 2026-09-09
+
+Fired by the `research→brief` staleness edge: `research/currency-review-pyforge-unifying-strategy-2026-09-09.md`
+landed under this station's research folder (four parallel audits of the Unifying Strategy chain
+against `main` `fe4025ea90`, every headline re-verified), and the brief's stamp sat at 2026-08-31.
+Checked against this brief's mission and scope — **no change to Steward's charter.** The research
+is chain-scoped to `spec-pyforge-unifying-strategy` (which Steward owns as the estate's post) and
+was consumed the same day by `bmad-correct-course`: operator-approved
+`sprint-change-proposal-2026-09-09-currency-review.md` minted **Epic 48** (the chain tells the
+truth — the ledger syncer's `blocked` and missing-key guards, R-18..R-22 promoted out of the
+deferred-work ledger, the CAP-axis namespace pass, the Single-Spec merge) and **Epic 49** (shipped
+becomes in effect — a `verified:` line per capability, a doctor-owned advisory effect check, six
+effect stories for CAP-4/-7/-11/-12/-14/-17). One operator ruling recorded upstream: the living
+Dream's ≤400-line constraint is retired. Nothing here adds a capability to Steward the station;
+the realization gate is a definition-of-done discipline the whole estate inherits, and its binding
+home is the Spec's open question `realization-gate-home`.

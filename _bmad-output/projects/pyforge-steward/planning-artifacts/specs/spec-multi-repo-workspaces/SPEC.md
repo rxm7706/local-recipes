@@ -1,13 +1,17 @@
 ---
 spec: multi-repo-workspaces
-status: ready
+status: ready   # PARKED 2026-09-09 with a named trigger — "when a second repo joins the estate",
+                # i.e. Story 44.3 (python-foundry). See § Spec Change Log.
+updated: "2026-09-09"
 owner-dream: docs/dreams/multi-repo-workspaces.md
 surface: []
 companions: []
 sources:
   - ../../../../../../docs/dreams/multi-repo-workspaces.md
-open_questions:
-  - "Where the repo-set registry lives (steward config vs a tracked manifest) — decided at 13.3: `.steward/repo-sets.yaml` (see Spec Change Log)."
+open_questions: []   # The registry-location question answered itself and is retired 2026-09-09
+                     # (batch row stB-C7): resolved at Story 13.3 as `.steward/repo-sets.yaml`
+                     # (`workspace.py:38`). A resolution belongs in the Spec Change Log, not in a
+                     # live question — the entry below is where it lives.
 ---
 
 # SPEC — One workspace opens every repo a story touches
@@ -54,3 +58,17 @@ workspace, with every single-repo guarantee intact per member.
   git, and keeps registry paths operator-declared rather than inferred.
 - **Known-bad avoided:** Silently inventing a `pyforge.toml` file this repo does
   not have; guessing clone locations for missing members.
+
+### 2026-09-09 — PARK with a named trigger
+
+- **Decision (operator, batch rows stB-B8 / C7):** park this Spec. **Trigger: "when a second repo
+  joins the estate"** — which is **Story 44.3** (python-foundry).
+- **Why parking is honest here, not dismissive:** CAP-1 and CAP-2 are built and `done` (Stories
+  13.3 / 13.4 — `start_repo_set` / `status_repo_set` / `clean_repo_set` and `.code-workspace`
+  generation at `workspace.py:277`, `:394`, `:413`, `:239`; registry path
+  `.steward/repo-sets.yaml` at `:38`) and have **never been invoked**. No `.steward/repo-sets.yaml`
+  exists — `git ls-files .steward/` returns only `keys-inventory.yaml` plus the two
+  `.example.yaml` files. Adopting now would mean writing a repo-set naming a repo that does not
+  exist yet.
+- **Registry-location question retired** in the same pass: it was answered at 13.3 and is recorded
+  in the 2026-08-23 entry above.

@@ -1,13 +1,15 @@
 ---
 id: SPEC-risk-tiered-review-depth
 spec: risk-tiered-review-depth
-status: shipped
+status: in-progress
+updated: "2026-09-09"
 owner-dream: docs/dreams/risk-tiered-review-depth.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py
 sources:
   - ../../../../../../docs/dreams/risk-tiered-review-depth.md
-open_questions: []
+open_questions:
+  - "Where does `declared_low_risk` come from — a story-spec frontmatter key, a dispatch CLI flag, or a gate-time derivation? No producer exists anywhere today (no CLI flag; no low_risk-shaped key in either bmad-spec's or bmad-build-auto's `spec-template.md`), no `VcsPort` call computes `changed_files`, and nothing in `cli/gate.py` calls either function. Until one is chosen the shipped mechanism cannot take effect."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -100,3 +102,18 @@ reduced cost (fewer cycles, or a cheaper pass) while a high-weight story is unaf
 **and** a reviewer-recommended follow-up on a low-weight story still reaches
 `deferred-work-check` with zero `tier3-only-deferral`-style loss, the same guarantee every
 other story already gets.
+
+## Assumptions
+
+- `status: in-progress` is a **reversal from `shipped`** under the realization gate
+  (2026-09-09, operator-approved). Story 2.8 shipped the mechanism and only the mechanism:
+  `classify_review_tier` (`core/gate.py:724`) and `resolve_review_cycles` (`:768`) have **zero
+  callers anywhere outside `tests/unit/test_gate.py`**. `DW-FU-2-8-4` carries
+  `verified: 2026-09-05 — STANDS`. Every story still pays the identical review cost — which is
+  this Spec's own title. `docs/dreams/risk-tiered-review-depth.md` moves `realized` →
+  `specified` in the same act.
+- Enablement lands as marshal **Story 33.5** in Epic 33, beside the token-economy enablement —
+  the same "turn on what is built" shape and the same operator decision. `DW-FU-2-8-4` stays in
+  the deferred-work ledger and **stands** until 33.5 lands both a producer and a caller.
+  Rejected: keep `shipped` and leave the ledger entry — that is the precise pathology the
+  realization gate exists to end.

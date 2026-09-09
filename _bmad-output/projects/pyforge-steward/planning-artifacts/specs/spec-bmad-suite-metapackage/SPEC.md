@@ -19,12 +19,20 @@ assumptions:
     published-but-skip-wired member; `bmad-eval-quality` is seated in its place."
   - "Member upstream resolution uses each recipe's cfe-upstream-registry (github/npm/pypi),
     matching doctor Story 19.1 — not npm-first globally."
-open_questions:
-  - "Metapackage version scheme: CalVer refresh stamp (2026.9.1) vs composite hash of member
-    versions? Default CalVer at spec time — sortable, human-readable on channel."
-  - "Include bmad-method from conda-forge in run deps vs SelfExplainML refresh-parity copy only?
-    Default: pin conda-forge channel for bmad-method, SelfExplainML for the other 12 (matches
-    install-matrix 'conda-forge canonical' row)."
+  - "LIVE DRIFT, 2026-09-09: `recipes/bmad-suite/recipe.yaml:14` reads `2026.9.9` while
+    `pixi.lock:17510` still resolves `bmad-suite-2026.9.5`. The metapackage's own criterion —
+    one install pulls every channel product at upstream-aligned floors — is true of the RECIPE
+    and NOT in effect in the LOCK until the next lock refresh. `bmad-suite-full` therefore still
+    resolves eval-quality through the old metapackage's floor; publishing 2026.9.9 is what moves
+    it."
+updated: "2026-09-09"
+open_questions: []
+  # ANSWERED 2026-09-09, both retired (batch row stA-C7):
+  # - Version scheme: CalVer refresh stamp (unpadded), as already shipped —
+  #   `recipes/bmad-suite/recipe.yaml:13-14` says so in the file ("bumped by `generate-bmad-suite`
+  #   when pins change"); live value 2026.9.9. The default at spec time held.
+  # - bmad-method's channel: **conda-forge is canonical** for bmad-method; SelfExplainML carries
+  #   refresh-parity for the other twelve (`install-matrix.md:14,:43`).
 ---
 
 # SPEC — The bmad-suite metapackage

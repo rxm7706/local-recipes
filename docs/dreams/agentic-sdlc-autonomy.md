@@ -52,3 +52,14 @@ synthesizes all four:
 - **2026-07-11** — the agentic-sdlc deck shipped (PR #50).
 - **2026-07-23** — the four-views white paper arrived; Dream retro-seeded with
   the factory's own L3 evidence.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Dream status kept `specified`;
+  **`spec-agentic-sdlc-autonomy` moves `pitched` → `ready`.** `pitched` is Dream vocabulary and was
+  the fleet's only instance in a Spec's `status:` field, outside the sequence `AGENTS.md:118`
+  sanctions (`draft → ready → in-progress → shipped`). Its effect was invisible: `pitched` is not in
+  `OPEN_SPEC_STATUSES` (`board.py:77`), so `board.py:716` skipped the Spec before the
+  `DEFERRED_SPECS` check ever ran — the carefully-worded exemption at `board.py:88-90` had never done
+  anything. **The `DEFERRED_SPECS` entry stays**; `ready` makes it live and honest: a settled
+  standing position with nothing to decompose, exempted on the record. Fleet ruling recorded in the
+  same batch: `pitched` is not a Spec status. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

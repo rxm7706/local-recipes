@@ -1,13 +1,12 @@
 ---
 spec: package-inventory-eligibility
-status: ready
+status: in-progress
 owner-dream: docs/dreams/package-inventory-eligibility.md
 surface: []
 companions: []
 sources:
   - ../../../../../../docs/dreams/package-inventory-eligibility.md
-open_questions:
-  - "Required-authority policy: which source classes MUST agree for eligible-union — config-driven; default at 7.2."
+open_questions: []   # the required-authority question was answered in code at Story 7.2; its config half is a named residual
 ---
 
 # SPEC — Every package has one provenance trail and one eligibility answer
@@ -47,3 +46,25 @@ the curated allow-lists (they become one source class).
 ## Success signal
 One CLI question, one CycloneDX answer, full provenance — across at least
 three real source classes, fixture-proven on the corpus.
+
+## Assumptions
+- **Required-authority policy is answered in code.** `eligibility.py:113-121` defaults
+  `required_authority_sources=None` to "every source name present in the full evidence
+  tuple" — unanimous consensus — and the docstring at `:128-131` records the omission of a
+  config surface as deliberate.
+- CAP-1..3 landed as real library modules — `sources.py` (SourceContract + registry),
+  `eligibility.py` (the union with ProvenanceEntry trails and the separate
+  `eligible-union`/`observed-in-use`/`flagged-for-review` vocabulary) and
+  `eligibility_sbom.py` (CycloneDX through the existing renderer) — with Stories 7.1–7.3
+  `done` and unit-tested. The Dream's constraint that this vocabulary stay separate from
+  `models.py`'s Status rungs holds, verified by reading.
+
+## Residuals
+- **There is no CLI question.** This Spec's Success signal is "One CLI question, one
+  CycloneDX answer", and `grep eligib src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py`
+  returns zero hits. The Spec is not shipped until warden grows the eligibility verb its
+  Success signal describes.
+- **The required-authority config surface is deferred, deliberately.** It is minted **only
+  together with the missing CLI front door** — a settable policy no user can reach is
+  unreachable, so the two belong in one story. *Rejected alternative:* mint the config story
+  now, separately.

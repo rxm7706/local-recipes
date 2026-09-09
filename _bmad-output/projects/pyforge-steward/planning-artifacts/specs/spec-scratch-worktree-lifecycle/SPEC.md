@@ -1,6 +1,7 @@
 ---
 spec: scratch-worktree-lifecycle
 status: ready
+updated: "2026-09-09"
 owner-dream: docs/dreams/scratch-worktree-lifecycle.md
 surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
@@ -118,4 +119,19 @@ Canonical decision text lives in
 `../spec-13-2-status-and-the-feed-mirror-decision.md` § Spec Change Log.
 Summary: feed-mirror is its own future verb (not folded into `start`);
 `workspace update` is omitted (no). CAP-3 `status` ships in that story.
+
+### 2026-09-09 — ADOPT: the documented landing ritual
+
+**Decision (operator, batch rows stB-B8 / C7).** `scratch-worktree-lifecycle` becomes the
+**documented landing ritual** — one `AGENTS.md` line, folded into **Story 48.1**'s existing
+`bmad-project-context` refresh. 48.1 already edits that managed block, so adoption costs one doc
+line and never a hand edit of `AGENTS.md`.
+
+Why it needs a vessel at all: **CAP-1..5 are built, `done`, and have never been invoked.** Stories
+13.1 / 13.2 landed `start_workspace` / `list_workspaces` / `status_workspaces` /
+`clean_workspaces` with archive-not-delete (`workspace.py:569`, `:611`, `:709`, `:809`, `:747`),
+yet `.steward/workspaces.yaml` does not exist and every landing pass still hand-runs
+`git worktree add` — the exact toil the Dream was written against.
+
+**Dream status holds at `specified`** pending one documented use.
 

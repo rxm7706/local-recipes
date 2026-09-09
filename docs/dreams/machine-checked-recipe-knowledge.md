@@ -2,7 +2,7 @@
 title: The CFE failure catalog is generated from the skill spec, every row lint-verified against its enforcing check
 type: dream
 owner: mason
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: realized    # 2026-09-09 — catalog + generator + freshness test + detector all live and green
 ---
 
 # Machine-checked recipe knowledge
@@ -54,3 +54,17 @@ CFE SKILL.md G-corpus · bmad-drift-check (the detector philosophy) ·
 - **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
   `spec-machine-checked-recipe-knowledge` derived under pyforge-mason and decomposed into the
   station backlog the same day (`a20192dd84`). Spec status `ready`.
+- **2026-09-09** — **Realized, and exercised** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2). `config/failure-catalog.yaml` (117 rows) derives from `SKILL.md`'s gotcha corpus via
+  `scripts/failure_catalog_generator.py`, is guarded for freshness by
+  `tests/meta/test_failure_catalog_freshness.py` (green), and is independently re-resolved by
+  `scripts/failure_catalog_check.py` (`DETECTOR = {"scope": "repo"}` at `:41`, auto-discovered by
+  `scripts/detectors.py`) — `pixi run -e local-recipes failure-catalog-check` reports **clean**.
+  The Spec flips `ready → shipped` and finally declares its own detector in `surface:`. The
+  null-rows backlog is real and large: **115 of 117 rows carry `enforced_by: null` — coverage
+  1.7 %**. That number is *emitted on every run* and nobody watches it; raising it is the
+  backlog's job, not this Dream's — the Dream's contract was that the number exist and that
+  drift be impossible to land silently, and both hold. The Dream's own open question (catalog
+  home: `config/` vs `data/`) is settled exactly as it predicted — it landed in `config/`,
+  because the artifact is derived-and-tracked.

@@ -28,19 +28,29 @@ sources:
   - ../../../../../../docs/dreams/unified-container.md
   - ../../research/technical-steward-pixi-workspace-member-research-2026-07-25.md   # Addendum A3/A4 — the feasibility study this Spec formalizes
   - ../../../pyforge-marshal/planning-artifacts/research/technical-pyforge-unification-2026-08-08.md   # § 2 — the orchestration half
+updated: "2026-09-09"
 open_questions:
-  - "One image or two: the lean all-stations image (Mode L) vs a
-    `pyforge-factory-full` packaging tier with local-recipes/CFE — Marshal's
-    research recommends two tiers; this Spec commits only to the lean one and
-    leaves the split undecided."
-  - "Baked checkout vs bind-mount as the primary mode (A3.6 recommends baked,
-    with bind-mount over /pyforge as the dev override) — decide at epic time."
+  # RETIRED 2026-09-09 — both were STALE, decided by the architecture run, and the frontmatter
+  # comment above already said so, so this file was contradicting itself:
+  #  - "One image or two" (batch row stB-B3): `uc:AD-2` (`ARCHITECTURE-SPINE.md:1318-1334`) rules
+  #    ONE image, with the second tier deferred-not-rejected under a named trigger — "when recipe
+  #    builds need to run inside the container".
+  #  - "Baked checkout vs bind-mount" (batch row stB-B4): the spine's own topology ratifies the
+  #    baked checkout at `/pyforge` (`ARCHITECTURE-SPINE.md:1291`); bind-mount over `/pyforge`
+  #    stays the dev override. "Epic time" was Epic 7, closed 5/5 in PR #372.
+  # The two below stay GENUINELY OPEN (batch row stB-B5) — but see the blocker note under each.
   - "Worktree placement for in-container bmad-loop runners (container fs vs
     volume) — deferred with Mode I; Mode L runs loops against a mounted host
     checkout exactly as today."
   - "Whether Mode L and the with-infrastructure Mode I are the same image with
     different mounts/limits, or Mode I forks — nothing here may foreclose
     Mode I, but its design is out of scope."
+  - "BLOCKER on both Mode questions (2026-09-09): neither is decidable until the image is built by
+    something. No CI workflow and no pixi task builds the root `Containerfile` — the workflow grep
+    matches only `src/platform/Containerfile` and the two sidecar files, and `pixi.toml` carries no
+    docker/podman build — and `pyforge-steward-container-gates-test` /
+    `-container-volumes-test` (`pixi.toml:556`, `:569`) run in ZERO CI jobs. CAP-5 is titled 'the
+    image proves itself at build time' and there is no build time. Vessel: new steward Story 48.10."
 ---
 
 # SPEC — one container, eight stations
@@ -134,3 +144,16 @@ One `podman build` yields one image; a rootless `podman run` boots `marshal` and
 reaches all eight station CLIs; the secret gate over the rootfs finds nothing;
 the same image runs behind Artifactory by env vars alone; state volumes survive
 container replacement.
+
+## Nothing builds the image — 2026-09-09
+
+**The signal above has never been exercised in CI**, and the two surviving Mode questions are not
+decidable until it is. No workflow and no pixi task builds the root `Containerfile`; the
+`container-gates` and `container-volumes` pixi tasks (`pixi.toml:556`, `:569`) are invoked by
+nothing. CAP-5 — "the image proves itself at build time" — has no build time to prove itself at.
+
+**Vessel: new steward Story 48.10** (batch § 2.3 C7 / rows stB-B5 / stB-B7) — a job or pixi task
+invoked by `pyforge-station-tests.yml` that builds the root `Containerfile` and runs
+`container-gates secrets-scan` + `container-volumes` on the result, landed **before Story 44.10
+closes the CI window**. The Spec stays `shipped` — Epic 7 delivered every capability it names —
+but the container half of the fleet's realization gate is unexercised until 48.10 lands.

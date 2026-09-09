@@ -1,14 +1,16 @@
 ---
 spec: machine-checked-recipe-knowledge
-status: ready
+status: shipped
 owner-dream: docs/dreams/machine-checked-recipe-knowledge.md
-surface: []
+surface:
+  - scripts/failure_catalog_check.py   # the Story 7.2 drift detector this Spec owns
 companions: []
 sources:
   - ../../../../../../docs/dreams/machine-checked-recipe-knowledge.md
   - ../../../../../../docs/intake/external-repos-analysis-2026-08-22/report.md
-open_questions:
-  - "Catalog file home: .claude/skills/conda-forge-expert/config/ vs data/ — decide at 7.1 (it is derived+tracked, so config-side)."
+open_questions: []
+  # ANSWERED 2026-09-09, exactly as the question predicted: the catalog landed in
+  # `.claude/skills/conda-forge-expert/config/`, because the artifact is derived AND tracked.
 ---
 
 # SPEC — Machine-checked recipe knowledge
@@ -43,3 +45,29 @@ not an actuator).
 `enforced_by` coverage is a number the fleet can watch, drift is impossible
 to land silently, and the next new gotcha arrives with its row + pointer or
 an honest null.
+
+**Shipped, and the number is watchable (2026-09-09).** Both CAPs are live and
+green: `config/failure-catalog.yaml` (117 rows) derives from SKILL.md's gotcha
+corpus via `scripts/failure_catalog_generator.py`, is freshness-guarded by
+`tests/meta/test_failure_catalog_freshness.py`, and is independently re-resolved
+by `scripts/failure_catalog_check.py` (DETECTOR scope `repo` at `:41`,
+auto-discovered by `scripts/detectors.py`) — `pixi run -e local-recipes
+failure-catalog-check` reports clean. It prints `null_rows=<n> coverage=<pct>` on
+every run: **115 of 117 rows carry `enforced_by: null`, coverage 1.7 % as of
+2026-09-09.** Raising that number is the null-rows backlog's job, not this Spec's —
+this Spec's contract is that the number exists and cannot drift silently.
+
+## Assumptions
+
+- `scripts/spec_surface_allowlist.txt:100` still allowlists
+  `scripts/failure_catalog_check.py` with the comment "allowlisted pending mason
+  claiming it via a proper folder-format spec". This Spec **is** that spec, and
+  this re-derive adds the path to `surface:`, so the allowlist entry now lists a
+  governed path twice and should be deleted. That deletion is a code edit under
+  `scripts/`, folded into **mason Story 15.1** as a named acceptance clause (that
+  story already re-stamps scoped surface baselines for every governed path it
+  deletes or moves). The stamp must be scoped — `python scripts/spec_surface_check.py
+  --write-baseline --spec pyforge-mason/spec-machine-checked-recipe-knowledge` —
+  never a bare `--write-baseline`, because the baseline reads the working tree plus
+  `git ls-files` and this repo's tree is routinely dirty with other stations' work;
+  new files must be `git add`-ed before stamping.

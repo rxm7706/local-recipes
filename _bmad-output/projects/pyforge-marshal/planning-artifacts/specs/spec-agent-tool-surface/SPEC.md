@@ -2,6 +2,7 @@
 id: SPEC-agent-tool-surface
 spec: agent-tool-surface
 status: in-progress
+updated: "2026-09-09"
 owner-dream: docs/dreams/agent-tool-surface.md
 surface:
   - .claude/tools/conda_forge_server.py
@@ -10,8 +11,18 @@ sources:
   - ../../../../../../docs/dreams/agent-tool-surface.md
   - ../../../../../../docs/dreams/agent-portability.md
   - ../../../../../../docs/dreams/regenerable-factory.md
-open_questions:
-  - "Q1 — one surface or two? The pyforge-atlas server arrived additively with its rebuild; whether the surface federates, merges, or stays split is undecided."
+open_questions: []
+  # Q1 ANSWERED 2026-09-09 (operator, fleet-readiness batch rows mars-A-B1 / C10): THE SURFACE
+  # FEDERATES. The HTTP station face `POST /stations/<name>/mcp` (django-pyforge
+  # `mcp_http.py:137`, with auth `mcp_auth.py:1`, rate limiting `rate_limit.py:3` and dual-era
+  # routing `mcp_dual_era.py:29,40`) is the ONE GOVERNED FRONT DOOR; the stdio servers are LOCAL
+  # ADAPTERS. The question was stale as posed -- it is no longer two surfaces but FIVE
+  # (`.claude/tools/conda_forge_server.py` with 46 `@mcp.tool` decorators,
+  # `.claude/tools/gemini_server.py`, `pyforge/atlas/mcp/server.py`, `pyforge/marshal/mcp/server.py`,
+  # and the HTTP transport). Merging five into one binary re-couples the crafts the Charter
+  # deliberately split; leaving them split leaves the surface ownerless, the failure this Dream
+  # exists to name. Federation is the only option the existing code already implements: the HTTP
+  # face is a mount point, not a server, so each craft keeps its own tools. See § Measured facts.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -85,10 +96,28 @@ A fresh clone on a new machine reaches all tools with no hand-editing; a contrac
 fails when a tool drifts from its script; and the coverage number is published in the
 Guildhall rather than claimed in prose.
 
-Today, honestly: **2 stations of 6** have realized capability on the surface (mason 21,
-atlas 21; warden partial at 2; herald, steward and **marshal — the owner — at zero**).
-The claim "every capability the factory has is reachable" is not yet true, which is why the
-Dream is `type: practice` and not a finished thing.
+~~Today, honestly: **2 stations of 6** have realized capability on the surface (mason 21,
+atlas 21; warden partial at 2; herald, steward and **marshal — the owner — at zero**).~~
+**Re-measured 2026-09-09: 3 of 6.** The claim "every capability the factory has is reachable"
+is still not true, which is why the Dream is `type: practice` and not a finished thing.
+
+## Measured facts (2026-09-09)
+
+Recorded because this Spec's body and the Dream both understate them.
+
+- **Coverage is 3/6, not 2/6.** Running the gate this Dream asked for
+  (`pyforge/marshal/mcp/coverage.py::tool_surface_coverage_report`) returns
+  `{"ratio": "3/6", "coverage": 0.5}` — mason (via `conda_forge_server.py`), atlas, and marshal
+  itself, no longer at zero.
+- **CLI ⇄ tool parity is gated for marshal ONLY** (`mcp/parity.py`,
+  `tests/meta/test_cli_tool_parity.py`, Story 18.2 / FR-155). The 46 CFE tools and
+  `pyforge/atlas/mcp/tools.py` have **no equivalent gate**. CROSS-STATION: routed to mason and
+  atlas per this Spec's own ownership split — a change to what a tool *does* belongs to the craft
+  owner.
+- **CAP-4's number is computed but not published.** `mcp/coverage.py` has a `main()`; no pixi
+  task exposes it, and the console that would have carried it is retired.
+- **`.mcp.json` still exists NOWHERE** — not at the repo root and not in any of the eight loop
+  homes, despite `cli/init.py:447` `_render_mcp_json`.
 
 ## The `.mcp.json` decision — four artifacts, four positions
 

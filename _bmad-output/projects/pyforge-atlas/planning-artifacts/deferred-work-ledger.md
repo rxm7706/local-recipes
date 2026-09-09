@@ -61,7 +61,7 @@ Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again
 
 Six of these are also re-stated as contract-level capabilities **DC-1…DC-6** in
 the PRD § 6.4, because they outlived the migration: `DW-C1-1`/`DW-G3`/`DW-H4`
-(live daemon), `DW-H1` (MinIO/PostgreSQL), `DW-H2` (agno synthesis + `vss`),
+(live daemon), `DW-H1` (PostgreSQL + RWX volume), `DW-H2` (agno synthesis + `vss`),
 `DW-H3` (live Wagtail).
 
 ---
@@ -563,6 +563,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 2/3 present (absent: tests/dashboard/test_dashboard_e2e.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-09 — **still-open (residual 2 only), now dependency-named.** Residual (1), the §2.1 semantic-HTML/ARIA navigation check, remains DONE per the 2026-08-28 update. Residual (2), the data-present visual pass, is still open and still attended-only — but it is no longer unowned: atlas **Story 25.2** (new Epic 25, ledger `blocked`) is the recorded pipeline run that materializes the Parquet tree this residual needs, so the two should be closed in the same attended session. Unrelated but worth stamping while here: `dashboard/app.py`'s `PAGE_INVENTORY` now carries **34** page definitions (Epic 22 added the three identity pages), while `pixi.toml:1065`/`:1070` still describe the gate as "31-page" and the module docstring says 28 — a count worth deriving rather than stamping.
+
 ## DW-D3-1 — the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
@@ -870,7 +872,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/2 present (absent: tests/catalog/test_no_inline_io.py, tests/orchestration/test_definitions_dryrun.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-## DW-H1 — the MinIO/PostgreSQL SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event
+## DW-H1 — the PostgreSQL + RWX-volume SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H1, § 7.4, FR-22(a))
   summary: H1 shipped the BUILDABLE half of the Karpathy-wiki storage layer — the layout contract
@@ -900,6 +902,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. Verified from the code's own statement of fact: `factory/storage.py:6` still reads '**Only the MinIO *Python SDK* is in-env today; the MinIO *server* is NOT provisioned**'. No server provisioning or bring-up has occurred. Also carried as PRD § 6.4 DC-3.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/factory/test_personas.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  evidence-update: 2026-09-09 — **the storage KIND this entry names is corrected; the entry itself stays `open` and ATTENDED.** Operator decision batch `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C16** (row atlas-B6): the object-storage half of this bring-up is re-pointed off MinIO onto the infra-kinds answer — an **RWX volume**, and for a multi-node target the **RWX-capable storage class** that provides it. `docs/dreams/pyforge-unifying-strategy.md:406-408` (re-affirmed 2026-09-05): "No MinIO as a fourth core kind … Lane 1 media is RWX, and a multi-node target names its RWX-capable storage class" — and Wagtail is Lane 1, the case that ruling anticipates. `spec-wagtail-corporate-brain/SPEC.md:24`, `:135`, `:137` and `spec-pyforge-atlas/SPEC.md:571` all inherited the phrase "PostgreSQL/MinIO" from THIS entry's heading and body, so the correction is upstream of both and both re-render without MinIO. The Never is not re-opened and no scoped exemption is granted; the PostgreSQL half and the attended-bring-up character of this entry are unchanged. This entry's own heading and the § summary cross-reference at the top of this ledger were rewritten to the RWX wording in the same 2026-09-09 pass (atlas owns this row, so atlas made the edit); the two Specs re-render at their next `bmad-spec` re-derive.
 
 ## DW-H2 — the live `agno`-Agent / LLM synthesis + F3-vss production retriever bring-up (ATTENDED) — DEFERRED
 
@@ -1861,6 +1865,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-09-09 — **MOOT PENDING atlas Story 25.1.** Re-read against live code at `fe4025ea90`: the claim still holds exactly as written (`views/widgets.py::get_widget` and `views/registry.py::get_view` both raise a bare `KeyError`), but the operator decision batch § 2.3 **C1** RETIRES the whole `pyforge/atlas/views/` package and `tests/unit/views/` — the two functions this entry indicts are deleted by Story 25.1, so the entry closes with the module rather than being fixed. Do NOT spend a story on the paired-KeyError cleanup. Re-check after 25.1 lands and close citing it.
+
 ### DW-14-3-1: tests/dashboard/test_dashboard_e2e.py's Playwright navigation races the Dash dev server's startup, reliably failing with net::ERR_CONNECTION_REFUSED
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
   summary: `test_dashboard_e2e_navigation_and_rendering`'s `page.goto(dashboard_server)` fires before the Dash dev server thread has finished binding its port, so the test reliably fails with `playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED` — pre-existing in `tests/dashboard/` (Story D2's Vizro/Dash module), surfaced incidentally while verifying this story's `kedro-test` acceptance criterion, and explicitly out of this story's scope to fix (Story 14.3's Boundaries & Constraints forbid touching `dashboard/`).
@@ -1882,6 +1888,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md, tests/views/test_render.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-09-09 — **MOOT PENDING atlas Story 25.1, with one piece worth keeping.** The Bokeh `patch_curdoc()` exception-unsafety is a genuine upstream hazard and the analysis is sound, but its stated audience — "whoever next tests a live-session error path in this package" — disappears when § 2.3 **C1** retires `pyforge/atlas/views/` and its tests (Story 25.1); there is no other live-Bokeh-session test surface in the estate. Closes with the module. The upstream fact itself (raising inside a live `on_change` callback poisons `curdoc()` for the rest of the process) is preserved here as the record, in case Bokeh ever returns to this estate.
 
 ### DW-A1-6: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lo
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
@@ -3782,6 +3790,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-09-09 — **still-open, and it now has a vessel.** The claim holds: `kedro run --pipelines derived_artifacts` remains a manual gate and `test_identity_complete_export.py` covers the node in isolation only. Atlas **Story 25.2** ("Materialize CAP-8's canonical Parquets — one recorded run", new Epic 25, ledger `blocked`) is the story that closes it: it is the recorded end-to-end run that materializes `identity_complete_export.parquet` and `enterprise_jfrog_consumption.parquet` and is the gate on `docs/dreams/atlas-kedro-catalog-expansion.md` moving `specified` → `realized` (operator batch § 2.2 row atlas-B5 + § 2.3 C6). It is `blocked` because it needs the attended, credentialed Artifactory path that `spec-conda-forge-packaging-inventory-operations` also waits on (that Spec holds itself `in-progress` for the same event: "CAP-2 (17.2) code landed, live-execution verification deferred"). Close this entry citing 25.1's sibling 25.2 when that run is recorded.
 
 ### DW-FU-24-1: test_adoption_register.py's persona-mention check only verifies the skill name substring appears in a persona SKILL.md, never that the routing line's stated grammar constraint text is present.
 

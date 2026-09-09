@@ -5,7 +5,7 @@ chain-layers audit (`pixi run -e local-recipes chain-layers-audit-check -- --pro
 <slug>`, Stories 17-3/21-1, FR-150/FR-192 CAP-3). This runbook is the reconciler side —
 the marshal `SYNC-RUNBOOK.md` two-layer pattern generalized to the fleet's planning
 spines. First validation run: the 2026-08-26 26-finding clearance (Worked Example 1,
-pending).
+complete — see § Worked Examples).
 
 ## When to run
 
@@ -118,6 +118,12 @@ Regenerating a board view is optional confirmation, not the measure.
   surface-changed for the marshal artifact set, reconcile per its own runbook and
   re-stamp with `python scripts/bmad_drift_check.py --write-baseline` — **after**
   `git add` of any new files.
+- **Append the run to § Worked Examples before the Land step is done.** Run 1 is the
+  validation narrative; every later run appends *at least a one-line entry* — date,
+  findings cleared, deviations. **A run that appends nothing has not completed its Land
+  step.** (`spec-chain-currency-sweep` CAP-6, narrowed 2026-09-09: three sweeps —
+  2026-08-29 / 09-04 / 09-07 — skipped the append because the old wording asked each run
+  for a Run-1-sized narrative, which is not proportionate to a 2-finding sweep.)
 
 ## Worked Examples
 

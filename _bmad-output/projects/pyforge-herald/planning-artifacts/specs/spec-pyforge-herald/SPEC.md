@@ -20,6 +20,12 @@ sources:
   - ../../../../../../docs/dreams/herald-pitch.md (archived/absorbed; source of HER-4..HER-10)
   - ../../../../../../docs/dreams/herald-moments-2-4-missing-surface.md (archived/absorbed; source of HER-11..HER-13)
 open_questions: []
+  # MOVED OUT 2026-09-09 (chain-currency runbook § overtaken, after the fleet-readiness re-derive).
+  # The Guildhall-referent question is the CHARTER's open question
+  # (`docs/governance/spec-pyforge-charter/SPEC.md` open_questions, batch § 2.3 C12) and has ONE
+  # owner there. Herald's Spec does not carry it as its own question -- a duplicated question in
+  # two Specs is exactly the fork the outcome/mechanism rule forbids. It is rendered here as a
+  # dated DEPENDENCY in § Residual dependencies instead.
 ---
 
 > **Canonical contract.** This SPEC is the complete contract for what to build, test and
@@ -54,15 +60,16 @@ engineering* — Herald exists so nothing the factory does stays invisible. Re-s
 "first to touch a Dream and last to touch a release". Communication runs throughout, not at
 the ends.
 
-**Current state (2026-08-02):** the deck family (Moment 1 content) is production-ready. HER-1's
-CLI mechanization of it is in progress — 4 of 17 foundation stories done (package scaffold,
-MCP-transport spike, bridge-core skeleton, registry module); `seed`/`pull`/`status`/`watch`
-are not wired into the CLI yet, and the loop is paused mid-story on the fallback transport
-adapter. Moments 2–4 (progress/success/operations proclamation) are Herald's active next
-frontier, planned end-to-end but not yet implemented — the detailed capability breakdown for
+**Current state (re-grounded 2026-09-09; the 2026-08-02 text below it described a mid-build
+station and contradicted this Spec's own `status: shipped`).** The deck family (Moment 1
+content) is production-ready. HER-1's CLI mechanization shipped: Epics 1–5 are `done` and
+`seed`/`pull`/`status`/`watch` are wired (`cli.py:226-318`); `cli.py` is 1764 lines wiring 26
+subparsers. Moments 2–4 shipped too — Epics 8–10 landed 47 stories on 2026-08-08 — as the
+CLI-triggered/local-storage v1, not the live-service version (that contract is
+`spec-herald-moments-2-4-live-backend`, `in-progress`). The detailed capability breakdown for
 both Moment 1's deck-family orchestration (HER-4..HER-10) and Moments 2–4's proclamation
-surfaces (HER-11..HER-13) now lives inline below, folded in from their own formerly-separate
-Specs on 2026-08-02.
+surfaces (HER-11..HER-13) lives inline below, folded in from their own formerly-separate Specs
+on 2026-08-02.
 
 Herald's Four Moments of Proclamation, in full: **Pitch** (HER-4..HER-10 — a Dream must be
 argued, not merely filed), **Progress** (HER-11 — a build in flight is not self-explaining),
@@ -73,8 +80,8 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 
 ### Station-level (unchanged, 2026-08-01/02)
 
-- **HER-1 — a Dream becomes a deck.** *Success:* `herald seed` renders a Dream into a deck and `herald pull` brings the designed result back; the round trip is the realized [[design-code-bridge]] (elaborated in HER-4 below). *In progress:* the CLI foundation (package scaffold, transport port, bridge-core, registry) is built and tested; the `seed`/`pull`/`status`/`watch` subcommands themselves are not yet wired up.
-- **HER-2 — releases are proclaimed from the ledger.** *Success:* release notables compile from pipeline data, never hand-written. *Status:* fully specced — the detailed breakdown that used to live in a separate `spec-herald-moments-2-4` document is now inline as HER-11 (Progress), HER-12 (Success) and HER-13 (Operations) below — but not yet implemented.
+- **HER-1 — a Dream becomes a deck.** *Success:* `herald seed` renders a Dream into a deck and `herald pull` brings the designed result back; the round trip is the realized [[design-code-bridge]] (elaborated in HER-4 below). *Shipped* (re-grounded 2026-09-09): the CLI foundation and the `seed`/`pull`/`status`/`watch` subcommands are all wired and tested (`cli.py:226-318`).
+- **HER-2 — releases are proclaimed from the ledger.** *Success:* release notables compile from pipeline data, never hand-written. *Status* (re-grounded 2026-09-09): the detailed breakdown that used to live in a separate `spec-herald-moments-2-4` document is inline as HER-11 (Progress), HER-12 (Success) and HER-13 (Operations) below, and shipped as the CLI-triggered v1 in Epics 8–10 (47 stories, 2026-08-08). The automatic, ledger-triggered version is `spec-herald-moments-2-4-live-backend`'s contract and has never run.
 - **HER-3 — the visual identity is one system.** *Success:* decks, infographics and the Guildhall share [[modernist-identity]]'s vocabulary (elaborated in HER-7 below).
 
 ### HER-4..HER-10 — Moment 1 (Pitch): deck-family orchestration (folded in 2026-08-02 from `spec-herald-pitch`, was CAP-1..CAP-7)
@@ -134,7 +141,7 @@ complementary, non-overlapping constraints.
 
 ## Non-goals
 
-- **Owning the console.** The Guildhall is Marshal's ([[factory-console]]); Herald supplies its conviction and its look, not its machinery.
+- **Owning the console.** The Guildhall is Marshal's ([[factory-console]]); Herald supplies its conviction and its look, not its machinery. **Referent PENDING a Charter amendment (2026-09-09)** — the substance holds (the hall is not Herald's) but `[[factory-console]]` is `superseded` and the Pages console is retired; see § *Residual dependencies*. Deliberately left un-reworded until the Charter rules.
 - **Infrastructure.** Moved to Marshal in the 2026-07-23 re-scope.
 - **~~Re-specifying Moments 2–4 as a separate spec~~ — AMENDED 2026-08-02.** This non-goal previously said Moments 2–4's capability breakdown lived in a separate `spec-herald-moments-2-4` document that this Spec referenced without duplicating. Per the explicit 2026-08-02 user override, that breakdown is now folded in directly as HER-11..HER-13 above; the separate file is archived (not deleted — see the banner note at the top of this document).
 - **New deck-authoring infrastructure** (from HER-4..10). Design-code-bridge is already proven on 7 decks; this Spec reuses it, does not rebuild it.
@@ -147,12 +154,26 @@ complementary, non-overlapping constraints.
 
 ## Success signal
 
-A release goes out with a deck, an infographic and notables that no one hand-assembled. **Not
-yet true end to end** (2026-08-02): the deck (HER-3 / HER-4..10) is production-ready and
-hand-operated; the CLI that mechanizes seed/pull (HER-1 / HER-4) is mid-build; the notables
-(HER-2 / HER-11..13) have a full planning chain but no code. Open drift: the bridge's design
-intent runs on `claude-design`, an MCP outside the governed tool surface — recorded in
+A release goes out with a deck, an infographic and notables that no one hand-assembled.
+
+**Not yet true end to end — re-grounded 2026-09-09.** The 2026-08-02 text this replaces said
+the seed/pull CLI was mid-build and the notables had "no code"; both shipped (see § Why). What
+is actually still untrue is narrower and sharper: nothing *automatic* has ever fired. The
+live-backend triggers have never run green (`spec-herald-moments-2-4-live-backend`, LB-2/LB-3
+`foundry-side`), the deck-QA gate has no caller (`spec-deck-visual-qa`), and the `.pptx`
+pipeline has never rendered a real station deck (`spec-pptx-deck-generation`). A release today
+still goes out because a human ran each verb. Open drift, unchanged: the bridge's design intent
+runs on `claude-design`, an MCP outside the governed tool surface — recorded in
 [[agent-tool-surface]]'s coverage table.
+
+**Station-level effect residue, vesselled (2026-09-09).** Three of Herald's five Dreams fail
+the realization gate for exactly the three reasons above. Herald **Epic 19 ("Herald in
+effect")** is minted as the vessel — one story per gap plus the webhook route-contract fix —
+and steward Epic 49 carries the index row. Two bookkeeping defects recorded, neither
+outstanding work: `sprint-status-ledger.yaml:99` reads `epic-18: backlog` while 18-1/18-2/18-3
+are each `done` (a roll-up defect, folded into steward 48.1), and the ledger header's
+`# stories: 100` mislabels 64 story keys plus 36 epic/retro keys (a fleet-wide generator
+defect).
 
 **Detailed signals inherited from the folded-in specs** (all still open as of 2026-08-02):
 
@@ -167,6 +188,20 @@ intent runs on `claude-design`, an MCP outside the governed tool surface — rec
 - Herald CLI supports `herald progress`, `herald success`, `herald notice`; Herald web surface unifies all three Moments in nav + layout.
 - Evidence linking works bidirectionally across Moment 3 (success) and Moment 4 (operations); no claim or notice exists without ≥1 evidence link.
 - Automation framework (weekly, on-event, on-manual) executes without errors; all three Moments tested together (integration suite passes).
+
+## Residual dependencies (2026-09-09)
+
+- **Non-goal `:137` ("the Guildhall is Marshal's (`[[factory-console]]`)") is PENDING the Charter
+  amendment and re-words when it lands.** Until then the citation is **known-stale, not a herald
+  decision**: `factory-console`'s Spec is `superseded`, the GitHub-Pages GuildHall console is
+  retired-and-guarded (`retired-console-check`, `scripts/detectors.py:216`), and the three live
+  console surfaces are Atlas's Vizro/BSL fleet board, the Wagtail Lane-1 CMS and eight `django-*`
+  station portals — none of them Marshal's. Guildhall is Charter Lexicon §7, so the ruling is
+  **constitutional, not a station decision**: it is raised as a Charter open question
+  (`docs/governance/spec-pyforge-charter/`, 2026-09-09) and will be decided with the Intelligence
+  Hub's Track/Frame answers (batch § 2.3 C4). **One owner, one question** — Herald does not carry a
+  second copy in its own `open_questions:`; when the amendment lands, the `[[factory-console]]`
+  referent is replaced in the same pass.
 
 ## Open Questions (carried from HER-4..HER-10, `spec-herald-pitch`, informational — not blocking)
 

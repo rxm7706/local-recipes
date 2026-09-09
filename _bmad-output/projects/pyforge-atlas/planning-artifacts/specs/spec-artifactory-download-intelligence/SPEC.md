@@ -1,14 +1,18 @@
 ---
 spec: artifactory-download-intelligence
-status: ready
+status: ready   # UNCHANGED 2026-09-09, deliberately. A `ready -> shipped` flip was RECOMMENDED by
+                # the readiness report (Table A row 3 / finding D-4) but is NOT enumerated in the
+                # 2026-09-09 decision batch § 2.2 Class B — only atlas-B3 (the Excel closure) is
+                # approved for this Spec. The flip waits on an explicit operator enumeration.
 owner-dream: docs/dreams/artifactory-download-intelligence.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/
 sources:
   - ../../../../../../docs/dreams/artifactory-download-intelligence.md
-open_questions:
-  - Excel governance rendering of the joined data — deliberately undecided at Spec time.
-  - Which live Artifactory instance, and when its attended bring-up happens — outside this Spec.
+open_questions: []   # ANSWERED 2026-09-09. Excel governance rendering — DECLINED PERMANENTLY
+                     # (batch § 2.1 row atlas-B3) and now a Non-goal. The live-instance question
+                     # was never a gap: it restates this Spec's own binding Non-goal, so it is
+                     # recorded as a deferred operator event, not an unanswered question.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -89,8 +93,12 @@ because no transport was injected; live bring-up is attended, later, separately)
 - **Not** a web dashboard or any new UI surface.
 - **Not** live-instance bring-up, instance selection, or any network call to a real Artifactory —
   deferred to the attended step this Spec explicitly excludes.
-- **Not** an Excel governance view — a Spec-time non-decision (see Open Questions); if ever
-  wanted it is a rendering of the same joined data, never a second pipeline.
+- **Not** an Excel governance view — **DECLINED PERMANENTLY 2026-09-09** (operator, batch § 2.1
+  row atlas-B3), no longer a Spec-time non-decision. Atlas Stories 23-8 (workbook-free metrics
+  universe) and 23-9 (quartet workbook retirement) are both `done`, and
+  `scripts/tests/test_quartet_no_xlsx_surface.py` asserts zero workbook surface across the quartet
+  actuators — keeping the option open would contradict a passing test. Any future governance
+  rendering is a rendering of the same joined data, never a second pipeline.
 
 ## Success signal
 
@@ -102,9 +110,23 @@ instance is required, named, or contacted anywhere in the verification; construc
 without an injected transport fails loudly. That is this Spec's whole finish line — live wiring
 is the later attended step, not part of this signal.
 
+## Assumptions
+
+- **Status stays `ready` this pass, deliberately.** Stories 15-1/15-2/15-3 are all `done`,
+  `artifactory/aql_adapter.py`'s `_unconfigured_transport` refuses exactly as CAP-1 requires, and
+  the catalog carries `artifactory_downloads_raw` / `_joined` — so a `ready → shipped` flip is
+  well-evidenced and was recommended (readiness Table A row 3 / finding D-4). It is **not applied**:
+  the 2026-09-09 decision batch enumerates only atlas-B3 for this Spec, and a status flip that no
+  approval names is exactly the paper claim the realization gate refuses. The flip waits on an
+  explicit operator enumeration.
+
 ## Open Questions
 
-- **Excel rendering:** deliberately undecided at Spec time. Any future Excel governance view is a
-  rendering of the atlas data this pipeline already produces — a downstream decision, not scope.
-- **Live instance:** which Artifactory deployment this eventually targets, and when its attended
-  bring-up happens — the operator decision defers both outside this Spec entirely.
+**None — both closed 2026-09-09.**
+
+- ~~**Excel rendering:** deliberately undecided at Spec time.~~ — **DECLINED PERMANENTLY**
+  (operator, batch § 2.1 row atlas-B3); see § Non-goals for the decision and its evidence.
+- ~~**Live instance:** which Artifactory deployment this eventually targets, and when its attended
+  bring-up happens.~~ — **NOT A GAP** (readiness Table B row 3 / § C-5): it restates this Spec's
+  own binding Non-goal, "Not live-instance bring-up, instance selection, or any network call to a
+  real Artifactory." Recorded as a deferred operator event, not an unanswered question.

@@ -1,5 +1,7 @@
 ---
 id: SPEC-marshal-status-harness-run-id-poisoning
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/marshal-status-harness-run-id-poisoning.md
 companions: []
 sources:
@@ -63,3 +65,15 @@ run.
 The live 2026-08-15 reproduction case (a spin-time poll timeout on `pyforge-doctor`'s story
 9.1 run) resolves to a correct state on the next status read instead of staying `unknown` for
 the run's entire life.
+
+## Assumptions
+
+- **`status:` ADDED 2026-09-09 — `(absent)` → `shipped`.** The key was missing entirely.
+- CAP-1 is `_discover_harness_run_id_by_filesystem` (`cli/status.py:659`), wired as the third
+  fallback at `:918-921`; CAP-2's honest degradation is held at `:930-940`. Shipped by direct
+  commit `e7039b9ee6`.
+- **Decomposition note, checked before flipping:** like its sibling Spec, no `epics.md` story owns
+  it — but the code is live and covered, so the value is `shipped`, not `ready`.
+- **Not to be confused with the surviving `pyforge-steward` UNKNOWN.** `DW-STATUS-2026-09-08-1`
+  traced that to a different cause — a harness-native run marshal never launched — owned by Story
+  5.11 (FR-196, `backlog`).

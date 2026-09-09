@@ -120,3 +120,17 @@ eligibility provenance)
   operator decision: mock-first injectable — no named instance; AQL adapter + internal/private
   flag join Phase C's identity space through _http.py's auth chain, mock-verified; live wiring
   stays a later attended step.
+
+- **2026-09-09** — Fleet readiness pass (operator batch § 2.1, row atlas-B3). **Excel governance
+  rendering is DECLINED permanently** and recorded as a Non-goal; the Spec's first open question
+  closes. It was already a Non-goal in the Spec's own text, this Dream's own feature audit called
+  Excel "Reconsidered", and the station has since shipped Stories 23-8 (workbook-free metrics
+  universe) and 23-9 (quartet workbook retirement) with
+  `scripts/tests/test_quartet_no_xlsx_surface.py` asserting zero workbook surface — keeping the
+  question open would have contradicted a passing test. The second question ("which live
+  Artifactory instance, and when") is not a gap at all: it restates the Spec's own binding
+  Non-goal, so it is recorded as a deferred operator event. With both retired, the Spec is
+  recommended `ready` → **`shipped`**: Stories 15-1/15-2/15-3 are `done`,
+  `artifactory/aql_adapter.py`'s `_unconfigured_transport` refuses exactly as CAP-1 requires, and
+  the Spec's own success signal is explicitly the mock-verified run — which is met. This Dream
+  stays `specified`; the live bring-up remains outside the Spec.

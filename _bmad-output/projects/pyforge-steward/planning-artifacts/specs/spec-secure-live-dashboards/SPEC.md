@@ -1,8 +1,16 @@
 ---
 spec: secure-live-dashboards
 status: ready
+updated: "2026-09-09"
+surface: []          # SUPERSEDED 2026-09-09 — see § Built, not adopted. The 2026-08-09 note below
+                     # ("frontier — no implementation exists") was true then and is false now:
+                     # Epic 9 is 7/7 `done` and nine modules ship under `pyforge/steward/dashboard/`.
+                     # Original note, kept for the record: frontier — no implementation exists
+                     # (verified 2026-08-09: zero hits for dashboard_audit_trail, ROLE_HEADER,
+                     # USER_ID_HEADER, allowed_roles, SECURITY_WEBHOOK_URL, ENCRYPT_EXPORT_FILE
+                     # outside docs/dreams+docs/intake; the Flask-Caching hits are conda recipes
+                     # and warden fixtures, not code)
 owner-dream: docs/dreams/secure-live-dashboards.md
-surface: []          # frontier — no implementation exists (verified 2026-08-09: zero hits for dashboard_audit_trail, ROLE_HEADER, USER_ID_HEADER, allowed_roles, SECURITY_WEBHOOK_URL, ENCRYPT_EXPORT_FILE outside docs/dreams+docs/intake; the Flask-Caching hits are conda recipes and warden fixtures, not code)
 companions:
   # The architecture that answers every open question this Spec was holding.
   # Load-bearing: its AD-1..sld:AD-14 are the build contract any decomposition binds to.
@@ -178,3 +186,31 @@ A second dashboard — one that did not exist when the pattern was written — r
 behind the corporate proxy by declaring its access column and its role vocabulary, and passes
 the same isolation suite unchanged. No audit schema, container stack, or filtering pipeline is
 written for it.
+
+## Built, not adopted — graded 2026-09-09 against live code
+
+Epic 9 is 7/7 `done` and nine modules ship under `pyforge/steward/dashboard/`. **Only `cache`,
+`filtering` and `declarations` have any consumer outside the package** — all three in
+`django-atlas/src/django_atlas_portal/board.py:17-20`, over a **5-row in-process fixture**
+(`board.py:28-36`). `middleware`, `audit`, `views`, `navigation`, `models` and `export` have
+**zero consumers**. `pyforge.steward.dashboard` appears in no `INSTALLED_APPS`
+(`src/platform/config/settings/base.py` has zero `dashboard` matches), so `AuditEntry`
+(`models.py:43`, `migrations/0001_initial.py`) has **no table in any running deployment** and Story
+9.3's "every load, filter, navigation and export lands in an audit trail" is unexercised.
+
+**Accuracy correction owed downstream:** `convergence.md:38` and `:129` say Atlas "never adopted"
+this Spec. Strictly it did — **at fixture grade** (`django-atlas/board.py:17-20`); Atlas's real
+Vizro board (`pyforge/atlas/dashboard/app.py`) imports **zero** steward dashboard modules. "Never
+adopted" understates what exists and would send an implementer to build a seam that is already
+there.
+
+## The Django half gets an adopter — 2026-09-09
+
+**Decision (operator, batch rows stB-B6 / C15), scoped to what Epic 49 already funds — Story
+49.4.** One decision, not two:
+
+- **If 49.4 mounts Atlas's real Vizro board on the host**, it must install
+  `pyforge.steward.dashboard` in `INSTALLED_APPS` and route the board's loads through `audit` +
+  `export`.
+- **If 49.4 instead rewrites CAP-7's criterion to name the fixture**, this Spec's Django half is
+  rewritten as deferred in the same act.

@@ -104,3 +104,13 @@ instance of that Dream's own problem statement).
   12-3 the vscode-kedro verdict) shipped its decomposition and the Spec moved
   `draft → shipped` in the Phase 2 landing; the surviving open questions ride the
   Phase 3 atlas chain.
+
+- **2026-09-09** — Fleet readiness pass. `realized` (Dream) and `shipped` (Spec) both **hold** —
+  all three dispositions were re-verified as artifacts on disk: `kedro-skills-audit-report.md`
+  (Cap 1), `.github/workflows/kedro-viz-publish.yml` (Cap 2), and `.vscode/extensions.json`
+  alongside `vscode-kedro-decision.md` (Cap 3). One serialization defect recorded for the Spec's
+  next re-derivation (readiness finding D-6): the four entries under the Spec's
+  `open_questions:` key are all declared RESOLVED by the YAML comment directly above them, so any
+  tool reading the machine key sees four open questions on a `shipped` Spec. They move verbatim
+  under `resolved_questions:`, leaving `open_questions: []`. No content change — the resolutions
+  were real.

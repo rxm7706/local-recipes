@@ -2,7 +2,7 @@
 title: A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another
@@ -159,3 +159,17 @@ a field that turned out to lie" bug, found the same day) ·
   this repo's Dream-first policy for any `pyforge-marshal` code change;
   captured as its own Dream once the user asked directly to fix it
   properly rather than work around it.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`,
+  fixture-pinned.** Fixed by direct commit `d7fd62707b` ("marshal: scope the GitHub PR-merge
+  story-key pattern to project_slug") and subsequently absorbed into Story 20.8's shared grammar,
+  where the scoping now lives as `_branch_belongs_to_project`
+  (`pyforge-core/.../landing_evidence.py:161`, applied at `:227`). CAP-1's regression is pinned on
+  the real PR #274 subject against BOTH slugs (`pyforge-core/tests/unit/test_landing_evidence.py:72`;
+  `pyforge-marshal/tests/unit/test_promotion.py:42-95`). The Spec, which carried **no `status:` line
+  at all**, is set to `shipped`.
+  **Chain note, recorded rather than hidden:** no `epics.md` story ever owned this fix — it landed
+  outside the story ledger and was back-filled by 20.8, which is why doctor's chain-completeness
+  reports 2/2 CAPs uncovered. This Dream's own text says it was "NOT hotfixed per this repo's
+  Dream-first policy"; it was, later. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

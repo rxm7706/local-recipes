@@ -2,7 +2,11 @@
 title: A promotion gate that has never seen what it ships
 type: dream
 owner: warden
-status: specified
+status: specified   # 2026-09-09 — valid under README §status: the readiness pass found
+                    # this at `specified` over a `draft` Spec (a README:71 violation) and
+                    # proposed reverting it to `dreamt`; the operator instead answered all
+                    # five open questions, so spec-golden-path-conda-blind-spot is `ready`
+                    # and `specified` is now earned rather than assumed.
 ---
 
 # A promotion gate that has never seen what it ships
@@ -143,3 +147,21 @@ check against, and its one consumer never asked what it said.
   not `clean` since `1016f4e763` (2026-09-04, after this Dream's measurement),
   so the third gap is closed and the gate is fail-closed today — nothing
   promotes until the verdict is real. Preserved in the Spec as CAP-5.
+- **2026-09-09** — Fleet readiness pass, re-verified against live code rather than the
+  Spec's own summary; all five open questions then answered by the operator
+  (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.3 C9), so the Spec moved `draft` → `ready` and this Dream's `specified` became
+  earned. **Still open, re-confirmed unbuilt:** CAP-1 — `PixiLockExtractor` reads the flat
+  top-level `packages:` list with no selection at all (`extract/lockfiles.py:180-206`);
+  CAP-2 — the script still stages a bare `pixi.toml` in a scratch dir; CAP-3 —
+  `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` appears in warden package code and tests only, with
+  zero hits in any workflow. **CAP-5's behaviour re-confirmed true** (`scripts/platform-deploy-verify-promotion.py:31`)
+  **but its guard is absent:** no test anywhere references that script — only the two
+  workflows and `scripts/platform-ci-local.sh` — so the estate's only fail-closed deploy
+  gate is three unprotected lines. That guard is minted first, as warden Story 12.1, ahead
+  of the four CAPs it protects; CAP-1..5 follow as Stories 12.2–12.6.
+  The answers, one line each: both `--pixi-environment` / `--pixi-platform` flags, explicit
+  in CI, host default only interactively · osv-native `--download-offline-databases` on the
+  connected runner, `actions/cache` keyed by the snapshot date · no coverage floor, `clean`
+  alone gates · `clean` only, never promote on `warn`, waiver or not · the unscoped union
+  stays the default with a structured WARNING, never an error.

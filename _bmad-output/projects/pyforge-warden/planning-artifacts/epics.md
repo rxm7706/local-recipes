@@ -14,8 +14,8 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-09-06'   # 2026-09-06 spec-bmad-suite-lifecycle relay epic added (see currency_review)
-currency_review: "Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
+updated: '2026-09-09'   # 2026-09-09 Epic 12 added — spec-golden-path-conda-blind-spot CAP-1..5 + the CAP-5 regression guard (see currency_review)
+currency_review: "Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -760,6 +760,73 @@ invariant, test-enforced by 9.3); steward 46.2 / 46.3 install the tools first.
 **Type:** feature • **Effort:** S • **Deps:** — (after steward 46.3 — cross-station: ledger `blocked` + refuse when the suite:AD-9 roster lacks `tea`, suite:AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-4 • suite:AD-4
 **Surface:** warden hook book (`pyforge.core.hooks` plugin bundle: one advisory scanner wrapping the `tea-test-review` pixi task), `tests/`, `--doctor` output
 **Given** the pixi task from steward 46.3 **When** the advisory scanner runs it against the PR diff **Then** the score and findings appear under `--doctor` / the advisory section, the exit code is unchanged whatever the *score*, a fixture PR below `--min-score` still composes the same rung, and the scanner is fail-open ONLY when the suite:AD-9 roster carries `tea` but its binary is merely unreachable on this process's PATH; when the suite:AD-9 roster lacks a `tea` entry entirely (`steward provision --module tea` never ran here) the scanner refuses per suite:AD-10 — `run_tea_test_review` raises `TeaRosterMissingError`, and `cli.py` records it as a `config-validation` error (a real ERROR rung, exit code moved) rather than a silent pass. Resolved 2026-09-07, DW-FU-11-2 — see `tea_advisory.py`'s module docstring for the full rationale.
+
+## Epic 12: A promotion gate that has seen what it ships
+
+**Spec binding.** Decomposes `spec-golden-path-conda-blind-spot` CAP-1..5 (Dream
+`docs/dreams/golden-path-conda-blind-spot.md`; Spec flipped `draft` → `ready` 2026-09-09
+when the operator answered all five open questions — fleet readiness decision batch
+`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+§ 2.3 C9). **The five answers are baked into the ACs below; they are not story-time
+decisions any more.** Reuse the two already-accepted designs — `spec-2-1`'s
+verified-confidence conda→pypi map and the Story 1.4 OSV-DB decision record
+(`planning-artifacts/osv-db-offline-provisioning-decision.md`) — and do not re-derive
+matching or staleness semantics. **HARD boundary, unchanged:** Warden's verdict stays the
+sole PR/promotion verdict; nothing here mints a second one, and the deploy verifier's
+clean-only gate is never relaxed to make deploy pass.
+
+**Story 12.1 is minted first, ahead of the CAPs it protects.** CAP-5's behaviour is already
+true on `main` (`scripts/platform-deploy-verify-promotion.py:31`, shipped 2026-09-04 in
+`1016f4e763`) but has **no regression guard**: no test file anywhere references that script
+— only `.github/workflows/platform-ci.yml`, `.github/workflows/platform-deploy.yml` and
+`scripts/platform-ci-local.sh`. It is currently the only thing making the deploy pipeline
+fail-closed, and it is three unprotected lines.
+
+### Story 12.1: Regression test — the promotion verifier's clean-only refusal cannot be removed silently
+**Type:** test • **Effort:** S • **Deps:** — • **FR/AD:** spec-golden-path-conda-blind-spot CAP-5 (guard half) • readiness batch warden-B6 / D-1
+**Surface:** a new test exercising `scripts/platform-deploy-verify-promotion.py` + the lane that runs it. **One decision the story owns:** which suite hosts it — `src/platform/tests/` (the script's own neighbourhood, already run by `platform-ci.yml`, a steward-owned path that needs the `maintenance` label) or `src/shared/packages/pyforge-warden/tests/integration/` (warden-owned, but the script is not warden's file). Pick one, state why, do not create a third lane.
+**Given** the verifier as it stands on `main` **When** the test suite runs **Then** a promotion record whose `warden_status` is `indeterminate`, `warn`, `fail`, or absent is REFUSED with a non-zero exit, a record whose status is `clean` is ACCEPTED, and the refusal message names the driver finding id
+**And** the test fails if the `!= 'clean'` comparison is deleted, weakened to a truthiness check, or turned into a warning — proven by exercising the verifier itself, not by asserting on its source text
+**And** the test runs in a lane that already gates PRs (a test nothing schedules is the DW-5-2-5 shape, not a guard)
+**And** no second promotion verdict is introduced anywhere: the test asserts the existing gate, it does not compute one
+
+### Story 12.2: Environment-scoped lockfile extraction
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-golden-path-conda-blind-spot CAP-1
+**Surface:** `src/shared/packages/pyforge-warden/src/pyforge/warden/extract/lockfiles.py` (`PixiLockExtractor`), `cli.py` flag surface, warden tests
+**Given** a multi-environment `pixi.lock` **When** the extractor is constructed with `environment: str | None` and `platform: str | None` and driven by the two CLI flags `--pixi-environment` / `--pixi-platform` **Then** scanning this repo's root `pixi.lock` scoped to `python-agent-platform` / `linux-64` yields the same set as that environment's `packages.linux-64` list in the lock — count, names and versions — with no other environment's exclusive packages
+**And** `None` / `None` keeps today's union behaviour exactly (the answered question: the unscoped union STAYS the default for other callers; it is never an error), and emits a structured WARNING naming the environment count when the lock resolves more than one
+**And** the platform defaults to the host ONLY for interactive use — CI passes both flags explicitly, because a host default would silently produce a different closure on an arm64 runner
+**And** this is not a general multi-environment selector for every future caller (Spec Non-goal): one named environment, one platform
+
+### Story 12.3: The promotion scans the shipped closure
+**Type:** feature • **Effort:** M • **Deps:** S-12.2 • **FR/AD:** spec-golden-path-conda-blind-spot CAP-2
+**Surface:** `scripts/platform-golden-path-promotion.sh`, the `golden-path-promotion` job in `.github/workflows/platform-ci.yml`
+**Given** Story 12.2's selector **When** `golden-path-promotion` runs **Then** it scans the resolved `python-agent-platform` environment out of the root `pixi.lock` — the thing actually built into the image — and the scratch-dir staging of a bare `pixi.toml` is GONE, not merely bypassed
+**And** the promotion record's components equal the CAP-1 set, and every component carries a locked version (no `NO_VERSION` arising from an unresolved manifest)
+**And** the script's own comment explaining why it scanned a bare manifest is removed with the workaround it described
+
+### Story 12.4: The offline OSV database is provisioned in CI
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-golden-path-conda-blind-spot CAP-3
+**Surface:** the `golden-path-promotion` job in `.github/workflows/platform-ci.yml`; no warden package change is expected
+**Given** the Story 1.4 decision record's §1 order **When** the promotion job runs **Then** provisioning is the osv-native `--download-offline-databases` route on the connected runner (the answered question — the conda-packaged-DB alternative does not exist yet and would be Mason work, not warden work), the DB is cached with `actions/cache` **keyed by the snapshot date**, and the daily key roll owns the refresh cadence — no human refresh owner
+**And** `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` points at a populated `<cache>/osv-scanner/PyPI/all.zip` with a recorded `snapshot_at`, and the record's vulnerability axis reports assessed > 0
+**And** a DB older than `db-max-age` (7 days, strict) or one without provenance routes the verdict to `indeterminate`, never `clean` — the Story 1.4 staleness semantics are reused, never re-derived
+**And** provisioning stays an explicit, non-default CI step (NFR-S2): the scan itself never egresses silently
+
+### Story 12.5: The verdict is honest and specific
+**Type:** feature • **Effort:** M • **Deps:** S-12.3, S-12.4 • **FR/AD:** spec-golden-path-conda-blind-spot CAP-4
+**Surface:** the promotion record's assembly path; warden report/coverage surfaces already frozen by Epic 6's 6.1 amendment
+**Given** a scanned, provisioned promotion run **When** the verdict is composed **Then** `warden_status` is `clean` ONLY when the shipped closure's conda+pypi identity is scanned end to end, and anything short of that is `indeterminate` / `warn` naming the unassessed components and the reason (`UNMAPPED_ECOSYSTEM`, stale DB, missing DB) — never a permanent architectural `indeterminate`
+**And** a deliberately pinned vulnerable version in that environment flips the record to a failing rung that names the finding
+**And** there is **no coverage floor**: `--fail-under-coverage` is not added and `clean` alone is the gate — the Spec's first Constraint already forbids dropping an unresolvable component from the denominator, so a floor would be a second expression of the same rule and a second number to tune
+**And** no component whose identity cannot be resolved is dropped to improve the percentage (the standing C0 guardrail)
+
+### Story 12.6: Deploy gates on the verdict — preserve the clean-only promotion gate
+**Type:** feature • **Effort:** S • **Deps:** S-12.1 • **FR/AD:** spec-golden-path-conda-blind-spot CAP-5
+**Surface:** `scripts/platform-deploy-verify-promotion.py` (preserve, do not relax), `.github/workflows/platform-deploy.yml`
+**Given** Story 12.1's guard in place **When** a digest is proposed for promotion **Then** the verifier refuses `indeterminate` / `warn` / `fail` and a missing record, accepts `clean`, and names the driver finding id — unchanged from `main`
+**And** `clean` is the ONLY promotable rung: a `warn` verdict is never promotable, waiver or not (the answered question). Waivers still work — they compose UPSTREAM, inside warden, turning a waived finding's contribution into `clean` — but they are never a second, deploy-side override, because exactly one consumer decides promotion
+**And** the two halves land together: the real verdict lands UNDER the gate, and the gate is never relaxed to make deploy pass
 
 ## Currency validation — 2026-08-26
 

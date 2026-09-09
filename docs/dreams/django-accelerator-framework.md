@@ -2,8 +2,17 @@
 title: A Django-service scaffolding engine, if this repo ever births new Django-based stations
 type: dream
 owner: mason
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Absorbed 2026-09-09** into
+> [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) § *Lane 2* —
+> the accelerator contract (CAP-1) travels with the exemplar it must never drift
+> from, and CAP-2's counting trigger is retired rather than scoped. Spec:
+> `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/`
+> (`status: absorbed`, `absorbed-into: spec-pyforge-unifying-strategy`).
+> Do not run `bmad-spec` against this file.
 
 # A Django-service scaffolding engine, if this repo ever births new Django-based stations
 
@@ -97,3 +106,26 @@ precedent from, not the source's own FreeMarker sample app) · [[pixi-container-
   versions the template may pin.
 - **2026-08-14** — **Subject project NAMED: [[python-agent-platform]]** (operator). The family's last precondition is met — the subject Dream and its family Spec (spec-python-agent-platform, pyforge-steward) consolidate all four same-day operator decisions plus the spike evidence; this dream's remaining role is the decision trail and its named pattern contracts.
 - **2026-08-14** — Spec authored (spec-django-accelerator-framework, pyforge-mason) closing the "spec'd with the family" obligation: CAP-1 = the accelerator contract (first realization: python-agent-platform's src/platform render, Story 10.1; second reference: steward's dashboard); CAP-2 = the templating engine, explicitly parked on the dream's own third-surface trigger.
+- **2026-09-09** — **Archived, absorbed** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.3 **C3**). CAP-2's third-surface trigger is **retired**, not scoped: the estate reached
+  **nine** Django faces and never repeated the hand-copy the trigger watched for. Instead of a
+  FreeMarker-style stamping engine it factored a declarative base class —
+  `django_pyforge.portals.PortalConfig` (`src/shared/packages/django-pyforge/`), subclassed by
+  eight station portals with ~10 declarative fields each
+  (`src/shared/packages/django-mason/src/django_mason_portal/apps.py:6-21`) and mounted into the
+  **one** project at `src/platform/config/settings/base.py:27-41,165-183`. The surface count never
+  passed two (`find src -name manage.py` → `src/platform/manage.py` only); steward's dashboard is a
+  Django *app* on its own daphne/nginx perimeter, not a second render. Counting surfaces —
+  repo-wide or estate-wide — measured the wrong thing. CAP-1's accelerator contract moves to
+  **`spec-pyforge-unifying-strategy`**'s Lane-2 section, where the living exemplar it must not
+  drift from actually lives (not `spec-python-agent-platform`, which steward Story 48.8
+  supersedes); CAP-1's evidence was in any case already stale in the mason copy (`SPEC.md:35`
+  cites `config/urls.py:26 include("health_check.urls")`, while the live route is
+  `src/platform/config/urls.py:98` via an explicit `HealthCheckView`, with `:50-55` recording the
+  `include(...)` form as **deprecated**). This Dream's residual value is its decision trail. The
+  Unifying Dream's "Lane 2 portal scaffolding" Kinship (`pyforge-unifying-strategy.md:669`) is
+  satisfied by the shipped portals. The Spec's `src/platform/**` surface glob is dropped —
+  it dual-governed `src/platform/deploy/DR.md` with a steward spec (an INV-2 smell
+  `spec-surface-check` reported under both). Mason never had an epic or a story for this Dream;
+  the Dream's own Kinships called mason *"nominal … genuinely unclaimed."*

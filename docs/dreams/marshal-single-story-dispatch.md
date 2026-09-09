@@ -2,7 +2,7 @@
 title: Single-story dispatch is a marshal verb, not a session's discipline
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # Single-story dispatch is a marshal verb, not a session's discipline
@@ -208,3 +208,22 @@ Lands as CAP-11 in `spec-marshal-single-story-dispatch`, Epic 29.
 - **2026-08-31** — Addendum: station-scoped and sequence-scoped dispatch.
 - **2026-09-02** — Addendum: a `done` spec must not review-loop — contracted as CAP-11 in the Spec
   (`1763820bee`), Epic 29. Spec status `in-progress`.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`,
+  verified in effect at fleet scale.** CAP-1..11 decompose to Epic 22 (22.1–22.11) and Epic 29
+  (29.1–29.2), all `done`; the drain campaigns and `fleet-drain-playbook.md` are the live exercise.
+  Spec `in-progress` → `shipped` with `open_questions: []`. All five questions closed:
+  **OQ-1** verb = `marshal factory dispatch`, no `marshal dev` family — now a cross-package constant
+  (`pyforge-core/.../landing_evidence.py:50`), so renaming would break doctor's grammar; PRD Q-15
+  inherits it. **OQ-2** launch = profile-driven, shipped as Story 22.8 — with a **new Constraint**
+  recorded: a dispatched session is never launched from a fork subagent (`bmad-build-auto`'s
+  mandatory subagents break inside one); the profile mechanism does not enforce it. **OQ-3**
+  (operator) the enforceable budget signal is wall-clock + idle-strand via the dispatch supervisor;
+  token ceilings stay advisory until Epic 33's benchmark exists. **OQ-4** disjointness compares
+  DECLARED surfaces only — and within-station fan-out is impossible until story specs declare their
+  own `surface:`. **OQ-5** completion detection shipped as a *sibling* supervisor
+  (`dispatch_supervisor/__main__.py`), neither a generalized supervisor nor Story 3.4's sidecar.
+  **Consequence carried forward:** two supervisors now write run state, which is exactly why the
+  CAP-17 publishing seam must be one publisher (`spec-marshal-token-economy` CAP-18, Story 33.4).
+  Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

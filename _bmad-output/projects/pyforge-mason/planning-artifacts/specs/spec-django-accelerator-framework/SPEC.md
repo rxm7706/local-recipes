@@ -1,27 +1,58 @@
 ---
 spec: django-accelerator-framework
-status: draft
+status: absorbed
 owner-dream: docs/dreams/django-accelerator-framework.md
+absorbed-into: spec-pyforge-unifying-strategy
 surface:
-  - src/platform/**
-  - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/**
+  # `src/platform/**` and the pyforge-steward dashboard glob were DROPPED 2026-09-09: they
+  # dual-govern `src/platform/deploy/DR.md` with a steward Spec, so `spec-surface-check`
+  # emits the identical drift-presumed finding under both — an INV-2 smell.
   - scripts/emit_wagtailcore_schema_delta.py
+companions: []
 sources:
   - ../../../../../../docs/dreams/django-accelerator-framework.md
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md
-open_questions:
-  - Does CAP-2's third-surface trigger count Django surfaces repo-wide only, or across the estate (sibling repos such as conda-forge-tracker)?
+open_questions: []
+  # CLOSED 2026-09-09: "Does CAP-2's third-surface trigger count Django surfaces repo-wide
+  # only, or across the estate?" — answered by the trigger's RETIREMENT, not by scoping it.
+  # Counting surfaces, repo-wide or estate-wide, measures the wrong thing.
 ---
 
-> **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
-> to build, test, and validate. `docs/dreams/django-accelerator-framework.md` is listed in
-> `sources:` for the decision trail (activation trigger, air-gap entry, feature audit) this
-> contract intentionally compresses; `spec-python-agent-platform` is the family Spec whose
-> CAP-1 host is this contract's first realization.
+# SPEC — The Django accelerator contract (ABSORBED)
 
-# The Django accelerator is a contract today; the engine waits for a third surface
+This is a pointer spec, not a contract. Absorbed by operator ruling on **2026-09-09**
+(fleet-readiness decision batch § 2.3 C3, evidence row mason-B6).
 
-## Why
+**Why it was absorbed.** CAP-2's counting trigger is **retired, not scoped**: it watched for a
+third or fourth Django surface repeating the copy by hand, and that premise was falsified. The
+estate reached **nine** Django faces and did not repeat the copy — it factored a declarative
+base class instead. `src/shared/packages/django-pyforge` provides
+`django_pyforge.portals.PortalConfig`; eight station portals subclass it with roughly ten
+declarative fields each (`django-mason/src/django_mason_portal/apps.py:6-21`) and mount into the
+ONE project via `src/platform/config/settings/base.py:27-41` and `:165-183`. The surface count
+never moved past two — `find src -name manage.py` returns exactly `src/platform/manage.py`.
+
+**Where the live content goes.** CAP-1's accelerator contract travels with the exemplar, and the
+exemplar lives under steward's chain, not mason's. Target: **`spec-pyforge-unifying-strategy`,
+its Lane-2 section** — deliberately NOT `spec-python-agent-platform`, because steward Story 48.8
+supersedes that Spec.
+
+**Why mason was never the right home.** Mason has no epic and no story for this Dream and never
+did; the Dream's own Kinships call mason nominal and "genuinely unclaimed". Absorbing also
+resolves mason's only `docs/dreams/README.md:71` vocabulary violation — a Dream at `specified`
+over a `draft` Spec.
+
+
+### The record, as it stood at absorption
+
+*Everything below is the contract as written before 2026-09-09, preserved verbatim so the
+absorb loses nothing. It is a record, not a live contract — CAP-1 travels to the Unifying
+Spec's Lane-2 section, CAP-2 is retired. CAP-1's own evidence is already stale here:
+`SPEC.md` cited `config/urls.py:26` `include(health_check.urls)`; the live route is
+`src/platform/config/urls.py:98` via an explicit `HealthCheckView`, with `:50-55` recording
+`include(health_check.urls)` as the DEPRECATED path they moved off.*
+
+#### Why (as written)
 
 The dream was captured thin on 2026-08-14 — one hand-built Django surface (Steward's dashboard),
 no recurring scaffolding pain, an explicit constraint against building anything until a second
@@ -39,7 +70,7 @@ seam owning `/api/`, `config/celery_app.py`. So the honest question this spec an
 from?" This spec closes the "spec'd with the family" obligation: CAP-1 names the contract (real
 now); CAP-2 parks the engine on the dream's own trigger.
 
-## Capabilities
+#### Capabilities (as written)
 
 - **CAP-1 — The accelerator contract (REAL now).**
   - **intent:** A named, documented shape — *the accelerator contract* — that any PyForge Django
@@ -68,7 +99,7 @@ now); CAP-2 parks the engine on the dream's own trigger.
     trigger fires, the engine work starts from the then-live conforming surfaces, and this spec
     is updated first.
 
-## Constraints
+#### Constraints (as written)
 
 - **Always — air-gap parity per the dream's 2026-08-14 air-gap entry:** Artifactory coordinates
   are first-class render-time substitutions across `pyproject.toml`, `pixi.toml`, Helm charts,
@@ -85,7 +116,7 @@ now); CAP-2 parks the engine on the dream's own trigger.
 - **Always — CAP-2 stays parked until its trigger:** building the engine before a third surface
   repeats the copy is a violation of this spec, not initiative.
 
-## Non-goals
+#### Non-goals (as written)
 
 - **Not** an engine build now — CAP-2 is parked on the dream's own third-surface trigger.
 - **Not** an import of the WF source's FreeMarker templates, Jenkins wiring, or three-repo
@@ -94,17 +125,10 @@ now); CAP-2 parks the engine on the dream's own trigger.
 - **Not** a new station — this is a mason planning artifact naming a shape two existing surfaces
   already carry; the platform's own build contract stays with `spec-python-agent-platform`.
 
-## Success signal
+#### Success signal (as written)
 
 The accelerator contract is documented (this spec); `src/platform/` and Steward's dashboard each
 verifiably conform to their applicable clauses or carry dated deviations; CAP-2 remains parked
 with its extraction-not-import rule and third-surface trigger recorded; and the owner dream reads
 `status: specified` with a Realization-log entry closing the "spec'd with (not after) the family"
 obligation.
-
-## Open Questions
-
-- **Trigger scope for CAP-2:** does the third/fourth-surface count include only Django surfaces
-  in this repo, or Django surfaces across the estate (sibling repos)? Estate-wide counting fires
-  the engine sooner; repo-wide keeps it strictly local evidence. Undecided — the answer changes
-  when, not whether, CAP-2 activates.

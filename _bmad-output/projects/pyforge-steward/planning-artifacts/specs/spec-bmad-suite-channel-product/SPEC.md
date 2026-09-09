@@ -11,12 +11,22 @@ assumptions:
   - "The 2026-09-05 state is the baseline (supersedes 2026-08-22): 6 tag-pinned
     recipes at newest tag, 7 commit-pinned at literal HEAD; TEA 1.24.0 released
     (the v1.23.3 watch closed); bmad-method 6.12.0 on conda-forge and the
-    channel while the applied `_bmad/` core is 6.11.0 pending steward Epic 14."
-open_questions:
-  - "CAP-2 scheduling: manual-on-drift-signal only, or a Phase-K-style
-    scheduled sweep? Story 15.2 did not decide it; the 2026-09-05 refresh was
-    triggered by doctor's ambient drift plus the operator, not a schedule —
-    manual-on-signal stays the default until a schedule earns its keep."
+    channel while the applied `_bmad/` core is 6.11.0 pending steward Epic 14.
+    REFRESHED on two live facts 2026-09-09: the applied `_bmad/` core is now
+    **6.12.0 as well** (`_bmad/_config/manifest.yaml`, applied 2026-09-06 via
+    `steward upgrade bmad-core`, commit `4fa185be56`) — not 'pending Epic 14';
+    and **TEA has moved to 1.25.0** (`pixi.toml:1613`,
+    `recipes/bmad-method-test-architecture-enterprise/recipe.yaml:6`),
+    superseding the 1.24.0 figure."
+updated: "2026-09-09"
+open_questions: []
+  # ANSWERED 2026-09-09 (batch row stA-B2): CAP-2 scheduling is DECIDED, not open —
+  # **manual-on-signal stays the default**. The signal-producer shipped: doctor Story 20.1 is
+  # `done` and the watched set is now roster-derived rather than a 7-of-13 hardcode
+  # (`pyforge/doctor/sources/bmad_method.py:411-449`), which also closes this Spec's
+  # "doctor maps 7 of 13" relay. Two governed refreshes have already run on the manual path
+  # (PRs #1059/#1060, then 2026.9.9). A schedule would add a cron surface the cutover must move,
+  # for no observed miss.
 ---
 
 # SPEC — The SelfExplainML bmad-suite is a governed product

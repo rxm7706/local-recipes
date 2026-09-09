@@ -1,6 +1,7 @@
 ---
 spec: landing-evidence-grammar
-status: ready
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/landing-evidence-grammar.md
 surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
@@ -9,9 +10,10 @@ surface:
   - src/shared/packages/pyforge-core/
 sources:
   - ../../../../../../docs/dreams/landing-evidence-grammar.md
-open_questions:
-  - "Grammar home (a story-level design decision): a contract with a cross-package conformance test, a shared data artifact both packages read, or a pyforge-core module (the Story 14.2 atomic-write shared-spine precedent) — constrained by the HARD rule that doctor never imports pyforge.marshal."
-  - "Pre-convention history: whether the grammar recognizes the existing recovery landings exactly as they were written, or a one-time, reviewed allowlist covers the pre-convention era — never a rewrite of history either way."
+open_questions: []
+  # ANSWERED 2026-09-09, both retired -- RESOLVED BY STORY 20.8, propagated now
+  # (fleet-readiness batch Class B, row mars-B). Full text with answers in
+  # § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -125,12 +127,34 @@ patches and `marshal retire` proposes real retirements (CAP-3); and the next man
 follows a documented, grammar-conformant convention, so it is recognized by every consumer on the
 day it lands (CAP-1). Absence-of-match stays hedged everywhere it is hedged today.
 
-## Open Questions
+**Measured 2026-09-09.** `pyforge.doctor.sources.marshal::gather_story_status` over the live
+tree reports: *no `done` story contradicts its landing evidence — **898 audited, 708 with no run
+record (unchecked)***. The green is real over the **190** stories that carry a run record; it is
+not a fleet-wide claim, and the success signal says so rather than reading as one. The hedge is
+correct by design (the Dream's own Constraints: absence of evidence stays hedged where it is
+hedged today), so **no coverage story is minted** — one is worth it only if run records become
+recoverable for pre-dispatch-era stories, which this Spec's Non-goals forbid rewriting history to
+achieve.
 
-- "Grammar home (a story-level design decision): a contract with a cross-package conformance
+## Open questions — closed 2026-09-09
+
+Both resolved by **Story 20.8** and propagated to the frontmatter on 2026-09-09. Question text
+preserved; the answer follows each.
+
+- ~~"Grammar home (a story-level design decision): a contract with a cross-package conformance
   test, a shared data artifact both packages read, or a `pyforge-core` module (the Story 14.2
   atomic-write shared-spine precedent) — constrained by the HARD rule that doctor never imports
-  `pyforge.marshal`."
-- "Pre-convention history: whether the grammar recognizes the existing recovery landings exactly
-  as they were written, or a one-time, reviewed allowlist covers the pre-convention era — never a
-  rewrite of history either way."
+  `pyforge.marshal`."~~ **CLOSED: a `pyforge-core` module.** The grammar lives in the shared
+  spine as `pyforge-core` `landing_evidence.py` — no station import, the Story 14.2 precedent —
+  and is consumed by `pyforge/doctor/sources/marshal.py:53` and
+  `pyforge/marshal/core/promotion.py:58`. The HARD constraint holds by construction.
+- ~~"Pre-convention history: whether the grammar recognizes the existing recovery landings
+  exactly as they were written, or a one-time, reviewed allowlist covers the pre-convention era —
+  never a rewrite of history either way."~~ **CLOSED: a SHA-prefix allowlist**
+  (`parse_recovery_commit_sha` at `landing_evidence.py:315`) — never a rewrite. The three standing
+  false positives are fixture-pinned at `landing_evidence.py:441` / `:450` / `:461`, with no
+  per-story whitelist.
+
+## Decomposition
+
+CAP-1..CAP-4 decompose to Stories 20.8–20.11, all `done`.

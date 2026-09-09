@@ -11,8 +11,8 @@
 # Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
-# project: steward
-# stories: 284
+# project: pyforge-steward
+# stories: 313
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -181,6 +181,30 @@ development_status:
   47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: done
   47-4-the-foundry-stack-carries-a-bmad-floor-row: done
   47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: done
+  48-1-the-ledger-syncer-guards-blocked-and-missing-keys: backlog
+  48-10-the-one-container-guild-proves-itself-at-build-time-ci-builds-the-root-containerfile: backlog
+  48-11-the-platform-image-can-import-the-warden-engine-it-calls: backlog
+  48-2-r-18-sizing-rewrite: backlog
+  48-3-r-19-network-baseline: backlog
+  48-4-r-20-secrets-profile: backlog
+  48-5-r-21-observability-contract: backlog
+  48-6-r-22-live-browser-streaming-or-the-pillar-deleted: backlog
+  48-7-the-cap-axis-namespace-pass: backlog
+  48-8-the-single-spec-merge: backlog
+  48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: backlog
+  49-1-the-verified-column-on-every-capability: backlog
+  49-10-index-atlas-realization-gate-effect-stories: blocked
+  49-11-index-herald-realization-gate-effect-stories: blocked
+  49-12-index-mason-realization-gate-effect-stories: blocked
+  49-13-index-scribe-realization-gate-effect-stories: blocked
+  49-2-the-capability-effect-check: blocked
+  49-3-cap-4-in-effect-start-and-get-on-all-eight-with-a-real-disconnect: backlog
+  49-4-cap-7-in-effect-the-real-board-or-the-criterion-says-fixture: backlog
+  49-5-cap-11-in-effect-the-eviction-test: backlog
+  49-6-cap-12-in-effect-revocation-on-the-next-request: backlog
+  49-7-cap-14-in-effect-real-semantic-recall-or-the-criterion-says-lexical: backlog
+  49-8-cap-17-in-effect-marshal-publishes-run-state-to-the-supervisor: blocked
+  49-9-index-marshal-realization-gate-effect-stories: blocked
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
@@ -289,6 +313,10 @@ development_status:
   epic-46-retrospective: optional
   epic-47: backlog
   epic-47-retrospective: optional
+  epic-48: backlog
+  epic-48-retrospective: optional
+  epic-49: backlog
+  epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done

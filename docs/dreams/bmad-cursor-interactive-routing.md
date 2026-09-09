@@ -2,7 +2,7 @@
 title: BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
@@ -118,3 +118,23 @@ solved and live, and that the interactive-chat shape is a distinct, unverified s
   empirical question — whether Cursor's interactive IDE chat surface (not the headless CLI) can
   spawn a context-free subagent, which `bmad-build-auto`'s review step mandates. Next: run the live
   subagent probe from inside Cursor's chat before building any `.mdc` routing.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`dreamt` → `specified`.** All
+  four of the Spec's open questions were answered by the operator, which is the condition
+  `spec-bmad-cursor-interactive-routing`'s `draft` status recorded ("nothing chosen yet: CAP-1 gates
+  every other CAP"); the Spec moves `draft` → `ready`. The chosen shape:
+  **OQ-1** — run the live subagent probe, and **plan for a NO**: the headless profile that works is
+  `cursor-agent -p --trust --force` (a one-shot where the agent owns the whole turn), while Cursor's
+  interactive chat is a human-in-the-loop editor session whose parallel-agent features are
+  session-level fan-out of the *same* prompt. Budget one session; treat CAP-3 as the likely branch.
+  **OQ-2** — on a failed probe take **CAP-3b** (allowlist skills that mandate no subagent) now, and
+  name CAP-3a a follow-on; a shelled-out `cursor-agent -p` "subagent" is the same class of substitute
+  reviewer this estate was burned by twice.
+  **OQ-3** — `.mdc` generation is a **maintained pixi task plus a drift detector**, never a one-time
+  script (a one-time run *becomes* the hand-maintained fork this Dream's Constraint forbids).
+  **OQ-4** — assume **no inline-import analog** to Claude Code's `@path`; carry team memory by
+  `alwaysApply` rule content plus explicit `@file` attachment, and verify it in the same probe
+  session. The Spec stays registered in doctor's `DEFERRED_SPECS` (a `ready` Spec *is* in
+  `OPEN_SPEC_STATUSES`, so the exemption is live) until the probe runs and decomposition begins.
+  Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

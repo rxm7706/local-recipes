@@ -424,3 +424,18 @@ no verification/ranking merge logic. Excel workbook never required.
 - **2026-08-29** — Seeded (`78ccbe4468`, the atlas bootstrap-chain fix) and specified the same day:
   `spec-atlas-kedro-catalog-expansion` under pyforge-atlas (status `ready`) with the Epics 21–23
   planning chain (`9a0cb475f9`).
+
+- **2026-09-09** — Fleet readiness pass (operator batch § 2.2, row atlas-B5). The Spec moves
+  `ready` → **`shipped`**: Epics 21, 22 and 23 are 100% `done`, CAP-1..CAP-8 are decomposed,
+  landed and gated, and both declared open questions were answered by delivery (Story 21.5's
+  `project_artifactory_names` names-only projection; `core_feedstock_attribution` proving
+  sufficient so the conda-forge.org/packages scrape stays deferred). **This Dream deliberately
+  HOLDS at `specified`.** CAP-8's closure claim is that `identity_complete_export.parquet` and
+  `enterprise_jfrog_consumption.parquet` are the canonical surface — and the catalog *declares*
+  both (`conf/base/catalog.yml:987-989`, `:1301-1303`), which is a contract, not data. Atlas
+  Story 25.2 ("Materialize CAP-8's canonical Parquets — one recorded run", ledger `blocked`)
+  is the unblock; it needs the attended, credentialed Artifactory path that
+  [[conda-forge-packaging-inventory-operations]] also waits on. This Dream moves to `realized`
+  in the same commit that records that run. Splitting Spec-status from Dream-status is the shape
+  [[wagtail-corporate-brain]] already uses; moving both together would set the precedent that a
+  data Dream is `realized` before any data exists.

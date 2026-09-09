@@ -137,3 +137,25 @@ exposes — it carried this Dream as a single bullet until 2026-07-25) ·
   project no station owned: four of its five parts already traced to Dreams; this
   was the gap. Assigned to Marshal because the surface is operating-model
   infrastructure, not any one craft.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized` (this is a
+  `type: practice` Dream); **Q1 is answered and the headline number is corrected.**
+  **Q1 — one surface or two? Answer: FEDERATE.** The HTTP station face `POST /stations/<name>/mcp`
+  (`django-pyforge/.../mcp_http.py:137`, with auth `mcp_auth.py:1`, rate-limiting `rate_limit.py:3`
+  and dual-era routing `mcp_dual_era.py:29,40`) is the one **governed front door**; the stdio servers
+  are **local adapters**. The question was stale as posed — it is no longer two surfaces but five
+  (`conda_forge_server.py` with 46 `@mcp.tool` decorators, `gemini_server.py`,
+  `pyforge/atlas/mcp/server.py`, `pyforge/marshal/mcp/server.py`, and the HTTP transport). Merging
+  them re-couples the crafts the Charter deliberately split; leaving them split leaves the surface
+  ownerless, which is the failure this Dream exists to name. Federation is what the code already
+  implements: the HTTP face is a mount point, not a server.
+  **Coverage is 3/6, not 2/6.** Running the gate this Dream asked for
+  (`pyforge/marshal/mcp/coverage.py::tool_surface_coverage_report`) returns `{"ratio": "3/6",
+  "coverage": 0.5}` — mason, atlas, and **marshal, the owner, no longer at zero** (Story 18.1 /
+  FR-153-154). The `type: practice` argument survives the correction; the number does not.
+  **Three residuals:** CLI⇄tool parity is gated for `pyforge.marshal.mcp` only
+  (`tests/meta/test_cli_tool_parity.py`) — the 46 CFE tools and `pyforge/atlas/mcp/tools.py` are
+  ungated, **routed cross-station to mason and atlas**; CAP-4's number is computed but published by
+  no pixi task; and `.mcp.json` exists **nowhere** — not at the repo root, not in any of the eight
+  loop homes, despite `cli/init.py:447 _render_mcp_json`. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

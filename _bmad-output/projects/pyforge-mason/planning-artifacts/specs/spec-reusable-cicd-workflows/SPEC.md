@@ -26,3 +26,18 @@ that vendors the file — plug in self-service via
 `uses: rxm7706/local-recipes/.github/workflows/<name>.yml@<ref>` (or a
 vendored copy where egress is blocked). The 63-family shape stays
 permanently out of scope; the socket is the deliverable.
+
+## Trigger watch — 2026-09-09
+
+Status stays `extension-point` and the socket is real (five `workflow_call` workflows
+exist). But the declared trigger — *a second consuming repo needs this repo's
+workflows* — may be about to fire without anyone noticing: steward **S-44.7** (the
+python-foundry cutover) creates `factory/` with its own `pixi.toml` and lock plus a
+recipes-only island CI triggering on `paths: factory/**` only (steward
+`epics.md:2650,2657`). That is a second consuming CI surface *inside* the cutover.
+
+**CONSULT THIS SPEC AT 44.7, NOT AFTER.** If the island CI wants these workflows, the
+extension-point activates and the capability is briefed then; if it deliberately does
+not, record that as *the trigger evaluated and declined*. A reciprocal trigger
+cross-reference is requested in steward's 44.7 story text — cross-station, mason
+cannot write it.

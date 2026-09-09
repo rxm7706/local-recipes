@@ -125,3 +125,18 @@ verdict artifacts)
   and external-source adapter registry are genuinely new. No specific already-bitten incident
   motivates this one (unlike [[bmad-switch-scope-enforcement]]); captured because the gap is real
   and the existing infrastructure fit is unusually clean, not because of a documented pain point.
+- **2026-09-09** — Fleet readiness pass (operator-approved batch, `fleet-readiness-decision-batch-2026-09-09.md`
+  row warden-B8). Stories 7.1–7.3 `done`; the three genuinely-new pieces this Dream named
+  all exist as real modules — `SourceContract` + registry (`sources.py`), the union with
+  `ProvenanceEntry` trails and the separate `eligible-union`/`observed-in-use`/
+  `flagged-for-review` vocabulary (`eligibility.py`), and CycloneDX output through the
+  existing renderer (`eligibility_sbom.py`). **The Constraint that this vocabulary stay
+  separate from `models.py`'s `Status` rungs HELD** — verified by reading, not assumed.
+  Gap: no CLI verb reaches any of it (`cli.py` contains no `eligib*` string), so the Spec's
+  Success signal — "one CLI question, one CycloneDX answer" — cannot be exercised; Spec
+  moved `ready` → `in-progress`. The Spec's one open question (required-authority policy)
+  is **answered in code** — `eligibility.py:113-121` defaults to unanimous consensus over
+  every source present in the evidence — with the config surface deliberately deferred
+  (`eligibility.py:128-131`); the deferral is accepted and recorded as a named residual,
+  and the config story is minted only together with the missing CLI front door, since a
+  settable policy no CLI can set is unreachable. This Dream stays `specified`.

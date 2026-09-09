@@ -243,3 +243,20 @@ the verification step is inserted, not the decisions reopened.
   draft was refuted in part by its own blind review — the method's point, proven
   eight times. Spec `shipped`; the resume decisions are packaged in
   `resume-package-2026-08-10.md`.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized` (PRs
+  #399–#406 merged); **both open questions closed.**
+  **OQ-1 — complete-station demotion precedent:** when sampling fails an AC on a shipped station the
+  result is a **coverage-debt row** in `planning-artifacts/deferred-work-ledger.md` — **never a
+  ledger reopen.** Reopening a `done` row re-arms the dispatch picker on a story whose code exists,
+  which is the respawn trap auto-memory already records
+  (`feedback_merged_story_with_backlog_ledger_row_respawns_forever`). The first occurrence never
+  arrived: this Dream's own 2026-08-10 close records 21+21+4 done-claim samples all cited, zero
+  demotions — so the ruling is precedent-setting, not remedial.
+  **OQ-2 — standing practice: STALE.** It is answered by [[chain-currency-sweep]] and that Spec's own
+  `DEFERRED_SPECS` entry (`board.py:100-106`), which describes exactly the recurring-runbook form
+  this question asked for. The 2026-08-10 one-shot priced itself on 61 Dreams / 335 stories; the
+  estate now holds 131 Dream files and atlas alone carries 137 stories — outgrown ~2×.
+  Housekeeping noted for doctor: this Spec's `DEFERRED_SPECS` entry is **inert** (`shipped` ∉
+  `OPEN_SPEC_STATUSES`) and is deleted in doctor's own pass. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

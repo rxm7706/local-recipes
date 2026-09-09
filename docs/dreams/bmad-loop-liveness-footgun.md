@@ -2,7 +2,7 @@
 title: Nobody has to hand-parse engine.pid to answer "is this run alive?"
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # Nobody has to hand-parse engine.pid to answer "is this run alive?"
@@ -107,3 +107,18 @@ and-resume`'s `deferred-work.md` entry (names the missing liveness primitive as 
   `bmad-loop 0.9.0`'s `runs.py` (`read_named_pid_identity`/`engine_alive`/`engine_liveness`), found
   the correct fix already exists as `bmad-loop status --json`, and found this exact gap already
   named (but unaddressed) in pyforge-marshal's own `deferred-work.md` (spec-3-7).
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`.**
+  Epic 24 is 3/3 `done` and in effect: CAP-1 landed as `HarnessPort.engine_liveness`
+  (`ports/harness.py:771-782`, tri-state `alive`/`dead`/`unknown`, `unknown` never coerced),
+  implemented at `adapters/harness_bmadloop.py:1657` by shelling to `bmad-loop status <run_id>
+  --json` + `list --json`, never importing `bmad_loop`; CAP-2 named that command as the documented
+  operator answer (team memory `.claude/memory/reference/fleet-landing-pass-liveness.md`); exercised
+  live at `cli/dispatch.py:2711-2726`, which refuses a dispatch on the liveness fact.
+  **Open question 1 is now answered by the operator:** the resume-preflight `unknown` policy is
+  **warn-and-proceed**, with `unknown` a first-class printed reason — refusing would coerce a *probe*
+  failure into `alive` semantics and would block routine resumes daily (auto-memory
+  `project_steward_unknown_landing_journal`). Spec stays `in-progress` (not `shipped`) because that
+  answer is still unwired: Epic 24 explicitly excluded resume-preflight consumption
+  (`spec-24-2-…md:18`). Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

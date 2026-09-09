@@ -26,9 +26,26 @@ checkpointing, TTL, validation, lineage, and scheduling for free.
   plus Epic 10's post-audit truth-up (Stories I0–I5, through PR #132,
   2026-07-29). 930 real collected tests across 78 pytest files
   (`src/shared/packages/pyforge-atlas/tests/`), documented story-by-story in
-  `test-architecture.md` (2026-08-02).
-- Boring Semantic Layer models, a Vizro dashboard (8 pages + factory-status
-  live; the full 28-CLI page inventory is deliberately deferred, `DW-D2-1`),
+  `test-architecture.md` (2026-08-02). *(The "38/38" is correct and stays —
+  it describes **the migration**, which is what this bullet is about. Read
+  as a station total it is fourteen epics and ~56 stories behind; see the next
+  bullet.)*
+- **The station has grown well past the migration** *(added 2026-09-09, fleet
+  readiness pass)*: **94 story keys across 24 epics**
+  (`planning-artifacts/sprint-status-ledger.yaml`; 142 ledger rows once the
+  epic and retrospective rows are counted), adding the query-plane faces
+  (Epic 20), catalog expansion and self-containment (21), Vizro identity
+  parity (22), the complete zero-deferred export (23), the MCP face (24) and
+  the realization-gate effect stories (25).
+- Boring Semantic Layer models, a Vizro dashboard — ~~8 pages + factory-status
+  live; the full 28-CLI page inventory is deliberately deferred, `DW-D2-1`~~
+  *(written 2026-08-02; **superseded 2026-09-09**, fleet readiness pass: the
+  full inventory shipped via Stories 20.5 and 21.9, `DW-D2-1` reads
+  `status: closed`, and `dashboard/app.py`'s `PAGE_INVENTORY` now carries 34
+  page definitions — gated by `dashboard-dryrun`, served by `pixi run -e
+  local-recipes dashboard-serve`. The struck text is kept as the record of
+  what was true when this Dream was last re-grounded — see § Realization
+  log.)* —
   Vizro-AI as an MCP-exposed NL interface, A2A agent-to-agent interfaces,
   OpenLineage + OTel tracing, DuckDB VSS, a Pyodide/DuckDB-WASM no-backend
   build (G1), Dagster sensors (dry-run proven; live daemon bring-up is an
@@ -170,3 +187,22 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Marquez, the non-hollow isolation-verification gate) — all judged genuine,
   researched, unscheduled scope, not speculative or superseded, so **no
   pruning**: nothing was cut from the merged brief/PRD/architecture/Spec.
+
+- **2026-09-09** — Fleet readiness pass, verified against live code at `fe4025ea90`. `realized`
+  **re-confirmed under the exercised gate** — the Kedro pipelines, the MCP face, the BSL models
+  and the Vizro board all run. Two body claims are behind the station and are corrected here
+  rather than silently: (1) "38/38 stories, 100%" (§ What is real) is a correct historical
+  statement about the **Kedro/Dagster/DuckDB migration only** — the station now carries **94 story
+  keys across 24 epics** (`planning-artifacts/sprint-status-ledger.yaml`; 142 ledger rows once
+  the epic and retrospective rows are counted — a distinction worth keeping, since the readiness
+  pass and the decision batch both quote the row count as a story count), adding the
+  query-plane faces (20), catalog expansion and self-containment (21), Vizro identity parity (22),
+  the complete zero-deferred export (23) and the MCP face (24); (2) "a Vizro dashboard (8 pages +
+  factory-status live; the full 28-CLI page inventory is deliberately deferred, `DW-D2-1`)" is
+  **stale** — `DW-D2-1` reads `status: closed`, the inventory shipped via Stories 20.5 and 21.9,
+  and `dashboard/app.py`'s `PAGE_INVENTORY` now carries 34 page definitions, gated by
+  `dashboard-dryrun` and served by `pixi run -e local-recipes dashboard-serve`. One unreached
+  surface was found on a sibling Dream and retired the same day — see [[atlas-query-dashboards]].
+  Cross-station residue for steward: `docs/dreams/README.md` still describes this Dream as
+  "waves 0–H shipped, PRs #58–#105", accurate for the migration and roughly 99 stories and 14
+  epics behind the station.

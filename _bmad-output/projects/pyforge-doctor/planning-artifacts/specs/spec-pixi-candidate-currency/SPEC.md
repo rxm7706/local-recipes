@@ -1,5 +1,10 @@
 ---
 id: SPEC-pixi-candidate-currency
+status: ready   # added 2026-09-09 (doctor-B6): the key was absent, which is the only reason
+                # chain-completeness reported ok — all five CAPs are uncovered by any doctor
+                # epic or FR, so an open status fires spec-not-decomposed. CAP-1/2/3/5 are
+                # satisfied by the Dream's ledgers; CAP-4 is the one code capability, and it
+                # is decomposed into exactly one doctor story.
 owner-dream: docs/dreams/pixi-candidate-currency.md
 companions:
   - ../../../../../../docs/dreams/pixi-candidate-currency.md
@@ -34,13 +39,13 @@ exists to prevent for planning-spine artifacts, applied here to a dependency led
 
 ## Capabilities
 
-- **CAP-1**
+- **CAP-1 — SATISFIED by the Dream's ledgers, not by code**
   - **intent:** Every commented-out `pixi.toml` candidate carries exactly one of five
     dispositions — blocked (names a re-check trigger), archived (upstream dead), stale
     (dead duplicate/superseded), ready (verified clean), unexamined (the honest default).
   - **success:** Every one of the Dream's 44 candidates already carries one; a newly
     commented-out candidate with no disposition is the detectable gap this contract names.
-- **CAP-2**
+- **CAP-2 — SATISFIED by the Dream's ledgers, not by code**
   - **intent:** Every active dependency below its conda-forge latest, after a
     `pixi update --dry-run` re-solve rules out a merely stale lock, carries blocked /
     platform-gap / deliberate-tradeoff / undiagnosed, naming the exact upstream package and
@@ -48,7 +53,7 @@ exists to prevent for planning-spine artifacts, applied here to a dependency led
     conflicts."
   - **success:** A shared root cause blocking several packages at once (e.g. one feedstock
     pin) is recorded once and every dependent package cites it, not re-derived per package.
-- **CAP-3**
+- **CAP-3 — SATISFIED by the Dream's ledgers, not by code**
   - **intent:** Every active dependency not resolved from conda-forge (SelfExplainML or
     bare PyPI) carries permanent-by-necessity / pending-conda-forge-submission /
     needs-recheck, cross-referenced against the owning `recipes/<name>/`'s own
@@ -56,7 +61,7 @@ exists to prevent for planning-spine artifacts, applied here to a dependency led
   - **success:** A recipe flagged `confirmed-on-conda-forge` whose package still locks from
     SelfExplainML (found live 2026-08-31: `fastmcp`, `slowapi`) is flagged `needs-recheck`,
     never silently accepted as consistent.
-- **CAP-4**
+- **CAP-4 — the one code capability; decomposed as a single doctor story**
   - **intent:** A `pyforge-doctor`-owned advisory check reads each ledger's own recorded
     verification date and flags when it exceeds a declared staleness threshold — the same
     `gather`/finding pattern `chain_currency_sweep_check` already uses, advisory only, never
@@ -64,7 +69,7 @@ exists to prevent for planning-spine artifacts, applied here to a dependency led
   - **success:** A ledger last verified beyond the threshold produces a named finding;
     re-running the audit and updating the recorded date clears it; the threshold is a
     declared policy value, never a hardcoded magic number.
-- **CAP-5**
+- **CAP-5 — SATISFIED by the Dream's ledgers, not by code**
   - **intent:** Every active dependency lacking a corresponding `[Conda-Forge Packaging]
     <name>`-shaped tracking item on OpenTeams-WFT-CDO's own project board carries
     visibility-gap-with-recipe (real packaging debt, invisible externally) or
@@ -85,6 +90,8 @@ exists to prevent for planning-spine artifacts, applied here to a dependency led
   verified against `pixi.lock`/repodata/a real solve, never against the metadata field alone.
 - **CAP-4's staleness check is advisory only, never a second PR gate** — the fleet-wide
   Warden doctrine every other doctor-owned check already follows.
+- **CAP-4's threshold is a declared policy value**, never a magic number inside the check
+  module; `verdict.exit_code_for` stays the sole verdict owner.
 
 ## Non-goals
 
@@ -108,6 +115,14 @@ check would have flagged it otherwise.
 
 ## Assumptions
 
+- CAP-1/CAP-2/CAP-3/CAP-5 are contracts over the Dream's four ledgers — they are met by
+  those ledgers carrying the dispositions, not by any module, and are therefore not
+  decomposed into stories. CAP-4 is the only capability that becomes code.
+- The ledger is already drifting, which is what CAP-4 exists to catch: the Dream audited 44
+  candidates over 64 commented dependency lines; `pixi.toml` now carries roughly 62 (a
+  looser regex over the same file returns 66 — the exact figure is the implementing story's
+  to settle), with 45 commits to `pixi.toml` since the last currency pass. Without CAP-4 the
+  Success signal above is false.
 - CAP-4's exact mechanism (a new `pyforge.doctor.sources` check module vs. extending an
   existing one) is left to implementation — the Dream and this kernel constrain its
   *behavior* (advisory, named threshold, per-ledger verification date) not its file layout.

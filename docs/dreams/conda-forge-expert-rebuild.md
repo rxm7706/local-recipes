@@ -125,3 +125,23 @@ structured specifically to not repeat).
   precedent was on the table; the decision is survivable only with the three CAP-3
   mitigations (equivalence harness, dual-landing, detector-enforced endgame), now the
   Spec's contract. This Dream cannot read `realized` until the end cutover completes.
+
+- **2026-09-09** — **Endgame declared over slices 1–2; the campaign closes there** (operator
+  ruling, `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.3 **C2**). The re-scope gate CAP-4 exists for finally got its price tag, and the answer
+  was *stop*: the cost is **recurring**, not one-time — every CFE release became a byte-re-port
+  obligation into two mirrors (23 qualifying retro commits in the campaign range; both re-scope
+  gates returned `adjust`, never `go`) for **zero** behavioural change (no caller had flipped,
+  both slices still `compiled`). The premise moved too: `skf-create-skill` compiles the
+  **knowledge layer** — both compiled slices are sha256-identical copies of the live scripts, and
+  every drift was closed by porting live source in, never by re-compiling — so "Skill-Forge-authored"
+  describes a Forge-authored brief + audit harness around an unmodified code copy, and the
+  unbriefed slices would buy briefs, not better code. Slice 3 (atlas-owned under Story 12.5,
+  12.3× slice 1) and slice 4 are **not briefed and will not be**. Deprecation posture for the long
+  tail: **delete-on-cutover, no stubs** — Mason reaches CFE by filesystem path, not by import, so a
+  stub module cannot serve a path resolver and CAP-5's degradation path already handles a missing
+  root. `campaign-state.yaml` now reads `endgame_declared: true`; mason **Epic 15 / Story 15.1** is
+  the closing story (cut the two slices' callers over or retire the mirrors, keep
+  `cfe-rebuild-guard-check` clean), and it must land **before** steward S-44.6 moves the CFE cell to
+  `skills/domain/conda-forge-expert/`. This Dream still cannot read `realized` — the end cutover has
+  not completed; what changed is its **scope**, from five slices to two.

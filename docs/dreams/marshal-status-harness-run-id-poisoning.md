@@ -2,7 +2,7 @@
 title: A spin-time poll timeout never permanently blinds marshal status to a healthy run
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A spin-time poll timeout never permanently blinds marshal status to a healthy run
@@ -94,3 +94,13 @@ the same session).
   a real spin (`pyforge-doctor --story 9.1`), and NOT hotfixed in that session per this repo's
   Dream-first policy for any `pyforge-marshal` code change. Captured as its own Dream once the
   user asked directly to fix it.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`.**
+  `_discover_harness_run_id_by_filesystem` (`cli/status.py:659`) is wired as the third fallback at
+  `:918-921`; CAP-2's honest degradation is held at `:930-940`. Shipped by commit `e7039b9ee6`. The
+  Spec, which carried **no `status:` line at all**, is set to `shipped`. Like its sibling Dream, no
+  `epics.md` story owns it — the fix landed outside the story ledger.
+  **Not to be confused with the surviving `pyforge-steward` `UNKNOWN`**, which
+  `DW-STATUS-2026-09-08-1` traced to a different cause — a harness-native run marshal never launched
+  — owned by Story 5.11 (FR-196, `backlog`). Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

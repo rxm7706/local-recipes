@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-01"
+updated: "2026-09-09"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -14,6 +14,9 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
+  - ../../research/architecture-review-pyforge-unifying-strategy-red-team-2026-09-02.md
+  - ../../research/currency-review-pyforge-unifying-strategy-2026-09-09.md
+  - ../../research/fleet-readiness-decision-batch-2026-09-09.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform  # pap:CAP-1..6 + pap:AD-1..17 (shipped host). Unifying CAP-1..19 are a different set. Pixi env id stays python-agent-platform.
@@ -32,7 +35,9 @@ surface:
   - environment.yaml
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-open_questions: []
+open_questions:
+  - "realization-gate-home: Epic 49 binds on this chain today (operator 2026-09-09: 'Unifying now, re-home later'); it re-homes to hub:CAP-* on spec-intelligence-hub by memlog once the operator's reading of 'align' lands and that Spec reaches ready. Story text does not change."
+  - "single-spec-merge-timing: answered 2026-09-09 — now, as Story 48.8, before any 44.x flip; the regeneration drill must not consume an unmerged extends: chain. NOTE (fleet readiness 2026-09-09, stB-F1): this is an ANSWERED question sitting in open_questions — the same shape as the spec-unified-container defect this pass retired. It MOVES TO § Residual when Story 48.8 lands `done`; it reads correctly only while 48.8 is unlanded."
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -49,8 +54,8 @@ open_questions: []
 > **2026-08-26 first slice shipped:** Epic 34.1–34.5, Lane 3 36.1–36.2
 > (`estate-cache`), five-tier 37.1 (40/40; mason = `conda-forge-expert`).
 > Sibling Epic 35.1 is `spec-mcp-era-isolation` CAP-4, not this CAP set.
-> Residual: none — the last three `open_questions` were answered 2026-08-26 (see § Open
-> Questions). Do not re-dispatch 18–37.
+> Residual: **see § Residual (2026-09-09)** — the three 2026-08-26 `open_questions` were answered
+> (see § Open Questions); the currency review reopened the residual. Do not re-dispatch 18–37.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** Cite host
 > capabilities as **`pap:CAP-1`..`pap:CAP-6`** and host spine as **`pap:AD-1`..`pap:AD-17`**
@@ -70,7 +75,7 @@ Source of record until a merge story copies the full text: `spec-python-agent-pl
 | `pap:CAP-2` | CAP-2 | Langflow Pattern A mount + `langflow_schema` |
 | `pap:CAP-3` | CAP-3 | DB-GPT via `pap:AD-17` pattern switch (Pattern B today) |
 | `pap:CAP-4` | CAP-4 | Celery; async never blocks Django |
-| `pap:CAP-5` | CAP-5 | One factory-sourced env; Python `3.12.*` |
+| `pap:CAP-5` | CAP-5 | One factory-sourced env; Python `3.14.*` (43.6, 2026-09-03; corrected 2026-09-09) |
 | `pap:CAP-6` | CAP-6 | Air-gap parity is a failing check |
 
 Spine: `pap:AD-1`..`pap:AD-17` = parent ARCHITECTURE-SPINE (same as **parent AD-n**).
@@ -80,6 +85,65 @@ Qualify every citation; bare `AD-n` in epics is a review fail.
 Single-Spec merge (copy `pap:CAP-*` full text here, retarget Epic 10–12, supersede the
 parent Spec) is **parked** — Dream Grounding. Do not drop `extends:`. Do not rename
 `[feature.python-agent-platform]` in those stories.
+
+
+## Absorbed (`daf:CAP-*`) — the Django accelerator contract
+
+**Absorbed 2026-09-09** (fleet readiness § 2.3 **C3**, operator-approved) from
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/SPEC.md`
+(`status: draft`, owner mason), whose frontmatter now reads
+`absorbed-into: spec-pyforge-unifying-strategy` and whose owner Dream
+`docs/dreams/django-accelerator-framework.md` is `archived` / `archived-reason: absorbed`.
+Its ids are qualified **`daf:CAP-n`** on arrival — exactly as `pap:` is — so no bare `CAP-n`
+collides with this file's own CAP-1..19 (the namespace rule Story 48.7 exists to enforce).
+
+| Qualified id | Source CAP | Disposition |
+|---|---|---|
+| `daf:CAP-1` | DAF CAP-1 — the accelerator contract (REAL now) | **Absorbed, below.** Its first realization is `pap:CAP-1`'s `src/platform/` render (Story 10.1, on main 2026-08-14); its second reference shape is Steward's dashboard. |
+| `daf:CAP-2` | DAF CAP-2 — the templating engine (CONTINGENT) | **Not absorbed — falsified and closed.** The counting trigger ("a third/fourth Django surface repeats the copy by hand") never fired the way it was written: the estate reached **nine** Django faces and factored `PortalConfig` instead (`django-pyforge`; eight portals with ~10 declarative fields, one `manage.py`). The engine is not parked here; it is not wanted. Its open question — repo-wide vs estate-wide counting — dies with it. |
+
+### `daf:CAP-1` — the accelerator contract
+
+*Intent.* A named, documented shape — **the accelerator contract** — that any PyForge Django
+surface renders to. Its clauses:
+
+- cookiecutter-django base **with FastAPI integration** (an ASGI seam owning the API namespace) —
+  live at `src/platform/config/asgi.py`;
+- `env()`-helper / **split settings** — `config/settings/{base,local,production,test}.py`;
+- **`/ht/` django-health-check endpoints** wired to K8s liveness/readiness probes —
+  live at `src/platform/config/urls.py:98`, mounted as
+  `HealthCheckView.as_view(checks=["health_check.Database", "health_check.Cache"])`
+  (import at `urls.py:11`). *(Citation corrected on absorption: the mason copy still cited
+  `config/urls.py:26` `include("health_check.urls")`; `urls.py:50-55` records that
+  `include(...)` form as **deprecated** — django-health-check 4.x has no `health_check.urls`
+  module at all, and the `checks` list must be dotted strings, never imported classes.)*
+- **mirror endpoints** (conda / pypi / registry) parameterized at render time;
+- **vendored zero-CDN static assets** (Bootstrap 5.3 + HTMX shape);
+- auth bound to an **internal OIDC IdP** — the provider is named by Story 48.9.
+
+*Success.* The contract is documented here, and both existing surfaces verifiably conform to the
+clauses applicable to each **or carry dated deviations**. One asymmetry is recorded rather than
+papered over: Steward's dashboard predates the contract and embodies the identity-at-the-boundary
+and adopter-declaration clauses (`middleware.py`, `declarations.py`), not the full render shape.
+
+*Constraints carried in.* **Air-gap parity** (Artifactory coordinates are first-class render-time
+substitutions across `pyproject.toml`, `pixi.toml`, Helm charts and CI workflows; every
+pip/conda/pixi install resolves from mirrored indexes only; frontend assets vendored with zero CDN
+`<script>`/`<link>` in base templates, applied at authoring time and never as a later patch; all
+runtime config through env/secret mounts, never committed; no external identity callbacks) — this
+is the same obligation as `pap:CAP-6`, and the two are one check, not two. **The platform is the
+living exemplar:** the contract must never drift from what `src/platform/` actually ships — when
+contract and render disagree, either the render gains a dated deviation or the contract is
+amended, never silent divergence.
+
+*Non-goals carried in.* Not an engine build. Not an import of the WF source's FreeMarker
+templates, Jenkins wiring, or three-repo pipeline — if a stamping engine is ever wanted, its
+templates are **extracted from the proven local shapes**, never imported. Not a new station.
+
+*Note for Story 48.8.* This absorption **precedes** the Single-Spec merge and is independent of
+it: DAF pointed at `spec-python-agent-platform` in its `sources:` and deferred the platform's own
+build contract to it, so absorbing DAF here rather than into a Spec that 48.8 supersedes avoids a
+two-hop pointer into a superseded parent.
 
 # pyforge-unifying-strategy — Foundry Platform mounts the eight stations
 
@@ -139,6 +203,11 @@ they are why this is not merely a UI project.
   - *(Correct-course 2026-08-24, operating-model Q7. Lane 2 contract is HTMX. DRF JSON:API is
     not a portal face — it stays on the Atlas / enterprise-data-models kinship. Compute JSON
     is FastAPI via CAP-6's client.)*
+  - *(Absorbed 2026-09-09, fleet readiness C3: the **shape** a Lane-2 surface renders to is now
+    stated in this file as `daf:CAP-1` — see § Absorbed. `PortalConfig` in `django-pyforge` is
+    what falsified DAF's CAP-2 counting trigger: nine Django faces were reached by factoring a
+    declarative registration, not by repeating a hand-copy nine times, so no templating engine
+    is wanted.)*
 
 - **CAP-4 — Every station has a service face.**
   - **intent:** Each station exposes its capabilities to programmatic and agent callers over a
@@ -312,7 +381,7 @@ they are why this is not merely a UI project.
 
 - **Always:** `spec-python-agent-platform` CAP-1..6 are shipped and binding. This SPEC extends
   them; `convergence.md` decides which side of the line a surface falls on.
-- **Always:** Django `>=5.2.15,<6` and Python `3.12.*`. Django 6 is unavailable. conda-forge ships
+- **Always:** Django `>=5.2.17,<6` and Python `3.14.*` (43.6, 2026-09-03; the Django bump `daa35ee171` 2026-08-29; both corrected here 2026-09-09). Django 6 is unavailable. conda-forge ships
   exactly one qualifying build, two security patch releases behind upstream. **Audited 2026-08-24:
   5.2.16 and 5.2.17 carry seven CVEs, one rated high — and every affected path is unreachable here
   (no `contrib.gis`, no cache middleware, no `URLField`, no `set_language` route). A currency gap,
@@ -343,7 +412,8 @@ they are why this is not merely a UI project.
   is deprecated. Do not import Kedro or Vizro into Django views.
 - **Never:** a station or agent opens a private DuckDB, Chroma, or the OLTP DSN for
   estate knowledge or Text-to-SQL after CAP-19 lands. Platform Postgres remains the
-  OLTP / app-state store. Scribe's **store port** remains (no `GraphStore` class
+  OLTP / app-state store. Scribe's **store port** remains (*2026-09-09: a `GraphStore` Protocol
+  now exists at `pyforge-scribe/.../graph_store.py:59` with three drivers — see § Residual*; as written 2026-08-24: no `GraphStore` class
   exists in `pyforge-scribe` today).
 - **Never:** `django-lasuite` on the host (`INSTALLED_APPS` or OIDC). Identity is
   `django-allauth`. Chrome is `django-pyforge`. Feedstock / `suite-*` recipes are
@@ -485,7 +555,10 @@ via `sprint-change-proposal-2026-09-02-red-team-high.md`. Constraints are append
   hours-scale limit and its own Deployment (42.4). **Never:** a build on the 300 s queue.
 - **Always:** prefixed roles (`pyforge:station:*`, `pyforge:tenant:*`, `pyforge:admin`); bare
   station names refused; `tenant` on `RunState` and the envelope (42.5).
-- **Always:** the living Dream is ≤ 400 lines and every diagram in it is a build target (43.1).
+- **Always:** every diagram in the living Dream is a build target (43.1). **Amended 2026-09-09
+  (operator):** the line count is not a constraint on the living Dream — a detailed evergreen
+  strategy outranks a short one; the archive holds historical topology only.
+  `historical-section-too-long` keeps that meaning, never a length cap.
 - **Always:** station routes are `/stations/<name>/api/v<N>/`; `/api/v1` is not Langflow's;
   `pyforge.core.client` is the one client with a contract test (43.2).
 - **Always:** co-located portals reach station code in-process; HTTP only under
@@ -495,6 +568,21 @@ via `sprint-change-proposal-2026-09-02-red-team-high.md`. Constraints are append
   **Decision 2026-09-02 (hybrid a+c):** one interpreter `3.14.*` for every env once Mason 13.1 / 13.2
   loosen `onnxruntime <1.24` and `sqlalchemy <2.0.29` (43.6 flips the pins); `mcp-host` stays as
   MCP-SDK isolation (langflow pins `mcp <2`). **Never:** describe `mcp-host` as an interpreter shim.
+
+### Correct-course 2026-09-09 — currency review (Epics 48–49)
+
+Bound from `research/currency-review-pyforge-unifying-strategy-2026-09-09.md` and the Dream
+§ *Where next* via `sprint-change-proposal-2026-09-09-currency-review.md`. Appended, not rewritten.
+
+- **Always:** a ledger sync never moves a `blocked` story off `blocked` and never drops a key the
+  tracked twin holds; the twin's `blocked` is sticky in both `sprint_plan.py` and
+  `promote_sprint_status.py` (48.1). **Never:** `--repair-feed` as a pre-write ritual until 48.1
+  lands.
+- **Always:** every capability in this Spec carries a `**verified:**` line naming which clause of
+  its success criterion has a live exercise and which is fixture-only (49.1). **Never:** a Dream
+  flips to `realized` on ledger bookkeeping; it flips on effect (Dream § Where next).
+- **Always:** cross-spine CAP citations are qualified (`fnd:`, `suite:`, `sld:`, `pap:`, `hub:`)
+  exactly as ADs and FRs are; a bare `CAP-n` means Unifying (48.7).
 
 ## Non-goals
 
@@ -546,6 +634,77 @@ OLTP.
   threshold as coarse protection, not exact-count semantics.
 - The eight stations' existing CLIs expose a stable enough surface for CAP-5 to dispatch to
   without modification. Unverified per-station.
+
+## Residual (2026-09-09)
+
+Reopened by the currency review; each line names its vessel.
+
+- **R-18..R-22** (`DW-RT-2026-09-02-2..6`) → Epic 48 Stories 48.2–48.6. Were "Epic 45
+  candidate"; Epic 45 went to eval-quality on 2026-09-05.
+- **Single-Spec merge** → Story 48.8 (parked since 2026-09-01; due before the cutover's
+  regeneration drill consumes the `extends:` chain). Never in the same story: renaming
+  `[feature.python-agent-platform]`.
+- **Story 43.7** `backlog` — sidecar runtime validation on Python 3.14 (added 2026-09-08).
+- **Six capabilities with an unexercised named criterion** → Epic 49: CAP-4 (`start`/`get` on 2
+  of 8, no disconnect test), CAP-7 (fixture board; real Vizro board asserted absent from the
+  host), CAP-11 (no eviction test), CAP-12 (`IDP_USERINFO = None` → next-login revocation),
+  CAP-14 (7-entry synonym map as "semantic"; no dual-write), CAP-17 (marshal never publishes to
+  the supervisor). Eleven CAPs verify fully.
+- **`realization-gate-home` precondition MET this pass (2026-09-09, fleet readiness C4).** The
+  question binds Epic 49's re-home to `hub:CAP-*` on `spec-intelligence-hub` reaching `ready`;
+  all nine of that Spec's open questions were answered as one operator-approved bundle and its
+  status flips `draft` → `ready`. **The re-home itself is pending that Spec's `bmad-spec`
+  re-derive** — until the re-derive lands, Epic 49 still binds on this chain and no story text
+  changes.
+
+- **Five currency-review findings had no vessel; each now names one (2026-09-09, fleet readiness
+  stB-F2).** They are all the "document tier stale" class the review named, and four of the five
+  sat behind `blocked` Epic 44 stories or behind no story at all:
+  1. **§1.7 — the obsolete feedstock table.** `stack.md`'s `## Absent — feedstock work, blocking`
+     heads a six-row table whose own closing prose says the stories are `done`; all six shipped in
+     `ed41099205` (2026-08-25), including the `cachebox` row whose premise is wrong (conda-forge
+     ships 5.2.3, pinned at `pixi.toml:240`). Knock-on: this file's own `surface:` glob
+     `recipes/cachebox/**` points at a directory that does not exist. → **Story 48.7**, whose
+     CAP-axis pass gains explicit **"document-tier residue"** scope.
+  2. **§1.8 — the High-Leverage matrix.** Five aspirational rows and three wrong-station bindings
+     survive in `stack.md` (e.g. `stack.md:68` binds `graphviz2drawio` to herald — zero hits in
+     herald; it is an atlas prototype). The Dream got a measured-status note on 2026-09-09; no
+     story corrected the matrix. → **Story 48.7** (same document-tier residue scope).
+  3. **§1.12 — the Spec/epics half.** The Dream corrected its measured claims; the Spec and epics
+     tiers did not. `spec-python-foundry-cutover/SPEC.md:34,:76` still say `7,855 recipe dirs`
+     (live: **7,873**), `:172` + `cutover.md:58,:112` still say `the 268 registered worktrees`
+     (swept 2026-09-05 — 10 remain, 8 KB, `DW-HYGIENE-2026-09-05-1`), and `epics.md:2664` /
+     `:2688` carry both literals **inside Story 44.8's and 44.10's own acceptance criteria**. →
+     **Stories 44.2 / 44.8 / 44.10 texts, all `blocked`** — recorded here as blocked-gated, with
+     the standing rule the Dream already adopted: *measure at dispatch, never a frozen literal.*
+  4. **§1.13 residue.** Three items with no vessel before this pass: the broken regeneration
+     command hardcoded in `scripts/pixi_env_matrix.py::render_markdown` (re-stamped on every
+     regeneration, so it self-heals into staleness); "16 of 18 living names bind to nothing"; and
+     the `pyforge.*` import-rule violation on both sides (`spec-python-agent-platform`'s Non-goal
+     is stated absolutely while `src/platform/ingest/github_projects/` imports
+     `pyforge.steward.{keys,sync}` at 8 sites outside the import-linter's `root_packages`, and
+     `django-atlas`'s portal imports `pyforge.steward.dashboard.*` under a test allow-list). →
+     **Story 48.7** for the first two; the import rule is recorded on
+     `spec-python-agent-platform`'s memlog and belongs to **Story 48.8**'s merge, so a merge that
+     copies text forward does not carry a knowingly-false absolute into the surviving contract.
+  5. **The four `blocked`-gated `DW-RT-2026-09-02-*` re-reads.** All nine still carry "agent
+     judgment not applied — a re-read against live code is still owed where the claim is
+     semantic" (`deferred-work-ledger.md:2487-2576`). Five (`-2..-6`) were promoted to Stories
+     48.2–48.6, so their re-read happens at implementation; the other four — `-1` (R-17 → Story
+     44.7) and `-7`/`-8`/`-9` (R-23/24/25 → Story 44.2) — are gated behind `blocked` Epic 44.
+     **`-9` (R-25) is the sharpest:** it is the correction for a constraint this chain's own Dream
+     already documents as knowingly wrong ("zero domain models on portals" vs
+     `django_warden_fabric/models.py:11` `ComplianceJob`), so a known-false constraint sits behind
+     a `blocked` gate with no interim annotation. → **blocked-gated; annotate at 44.2/44.7
+     dispatch, not before.**
+  *Not steward's to vessel:* §1.10's "no detector validates Kinship wikilinks" is relayed to
+  **doctor** as a `dreams-hygiene-check` extension (fleet readiness Class D, D3).
+
+- **Three statements in this chain were false against live code and are corrected 2026-09-09:**
+  this file's "no `GraphStore` class exists in `pyforge-scribe`" (it exists —
+  `graph_store.py:59`, with `_pg`, `_plane`, `_plugins` drivers; the two prose sites below are
+  annotated, not deleted); `resilience-invariants.md:103` BS-5 (`read_only=True` appears twice,
+  AST-enforced) and `:104` BS-6 (CloudEvents 1.0 ships at `events/constants.py`).
 
 ## Open Questions
 
@@ -621,5 +780,5 @@ OLTP.
   dual-write for now.** The plane (via the 34.5 store-port driver) is primary and
   satisfies canopy:FR-36; `scribe_schema` pgvector stays written as the safety net until the
   plane has operating history, then retirement becomes its own explicit decision.
-  Lexical recall may stay local. There is still no `GraphStore` class in
+  Lexical recall may stay local. *(2026-09-09: superseded — `GraphStore` exists; § Residual.)* There is still no `GraphStore` class in
   `pyforge-scribe`.

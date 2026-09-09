@@ -2,7 +2,7 @@
 title: A legitimate landing is recognizable no matter which of the three-plus paths landed it
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A legitimate landing is recognizable no matter which of the three-plus paths landed it
@@ -96,3 +96,19 @@ different dialect.
   level within the doctor-never-imports-marshal boundary), CAP-2 doctor-side adoption, CAP-3
   marshal-side adoption. Decomposed the same day into epics.md Epic 20 (Stories 20.8–20.10,
   FR-191).
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`,
+  verified in effect rather than by ledger.** Stories 20.8–20.11 shipped
+  `pyforge.core.landing_evidence` as the shared spine (no station import — the Story 14.2 precedent),
+  consumed by `doctor/sources/marshal.py:53` and `marshal/core/promotion.py:58`; Spec `ready` →
+  `shipped` with both frontmatter questions resolved by 20.8 (home = a `pyforge-core` module;
+  pre-convention history = a SHA-prefix allowlist, `parse_recovery_commit_sha` at `:315`, never a
+  rewrite of history). Live measurement the same day:
+  `pyforge.doctor.sources.marshal::gather_story_status` reports *"no `done` story contradicts its
+  landing evidence (898 audited, 708 with no run record (unchecked))"*; the three standing false
+  positives (marshal 8-2, marshal 10-1, mason 3-7) are fixture-pinned at
+  `landing_evidence.py:441/450/461` with no per-story whitelist. **Operator ruling:** accept the
+  green and record the coverage number in the success signal — the green is real over the 190 stories
+  that carry a run record; no coverage story is minted, because recovering run records for
+  pre-dispatch-era stories is what this Dream's own non-goals forbid. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

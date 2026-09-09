@@ -10,8 +10,18 @@ companions: []
 sources:
   - ../../../../../../docs/dreams/platform-fifteen-factors.md
   - ../../../../../../docs/intake/external-repos-analysis-2026-08-22/report.md
-open_questions:
-  - "OIDC provider for real deployments (Keycloak is the local substrate) — decide before CAP-1's production story."
+updated: "2026-09-09"
+open_questions: []
+  # ANSWERED 2026-09-09 (batch rows stB-B1 / C7): the OIDC provider for real deployments is
+  # **Keycloak in-cluster, deployed by the Foundry chart**, as the DEFAULT profile; the
+  # `COMPONENT_OIDC_*` seam (`base.py:564-580`, all defaulting to "") stays the BYO-IdP escape
+  # hatch. The seam exists and is entirely unpopulated — `production.py` overrides none of it and
+  # `base.py:214-215` reads `IDP_CLAIMS_SNAPSHOT = None` / `IDP_USERINFO = None`, the same fact
+  # Story 49.6 exists to fix — so this is ONE deployment decision co-decided with 49.6, not two.
+  # Infra-kinds check: NOT a breach of the lock — Keycloak is a chart Deployment storing its state
+  # in the existing PostgreSQL, and the lock is on backing services (PostgreSQL + Redis +
+  # Kubernetes). Vessel: new steward **Story 48.9** on Epic 48, beside 48.4's secrets profile —
+  # never the `blocked` Epic 44.
 ---
 
 # SPEC — The platform host earns its 15 factors
@@ -28,6 +38,10 @@ refusals, no policy-as-tests. MIT reference implementations exist
   no local passwords; Keycloak realm-as-code locally (devinfra pattern).
   *Success:* login flows through the IdP end-to-end locally; createsuperuser
   retired from the docs path.
+  *Production profile decided 2026-09-09:* **Keycloak in-cluster, deployed by the Foundry chart**,
+  is the default; the `COMPONENT_OIDC_*` seam is the BYO-IdP escape hatch. Landed as **Story
+  48.9**, co-decided with Story 49.6 (which populates `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO`,
+  both `None` today at `base.py:214-215`).
 - **CAP-2 — telemetry.** structlog + OTel in every process; request_id/
   user_id/trace_id on every line; OTLP export only when endpoint set.
   *Success:* one request traces web→Celery with correlated ids.

@@ -2,7 +2,7 @@
 title: A normalized data model and REST API pattern, waiting for a PyForge-native subject
 type: dream
 owner: atlas
-status: specified   # 2026-08-22 — reframed as an EXTENSION-POINT (operator): the fleet ships the socket/contract; the capability develops separately (incl. air-gapped) — see the spec's Extension contract section
+status: dreamt
 ---
 
 # A normalized data model and REST API pattern, waiting for a PyForge-native subject
@@ -100,3 +100,24 @@ subject exists)
   runtime-driven enterprise posture (env vars only, never committed config); and admin/browsable-
   API static assets serve WhiteNoise/`collectstatic`-style with zero CDN references — the same
   concern spec-atlas-query-dashboards CAP-4 makes contractual for dashboard surfaces.
+
+- **2026-09-09** — Fleet readiness pass; status corrected `specified` → **`dreamt`** (operator
+  batch § 2.2, row atlas-B4). § What is real still reads "Nothing", correctly — no PyForge
+  subsystem has surfaced a need for this pattern. `docs/dreams/README.md` § status is explicit
+  that "`specified` requires a Spec at `ready` or beyond"; `spec-enterprise-data-models-and-apis`
+  is `extension-point`, an explicit park with **zero stories minted** — neither `ready` nor
+  beyond. This Dream's own Constraint says the same thing in its own words: it "should not
+  advance past `dreamt` without a concrete PyForge-native domain to normalize". The Spec keeps
+  `status: extension-point`, unchanged, with its trigger intact; it reverts to `specified` the
+  moment a subject is named and the Spec reaches `ready`.
+  **The 2026-08-22 extension-point reframe stands, recorded here verbatim now that it no longer
+  rides on the `status:` line:** *"reframed as an EXTENSION-POINT (operator): the fleet ships the
+  socket/contract; the capability develops separately (incl. air-gapped) — see the spec's
+  Extension contract section."* That reframe is sound and the seam is real — but the socket it
+  names is steward's shipped AD-17 pluggable-app registry (`config/engine_patterns.py`), which
+  belongs to steward, not to this Dream. Under the realization gate this Dream still has nothing
+  of its own to exercise. Nearest-need note unchanged: [[atlas-query-dashboards]] remains the
+  better-evidenced neighbour (itself retired the same day, batch C1).
+  Cross-station residue for steward: `docs/dreams/README.md` should name `extension-point` as a
+  recognised parked-Spec state that does NOT satisfy `specified`, and carry this row's corrected
+  status.

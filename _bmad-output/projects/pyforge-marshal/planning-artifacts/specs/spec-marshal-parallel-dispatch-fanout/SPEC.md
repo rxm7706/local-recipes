@@ -1,8 +1,8 @@
 ---
 id: SPEC-marshal-parallel-dispatch-fanout
 spec: marshal-parallel-dispatch-fanout
-status: ready
-updated: "2026-09-01"
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/marshal-parallel-dispatch-fanout.md
 covers-dreams:
   - docs/dreams/marshal-parallel-dispatch-fanout.md
@@ -21,9 +21,17 @@ related:
   - ../spec-marshal-single-story-dispatch/SPEC.md
   - ../spec-marshal-token-economy/SPEC.md
   - ../spec-28-12-dependency-derived-dispatch-ordering.md
-open_questions:
-  - "Token-budget-aware cap (28.10/28.11) vs fixed integer — deferred; v1 uses fixed policy cap only."
-  - "Precomputed surface index at spec-promotion time (28.9-adjacent) vs pairwise intersection each tick — v1 uses live effective-surface intersection."
+open_questions: []
+  # ANSWERED 2026-09-09, both retired (operator, fleet-readiness batch rows mars-B-B5 / mars-B-B6):
+  # oq1 token-budget-aware cap vs fixed integer -> the cap STAYS A FIXED INTEGER. Budget
+  #   awareness needs a measured baseline that does not exist (Stories 28.10/28.11 shipped a cost
+  #   CATALOG, not a live meter); revisit only once Epic 33's benchmark artifact exists. Rejected:
+  #   make it budget-aware now -- a second unfed dial.
+  # oq2 precomputed surface index vs live intersection -> keep the LIVE effective-surface
+  #   INTERSECTION each tick. The bottleneck is DECLARATION, not cost: `core/dispatch_fleet.py:770-790`
+  #   refuses on unknown-surface, and under CAP-16 auto-derivation (`core/gate.py:348-423`) two
+  #   same-station stories share a surface by construction, so no index helps until story specs
+  #   declare their own `surface:`. Rejected as premature: it optimises a step that always refuses.
 ---
 
 > **Canonical contract.** This SPEC and `wave-scheduler.md` are the complete,
@@ -114,6 +122,17 @@ width (parallel-safe waves among the ready set).
     never fan out with others (conservative default — serial until surface is
     declared).
 
+- **CAP-6**
+  - **intent:** Factory fan-out gets its **own `dispatch.max_parallel` policy key**, resolved
+    by `cli/dispatch.py:893-902` independently of bmad-loop's `scm.max_parallel`
+    (`core/policy.py:513`), which it falls back to today. One knob stops governing two
+    unrelated concurrency models, and raising the dispatch cap stops firing
+    `_max_parallel_clamp_finding` (`core/policy.py:1537-1551`) — whose message names
+    `bmad_loop 0.9.0`, a false-context warn on the dispatch path.
+  - **success:** A station declaring `dispatch.max_parallel = N` forms waves of up to N with no
+    bmad-loop clamp advisory; a station declaring nothing behaves exactly as today (`1`); the
+    bmad-loop knob continues to govern the spin engine alone.
+
 ## Partial wave failure (v1 default)
 
 When wave members terminalize **asymmetrically** (one verify-fails, one lands):
@@ -135,6 +154,7 @@ wave. Wave journal records per-member terminal outcome before the wave id closes
 | Capability | Epic 28 story | Story spec |
 |---|---|---|
 | CAP-1..CAP-5 | **28.16** Parallel dispatch fan-out when deps and surfaces are disjoint | `spec-28-16-parallel-dispatch-fanout-when-deps-and-surfaces-are-disjoint.md` |
+| CAP-6 | **33.8** `dispatch.max_parallel` + the first live fan-out wave | minted 2026-09-09 (Epic 33) |
 
 Story **28.12** remains ordering-only (CAP-14). **28.16** deps: **28.12** (ready-set hook).
 
@@ -143,3 +163,26 @@ Story **28.12** remains ordering-only (CAP-14). **28.16** deps: **28.12** (ready
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — wave batch,
   narrowed conflict, journal, default-serial regression
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — no undeclared deps
+
+## Assumptions
+
+- `status: shipped` is **mechanism only.** CAP-1..CAP-5 shipped in Story 28.16 (wave scheduler
+  `core/dispatch_fleet.py:750-790`; narrowed conflict guard `cli/dispatch.py:935`
+  `station_in_flight_conflict(..., parallel_dispatch=False)`; wave journal
+  `cli/dispatch.py:2775`), all `done`. `docs/dreams/marshal-parallel-dispatch-fanout.md`
+  deliberately keeps `status: specified`: its own gate is a live proof, and none exists.
+
+## Residual (carried into Story 33.8)
+
+- `max_parallel` is `1` on all eight rendered loop homes and **no live wave has ever run** — the
+  shipped scheduler has never formed a wave in the running estate.
+- The cap reuses bmad-loop's `scm.max_parallel` rather than the `dispatch.max_parallel` key the
+  Dream asked for. Now CAP-6.
+- **Within-station fan-out cannot form a wave at all.** CAP-16 (Story 28.14) auto-derives
+  `policy_surface` to the station's whole package tree, so two same-station stories overlap by
+  construction and `core/dispatch_fleet.py:786` refuses. Fan-out requires story specs to declare
+  their own `surface:` first. Two capabilities shipped a week apart in the same epic compose into
+  a no-op; neither Spec recorded it until 2026-09-09.
+- The `[epic_surfaces]` entries this Spec's `marshal-policy.toml` glob governs grew on 2026-09-09
+  (marshal `"33"`; steward `"48"` and `"49"`). No fan-out semantics changed — those entries are
+  the declaration `dispatch_fleet` reads.

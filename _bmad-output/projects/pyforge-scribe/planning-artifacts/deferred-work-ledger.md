@@ -189,3 +189,15 @@ sibling ledgers and the detector both use.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+
+## DW-SCRIBE-2026-09-09-ADR-INTEROP — Should Scribe READ pre-existing `docs/adr/`-style files in a target repo?
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md` (body § Open Questions, Q3 — closed 2026-09-09; this is the half that was split off rather than answered)
+  summary: `scribe capture --type decision` will NOT adopt `docs/adr/` numbering (decided 2026-09-09, operator, fleet-readiness decision batch row scribe-B1 — a fourth `--type` value breaks AD-3's byte-identical parity with Claude Code's user-local auto-memory schema, which is CAP-1's own success criterion, and a second numbering scheme is the synonym-into-prose Charter CAP-4 forbids). The separable half is READING: if Scribe is ever installed in a target repo that already keeps `docs/adr/`-style decision records, should `scribe graph compile` treat that directory as a seventh named compile surface (read-only, provenance-cited, never written back)?
+  evidence: `docs/adr/` does not exist in THIS repo, so nothing here can motivate or test it — the question only becomes real when a second consumer repo exists, which is also the trigger `spec-pyforge-scribe`'s "No plugin/marketplace packaging until a second consumer repo exists" Non-goal already names. `compile.py:6-27` enumerates six named surfaces plus one optional gated extra (`SCRIBE_GRAPHIFY_EXTRA`), so the shape for adding a seventh read-only surface already exists and needs no new mechanism. `spec-pyforge-scribe` Non-goal "No cross-repo synchronization — each repo's Scribe instance is self-contained" bounds it: read-in-place only, never a sync.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py
+  origin: fleet-readiness decision batch 2026-09-09 (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, § 2.1 row scribe-B1) — filed as deferred work rather than left as an open contract question
+  severity: low
+  recorded: 2026-09-09
+  status: open
+  close_when: a second consumer repo exists AND it keeps `docs/adr/`-style records — otherwise this stays a hypothetical and closes as a Non-goal

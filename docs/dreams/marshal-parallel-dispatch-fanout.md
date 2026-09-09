@@ -222,3 +222,23 @@ the other way around.
   `spec-marshal-parallel-dispatch-fanout/SPEC.md` (CAP-1 wave scheduler,
   CAP-2 narrowed conflict, CAP-3 journal, CAP-4 explicit cap default 1, CAP-5
   compose with 28.12). Status: `specified`.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Mechanism shipped, **status
+  deliberately NOT flipped.** Story 28.16 is `done`: the wave scheduler
+  (`core/dispatch_fleet.py:750-790`), the narrowed conflict guard (`cli/dispatch.py:935`
+  `station_in_flight_conflict(..., parallel_dispatch=False)`) and the wave journal
+  (`cli/dispatch.py:2775`) are all real, so `spec-marshal-parallel-dispatch-fanout` moves `ready` →
+  `shipped`. This Dream stays **`specified`**: `max_parallel = 1` on all eight rendered loop homes
+  and **no live wave has ever run**, so § *Live proof required* is unmet — under the realization gate
+  a mechanism is not the effect.
+  Both open questions closed by the operator: the cap stays a **fixed integer** (token-budget
+  awareness needs a measured baseline that does not exist), and the wave builder keeps the **live
+  effective-surface intersection** (declaration, not cost, is the bottleneck). **New CAP-6:** factory
+  fan-out gets its own **`dispatch.max_parallel`** policy key — today `cli/dispatch.py:893-902` falls
+  back to bmad-loop's `scm.max_parallel`, so raising it also fires `_max_parallel_clamp_finding`
+  (`core/policy.py:1537-1551`), a warn whose text names bmad_loop 0.9.0 — wrong context on the
+  dispatch path. One knob currently governs two unrelated concurrency models. Decomposed as marshal
+  **Story 33.8**, which also carries the second defect: within-station fan-out cannot form a wave at
+  all until story specs declare their own `surface:` (CAP-16 auto-derivation vs the pairwise refusal
+  at `core/dispatch_fleet.py:786`). Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

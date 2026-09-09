@@ -1,6 +1,7 @@
 ---
 spec: enterprise-airgap
 status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/enterprise-airgap.md
 program: regenerable-factory (Wave 3)
 surface:
@@ -51,3 +52,21 @@ code or committed configuration. Owner: Steward (the estate).
 Same-checkout dual-posture operation (open + behind Artifactory via env
 vars); offline read-side; the open question closed by a host-gated header
 with a regression test.
+
+## Reciprocal chain pointer to mason — 2026-09-09
+
+Mason's `spec-miniforge-installer` names **its own trigger as steward-owned and un-watched**:
+*"steward's enterprise-airgap / Story 12.3 work surfaces a private-channel-locking need for a
+Python distributable."* The socket already exists and is empty by design —
+`src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:54`,
+`SUPPORTED_DISTRIBUTABLES: dict[str, DistributableBackend] = {}` ("Empty by design (Story 9.2).
+External installers register later.").
+
+**So whoever runs the CAP-3 mirror exercise, or Story 12.3's air-gap parity check, must ALSO decide
+whether a Python distributable needs private-channel locking — and, if so, tell mason.** The
+trigger fires here and nothing watches it from the mason side. This is the reciprocal half of the
+Kinship line added to `docs/dreams/enterprise-airgap.md` the same day (batch § 2.3 C7 / Class D
+D11).
+
+No capability change: this Spec stays `shipped`, and CAP-3's mirror run remains unexercised and
+foundry-side.

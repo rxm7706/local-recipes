@@ -2,6 +2,7 @@
 id: SPEC-artifact-chain-reconciliation
 spec: artifact-chain-reconciliation
 status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/artifact-chain-reconciliation.md
 companions:
   - audit-method.md
@@ -18,12 +19,9 @@ assumptions:
   - "The bmad-check-implementation-readiness gate-report class accepts the
     traceability-matrix format; if its template resists, the matrix is the
     report body and the template's summary wraps it."
-open_questions:
-  - "Complete-station demotion precedent: when sampling fails an AC on a
-    shipped station, does the story reopen or does it become a coverage-debt
-    row? Decide at first occurrence (non-blocking)."
-  - "One-shot campaign or standing practice? Priced after the first pass
-    (non-blocking)."
+open_questions: []
+  # BOTH RETIRED 2026-09-09 (operator, fleet-readiness batch rows mars-A-B3 / mars-A-E4).
+  # Full text with dispositions in § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -158,3 +156,20 @@ completed stations' statuses, and all 61 Dreams reconcile against code;
 detectors green; the four decomposition chains and any re-spin proceed on
 artifacts measured true rather than presumed — demonstrable by opening any
 gate report and following any row's citation into the code it names.
+
+## Open questions — closed 2026-09-09
+
+- ~~"Complete-station demotion precedent: when sampling fails an AC on a shipped station, does
+  the story reopen or does it become a coverage-debt row? Decide at first occurrence
+  (non-blocking)."~~ **CLOSED: a coverage-debt row in
+  `planning-artifacts/deferred-work-ledger.md` — NEVER a ledger reopen.** Reopening a `done` row
+  re-arms the dispatch picker on a story whose code already exists (the standing
+  merged-story-with-backlog-row-respawns-forever failure). The first occurrence never arrived: the
+  2026-08-10 audit close records 21 + 21 + 4 done-claim samples all cited, **zero demotions** — so
+  this ruling is precedent-setting, not remedial.
+- ~~"One-shot campaign or standing practice? Priced after the first pass (non-blocking)."~~
+  **STALE — answered elsewhere.** `docs/dreams/chain-currency-sweep.md` and its doctor
+  `DEFERRED_SPECS` entry (`board.py:100-106`) describe exactly the recurring-runbook form this
+  question asked for. The 2026-08-10 one-shot priced itself on 61 Dreams / 335 stories; the estate
+  now holds **131 Dream files** and atlas alone carries **137 stories** — outgrown roughly 2×.
+  Point the question there; it is not re-answered here.

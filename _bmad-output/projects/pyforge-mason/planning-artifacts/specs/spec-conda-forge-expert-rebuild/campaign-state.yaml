@@ -81,7 +81,7 @@ campaign:
   # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
   # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
   # it is not forgotten either.
-  next_story: "12.1-12.8 done (Story 12.8, 2026-08-28: second dated re-scope checkpoint recorded -- campaign.re_scope_gate_2, decision 'adjust' -- slice-3/4 briefing is gated on closing BOTH compiled slices' stale equivalence findings first, see campaign.re_scope_gate_2.note). Epic 12 ends at 12.8 (epics.md's own 'Uncovered remainder' framing) -- no slice-3/4 story is minted yet, and this checkpoint deliberately does not mint one (decompose-no-further discipline). Next real work: close campaign.re_scope_gate_2.pre_conditions.slice1_equivalence_closure and .slice2_equivalence_closure (see slices[0]/slices[1].next_action for the remaining-work detail), then brief whichever of slice 3 (atlas-owned, Story 12.5) or slice 4 (mason-owned) comes next"
+  next_story: "ENDGAME DECLARED 2026-09-09 (operator, fleet-readiness-decision-batch-2026-09-09 section 2.3 C2) -- see campaign.endgame_declared's own comment for the ruling and its evidence. The campaign closes over slices 1-2; slice 3 (atlas-owned, Story 12.5) and slice 4 are NOT briefed and will not be. Next real work is the CLOSING story, mason Epic 15 / Story 15.1: cut the callers over to the two compiled slices or retire the mirrors (delete-on-cutover, no stubs -- OQ4), keep cfe-rebuild-guard-check clean, and land it BEFORE steward S-44.6 moves the CFE cell to skills/domain/conda-forge-expert/ (this Spec's surface is written against .claude/skills/conda-forge-expert/**). campaign.re_scope_gate_2 and its two 'open' pre-conditions are MOOT under the endgame -- they gated a slice-3/4 briefing that will not happen; they were deliberately left unedited as the historical record. Historical: 12.1-12.8 done (Story 12.8, 2026-08-28, second dated re-scope checkpoint, decision 'adjust'); Epic 12 ended at 12.8 with no slice-3/4 story minted (decompose-no-further discipline)."
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices
@@ -508,7 +508,22 @@ campaign:
       Mirrored verbatim into SPEC.md's Open Questions item 1.
   # Story 6.2 guard hooks -- see the "Divergence-and-endgame guard hooks" comment above
   # status_vocabulary for the full field descriptions.
-  endgame_declared: false
+  endgame_declared: true
+  # DECLARED 2026-09-09 (operator ruling, recorded in
+  # _bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md
+  # section 2.3 C2, evidence rows mason-B1 / mason-B2 / mason-B3).
+  # Reason: OQ3 answered NO -- full scope does not survive the measured cost. The cost is
+  # RECURRING, not one-time: every CFE release is a byte-re-port obligation into two mirrors
+  # (23 qualifying retro commits in the campaign range; both re-scope gates returned "adjust",
+  # never "go"), for ZERO behavioural change (callers still empty, both slices still
+  # "compiled"). OQ2's answer removes the remaining upside -- Skill Forge compiles the
+  # knowledge layer while the code is copied byte-for-byte (sha256-identical, see
+  # slices[0].equivalence and slices[1].equivalence), so the unbriefed slices buy briefs,
+  # not better code. Slice 3 (atlas-owned, 12.3x slice 1) and slice 4 are NOT briefed and
+  # will not be. The endgame covers slices 1-2 only: callers flip to the compiled slices, or
+  # the mirrors are retired -- delete-on-cutover, no stubs (OQ4, row mason-B3).
+  # Clause (c) is satisfied trivially while `callers` stays empty; the closing story
+  # (mason Epic 15 / Story 15.1) populates or retires it.
   callers: []
 
 slices:

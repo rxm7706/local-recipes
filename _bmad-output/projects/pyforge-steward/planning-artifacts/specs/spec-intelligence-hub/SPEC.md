@@ -1,26 +1,45 @@
 ---
 spec: intelligence-hub
-status: draft   # 2026-09-05 seeded so the Dream's chain link is durable (dream-chain INV-1); 2026-09-06 RB-1/RB-2 research closed (Frame Spec v0.2.0 exists; nebari + nebi on conda-forge, NIC absent). Still nothing chosen: CAP-1..5 are candidate shapes behind the operator's open questions. Registered in doctor's DEFERRED_SPECS until those clear.
+status: ready   # 2026-09-09 (operator, fleet-readiness decision batch § 2.3 C4 — the nine-answer
+                # bundle approved as one). Was `draft` from 2026-09-05, when the Spec was seeded so
+                # the Dream's chain link was durable (dream-chain INV-1); RB-1/RB-2 closed
+                # 2026-09-06. All six declared open questions plus the three the Dream gained on
+                # 2026-09-09 are now answered and the shapes are chosen — see § Decisions.
+                # OWED TO DOCTOR in the same change (cross-station): de-register this Spec from
+                # `pyforge/doctor/sources/board.py` DEFERRED_SPECS. Its entry rationale is also
+                # factually wrong — it says NIC is absent, and `recipes/nebari-infrastructure-core`
+                # landed 2026-09-07.
+                # This flip is the precondition `spec-pyforge-unifying-strategy`'s own
+                # `realization-gate-home` question names: Epic 49 re-homes to `hub:CAP-*` once this
+                # Spec reaches `ready`.
+updated: "2026-09-09"
 owner-dream: docs/dreams/intelligence-hub.md
 surface: []
 companions:
   - vocabulary-map.md
 sources:
   - ../../../../../../docs/dreams/intelligence-hub.md
-open_questions:
-  - "Owner: steward (the estate; already owns the Unifying Strategy, eval-quality and the channel product) vs marshal (Ops, Gates) vs scribe (Frames, memory) — owning is the post, not the product."
-  - "Which of the seven Guard categories does the repo lack entirely, and is source-grounding of LLM output the first to add? Shapes CAP-4."
-  - "Does a bmad-loop run already emit enough to constitute a Track, and what retention does the operator want? Shapes CAP-3."
-  - "Does the repo publish its own context as Frames (a Community Frame for local-recipes)? RB-1 removed the 'does a protocol exist' blocker; this is now purely the operator's call on CAP-2."
-  - "Derived from RB-2: package `nebari-infrastructure-core` (Go CLI, GitHub-release binaries + Homebrew only, v0.14.0) and the `frames` registry client (Go, v0.1.7) as local recipes — is that wanted, now that CAP-5's verified gap is exactly those two?"
-  - "Derived from RB-1: author the first conformant `.frame.md` for local-recipes now (v0.2 is a single Markdown file with four required frontmatter fields — cheap, validator in-repo) or wait for the shape decision?"
+open_questions: []
+  # ALL ANSWERED 2026-09-09 (operator, batch § 2.3 C4 bundle) — full text in § Decisions:
+  #  - Owner (B6)                 -> STEWARD, with relays to marshal (Track) and scribe (Frame store).
+  #  - Missing Guard categories (B7) -> exactly two: Source-Grounding and Outcome; source-grounding first.
+  #  - Track + retention (B8)     -> a run is NOT yet a Track; assemble one tracked `track.json`
+  #                                  per run; Track kept indefinitely, raw payload 90 days.
+  #  - Publish context as Frames (B9) -> YES, minimally and privately; git is the store; no
+  #                                  Community Frame and no registry.
+  #  - Package NIC / frames client (B10) -> question was STALE (both recipes landed 2026-09-07);
+  #                                  rewritten as "when do they go to conda-forge?" -> NOT NOW.
+  #  - Author the first `.frame.md` now (B11) -> NOW.
+  #  - D-1 which reading of "align" -> reading 2 with reading 1 folded in; reading 3 deferred.
+  #  - D-2 `NebariApp` template + NIC kind profile -> not now, foundry-side.
+  #  - D-3 `nebi push` before the cutover -> no; foundry-side, after the flag.
+  # RB-1 and RB-2 closed earlier, on 2026-09-06, with dated evidence in the Dream.
 ---
 
-> **Canonical contract — in `draft`.** This SPEC and `vocabulary-map.md` are the chain link for
-> `docs/dreams/intelligence-hub.md`, not yet a contract downstream can bind to: the capabilities
-> below are the Dream's five candidate shapes, **none chosen**, and the choice waits on the
-> `open_questions`. The two pre-Spec research items (RB-1, RB-2) closed on 2026-09-06; their
-> findings live in the Dream's § Research backlog.
+> **Canonical contract.** This SPEC and `vocabulary-map.md` are the complete contract for
+> `docs/dreams/intelligence-hub.md`. As of **2026-09-09** the shapes are **chosen** and every open
+> question is answered (§ Decisions), so downstream may bind to it. The two pre-Spec research items
+> (RB-1, RB-2) closed on 2026-09-06; their findings live in the Dream's § Research backlog.
 
 # SPEC — PyForge speaks the Intelligence Hub vocabulary deliberately
 
@@ -36,12 +55,16 @@ It speaks that vocabulary by accident. This Spec exists to decide which of the p
 PyForge adopts, aligns to, or merely names — deliberately. One tension is carried, not assumed:
 PyForge rents the model and the harness (Claude Code sits on the paper's rented-black-box list)
 while owning the context, the workflows, the checks and the evidence — the split the paper says
-matters most. Owner: **steward** (the estate) until the owner question is answered.
+matters most. Owner: **steward** (the estate) — settled 2026-09-09 (§ Decisions B6), with
+`hub:CAP-3` (Track) relayed to marshal and the Frame-store half of CAP-2 relayed to scribe.
 
 ## Capabilities
 
-*Candidate shapes. Selecting among them is this Spec's first decision and is deferred behind
-the open questions; an unchosen shape becomes a non-goal at that point, never silently dropped.*
+*Chosen 2026-09-09 (§ Decisions). The reading of "align" is **reading 2** — adopt the artifact
+model on the existing stack — with reading 1 (the vocabulary cross-walk) folded in because the
+cross-walk is free. Reading 3 (NIC as substrate) is deferred behind the cutover flag, so the
+Dream's candidate shapes 6 and 7 are not in this contract. All five CAPs below are in scope; none
+was dropped.*
 
 - **CAP-1 — Vocabulary alignment only.**
   - **intent:** the Charter's Lexicon and the station roster map once to Frames / Cogs / Ops /
@@ -52,12 +75,15 @@ the open questions; an unchosen shape becomes a non-goal at that point, never si
 - **CAP-2 — Frames as first-class** *(gate lifted 2026-09-06 — RB-1: Frame Spec v0.2.0 is
   published; single-file Markdown + YAML frontmatter; registries, identity and provenance out
   of its scope).*
-  - **intent:** the repo's own context — the `AGENTS.md` block, station personas, the
-    recipe-authoring conventions — published as Frame-shaped artifacts with named accountable
-    owners; a Community Frame for local-recipes.
-  - **success:** each artifact passes the spec's own `tools/validate_frames.py` (the v0.2
-    required fields) and names its owner; if the `nebari-frames` registry is adopted, each also
-    survives its `.frame.md` import/export round trip.
+  - **intent:** the repo's own context — the `AGENTS.md` verified block, the station personas —
+    published as Frame-shaped artifacts with named accountable owners: **one Company Frame plus
+    eight station Frames that `inherits` it, with git as the store** (decided 2026-09-09, B9;
+    no Community Frame, no registry).
+  - **success:** each artifact passes an **IN-REPO four-field preflight** implementing Frame Spec
+    v0.2's required fields (`type`, `name`, `description`, `visibility`) and names its owner.
+    Upstream's `tools/validate_frames.py` is an **optional cross-check only** — `openteams-ai/frame-spec`
+    has no LICENSE file and no git tag (RB-1), so no acceptance criterion in this repo may depend
+    on it. *(Contract fix 2026-09-09, B11.)*
 - **CAP-3 — A declared validation strategy per run.**
   - **intent:** a bmad-loop run or `marshal factory spin` declares its Guards by stage, its
     Gates as threshold rules, and its Track contents + retention, so the several evidence files
@@ -82,8 +108,17 @@ the open questions; an unchosen shape becomes a non-goal at that point, never si
 
 ## Constraints
 
-- **Dream-first.** No code from the seed; this Spec chooses among CAP-1..5 before any code — and
-  has not chosen yet.
+- **Dream-first.** No code from the seed; this Spec chooses among CAP-1..5 before any code.
+  *(Satisfied 2026-09-09 — the shapes are chosen; see § Decisions.)*
+- **Any `hub:` NIC-profile story is GATED on the first green `ocp-portability-smoke` run.** The
+  OCP profile is already a profile by construction (`pap:AD-11` keeps the core chart unchanged and
+  confines OCP specifics to `overlays/ocp/`), so a NIC overlay would sit beside it cleanly — but
+  the OCP profile has never been proven on a cluster, and two unproven profiles side by side
+  double the claim with zero evidence. Steward's first-green funding decision
+  (`spec-ocp-as-a-portability-profile`, batch C14) is therefore the prerequisite for the Dream's
+  shape 6, not a separate errand.
+- **An external vocabulary is cross-walked and NEVER enters the seven Lexicon terms.** The
+  Charter's CAP-4 ruling (guild-E3): the Hub vocabulary maps to the Lexicon, it does not join it.
 - **The whitepaper is the source of record.** No claim the paper does not make; re-verify any
   statistic or vendor fact at intake; cite later revisions by tag from
   `openteams-ai/inthub-whitepaper` (Revision 9 = `v9`), never by PDF URL alone.
@@ -106,23 +141,118 @@ the open questions; an unchosen shape becomes a non-goal at that point, never si
 - Reproducing the whitepaper; readers who need the text go to the source.
 - Re-packaging `nebari` or `nebi` — both are on conda-forge (RB-2); version bumps there are
   PRs to feedstocks rxm7706 does not maintain, not this chain's work.
+- **A Community Frame, or any Frame registry** *(2026-09-09, B9)*. `openteams-ai/frame-spec` has
+  no LICENSE file and no git tag, and `nebari-frames` is beta on single-writer SQLite with
+  `replicaCount: 1` — a fourth infra kind against the lock. Frames stay private, in git.
+- **Submitting `nebari-infrastructure-core` or `nebari-frames` to conda-forge** *(2026-09-09,
+  B10 — "not now")*. Revisit on first real consumption.
+- **A `NebariApp` template in the Foundry chart, and the NIC kind profile** *(2026-09-09, D-2)* —
+  not now, foundry-side; the chart's Ingress/Route stays primary (`pap:AD-11`).
+- **`nebi push` of the station workspaces to OCI before the cutover** *(2026-09-09, D-3)* —
+  foundry-side, after the flag.
 
 ## Success signal
 
-The operator has chosen among CAP-1..5 (each choice a memlog decision; unchosen shapes recorded
-as non-goals), RB-1 and RB-2 are closed in the Dream with dated evidence (done 2026-09-06), the
-remaining questions are answered, and this Spec reaches `ready` — at which point it leaves
-doctor's `DEFERRED_SPECS` and decomposes into steward epics. Until then the signal is only this:
-the chain link exists and the contract is honestly unsettled.
+*Reached 2026-09-09 for the choosing half:* the operator has chosen among CAP-1..5 (each choice a
+memlog decision; nothing dropped silently — the deferred readings are recorded as non-goals), RB-1
+and RB-2 closed in the Dream with dated evidence (2026-09-06), every remaining question is
+answered, and this Spec is `ready` — so it leaves doctor's `DEFERRED_SPECS` and decomposes into
+steward epics.
+
+*The signal that remains:* the Charter carries the vocabulary cross-walk and its reverse block;
+one Company Frame plus eight station Frames pass the in-repo four-field preflight; one bmad-loop
+run emits one tracked `track.json` with its enumerated fields and stated retention; and a Spec can
+name which Guard categories it lacks, with source-grounding running on dev/review output rather
+than at one site.
 
 ## Assumptions
 
-- Owner `steward` stands until the owner question is answered; the Spec moves with the owner
-  (dream-chain INV-2) if it changes.
+- Owner `steward` — **settled 2026-09-09 (B6)**, no longer an assumption; marshal and scribe hold
+  relays, never the Lexicon amendment.
 - The candidate shapes are independent; more than one may be chosen, and CAP-1 may be chosen
-  alone.
+  alone. *(All five were chosen.)*
 - Frame Spec v0.2 stays a single-file format (its directory form is deferred) and its repository
   stays licence-less until upstream says otherwise; conformant documents can be authored
   regardless, and the spec text itself is never vendored here.
 - `nebari-feedstock` and `nebi-feedstock` stay maintained by nebari-dev people; rxm7706 is not a
   maintainer on either, so any bump there is a reviewed PR, never a push.
+
+## Decisions — 2026-09-09
+
+Nine answers, approved by the operator as one bundle (`fleet-readiness-decision-batch-2026-09-09.md`
+§ 2.3 C4). They flip this Spec `draft → ready`.
+
+**B6 — Owner: STEWARD stays owner.** `hub:CAP-3` (Track) relays to marshal; the Frame-store half of
+CAP-2 relays to scribe. The alignment work is a Charter/Unifying amendment plus a deploy profile,
+and both are steward surfaces (`spec-pyforge-unifying-strategy` is steward's — `SPEC.md:21` carries
+the `extends:`; an NIC profile would land beside `steward/deploy_profiles.py`). Same
+one-owner-plus-relays shape already proven at eight stations by `spec-bmad-suite-lifecycle`. Marshal
+owns the Ops/Gates mechanics and scribe Organizational Memory **as relays, never as owners of the
+Lexicon amendment**.
+
+**B7 — Missing Guard categories: exactly TWO of the paper's seven.**
+
+- **Source-Grounding** exists at exactly one site — `scribe/recall.py` AD-8, "no code path may
+  return synthesized prose without a resolvable citation" — and **nowhere on the dev/review output
+  that actually lands code**.
+- **Outcome** is absent entirely (eval-quality's catch rate is a Guard on a Guard, not an Outcome
+  Guard).
+
+The other five map to live surfaces: Algorithmic = the ~30 `*-check` detectors + warden's verdict
+lattice; Consensus = the parallel review lenses; Expert = `gate_mode` + the operator-confirmation
+lines at `AGENTS.md:29-30`; Policy & Safety = warden license/vuln/waiver + marshal's 14 MRS-GATEs;
+Regression & Drift = `bmad-drift-check`, `spec_surface_check.py`, doctor's `frozen_path.py`.
+**SOURCE-GROUNDING GOES FIRST** — a working in-repo pattern exists to copy (AD-8), the repo's own
+memory names the failure it prevents, and Outcome Guards are blocked on `build-league-scorecard`'s
+measure set (batch C13).
+
+**B8 — Track + retention: a bmad-loop run does NOT yet constitute a Track.** Enough content, wrong
+shape and wrong place. A run emits `journal.jsonl`, a gate record (`gate-record.json`),
+`state.json`, `session.log` and `dispatch-supervisor.log`, all under a Tier-3 **gitignored**
+`dispatch-runs/<run>/` dir — roughly 60 % of the paper's Track field list (the Op run,
+Guards-as-commands with results, the Gate verdict, timestamps, tree revision), missing
+model/adapter version and config, human approvals/overrides, and any retention statement anywhere
+in the repo. **Decision: assemble ONE TRACKED `track.json` per run** from what already exists plus
+those three field groups; keep the **Track indefinitely** and the **raw payload 90 days**. Marshal
+supplies the field enumeration (relay). Evidence in a gitignored tree is the same failure that lost
+13 warden story specs to worktree teardown.
+
+**B9 — Publish the repo's context as Frames: YES, minimally and privately.** One Company Frame
+derived from the `AGENTS.md` verified block, plus eight station Frames that `inherits` it, with
+**git as the store**. No Community Frame and no registry (see § Non-goals for why). Conformance is
+four frontmatter fields with a free-form body (frame-spec PR #25, merged 2026-09-07), and the eight
+`bmad-agent-<station>` persona `SKILL.md` files already are that shape. **Prerequisite: refresh the
+`AGENTS.md` managed block via `bmad-project-context` first** — it is stamped "Verified 2026-09-06
+against `99e595cc6a`" and main is `fe4025ea90`.
+
+**B10 — Package NIC / the frames client: the question was STALE AS WRITTEN**, and is rewritten
+before it is answered. Both recipes landed 2026-09-07, two days before the Dream recorded the lane:
+`recipes/nebari-infrastructure-core/recipe.yaml:5` (0.14.0, `dd7c4e7eb7`) and
+`recipes/nebari-frames/recipe.yaml:5` (0.1.7, `3469ee97cb`). Rewritten as *"when, if ever, do NIC
+and nebari-frames go to conda-forge?"* and answered **NOT NOW**: NIC's own README says "under heavy
+development and very unstable … not yet suitable for production", rxm7706 maintains neither
+neighbouring feedstock, nothing in the estate consumes either recipe, and an external PR needs an
+explicit ask (`AGENTS.md:28`). **Trigger for revisiting: first real consumption.**
+
+**B11 — Author the first `.frame.md` now or after the shape decision: NOW.** It is the same work as
+B9 and one of the few moves the cutover does not penalise — the Dream's own A→B→C sequence puts
+Frames in the "now" column precisely because Dreams and memlogs are re-derived into the foundry,
+not migrated. Cost is a frontmatter block over text that already exists plus a ~30-line four-field
+check. **Contract fix in the same ruling:** CAP-2's success must not bind to upstream's unlicensed
+`tools/validate_frames.py` — rewritten to the in-repo preflight (see CAP-2).
+
+**D-1 — Which reading of "align": READING 2** (adopt the artifact model on the existing stack) with
+reading 1 (the vocabulary cross-walk) folded in, because the cross-walk is free. **Reading 3** (NIC
+as substrate) is **deferred behind the cutover flag**.
+
+**D-2 — `NebariApp` template + NIC kind profile: NOT NOW, foundry-side.** The chart's Ingress/Route
+stays primary (`pap:AD-11`). Any `hub:` NIC-profile story is gated on the first green
+`ocp-portability-smoke` run — see § Constraints.
+
+**D-3 — `nebi push` before the cutover: NO** — foundry-side, after the flag.
+
+**guild-E3 — Charter amendment shape for CAP-1:** close the "or the Unifying Strategy" branch **in
+the Charter's favour** — the vocabulary map lands in `pyforge-charter.md`, not the Unifying
+Strategy. Add the **reverse cross-walk block** (three Lexicon nouns with no Hub counterpart; the
+Cogs collision), and carry an explicit **CAP-4 ruling** that an external vocabulary is cross-walked
+and never enters the seven Lexicon terms.

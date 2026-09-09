@@ -11,12 +11,22 @@ sources:
   - ../../../../../../docs/dreams/kedro-org-tooling-adoption.md
   - ../../research/technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md
   - ../../../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md
-open_questions:
+updated: "2026-09-09"
+open_questions: []
+  # Serialization fix 2026-09-09 (readiness finding D-6): all four questions below were already
+  # declared RESOLVED by this comment, yet still sat under the machine key — so any consumer
+  # reading frontmatter saw four open questions on a `shipped` Spec. They now live under
+  # `resolved_questions:`, verbatim. Status `shipped` and Dream `realized` are both correct and
+  # unchanged; this was a serialization defect, not a content one.
+resolved_questions:
   # All four RESOLVED by delivery (audit Phase 3, 2026-08-10): Q1 by Path B shipping
   # (12-2 publishes via steward deploy dashboard — the dormancy question no longer gates);
   # Q2 answered (atlas Epic 12 carried the story, done); Q3 deferred as optional goodwill
   # (not an AC — recorded here); Q4 answered (bmad-module-provisioning landed FIRST and is
   # realized — provision-through-it stands for any future kedro-skills install).
+  # Every resolution is verifiable on disk: `kedro-skills-audit-report.md` (Cap 1),
+  # `.github/workflows/kedro-viz-publish.yml` (Cap 2), `.vscode/extensions.json` +
+  # `vscode-kedro-decision.md` (Cap 3).
   - "Is publish-kedro-viz dormant-and-abandoned or stable-and-done? Last push 2025-11-25 (~8.5 months); the Action is thin enough that quiet may mean finished, but it wraps kedro-viz's build interface and kedro-viz itself is moving (v12.4.0, pushed 2026-08-08) — a future kedro-viz major could strand the v3 pin. The research recommends Path B (Steward publishes `kedro viz build` output directly) precisely because this question is unresolved."
   - "Which station's backlog carries the viz-publishing story? The Dream blesses owner ≠ mechanism (Atlas owns the outcome, Steward owns `deploy dashboard`), but the story has to live somewhere concrete."
   - "Does the kedro-skills upstream-contribution angle (Atlas as an unusually invariant-heavy Kedro deployment) become an AC on the audit story ('file upstream issues for guidance the audit finds wrong') or a separate goodwill task?"

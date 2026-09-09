@@ -104,3 +104,27 @@ follow-up on top of it, not a replacement) · [[herald-moments-2-4-missing-surfa
 - **2026-08-10** — Specified: operator go in-session ("herald live-backend"); Spec at
   `ready`, decomposed as herald Epic 13 (6 stories) with the concurrency prerequisite as
   S-13.1 and the Spec's serverless-intermediates brake preserved as S-13.2.
+
+- **2026-09-09 (fleet readiness pass — built, never run green)** — Epic 13 is 6/6 `done`
+  and the code is real (`db.py` 667, `locking.py` 208, `webhook.py` 1350,
+  `webhook_host.py` 246, `scheduler.py` 193), but under the realization gate the
+  live-backend half is **not in effect**: `.github/workflows/herald-live-demo.yml` — the
+  only thing in the estate that ever starts a listening process — is `disabled_manually`,
+  its last 100 runs are 100 failures with zero successes, and its last run was 2026-08-24;
+  its own header states it is "never a persistent, publicly-reachable deployment" and
+  writes each job to a `${{ runner.temp }}` DB "discarded when the job ends". **A ship has
+  never recorded itself.** Two corrections to the 2026-08-10 entry: the webhook path
+  (`/api/herald/webhooks/on-ship`, `webhook.py:183-184`) violates the station route
+  contract — `spec-pyforge-unifying-strategy` SPEC.md:497 is an Always, "station routes are
+  `/stations/<name>/api/v<N>/`", and `config/asgi.py:149-150` sends every bare `/api/*`
+  path to the platform FastAPI seam, so mounting the app today is a silent 404 — and
+  "adopting Steward's pattern" bound only `webhook.py`'s *shape* (AD-8/AD-9), not its
+  hosting: `pyforge-herald` imports nothing from `pyforge-steward` and mounts no Steward
+  middleware (`webhook_host.py:77-89`), while `DW-13-6-1` records that `steward deploy
+  perimeter` still cannot target an arbitrary ASGI callable (`deploy.py:484` hardcodes
+  `myproject.asgi:application`). **Operator decision (fleet-readiness decision batch
+  2026-09-09, row C11): there is no pull; the question re-opens as a *hosting* decision
+  when the python-foundry cutover gives Herald a real perimeter.** LB-1 is closed; LB-2 and
+  LB-3 are re-scoped `foundry-side`; the Spec moves `ready → in-progress`. **Status held at
+  `specified`.** Vessel for the two now-actionable halves: herald Epic 19 (Stories 19.1 the
+  route-contract move, 19.2 one real ship against a persistent store).

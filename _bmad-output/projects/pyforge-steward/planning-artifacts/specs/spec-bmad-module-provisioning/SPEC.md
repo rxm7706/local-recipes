@@ -8,19 +8,19 @@ surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
 sources:
   - ../../research/market-steward-platform-ops-2026-08-08.md
-open_questions:
-  - "What is a 'module', concretely? The Dream names npm-distributed BMAD Method
-    modules (Skill Forge, BMB, TEA/CIS, the unexercised five) — but the boundary
-    with a bare .claude/skills/ skill or a _bmad/custom/ config layer is not
-    pinned. First cut: a module is a thing with its own upstream installer that
-    lands files in .claude/skills/ and/or _bmad/; a hand-authored skill is not."
-  - "Installed-vs-available state: new .steward/ file (keys-inventory precedent)
-    or derived from the filesystem (derive-don't-declare memory rule)? Research
-    OQ2, deliberately unresolved. The Terraform comparison argues hard against
-    any state file; leaning derivation, decide at epic time."
-  - "Flag-value naming: --module skf vs --module skill-forge vs the npm package
-    name (bmad-module-skill-forge). The Dream says 'naming TBD at Spec time';
-    still TBD — pick when the first backend lands."
+updated: "2026-09-09"
+open_questions: []
+  # ANSWERED IN CODE 2026-09-09, all three retired (batch row stA-C6):
+  # 1. "What is a module, concretely?" — the five names in `_SUPPORTED_MODULES`
+  #    (bmb, tea, cis, utility-skills, manticore) plus `_SKIPPED_MODULES`; the five install
+  #    classes in `install-class-playbook.md` draw the boundary a hand-authored
+  #    `.claude/skills/` skill falls outside of. The Spec's own first cut held.
+  # 2. Installed-vs-available state — DERIVED, no state file. `provision.py:71` records it
+  #    verbatim ("no new state file — derive-don't-declare"); `.steward/` holds only the
+  #    keys-inventory plus the examples. The Terraform comparison won.
+  # 3. Flag-value naming — short module names, `--module bmb|tea|cis|utility-skills|manticore`.
+  #    `--module skf` is an explicit, documented REFUSAL (Skill Forge installs by its own
+  #    installer).
 ---
 
 # SPEC — BMAD modules are provisioned, not hand-installed

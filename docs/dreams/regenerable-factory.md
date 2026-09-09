@@ -71,3 +71,13 @@ framework-neutral) · [[pyforge-charter]].
 - **2026-07-23** — doctrine decided (user call, inverting the
   "no retroactive ceremony" default): backfill PRDs/specs for realized work
   so any code is changeable through the pipeline; Dream seeded.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Currency, status unchanged
+  (`realized`). The **drift half is live**: `gather_spec_surface` over the tree returns 6 entries, 5
+  informational plus *"every tracked file governed or allowlisted; no drift"*. The **drill half has
+  no live oracle**: the 2026-07-23 PASS (`spec-factory-console/drill-evidence.md`) was against
+  `generate.py`, and `spec-factory-console/SPEC.md:78` now records *"regeneration drill is historical
+  — `generate.py` is gone."* So the estate holds no *re-runnable* proof of this Dream's own central
+  claim. The successor drill is named in the Unifying Dream (§ *What the Foundry becomes*) as
+  foundry's own construction, rebuild-with-the-archive-as-oracle — **no new drill is owed in
+  local-recipes**. Batch: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

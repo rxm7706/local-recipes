@@ -1,14 +1,18 @@
 ---
 spec: bmad-switch-scope-enforcement
-status: ready
+status: in-progress
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-switch-scope-enforcement.md
 surface:
   - scripts/bmad-switch
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
 sources:
   - ../../../../../../docs/dreams/bmad-switch-scope-enforcement.md
-open_questions:
-  - "Which write boundaries beyond bmad-switch and marshal init get the preflight wired first — the Dream wants it before every BMAD write-skill invocation, but the injection mechanism into skills is undecided."
+open_questions: []
+  # OQ-1 ANSWERED 2026-09-09 (operator, fleet-readiness batch rows mars-A-B5 / C10): NO further
+  # BMAD write-skill gets the preflight in local-recipes. Wire `verify_scope` at
+  # `marshal factory dispatch` instead, and DEFER the skill-injection question to the foundry
+  # cutover's 44.5 layout. See § Open question -- closed 2026-09-09.
 decisions:
   - "Story 20.6 CAP-1: shared primitive lives at pyforge.marshal.scope (import path; stdlib-only body). never-two-parallel-copies — no Genesis twin in this repo; 20.7 consumers import this module."
 ---
@@ -107,13 +111,32 @@ expected_slug)` flags it as `ScopeDrift`; `bmad-switch --current` exits non-zero
 "unrecognized" rather than passing; and exactly one implementation backs all of it — at which
 point DW-1-4-2 (`deferred-work-ledger.md:385`) can be closed against this spec.
 
-## Open Questions
+## Open question — closed 2026-09-09
 
-- "Which write boundaries beyond `bmad-switch` and `marshal init` get the preflight wired first —
-  the Dream wants it before every BMAD write-skill invocation, but the injection mechanism into
-  skills is undecided."
+- ~~"Which write boundaries beyond `bmad-switch` and `marshal init` get the preflight wired first
+  — the Dream wants it before every BMAD write-skill invocation, but the injection mechanism into
+  skills is undecided."~~ **CLOSED (operator):** no further BMAD write-skill gets the preflight in
+  `local-recipes`. Story 20.7 shipped exactly two call sites and said so (`spec-20-7:19,:31`).
+  The remaining exposure is not skills-in-general — it is the **parallel-agent case** `CLAUDE.md`
+  documents as a HARD rule and auto-memory records as a live incident (the 2026-07-25 five-agent
+  fan-out). Every parallel BMAD write today enters through `marshal factory dispatch`, which
+  already stamps `BMAD_ACTIVE_PROJECT` per invocation (verified in a live journal payload:
+  `"bmad_active_project": "pyforge-steward"`), so **one `verify_scope` call there covers the whole
+  class** without inventing an injection mechanism — and the two gitignored compatibility symlinks
+  this Dream guards may not survive the cutover at all. **Rejected:** wire a `bmad-customize`
+  override into every write-skill now — it lives in the regenerated BMAD install layer and would
+  have to survive every `bmad-method update`. **Decomposed as marshal Story 33.9**; the
+  skill-injection question defers to foundry 44.5.
 
 ## Decisions (Story 20.6)
 
 - Shared primitive home: `pyforge.marshal.scope` (import path; stdlib-only). never-two-parallel-copies
   — no Genesis twin in this repo; story 20.7 callers import this module.
+
+## Assumptions
+
+- `status: in-progress`, not `shipped` (2026-09-09). CAP-1/CAP-2 are in effect: Stories 20.6/20.7
+  shipped one shared stdlib-only primitive (`pyforge/marshal/scope.py`) consumed by exactly two
+  hard-failing call sites — `scripts/bmad-switch:207-210,232-233` and
+  `pyforge/marshal/cli/init.py:247` — and `DW-1-4-2` is closed. The third call site the operator
+  chose (`verify_scope` at `marshal factory dispatch`) is unbuilt: Story 33.9.

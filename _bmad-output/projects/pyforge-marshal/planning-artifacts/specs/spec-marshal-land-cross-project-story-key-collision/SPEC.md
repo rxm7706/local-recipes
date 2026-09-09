@@ -1,5 +1,7 @@
 ---
 id: SPEC-marshal-land-cross-project-story-key-collision
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/marshal-land-cross-project-story-key-collision.md
 companions: []
 sources:
@@ -102,3 +104,17 @@ subjects. A live re-run of `marshal land pyforge-mason` against the current,
 still-unlanded `4.2` wave reports a fresh landing, not `already_landed` —
 the fix's own acceptance evidence against the exact real bug that motivated
 it.
+
+## Assumptions
+
+- **`status:` ADDED 2026-09-09 — `(absent)` → `shipped`.** The key was missing entirely; doctor's
+  chain-completeness reports 2/2 CAPs uncovered only because no story key names this Spec.
+- CAP-1/CAP-2 are live and fixture-pinned. Fixed by direct commit `d7fd62707b` *("marshal: scope
+  the GitHub PR-merge story-key pattern to `project_slug`")* and then **absorbed into Story 20.8's
+  shared grammar**, where the scoping lives as `_branch_belongs_to_project`
+  (`pyforge-core` `landing_evidence.py:161`, applied at `:227`). The regression is pinned on PR
+  #274's real subject against **both** slugs (`pyforge-core`
+  `tests/unit/test_landing_evidence.py:72`; `pyforge-marshal` `tests/unit/test_promotion.py:42-95`).
+- **Decomposition note, checked before flipping:** no `epics.md` story ever owned this fix — it
+  landed outside the story ledger and was back-filled by Story 20.8 (`done`). The work is therefore
+  decomposed-and-done through 20.8, which is why the value is `shipped`, not `ready`.

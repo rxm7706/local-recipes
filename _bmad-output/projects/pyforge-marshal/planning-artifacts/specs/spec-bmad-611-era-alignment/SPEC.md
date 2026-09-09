@@ -1,6 +1,7 @@
 ---
 spec: bmad-611-era-alignment
-status: ready   # CAP-1..7 shipped (marshal Epic 25, 7/7 done 2026-08-24); CAP-8..11 (2026-09-05) + CAP-12..13 (2026-09-06) decomposed as marshal Epic 30 (30.1–30.5) + Epic 31 (31.1–31.6), not started
+status: ready   # RE-DERIVED 2026-09-09: CAP-1..7 shipped (marshal Epic 25, 7/7 done 2026-08-24); Epic 30 is 5/5 `done` (30-1..30-5); Epic 31 is 31-1..31-3 `done`, 31-4 + 31-5 `backlog`, 31-6 `blocked`. The status VALUE stays `ready` — the round closes when Epic 31 does.
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-611-era-alignment.md
 surface: []   # none claimed: the story surfaces (policy.py, status surfaces, DW scripts, guard test) are measured by fleet-level spec-surface coverage, not double-governed here
 companions:
@@ -14,12 +15,10 @@ assumptions:
   - "The v7 cut is still months out: 6.12.0 shipped 2026-09-03 without
     bmad-ticket or the TOML cutover, no date or milestone exists, cadence stays
     monthly-plus — CAP-1 / CAP-8 remain cheap insurance, not an emergency."
-open_questions:
-  - "CAP-8: derive the guard tuple from steward's release catalog
-    (`data/bmad_core_releases/<ver>.yaml` skill_renames + removals) instead of
-    a hand-kept tuple? Default yes at story time — derive, don't declare — once
-    the 6.12.0 catalog lands (its 2026-09-05 draft was lost with the swept
-    worktree; re-derive it from the unpacked package)."
+open_questions: []
+  # RETIRED 2026-09-09 (fleet-readiness batch row mars-A-D7). CAP-8's question was ANSWERED AT
+  # STORY TIME, AGAINST THIS SPEC'S OWN DEFAULT: Story 30.1 kept `RETIRED_SKILL_IDS` a
+  # hand-maintained tuple rather than deriving it. See § CAP-8 -- decided against the default.
 ---
 
 # SPEC — PyForge stays aligned to the installed BMAD era
@@ -262,3 +261,24 @@ zero `project-context.md` rows and SYNC-RUNBOOK's cadence names only
 discontinued `llms-full.txt`; and the three bmad-loop repo skills diff empty
 against the installed package under a test — each traceable to the
 alignment-inventory row (#9–#14) it closes.
+
+## CAP-8 — decided against the default (2026-09-09)
+
+This Spec set the default to **derive** the retired-ID guard tuple from steward's release catalog
+(`data/bmad_core_releases/<ver>.yaml` `skill_renames` + `removals`). **Story 30.1 shipped the
+opposite:** `RETIRED_SKILL_IDS` stays a **hand-maintained tuple**, with a one-directional
+catalog-consistency meta-test as the compensator (`spec-30-1:73-74`). The reversal was never
+recorded on this parent Spec until now.
+
+**Residual, named by that story itself (`:14-22`, `:79`):** the meta-test reads only
+`skill_renames[].from` and never the catalog's `removals` list, so **a fully-removed,
+never-shimmed id is unguarded**. Re-open if a removal-class id is ever missed.
+
+This contradicts the standing derive-don't-declare rule, which is exactly why it is on the record
+here rather than left implicit in the story.
+
+## Cross-station (2026-09-09)
+
+The epic-level rollup rows contradict their own stories — `epic-30: backlog` and `epic-31: backlog`
+sit beside `epic-25`..`epic-29` all `done`. That defect is **steward-owned**, folded into Story
+48.1; no marshal story is minted for it.

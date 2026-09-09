@@ -2,7 +2,7 @@
 title: A BMAD write can never land in the wrong project's artifacts, mechanically
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A BMAD write can never land in the wrong project's artifacts, mechanically
@@ -125,3 +125,17 @@ kinship, not a merge)
   "Marshal owns the source of `scripts/bmad-switch`" statement — not Steward, despite most other
   BMAD-infra Dreams in this repo defaulting there.
 - **2026-08-14** — Spec authored (spec-bmad-switch-scope-enforcement, pyforge-marshal) by the 2026-08-14 dream-backlog audit: one shared verify_scope primitive consumed by bmad-switch and cli/init.py, closing DW-1-4-2's product-decision hook.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`.**
+  Stories 20.6/20.7 shipped one shared stdlib-only primitive (`pyforge/marshal/scope.py`) consumed by
+  exactly two hard-failing call sites — `scripts/bmad-switch:207-210,232-233` and
+  `pyforge/marshal/cli/init.py:247`. `DW-1-4-2` closed.
+  **The open question is answered by the operator:** no further BMAD write-skill gets the preflight
+  in local-recipes — `verify_scope` is wired at **`marshal factory dispatch`** instead (marshal
+  **Story 33.9**), and the skill-injection mechanism is deferred to the foundry cutover's 44.5
+  layout. Rationale: the remaining exposure is the parallel-agent case `CLAUDE.md` documents as a
+  HARD rule, and every parallel BMAD write enters through `factory dispatch`, which already stamps
+  `BMAD_ACTIVE_PROJECT` per invocation; the two gitignored compatibility symlinks this Dream guards
+  may not survive the cutover at all. Spec `ready` → `in-progress` (CAP-1/2 in effect, the third call
+  site unbuilt). Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
