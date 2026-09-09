@@ -66,6 +66,48 @@ PROJECTS = ROOT / "_bmad-output" / "projects"
 #: reading, so they are recorded rather than guessed at.
 _BASELINE_PATH = ROOT / "scripts" / ".ad-citation-baseline.json"
 
+#: Citations to a THIRD-PARTY tool's own documented ADs. These can never
+#: resolve against a spine in this fleet, because the tool that defines them
+#: has none here -- so counting them as broken is wrong, and baselining them
+#: leaves them sitting as debt that no work can ever clear.
+#:
+#: Deliberately keyed by (path substring, id): narrow enough that it cannot
+#: absolve an unrelated citation of the same number elsewhere, and greppable
+#: so the exemption is visible from the citing file. An entry must name the
+#: owning tool and why the id is external -- an unexplained exemption is
+#: indistinguishable from a silenced finding.
+_EXTERNAL_AD_CITATIONS: dict[str, dict[int, str]] = {
+    # `eval-quality` is a bmad-suite CLI wielded BY steward, not a station of
+    # this fleet; its ADs are its own documented contract. AD-21 is its exit
+    # code 3 ("failed pre-flight"); AD-33 is its `witness-matched` /
+    # `clean-control-false-positive` oracle vocabulary. Both are cited here as
+    # that tool's behaviour, never as a claim about a pyforge spine.
+    "pyforge-steward/planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect": {
+        21: "eval-quality CLI's documented exit code 3 (failed pre-flight)",
+    },
+    "pyforge-steward/implementation-artifacts/spec-45-2-the-reviewer-is-measured-against-a-planted-defect": {
+        21: "eval-quality CLI's documented exit code 3 -- the Tier-3 twin of the spec above",
+    },
+    "pyforge-steward/planning-artifacts/specs/spec-bmad-eval-quality/.memlog.md": {
+        33: "eval-quality CLI's own witness-matched / clean-control oracle states",
+    },
+    # Project-scoped on purpose. A bare "planning-artifacts/deferred-work-ledger.md"
+    # was tried first and matched EVERY station's ledger, so atlas citing the same
+    # number would have been silently absolved -- the too-broad-pattern defect,
+    # caught by this module's own over-match test rather than in review.
+    "pyforge-steward/planning-artifacts/deferred-work-ledger.md": {
+        21: "eval-quality CLI's documented exit code 3, quoted in DW-FU-45-2-2",
+    },
+}
+
+
+def _is_external_citation(rel_path: str, ad_id: int) -> bool:
+    """Is this citation a third-party tool's own AD, not a fleet spine's?"""
+    for fragment, ids in _EXTERNAL_AD_CITATIONS.items():
+        if fragment in rel_path and ad_id in ids:
+            return True
+    return False
+
 #: An AD DEFINITION: a markdown heading (any depth) or a bold run, then the id.
 #: Optionally inside a list item. Deliberately assumes nothing about the
 #: separator or trailing text -- see the five bugs in the module docstring.
@@ -146,6 +188,7 @@ def main() -> int:
     cross_project = 0
     ambiguous: list[str] = []
     misnamed: list[str] = []
+    external = 0
     malformed: list[str] = []
 
     # --- FAIL: a spine folder that does not name its own project ------------
@@ -208,6 +251,9 @@ def main() -> int:
                 n = int(raw)
                 if n in defined[slug]:
                     continue
+                if _is_external_citation(str(path.relative_to(ROOT)), n):
+                    external += 1
+                    continue
                 unresolvable.append(
                     f"{slug}: {path.relative_to(ROOT)} cites bare AD-{n}, which this "
                     f"project does not define -- qualify it (`<spine>:AD-{n}`) or fix the id"
@@ -245,7 +291,8 @@ def main() -> int:
     print(
         f"[ad-citation] {total_defined} AD(s) defined across "
         f"{sum(len(v) for v in per_spine.values())} spine(s) in {len(projects)} project(s); "
-        f"{cross_project} qualified cross-project citation(s)"
+        f"{cross_project} qualified cross-project citation(s); "
+        f"{external} external-tool citation(s)"
     )
 
     # One ratchet over every FAIL class. `unresolvable` is deduplicated first:

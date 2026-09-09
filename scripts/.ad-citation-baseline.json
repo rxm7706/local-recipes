@@ -12,15 +12,10 @@
   "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-16-context.md cites bare AD-17, which this project does not define -- qualify it (`<spine>:AD-17`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-8-context.md cites bare AD-10, which this project does not define -- qualify it (`<spine>:AD-10`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-16-3-every-process-speaks-structlog-otel.md cites bare AD-17, which this project does not define -- qualify it (`<spine>:AD-17`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md cites bare AD-21, which this project does not define -- qualify it (`<spine>:AD-21`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md cites bare AD-21, which this project does not define -- qualify it (`<spine>:AD-21`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md cites bare AD-11, which this project does not define -- qualify it (`<spine>:AD-11`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md cites bare AD-21, which this project does not define -- qualify it (`<spine>:AD-21`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-eval-quality/.memlog.md cites bare AD-33, which this project does not define -- qualify it (`<spine>:AD-33`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/test-design-architecture.md cites bare AD-24, which this project does not define -- qualify it (`<spine>:AD-24`) or fix the id",
-  "pyforge-warden: _bmad-output/projects/pyforge-warden/planning-artifacts/research/technical-warden-dependency-gate-refresh-2026-08-08.md cites bare AD-5, which this project does not define -- qualify it (`<spine>:AD-5`) or fix the id"
+  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/test-design-architecture.md cites bare AD-24, which this project does not define -- qualify it (`<spine>:AD-24`) or fix the id"
  ]
 }
