@@ -4149,6 +4149,51 @@ curl -s https://api.github.com/repos/<org>/<repo>/compare/v<X.Y.Z>...<head-sha> 
 
 ---
 
+### G115. A staged-recipes PR SILENTLY STRANDS the `__win` variant of a noarch recipe — it is built, tested green, then discarded; the channel goes quietly unix-only
+
+**Symptom**: a `noarch:` recipe with `if: win`/`if: unix` run selectors is fully green on staged-recipes, its artifacts download cleanly, and everything you publish to your own channel installs on Linux and macOS — but never on Windows. `conda_pkgs_win` is a ~75 KB shell with **zero** `.conda` files while `conda_pkgs_noarch` carries exactly one package, the `__unix` one.
+
+**Why**: such a recipe yields TWO artifacts — the win job builds the `__win` variant, the linux job the `__unix` one — and for a `noarch` package BOTH land in that job's `noarch/` subdir. But staged-recipes' Windows pipeline publishes `D:\bld\win-64\` (`Uploading pipeline artifact from D:\bld\win-64\`), which for a noarch recipe is empty, while `conda_pkgs_noarch` is published by the *linux* job. So the `__win` build is created, **tested green**, and destroyed with the ephemeral runner. Nothing fails; the PR is green; the variant simply never becomes an artifact. Anything fed to a channel from staged-recipes PR artifacts is therefore `__unix`-only until its feedstock exists — and the gap is invisible unless you inspect `depends` for `__win`.
+
+**You cannot fix it inside the PR.** The publish step lives in staged-recipes' repo-global `.azure-pipelines/azure-pipelines-win.yml`; a per-recipe `conda-forge.yml` cannot reach it ([G83](#g83-a-staged-recipes-per-recipe-conda-forgeyml-is-almost-entirely-inert-during-the-pr-build--build_allpy-reads-only-conda_build_tool-every-other-key-just-seeds-the-post-merge-feedstock) — `build_all.py` reads only `conda_build_tool`), and a recipe PR editing those pipelines would not be accepted.
+
+**Fix — build the `__win` variant on your own Windows runner.** GitHub Actions `windows-2022`/`windows-latest` is free and does what staged-recipes will not: build the recipe with `--target-platform win-64` and publish `D:\bld\noarch\*.conda` (the path staged-recipes ignores), optionally uploading straight to the channel. Gate the upload on an explicit input and **fail loudly when the token is missing** — a silent skip reads as a successful publish and leaves the channel quietly incomplete. Pin the client destination (`anaconda -s https://api.anaconda.org`); the bare client blocks on an interactive anaconda.com-vs-.org prompt under a non-TTY runner. Post-merge this stops mattering: the FEEDSTOCK pipeline uploads each job's output directly, which is why `bmad-method` shows a clean 17 `__win` / 17 `__unix` on conda-forge while the same package sat 3-for-3 `__unix` on a channel fed from PR artifacts.
+
+**Detect it in one query** — never infer from "the PR is green":
+```bash
+curl -s --compressed https://conda.anaconda.org/<channel>/noarch/repodata.json \
+ | python3 -c "import json,sys; d=json.load(sys.stdin); pk={**d['packages'],**d['packages.conda']}; \
+   print([(k,[x for x in v['depends'] if x.startswith('__')]) for k,v in pk.items() if v['name']=='<pkg>'])"
+```
+
+**Two traps met on the way there.** (1) A colon (or `* ? " < > |`) anywhere in a TRACKED path makes `actions/checkout` fail on Windows with `invalid path ... exit code 128` — every Windows job dies before its first build step, which is an easy reason for such a workflow to have been disabled and forgotten. Audit with `git ls-files | grep -E '[:*?"<>|]'`. (2) rattler-build can fail a Windows run at test-env **teardown** (`Retrying deletion 1/5..5/5: The process cannot access the file because it is being used by another process. (os error 32)` → `Error: × Test failed`) *after* the tests themselves printed success — a lingering `node.exe` holding handles. Re-run before treating it as a recipe defect; it passed on the immediate retry.
+
+**Case study**: `bmad-eval-quality` 1.3.0 / staged-recipes #34774 (2026-09-09). The win job built `…-h62479a6_0` with `depends: ['nodejs >=22.20.0', '__win']` and reported `all tests passed!`, yet all four published artifacts held zero packages from it. A `windows-2022` dispatch produced the same variant (`…-h2fd06db_0`, shipping `Scripts/eval-quality.bat` and no `bin/`) as a downloadable artifact; after upload a win-64 cross-solve resolved it. The same run fixed `bmad-method` 6.12.0, whose channel copy had been `__unix`-only for its whole life.
+
+---
+
+### G116. A noarch recipe with a `build.bat` but NO `__unix`/`__win` split ships only the BUILD platform's entry point — installable on the other OS, and broken there, with nothing to say so
+
+**Symptom**: a `noarch: generic` recipe carries both `build.sh` and `build.bat`, builds green, and installs happily on Windows — but its CLI does not exist there. The artifact contains `bin/<name>` and no `Scripts/<name>.bat`.
+
+**Why**: `noarch` means ONE artifact is built once and reused everywhere. Only the build host's script runs, so only that platform's entry point is created — and with no `__unix`/`__win` in `requirements.run` there is no virtual package to stop the solver installing it on the other OS. This is the exact inverse of [G115](#g115-a-staged-recipes-pr-silently-strands-the-__win-variant-of-a-noarch-recipe--it-is-built-tested-green-then-discarded-the-channel-goes-quietly-unix-only): there the split exists and one variant is lost in transit; here there is no split, so the package *claims* universality it does not have. It is the worse failure of the two — G115 at least yields an honest "not installable on Windows", while this installs and then does nothing.
+
+**Fix — prefer ONE artifact that carries BOTH entry points.** A `.bat` shim is just text; `build.sh` can write it on Linux, so a single noarch build can serve every platform with no split, no second build, and no Windows runner:
+
+```bash
+mkdir -p "${PREFIX}/bin" "${PREFIX}/Scripts"
+cp "${RECIPE_DIR}/<tool>.py" "${PREFIX}/bin/<tool>"; chmod +x "${PREFIX}/bin/<tool>"
+printf '@"%%~dp0..\\python.exe" "%%~dp0<tool>-script.py" %%*\r\n' > "${PREFIX}/Scripts/<tool>.bat"
+```
+
+The unused wrapper is inert on the other OS. Reserve the `__unix`/`__win` split for recipes whose *content* genuinely differs per platform (a vendored native `node_modules`, a per-OS binary) — there you must build both variants and publish both (G115).
+
+**Detect it** by inspecting the published artifact, not the recipe: a package whose `depends` carries no `__win`/`__unix` but which ships `bin/` and no `Scripts/` (or vice versa) is mis-declared.
+
+**Case study**: the bmad-suite audit (2026-09-09) — 7 of 13 members (`bmad-method-test-architecture-enterprise`, `bmad-builder`, `bmad-creative-intelligence-suite`, `bmad-utility-skills`, `bmad-labs-skills`, `bmad-module-template`, `bmad-manticore`) each ship a `build.bat` with no split, and every published artifact carried `bin/` + no `Scripts/`. All were Linux-built, so all are silently entry-point-less on Windows.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -4185,6 +4230,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.89.0** (Sep 9, 2026) — **G115 + G116: Windows variants of noarch recipes (MINOR).** **G115** — staged-recipes builds the `__win` variant of a selector-carrying noarch recipe, tests it green, then discards it: the win job publishes `D:\bld\win-64\` (empty for noarch) while `conda_pkgs_noarch` comes from the linux job, so any channel fed from PR artifacts is silently `__unix`-only. Unfixable in-PR; fix is a `windows-2022` dispatch publishing `D:\bld\noarch\*.conda`. Verified on bmad-eval-quality 1.3.0 + bmad-method 6.12.0. Includes two traps: a colon in a tracked path kills Windows `actions/checkout` entirely, and an `os error 32` teardown failure can follow passing tests. **G116** — the inverse: a noarch recipe with a `build.bat` but no `__unix`/`__win` split ships only the build platform's entry point and still installs on the other OS (7 of 13 bmad-suite members); prefer one artifact carrying both wrappers.
 - **v8.88.1** (Sep 9, 2026) — **`pr-artifacts` returned ZERO packages for every `noarch:` recipe (PATCH).** `_DEFAULT_CONDA_PKGS_RE` matched `conda_pkgs_(linux|osx|win)` only, excluding `conda_pkgs_noarch` — the sole artifact carrying a noarch recipe's package (the per-arch ZIPs hold an empty ~75 KB repodata shell). Silent: the tool reported success and built a valid-but-empty `file://` channel. Affected most of conda-forge since v8.14.0. Fixed the regex + subdir map; `_write_noarch_stub` is now correctly the no-noarch-artifact fallback. Verified live on staged-recipes #34774 / #33125, whose packages then uploaded and indexed on SelfExplainML. +5 tests; byte-re-ported into slice-2.
 - **v8.88.0** (Sep 9, 2026) — **bmad-suite member descriptions become generated, not hand-added (MINOR).** `recipes/bmad-suite/recipe.yaml`'s `run:` block is regenerated wholesale between its GENERATED markers, so a hand-added trailing `# description # urls` comment is wiped on the next `generate-bmad-suite`. `suite-members.yaml` now carries per-member `description:` + `urls:`, and `bmad_suite_metapackage.py` emits them as one column-aligned trailing comment (the selector-nested member shares the same absolute column). Descriptions come from each member recipe's own `about.*`. Regeneration is idempotent, the pins still parse as bare `name >=version`, and `_parse_existing_pins` is unaffected; +5 unit tests. Authoring trap: a value STARTING with `"` breaks YAML parsing of the manifest — single-quote it (same class as G98's `#`/`:` rule).
 - **v8.87.2** (Sep 9, 2026) — **bmad-eval-quality tag-flip retro: G109 gains the "should this still be commit-pinned?" check (PATCH; refines existing guidance, no new gotcha).** From bumping `recipes/bmad-eval-quality` off its commit pin. The recipe sat at `3172162f` as `0.2.0.dev0` awaiting a `v0.2.0` tag; upstream had since shipped v0.2.0, v0.3.0, v1.0.0, v1.1.0 and **v1.3.0**, so G109's core rule (re-derive the version of record, never assume the awaited one) fired exactly as written — a second live case study after bmad-manticore. The **new** finding is a bias in the signal: a drift detector (and `github_updater --head`) reports *a commit*, which frames the work as "bump the pin", when a dev-snapshot recipe's own note usually says *"flip to the tag archive when vX lands"*. Two cheap API checks now sit in G109 — list tags, then `compare/v<X>...<head>`; **`ahead 0 / behind 0` means the flagged HEAD IS the release commit**, so the correct edit is to leave commit-pinning entirely (tag archive, drop `context.commit`, `cfe-source-kind: github-tag`, `build.number` **reset to 0** since the version moved and G113's increment rule does not apply). Verified live: `bc2c2bba1ba6` was exactly the `v1.3.0` tag commit. G110 (re-read `bin`/metadata on every bump — unchanged here), G112 (build shape needed no edit), G113 (reset-not-increment on a version change), G61 (sha256 computed live), G65 (CI-parity lint) and G85 (a `.conda` is written BEFORE tests, so re-run the test phase against the artifact — done, `test 1.3.0 = 1.3.0`) all held without correction. G114 still bounds the Windows claim: the `__win` artifact remains unbuilt locally. **Files**: `SKILL.md` (G109 refinement + case study 2, version, history), `config/skill-config.yaml` (8.87.1 → 8.87.2), `MANIFEST.yaml`, `CHANGELOG.md`; `recipes/bmad-eval-quality/recipe.yaml` + the steward spec memlog in the companion commit.
