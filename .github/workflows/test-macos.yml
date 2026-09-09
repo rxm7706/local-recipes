@@ -14,7 +14,7 @@ on:
         description: 'macOS x86_64 deployment target'
         required: false
         type: string
-        default: '10.15'
+        default: '11.0'
       osx_arm64_deployment_target:
         description: 'macOS ARM64 deployment target'
         required: false
@@ -43,12 +43,9 @@ on:
       osx_64_deployment_target:
         description: 'macOS x86_64 deployment target'
         required: false
-        default: '10.15'
+        default: '11.0'
         type: choice
         options:
-          - '10.13'
-          - '10.14'
-          - '10.15'
           - '11.0'
           - '12.0'
           - '13.0'
@@ -92,8 +89,15 @@ on:
         type: string
 
 env:
-  # Default SDK versions from conda_build_config.yaml
-  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '10.15'
+  # Deployment targets, NOT SDK versions -- and the authority is
+  # conda-forge-pinning's `c_stdlib_version` (osx), not the retired
+  # `MACOSX_DEPLOYMENT_TARGET`/`MACOSX_SDK_VERSION` keys, which no longer exist
+  # in conda_build_config.yaml at all. As of conda-forge-pinning
+  # 2026.09.09.05.43.13 that value is a SINGLE `11.0` covering both
+  # architectures -- osx-64 is no longer pinned lower than osx-arm64, so the
+  # long-standing 10.15 here was stale. Re-read it, never hardcode:
+  #   grep -A6 '^c_stdlib_version:' .pixi/envs/local-recipes/conda_build_config.yaml
+  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '11.0'
   DEFAULT_OSX_ARM64_DEPLOYMENT_TARGET: '11.0'
 
 jobs:
@@ -150,7 +154,7 @@ jobs:
         recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
     env:
       CONFIG: osx64
-      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '11.0' }}
       MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_64_sdk_version || '' }}
 
     steps:
@@ -475,5 +479,5 @@ jobs:
           echo "| osx-arm64 | ${{ needs.build-osx-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY
           echo "- osx-arm64 deployment target: ${{ github.event.inputs.osx_arm64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY
