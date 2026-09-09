@@ -5297,14 +5297,14 @@
  },
  "pyforge-steward/spec-bmad-suite-install-class-wiring": {
   "files": {
-   ".github/workflows/pyforge-steward-fresh-clone.yml": "03c4b4a5cce1c2d5d6aa181e3e3fecc163d56243",
+   ".github/workflows/pyforge-pip-install.yml": "b957f385bfa364dfbeacf054e85fbdf16748ff48",
    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md": "0dce2c2f7af9da0a87eec7d9f0aef1b47f685d38",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "d775177126961e76681757ca45ed3903035f065a",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py": "7bdcd94e61d4690a869b1bd70e827ba2f3bb3f3e",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "a5d4bcd0cfd62b5ebd70d64dd8c40bd176c39344",
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "e757b7276edcb9a381cfecc15ebb9ad42d365dee"
   },
-  "memlog": "2d4ca8d46d9f7d19c53f532190ffa54a2f6b90cf"
+  "memlog": "8b2b78b32e0eabad759e4a4a08bdb86b7901fb97"
  },
  "pyforge-steward/spec-bmad-suite-lifecycle": {
   "files": {},

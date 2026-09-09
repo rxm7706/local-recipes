@@ -7,7 +7,7 @@ surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
   - src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
-  - .github/workflows/pyforge-steward-fresh-clone.yml
+  - .github/workflows/pyforge-pip-install.yml
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md
 companions:
   - install-class-playbook.md

@@ -1,0 +1,131 @@
+name: pyforge pip-install
+
+# The ONE lane that proves the pyforge packages work as ordinary Python
+# distributions, INSTALLED OUTSIDE PIXI. That is the whole reason it exists:
+# `pyforge-station-tests.yml` already runs every one of the tests below inside
+# pixi, so the assertions are not what is unique here -- the installation path
+# is. `requires-python` honoured by a real interpreter, `--no-deps` importability
+# with nothing else on the path, and steward's fresh-clone class-path resolving
+# with no pixi workspace present are all invisible to a pixi run.
+#
+# That path has caught a real break: PR #1082 raised the packages'
+# requires-python to >=3.14 and three lanes went red with "Package
+# 'pyforge-core' requires a different Python: 3.12.14 not in '>=3.14'" -- a
+# failure no pixi environment could have produced.
+#
+# CONSOLIDATED 2026-09-08 from three separate workflows (`pyforge-core`,
+# `pyforge-steward-five-tier`, `pyforge-steward-fresh-clone`). They ran the same
+# four steps each -- checkout, setup-python, pip install, one pytest -- and a
+# diff touching `src/shared/packages/pyforge-steward/**` triggered TWO of them,
+# paying checkout + setup-python + pip twice to run 18 tests that finish in
+# under a second. The setup cost dominates completely, so this pays it ONCE.
+# The union trigger means a core-only diff now also runs steward's two checks;
+# they cost milliseconds, which is far cheaper than a second runner.
+#
+# Two venvs, not one, and deliberately: `pyforge-core` is installed WITH its
+# dependencies (its own suite needs them), while the steward checks install
+# `--no-deps` precisely to prove they need nothing beyond what they declare.
+# Sharing one venv would destroy that second proof.
+
+on:
+  pull_request:
+    paths:
+      - 'src/shared/packages/pyforge-core/**'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-*/pyproject.toml'
+      - 'src/shared/packages/pyforge-*/src/**'
+      - 'src/shared/packages/django-*/**'
+      - '.claude/skills/pyforge-*/**'
+      - '.claude/skills/bmad-agent-*/**'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-22-prep-*.md'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/**'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md'
+      - 'pixi.toml'
+      - 'docs/dashboard/kedro-viz/**'
+      - '.github/workflows/pyforge-pip-install.yml'
+  # Deliberately IDENTICAL to the pull_request list above. All three
+  # predecessor workflows carried the same paths on both events, and a
+  # consolidation that quietly narrowed the post-merge net would be a
+  # coverage regression wearing a refactor's clothes. GitHub Actions does not
+  # support YAML anchors, so the list is repeated rather than shared -- if you
+  # edit one, edit both.
+  push:
+    branches: [main]
+    paths:
+      - 'src/shared/packages/pyforge-core/**'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-*/pyproject.toml'
+      - 'src/shared/packages/pyforge-*/src/**'
+      - 'src/shared/packages/django-*/**'
+      - '.claude/skills/pyforge-*/**'
+      - '.claude/skills/bmad-agent-*/**'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-22-prep-*.md'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/**'
+      - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md'
+      - 'pixi.toml'
+      - 'docs/dashboard/kedro-viz/**'
+      - '.github/workflows/pyforge-pip-install.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pyforge-pip-install-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pip-install:
+    name: pip-install
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          # 3.14 since 2026-09-08 (marshal Story 32.2, spec-fleet-consistency-
+          # standard CAP-5). This lane pip-installs OUTSIDE pixi, so raising the
+          # packages' requires-python to >=3.14 made pip refuse at 3.12 -- see
+          # the header. Keep this in step with the packages' own floor.
+          python-version: '3.14'
+
+      # --- venv 1: pyforge-core WITH dependencies -------------------------
+      - name: Install pyforge-core (with deps) and pytest
+        run: |
+          python -m venv .venv-core
+          .venv-core/bin/python -m pip install --quiet --upgrade pip
+          .venv-core/bin/python -m pip install --quiet pytest
+          .venv-core/bin/python -m pip install --quiet ./src/shared/packages/pyforge-core
+
+      - name: Generate parity matrix and run pyforge-core tests
+        run: >
+          .venv-core/bin/python -m pytest -q
+          src/shared/packages/pyforge-core/tests/unit
+          src/shared/packages/pyforge-core/tests/meta/test_cli_parity_matrix.py
+          src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py
+          src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py
+
+      # --- venv 2: core + steward with --no-deps --------------------------
+      # A SEPARATE venv on purpose: `--no-deps` is the assertion, and installing
+      # into venv 1 (which already carries pyforge-core's full dependency tree)
+      # would silently satisfy imports these checks are meant to prove they do
+      # not need.
+      - name: Install check packages (--no-deps) and pytest
+        run: |
+          python -m venv .venv-steward
+          .venv-steward/bin/python -m pip install --quiet --upgrade pip
+          .venv-steward/bin/python -m pip install --quiet pytest PyYAML
+          .venv-steward/bin/python -m pip install --quiet --no-deps ./src/shared/packages/pyforge-core
+          .venv-steward/bin/python -m pip install --quiet --no-deps ./src/shared/packages/pyforge-steward
+
+      - name: Run five-tier completeness check
+        run: >
+          .venv-steward/bin/python -m pytest -q
+          src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py
+
+      - name: Prove fresh-clone class-path (CAP-3)
+        run: >
+          .venv-steward/bin/python -m pytest -q
+          src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
