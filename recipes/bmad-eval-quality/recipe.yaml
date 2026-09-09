@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.4.0"
+  version: "1.4.1"
 
 package:
   name: bmad-eval-quality
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-eval-quality/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 3db34d03633c4eae9aa054626802399c37aebf84076ebcb03611a138717a4a47
+  sha256: 158f1cf48bf16e44cb3606d54020111faca815f024cba8dbdc2e933449edf112
 
 build:
   number: 0
@@ -32,7 +32,7 @@ tests:
   - script:
       - if: not win
         then:
-          - test "$(eval-quality --version)" = "1.4.0"
+          - test "$(eval-quality --version)" = "1.4.1"
           - eval-quality --help | grep -q "eval-quality score"
           - eval-quality compile --in "${PREFIX}/lib/node_modules/eval-quality/corpus/dev/contracts/satisfied-declarations.json" > /dev/null
         else:
@@ -104,15 +104,20 @@ extra:
 #    # tag commit (ahead 0 / behind 0), so this flips to the tag archive as the
 #    # retired comment instructed. Version moved, so build.number resets to 0
 #    # (G113 increments only on a same-version content change).
-#    # 2026-09-09 (same day, second bump): upstream cut v1.4.0. Re-derived per
-#    # G109 rather than trusting the tag named in the request; re-read
-#    # package.json per G110 and NOTHING that the build scripts depend on moved
-#    # — bin map still {"eval-quality": "dist/cli/main.js"}, `files` still
-#    # [dist, schemas, corpus, README.md, LICENSE], engines still node
-#    # >=22.20.0, and still exactly one prod dep (zod, MIT — so the
-#    # `Apache-2.0 AND MIT` license expression and both license_file entries
-#    # stay correct). build.sh/build.bat therefore unchanged; version moved so
-#    # build.number stays 0 (G113).
+#    # 2026-09-09 (same day, second and third bumps): upstream cut v1.4.0 and
+#    # then v1.4.1, the latter published 12:15Z WHILE this recipe was being
+#    # updated to v1.4.0 — a live G109 recurrence, and the sharpest argument for
+#    # the rule: the version of record moved mid-task, so a tag named in the
+#    # request (or in the last snapshot's note) is never authority. Re-derived
+#    # from the default branch on each bump; npm's dist-tag agreed both times.
+#    # Re-read package.json per G110 across both bumps and NOTHING the build
+#    # scripts depend on moved — bin map still {"eval-quality":
+#    # "dist/cli/main.js"}, `files` still [dist, schemas, corpus, README.md,
+#    # LICENSE], engines still node >=22.20.0, still exactly one prod dep (zod,
+#    # MIT — so the `Apache-2.0 AND MIT` expression and both license_file
+#    # entries stay correct). build.sh/build.bat therefore unchanged; the
+#    # version moved, so build.number stays 0 (G113 increments only on a
+#    # same-version content change).
 # build:
 #    # dist/ is gitignored upstream; prepack runs tsc, so the build does
 #    # npm ci (devDependencies) + npm run build, then a clean
@@ -121,7 +126,7 @@ extra:
 #    # Wrappers in bin/ (bash) and Scripts/ (.bat), never npm install -g
 #    # symlinks, per G6/G100 and the bmad-method feedstock pattern.
 # tests:
-#    # --version prints the bare package.json version ('1.4.0'), which now
+#    # --version prints the bare package.json version ('1.4.1'), which now
 #    # equals the conda version since the recipe is tag-sourced (under the
 #    # retired commit pin it was '0.2.0' vs conda '0.2.0.dev0' — re-check this
 #    # assertion on every bump, per G110's bin/metadata re-read rule).
