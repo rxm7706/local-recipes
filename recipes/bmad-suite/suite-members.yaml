@@ -22,7 +22,7 @@ members:
   - name: bmad-creative-intelligence-suite
   - name: bmad-module-skill-forge
   - name: bmad-eval-quality
-    notes: eval-quality CLI (compile/seal/preflight/score); commit-pinned 0.2.0.dev0 — Dream docs/dreams/bmad-eval-quality.md, Story 45.1
+    notes: eval-quality CLI (compile/seal/preflight/score); tag-sourced since 1.3.0 (2026-09-09 — left the 0.2.0.dev0 commit pin per CFE G109) — Dream docs/dreams/bmad-eval-quality.md, Story 45.1
   - name: bmad-utility-skills
   - name: bmad-labs-skills
   - name: bmad-module-template

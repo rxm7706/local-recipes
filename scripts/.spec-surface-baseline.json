@@ -5274,12 +5274,13 @@
    "evals/review-catches-planted-defect/probes/mutated-probe.json": "9c3cce3d62357f08ef5fd76a625312997778f7ad",
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
-   "recipes/bmad-eval-quality/build.bat": "05da953224d139be65f3d6b2bf729c0f9345f878",
-   "recipes/bmad-eval-quality/build.sh": "03cd71d25f579b60f87d9270edd5f65d5266287c",
-   "recipes/bmad-eval-quality/conda-forge.yml": "4afc355ca15688a3c6290afe5776496c6c8b649c",
+   "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
+   "recipes/bmad-eval-quality/build.bat": "adb7ecf76b4e62ff4fb9f9bc581ca53626b0d4b9",
+   "recipes/bmad-eval-quality/build.sh": "6f14f1f3cebfc8f07fca48daafd961393c367e17",
+   "recipes/bmad-eval-quality/conda-forge.yml": "f9c4a4296a9e3d457ae11a08e9eae3d739807129",
    "recipes/bmad-eval-quality/recipe.yaml": "85deb8ae2bde8063310e68437b1ced78a9ef34bb"
   },
-  "memlog": "102c6e81c116bcbd891d7d3e86a2e9f0d2e8eb26"
+  "memlog": "28a678b267a0b6e994f957fbcab46c11db345b66"
  },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
