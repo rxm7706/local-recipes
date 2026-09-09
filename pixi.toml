@@ -54,7 +54,15 @@ conda-index = ">=0.3.0"           # repodata.json index generator
 conda-forge-ci-setup = ">=4.9.3,<5.0"  # conda-forge CI bootstrap scripts (CI fidelity)
 conda-forge-pinning = "*"         # global conda-forge version pinning manifest
 frozendict = "*"                  # immutable dict (transitive build dep)
-#networkx = "2.4.*"                # graph library; pinned to 2.4 for conda-build compat
+networkx = ">=3.0"                # REQUIRED by .ci_support/build_all.py (`import networkx as nx`, line 8), which
+                                  # `.scripts/build_steps.sh` runs from THIS env -- it installs
+                                  # `environment.yaml`, exported from [feature.build]. Commented out until
+                                  # 2026-09-09, which is a third, independent reason the Linux Docker lane could
+                                  # never build anything here (see build_steps.sh's own header for the other two):
+                                  # every run died on `ModuleNotFoundError: No module named 'networkx'` before it
+                                  # reached a single recipe. Restored WITHOUT the old `2.4.*` pin -- that ceiling
+                                  # dates to 2019 and its stated reason ("conda-build compat") no longer holds;
+                                  # build_all.py uses only DiGraph/topological_sort, stable since 2.x.
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 
 [feature.linux]

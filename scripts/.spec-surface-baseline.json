@@ -540,8 +540,8 @@
  },
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
-   "pixi.lock": "8c68d3092ba0d646778bbb0f67644d847e712737",
-   "pixi.toml": "fcc0d391a8394f47852b075fd1ff608068f2d07a",
+   "pixi.lock": "7fd2d497b95b2b83662582f19639bb830f9c8c2f",
+   "pixi.toml": "aa83b9c7d5990c1ff5cce2e299ee82e8fb077e6a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "c9ceece6aa040ac9b2d62b9dba24a91b9bf21c44",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "3788a33297571c63bfac5d0a47ec18c301a71d56",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
@@ -560,7 +560,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py": "206eee78938a71cea13f42f2135c63e0f0309166",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909"
   },
-  "memlog": "34ac095cd0fc252d5682cda8bce9ce69bdc44bcb"
+  "memlog": "12e1e2ef26b8afe3de988ad7c98afc44e707c40e"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -2954,7 +2954,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "fcc0d391a8394f47852b075fd1ff608068f2d07a",
+   "pixi.toml": "aa83b9c7d5990c1ff5cce2e299ee82e8fb077e6a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "8a93e5e51a08423391a0da2cfb4b65cee68a3e3c",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "ddaa3060c1d5985d03a96e33c8327cb328b1e2e5",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3466,7 +3466,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6b084d6dc2b0136e7a6abde6ecdaf25ff51f8d63",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "8a3686ab86893bce2631c9b3cec756409363c21b"
   },
-  "memlog": "7e79df141e1b1b6eb55d082f7fe0c6e27942b64d"
+  "memlog": "8fc884dc58a56b53b00eeadee8f1e3231a520275"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
