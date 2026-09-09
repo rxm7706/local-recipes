@@ -1,0 +1,12 @@
+# Local + SelfExplainML solve: every suite member ships on the PrivateChannel,
+# not conda-forge, so the metapackage's test env cannot resolve without it.
+# `build_all.py` reads channel_sources from THIS file (not conda-forge.yml) --
+# see .ci_support/build_all.py, which globs recipes/<name>/conda_build_config.yaml
+# and splits the first entry on commas. Same shape as
+# recipes/openfeature-provider-flagd/conda_build_config.yaml.
+#
+# The suite is a PrivateChannel product (cfe-on-conda-forge-status:
+# not-applicable) -- never submitted to staged-recipes, so this file has no
+# upstream audience.
+channel_sources:
+  - conda-forge,SelfExplainML
