@@ -120,3 +120,82 @@ def test_missing_markers_is_a_hard_error(rewrite):
     """Never silently no-op on a recipe that lost its markers."""
     with pytest.raises(SystemExit):
         rewrite(RECIPE.replace("# GENERATED-BEGIN: suite-run-requirements", "# nope"))
+
+
+# --- run-line rendering: trailing member descriptions (2026-09-09) -----------
+#
+# The descriptions live in suite-members.yaml, NOT in the GENERATED block: a
+# comment hand-added between the markers is wiped by the next regeneration.
+# These pin the emit contract so that cannot silently regress.
+
+
+def _pin(mod, name, floor, *, description="", urls=()):
+    return mod.MemberPin(
+        name=name,
+        floor=floor,
+        registry="github",
+        upstream=None,
+        source="recipe-floor",
+        description=description,
+        urls=tuple(urls),
+    )
+
+
+def test_member_comment_joins_description_and_urls(load_module):
+    mod = load_module("bmad_suite_metapackage.py")
+    pin = _pin(mod, "bmad-loop", "0.11.1", description="Does a thing.",
+               urls=["https://example.invalid/a", "https://example.invalid/b"])
+    assert mod._member_comment(pin) == (
+        "  # Does a thing. # https://example.invalid/a # https://example.invalid/b"
+    )
+
+
+def test_member_without_description_or_urls_emits_no_comment(load_module):
+    mod = load_module("bmad_suite_metapackage.py")
+    assert mod._member_comment(_pin(mod, "bmad-loop", "0.11.1")) == ""
+    lines = mod._format_run_lines([_pin(mod, "bmad-loop", "0.11.1")])
+    # No trailing whitespace and no bare "#" when there is nothing to say.
+    assert lines == ["    - bmad-loop >=0.11.1"]
+
+
+def test_comments_align_to_one_column_including_selector_nested(load_module):
+    mod = load_module("bmad_suite_metapackage.py")
+    lines = mod._format_run_lines([
+        _pin(mod, "bmad-loop", "0.11.1", description="Short.", urls=[]),
+        _pin(mod, "bmad-method-test-architecture-enterprise", "1.25.0",
+             description="Long name.", urls=[]),
+        _pin(mod, "mybmad-dashboard", "0.1.0.dev0", description="Nested.", urls=[]),
+    ])
+    commented = [ln for ln in lines if "#" in ln]
+    assert len(commented) == 3
+    columns = {ln.index("#") for ln in commented}
+    # One shared absolute column, so the block reads as a table -- and the
+    # selector-nested member (deeper indent) still lines up with the rest.
+    assert len(columns) == 1
+    assert "    - if: linux or osx" in lines and "      then:" in lines
+
+
+def test_rendered_comment_is_a_yaml_comment_not_part_of_the_spec(load_module):
+    """The pin conda sees must stay `name >=version` -- never the comment text."""
+    mod = load_module("bmad_suite_metapackage.py")
+    lines = mod._format_run_lines([
+        _pin(mod, "bmad-method", "6.12.0", description='"Quoted" - dashes — and #hashes',
+             urls=["https://example.invalid/x"]),
+    ])
+    doc = yaml.safe_load("requirements:\n  run:\n" + "\n".join(lines) + "\n")
+    assert doc["requirements"]["run"] == ["bmad-method >=6.12.0"]
+
+
+def test_existing_pin_parser_survives_trailing_comments(load_module):
+    """_parse_existing_pins must still read the floor past a trailing comment."""
+    mod = load_module("bmad_suite_metapackage.py")
+    lines = mod._format_run_lines([
+        _pin(mod, "bmad-eval-quality", "1.3.0", description="Desc.",
+             urls=["https://example.invalid/e"]),
+    ])
+    text = (
+        "  # GENERATED-BEGIN: suite-run-requirements\n"
+        "  run:\n" + "\n".join(lines) + "\n"
+        "  # GENERATED-END: suite-run-requirements\n"
+    )
+    assert mod._parse_existing_pins(text) == {"bmad-eval-quality": "1.3.0"}

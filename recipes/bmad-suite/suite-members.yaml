@@ -15,21 +15,68 @@
 members:
   # --- Active SelfExplainML channel (included in bmad-suite metapackage) ---
   - name: bmad-method
+    description: '"Build More Architect Dreams" - Agile Ai Driven Development — Turn an idea or change request into working software without giving up the thinking.'
+    urls:
+      - https://github.com/bmad-code-org/BMAD-METHOD
+      - https://bmadcode.com/
+      - https://docs.bmad-method.org/
     notes: conda-forge canonical; SelfExplainML refresh-parity optional
   - name: bmad-loop
+    description: Deterministic ralph-loop orchestrator that drives the BMAD implementation phase unattended.
+    urls:
+      - https://github.com/bmad-code-org/bmad-loop
+      - https://github.com/bmad-code-org/bmad-loop#readme
   - name: bmad-method-test-architecture-enterprise
+    description: TEA (Murat) — risk-based test strategy, test automation and release-gate decisions.
+    urls:
+      - https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+      - https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
   - name: bmad-builder
+    description: BMad Core expansion module for creating, sharing and discovering AI modules and agents.
+    urls:
+      - https://github.com/bmad-code-org/bmad-builder
+      - https://bmad-builder-docs.bmad-method.org
   - name: bmad-creative-intelligence-suite
+    description: Creative agent suite for innovation, design thinking, storytelling and presentations.
+    urls:
+      - https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+      - http://cis-docs.bmad-method.org
   - name: bmad-module-skill-forge
+    description: Turns code and docs into instructions AI agents can actually follow (Quick/Forge/Forge+/Deep tiers).
+    urls:
+      - https://github.com/armelhbobdad/bmad-module-skill-forge
   - name: bmad-eval-quality
+    description: Compiles, seals, preflights and scores Behavioral Evaluation Contracts via a clean-vs-planted-defect twin run.
+    urls:
+      - https://github.com/bmad-code-org/bmad-eval-quality
     notes: eval-quality CLI (compile/seal/preflight/score); tag-sourced since 1.3.0 (2026-09-09 — left the 0.2.0.dev0 commit pin per CFE G109) — Dream docs/dreams/bmad-eval-quality.md, Story 45.1
   - name: bmad-utility-skills
+    description: Utility skills for BMad Method contributors — PR review, triage, changelog, root-cause analysis.
+    urls:
+      - https://github.com/bmad-code-org/bmad-utility-skills
   - name: bmad-labs-skills
+    description: Community BMAD skills marketplace for Claude Code (22 general-purpose skills).
+    urls:
+      - https://github.com/bmad-labs/skills
   - name: bmad-module-template
+    description: Scaffolding template for authoring a new installable BMad Method module.
+    urls:
+      - https://github.com/bmad-code-org/bmad-module-template
   - name: bmad-manticore
+    description: AI video-production pipeline packaged as an installable BMad module (15 mc-* skills).
+    urls:
+      - https://github.com/bmad-code-org/bmad-manticore
   - name: bmad-dashboard
+    description: VS Code extension giving BMad Method V6 projects a live project dashboard.
+    urls:
+      - https://github.com/bmad-code-org/bmad-method-ui
+      - https://github.com/bmad-code-org/bmad-method-ui#readme
     notes: bmad-ui feature; build-from-source class
   - name: mybmad-dashboard
+    description: Self-hosted web dashboard for BMad Method V6 projects (linux/osx per upstream).
+    urls:
+      - https://github.com/bmad-code-org/bmad-method-ui
+      - https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
     notes: bmad-ui feature; linux/osx per upstream
 
   # --- Deprecated / removed from SelfExplainML (manifest only, not metapackage) ---
