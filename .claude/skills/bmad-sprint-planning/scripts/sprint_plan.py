@@ -64,6 +64,18 @@ RETRO_RANK = {"optional": 0, "done": 1}
 RANKS = {"epic": EPIC_RANK, "story": STORY_RANK, "retro": RETRO_RANK}
 ACTION_STATUSES = ("open", "in-progress", "done")
 
+# Statuses that sit OUTSIDE the progression lattice: they are never computed,
+# and generate must never overwrite one. `blocked` is the operator's dispatch
+# gate -- marshal honours it (core/dispatch_fleet.py NON_IMPLEMENT_STATUSES)
+# and bmad-loop's stories_engine stops a scan on it -- so only an explicit hand
+# flip may clear it. Without this set `blocked` fell through _merge_status's
+# `existing not in rank` branch and was rewritten to the computed default,
+# `backlog`, which is the fail-OPEN direction: it means "dispatch me". That is
+# how 14 deliberately-blocked steward Epic-44 stories (44.3 "open the foundry",
+# 44.9 "mason submits to conda-forge", 44.10 "archive local-recipes" among
+# them) were silently un-blocked by one regenerate on 2026-09-06 (be0a29b320).
+STICKY_STATUSES = {"story": frozenset({"blocked"})}
+
 # v6 wrote these; they still exist in the wild (v6-shims/bmad-create-story
 # actively writes 'contexted'). Normalized on every read so no subcommand ever
 # treats a valid legacy file as illegal or resets its progress.
@@ -92,6 +104,10 @@ Story Status:
   - in-progress: Developer actively working on implementation
   - review: Implementation complete, ready for review
   - done: Story completed
+  - blocked: Held by the operator; NOT a point on the progression. generate
+    never computes it and never overwrites it -- only an explicit hand flip
+    (or --set) clears it. Marshal refuses to dispatch it and bmad-loop stops
+    its scan on it, so losing it silently opens a story for dispatch.
 
 Retrospective Status:
   - optional: Can be completed but not required
@@ -232,6 +248,25 @@ def _normalize(raw):
     return status, raw in LEGACY_STATUS
 
 
+def _is_sticky(kind, status):
+    """True when `status` is an out-of-lattice status for `kind` (STICKY_STATUSES)."""
+    return status in STICKY_STATUSES.get(kind, frozenset())
+
+
+def _is_legal(kind, status):
+    """True when `status` is a recognized value for `kind`.
+
+    Legality is the rank table PLUS the sticky statuses, which carry no rank
+    by design -- they are not points on the progression, they are holds on it.
+    """
+    return status in RANKS[kind] or _is_sticky(kind, status)
+
+
+def _legal_statuses(kind):
+    """Every recognized status for `kind`, sorted -- for error messages."""
+    return sorted(set(RANKS[kind]) | set(STICKY_STATUSES.get(kind, frozenset())))
+
+
 def parse_epics(paths):
     """Return (entries, warnings). Entries are (key, kind, epic_num) in file order."""
     epics = {}  # epic_num -> [story keys in order]
@@ -324,6 +359,13 @@ def _merge_status(kind, computed, existing_raw, key, warnings, report):
     existing, was_legacy = _normalize(existing_raw)
     if was_legacy:
         report["legacy_mapped"].append({"key": key, "from": existing_raw, "to": existing})
+    # A sticky status outranks nothing and everything: it is a hold placed by
+    # hand, so generate returns it untouched rather than comparing ranks. This
+    # guard MUST precede the `not in rank` check below, which would otherwise
+    # class it illegal and replace it with `computed` (see STICKY_STATUSES).
+    if _is_sticky(kind, existing):
+        report["preserved_sticky"].append({"key": key, "status": existing})
+        return existing
     if existing not in rank:
         warnings.append(f"illegal status '{existing_raw}' on '{key}' replaced with '{computed}'")
         report["illegal"].append({"key": key, "status": existing_raw})
@@ -345,6 +387,7 @@ def build_status(entries, existing_data, stories_dir, warnings):
         "legacy_mapped": [],
         "illegal": [],
         "kept_keys": [],
+        "preserved_sticky": [],
     }
     if existing_status:
         entries, kept_keys, bind_warnings = _bind_existing_story_keys(
@@ -448,10 +491,10 @@ def _parse_sets(pairs, valid_keys):
         if key not in valid_keys:
             _fail(f"--set key '{key}' is not in the generated plan", valid_keys=sorted(valid_keys))
         kind, _ = classify_key(key)
-        if status not in RANKS[kind]:
+        if not _is_legal(kind, status):
             _fail(
                 f"--set status '{status}' is not legal for {kind} '{key}'",
-                legal=sorted(RANKS[kind]),
+                legal=_legal_statuses(kind),
             )
         parsed.append((key, status))
     return parsed
@@ -593,7 +636,7 @@ def cmd_status(args):
         status, was_legacy = _normalize(raw)
         if was_legacy:
             legacy_mapped.append({"key": key, "from": raw, "to": status})
-        if status not in RANKS[kind]:
+        if not _is_legal(kind, status):
             illegal.append({"key": key, "status": raw})
             continue
         counts[kind][status] = counts[kind].get(status, 0) + 1
@@ -720,7 +763,7 @@ def cmd_validate(args):
                 status, was_legacy = _normalize(raw)
                 if was_legacy:
                     legacy_mapped.append({"key": str(key), "from": raw, "to": status})
-                if status not in RANKS[kind]:
+                if not _is_legal(kind, status):
                     problems.append(f"illegal {kind} status {str(raw)!r} on '{key}'")
         elif isinstance(data.get("development_status"), dict):
             problems.append("development_status is empty")

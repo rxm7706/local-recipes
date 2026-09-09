@@ -6105,3 +6105,86 @@ status: open
 
   corrected: 2026-09-08 — the ORIGINAL diagnosis above named the retired-snapshot path, and that path is real and is now FIXED (`run_state_retired` + MRS-STATUS-012: a run whose harness id resolved but whose snapshot is gone reports `idle` with a WARN, while `is_run_live` keeps it conservatively live so no destructive guard is weakened). But it is NOT why pyforge-steward reads `unknown`. Reading steward's own newest loop-home run (`.bmad-loop/runs/20260820-140536-988f`) shows the true cause: its journal carries 32 events of bmad-loop's OWN vocabulary (`run-start`, `story-start`, `session-start`/`session-end`, `story-done`, `run-stop`) and NOT ONE `run-launch`/`run-resume` entry, which is the shape `cli/spin.py` writes and the only shape `_gather_run_journal_facts` folds for a launch pid. That run was started by bmad-loop DIRECTLY, not via `marshal spin`. So `launch_pid is None`, the FIRST `journal_unreadable` branch fires, and the home degrades — even though the same journal plainly records a graceful terminal `run-stop` ("2 done, 0 deferred, 0 escalated ... 8 stories remaining"). Marshal only understands runs it launched itself; a harness-native run is opaque to it, which is exactly what "needs re-spin" has been telling us.
   residual: The remaining fix is to recognise a harness-native terminal run. Deliberately NOT done here: `cli/status.py` folds only marshal's own kinds, and teaching it bmad-loop's `run-start`/`run-stop` vocabulary directly would couple the CLI to the harness's journal format, bypassing `HarnessPort` — the seam that already abstracts bmad-loop for exactly this reason. The clean shape is a `HarnessPort` capability ("is this run terminal?") that `_gather_run_journal_facts` consults when no launch pid is recoverable. That is a contract change to Marshal's status surface and wants its own story, as this entry said from the start.
+
+  owned: 2026-09-08 — the residual now HAS its story: **Story 5.11, "A harness-native terminal run reads as finished, not `unknown`"** (`epics.md` Epic 5, FR-196, ledger `backlog`). Its acceptance criteria bind the seam explicitly — the capability lands in `adapters/harness_bmadloop.py`, `cli/status.py`/`core/status.py` learn no bmad-loop journal kind, an unclassifiable run stays `unknown` with `is_run_live` conservatively live, and `pyforge-steward`'s existing home is the acceptance fixture. This entry stays `open` until that story ships; nothing about the diagnosis changed, it just acquired an owner in a ledger-driven view instead of living only in this note.
+
+### DW-SPRINTPLAN-2026-09-08-1: `sprint_plan.py generate` silently rewrote the operator's `blocked` gate to `backlog` — the fail-OPEN direction — because `blocked` was never in its vocabulary
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (Story 31.4 governs the sprint-planning trio as a marshal spec surface)
+  summary: `blocked` is a repo-local story status that the whole fleet treats as the operator's dispatch gate, but the generator that WRITES the ledger did not recognise it. Every `sprint_plan.py generate` classed it illegal and replaced it with the computed default `backlog` — which means "dispatch me". The gate was enforced downstream and erased upstream.
+  evidence: |
+    Diagnosed and fixed 2026-09-08. `blocked` appeared NOWHERE in
+    `.claude/skills/bmad-sprint-planning/scripts/sprint_plan.py`: absent from
+    `STORY_RANK` (line 61: only backlog/ready-for-dev/in-progress/review/done)
+    and absent from the `HEADER_COMMENT` vocabulary the shipped
+    `sprint-status-template.yaml` mirrors. `_merge_status`'s
+    `if existing not in rank:` branch therefore fired on every blocked row and
+    returned `computed`, which for a story is `backlog` (build_status line 362)
+    or `ready-for-dev` when a story file exists on disk. Three further sites
+    (`--set` validation, `cmd_status` counting, `cmd_validate`) each tested
+    `status not in RANKS[kind]` and would also have reported a legitimate
+    blocked row as illegal.
+
+    Downstream, `blocked` is genuinely load-bearing:
+    `marshal/core/dispatch_fleet.py:61` has
+    `NON_IMPLEMENT_STATUSES = frozenset({DONE_STATUS, "review", "blocked"})`,
+    and bmad-loop's own `stories_engine.py` stops a scan on a blocked story
+    ("a blocked story cannot be leapfrogged"). So the dispatcher enforced a
+    gate the generator destroyed.
+
+    LIVE DAMAGE. Commit `be0a29b320` (PR #1077, `plan/bmad-suite-lifecycle-2026-09-06`)
+    ran a regenerate and flipped FOURTEEN deliberately-blocked `pyforge-steward`
+    Epic-44 stories to `backlog` in one sweep — including `44-3-open-the-foundry`
+    (creates a GitHub repository), `44-9-mason-submits-to-conda-forge` (opens
+    upstream PRs) and `44-10-archive-local-recipes` (outward, irreversible:
+    disables CI and archives a repository) — the three that steward's own
+    `epics.md` marks "held `blocked`; dispatched only on the operator's explicit
+    confirmation, never by a drain" (`fnd:AD-9`). That commit's message documents
+    exactly ONE intended flip, "steward 45-2 blocked -> backlog"; the other
+    fourteen were collateral, and their fourteen "illegal status" warnings went
+    unread alongside a DIFFERENT sprint_plan.py defect found the same session
+    (the 80-column yaml wrap, folded into Story 31.4). Blocked-count history on
+    the steward ledger: 15 / 15 / 15 through 2026-09-05, then 0.
+
+    Fleet-wide, exactly ONE blocked row survived to 2026-09-08 —
+    `pyforge-marshal`'s `31-6-bmad-os-gh-triage-and-multi-repo-git-ops-are-marshal-wielded`
+    — one regenerate from the same fate.
+  location: .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py:61
+  origin: found while verifying whether a scoped steward spin was safe (carry-over pass from PR #1086)
+  severity: high
+  promoted: 2026-09-08 — hand-recorded at the time of the fix
+  status: resolved
+  resolution: |
+    FIXED in the same pass, not deferred. `STICKY_STATUSES = {"story": frozenset({"blocked"})}`
+    names the out-of-lattice statuses; `_is_sticky`/`_is_legal`/`_legal_statuses`
+    express legality as "the rank table PLUS the sticky set"; `_merge_status`
+    returns a sticky existing status untouched via a guard placed BEFORE the
+    `not in rank` branch, and records it in a new `preserved_sticky` report key;
+    the three legality sites now call `_is_legal`. `blocked` is documented in
+    both `HEADER_COMMENT` and `sprint-status-template.yaml` (a meta-test asserts
+    the two never drift). The 14 steward rows were restored to `blocked`, with
+    `44-13-memlog-fidelity` left `backlog` — the operator's deliberate first flip
+    of 2026-09-04, which must NOT be reverted.
+
+    Proven both directions against the real artifacts, not just by reading:
+    the PRE-fix generator (`git show HEAD:...`) run on the RESTORED steward
+    ledger destroyed all 14 rows again (`blocked` count 14 -> 0, with 44.3/44.9/
+    44.10 back to `backlog`), reproducing the incident exactly; the fixed
+    generator preserved all 14 with zero illegal warnings, and independently
+    preserved marshal's own `31-6` row. 41/41 existing sprint_plan tests pass.
+  note: |
+    The class, not just the instance, is worth naming: this is the THIRD
+    regeneration data-loss defect found in this one file (after `1aeb911b3b`,
+    where a 60-char slug truncation orphaned 13 done steward keys, and
+    `6ba6bd9eb6`/Story 31.4's 80-column yaml wrap). All three share a shape —
+    a generator that silently discards state it does not recognise — and all
+    three were found only after the damage landed. Story 31.4's spec-surface
+    governance of the sprint-planning trio exists precisely to catch the next
+    one; this entry is evidence that the surface earns its keep.
+
+    An upstream `bmad-method update` will clobber this patch along with the two
+    before it. That risk is accepted and pre-existing (the file already differs
+    from upstream on two counts); Story 31.4's surface is what detects the
+    clobber.
+
+  verified: 2026-09-08 — resolved-in-pass — fix, restore, and both-direction proof landed together.

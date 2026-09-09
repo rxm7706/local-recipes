@@ -149,21 +149,21 @@ development_status:
   43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: done
   43-7-sidecar-runtime-validation-on-python-3-14: backlog
-  44-1-the-move-list-manifest: backlog
-  44-10-archive-local-recipes: backlog
-  44-11-windows-native-estate: backlog
-  44-12-cutover-flag-and-replay-harness: backlog
+  44-1-the-move-list-manifest: blocked
+  44-10-archive-local-recipes: blocked
+  44-11-windows-native-estate: blocked
+  44-12-cutover-flag-and-replay-harness: blocked
   44-13-memlog-fidelity: backlog
-  44-14-rebuild-harness-and-oracle-gate: backlog
-  44-15-actions-minutes-metering: backlog
-  44-2-the-red-team-document-fixes: backlog
-  44-3-open-the-foundry: backlog
-  44-4-fold-the-packages: backlog
-  44-5-move-the-estate: backlog
-  44-6-cfe-comes-home: backlog
-  44-7-the-factory-island: backlog
-  44-8-the-working-set: backlog
-  44-9-mason-submits-to-conda-forge: backlog
+  44-14-rebuild-harness-and-oracle-gate: blocked
+  44-15-actions-minutes-metering: blocked
+  44-2-the-red-team-document-fixes: blocked
+  44-3-open-the-foundry: blocked
+  44-4-fold-the-packages: blocked
+  44-5-move-the-estate: blocked
+  44-6-cfe-comes-home: blocked
+  44-7-the-factory-island: blocked
+  44-8-the-working-set: blocked
+  44-9-mason-submits-to-conda-forge: blocked
   45-1-eval-quality-joins-the-suite: done
   45-2-the-reviewer-is-measured-against-a-planted-defect: done
   46-1-the-adoption-register-governs-wiring: done

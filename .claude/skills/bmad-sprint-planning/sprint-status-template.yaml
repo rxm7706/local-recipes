@@ -21,6 +21,10 @@
 #   - in-progress: Developer actively working on implementation
 #   - review: Implementation complete, ready for review
 #   - done: Story completed
+#   - blocked: Held by the operator; NOT a point on the progression. generate
+#     never computes it and never overwrites it -- only an explicit hand flip
+#     (or --set) clears it. Marshal refuses to dispatch it and bmad-loop stops
+#     its scan on it, so losing it silently opens a story for dispatch.
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
