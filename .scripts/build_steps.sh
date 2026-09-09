@@ -43,9 +43,21 @@ git config --global --add safe.directory "${FEEDSTOCK_ROOT}"
 
 # Copy the host recipes folder so we don't ever muck with it
 # Skip build_artifacts and other big items because it gets huge with time
+#
+# `.claude` and `src` are excluded FOR THIS REPO, and they are load-bearing
+# exclusions, not tidying: `build_all.py` walks the copied tree and hard-errors
+# on any recipe file outside `recipes/<name>/` --
+#   RuntimeError: recipe .claude/skills/conda-forge-expert/examples/
+#   python-compiled/recipe.yaml in wrong directory; must be under recipes/<name>/
+# staged-recipes has no such trees, so upstream never trips this. Here there are
+# 14 recipe/meta.yaml under `.claude/` (conda-forge-expert's worked examples) and
+# 1,993 under `src/` (station test fixtures) -- derived with
+# `git ls-files | grep -E '(^|/)(recipe|meta)\.yaml$' | grep -v '^recipes/'`,
+# so the list is complete rather than the first offender the runner happened to
+# hit. Skipping `src` also spares the copy the whole platform tree.
 mkdir -p ~/staged-recipes-copy
 shopt -s extglob dotglob
-cp -r "${FEEDSTOCK_ROOT}"/!(.|..|build_artifacts|.pixi|miniforge3|MacOSX*.sdk.tar.xz|SDKs|output) ~/staged-recipes-copy
+cp -r "${FEEDSTOCK_ROOT}"/!(.|..|build_artifacts|.pixi|miniforge3|MacOSX*.sdk.tar.xz|SDKs|output|.claude|src) ~/staged-recipes-copy
 shopt -u extglob dotglob
 
 # Remove any macOS system files
