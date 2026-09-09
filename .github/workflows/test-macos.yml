@@ -147,7 +147,7 @@ jobs:
           conda-solver: libmamba
           conda-remove-defaults: true
           activate-environment: build
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Install build tools
         shell: bash -el {0}
@@ -275,7 +275,7 @@ jobs:
           conda-solver: libmamba
           conda-remove-defaults: true
           activate-environment: build
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Install build tools
         shell: bash -el {0}
