@@ -36,3 +36,19 @@ multi-tenant SaaS on day one. Kin: `spec-pyforge-warden-compliance-gates`,
 - **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
   `spec-compliance-factory-web-face` derived under pyforge-warden and decomposed into the station
   backlog the same day (`a20192dd84`). Spec status `ready`.
+- **2026-09-09** — Fleet readiness pass (operator-approved batch, `fleet-readiness-decision-batch-2026-09-09.md`
+  row warden-B7). Stories 8.1/8.2 read `done` and the app IS mounted —
+  `django_warden_fabric` is registered through `_STATION_PORTAL_PACKAGES`
+  (`src/platform/config/settings/base.py:28`), having relocated from
+  `src/platform/compliance_face/` to `src/shared/packages/django-warden/` in `2394d850db`,
+  with `/compliance/` a permanent redirect to `/stations/warden/`. **The host question this
+  Dream left open was answered by delivery: a platform-mounted Django app, as predicted.**
+  Two realization gaps found against live code, both recorded on the Spec as a residual:
+  the platform env carries no `pyforge-warden` path dep (`pixi.toml`
+  `[feature.python-agent-platform.dependencies]` has only `pyforge-steward`) while
+  `tasks.py:97-102` lazy-imports `pyforge.warden.cli`, so the deployed image cannot reach
+  the engines the face calls and every job lands `FAILED`; and `sbom_json` is hardcoded
+  `"{}"` (`tasks.py:111`), half-stubbing CAP-2. The dependency fix is **steward Story 48.11**
+  (steward's surface, warden's capability; it also regenerates `environment.yaml`). Spec
+  moved `ready` → `in-progress`; this Dream stays `specified` — the contract exists and is
+  sound, the estate has not caught up to it.

@@ -11,8 +11,8 @@
 # Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
-# project: mason
-# stories: 89
+# project: pyforge-mason
+# stories: 99
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -38,6 +38,12 @@ development_status:
   13-1-langflow-base-onnxruntime-pin-admits-python-3-14: done
   13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14: done
   14-1-bmad-eval-quality-builds-a-__win-variant: done
+  15-1-close-the-cfe-rebuild-campaign-cut-callers-over-to-slices-1-2-or-retire-the-mirrors: blocked
+  15-2-rule-2-retro-for-story-13-2-lands-in-the-cfe-skill: backlog
+  16-1-mason-s-own-env-satisfies-the-cfe-import-floor: backlog
+  16-2-a-first-estate-caller-of-mason-recipe: backlog
+  16-3-mason-s-mcp-tool-surface-passes-the-cli-tool-parity-gate: backlog
+  16-4-the-containerfile-convention-guard-derives-its-file-list: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -87,6 +93,10 @@ development_status:
   epic-13-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
+  epic-15: backlog
+  epic-15-retrospective: optional
+  epic-16: backlog
+  epic-16-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

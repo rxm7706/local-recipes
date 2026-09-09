@@ -2,7 +2,7 @@
 title: A story's orchestrator-recorded baseline can never drift out from under its own worktree
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A story's orchestrator-recorded baseline can never drift out from under its own worktree
@@ -227,3 +227,18 @@ recorded during the 2026-08-14 recovery of 8.1-9.5, 9.6, and — via the mason p
   Story 10.1 intent-gap evidence). Registered in
   `_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json`
   (`baseline-commit-midflight-drift`). No edits to the installed `bmad_loop` package.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`.**
+  Epic 20 Stories 20.1–20.3 are `done` and neither this Dream nor its Spec recorded it:
+  `scripts/bmad_loop_baseline_drift_check.py` + the `baseline-drift-check` pixi task
+  (`pixi.toml:932`), the loud `--json` defer surface for fleet-picture, and the gated upstream
+  filing (bmad-loop issue #701, `upstream-register.json` `baseline-commit-midflight-drift`). Both
+  open questions were answered by the implementation: post-hoc journal-signature match only, and
+  report-only — exit 1 plus `--json`. Spec `ready` → `shipped`.
+  **Residual carried forward:** the detector scans `~/.bmad-loops/<slug>/.bmad-loop/runs/` only
+  (`bmad_loop_baseline_drift_check.py:72,142`) while the live engine is `marshal factory dispatch`,
+  whose journals live under `_bmad-output/projects/<slug>/implementation-artifacts/dispatch-runs/`;
+  the newest loop-home run in any of the eight homes is 2026-08-22. It exits 0 "OK" on an empty
+  observation plane instead of reporting could-not-observe — a false green by the repo's own
+  standard (`pixi.toml:1033`). Re-pointed by marshal **Story 33.7**. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

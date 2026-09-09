@@ -58,3 +58,22 @@ without freezing a product line that changes by design.
 `spec_surface_check` green with `recipes/**` governed (coverage) and the
 drift exemption printed, never silent; campaign waves keep landing evidence
 in the adopted specs.
+
+## Realization-gate re-read — 2026-09-09
+
+Status stays `shipped` and the Dream stays `realized`. **CAP-1** (local-mirror-first)
+and **CAP-2** (`cfe-*` metadata) are exercised continuously — 70 commits touching
+`recipes/` since 2026-08-10 across a 7,873-directory tree.
+
+**CAP-3 is DORMANT, and "recurring waves" must not be read as live.** All three
+engine specs are untouched since 2026-06/07 — `feedstock-refresh.md` last commit
+`1aeaf12cee` (2026-07-02), `feedstock-platform-expansion.md` `1bdd5a2f02`
+(2026-06-28), `feedstock-failure-remediation.md` `1aeaf12cee` — Track A Wave H still
+lists 179 remaining, and Track B (232) is unstarted.
+
+**Greenfield consequence, consult at 44.8 and not after.** Steward S-44.8 moves only
+in-flight and sole-maintainer recipes to `factory/recipes/`; every other `recipes/**`
+row reads *stays* and is archived with local-recipes. This Spec's CAP-1 surface is
+`recipes/**` with `surface-drift: exempt` — after the cutover most of that surface
+lives in an ARCHIVED repo, which changes what "every feedstock we can touch" can mean.
+Neither the Dream nor this Spec anticipated it.

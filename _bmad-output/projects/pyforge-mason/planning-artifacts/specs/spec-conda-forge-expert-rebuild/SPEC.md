@@ -2,7 +2,7 @@
 id: SPEC-conda-forge-expert-rebuild
 spec: conda-forge-expert-rebuild
 status: in-progress
-updated: "2026-08-28"
+updated: "2026-09-09"
 owner-dream: docs/dreams/conda-forge-expert-rebuild.md
 surface:
   - .claude/skills/conda-forge-expert/**      # the skill being rebuilt slice by slice (parallel-run target; flips at the end cutover)
@@ -138,6 +138,13 @@ slice's real cost is measured.
 - **The test net is the safety rail.** Existing CFE tests (unit + meta, ~1,186 across the
   suite) run green at every slice boundary; a slice may add tests but may not weaken or
   delete existing ones to pass.
+- **Rule-2 retros land in the LEGACY skill ONLY, and dual-land in the same PR.** *(Settled
+  2026-09-09 from practice, ratifying what was Open Question 5.)* A retro edits
+  `.claude/skills/conda-forge-expert/**`; any mirrored script it touches is byte-re-ported
+  into the affected compiled slice and that slice's `brief_mirrored_through` is advanced —
+  both in the same PR, never a follow-up. Precedent: CFE v8.88.1 (`pr_artifacts.py`
+  re-ported, `cmp` clean) and commit `4b04cce30e`. CAP-3 clause (b) is the machine
+  enforcement of this rule.
 
 ## Non-goals
 
@@ -188,16 +195,46 @@ tools noticed the transition except through the CHANGELOG.
    means Forge compiles the knowledge layer while code migrates conventionally under the
    brief's contract, or Forge genuinely drives code generation. The answer re-scopes
    everything after CAP-2.
+
+   **Resolved — 2026-09-09 (operator).** **NO.** Skill Forge compiles the KNOWLEDGE layer;
+   the code is mirrored byte-for-byte, not generated. Evidence: slice 1's five scripts are
+   sha256-identical to live (`campaign-state.yaml:524-527`); slice 2's 25 scripts are
+   sha256-verified byte-identical to source (`:638-642`); every drift event was closed by
+   porting live source into the copy, never by re-compiling (`:633`). Consequence the
+   operator weighed: this Spec's headline — "Skill-Forge-authored" — is not what shipped.
+   What shipped is a Forge-authored brief plus an audit harness around an unmodified code
+   copy. This is the strongest single input to Question 3.
 3. **Does full scope survive the first slice's measured cost?** The user chose full scope
    with eyes open; CAP-4's re-scope gate is where that choice gets its first real price
    tag. Stopping after a clean first slice is an allowed outcome of the gate, not a
    failure of the Spec.
+
+   **Resolved — 2026-09-09 (operator).** **NO — full scope does not survive the measured
+   cost. The endgame is declared over slices 1–2 ONLY.** The cost is recurring, not
+   one-time: every CFE release is a byte-re-port obligation into two mirrors (23 qualifying
+   retro commits in the campaign range; both re-scope gates returned `adjust`, never `go`)
+   for zero behavioural change — `campaign.callers` is empty and both slices are still
+   `compiled`. Slice 3 (atlas-owned under Question 1's ruling, 12.3× slice 1) is NOT
+   briefed; slice 4 is NOT briefed. Callers are cut over to slices 1–2, or the mirrors are
+   retired, by a closing story. Stopping after a clean slice was always an allowed outcome
+   of the gate; this is that outcome.
 4. **What is the deprecation posture for the long tail?** Delete-on-cutover is cleanest
    for the detector; a dated stub is kinder to out-of-repo callers (Mason installed
    elsewhere). Per-slice choice, but the default needs deciding in the slice map.
-5. **How do Rule-2 retros work mid-campaign?** Each slice epic ends with a retro — but
-   does it edit the legacy `SKILL.md`, the successor slice's skill, or both during the
-   overlap window? The first slice's retro sets the precedent.
+
+   **Resolved — 2026-09-09 (operator).** **DELETE-ON-CUTOVER, no stubs, campaign-wide
+   default.** The kinder-to-out-of-repo-callers premise does not hold: Mason reaches CFE by
+   FILESYSTEM PATH, not by import — `resolve.py`'s chain is flag, then `MASON_CFE_ROOT`,
+   then a cwd walk, and `mason doctor` reports `cfe_root_step: cwd-walk` — so a Python stub
+   module cannot serve a path resolver. An out-of-repo Mason gets a missing root, which
+   `cfe.py`'s CAP-5 degradation path already handles (`mason doctor` exits 0 with
+   `unavailable_verbs: ('recipe',)`). CAP-3's guard clause (c) becomes trivially satisfiable
+   instead of needing marker machinery, and steward S-44.10 archives this repo anyway.
+5. **~~How do Rule-2 retros work mid-campaign?~~ — MOVED TO CONSTRAINTS 2026-09-09.** It is
+   a decision, not a question: retros land in the legacy skill only and dual-land in the
+   same PR. See § Constraints.
+
+**All five questions are now closed.**
 
 ## Decomposition record — 2026-08-27 (reconcile pass; status `ready → in-progress`)
 
@@ -236,3 +273,21 @@ recorded decision — the campaign decomposes in checkpoint-gated waves, per thi
 "commits to the remainder only as campaign-tracked sequence" and Epic 6's
 decompose-no-further discipline. Nothing in this pass implemented, briefed, or compiled any
 slice; the live skill remains authoritative throughout.
+
+## Endgame declared — 2026-09-09
+
+The campaign's endgame is declared over **slices 1–2 only** (Question 3). A closing story is
+minted as **mason Epic 15, Story 15.1**: cut the callers over to slices 1–2, or retire the
+mirrors, and close the campaign. **This Spec's `status:` stays `in-progress` until that story
+lands** — the flip to a closing status is a separate event once the cut-over-or-retire work
+merges.
+
+`campaign-state.yaml` records the same: `campaign.endgame_declared` flipped `false → true`
+with a dated reason and the operator citation, and `campaign.next_story` was rewritten to the
+endgame. `campaign.re_scope_gate_2`'s two open pre-conditions are now MOOT — they gate a
+slice-3/4 briefing that will never happen — and were deliberately left unedited rather than
+re-worded, so the record of what was gated survives.
+
+**Sequencing that matters:** the campaign closes BEFORE steward S-44.6 (which moves the whole
+CFE cell to `skills/domain/conda-forge-expert/`), otherwise 44.6 has to re-point a live
+campaign's surface and slice map as well as move the cell.

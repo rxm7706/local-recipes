@@ -2,7 +2,7 @@
 title: A one-line doc fix and a cross-module rewrite get the identical review
 type: dream
 owner: marshal
-status: realized
+status: specified
 ---
 
 # A one-line doc fix and a cross-module rewrite get the identical review
@@ -120,3 +120,19 @@ mode for a class of stories, not just for the repo as a whole.
   Dream (different subsystem, different epic):
   [`quick-dev-reconciliation.md`](quick-dev-reconciliation.md).
 - **2026-08-14** — Realized — Story 2.8 (FR-185) shipped `classify_review_tier`/`resolve_review_cycles` in `core/gate.py`. Status flipped and FR-185 backfilled into the PRD by the 2026-08-14 audit.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **STATUS REVERSED, `realized` →
+  `specified`, under the realization gate.** Story 2.8 shipped the mechanism and only the mechanism:
+  `classify_review_tier` (`core/gate.py:724`) and `resolve_review_cycles` (`:768`) have **zero
+  callers anywhere outside `tests/unit/test_gate.py`**. There is no producer of `declared_low_risk`
+  (no CLI flag; no `low_risk`-shaped key in either `bmad-spec`'s or `bmad-build-auto`'s
+  `spec-template.md`), no `VcsPort` call computing `changed_files`, and nothing in `cli/gate.py`
+  calls either function — recorded as `DW-FU-2-8-2` and `DW-FU-2-8-4`, the latter re-verified
+  `2026-09-05 — STANDS`. A one-line doc fix and a cross-module rewrite therefore still get the
+  identical review, which is this Dream's own title. The 2026-08-14 flip was chain bookkeeping — the
+  same failure [`adaptive-model-tiering.md`](adaptive-model-tiering.md) records against itself, and
+  the third instance inside marshal alone.
+  `spec-risk-tiered-review-depth` moves `shipped` → `in-progress` and gains one open question (where
+  does `declared_low_risk` come from?). **Enablement is marshal Story 33.5**, beside the token-economy
+  enablement — same "turn on what is built" shape. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

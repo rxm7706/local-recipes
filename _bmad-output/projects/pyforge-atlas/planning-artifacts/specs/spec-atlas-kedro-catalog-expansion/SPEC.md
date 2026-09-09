@@ -1,6 +1,10 @@
 ---
 spec: atlas-kedro-catalog-expansion
-status: ready
+status: shipped   # 2026-09-09 (operator, batch § 2.2 row atlas-B5), was `ready` and untouched since
+                  # authoring: Epics 21, 22 and 23 are 100% `done` in `sprint-status-ledger.yaml`
+                  # and CAP-1..CAP-8 are decomposed, landed and gated. The owner Dream deliberately
+                  # HOLDS at `specified` — see § Dream holds at `specified`.
+updated: "2026-09-09"
 owner-station: pyforge-atlas
 owner-dream: docs/dreams/atlas-kedro-catalog-expansion.md
 surface:
@@ -25,9 +29,15 @@ companions:
   - ../spec-conda-forge-packaging-inventory-operations/SPEC.md
 sources:
   - ../../../../../../docs/dreams/atlas-kedro-catalog-expansion.md
-open_questions:
-  - "CDO-ENT-JFROG universe names via artifactory_downloads live fetch — confirm attended credential path before Story 21.5 lands telemetry-as-names-only contract."
-  - "conda-forge.org/packages scrape — defer unless core_feedstock_attribution Parquet proves insufficient in 18.6 parity review."
+open_questions: []   # ANSWERED BY DELIVERY 2026-09-09 (readiness § C-4). (1) CDO-ENT-JFROG
+                     # universe names — answered at Story 21.5 (`done`): `project_artifactory_names`
+                     # ships the Tier-2 names-only projection and degrades to an empty frame
+                     # carrying the names-only schema when the upstream columns are absent;
+                     # telemetry columns stay inventory-side, as recommended. (2) The
+                     # conda-forge.org/packages scrape — the recommended path was taken and nothing
+                     # proved it insufficient: `core_feedstock_attribution` is a live catalog
+                     # dataset and the feedstock-name join source, and `catalog-sources.md:40`
+                     # already records the scrape as `deferred` with that rationale.
 ---
 
 # SPEC — Atlas Kedro catalog expansion (self-contained + inventory-aligned)
@@ -205,3 +215,22 @@ Epic 23 (CAP-8): Dream fully closed — `identity_complete_export.parquet` +
   moves them.
 - Feedstock URLs derive from `core_feedstock_attribution` Parquet without a v1
   `conda-forge.org/packages` scrape.
+
+## Dream holds at `specified` — 2026-09-09
+
+This Spec is `shipped`; the owner Dream `docs/dreams/atlas-kedro-catalog-expansion.md` **does not
+follow it to a terminal state** (batch § 2.2 row atlas-B5). It holds at `specified` until one
+recorded run materializes BOTH `identity_complete_export.parquet` and
+`enterprise_jfrog_consumption.parquet`. A declared Kedro dataset (`conf/base/catalog.yml:987-989`,
+`:1301-1303`) is a contract, not data — moving both together would set the precedent that a data
+Dream is `realized` before any data exists, the exact pathology the realization gate was written
+for. Splitting Spec-status from Dream-status is the shape `spec-wagtail-corporate-brain` already
+uses successfully.
+
+**Effect story:** atlas **Story 25.2**, "Materialize CAP-8's canonical Parquets — one recorded
+run", under the new **Epic 25** (batch § 2.3 C6). It is seeded `blocked` because it needs the
+ATTENDED, credentialed Artifactory path that `spec-conda-forge-packaging-inventory-operations` also
+waits on ("CAP-2 (17.2) code landed, live-execution verification deferred — attended, credentialed
+run pending"). **Two Specs, one precondition**: they must not disagree about whether it has been
+met. Recorded here as prose, deliberately NOT as a cross-project `Deps:` token. Closing 25.2 is
+what moves the owner Dream to `realized`.

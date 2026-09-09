@@ -269,6 +269,38 @@ verify_commands = [
   "AGENTS.md",
 ]
 
+"33" = [  # token economy in effect — the enablement epic (spec-marshal-token-economy CAP-1..18,
+          # spec-risk-tiered-review-depth, spec-adaptive-model-tiering CAP-2,
+          # spec-marshal-parallel-dispatch-fanout CAP-6, the two Epic-20 watchdog specs,
+          # spec-bmad-switch-scope-enforcement), minted 2026-09-09 by
+          # sprint-change-proposal-2026-09-09-token-economy-enablement.md. Copies the "31" list and
+          # adds this epic's own globs: django-pyforge + pyforge-doctor for Story 33.4's single
+          # CAP-18 publisher, policy-defaults for the [context] block, the Dream, the CFE SKILL.md
+          # Story 33.10 derives the pin from, and scripts/** for 33.7's two watchdogs.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/skills/**",
+  "_bmad-output/projects/*/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/**",
+  "AGENTS.md",
+  "scripts/**",
+  "src/shared/packages/django-pyforge/**",
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/policy-defaults.toml",
+  "_bmad-output/projects/*/planning-artifacts/marshal-policy.toml",
+  "docs/dreams/marshal-token-economy.md",
+  "docs/dreams/adaptive-model-tiering.md",
+  "docs/dreams/risk-tiered-review-depth.md",
+  "docs/dreams/marshal-parallel-dispatch-fanout.md",
+  "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
+]
+
 # landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.

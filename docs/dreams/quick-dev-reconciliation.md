@@ -148,3 +148,11 @@ Marshal noticing, after the fact, that someone already did.
   Dream (different subsystem, different epic):
   [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md).
 - **2026-08-14** — Realized — Story 5.9 (FR-186) shipped `deploy reconcile-completions` with the documented `not-loop-native` label deviation (narrows toward true quick-dev as FR-187 subjects accumulate). Status flipped and FR-186 backfilled into the PRD by the 2026-08-14 audit.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized`; the
+  Spec's last open question **retires to `open_questions: []`**. It was answered by Story 5.9
+  (FR-186, `done`) and recorded in the Spec's Change Log on 2026-08-12 — merge-subject classification
+  through the three-pattern chain (`core/promotion.py:35-36,252-256`) feeding
+  `core.status.not_loop_native_completions` (`cli/deploy.py:831-835`), labelled `not-loop-native` as
+  the honest joint fact, narrowing toward true quick-dev as FR-187 subjects accumulate. Only the
+  frontmatter never caught up. Batch: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

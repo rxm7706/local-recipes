@@ -2,7 +2,7 @@
 title: Scribe reaches past curated memory into the raw session transcripts underneath it
 type: dream
 owner: scribe
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: realized   # 2026-09-09 — Epic 3 (3.1 scanner, 3.2 compile source, 3.3 bounds+schedule) all `done` and the criterion is EXERCISED: .claude/data/pyforge-scribe/transcript-scan-cache.json is the artifact only a real scan produces. Was `specified` (2026-08-22 — spec + station decomposition landed same day).
 ---
 
 # Scribe reaches past curated memory into the raw session transcripts underneath it
@@ -56,9 +56,21 @@ the not-yet-built Epic 2 compile step, not a new station or a new charter.
 
 ## What is real
 
-Nothing yet. `scribe capture --promote` (Story 1.3) is real but scoped to curated personal
-memory only. Epic 2 (the knowledge graph this would extend) is entirely backlog — 4 of 4
-stories, untouched.
+**Built and exercised** — *corrected 2026-09-09 (fleet readiness pass); the superseded
+2026-08-15 reading was "Nothing yet. `scribe capture --promote` (Story 1.3) is real but scoped
+to curated personal memory only. Epic 2 (the knowledge graph this would extend) is entirely
+backlog — 4 of 4 stories, untouched."*
+
+`transcripts.py` (506 lines) mines raw `.jsonl` sessions for un-curated decisions and routes
+every candidate through `promote.py`'s proposal-then-confirm gate; `compile.py` carries the same
+scan as a named sixth surface (`compile.py:114-117`, `:174-196`), with `transcript:` provenance
+citations. Epic 2 is `done` (4/4) and Epic 3 is `done` (3/3). Proof of a real run:
+`.claude/data/pyforge-scribe/transcript-scan-cache.json`, alongside a 1.67 MB `graph.json`.
+
+The live surface has outgrown this Dream's own measurement — **27 files / 631 MB** as recorded
+for DW-FU-3-2-2, not the "22 files / 161 MB" quoted above and in § *The Dream* — which is
+exactly why Story 3.3 added a file-count cap, a total-byte budget (newest files first) and a
+per-file timeout before putting the scan on the unattended nightly path.
 
 ## Constraints
 
@@ -97,3 +109,21 @@ discussed but not carried forward).
   them systematically — `scribe capture --promote` only reaches curated personal memory, one
   layer up from where this gap actually lives. Folded into Scribe's own territory per the
   user's explicit direction, rather than treated as a one-off sweep.
+- **2026-09-09 (fleet readiness pass — REALIZED)** — `specified → realized`. Epic 3 closed 3/3
+  and the criterion is *exercised*, not merely built: the scanner has actually run against this
+  machine's transcript store, and `.claude/data/pyforge-scribe/transcript-scan-cache.json`
+  (10 KB, 2026-08-27) is the artifact only a real scan produces. The Spec's one open question —
+  "incremental by transcript mtime **vs** full sweeps" — was answered as **both**: an
+  mtime+size-keyed cache for the incremental half and a triple bound (file-count cap, byte
+  budget selecting newest-first, per-file timeout) for the sweep half, sized against the live
+  27-file / 631 MB surface rather than this Dream's stale 22-file / 161 MB figure
+  (`transcripts.py:25-43`). `spec-scribe-mines-raw-session-transcripts` moves `ready → shipped`
+  in the same pass. **One contract collision surfaced and is proposed for amendment upstream:**
+  `spec-pyforge-scribe`'s Non-goal — "Scribe never passively mines chat logs, Slack, **or
+  session transcripts** for decisions … permanently" — reads as a blanket prohibition this
+  Dream's shipped work contradicts; the distinction that actually holds is *ambient* vs
+  *deliberate-and-human-gated*, and the Non-goal should be re-worded to say so rather than left
+  to be read as a live veto. Recorded on that Spec's memlog this date. **Residual:** the scan is
+  invoked by hand — the unattended path exists but no schedule is installed, so "routine
+  promotion sweeps" in the Success signal is still aspirational; vessel is scribe **Epic 8**
+  (fleet-readiness decision batch 2026-09-09, row C6).

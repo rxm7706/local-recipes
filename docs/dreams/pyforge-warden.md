@@ -26,13 +26,21 @@ the host or the source.
   an opt-in fix-PR actuator; the three-ring vision (consumption edge → registry
   perimeter → public upstream).
 
-## What is real (in-build)
+## What is real
 
-- **23/31 stories merged** (epics 1–4 + 6.1/6.2/6.4/6.10), FR1–FR40 frozen,
-  schema 1.1.0, honest dashboard live. Remaining: 6.3 (in progress), 6.5–6.9,
-  then Epic 5. Built loop-driven by [[pyforge-marshal]].
-- Spec: `docs/specs/pyforge-warden.md` (legacy tier); package at
-  `src/shared/packages/pyforge-warden/`.
+- **43/43 stories merged** across epics 1–11
+  (`_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml`),
+  FR1–FR40 frozen, schema 1.1.0, honest dashboard live. Built loop-driven by
+  [[pyforge-marshal]]. Epics 7–11 post-date the original v1 scope: the eligibility
+  union (7), the web face (8), the PR-gate hook book + scanner plugins (9), the
+  skill/persona/portal slice (10), and the two advisory lenses (11). Epic 12 was
+  minted 2026-09-09 for [[golden-path-conda-blind-spot]].
+- **In effect, not merely merged:** `warden scan` is the estate's sole PR verdict, and
+  `scripts/platform-deploy-verify-promotion.py:31` refuses any digest whose recorded
+  verdict is not `clean`.
+- Spec: `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/`
+  (Tier 2, `shipped`); `docs/specs/pyforge-warden.md` is the absorbed legacy Tier-1
+  intake. Package at `src/shared/packages/pyforge-warden/`.
 
 ## Realization log
 
@@ -42,3 +50,10 @@ the host or the source.
 - **2026-07-23** — Dream retro-seeded; chapter deck `presentations/pyforge-warden/`
   (the deck-family exemplar). Registry-perimeter ring links to [[enterprise-airgap]].
 - **2026-07-23 (gist audit)** — grounding: the Phase-0 deep review (47 KB), the Python Dependency Policy sketch, and the Enterprise Python Manifest (Assured-OSS lists → the vetted-base row) all pre-figure v1 (`docs/intake/gists/`).
+- **2026-09-09** — Fleet readiness pass (operator-approved decision batch,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`).
+  § What is real re-grounded against the live ledger (23/31 → 43/43; epics 7–11 named).
+  Realization re-confirmed under the *exercised-in-the-estate* gate rather than the merge
+  gate: warden is the sole PR verdict and `platform-deploy` reads it. Two ledger-vs-in-effect
+  gaps found on OTHER warden Dreams — the web face's engine import and the eligibility CLI
+  — recorded on their own Dreams and Specs, not here.

@@ -1812,6 +1812,104 @@ operator's step.
 **Given** the unix-only variant on the channel **When** the recipe gains the Windows build (`call` for `.cmd` shims, `noarch_platforms` carrying win-64, `build.number` bumped for the same version) and builds green locally via `recipe-build` **Then** the pixi pin can leave the target tables, `steward suite pipeline-truth` reads the member current on all three platforms after the operator uploads, and the CFE CHANGELOG carries the retro entry
 
 
+## Epic 15: Close the CFE rebuild campaign at slices 1–2
+
+**Spec binding.** `spec-conda-forge-expert-rebuild`, CAP-2 / CAP-3 / CAP-4. Minted 2026-09-09
+from the operator's fleet-readiness ruling
+(`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+§ 2.3 **C2**, evidence rows mason-B1 / mason-B2 / mason-B3): OQ3 answered **NO** — full scope does
+not survive the measured cost, so the endgame is declared over **slices 1–2 only**. Slice 3
+(atlas-owned under Story 12.5, 12.3× slice 1) and slice 4 are **not briefed and will not be**;
+`campaign.re_scope_gate_2` is moot. OQ4 answered **delete-on-cutover, no stubs** — Mason reaches
+CFE by filesystem path, not by import, so a stub module cannot serve a path resolver, and CAP-5's
+degradation path already handles a missing root. **HARD boundaries:** the work edits
+`.claude/skills/conda-forge-expert/**`, so it runs through `conda-forge-expert` (CLAUDE.md **Rule 1**)
+and ends with a CFE retro (**Rule 2**). Rule-2 retros during the overlap window still land in the
+**legacy** skill only and dual-land into the compiled slices in the same PR (the ratified OQ5
+constraint / CAP-3 clause (b)).
+
+**Also carried here (added 2026-09-09).** This epic is mason's **outstanding CFE-skill-surface
+obligations**, not only the campaign close — the two stories share one surface, one Rule-1 route
+and one Rule-2 retro window, so batching them means a single CFE release closes both instead of
+two separate skill-surface PRs. Story 15.2 lands the Rule-2 retro that Story 13.2 deferred
+(`DW-13-2-1`): CLAUDE.md Rule 2 says a conda-forge effort is **not done** until its retro lands,
+and that retro has now been unwritten across four CFE releases.
+
+### Story 15.1: Close the CFE rebuild campaign — cut callers over to slices 1–2 or retire the mirrors
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-2 / CAP-3 / CAP-4 • CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/**` (the two compiled slices `cfe-recipe-generation` and `cfe-recipe-lifecycle`), `.claude/scripts/conda-forge-expert/**` (wrapper redirects, if any caller flips), `.claude/tools/conda_forge_server.py` (MCP registrations, if any caller flips), `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/{campaign-state.yaml,slice-map.md}`
+**Given** the endgame is declared (`campaign.endgame_declared: true`, 2026-09-09) over slices 1–2, with `campaign.callers` empty and both slices still `status: compiled`
+**When** each of the two compiled slices is resolved one way — either its callers are flipped to it (`campaign.callers` populated, every entry off `resolves_to: "legacy"`, slice `status: cut-over`) **or** the mirror is retired (slice `status: retired`, the compiled copy **deleted**, no dated stub left behind) — and the standing per-release byte-re-port obligation ends with it
+**Then** `pixi run -e local-recipes cfe-rebuild-guard-check` is **clean** (clause (c) has no legacy caller surviving the declared endgame; clause (b) has no briefed slice behind a landed retro), `campaign-state.yaml` records the disposition per slice with a dated note, the Spec's status flips off `in-progress` via a memlog event, and the effort ends with a `conda-forge-expert` retro entry in `CHANGELOG.md` (Rule 2)
+**Sequencing note (text only, not a `Deps:` token — it names a foreign station's story):** this story must land **before** steward's `fnd:CAP-3` story (steward Epic 44, S-44.6, "CFE comes home") moves the CFE cell to `skills/domain/conda-forge-expert/`. This Spec's `surface:` and the slice map are written against `.claude/skills/conda-forge-expert/**`; closing the campaign first makes 44.6 a pure move instead of a move that must also re-point a live campaign.
+**Named surface-baseline clause (added 2026-09-09, folding the C-6 residue).** This story already has to re-stamp scoped surface baselines for every governed path it deletes or moves, so it also carries one unrelated-but-adjacent allowlist cleanup: **delete `scripts/spec_surface_allowlist.txt:100`** — the `scripts/failure_catalog_check.py` entry whose own comment reads *"allowlisted pending mason claiming it via a proper folder-format spec"*. `spec-machine-checked-recipe-knowledge` **is** that folder-format spec, and its 2026-09-09 re-derive adds `scripts/failure_catalog_check.py` to its `surface:`, so the allowlist entry becomes a governed path listed twice. **Done means:** the line is removed, `spec-surface-check` reports no finding for that path, and the baseline is re-stamped **scoped** — `python scripts/spec_surface_check.py --write-baseline --spec pyforge-mason/spec-machine-checked-recipe-knowledge` — **never a bare `--write-baseline`** (the baseline reads the working tree and `git ls-files`, and this repo's tree is routinely dirty with other stations' work; a bare stamp bakes their edits into mason's baseline). Stage the file before stamping.
+
+### Story 15.2: Rule-2 retro for Story 13.2 lands in the CFE skill
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** CLAUDE.md **Rule 2** (non-optional, non-deferrable) • `DW-13-2-1` • CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/SKILL.md` (G26 gains the Story-13.2 case study), `.claude/skills/conda-forge-expert/CHANGELOG.md` (a dated version entry), `.claude/skills/conda-forge-expert/MANIFEST.yaml` + `config/skill-config.yaml` (version bump), `config/failure-catalog.yaml` (regenerated if a gotcha's title or body moves), `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md` (close `DW-13-2-1`)
+**Given** Story 13.2 (`dbgpt-client`'s `sqlalchemy` upper-bound cap admitting Python 3.14) shipped with its Rule-2 CFE retro **deferred** — mason's own meta-test `test_persona_consults_cfe.py::test_conda_forge_expert_not_replaced_or_skf_nested` fails when `SKILL.md`/`CHANGELOG.md` change on a story branch, so the retro could not land in-story — and the 2026-09-08 re-verification confirmed it is **still unwritten**: the G26 extension that *did* land (`SKILL.md:2454`) carries **Story 13.1's** `langflow-base` case study, not 13.2's, and no 13.2 entry exists anywhere in `CHANGELOG.md` through v8.90.1
+**When** the retro runs against Story 13.2's actual evidence — the `dbgpt-client` `sqlalchemy >=2.0.25,<2.0.29` cap, why the recipe run-dep loosen alone was insufficient, and which upstream files the source patch had to touch for the wheel METADATA to agree (the G26 mechanism) — and lands as a **maintenance PR on the CFE surface**, outside any mason story branch, so the meta-test is satisfied by construction
+**Then** `CHANGELOG.md` carries a dated entry naming Story 13.2, `SKILL.md`'s G26 gains the `dbgpt-client` case study distinct from 13.1's, the skill version is bumped **per semver** (PATCH for a case-study/clarification, MINOR if a new gotcha or section falls out), `MANIFEST.yaml` + `config/skill-config.yaml` agree with `SKILL.md`'s frontmatter `version:` (they have drifted apart before — v8.90.0 fixed exactly that), `config/failure-catalog.yaml` is regenerated if any gotcha text moved (`tests/meta/test_failure_catalog_freshness.py` guards it), and **`DW-13-2-1` is closed with a dated resolution note** rather than another `verified: still-open` line
+**Rule 1/2:** the whole story is CFE-surface work — it runs through `conda-forge-expert`, and it **is** the Rule-2 retro, so it does not spawn a further one. **Mirror obligation:** per the ratified OQ5 constraint / CAP-3 clause (b), if this retro touches any script mirrored into a compiled slice, byte-re-port it and advance that slice's `brief_mirrored_through` **in the same PR**; a docs-only retro needs no re-port, but verify that rather than assuming it, and keep `cfe-rebuild-guard-check` clean either way.
+
+## Epic 16: Turn on what is built — mason's realization-gate and coverage residue
+
+**Spec binding.** `spec-pyforge-mason` CAP-2 (the `recipe` verb family) + CAP-5 (graceful
+degradation), plus the ungated-surface and under-covered-guard residue the same pass found
+(`spec-packaging-factory`, `spec-pixi-container-image`). Minted 2026-09-09 from the operator's fleet-readiness ruling
+(`fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C6**, evidence row mason-B5): mason is one
+of the twelve `done`-but-not-in-effect capabilities the pass found, and C6 places the effect story
+on the **owning station's** epics with steward Epic 49 carrying only an index row. The gap is
+concrete and dual: `mason doctor` in mason's own pixi env reports
+`cfe_import_floor_satisfied: False`, `cfe_import_floor_missing: ('truststore', 'conda-forge-metadata')`
+and **`unavailable_verbs: ('recipe',)`**, because `[feature.pyforge-mason.dependencies]`
+(`pixi.toml:281-283`) declares neither floor dependency while `cfe.py:180-186`'s `CFE_IMPORT_FLOOR`
+requires both — and nothing in the estate invokes `mason recipe` / `mason package` /
+`mason environment` (one comment at `pixi.toml:797`, zero call sites; all recipe work still routes
+through `pixi run -e local-recipes recipe-build`). Story 49.2's effect check applies: **a caller
+outside its own test file.**
+
+**Scope widened 2026-09-09** beyond the `recipe` verb family to the pass's two other
+mason-owned *coverage* gaps, because both are the same shape — something built, and nothing
+watching it: **16.3** (mason's 46-tool MCP surface is ungated for CLI⇄tool parity while marshal's
+is gated) and **16.4** (the Containerfile convention guard enumerates three of four files).
+16.4 belongs by subject to **Epic 8** (`spec-pixi-container-image`, Story 8.1 "The convention is
+written and guarded"), and is carried **here** deliberately: `epic-8` reads `done` in the tracked
+ledger, and hanging a `backlog` story off it would flip that rollup and misreport a genuinely
+completed epic across the fleet picture. Recorded so the subject-vs-home split is not read as a
+mis-file.
+
+### Story 16.1: Mason's own env satisfies the CFE import floor
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-2 / CAP-5 • steward Epic 49 (C6 effect gate) • CFE Rule 1 + Rule 2
+**Surface:** `pixi.toml` (`[feature.pyforge-mason.dependencies]`), `environment.yaml` (regenerated — the sync check is ungated by the `maintenance` label), `src/shared/packages/pyforge-mason/tests/**` (a regression assertion)
+**Given** `mason doctor` reports `unavailable_verbs: ('recipe',)` and `cfe_import_floor_missing: ('truststore', 'conda-forge-metadata')` in the `pyforge-mason` env
+**When** `truststore` and `conda-forge-metadata` are added to `[feature.pyforge-mason.dependencies]` at floors matching what `cfe.py`'s `CFE_IMPORT_FLOOR` actually requires, the lock is re-solved and `environment.yaml` regenerated
+**Then** `pixi run -e pyforge-mason mason doctor` reports `cfe_import_floor_satisfied: True`, an empty `cfe_import_floor_missing`, and **no** `recipe` entry in `unavailable_verbs`; a test pins the floor so a future dependency edit that drops either package reds instead of silently re-disabling the verb family; and CAP-5's degradation path is re-verified (a deliberately broken floor still exits 0 with the verb reported unavailable — the graceful-degradation contract must not regress into a hard failure)
+**Rule 1/2:** this is CFE-floor work — the change is driven by `cfe.py`'s import floor, so the story runs through `conda-forge-expert` and ends with the Rule-2 retro.
+
+### Story 16.2: A first estate caller of `mason recipe`
+**Type:** feature • **Effort:** S • **Deps:** 16.1 • **FR/AD:** spec-pyforge-mason CAP-2 • steward Epic 49 (C6 effect gate, "has a caller outside its own test file") • CFE Rule 1 + Rule 2
+**Surface:** `pixi.toml` (one task), or `.github/workflows/**` (one step), plus whatever documentation names the route
+**Given** the `recipe` verb family runs in mason's own env (16.1) but nothing in the estate invokes it — `pixi.toml:797` is a comment and there are zero call sites
+**When** one real estate route is moved onto mason: a pixi task (or a CI step) that builds one recipe through `mason recipe build` rather than `pixi run -e local-recipes recipe-build`, chosen so the route is exercised on every run of an existing lane rather than only on demand
+**Then** the caller exists **outside** mason's own test tree, a green run is recorded with its command and output, `mason doctor` reports the verb available on that lane's env, and the Unifying realization gate can read mason's CAP-2 as *exercised in the running estate* rather than *decomposed and merged*. The delegation boundary is unchanged — mason still wraps CFE (Rule 1), and the effort ends with the Rule-2 retro.
+
+### Story 16.3: Mason's MCP tool surface passes the CLI⇄tool parity gate
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-packaging-factory (governs `.claude/tools/conda_forge_server.py`) • marshal `spec-agent-tool-surface` FR-155 / Story 18.2 (the primitive being extended) • CFE Rule 1 + Rule 2
+**Surface:** `.claude/tools/conda_forge_server.py` (a declared CLI↔tool mapping + any CLI-only/tool-only allowlist), a new parity meta-test under `.claude/skills/conda-forge-expert/tests/meta/`, `pixi.toml` (the task, if a new one is needed) + the `SCRIPTS` list in `tests/meta/test_all_scripts_runnable.py` if a script is added (the three-place rule)
+**Given** parity between a station's CLI verbs and its MCP tools is **a gated number, not review** for marshal only — `src/shared/packages/pyforge-marshal/tests/meta/test_cli_tool_parity.py` drives `pyforge.marshal.mcp.parity` (`assert_cli_tool_parity`, `discover_cli_verbs`, `parity_findings`, `tools_by_cli_verb`, with explicit `CLI_ONLY_VERBS` / `TOOL_ONLY_NAMES` allowlists) against live `TOOL_SPECS` — while mason's **46** `@mcp.tool` registrations in `.claude/tools/conda_forge_server.py` have **no parity gate at all**, so a CLI wrapper can gain or lose a verb with no tool counterpart and nothing reds
+**When** marshal's primitive is **extended over the CFE server** rather than re-implemented — the CLI surface derived from `.claude/scripts/conda-forge-expert/` and the pixi task registry, the tool surface from the live `@mcp.tool` registrations, with every deliberate asymmetry declared in an explicit allowlist carrying a one-line reason (not a silent skip)
+**Then** the live inventory passes clean, a **fixture-injected** mismatch in each direction (an on-surface CLI verb with no tool; a tool with no CLI verb and no allowlist entry) **fails** the gate — proving the gate can fail, not merely that it passes — and the parity number is reported rather than asserted by review
+**Boundaries (text only, no foreign `Deps:` token):** atlas's half of the marshal C10 routing — `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py` — is **atlas's story to mint**, not mason's; this story touches no atlas file. If the extension needs a shared helper rather than a mason-local copy, propose it to marshal rather than forking `pyforge.marshal.mcp.parity` (a second independent copy of a gate is how the `_http.py` credential leak survived a "durable fix" — the CFE skill records that lesson explicitly). Rule 1 applies throughout; the effort ends with the Rule-2 retro.
+
+### Story 16.4: The Containerfile convention guard derives its file list
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pixi-container-image CAP-1 (restated 2026-09-09: *enumerated by glob, never a hard-coded list*) • steward Epic 49 (C6 effect gate)
+**Surface:** `tests/packaging/test_containerfile_base_layer_convention.py`
+**Given** the repo's two enumerations of its Containerfiles **disagree**: `scripts/pixi_version_registry.py:79-87` covers all four, while the convention guard's `CONTAINERFILES` tuple (`tests/packaging/test_containerfile_base_layer_convention.py:50-52`) hard-codes only three — omitting `src/platform/compose/mcp-host/Containerfile` (spec-mcp-era-isolation slice 1), which is therefore **ungoverned** by the registry-pinned-base and no-`ENV`-credential checks. The omitted file is compliant **today**; the finding is that nothing would notice if it stopped being
+**When** the tuple is replaced by a **derivation** over the tracked tree (glob `Containerfile*`, git-tracked only, so an untracked scratch Containerfile cannot red the suite) — **not** by appending a fourth literal, which reproduces the same defect one file later
+**Then** all four files are swept by both the `FROM` and `ENV` checks, a test proves the derivation actually **finds** them (a count assertion, or an explicit membership check for the previously-omitted path, so an empty glob cannot pass vacuously — an absence assertion that cannot be distinguished from having scanned nothing is the failure mode the fleet has hit before), a planted unpinned base or `ENV`-declared credential in the **fourth** file reds the suite, and `spec-pixi-container-image`'s Constraints line ("until ≥2 Containerfiles diverge") reads against four rather than three
+**Note:** no `conda-forge-expert` involvement — this touches no recipe and no CFE surface, so Rules 1/2 do **not** apply to this story.
+
 ## Platform floor addendum — 2026-09-07
 
 Every story in this epic set builds and tests against **Python 3.14 only**.

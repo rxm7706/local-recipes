@@ -86,3 +86,18 @@ format-specific gates this one's structural half depends on)
   pipeline is ever built — the strongest-evidenced of the three deck dreams in this batch as a
   result.
 - **2026-08-14** — Spec authored (spec-deck-visual-qa, pyforge-herald) by the 2026-08-14 dream-backlog audit: the visual-QA half only (PNG-per-slide headless render + <image-slot> placeholder scan against the existing HTML pipeline); the three .pptx-contingent gates stay parked with their sibling dreams.
+- **2026-09-09 (fleet readiness pass — built, not in effect)** — Epic 14 (14.1 gate-report
+  interface, 14.2 headless-render gate, 14.3 image-slot scan) is `done` in the tracked
+  ledger and real in code (`src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py`,
+  665 lines; `herald deck qa <slug>` at `cli.py:331-341`, dispatched `:764-765`, handled
+  `:982-995`). Both of the Spec's open questions are **answered by that code** and closed
+  this date: the entrypoint is the Epic-6 CLI dispatcher (no per-deck `scripts/` step), and
+  the serve mode is a throwaway loopback static server rather than `file://`
+  (`deck_qa.py:143-152` — "Chromium needs a real HTTP origin, not `file://`"). **Status held
+  at `specified`, not advanced to `realized`**: nothing in the repo calls the gate — no pixi
+  task (`pixi.toml` names `deck_qa` only in the playwright dependency comment at line 2352),
+  no CI job, and `docs/specs/presentation-deck.md` still describes a purely run-shaped
+  verify checklist. No run artifact exists — `render_gate` writes `.herald/deck-qa/<slug>/render/`
+  (`deck_qa.py:117`, `:245-250`) and `.herald/` is not in the tree. The capability exists;
+  the gap it was written to close is still open. Vessel: herald Epic 19 Story 19.3 (give
+  the gate a caller), per the fleet-readiness decision batch 2026-09-09 row C6.

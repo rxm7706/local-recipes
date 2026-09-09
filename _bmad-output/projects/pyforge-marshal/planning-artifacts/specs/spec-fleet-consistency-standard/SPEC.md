@@ -1,6 +1,7 @@
 ---
 id: SPEC-fleet-consistency-standard
-status: ready
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/pyforge-marshal.md   # § The frontier — "Fleet consistency standard"
 surface:
   - scripts/governance_currency_check.py    # CAP-6, net-new — the staleness detector
@@ -12,8 +13,11 @@ companions:
 sources:
   - docs/dreams/pyforge-marshal.md
 open_questions:
-  - "Does mechanizing INV-2/INV-3 into pyforge.doctor.sources land as a later story here or in pyforge-doctor? EXEMPLAR-STANDARD's own verification section admits both were measured by hand and never mechanized."
-  - "Should the coverage gate's --cov target be extended over the django/portal tier? package_src() resolves to pyforge-<station>/src/pyforge/<station>, so django-pyforge's mcp_auth.py / access.py / rate_limit.py / middleware.py / circuits.py sit outside every cov target by construction. Deferred to spec-pyforge-testing-charter CAP-4's decomposition."
+  # ANSWERED 2026-09-09 (operator, fleet-readiness batch rows mars-B-B9 / mars-B-B10). Neither is
+  # undecided any longer; both are RETITLED AS DISPOSITIONS rather than deleted, because each now
+  # names another station's outstanding work.
+  - "DISPOSITION (answered 2026-09-09) — mechanizing INV-2/INV-3 into `pyforge.doctor.sources` lands in PYFORGE-DOCTOR, not as a later story here. Marshal builds, Doctor judges; the split has precedent in Story 6.9, which moved `spec_surface_check` out of `scripts/` into `pyforge.doctor.sources.chain` and had both marshal Specs re-point their surfaces. Rejected: keep it in marshal — it re-creates the detector-in-marshal shape 6.9 deliberately retired. CROSS-STATION: doctor owns the story."
+  - "DISPOSITION (answered 2026-09-09) — YES, the coverage gate's `--cov` target should extend over the django/portal tier, but NOT HERE: it amends `spec-pyforge-testing-charter` CAP-4, which already owns coverage. `package_src()` resolves to `pyforge-<station>/src/pyforge/<station>`, so django-pyforge's `mcp_auth.py` / `access.py` / `rate_limit.py` / `middleware.py` / `circuits.py` sit outside every cov target by construction. Epic 32 is `done`, so a new story here would reopen a closed epic. Rejected: extend `package_src()` inside fleet-consistency — it re-mints an owned capability. CROSS-STATION: the testing-charter Spec's owner takes it."
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability — consult them only if you need narrative rationale this contract intentionally omits.
@@ -103,3 +107,5 @@ hand.
 - Raising `requires-python` to `>=3.14` breaks no external consumer: no `recipes/pyforge-*` exists, so the stations are built by `pixi-build-python` for this repo's own 3.14 estate and are not published to conda-forge.
 - Folding steward's `conformance/` into `unit/` inherits the unit floor rather than integration's. Taken from steward's own `test-architecture.md`, which classifies those files as unit level; not independently re-judged file by file.
 - The other seven `epics-with-stories.md` carry normative content of the same kind steward's does. They are audited before deletion rather than assumed empty — steward's mandate was found by accident, which is the reason the audit is a gate.
+- `status: shipped` (2026-09-09) — CAP-1..CAP-6 decompose to Epic 32 (Stories 32.1–32.8), all
+  `done`; `epic-32` and `epic-32-retrospective` are both `done` in the ledger.

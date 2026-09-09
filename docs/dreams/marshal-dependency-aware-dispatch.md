@@ -2,7 +2,7 @@
 title: Marshal Dependency-Aware Dispatch — the fleet orders its own backlog and forgets nothing it kills
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # Marshal Dependency-Aware Dispatch
@@ -291,3 +291,23 @@ Spec: `spec-marshal-drain-self-resolution/SPEC.md`. Dream file
   Story 28.24, supervisor finalizes when the harness cannot run shell), with
   [`marshal-drain-self-resolution.md`](marshal-drain-self-resolution.md) archived in place as a
   pointer. `spec-marshal-verify-fail-terminalization` (status `ready`) also references this Dream.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`,
+  verified in effect.** This Dream is contracted across three Specs and needs no fourth; read the
+  contract map here, not in any one Spec:
+  A dependency-derived ordering → `spec-marshal-token-economy` CAP-14 (Story 28.12, `done`);
+  B sanctioned retry after an external stop → token-economy CAP-15 (28.13, `done`);
+  C auto-derived effective surface → token-economy CAP-16 (28.14, `done`);
+  D scope-violation enforcement mode → token-economy CAP-17 (28.15, `done`);
+  E verify-fail terminalization → `spec-marshal-verify-fail-terminalization` CAP-1..3 (28.17, `done`);
+  F drain self-resolution → `spec-marshal-drain-self-resolution` CAP-1..7 (28.18–28.24, `done`).
+  **Two consequences to state plainly.** Unlike their Epic-28 siblings, C and D need no declaration
+  to take effect: `core/gate.py:348-423` auto-derives the station surface when no `[epic_surfaces]`
+  entry exists, and `core/policy.py:609` sets `scope_violation_mode = "warn"` as the DEFAULT — so
+  **AD-49's non-waivable `SCOPE_VIOLATION` refuse is no longer the fleet default**; every station runs
+  advisory scope containment unless it declares `hard`. That is the intended 2026-08-31 operator
+  decision, but § D of this Dream still describes it as an opt-in (*"default `hard` — today's
+  non-waivable refuse"*), which is now false against `core/policy.py:609`. And C composes with Story
+  28.16 into a no-op for within-station fan-out: two same-station stories share an auto-derived
+  surface by construction, so the pairwise wave test refuses (marshal **Story 33.8**). Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

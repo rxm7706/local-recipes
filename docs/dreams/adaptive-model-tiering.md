@@ -127,3 +127,20 @@ first.
   `adapters/harness_bmadloop.py`, and `cli/spin.py` were deliberately left
   untouched pending the Spec/story chain.
 - **2026-08-14** — Realized — decomposed 2026-08-11 as Stories 3.11 (FR-182) and 3.12 (FR-183), both shipped and ledger-done; `marshal-policy.toml` now carries real `model_tier_map` entries. Status flipped and FR-182/183 backfilled into the PRD by the 2026-08-14 dream-backlog chain audit. Residual is operational adoption: stories declaring `difficulty:`.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized`; the
+  **facts around it are corrected, and CAP-2 is the live gap.** CAP-1 **is fed** since 2026-08-13
+  (Story 3.11): 57 story specs across six stations declare a `difficulty:` (marshal 41, atlas 4,
+  doctor 4, mason 4, scribe 3, steward 1), `marshal-policy.toml:326-336` and pyforge-atlas's
+  `:168-178` carry real `model_tier_map` tables, and two live dispatch journals resolved
+  `"model": "composer-2.5-fast"` (marshal 28.24 on 2026-09-02; atlas 21.9 on 2026-09-01) through
+  `core/dispatch.py:220-232 resolve_dispatch_model` at `cli/dispatch.py:1400`. The claim that "no
+  story declares a `difficulty:` and no project populates a tier map" — carried in this Dream's
+  README row and in the Unifying Strategy's realization table — is false as of today.
+  **What is genuinely unrealized:** six of eight stations have no tier map and journal `"model":
+  null` (verified on mason 13.1, 2026-09-02 and steward 43.6, 2026-09-03), and **CAP-2's
+  retry-triggered floor-raise is unreachable** — `cli/spin.py:2268-2277 _apply_retry_escalation`
+  fires only in `run_resume`, while `cli/dispatch.py` and `core/dispatch.py` contain no floor-raise
+  call at all. `marshal factory dispatch` has been the live engine since ~2026-08-22. Both halves are
+  marshal **Story 33.6**. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

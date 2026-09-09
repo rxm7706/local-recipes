@@ -1,5 +1,10 @@
 ---
 id: SPEC-deferred-work-resolution-sweep
+status: in-progress   # added 2026-09-09 (doctor-B7): the key was absent entirely, which
+                      # silently exempted this Spec from chain-completeness INV-A. Epic 11
+                      # is 7/7 done, but CAP-2/CAP-3/CAP-6 measure inert against the live
+                      # ledgers (see the 2026-09-08 companion) — `shipped` would encode a
+                      # measured non-capability as delivered.
 owner-dream: docs/dreams/deferred-work-resolution-sweep.md
 companions:
   - precedent-2026-07-30-campaign.md
@@ -51,6 +56,10 @@ A tracked deferred-work ledger entry is a claim about code truth *at authoring t
   - Was: when a new story/spec is drafted for an epic, tracked deferred-work entries whose `owner:`/prose names that same epic or story are surfaced as candidate acceptance criteria.
   - Its scope-boundary Open Question (below) resolved to "own follow-on Spec," decided once this Spec's CAP-1..7 shipped cleanly as Epic 11 (pyforge-doctor), Stories 11.1–11.7 — a self-contained read-only sweep pipeline that a write-adjacent capability like CAP-8 would have muddied. No follow-on Spec/Dream exists yet; tracked in pyforge-doctor's `deferred-work-ledger.md` (`DW-11-8-1`) rather than silently dropped. This Spec now covers CAP-1..7 only.
 
+- **CAP-9 — the intake guard.**
+  - **intent:** Deferred-work intake refuses — or explicitly flags — an entry that cites no resolvable `location:`, so the ledger stops accumulating claims no sweep can ever check.
+  - **success:** An entry with no extractable repo path is rejected at defer time (or emitted carrying an explicit unverifiable marker), and the fleet's never-verified population stops growing.
+
 ## Constraints
 
 - **Reuse, don't re-solve, the heading-less-entry parser fix.** `deferred-work-audit-completeness`'s Spec (CAP-4..7, folded into `spec-deferred-work-visibility`) already addresses the same root-cause bug (`normalize_deferred_ledgers.py`'s blind spot) from the promotion side — fix once, consumed by both.
@@ -69,6 +78,7 @@ Running the sweep against the fleet's current ~400+ tracked entries reduces the 
 
 ## Assumptions
 
+- CAP-2/CAP-3/CAP-6 stay as written: the mechanism is built and correct, but its premise — that entries are written as checkable claims — does not hold for this corpus (measured 2026-09-08: CAP-3 matched 0 of 1,410 entries, CAP-2 skipped 0 of 183 due entries, CAP-6 found 1 near-duplicate pair against 4 defect classes found by hand). Rewriting their success criteria to describe the corpus would close the chain and retire the lead; CAP-9 attacks the cause instead.
 - Assumed this Spec stays independent from `deferred-work-audit-completeness` (already folded into `spec-deferred-work-visibility`) rather than being folded in too — the source Dream's own "Relationship to the sibling Dream" section states the two problems (parsing vs. code-comprehension) differ enough in kind to warrant separate stories.
 
 ## Open Questions

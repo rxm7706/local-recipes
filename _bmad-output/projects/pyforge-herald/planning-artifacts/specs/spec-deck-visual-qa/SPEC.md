@@ -7,9 +7,12 @@ surface:
   - presentations/<topic>/ (built decks the gates run against; worked example presentations/agentic-sdlc/)
 sources:
   - ../../../../../../docs/dreams/deck-visual-qa.md
-open_questions:
-  - "Entrypoint placement (a decomposition-time design decision, not resolved by the Dream): a `herald deck qa <slug>` subcommand on the existing Epic-6 CLI dispatcher, or a standalone step in the per-deck `scripts/` build pipeline alongside `extract-slides.mjs`."
-  - "Serve mode for the headless render: the built `dist/` opened as `file://` (the offline mode presentation-deck.md's own verify gate already requires to work) vs a throwaway local static server — whichever hash-routing under headless Chromium handles reliably; needs a spike against a real deck."
+open_questions: []
+  # ANSWERED 2026-09-09 (both, decided in shipped code — batch row `herald-OQs`):
+  # OQ-1 entrypoint placement -> the Epic-6 CLI dispatcher won; `herald deck qa <slug>
+  #   [--repo-root]` at cli.py:331-341 / :764-765 / :982-995. No per-deck `scripts/` step.
+  # OQ-2 serve mode -> against `file://`; a throwaway loopback static server
+  #   (deck_qa.py:143-152). Both are now Constraints below.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -84,6 +87,17 @@ rendering) — this is a NEW epic at decomposition time.
   render backends.
 - **Always:** no new headless-browser dependency — playwright-python is already catalogued in
   the pixi envs; consult `library-llms-full.md` before proposing anything beyond it.
+- **Always:** the gate's entrypoint is the existing Epic-6 CLI dispatcher, not a per-deck
+  build step — `herald deck qa <slug> [--repo-root]` (decided 2026-09-09 against the
+  `scripts/` alternative; shipped at `cli.py:331-341`, `:764-765`, `:982-995`). A per-deck
+  pipeline step would fork the gate per deck and re-open the CAP-3 report contract.
+- **Always:** the headless render is driven over a real HTTP origin — a throwaway loopback
+  static server bound on `127.0.0.1:0` — never `file://` (decided 2026-09-09; shipped at
+  `deck_qa.py:143-152`, slides driven at `http://127.0.0.1:{port}/#/{index+1}`,
+  `deck_qa.py:341`). Reason, recorded inline in the code: the deck is a Vite bundle with
+  dynamically-imported JS chunks and Chromium blocks cross-origin fetch/module-import under
+  `file://`. This does not weaken `presentation-deck.md`'s own offline-`file://` verify gate;
+  it says the QA render may not rely on it.
 
 ## Non-goals
 
@@ -106,12 +120,12 @@ sheet, and a gate-keyed report whose placeholder scan flags slide 40's three unf
 each slide LOOKS like" evidence, closing the "render gates prove the page RUNS, never that it
 LOOKS right" gap for the whole pipeline.
 
-## Open Questions
-
-- "Entrypoint placement (a decomposition-time design decision, not resolved by the Dream): a
-  `herald deck qa <slug>` subcommand on the existing Epic-6 CLI dispatcher, or a standalone
-  step in the per-deck `scripts/` build pipeline alongside `extract-slides.mjs`."
-- "Serve mode for the headless render: the built `dist/` opened as `file://` (the offline mode
-  presentation-deck.md's own verify gate already requires to work) vs a throwaway local static
-  server — whichever hash-routing under headless Chromium handles reliably; needs a spike
-  against a real deck."
+**Realization status (2026-09-09): built, not in effect.** Epic 14 shipped all three gates
+(14.1/14.2/14.3 `done`; `deck_qa.py`, 665 lines) and nothing calls them — no pixi task
+(`pixi.toml` names `deck_qa` only in a playwright dependency comment, line 2352), no CI job
+(`grep -rn "deck qa" .github/workflows/` is empty), and `docs/specs/presentation-deck.md` — the
+workflow every deck build follows — still carries zero reference to the gate, so its verify
+checklist remains purely run-shaped, which is exactly the gap this Spec exists to close. No run
+artifact exists anywhere: `render_gate` writes `.herald/deck-qa/<slug>/render/`
+(`deck_qa.py:117`, `:245-250`) and `.herald/` is not in the tree. Vessel: herald Epic 19 Story
+19.3 (steward Epic 49 carries the index row).

@@ -208,6 +208,19 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
     only the journal; the mode is per-station, so one station's choice never changes
     another's.
 
+- **CAP-18**
+  - **intent:** One publisher: marshal publishes bmad-loop/dispatch run state *and* CAP-7's
+    per-layer savings telemetry to `django_pyforge.supervisor` over a single supervisor-side
+    hop, so the published plane — not `~/.bmad-loops` — is the source of run truth for marshal,
+    doctor, the Unifying Spec's run-state-as-a-service (`spec-pyforge-unifying-strategy`
+    CAP-17, qualified) and the Hub Track (`spec-intelligence-hub` `hub:CAP-3`). Both
+    supervisors (loop and dispatch) feed that one publisher — one writer, not one per engine.
+  - **success:** marshal imports `django_pyforge` in exactly one publisher module (today it
+    imports it zero times); `cli/init.py:331` and pyforge-doctor's `sources/marshal.py:544`
+    read the published plane instead of `Path.home()/".bmad-loops"`; the front door shows live
+    run state and the per-story timing survives the workstation; CAP-7's savings fields carry
+    real numbers, not the four `None` stubs at `adapters/harness_bmadloop.py:1880-1898`.
+
 ## Constraints
 
 - **Never compress the contract:** story specs, acceptance criteria, gate verdicts, and
@@ -238,6 +251,12 @@ gaps (`DW-FU-3-6-6`), never "context is too big" — because nothing has ever me
   so on the linux loop fleet all five layers are live; degradation still governs
   non-linux platforms (caveman/codegraph are linux-64-only) and any future regression.
 
+- **Measurement first (Epic 33 ordering):** Story 33.1 — the on/off benchmark artifact
+  (CAP-9) plus the four real savings getters (CAP-7) — blocks 33.2 and everything after it. No
+  layer is turned on for real work before a measured saving exists, and
+  `docs/dreams/marshal-token-economy.md` stays `specified` until that benchmark reports one on
+  a real story. Nothing else counts as the gate.
+
 ## Non-goals
 
 - **Not** altering BMAD skill semantics: the story contract, gates, and review occurrence
@@ -258,3 +277,21 @@ The pinned benchmark story runs twice — layers off, layers on — and the on-r
 same story (same verdict, same gate results, reviewer never skipped) at a measurably lower
 weighted-token total, with the per-layer savings visible in the run's journal and in
 `marshal status` while it runs. Ceilings are then recalibrated citing that measurement.
+## Assumptions
+
+- **CAP-axis qualification (2026-09-09).** A bare `CAP-n` in this Spec always means *this*
+  Spec. The Hub Track is `hub:CAP-3` (`spec-intelligence-hub` SPEC.md:61), never this Spec's
+  CAP-3 (caveman output-compression seeding via Genesis); only CAP-7 is a correct
+  token-economy citation for savings telemetry; and Unifying run-state-as-a-service is always
+  written qualified as `spec-pyforge-unifying-strategy` CAP-17, because this Spec's own CAP-17
+  is `scope_violation_mode` (`core/policy.py:601-609`).
+- Epic 33 "Token economy in effect", minted by
+  `../../change-history/sprint-change-proposal-2026-09-09-token-economy-enablement.md`, is this
+  Spec's enablement decomposition: 33.1 measure → 33.2 enable the layers on dispatch
+  (`resolve_wire_wrap` folded on `factory dispatch`) → 33.3 enable on spin (fold repo defaults)
+  → 33.4 CAP-18 one publisher → 33.5 risk-tiered review wiring → 33.6 adaptive tiering fed on
+  all eight stations plus floor-raise on dispatch → 33.7 the two Epic-20 watchdogs re-pointed
+  off `~/.bmad-loops` → 33.8 first live fan-out wave → 33.9 `verify_scope` at `factory
+  dispatch` → 33.10 the derived CFE pin. Steward Story 49.8 is ledger-`blocked` on 33.4.
+- `status: ready` — Epic 33 is minted but unstarted; the Spec is the contract Epic 33
+  implements, not yet in-progress work.

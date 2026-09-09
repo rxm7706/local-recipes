@@ -1,8 +1,8 @@
 ---
 spec: chain-currency-sweep
-status: ready
+status: shipped
 created: "2026-08-26"
-updated: "2026-08-26"
+updated: "2026-09-09"
 owner-dream: docs/dreams/chain-currency-sweep.md
 surface:
   - scripts/chain_currency_sweep_check.py
@@ -44,8 +44,8 @@ A vision to realize on top of a proven pain: every Dream→Code chain on the boa
   - **success:** In any sweep PR, every diff hunk that bumps `updated:` pairs with a dated addendum in that same file; a stamp-only diff fails review.
 
 - **CAP-6 — Worked-Example accumulation**
-  - **intent:** Each sweep run appends a Worked Example (outcome, deviations, timings) to the runbook, timeless-workflow style, so the procedure compounds.
-  - **success:** Run 1 — the 2026-08-26 clearance of 26 findings + 1 overtaken — lands as the runbook's first Worked Example and doubles as its validation pass; every later run appends its own.
+  - **intent:** Each sweep run leaves a record in the runbook, timeless-workflow style, so the procedure compounds — proportionate to the run, not a fixed narrative cost.
+  - **success:** Run 1 — the 2026-08-26 clearance of 26 findings + 1 overtaken — lands as the runbook's validation Worked Example; every later run appends a one-line entry (date, findings cleared, deviations). A run that appends nothing has not completed its Land step.
 
 ## Constraints
 
@@ -54,6 +54,7 @@ A vision to realize on top of a proven pain: every Dream→Code chain on the boa
 - The audit mechanics are the detector's rules, not the sweep's to renegotiate: feeds graph edges, the 2-day grace window, strict `updated:` > path-date > git-last-touch precedence, behind-code suppression once a Dream is `realized`, overtaken cleared only by emptying `open_questions` — all per the runbook.
 - Dispatch discipline: one agent per station cascade, physical paths only (`_bmad-output/projects/pyforge-<slug>/planning-artifacts/…`), `BMAD_ACTIVE_PROJECT=<slug>` per invocation, never `scripts/bmad-switch` from a parallel agent, never a shared orchestrator holding the whole backlog; verify placement (`readlink -f`) and frontmatter survival after every edit.
 - Landing: one branch per sweep, one commit per station cascade (plus one for retros), `maintenance` label, merge with `--merge` never squash.
+- `DEFERRED_SPECS` (`board.py`) is code: this Spec's entry leaves the list through a doctor story, never a hand edit.
 
 ## Non-goals
 
@@ -68,5 +69,5 @@ After any trigger fires, one dispatched sweep returns the fleet's planning spine
 
 ## Assumptions
 
-- `status: ready` — the detector half is shipped and the runbook is tracked; the reconciler side (Run 1, the 2026-08-26 clearance) is pending dispatch.
+- `status: shipped` — the detector is shipped and the runbook is tracked and executed: Run 1 cleared 26 findings on 2026-08-26, and three further sweeps ran 2026-08-29, 2026-09-04 and 2026-09-07 (recorded in `prds/prd-pyforge-doctor-2026-07-25/prd.md:6`).
 - The Dream's status flip (`dreamt` → onward) is handled by the parent session, not this spec run.

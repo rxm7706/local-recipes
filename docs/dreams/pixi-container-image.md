@@ -2,7 +2,7 @@
 title: A shared base container image with pixi already installed, if this repo ever ships one
 type: dream
 owner: mason
-status: specified   # 2026-08-22 — spec + station decomposition landed same day
+status: realized    # 2026-09-09 — convention doc + guard test live; four Containerfiles, one pattern
 ---
 
 # A shared base container image with pixi already installed, if this repo ever ships one
@@ -39,14 +39,17 @@ pixi-materialization discipline and are now held to it explicitly:
 
 ## What is real
 
-The trigger fired. Three Containerfiles now ship in this repo's own tracked source: `Containerfile`
-(root, Story 7.1), `src/platform/Containerfile` (Story 10.3), and
-`src/platform/compose/dbgpt/Containerfile` (Story 10.5). All three converged independently on the
+The trigger fired. **Four** Containerfiles now ship in this repo's own tracked source:
+`Containerfile` (root, Story 7.1), `src/platform/Containerfile` (Story 10.3),
+`src/platform/compose/dbgpt/Containerfile` (Story 10.5), and
+`src/platform/compose/mcp-host/Containerfile` (spec-mcp-era-isolation slice 1 —
+`ghcr.io/prefix-dev/pixi:0.80.0` builder + `registry.access.redhat.com/ubi9/ubi-minimal:9.6`
+runtime, no `ENV` credential). All four converged independently on the
 same base-layer pattern — a registry-pinned `ghcr.io/prefix-dev/pixi` builder stage plus a minimal
 runtime stage, no credential ever baked into a layer or `ENV`. That convergence is now written down
 as policy in `docs/reference/container-base-layer-convention.md` and enforced by
 `tests/packaging/test_containerfile_base_layer_convention.py` (which sweeps every `FROM`/`ENV` line
-across all three files), alongside the pre-existing `scripts/pixi_version_registry.py` (which keeps
+across the files it enumerates — three of the four today; see the 2026-09-09 log entry), alongside the pre-existing `scripts/pixi_version_registry.py` (which keeps
 the pixi builder-stage tag in sync with `pixi.toml`'s `requires-pixi` floor). Mason's `build_docker`
 mode remains the separate recipe cross-compilation concern this Dream never covers — confirmed by
 reading `models.py`'s own Story 2.6 documentation before drafting this, specifically to avoid
@@ -128,3 +131,16 @@ source org's Tier-3 batch, sharing the same "no current PyForge target" disposit
   statically guard against a future unpinned base or `ENV`-declared credential across all three
   files. No repo-owned base image was built or published — the upstream `ghcr.io/prefix-dev/pixi`
   image stays the base for every builder stage, per `spec-pixi-container-image`'s own Constraints.
+- **2026-09-09** — **Realized, with a coverage gap named** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2). A **fourth** Containerfile — `src/platform/compose/mcp-host/Containerfile`
+  (spec-mcp-era-isolation slice 1) — now ships and follows the same convention, so the
+  "three Containerfiles, one pattern" reading above was one behind; corrected in place. The Spec
+  flips `ready → shipped`. The gap: the two enumerations in the repo **disagree**.
+  `scripts/pixi_version_registry.py:79-87` already covers all four, but
+  `tests/packaging/test_containerfile_base_layer_convention.py:50-52` hard-codes only three, so
+  the fourth file is **ungoverned by the convention guard**. It is compliant today; the finding is
+  that nothing would notice if it stopped being. The fix is to **derive** the list (glob
+  `Containerfile*`), not to append a fourth literal — a declared list where a derived one was
+  needed. That fix is a code change and needs a story; it is not applied by this documentation
+  pass.

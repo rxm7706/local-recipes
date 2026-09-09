@@ -11,8 +11,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-07"
-currency_review: "Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
+updated: "2026-09-09"
+currency_review: "Reviewed 2026-09-09 (Epic 8 added: 'Scribe in effect — the compile runs on a schedule the estate owns', the station's one built-but-not-in-effect capability under the realization gate; fleet-readiness decision batch 2026-09-09 row C6. Story 8.1 mints no new capability — Story 3.3 already shipped the bounds, the lock and the unattended mode; what is missing is a trigger, and the runbook's standing 'never a GitHub Actions workflow' reason is carried into the epic's boundaries). Reviewed 2026-09-06 (Epic 7 added: spec-bmad-suite-lifecycle scribe relay — three utility skills routed, Story 7.1). Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
 epics_role: canonical
@@ -471,6 +471,33 @@ installs first; recall stays grounded (`spec-pyforge-scribe`).
 
 Validated against the reconciled architecture spine (updated 2026-08-26) and the as-built code through commit `2d264c7f5c`. All 14 stories (1.1–5.2) are `done` per the tracked `sprint-status-ledger.yaml`; no heading or status was changed by this pass. Spot-checks: Story 4.1's ACs are satisfied as built — `graph_store_plugins.py::open_graph_store` selects drivers by owner on the CAP-18 hook contract with `FlatFileGraphStorePlugin` as the default, and the steward PG driver registers as a second plugin (`graph_store_pg.py`), not a fork. Story 5.2's PortalClient-only rule is enforced by `tests/meta/test_first_portal_slice.py`. The Canopy-obligations table's line "today's shipped backend is `FlatFileGraphStore` only" is now dated: since 2026-08-25/26 the PG (steward 28.1) and plane (steward 34.5) drivers exist behind the same port — governed by the **2026-08-26 dual-write operator decision** (plane primary satisfying FR-36; `scribe_schema` pgvector written as safety net; strategy SPEC § Open Questions, `query-plane-scribe-cutover`), which stays steward-owned and mints **no new scribe epic or story**. Epic 3's transcript scope is reconciled in the PRD (§5 amendment note) — this breakdown required no structural change. Residual work is tracked in `deferred-work-ledger.md` (DW-FU-3-2 family) and the 2026-08-08 technical report (RISK-1 promote.py review, RISK-2 unscheduled nightly), not as new stories here. *(Addendum 2026-08-27: the RISK-2 residual and DW-FU-3-2-2 named above are now owned by Story 3.3 — minted that date under Epic 3.)*
 
+
+## Epic 8: Scribe in effect — the compile runs on a schedule the estate owns
+
+**Spec binding.** The scribe satellite of the **realization gate** — a capability is in effect
+when its named success criterion is exercised in the running estate, not when its story merges
+(`spec-pyforge-unifying-strategy`; fleet-readiness decision batch 2026-09-09, row **C6**).
+Scribe is the healthiest station in that pass — 19/19 stories `done` and the code behind them
+real — and it has exactly one capability that is built and not in effect: **nothing triggers the
+compile.** `.claude/data/pyforge-scribe/graph.json` was last written 2026-08-27, `graph compile
+--nightly` is unattended-safe and `flock -n`-safe, and the documented trigger is an opt-in
+operator `crontab` line nobody installed. `spec-pyforge-scribe`'s own success signal asks for
+"nightly compile completes unattended across at least 4 consecutive scheduled runs" — today that
+is unverifiable, because there are no scheduled runs. Steward **Epic 49** carries one index row
+pointing here. **HARD boundaries:** no new capability is built — Story 3.3 already shipped the
+bounds, the lock and the unattended mode; **never a GitHub Actions workflow** (the runbook's
+standing reason holds: a GitHub-hosted runner has none of the three surfaces — this checkout's
+`.claude/memory/`, the per-user `~/.claude/projects/<encoded-repo>/*.jsonl` transcripts, and the
+gitignored graph store — so a scheduled workflow would faithfully compile an empty machine every
+night and prove nothing); the graph stays a derived artifact, never a source of record.
+
+### Story 8.1: The nightly compile gets a trigger the estate owns, and a freshness signal that proves it fired
+**Type:** feature • **Effort:** M • **Deps:** S-3.3 • **FR/AD:** FR-9 • FR-11 • `spec-pyforge-scribe` CAP-2 success signal ("4 consecutive scheduled runs") • batch row C6
+**Surface:** a checked-in trigger definition (a `pixi.toml` task plus the estate-side hook that invokes it — a marshal dispatch hook, or a versioned systemd-user/`launchd` unit the bootstrap installs; **not** `.github/workflows/`), `src/shared/packages/pyforge-scribe/docs/cli-runbooks.md` § *Installing the nightly trigger*, a freshness/staleness check reachable from the detector set, `.claude/data/pyforge-scribe/graph.json` (read only — still gitignored, still derived)
+**Given** `scribe graph compile --nightly` is prompt-free, `flock -n`-safe and exits 0 on an overlapping firing (`cli.py:285-299`), and the only documented trigger is "an opt-in operator crontab entry" (`cli.py:290-291`, `docs/cli-runbooks.md` § *Installing the nightly trigger*) that is not installed — the store's last write is 2026-08-27 — **When** the trigger is defined in the repo and installed by a documented, repeatable act rather than a hand-typed `crontab -e` **Then** the compile fires on schedule on the machine that holds the three surfaces, four consecutive scheduled runs are recorded (run log or graph mtime series), and the trigger's definition is reviewable in git
+**And** a freshness signal exists and is checkable: the age of `.claude/data/pyforge-scribe/graph.json` is reportable, and a store older than the schedule's own period surfaces as an **advisory** finding — never a PR gate and never a second verdict
+**And** the boundary is honoured explicitly: the story records **why** this is not a GitHub Actions workflow (runbook § *Scope note*), so the next pass does not re-propose one
+**And** the durable-driver path is not silently required — the default `FlatFileGraphStore` needs no service; if a scheduled run is ever pointed at the PostgreSQL driver it needs the local cluster up (`scribe-pg-up`), which the trigger must either start or refuse cleanly, never fail red on a machine without it
 
 ## Platform floor addendum — 2026-09-07
 

@@ -1,5 +1,8 @@
 ---
 id: SPEC-backlog-intake-check
+status: shipped   # added 2026-09-09: the key was absent, which silently exempted this Spec
+                  # from chain-completeness (board.py:715-716). CAP-1 is delivered as doctor
+                  # Story 13.1; 0 uncovered CAPs with the status gate lifted.
 owner-dream: docs/dreams/deferred-work-resolution-sweep.md
 companions: []
 sources:

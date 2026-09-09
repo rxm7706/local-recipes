@@ -1,6 +1,7 @@
 ---
 spec: factory-console
 status: superseded
+updated: "2026-09-09"
 superseded_by: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md#cap-2--lane-1-is-cms-managed-and-it-is-the-only-front-door
 owner-dream: docs/dreams/factory-console.md
 program: regenerable-factory (Wave 2)
@@ -76,3 +77,16 @@ Lane 1 `/console/` is the operator console. `retired-console-check` fails if
 the Guildhall generator, `data.js`, or the four retired pixi tasks return.
 Pages still publishes `docs/dashboard/` (Kedro-Viz + stub). The CAP-4
 regeneration drill is historical — `generate.py` is gone.
+
+## Surface no longer describes its files (2026-09-09)
+
+This Spec is `superseded` but still governs two paths whose meaning changed **under** it:
+
+- `docs/dashboard/index.html` — now a 14-line *"console moved"* stub, since steward Story 30.2.
+- `scripts/fleet_scan.py` — a **parser library only**. The `data.js` write CLI is retired
+  (`fleet_scan.py:6`, `:93`) and `main()` returns 2 at `:3505-3511`.
+
+**CROSS-STATION:** steward Cutover Story 44.1 requires 100 % of tracked files to resolve to
+stays / dies / a destination, and both of these currently resolve only to a superseded Spec whose
+surface no longer describes them. **A destination decision for both is owed to 44.1 — routed to
+steward.** Status stays `superseded`; nothing is re-homed here.

@@ -1,6 +1,7 @@
 ---
 id: SPEC-pyforge-mason
-updated: "2026-08-26"
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/presenton-pixi-image.md   # folded in 2026-08-02 as CAP-8..CAP-13 (see § Satellite below); satisfies INV-1 for this Dream
@@ -205,6 +206,36 @@ ownership), OQ-9 (minimum CFE version — none declared, no adapter break observ
 5. **`behind-code` suppression is now by design:** with the owner Dream flipped to `realized`
    (2026-08-26), the chain-layers audit's behind-code flag for this station is retired — the
    chain is no longer "still being built."
+
+### Realization-gate re-read — 2026-09-09
+
+A **gap, not a defect**, and not a status change: the owner Dream keeps `status: realized` and
+this Spec is `shipped`. What the gate finds is that the station's differentiator is not
+exercised anywhere in the estate.
+
+1. **`mason doctor` in mason's OWN pixi env reports `cfe_import_floor_satisfied: False`,
+   `cfe_import_floor_missing: (truststore, conda-forge-metadata)` and
+   `unavailable_verbs: ('recipe',)`** — because `[feature.pyforge-mason.dependencies]`
+   (`pixi.toml:281-283`) declares neither floor dependency while `cfe.py:180-186`'s
+   `CFE_IMPORT_FLOOR` requires both. CAP-5's graceful-degradation contract is working exactly
+   as specified; what is unexercised is **CAP-2**, the station's differentiator. Vessel:
+   **Story 16.1** (the env satisfies the CFE import floor — `pixi.toml` + a regenerated
+   `environment.yaml` + a regression test; CLAUDE.md Rule 1/Rule 2 apply, it is CFE-floor work).
+2. **Nothing in the estate invokes `mason recipe`, `mason package` or `mason environment`** —
+   one comment at `pixi.toml:797`, zero call sites; all recipe work still routes through
+   `pixi run -e local-recipes recipe-build`. "Mason ships Mason" remains rehearsal-tier (no
+   `recipes/pyforge-mason` recipe, no public publish — consistent with item 3 above). Vessel:
+   **Story 16.2** (a first estate caller of `mason recipe`, outside mason's own test tree —
+   Story 49.2's effect check: "has a caller outside its own test file").
+
+Both stories are minted on mason's own epics; steward Epic 49 carries the index row.
+
+### The `status:` key — added 2026-09-09
+
+This Spec carried **no `status:` line at all** (it uses the `id:` form), so `chain-completeness`
+never saw it and reported 7/7 CAPs uncovered. That was a bookkeeping defect, not a coverage one.
+`status: shipped` is now declared. Fleet note: eight Specs across the fleet carry no status line
+(doctor ×4, marshal ×3, mason ×1) — this was mason's one.
 
 ## Satellite: Presenton (air-gapped conda-native repackaging)
 

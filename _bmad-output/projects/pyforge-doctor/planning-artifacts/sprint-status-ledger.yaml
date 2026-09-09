@@ -11,8 +11,8 @@
 # Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
-# project: doctor
-# stories: 113
+# project: pyforge-doctor
+# stories: 131
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -51,6 +51,22 @@ development_status:
   20-3-frozen-path-changed-exists: done
   20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done
   20-5-the-version-drift-spec-s-open-questions-are-written-back: done
+  21-1-deferred_specs-stops-reading-as-a-live-exemption-when-it-is-not-one: backlog
+  21-10-a-verified-line-on-a-capability-is-read-and-rendered: backlog
+  21-11-the-effect-check-renders-beside-story-status-check: backlog
+  21-12-a-body-that-says-3-of-9-under-realized-is-a-finding: backlog
+  21-13-open_questions-over-a-live-memlog-question-is-a-finding: backlog
+  21-14-promissory-language-under-a-terminal-status-is-measured-before-it-ships: backlog
+  21-15-a-status-comment-that-contradicts-its-own-ledger-is-a-finding: backlog
+  21-16-the-status-body-check-renders-where-the-operator-already-looks: backlog
+  21-2-a-spec-with-no-status-line-is-a-finding-not-a-silent-exemption: backlog
+  21-3-sibling-dreams-drift-joins-on-the-key-the-two-trees-actually-share: backlog
+  21-4-constitutive-is-derived-from-the-roster-not-hardcoded-beside-it: backlog
+  21-5-the-deferred-work-verifier-resolves-a-project-relative-source_spec-from-the-project-root: backlog
+  21-6-dreams-hygiene-reconciles-every-dream-file-and-readme-71-is-enforced: backlog
+  21-7-the-pixi-candidate-ledgers-get-their-staleness-check: backlog
+  21-8-deferred-work-intake-refuses-an-entry-that-cites-nothing-checkable: backlog
+  21-9-a-capability-with-no-caller-outside-its-own-tests-is-a-finding: backlog
   3-1-partition-findings-by-actionability: done
   3-2-rank-the-actionable-partition: done
   3-3-root-cause-naming: done
@@ -113,6 +129,8 @@ development_status:
   epic-2-retrospective: optional
   epic-20: backlog
   epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
   epic-4: done

@@ -1,7 +1,8 @@
 ---
 id: SPEC-agentic-sdlc-autonomy
 spec: agentic-sdlc-autonomy
-status: pitched
+status: ready
+updated: "2026-09-09"
 owner-dream: docs/dreams/agentic-sdlc-autonomy.md
 surface:
   []          # no code surface yet
@@ -48,3 +49,16 @@ never shipped. Its evidence is the factory itself.
 The position survives contact with practitioners because every part of it is instantiated
 here. Standing risk: this is the practice most able to drift into marketing, because nothing
 fails when it does.
+
+## Assumptions
+
+- `status: pitched` → `ready` (2026-09-09, operator-approved). **Fleet ruling: `pitched` is not a
+  Spec status.** It is Dream vocabulary and was the fleet's only instance in a Spec `status:`
+  field; `AGENTS.md:118` sanctions `draft → ready → in-progress → shipped`. `ready` is the honest
+  value here: a settled standing position with nothing to decompose.
+- **Doctor's `DEFERRED_SPECS` entry for this Spec stays.** It had never done anything: `pitched`
+  is not in `OPEN_SPEC_STATUSES` (`board.py:77`), so `board.py:716` skipped the Spec before the
+  `DEFERRED_SPECS` check ever ran, leaving the carefully-worded exemption at `board.py:88-90`
+  inert. The flip to `ready` makes the exemption **live and honest** — a settled contract with
+  nothing to decompose, exempted on the record. **Rejected:** `archived`/`absorbed` — cleaner
+  bookkeeping, but it deletes a standing position the Charter still argues from.

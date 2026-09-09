@@ -8,6 +8,17 @@ shipped_scope_note: |
   (DW-B4-2), the F1 cold/warm benchmark (DW-F1-1), and the live Dagster daemon (DW-C1-1,
   DW-G3, DW-H4) are all still outstanding. See § Success signal. Added 2026-07-27 per
   AUD-ATLAS-047 / AUD-ATLAS-049.
+
+  Currency, 2026-09-09: "the 32 stories" is a correct HISTORICAL statement about the
+  Kedro/Dagster/DuckDB MIGRATION only. Measured with the real parser
+  (`scripts/fleet_scan.py::parse_sprint_status`), the station's ledger now holds **93 story
+  keys across 24 epics** — 141 rows once the 24 epic rows and 24 retrospective rows are
+  counted — plus Epic 25, minted 2026-09-09. The "137" quoted by the 2026-09-09 readiness
+  pass and by the decision batch is the ROW count as it stood before Epic 25 (91 stories
+  then), not a story count; both artifacts read it as stories. `status: shipped` and the
+  owner Dream's `realized` both HOLD under the exercised realization gate — pipelines, the
+  MCP face, the BSL models and the Vizro board all run.
+updated: "2026-09-09"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/unity-data-stack.md    # folded in 2026-08-02 as CAP-18..26 (see below); satisfies INV-1 for this Dream
@@ -53,7 +64,21 @@ sources:
   - ../../../../../../docs/dreams/wasm-analytics-stack.md   # [Wasm satellite] archived 2026-08-02, narrative absorbed into pyforge-atlas.md
   - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-wasm-analytics-stack-2026-07-25/brief.md     # [Wasm satellite, moved to archive/ 2026-08-02]
   - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md           # [Wasm satellite, moved to archive/ 2026-08-02]
-open_questions: []   # all four of the PRIMARY Atlas Spec's own OQs resolved 2026-07-25 — see § Resolved questions. The two satellites carry their own unresolved open questions — see § Open Questions (satellites), not invented away by this consolidation.
+open_questions: []
+  # All four of the PRIMARY Atlas Spec's ORIGINAL OQs resolved 2026-07-25 — see § Resolved
+  # questions. The two satellites carry their own unresolved open questions — see § Open
+  # Questions (satellites), not invented away by this consolidation; they have never been
+  # frontmatter entries.
+  #
+  # ANSWERED 2026-09-09 (chain-currency runbook § overtaken), raised and retired the same day:
+  # "The shipped Vizro page count disagrees with itself: `pixi.toml:1065` and `:1070` both
+  # describe a '31-page' dashboard-dryrun gate, `dashboard/app.py`'s `PAGE_INVENTORY` carries 34
+  # `PageDef` entries, and the module docstring still says 28."
+  # -> THE LIVE COUNT IS 34: `PAGE_INVENTORY` in `dashboard/app.py` holds 34 `PageDef` entries,
+  #    including Epic 22's three identity pages. The 31 at `pixi.toml:1065`/`:1070` and the 28 at
+  #    `app.py:13` are STALE LITERALS, not a disagreement to adjudicate. ANSWERED AND VESSELLED,
+  #    not open: Story 25.1 ("Retire the second Lane-3 runtime") carries the literal fix as an
+  #    And-clause. The count still wants deriving rather than stamping -- that is the story's job.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -194,7 +219,10 @@ this document's five fields.
     (the live-confirmed core) plus factory-status, each honest about its state — grounded,
     BSL-wired shell, or no-BSL-model shell — while the **full 28-CLI page inventory is
     CIS-two-spine deferred** (`DW-D2-1`) *(corrected 2026-07-27, `AUD-ATLAS-041`: this clause
-    previously claimed all 28 were answerable)*; a natural-language query returns a chart
+    previously claimed all 28 were answerable;* ***superseded 2026-09-09****: DW-D2-1 reads
+    `status: closed` and the inventory shipped — `spec-atlas-query-dashboards` CAP-7 carried it
+    to delivery. The exact live page count is itself in dispute and is this Spec's one open
+    question.)*; a natural-language query returns a chart
     grounded in declared metrics; and its language backend routes through repo model-backend
     configuration, never a hardcoded public endpoint.
 
@@ -568,9 +596,14 @@ three.
   no HTTP surface exists. **Deferred, not refused**: it is committed as a real
   future capability, tracked as **DC-1** in the PRD § 6.4. Non-goal *for this
   scope*, not forever.
-- **Live production bring-ups** — Dagster daemon, MinIO/PostgreSQL servers, live
-  Wagtail, agno LLM synthesis, and the production `vss` retriever each ship a
-  seam and run against local/embedded defaults. Tracked as **DC-2…DC-6** in the
+- **Live production bring-ups** — Dagster daemon, PostgreSQL servers and an
+  RWX-capable storage class, live Wagtail, agno LLM synthesis, and the production
+  `vss` retriever each ship a seam and run against local/embedded defaults.
+  *(Storage kind re-pointed 2026-09-09, batch § 2.3 C16 / row atlas-B6: this line
+  read "MinIO/PostgreSQL servers", a phrase inherited from atlas's own DW-H1 ledger
+  heading rather than chosen here. `docs/dreams/pyforge-unifying-strategy.md:406-408`
+  — "No MinIO as a fourth core kind", re-affirmed 2026-09-05. The Non-goal itself is
+  unchanged: this Spec provisions no servers.)* Tracked as **DC-2…DC-6** in the
   PRD § 6.4. *(Each was properly deferred at build time — `DW-C1-1`/`DW-G3`,
   `DW-H1`…`DW-H4`. The live Tier-3 ledger is truncated to 9 and gitignored, but the
   complete set of **52** is consolidated and tracked at
@@ -788,4 +821,28 @@ questions, honestly preserved rather than silently resolved by this
 - **`componentize-py` rule-configuration redesign:** does the build-time-only import restriction force a redesign of the validation component's rule-configuration mechanism, if rules were meant to be dynamically loaded per file-type?
 - **Operational ownership:** who is on-call for this pipeline in production, and what SLA (if any) applies to validation/ingestion latency — needed before Architecture commits to a specific deployment topology.
 - **Data classification and retention:** no scheme (PII, confidential) is defined for Bronze/Silver/Gold or Marquez's lineage history; if the seed use case's actual data (headcount/cost) carries PII, this adds retention/access-control requirements not currently specified.
+
+## Currency pass — 2026-09-09
+
+**Status holds.** `status: shipped` and the owner Dream's `realized` both survive the exercised
+realization gate: the pipelines, the MCP face, the BSL models and the Vizro board all run. Two
+body claims were behind the station and are re-grounded above — the story count (see
+`shipped_scope_note`) and the deferred 28-CLI page inventory (CAP-8; DW-D2-1 is closed).
+
+**CLI⇄tool parity gate → Story 25.3.** An incoming cross-station claim (decision batch § 2.3 C10,
+marshal-A finding E6 → mason/atlas): atlas's MCP tools — like the 46 conda-forge-expert tools —
+have **no CLI⇄tool parity gate**. The governed front door is the HTTP station face
+(`mcp_http.py:137`, `POST /stations/atlas/mcp`) with stdio servers as local adapters, but nothing
+asserts that every `pyforge atlas …` verb has a tool and vice versa. It lands as **Epic 25 Story
+25.3**, "Atlas's MCP tools pass the CLI⇄tool parity gate" (ledger `backlog`), not as an Epic 24
+rider.
+
+Grounding found while minting it, worth keeping: atlas is the ONE station the unified front door
+cannot AST-introspect — `pyforge.core.dispatch.PREPARATORY_UNINTROSPECTABLE['atlas']`
+(`core/dispatch.py:29`) points at steward's `spec-22-prep-atlas-kedro-cli-introspection`
+(`status: ready`, never minted as a ledger key), whose own Approach says "a later story must
+generate the CAP-5 parity matrix for atlas verbs from Kedro's own command surface, still without
+reimplementing pipelines in core". **Story 25.3 IS that story.** The one-line `pyforge-core` edit
+it implies is steward's surface — split it, or land a steward memlog line first, or
+`spec-surface-check` reds at merge. C10's other half, the 46 CFE tools, stays mason's.
 

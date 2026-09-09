@@ -21,8 +21,10 @@ sources:
 # Composed at landing time (2026-08-20): S-16.2's work was authored against main BEFORE S-16.1
 # landed, so each side of that merge closed one question and still listed the other's as open.
 # Both closures stand; neither reopens the other. What is NOT closed here is DW-H1's own
-# PostgreSQL/MinIO requirement for the separate ATTENDED PRODUCTION bring-up -- that stays open
-# under DW-H1, where it belongs, and is not an open question of this spec.
+# PostgreSQL + RWX-volume requirement for the separate ATTENDED PRODUCTION bring-up -- that stays
+# open under DW-H1, where it belongs, and is not an open question of this spec.
+# (Re-pointed 2026-09-09, batch C16: the storage half read "PostgreSQL/MinIO"; MinIO is not a
+# core kind, and Wagtail is Lane 1 media = an RWX volume. See § DW-H1 storage re-point.)
 open_questions: []
 ---
 
@@ -132,10 +134,11 @@ the other's question as open — and were composed at landing time, 2026-08-20.
   `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s Design Notes
   for the full resolution and evidence.
 - **DW-H1 dependency — RESOLVED for the LOCAL-REHEARSAL scope only (S-16.1).** SQLite satisfies
-  Story 16.2's local-rehearsal instance. This does **not** resolve DW-H1's PostgreSQL/MinIO
-  requirement for the separate ATTENDED PRODUCTION bring-up DW-H3 already assumes
-  ("+ PostgreSQL/MinIO from DW-H1") — that remains exactly as open as before, still owned by
-  DW-H1. See `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s
+  Story 16.2's local-rehearsal instance. This does **not** resolve DW-H1's **PostgreSQL + an RWX
+  volume** requirement for the separate ATTENDED PRODUCTION bring-up DW-H3 already assumes
+  ("+ PostgreSQL + an RWX volume from DW-H1") — that remains exactly as open as before, still
+  owned by DW-H1. *(Storage kind re-pointed 2026-09-09, batch C16 — see § DW-H1 storage re-point;
+  the text previously read "PostgreSQL/MinIO".)* See `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s
   Design Notes for the full resolution and evidence.
 - **Verification home — RESOLVED (S-16.2, 2026-08-15).** The rehearsal lives in the DEFAULT `kedro-test`
   gate — a real httpx-backed opener (`src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py`)
@@ -154,3 +157,15 @@ the other's question as open — and were composed at landing time, 2026-08-20.
   `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`)
   is additional, not a substitute — it still runs the same script against a real Wagtail/La Suite
   instance.
+
+## DW-H1 storage re-point — 2026-09-09
+
+**DW-H1's object-storage half is re-pointed at the infra-kinds answer: an RWX volume / the
+target's RWX-capable storage class, NOT MinIO** (operator, batch § 2.3 C16 / row atlas-B6).
+`docs/dreams/pyforge-unifying-strategy.md:406-408` reads "No MinIO as a fourth core kind
+(re-affirmed 2026-09-05; Lane 1 media is RWX, and a multi-node target names its RWX-capable
+storage class)" — and Wagtail is Lane 1, exactly the case that ruling anticipates.
+
+Every restatement of DW-H1's requirement in this Spec now reads "PostgreSQL + an RWX volume".
+**DW-H1 itself stays `open` and ATTENDED; only the storage kind it names is corrected.** The Never
+is not re-opened and no scoped exemption is granted.

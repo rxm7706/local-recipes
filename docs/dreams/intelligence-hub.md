@@ -27,6 +27,18 @@ status: dreamt
   https://github.com/openteams-ai/inthub-whitepaper — `whitepaper.md`, `GLOSSARY.md`, `SOURCES.md`,
   `MESSAGING.md`; Revision 9 is tag `v9` (2026-08-17, commit `9c2856923b`), Revision 8 is `v8`
   (2026-08-06); no licence file. Cite later revisions by tag from this repository, not by PDF URL.
+- **Field guide** (read 2026-09-09, RB-3): https://ownyourintelligence.ai/ — an Astro site (21 pages
+  by sitemap: `/guide/*` in five parts, `/glossary/`, `/sources/`) that *reads* the whitepaper for a
+  general audience; not a second source, and its "status audited" block is dated **2026-08-18**, one
+  day before the Frame Spec went public, so it still says "no published specification". Its own
+  additions: a glossary, a 15-question FAQ, and six **falsifiable indicators** (§ *The decade
+  ahead*) against which an outside party can judge the thesis.
+- **Implementation estate** (read 2026-09-09, RB-3): https://github.com/nebari-dev — 76 public
+  repositories. A first-party Software Pack declares its maturity in its own `pack-metadata.yaml`
+  (`level`: experimental / alpha / beta / ga), aggregated by
+  `nebari-dev/software-pack-dashboard/tracked-packs.yaml`; the ladder is defined in
+  `nebari-dev/software-pack-template/docs/release-readiness-checklist.md`. Derive readiness from
+  those files, never from prose.
 - **Evidence base:** 34 cited sources — McKinsey (×4), PwC (×2), Deloitte (×3), Stanford HAI
   AI Index 2025 + 2026, Brookings, OSI/OpenLogic State of Open Source 2026, Financial Times,
   Nadella at WEF Davos 2026, Hugging Face, NBER (×2), PEX Network, Dataversity, AlixPartners,
@@ -659,18 +671,119 @@ paper says matters most, but it should be stated, not assumed.
    publish the repo's own context — the `AGENTS.md` block, station personas,
    the recipe-authoring conventions — as Frame-shaped artifacts with named owners; a Community
    Frame for local-recipes would be the paper's use case 3 applied to ourselves.
+   *(RB-3, 2026-09-09: v0.2 conformance is the four frontmatter fields and nothing else — body
+   free-form, no section taxonomy, `inherits` resolution recommended not required (frame-spec
+   PR #25, merged 2026-09-07). The spec repository ships `tools/frame-reader/SKILL.md` and
+   `tools/frame-authoring-assistant/SKILL.md` — PyForge's own skill shape — so this shape is one
+   Frame per station inheriting a Company Frame derived from the `AGENTS.md` verified block, a
+   reader skill, and git as the store. No registry required.)*
 3. **A declared validation strategy per run.** A bmad-loop run or `marshal factory spin` declares its
    Guards by stage, its Gates as threshold rules and its Track contents/retention; the several
    evidence files converge on one structured Track. Landing-evidence grammar and durable-runs are
    the precedents.
 4. **Guards as a library.** Expose detectors, Warden axes and review lenses as reusable Guards with a
    declared category (the paper's seven), so a Spec can say which categories it lacks.
+   *(RB-3, 2026-09-09: `nebari-dev/provenance-collector-pack` — in-cluster image digest,
+   signature, SLSA and SBOM attestation checks, alpha — is a candidate Warden **plugin source**
+   under Unifying CAP-18, never a second verdict; it overlaps steward 43.4 "deploy by digest".)*
 5. **Package the Nebari/Nebi lineage where missing.** A Mason/CFE lane: verify with `lookup_feedstock`
    and `pypi_intelligence` whether `nebari`, `nebari-infrastructure-core` and `nebi` exist on
    conda-forge or PyPI, and build local recipes if not — a green local build ends the task, no
    external PR without an ask. *(RB-2, 2026-09-06: `nebari` and `nebi` are already on
    conda-forge; only `nebari-infrastructure-core` is missing — the lane narrows to that Go CLI,
    plus the `frames` registry client if wanted.)*
+   *(2026-09-09: the local-build half is **already done** — `recipes/nebari-infrastructure-core`
+   0.14.0 (`b1f455b029`, with an ARM build fix `60b1bc475f`) and `recipes/nebari-frames` 0.1.7
+   (`dd7c4e7eb7`) landed on 2026-09-07, two days before this Dream recorded the lane. What
+   remains of shape 5 is only whether either goes to conda-forge, which needs an explicit ask.)*
+6. **Foundry Platform as a Nebari Software Pack; NIC as a steward deployment profile.** *(candidate
+   added 2026-09-09 from RB-3; not chosen.)* The Foundry Helm chart gains one optional
+   `nebariapp.yaml` template — `auth.enforceAtGateway: false`, so `django-allauth` keeps OIDC and
+   the nebari-operator only provisions the Keycloak client and its Secret; `routing.publicRoutes`
+   for `/ht/` and `/api/health`; a `deviceFlowClient` for the `pyforge` CLI; a Launchpad card — and
+   steward gains a NIC profile beside the OCP profile, using NIC's **local kind provider** for an
+   attended bring-up of the same class as 12-7 on CRC. PostgreSQL and Redis stay in-chart; NIC's
+   Keycloak / Envoy Gateway / cert-manager / ArgoCD play the role the OCP router and OAuth play
+   today, so the infra-kinds lock is untouched. Layer 1 *beneath* the Foundry, never the Foundry
+   replaced.
+7. **Station environments published through Nebi to OCI.** *(candidate added 2026-09-09 from RB-3;
+   not chosen.)* `nebi push` of the station pixi workspaces to `quay.io` or the internal registry as
+   versioned, rollback-able environment artifacts — the enterprise-mirror / air-gap story on the
+   Nebi that exists today (environment management), not a pixi replacement. Nebi's roadmap SBOM and
+   compliance checks overlap Warden: watch, do not adopt.
+
+## How alignment with the Unifying Strategy would proceed — candidate, not a decision (2026-09-09)
+
+Recorded after the operator asked what it would take for the evergreen
+[`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) to be aligned to this Dream and to
+adopt its stack. This is the assessment as given; every line below is a candidate that the Spec
+turns into a decision or a non-goal. **Nothing here is chosen.**
+
+**Three readings of "align", which lead to materially different work:**
+
+| Reading | Realises | Cost |
+|---|---|---|
+| Vocabulary | Shape 1 — the Charter Lexicon speaks Hub / Frame / Cog / Op / Guard / Gate / Track | A recorded Charter amendment; no code |
+| Artifact model on the existing stack | Shapes 2, 3, 4 — Frames, a declared validation strategy per run, Guards with categories, one Track per run — on Django + PostgreSQL + Redis + Kubernetes + pixi | Skill, detector and marshal-policy work; Track store foundry-side |
+| Layer 1 as a profile as well | Shapes 5, 6, 7 — NIC and `frames` recipes, Foundry as a Software Pack, Nebi push to OCI | A steward deploy profile; attended bring-up; Go recipes |
+
+**What "adopt the stack" can honestly mean today,** by the paper's own honesty table and RB-1..3:
+adopt Frame Spec v0.2 as the context format now; consume `nebi` and `nebari` from conda-forge as
+they are; treat NIC as Layer 1 *beneath* the Foundry, a profile beside OCP; design PyForge's own Op
+manifest in the paper's example shape (Frames, Cogs, Guards by stage, Gates as threshold rules,
+Track `retain_for` + `include`) so it can be Nebi-packaged once Nebi defines that — no public Op
+manifest schema exists. The Foundry *is* the Hub's Layer 2 plus its accountability plane. A sharper
+Why than vocabulary: the field guide's six falsifiable indicators — an open Frame spec with
+implementations not controlled by OpenTeams; Hubs run by organisations with no OpenTeams
+relationship; community Guard libraries with real usage; products around the Hub built by third
+parties — are ones PyForge could be independent evidence for.
+
+**Standing rulings the "adopt" reading meets, and the candidate resolution for each:**
+
+| Ruling | Collision | Resolution |
+|---|---|---|
+| Infra-kinds lock (PostgreSQL + Redis + Kubernetes; DuckDB a library) | `nebari-frames` runs on single-writer SQLite; Collab Hub on fs / S3 / Postgres | Git is the Frame store (the paper's simplest tier, and the guide's own advice); `frames` CLI as validator only; a registry, if ever, is Collab Hub on Postgres. NIC foundation services sit where OCP's router and OAuth sit |
+| One PR verdict (Warden) | "Guard" language | Guards are detectors and Warden hook-spec plugins with a declared category; Gates are the verdict plus operator confirmation; nothing mints a second verdict |
+| Autonomy is a repo-wide setting (`gate_mode`) | Autonomy granted per engagement | The Op manifest per run is where `gate_mode` becomes per-engagement; converges with [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) |
+| Rented harness (Claude Code on the paper's list) | Cog hides harness choice | The Portability contract in `AGENTS.md` is the Cog boundary; state the split: model and harness rented, context / workflows / checks / evidence owned |
+| Air-gap parity | NIC downloads OpenTofu at runtime | Pin conda-forge `opentofu` through `NIC_TOFU_PATH` |
+| "No `CAP-20` in the evergreen Spec" (a Never) | New capabilities | They live on `spec-intelligence-hub` with `extends: spec-pyforge-unifying-strategy` under a fourth prefix, `hub:`, beside bare, `pap:` and `fnd:` |
+| Living Unifying Dream ≤ 400 lines; historical names stay | Retitling or growing that Dream | Do not retitle; a Grounding bullet and a cross-reference point here; this Dream stays the sibling that carries the whitepaper |
+
+**Candidate sequence,** following the cutover precedent of 2026-09-04 (a Dream section → a derived
+Spec that extends the Unifying Strategy → a spine → one steward epic held `blocked` until the
+operator iterates):
+
+- **A. Decide and record.** The operator's reading, and the answers to § *Open questions*, land as
+  memlog decisions on `spec-intelligence-hub`, then Realization-log entries in both Dreams and a
+  Grounding bullet in the Unifying Strategy. Owner stays steward.
+- **B. Contract before repo.** `bmad-spec` update → `ready` under the `hub:` prefix;
+  `bmad-correct-course` on the Unifying Strategy for a dated Constraints block;
+  `bmad-architecture` → a `hub:AD-n` spine; `bmad-create-epics-and-stories` → the next free steward
+  epic (45–47 are taken as of 2026-09-09), every story `blocked`; de-register the Spec from doctor's
+  `DEFERRED_SPECS`.
+- **C. Realise cheapest first, and mind the cutover.** Dreams and memlogs are the only unconditional
+  move into `python-foundry`; every rendered artifact is re-derived there. So A and B land now, the
+  no-code and doc-only pieces land now, and runtime code waits for the cutover flag so it is built
+  once in foundry rather than moved:
+  1. Lexicon mapping as a recorded Charter amendment — now.
+  2. Eight station Frames inheriting a Company Frame derived from the `AGENTS.md` block, a
+     frame-reader skill, a four-field preflight detector — now; git as the store, no registry.
+  3. A Guard catalogue as a doctor source deriving the seven categories from a declared attribute on
+     each detector, Warden axis and review lens — now; it will show source-grounding and outcome
+     Guards missing.
+  4. One structured Track per bmad-loop run with stated retention, and a validation block in the
+     marshal policy that is the Op manifest — foundry-side.
+  5. Mason lane: NIC and the `frames` CLI as Go recipes — **landed 2026-09-07**, ahead of this
+     plan; only a conda-forge submission remains, and that needs an ask.
+  6. The `nebariapp.yaml` template in the Foundry chart and the NIC kind profile — foundry-side,
+     attended like 12-7.
+  7. `nebi push` of station workspaces to OCI — foundry-side, after the cutover flag.
+
+**What this would not do:** retitle the Unifying Strategy; mint `CAP-20` on the evergreen Spec;
+deploy `nebari-frames` in-cluster as a fourth kind; replace pixi with Nebi; target Nebari classic
+(sunsetting); build a marketplace or Desktop/Web Application (Collab Hub is that backend, and stays
+a non-goal); vendor the Frame Spec text (no LICENSE); open any external PR.
 
 ## What is real
 
@@ -725,12 +838,21 @@ contract chooses among the candidates above before any code.
 - Does a **bmad-loop run** already emit enough to constitute a Track, and what retention would the
   operator want?
 - Do we want the repo's **own context published as Frames** (a Community Frame for local-recipes)?
+- **Which reading of "align the Unifying Strategy to this Dream"** — vocabulary only, the artifact
+  model on the existing stack, or Layer 1 as a NIC profile as well (§ *How alignment … would
+  proceed*)? Each is a memlog decision; candidate shapes 6 and 7 exist only under the third.
+- Is a **`NebariApp` template** in the Foundry chart wanted while the chart's own ingress and the
+  OCP route stay the primary routes — and is the NIC kind profile a steward attended bring-up in
+  `local-recipes`, or foundry-side only?
+- Is **`nebi push`** of the station workspaces to OCI wanted before the cutover, or only foundry-side?
 
 ## Research backlog (pre-Spec)
 
 Two research items queued 2026-09-05 at the operator's request. They are prerequisites for the
 Spec, not stories; each closes by appending its finding here (dated, with the evidence) and by
-updating the open question it answers. **Both ran on 2026-09-06; findings are recorded inline.**
+updating the open question it answers. **Both ran on 2026-09-06; findings are recorded inline.** A
+third, RB-3, was queued and run on 2026-09-09 when the operator asked what aligning the Unifying
+Strategy to this Dream would take.
 
 - **RB-1 — Has the Frame protocol been published?** The paper lists "Frame protocol published" as a
   Phase 1 (now–6 months) milestone and calls the protocol the standard that makes Frame exchange
@@ -813,6 +935,92 @@ updating the open question it answers. **Both ran on 2026-09-06; findings are re
   with no per-name filter, so it does not apply to a named lookup. **Effect:** candidate shape 5
   narrows to one Go CLI (NIC), plus the `frames` client if the operator wants the registry
   consumable from pixi; no external PR is implied — a green local build ends that lane.
+- **RB-3 — What does the field guide add, and what in the Nebari stack is actually ready?** Queued
+  and run 2026-09-09 at the operator's request. Sources: every page of ownyourintelligence.ai (by
+  sitemap), the whitepaper PDF re-fetched and hash-compared, `openteams-ai/frame-spec` at HEAD, and
+  all 76 public `nebari-dev` repositories via the GitHub API, reading each `pack-metadata.yaml`
+  where one exists. Gates the candidate approach above and shapes 6–7.
+
+  **RB-3 finding — 2026-09-09.**
+  - *The site is a reading, not a source.* Its status audit (2026-08-18) predates the Frame Spec by
+    one day and still says "no published specification"; this Dream is ahead of it. It adds a
+    glossary, a 15-question FAQ (FAQ 14: a small firm's first step is a Company Frame in "an
+    afternoon and a strong opinion about how the company talks"; FAQ 12: MCP is complementary
+    Cog-layer plumbing; FAQ 7: "the recursion … terminates in humans at Gates"), the advice to start
+    Organizational Memory as versioned Frame files in git, and six falsifiable indicators: (1) the
+    Frame protocol as a genuinely open specification with implementations not controlled by
+    OpenTeams; (2) Hubs deployed by organisations with no OpenTeams relationship; (3) marketplace
+    liquidity from third-party Ops and Frames; (4) community Guard libraries with real usage; (5) one
+    vertical where Frame-based context exchange is normal practice; (6) products around the Hub
+    built by parties other than the steward. The PDF is byte-identical to the hash under § Source.
+  - *The Frame Spec got simpler.* PR #25 "Make the spec's minimalism unmistakable" (merged
+    2026-09-07): conformance = the four required frontmatter fields, nothing else; the body is
+    free-form with no section taxonomy (a reader had generated ten dutiful sections from
+    `docs/overview.md` and concluded the spec was too heavy); resolving `inherits` is recommended,
+    not required; new `examples/code-review-norms/` (four fields, no headings, all value in the
+    body). The repo ships `tools/frame-reader/SKILL.md`, `tools/frame-authoring-assistant/SKILL.md`,
+    `tools/validate_frames.py` (7 tests, 18/18 examples), and `USING-FRAMES.md`. Still no LICENSE
+    file and no git tag; `spec/v0.2.md` and the working draft are identical.
+  - *What is ready, derived from `pack-metadata.yaml`* (19 packs declare a level; 14 are tracked by
+    the dashboard):
+
+    | Level | Packs |
+    |---|---|
+    | beta | data-science, nebi-pack, lgtm, skillsctl, rayserve, llm-serving, superset, nebari-frames, collab-hub |
+    | alpha | chat, mlflow, provenance-collector, langfuse, harbor |
+    | experimental | pi-coding-agent, apps, nebari-catalog, dask-gateway, unity-catalog |
+
+    The ladder (`release-readiness-checklist.md`): experimental → alpha ("installs and runs the happy
+    path on a current NIC dev cluster") → beta ("customer pilots with engineering support; values may
+    change") → GA (`v1.0.0`+, EffVer tags). No pack is GA.
+  - *NIC* (`nebari-infrastructure-core` v0.14.0, Go 1.26+, Apache-2.0) is "an opinionated Kubernetes
+    distribution": OpenTofu provisions the cluster, ArgoCD installs Keycloak + Envoy Gateway +
+    cert-manager + an OpenTelemetry Collector, and the nebari-operator reconciles `NebariApp`
+    resources into HTTPRoute + TLS + OIDC. Providers: AWS EKS, GCP GKE, Azure AKS, Hetzner k3s,
+    **local kind** (`examples/local-config.yaml`, Docker required) and `existing` (k3d / k3s /
+    minikube / managed, no provisioning). Its README: "under heavy development and very unstable …
+    not yet suitable for production". Every deployment gets a Launchpad landing page.
+  - *`NebariApp` CRD* (`reconcilers.nebari.dev/v1`; the template tracks operator
+    `v0.1.0-alpha.19`): `auth.enforceAtGateway: false` makes the operator provision the Keycloak
+    client and a `<name>-oidc-client` Secret (`client-id`, `client-secret`, `issuer-url`) while "the
+    app handles OAuth natively" — the Foundry's `django-allauth` path; `deviceFlowClient` provisions a
+    public client for RFC 8628 CLIs; `routing.publicRoutes` bypass auth (probes); `landingPage` adds
+    the Launchpad card; `gateway: public | internal`. A pack may be Helm, Kustomize or plain YAML;
+    template example 5 wraps an existing chart.
+  - *Nebi* is alpha ("not recommended for production"): server + CLI + desktop; pixi workspaces
+    pushed, pulled, diffed and rolled back by tag, published to any OCI registry, under RBAC + OIDC.
+    `nebi-pack` (beta) runs it on **PostgreSQL + Keycloak** — not a fourth infra kind.
+    `nebari-environments` publishes community pixi environments as OCI artifacts through it. Roadmap
+    on nebari.dev: SBoM generation and compliance checking. Still no Frame / Cog / Op / Guard
+    packaging.
+  - *`nebari-frames`* (beta, v0.1.7): Go backend + `frames` CLI (Homebrew tap) + web app + `/mcp`
+    (`create_frame` / `update_frame` tools since 2026-08-21); the chart wants a NIC cluster but the
+    binary runs standalone with self-managed OIDC (`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`,
+    `OIDC_DEVICE_CLIENT_ID`); SQLite single-writer, `replicaCount: 1`; one organisation in the MVP;
+    Frames consumable by any MCP client "or by Claude Code through file install"; its demo note:
+    MCP/Claude needs manual Keycloak realm configuration (dynamic client registration).
+  - *`collab-hub-pack`* (beta, v0.1.0, pushed 2026-09-09) is the Desktop/Web Application backend
+    ("Collab"): FastAPI; a Frames store (filesystem, S3 or Postgres); Slack / Gmail / Calendar / Drive
+    connectors; a Keycloak user directory; scheduled tasks; an MCP server; client "Apollo desktop".
+    Confirms the Desktop/Web Application non-goal — it exists upstream.
+  - *Guard-shaped and kin:* `provenance-collector-pack` (alpha, BSD-3-Clause) — a CronJob that
+    discovers running images and Helm releases, resolves digests, verifies signatures, checks SLSA
+    provenance and SBOM attestations, and emits a JSON report with a dashboard and Grafana views.
+    `skillsctl` (beta) — a Claude Code skill registry (CLI + backend), predecessor of nebari-frames;
+    kin to SKF, not an adoption. `chat-pack` (alpha) — React + a Ravnar AG-UI agent server with
+    pydantic-ai tools. `nebari-catalog-pack` (experimental) — "a pack that installs packs" from an OCI
+    registry into the GitOps repo: the marketplace in miniature.
+  - *Op manifest:* no schema exists anywhere public. The guide's `/guide/guards-gates-tracks/` shows
+    only the paper's YAML-style example (`op` → `frames`, `cogs`, `guards` by `preflight` /
+    `in_flight` / `post_run`, `gates` as `if … then …` threshold rules, `track` with `retain_for` and
+    `include`). PyForge's manifest is ours to define in that shape.
+  - Tool notes: `gh api --paginate orgs/nebari-dev/repos`; the pack fields that matter are `level`,
+    `nebariapp_integration`, `scope.standalone-supported`, `last_promoted_at`, `demo_notes`.
+
+  **Effect:** shape 1 gains its Why (the indicators); shape 2 is cheaper than seeded (four fields, a
+  reader skill, git as the store); shape 4 gains a plugin source; shape 5's local-build half was found already executed
+  (both recipes landed 2026-09-07); shapes 6 and 7 are added as candidates; the Desktop/Web Application non-goal is confirmed by Collab Hub.
+  Three open questions added under § *Open questions for the Spec*. Nothing chosen.
 
 ## Kinships
 
@@ -864,3 +1072,20 @@ updating the open question it answers. **Both ran on 2026-09-06; findings are re
   tag `v9`) is recorded under § Source. The Spec's two research questions closed and two derived
   ones took their place (package NIC + `frames`? author the first conformant Frame now?). Status
   stays `dreamt`: the shape decision is still the operator's.
+- **2026-09-09** — Operator asked how the evergreen Unifying Strategy would be aligned to this
+  Dream and adopt its stack; the assessment was given in-session and now lives here so it stays
+  with the seed. RB-3 run and closed (field guide, `openteams-ai/frame-spec` at HEAD, all 76
+  `nebari-dev` repositories with maturity derived from `pack-metadata.yaml`, the `NebariApp` CRD).
+  Candidate shapes 2 and 4 glossed; shapes 6 (Foundry as a Software Pack, NIC as a steward
+  profile) and 7 (Nebi push of station workspaces to OCI) added as candidates; § *How alignment
+  with the Unifying Strategy would proceed* records the three readings, the collisions with
+  standing rulings and their candidate resolutions, and the A → B → C sequence with its
+  now-versus-foundry split. Three open questions added. Still no adoption decided; status stays
+  `dreamt`; `spec-intelligence-hub` (`draft`) re-derives from here.
+- **2026-09-09 (later)** — Correction from the Unifying Strategy currency review
+  (`research/currency-review-pyforge-unifying-strategy-2026-09-09.md`): the recipes shape 5 names
+  had already landed on 2026-09-07 (`recipes/nebari-infrastructure-core` 0.14.0,
+  `recipes/nebari-frames` 0.1.7), before this Dream recorded the lane. Shape 5, sequence item 5
+  and RB-3's Effect line corrected. The same review found the kinship edge to the Unifying Strategy
+  was one-way; that Dream now lists this one.
+- **2026-09-09 (fleet readiness pass)** — **All nine open questions answered as one operator-approved bundle** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C4**: B6–B11 plus the three questions this Dream gained earlier the same day, plus `guild-E3`). Owner stays **steward**, with `hub:CAP-3` relaying to marshal and CAP-2's Frame-store half to scribe. Verified against live code: the seven Guard categories map to five present surfaces, **Source-Grounding exists at exactly one site** (`scribe/recall.py` AD-8) and **Outcome is absent entirely** — and Outcome Guards are blocked on [`build-league-scorecard.md`](build-league-scorecard.md)'s parked measure set, making the two Dreams a dependency pair. A bmad-loop run emits ~60 % of a Track across five files in a **gitignored** Tier-3 dir, missing model/adapter version, human approvals and any retention statement — so one tracked `track.json` per run is assembled, Tracks kept indefinitely and the raw payload 90 days. Frames: yes, minimally and privately (one Company Frame from the `AGENTS.md` verified block + eight station Frames that `inherits` it, git as the store; no Community Frame, no registry), authored **now**, with CAP-2's success rewritten to an **in-repo four-field preflight** rather than upstream's unlicensed `tools/validate_frames.py`. Shape 5's residue is a conda-forge submission decision only — **not now**. `NebariApp`/NIC-kind profile and `nebi push` are **foundry-side**, and any `hub:` NIC-profile story is gated on the first green `ocp-portability-smoke` run. Escalation resolved: `spec-pyforge-unifying-strategy`'s `realization-gate-home` open question depended on this Spec reaching `ready`; **`spec-intelligence-hub` flips `draft` → `ready`** in this pass, so Epic 49's re-home to `hub:CAP-*` is unblocked and pending that Spec's re-derive. This Dream's own **status stays `dreamt` in this pass and flips to `specified` when the Spec's re-derive lands `ready`** (`docs/dreams/README.md:71` — `specified` requires a Spec at `ready` or better).

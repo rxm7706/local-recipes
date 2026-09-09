@@ -98,3 +98,16 @@ machinery; expanding the OpenTeams universe definition.
 ## Success signal
 From-scratch to execution-ready queues in one governed run, surface claimed,
 allowlist shrunk — and the next intake is a re-run, not a rebuild.
+
+## Shared precondition with atlas Story 25.2 — recorded 2026-09-09
+
+The ATTENDED, credentialed Artifactory run this Spec holds itself `in-progress` for — "CAP-2
+(17.2) code landed, live-execution verification deferred (attended, credentialed run pending)" —
+is the **same operator event** atlas **Story 25.2** needs before it can materialize
+`enterprise_jfrog_consumption.parquet` for `spec-atlas-kedro-catalog-expansion` CAP-8 (batch
+§ 2.2 row atlas-B5 + § 2.3 C6). **One precondition, two Specs — they must not disagree about
+whether it has been met.** Recorded as prose, deliberately not as a cross-project `Deps:` token.
+
+Nothing else on this Spec changes. The 2026-09-09 readiness pass re-verified CAP-1's
+hardest-to-fake criterion — "the allowlist lines are DELETED" — and it holds: zero quartet
+entries remain in `scripts/spec_surface_allowlist.txt`.

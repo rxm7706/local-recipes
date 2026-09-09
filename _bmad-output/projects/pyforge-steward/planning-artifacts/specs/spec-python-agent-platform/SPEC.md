@@ -1,6 +1,8 @@
 ---
 spec: python-agent-platform
-status: in-progress
+status: in-progress   # Story 48.8 SUPERSEDES this Spec into `spec-pyforge-unifying-strategy`.
+                      # `pap:` STAYS A LIVE ID PREFIX — see § Superseded by Story 48.8.
+updated: "2026-09-09"
 companions: [ARCHITECTURE-SPINE.md]
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
@@ -193,3 +195,21 @@ the named bcrypt prerequisite.
   API-key/password-hashing path under bcrypt ≥4.1 — an import check is not sufficient. The
   platform's 3.14 gate (CAP-5) flips green the release after either lane lands; dbgpt + django
   5.2.15 are already 3.14-clean.
+
+## Superseded by Story 48.8 — recorded 2026-09-09
+
+**Story 48.8 supersedes this Spec into `spec-pyforge-unifying-strategy`, and it DOES retarget the
+pointers** (batch rows stB-B9 / stA-B13 / C7). 48.8's surface is widened to name:
+
+1. **The four sibling Specs whose own frontmatter reads `absorbed-into: spec-python-agent-platform`**
+   — `spec-asgi-multiplexer-monolith/SPEC.md:5`, `spec-langflow-django-plugin/SPEC.md:5`,
+   `spec-enterprise-multi-agent-orchestration/SPEC.md:5`, `spec-db-gpt-django-plugin/SPEC.md:5`.
+   Each becomes a pointer to a superseded pointer otherwise.
+2. **Steward's own spine** — `ARCHITECTURE-SPINE.md:281`, `:617` (the parent pointer plus the
+   `pap:AD-n` citation form).
+3. **Cross-station, as a relay and not an edit:** mason's
+   `spec-django-accelerator-framework/SPEC.md:11`, `:95`.
+
+**`pap:` stays a live ID prefix** — 280 citation sites across 60 files and four other stations,
+with `scripts/ad_citation_check.py:123-124` special-casing it. **The merge moves the TEXT, never
+the namespace.**

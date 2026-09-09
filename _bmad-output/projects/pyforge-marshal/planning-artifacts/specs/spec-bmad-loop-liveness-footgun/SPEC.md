@@ -1,6 +1,7 @@
 ---
 spec: bmad-loop-liveness-footgun
-status: ready
+status: in-progress
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-loop-liveness-footgun.md
 companions:
   - convergence.md
@@ -10,10 +11,15 @@ surface:
   - docs/dreams/bmad-loop-liveness-footgun.md
 sources:
   - ../../../../../../docs/dreams/bmad-loop-liveness-footgun.md
-open_questions:
-  - "unknown-verdict policy at resume preflight: refuse, warn-and-proceed, or operator-confirm — spec-3-7's deferred entry flags exactly this policy decision about `unknown`."
-  - "Primitive home (a story-level design decision): a `HarnessPort` method (ports/harness.py, the seam spec-3-7 names as missing) vs a `scripts/*.py` helper (loop-stall-check precedent) vs a `pyforge.doctor` source (story-status-check precedent)."
-  - "Operator front door: document `bmad-loop status <run_id> --json` directly (the Dream's own wording) vs a thin `marshal` wrapper subcommand — one-front-door tension, cheap either way once CAP-1 exists."
+open_questions: []
+  # ALL THREE ANSWERED, retired 2026-09-09. OQ-2 (primitive home) and OQ-3 (operator front door)
+  # were answered by Epic 24's shipment: the primitive is a `HarnessPort` method
+  # (`ports/harness.py:771-782`), implemented at `adapters/harness_bmadloop.py:1657` by shelling
+  # to `bmad-loop status <run_id> --json` plus `list --json` -- never importing `bmad_loop` -- and
+  # that command IS the documented operator front door.
+  # OQ-1 ANSWERED 2026-09-09 (operator, fleet-readiness batch rows mars-A-B4 / C10): the
+  # resume-preflight `unknown` verdict policy is WARN-AND-PROCEED, with `unknown` a FIRST-CLASS
+  # PRINTED REASON -- not refuse, not operator-confirm. See § The `unknown` policy.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -130,6 +136,22 @@ end by replaying the two live incidents: 2026-08-15 (raw run, UNSUPERVISED diagn
 2026-08-14 (mason, engine alive under `bmad-loop resume`), both resolved by the documented
 path with no `engine.pid` read.
 
+## The `unknown` policy (answered 2026-09-09)
+
+`EngineLiveness` is a deliberate tri-state, and `ports/harness.py:781-782` states that `unknown`
+is never coerced. **Refusing on `unknown` would coerce it into alive semantics at the operator's
+expense**, and every `unknown` cause listed there — an unreadable run dir, an unimportable
+`bmad_loop` — is a **probe** failure, not a run failure. It is also the common case, not the
+edge: steward is recorded reading `unknown` from a landing journal after every `land-story`, so a
+refuse policy would block routine resumes daily.
+
+**Rejected: operator-confirm** — it converts an unattended resume into an attended one on the
+fleet's most frequent condition.
+
+Wiring this answer into the resume preflight is what keeps the Spec `in-progress`: OQ-1 was
+explicitly out of Epic 24's scope (`spec-24-2:18`, *"resume preflight consumption (spec-3-7
+deferred)"*).
+
 ## Assumptions
 
 - `bmad-loop status <run_id> --json`'s `{"run_id", "status"}` shape is the stable contract
@@ -142,3 +164,11 @@ path with no `engine.pid` read.
   here.
 - Unattended authoring session: express-mode calls above were made without operator
   confirmation and are recorded here and in `.memlog.md` rather than asked.
+- `status: in-progress`, not `shipped` (2026-09-09). Epic 24 is 3/3 `done` and CAP-1..CAP-3 are
+  in effect — `HarnessPort.engine_liveness` (`ports/harness.py:771-782`) implemented at
+  `adapters/harness_bmadloop.py:1657`, consumed live by `cli/dispatch.py:2711-2726`'s liveness
+  refusal. The Spec stays `in-progress` until the operator's `unknown` answer is wired into the
+  resume preflight.
+- `docs/dreams/bmad-loop-liveness-footgun.md` moved `specified` → `realized` on 2026-09-09 with a
+  dated Realization-log entry recording Epic 24 in effect and the warn-and-proceed answer.
+  Content-only; no capability or surface semantics changed.

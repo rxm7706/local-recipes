@@ -10,9 +10,26 @@ spec: bmad-method-core-upgrade
 # against a FUTURE bmad-method release with zero improvised recoveries — has
 # not happened; the owning Dream is still `specified`, not `realized`; and
 # the cited spec-mcp-era-isolation precedent for "success signal pending,
-# call it shipped anyway" does not exist in this tree to verify. Flip to
-# `shipped` when the next bmad-method release apply exercises CAP-6..8 live.
+# call it shipped anyway" does not exist in this tree to verify.
+#
+# HOLD RESTATED 2026-09-09 (batch Class B row stA): the hold is right, but the
+# reason above ("a live apply has not happened") is now FALSE. The apply-time
+# exercise DID happen — `4fa185be56` (2026-09-06) upgraded 6.11.0 -> 6.12.0
+# core+bmm "via steward upgrade bmad-core", followed by `e7b5d6d05e`
+# (`--no-shims`), and `_bmad/_config/manifest.yaml` reads version 6.12.0 /
+# lastUpdated 2026-09-07. It was NOT recovery-free: the `-y` update deleted the
+# skf custom module outright, `_bmad/skf/config.yaml` was restored by hand,
+# `_bmad/config.toml [modules.skf]` was hand-corrected, and upstream's
+# `resolve_config.py` change was hand-ported by three-way merge — minting
+# failure-modes traps 12–15.
+#
+# FLIP CONDITION (restated): flip to `shipped` when the NEXT bmad-method release
+# after 6.12.0 applies through CAP-6..8 with ZERO improvised recoveries — not
+# merely "when an apply happens". `failure-modes.md:26` carries the live residual
+# verbatim: "The live re-run of the 6.12 apply with this in place is still a
+# pending operator action."
 status: in-progress
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-method-core-upgrade.md
 surface: []   # upgrade.py + data/bmad_core_releases/ are governed by spec-pyforge-steward's surface; not double-governed here
 companions:
@@ -30,14 +47,17 @@ assumptions:
     notes verbatim; unchanged at 6.12) — `_bmad/bmm/config.yaml` still ships and the
     planning-artifacts symlink pattern still works; CAP-1 must flag the eventual
     TOML cutover release."
-open_questions:
-  - "Should doctor's ambient drift extend to the SelfExplainML bmad-suite
-    packages? bmad-loop lagged 0.9.0→0.11.0 with zero ambient signal until a
-    human checked (2026-08-21). Doctor-side scope — relayed 2026-09-06 to doctor
-    Story 20.1 (spec-bmad-suite-lifecycle); doctor maps 7 of 13 members today."
-  - "Where does bmad-method read remembered `[modules.skf]` answers from —
-    `_bmad/config.toml` or the module `config.yaml`? Empirical at the next apply;
-    the custom-layer pins exist in `_bmad/custom/config.toml` (C7/C17 done)."
+open_questions: []
+  # ANSWERED 2026-09-09, both retired (batch row stA-C9):
+  # - Ambient drift over the SelfExplainML bmad-suite packages: **YES, and SHIPPED.** Doctor
+  #   Story 20.1 is `done` and the watched set is derived from the roster rather than a 7-of-13
+  #   hardcode (`pyforge/doctor/sources/bmad_method.py:411-449`; `_manifest_suite_members` unions
+  #   the pixi `bmad-*` pins).
+  # - Where bmad-method reads remembered `[modules.skf]` answers from: **NEITHER.** The installer
+  #   regenerates the module `config.yaml` from `module.yaml` defaults and writes a defaults block
+  #   into `_bmad/config.toml` (`failure-modes.md:26`, trap 14). Live proof: `_bmad/config.toml:24`
+  #   still carries the literal `{project-root}/{value}` while `_bmad/custom/config.toml:40` holds
+  #   the real pin. Remembered answers survive ONLY because CAP-7 snapshots and restores them.
   # Answered 2026-09-06 (memlog): Q2 @next → report-only rehearsal (steward 46.10);
   # Q3 skf truth = conda-packaged 2.1.0 == tag v2.1.0 (pin, 46.7); Q5 skf stays a
   # registered custom module (bmad-help routing for 15 skills).

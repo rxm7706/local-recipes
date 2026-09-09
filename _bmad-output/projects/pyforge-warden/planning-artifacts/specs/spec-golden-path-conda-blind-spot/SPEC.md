@@ -1,6 +1,6 @@
 ---
 spec: golden-path-conda-blind-spot
-status: draft
+status: ready
 owner-dream: docs/dreams/golden-path-conda-blind-spot.md
 surface: []
 companions:
@@ -9,12 +9,7 @@ companions:
   - ../spec-2-1-conda-pypi-map-the-ecosystem-identity-predicate.md
 sources:
   - ../../../../../../docs/dreams/golden-path-conda-blind-spot.md
-open_questions:
-  - "Selector grammar: extractor constructor args plus which CLI flags (--pixi-environment / --pixi-platform?); does the platform default to the host or must CI pass it explicitly?"
-  - "Provisioning: which decision-record route does CI take, where is the DB cached across runs (actions/cache keyed by snapshot date?), and who owns its refresh cadence?"
-  - "Coverage floor: does promotion also require 100 % assessed coverage (--fail-under-coverage) or is a clean rung alone the gate?"
-  - "Is a warn verdict ever promotable with a recorded Story 3.2 waiver, or is clean the only promotable rung?"
-  - "Should the unscoped union extraction stay the default for other callers, or become an explicit error on a multi-environment lockfile?"
+open_questions: []   # all five answered 2026-09-09 (operator-approved decision batch, C9)
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. The Dream in `sources:` is traceability only.
@@ -43,7 +38,8 @@ absent-DB rule from Story 1.4 correctly routes to `indeterminate`. Since
     `python-agent-platform` / `linux-64` yields the same set as that
     environment's `packages.linux-64` list in the lock (count, names,
     versions), with no other environment's exclusive packages; the unscoped
-    call keeps today's union behaviour.
+    call (`environment=None`, `platform=None`) keeps today's union behaviour
+    and emits a structured WARNING naming the environment count.
 - **CAP-2 — the promotion scans the shipped closure.**
   - **intent:** `golden-path-promotion` scans the resolved
     `python-agent-platform` environment out of the root `pixi.lock` — the
@@ -57,7 +53,9 @@ absent-DB rule from Story 1.4 correctly routes to `indeterminate`. Since
     already accepted, so the vulnerability axis assesses every
     identity-resolved component.
   - **success:** `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` points at a populated
-    `<cache>/osv-scanner/PyPI/all.zip` with a recorded `snapshot_at`; the
+    `<cache>/osv-scanner/PyPI/all.zip` with a recorded `snapshot_at`,
+    provisioned by osv-native `--download-offline-databases` on the connected
+    runner and held in an `actions/cache` keyed by the snapshot date; the
     record's vulnerability axis reports assessed > 0; a DB older than
     `db-max-age` (7 days, strict) or without provenance routes the verdict to
     `indeterminate`, never `clean`.
@@ -69,13 +67,16 @@ absent-DB rule from Story 1.4 correctly routes to `indeterminate`. Since
   - **success:** on a not-clean verdict the record names the unassessed
     components and the reason (`UNMAPPED_ECOSYSTEM`, stale DB, missing DB); a
     deliberately pinned vulnerable version in the environment flips the record
-    to a failing rung that names the finding.
+    to a failing rung that names the finding. Coverage is not a separate
+    gate: no `--fail-under-coverage` floor is added, because an unassessed
+    component cannot reach `clean` under this Spec's first Constraint.
 - **CAP-5 — deploy gates on the verdict (already true on main — preserve).**
   - **intent:** `platform-deploy` promotes a digest only when its recorded
     verdict is `clean` (shipped in `1016f4e763`; this spec keeps it).
   - **success:** the verifier refuses `indeterminate` / `warn` / `fail` and a
     missing record, accepts `clean`, names the driver finding id, and a test
-    fails if the `!= 'clean'` refusal is removed.
+    fails if the `!= 'clean'` refusal is removed. `clean` is the only
+    promotable rung — a `warn` is never promotable, waiver or not.
 
 ## Constraints
 - Never promote to `clean` by loosening what counts as scanned: a selector that
@@ -92,6 +93,17 @@ absent-DB rule from Story 1.4 correctly routes to `indeterminate`. Since
 - Scope is `pyforge-warden/extract/lockfiles.py`,
   `scripts/platform-golden-path-promotion.sh` and the `golden-path-promotion`
   job in `platform-ci.yml`.
+- **Both selector flags are explicit in CI.** `--pixi-environment` and
+  `--pixi-platform` are passed by the promotion job; the host default applies
+  to interactive use only. A host-derived platform would silently produce a
+  different closure on an arm64 runner — the misrepresentation this Spec exists
+  to kill.
+- **Waivers compose upstream, inside Warden**, turning a waived finding's
+  contribution into `clean`; they are never a second, deploy-side override.
+  Exactly one consumer decides promotion.
+- **No coverage floor.** `--fail-under-coverage` is not added: the first
+  Constraint already forbids the failure mode it would guard, so a floor would
+  be a redundant second expression of the same rule and a second number to tune.
 
 ## Non-goals
 - A general multi-environment / multi-platform selector for every future Warden
@@ -115,22 +127,25 @@ next record to a failing rung that `platform-deploy` refuses.
   pins `--platform=linux/amd64`); no other environment is in scope.
 - Warden's existing seven-rung lattice supplies every not-clean rung; no new
   rung or verdict field.
-- Provisioning defaults to osv-native `--download-offline-databases` on the
-  connected CI runner with snapshot provenance recorded, unless a
-  conda-packaged DB exists by story time (the decision record's §1 order).
-- The environment/platform selector is an extractor option surfaced through
-  the warden CLI; exact flag names are a story-time decision.
+- Provisioning takes the osv-native `--download-offline-databases` route on the
+  connected CI runner with snapshot provenance recorded (the decision record's
+  §1 order). The daily `actions/cache` key roll owns the refresh cadence — no
+  human refresh owner — and makes the 7-day strict staleness rule self-enforcing.
+- The environment/platform selector is an extractor option
+  (`environment: str | None`, `platform: str | None`) surfaced through the
+  warden CLI as `--pixi-environment` / `--pixi-platform`.
+- Packaging the OSV offline database as a conda-forge artifact is a recorded
+  **rejected alternative**, not a story: it would be Mason work under
+  `conda-forge-expert` and never belongs on warden's board. Recorded so a future
+  reader does not re-derive it as a warden task.
 
-## Open Questions
-- Selector grammar: extractor constructor args plus which CLI flags
-  (`--pixi-environment` / `--pixi-platform`?); does the platform default to
-  the host or must CI pass it explicitly?
-- Provisioning: which decision-record route does CI take, where is the DB
-  cached across runs (actions/cache keyed by snapshot date?), and who owns its
-  refresh cadence?
-- Coverage floor: does promotion also require 100 % assessed coverage
-  (`--fail-under-coverage`) or is a `clean` rung alone the gate?
-- Is a `warn` verdict ever promotable with a recorded Story 3.2 waiver, or is
-  `clean` the only promotable rung?
-- Should the unscoped union extraction stay the default for other callers, or
-  become an explicit error on a multi-environment lockfile?
+## Decomposition
+
+Warden Epic 12, six stories: **12.1** the CAP-5 regression guard, minted first and ahead of
+the CAPs it protects (the `!= 'clean'` refusal at
+`scripts/platform-deploy-verify-promotion.py:30-34` is the estate's only fail-closed deploy
+gate and nothing tests it today); **12.2** CAP-1 environment-scoped extraction; **12.3**
+CAP-2 the promotion scans the shipped closure, scratch-dir staging deleted; **12.4** CAP-3
+offline OSV DB provisioning; **12.5** CAP-4 the honest, specific verdict; **12.6** CAP-5
+preserve the clean-only deploy gate. The five answers above are baked into the acceptance
+criteria, never restated as story-time decisions.

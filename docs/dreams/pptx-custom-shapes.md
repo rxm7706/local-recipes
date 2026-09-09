@@ -64,3 +64,12 @@ source batch)
   alongside its two sibling deck dreams. Deliberately framed as non-independent from
   [[pptx-deck-generation]] rather than duplicating that Dream's own "is a `.pptx` pipeline even
   needed" open question here — one open question, named once, inherited by both dependents.
+- **2026-09-09 (fleet readiness pass — built, unexercised)** — § *What is real* ("Nothing —
+  this Dream has no independent existence…") is superseded: Story 15.2 shipped
+  `add_card` / `add_metric_box` / `add_table` / `add_section_label` plus `fit_text`'s Pillow
+  `ImageFont` autofit inside `pptx_pipeline.py`, reached from `content_plan.json`'s optional
+  `"shapes"` list. Unexercised — no dense slide has been run through it, because no
+  `content_plan.json` exists anywhere in the tree, so the "densest six-act appendix slide"
+  signal has never been executed. **Status held at `specified`.** Vessel: herald Epic 19
+  Story 19.4 — the same real-deck render that exercises its parent
+  [[pptx-deck-generation]] — per the fleet-readiness decision batch 2026-09-09 row C6.

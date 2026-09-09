@@ -3,10 +3,10 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 18  # 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
-storyCount: 50  # 2026-09-06: 47 + Stories 18.1–18.3 (dated snapshot; the ledger enumerates).
-status: complete
-updated: "2026-09-07"
+epicCount: 19  # 2026-09-09: Epic 19 added ("Herald in effect" — the realization-gate satellites, fleet-readiness decision batch 2026-09-09 row C6). 2026-09-06: Epic 18 added (spec-bmad-suite-lifecycle herald relays); the prior numeral 12 was stale — Epics 13–17 were never counted. The ledger's key count is the enumeration.
+storyCount: 54  # 2026-09-09: 50 + Stories 19.1–19.4 (dated snapshot; the ledger enumerates).
+status: in-progress  # 2026-09-09: Epic 19 opens four unstarted stories; was `complete` while Epics 1–18 were the whole set.
+updated: "2026-09-09"
 ---
 
 # pyforge-herald — Epic Breakdown
@@ -575,6 +575,44 @@ steward 46.6 / 46.2 / 46.5 provision first; Path B grammar stays `pyforge herald
 **Surface:** `.claude/skills/bmad-agent-herald/SKILL.md`, `adoption-register.md` § 2 row, `AGENTS.md` block
 **Given** the labs skill installed by name **When** the herald persona routes quick slide drafts to `slides-generator` while the Claude-Design deck pipeline stays the deck source of record **Then** the register names herald as sole wielder and the routing line states the boundary (draft only; never a deck head)
 
+
+## Epic 19: Herald in effect (fleet readiness 2026-09-09)
+
+**Spec binding.** The herald satellites of the **realization gate** — a capability is in effect
+when its named success criterion is exercised in the running estate, not when its story merges
+(`spec-pyforge-unifying-strategy`; fleet-readiness decision batch 2026-09-09, row **C6**). The
+2026-09-09 readiness pass found three of Herald's five Dreams `done` in the ledger and never
+exercised: Epic 13's live backend has never run green, Epic 14's deck-QA gate is called by
+nothing, and Epic 15's pptx pipeline has never rendered a real station deck. This epic is their
+single vessel; steward **Epic 49** carries one index row pointing here, and nothing in this epic
+is re-implemented under steward. **HARD boundaries:** no new capability is built — every story
+turns on something that already ships; the effect test is Story 49.2's, *"has a caller outside
+its own test file"*; `herald-live-demo.yml` stays disabled (a green run against a
+`runner.temp` store is not the success signal); no second console, no extra public port.
+
+### Story 19.1: The webhook routes move onto the station API seam
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-herald-moments-2-4-live-backend` LB-2 • `spec-pyforge-unifying-strategy` SPEC.md:497 (Always: station routes are `/stations/<name>/api/v<N>/`) • batch row C11
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py` (`ON_SHIP_PATH` / `ON_PR_CLOSE_PATH`, `:183-184`), `src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py`, `src/platform/config/station_api.py` (herald v1 registration beside warden, `:146`), `.github/workflows/herald-live-demo.yml` (caller paths only), herald's CI-caller documentation
+**Given** `webhook.ON_SHIP_PATH = "/api/herald/webhooks/on-ship"` and `ON_PR_CLOSE_PATH = "/api/herald/webhooks/on-pr-close"`, which sit on the bare `/api/` namespace the platform FastAPI seam owns — `config/asgi.py:149-150` routes every `/api/*` path to `fastapi_application`, and only `_STATION_API_RE` paths are diverted to a station sub-app (`config/asgi.py:132-144`, `config/station_api.py:24-32`) — **When** the literals are re-pointed onto `/stations/herald/api/v1/webhooks/{on-ship,on-pr-close}` and herald v1 is registered on the seam beside warden **Then** a request to the new path reaches `webhook_host:application` rather than the platform stub, the HMAC verification path is unchanged, every caller (workflow, runbook, CLI doc) names the new path, and a test asserts the bare `/api/herald/...` form is no longer served
+**And** the change is contract-visible: the Spec's `surface:` block and `docs/` callers move in the same PR, because fixing this later means changing a documented CI-caller contract
+
+### Story 19.2: One real ship records itself against a persistent store
+**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** `spec-herald-moments-2-4-live-backend` LB-2 / LB-3 • Epic 13's success signal • batch rows C6, C11
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/{webhook.py,webhook_host.py,scheduler.py,db.py,locking.py}`, the store location (a persistent path or a provisioned DB — **never** `${{ runner.temp }}`), `HERALD_WEBHOOK_SECRET` provisioning, whatever host actually runs the listener
+**Given** Epic 13 closed 6/6 `done` while `herald-live-demo.yml` is `disabled_manually` with 100 failed runs and zero successes (last run 2026-08-24), its own header declaring it "never a persistent, publicly-reachable deployment" writing to a `runner.temp` DB "discarded when the job ends" — so a ship has never recorded itself — **When** one real ship event is delivered to the webhook against a store that survives the process **Then** the progress record exists in that store after the process exits, is readable by `herald progress`, and the run is cited by evidence (run id or store path) in this story's completion note
+**And** the hosting half is honest about its blocker: `DW-13-6-1` records that `steward deploy perimeter` renders only a hardcoded `myproject.asgi:application` (`steward/deploy.py:484`) with no `--asgi-application` flag, so this story either names the host it used or is **explicitly `foundry-side`** and blocked on the cutover giving Herald a perimeter — it never closes on a throwaway store
+
+### Story 19.3: The deck-QA gate gets a caller
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** `spec-deck-visual-qa` CAP-1..3 (Epic 14: 14.1/14.2/14.3, all `done`) • batch row C6
+**Surface:** `pixi.toml` (a `deck-qa` task in the `local-recipes` or `pyforge-herald` feature), `docs/specs/presentation-deck.md` § verify checklist, optionally `.github/workflows/` (a deck lane), `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py` (unchanged — this story adds no gate)
+**Given** `herald deck qa <slug>` works (`cli.py:331-341` / `:764-765` / `:982-995`; `deck_qa.py`, 665 lines) and nothing calls it — no pixi task (`pixi.toml` names `deck_qa` only in a playwright dependency comment), no CI job, and `docs/specs/presentation-deck.md`'s verify checklist is still entirely run-shaped, which is the exact gap the Spec was written to close — **When** a pixi task invokes the gate and `presentation-deck.md`'s verify checklist names it as a step **Then** one existing deck (`presentations/agentic-sdlc/`) is run through the gate, its report is produced under `.herald/deck-qa/<slug>/`, and the gate has at least one caller outside its own test file
+**And** the gate's verdict is advisory or blocking by explicit choice recorded in the story — never blocking by accident, and never a second PR gate
+
+### Story 19.4: One real station deck renders through the pptx pipeline
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pptx-deck-generation` CAP-1 • `spec-pptx-custom-shapes` CAP-1 (Epic 15: 15.1/15.2, both `done`) • batch row C6
+**Surface:** a first real `content_plan.json` (none exists anywhere in the tree today), `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py` (unchanged — this story adds no pipeline), `presentations/<station>/src/pptx/`, `docs/specs/presentation-deck.md` (the pptx step, if it earns one)
+**Given** `pptx_pipeline.py` (1057 lines) ships `extract_spec` / `fill_template` and the shape API (`add_card` / `add_metric_box` / `add_table` / `add_section_label` + Pillow `fit_text` autofit) behind `herald deck pptx-spec` / `pptx-fill` (`cli.py:342-386`), while every `.pptx` under `presentations/*/src/pptx/` is a dated Marp export from 2026-07/08 and no `content_plan.json` exists — **When** one station deck is authored as a `content_plan.json` and filled through the pipeline against the committed interim template (`templates/pyforge-deck-template.pptx`) **Then** the resulting `.pptx` opens with real, editable text runs (not background-image slides), at least one dense slide exercises the shape API, and the file is the pipeline's output rather than a Marp export
+**And** the deck follows the canonical six-act framework with the Warden standalone deck as the shape exemplar; a PyForge-branded `.potx` stays deferred work reachable by a `--template` flag, not a blocker for this story
 
 ## Platform floor addendum — 2026-09-07
 

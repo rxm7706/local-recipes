@@ -27,3 +27,18 @@ precedent) and a shape-validating test (mason Story 9.2, coordinated with
 steward 12.3's air-gap run). A Miniforge/constructor-based installer — or
 any vendor's — is then a SEPARATE deliverable that registers and validates,
 never a core build.
+
+## Trigger ownership — 2026-09-09
+
+Status stays `extension-point` and this Spec is **correct as written**: the socket is
+real and the capability is correctly absent — `pyforge/mason/airgap_contract.py:54`
+declares `SUPPORTED_DISTRIBUTABLES = {}`, empty by design.
+
+The finding is an **ownership asymmetry**. The declared trigger — *steward's
+enterprise-airgap/12.3 work surfaces a private-channel-locking need for a Python
+distributable* — is STEWARD-OWNED and UN-WATCHED: nothing on the steward side points
+back at this extension-point, so the trigger can fire in steward's chain with no
+signal reaching mason. A **reciprocal pointer** is requested in steward's
+enterprise-airgap chain, naming `spec-miniforge-installer` as the extension-point that
+activates when 12.3 surfaces the need — cross-station, mason cannot write it; routed to
+steward in the fleet-readiness apply report.

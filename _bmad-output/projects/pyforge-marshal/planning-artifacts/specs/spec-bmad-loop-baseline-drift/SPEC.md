@@ -1,6 +1,7 @@
 ---
 spec: bmad-loop-baseline-drift
-status: ready
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/bmad-loop-baseline-drift.md
 surface:
   - pixi.toml
@@ -8,9 +9,11 @@ surface:
   - docs/dreams/bmad-loop-baseline-drift.md
 sources:
   - ../../../../../../docs/dreams/bmad-loop-baseline-drift.md
-open_questions:
-  - "Detection posture: post-hoc journal-signature match only, or also a live mid-flight comparison of task.baseline_commit against the worktree's real basis — the latter catches drift BEFORE a deferred attempt burns hours."
-  - "Whether pause/escalate can be actuated from outside the package (a bmad-loop CLI surface vs report-only) — unsolicited tmux send-keys is against standing policy, so actuation may reduce to loud reporting."
+open_questions: []
+  # ANSWERED BY THE IMPLEMENTATION, retired 2026-09-09 (fleet-readiness batch Class B, row mars-A):
+  # detection posture -> POST-HOC JOURNAL-SIGNATURE MATCH ONLY (no live mid-flight comparison);
+  # actuation -> REPORT-ONLY (exit 1 plus `--json`), no pause/escalate from outside the package.
+  # Full text with answers in § Open questions -- closed 2026-09-09.
 decisions:
   - "Detector home (Story 20.1): scripts/bmad_loop_baseline_drift_check.py via baseline-drift-check pixi task (loop-stall-check precedent), not pyforge.doctor.sources."
 ---
@@ -112,14 +115,38 @@ exact story/baselines/refs named; a live recurrence surfaces loudly in the ATTEN
 of dispatching on in silence (CAP-2); the upstream track is filed or explicitly gated-out, outcome
 recorded in the Dream's Realization log (CAP-3). Manual salvage stops being the discovery mechanism.
 
-## Open Questions
+## Open questions — closed 2026-09-09
 
-- "Detector home (a story-level design decision): a `scripts/*.py` invoked directly
+Both answered by Story 20.1–20.3's implementation; question text preserved.
+
+- ~~"Detector home (a story-level design decision): a `scripts/*.py` invoked directly
   (loop-stall-check precedent) or a `pyforge.doctor.sources` module behind the dispatcher
-  (story-status-check precedent)."
-- "Detection posture: post-hoc journal-signature match only, or also a live mid-flight comparison
-  of `task.baseline_commit` against the worktree's real basis — the latter catches drift BEFORE a
-  deferred attempt burns hours."
-- "Whether pause/escalate can be actuated from outside the package (a bmad-loop CLI surface vs
+  (story-status-check precedent)."~~ **CLOSED at Story 20.1:**
+  `scripts/bmad_loop_baseline_drift_check.py` via the `baseline-drift-check` pixi task
+  (`pixi.toml:932`) — the loop-stall-check precedent, not `pyforge.doctor.sources`.
+- ~~"Detection posture: post-hoc journal-signature match only, or also a live mid-flight
+  comparison of `task.baseline_commit` against the worktree's real basis — the latter catches
+  drift BEFORE a deferred attempt burns hours."~~ **CLOSED: post-hoc journal-signature match
+  only.**
+- ~~"Whether pause/escalate can be actuated from outside the package (a bmad-loop CLI surface vs
   report-only) — unsolicited tmux send-keys is against standing policy, so actuation may reduce to
-  loud reporting."
+  loud reporting."~~ **CLOSED: report-only** — exit 1 plus `--json`, the loud defer surface
+  `fleet-picture` reads. No actuation.
+
+## Assumptions
+
+- `status: shipped` (2026-09-09) — Epic 20 Stories 20.1–20.3 are `done`:
+  `scripts/bmad_loop_baseline_drift_check.py` plus the `baseline-drift-check` pixi task
+  (`pixi.toml:932`), the loud `--json` defer surface for `fleet-picture`, and the gated upstream
+  filing (bmad-loop issue #701, `upstream-register.json` `baseline-commit-midflight-drift`).
+
+## Residual (2026-09-09) — the observation plane is empty
+
+The detector scans `~/.bmad-loops/<slug>/.bmad-loop/runs/` only
+(`bmad_loop_baseline_drift_check.py:72`, `:142`). The estate's live engine is
+`marshal factory dispatch`, whose journals live under
+`_bmad-output/projects/<slug>/implementation-artifacts/dispatch-runs/`, and the newest loop-home
+run in any of the eight homes is 2026-08-22 (atlas). **The detector therefore exits 0 "OK" on an
+EMPTY observation plane instead of reporting could-not-observe (`scope=runtime`, exit 2) — a false
+green by this repo's own stated standard (`pixi.toml:1033`).** Re-pointing it at the dispatch plane
+is marshal **Story 33.7**.

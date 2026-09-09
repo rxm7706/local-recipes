@@ -2,7 +2,7 @@
 title: bmad-eval-quality — prove the reviewer catches the planted bug
 type: dream
 owner: steward
-status: specified
+status: realized   # 2026-09-09 (fleet readiness, Class B) — Epic 45 2/2 done; CAP-1 on the channel + pixi pin, CAP-2's twin-run exercised live (3 trials/arm)
 ---
 
 # bmad-eval-quality — prove the reviewer catches the planted bug
@@ -174,3 +174,4 @@ or driver code.
   `local-recipes` feature (WDS pin dropped), so `eval-quality` is on PATH in the day-to-day env and
   steward's pipeline-truth reads it `runnable`. **Story 45.1 done.** CAP-2 / Story 45.2 (the
   twin-run pilot) remains blocked on a first contract — status stays `specified`.
+- **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, row stA / § C4). CAP-2 is exercised: `evals/review-catches-planted-defect/` (contract, both arms, probes, driver, findings schema) with pixi tasks `eval-quality-smoke` / `eval-quality-review-twin-run` / `eval-quality-review-replay` (`pixi.toml:1044-1055`), and the Spec records the empirical clean-arm false-positive finding from live `--trials 3` runs. Status `specified` → **`realized`**. **Version currency:** § *Decisions locked* and § *What it looks like when real* still name `0.2.0.dev0 @ 3172162f`; upstream has since shipped through **v1.4.1**, the recipe is tag-sourced (`recipes/bmad-eval-quality/recipe.yaml:5,:12,:35`) and the pixi pin is `>=1.4.1` (`pixi.toml:1611`) — the commit-pin decision is historical record, not the live contract.

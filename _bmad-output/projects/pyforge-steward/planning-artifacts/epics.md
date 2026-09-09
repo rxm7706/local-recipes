@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-09-08'   # spec→prd→arch→epics cascade 2026-09-08 (deferred-work sweep follow-ups); Story 43.7 added — see § Currency validation note — 2026-09-08
+updated: '2026-09-09'   # two 2026-09-09 cascades: the currency-review correct-course (Epics 48/49 minted) and the fleet-readiness decision batch (Stories 48.9-48.11, index rows 49.9-49.13) — see the two § Currency validation note — 2026-09-09 sections; prior stamp 2026-09-08 (deferred-work sweep follow-ups; Story 43.7)
 currency_review: "Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2573,7 +2573,10 @@ So that the interpreter move is validated against work the sidecar actually does
 ## Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
 
 The estate moves from `rxm7706/local-recipes` to `python-foundry` in six phases behind a derived move-list manifest; the recipe plant becomes the `factory/` island; `local-recipes` is archived read-only. Dream § *Cutover to `python-foundry`* (2026-09-04); spine `architecture-python-foundry-cutover-2026-09-04` (`fnd:AD-1..19`). **The cutover is a flag, not a date (`fnd:AD-17`): `local-recipes` evolves normally until `pyforge.cutover_root` flips (after 44.5); the plan regenerates or appends at will and every move is a replay (`fnd:AD-18`).**
-Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Iteration 4 (`fnd:AD-23`, `fnd:CAP-10`): the last two open questions are closed — foundry is private permanently (`fnd:AD-14`), CI evidence is a real run with the remote host as self-hosted fallback, and 44.15 meters Actions minutes.** **Solutioning iteration 4 — every story below is ledger `blocked` until the operator flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11–44.15 are enablers.
+Minted by `sprint-change-proposal-2026-09-04-foundry-cutover.md`. **Iteration 3 (`fnd:AD-20..22`): the cutover is regenerative — Dreams and memlogs seed foundry, and every capability is rebuilt or moved per the capability ledger, with the archive as oracle.** **Iteration 4 (`fnd:AD-23`, `fnd:CAP-10`): the last two open questions are closed — foundry is private permanently (`fnd:AD-14`), CI evidence is a real run with the remote host as self-hosted fallback, and 44.15 meters Actions minutes.** **Solutioning iteration 4 — every story below is ledger `blocked` until the operator flips it (`fnd:AD-9`); no story spec is drafted before that flip.** Additive over shipped epics; none reopened. Phase n ↔ Story 44.(n+3); 44.11–44.15 are enablers. **Order amended 2026-09-09
+(`sprint-change-proposal-2026-09-09-currency-review.md`):** Epic 47's P1–P18 readiness lines
+precede the operator's 44.3 flip (47's HARD boundary); Story 48.1 precedes any ledger write on
+this project; Story 48.8 precedes the regeneration drill.
 
 ### Story 44.1: The capability ledger and the move-list manifest
 
@@ -2643,6 +2646,7 @@ So that no `MASON_CFE_ROOT` resolves to `local-recipes` and retros land in the l
 **Type:** feature • **Effort:** M • **Deps:** S-44.5 • **FR/AD:** fnd:CAP-3 • fnd:AD-4, fnd:AD-5, fnd:AD-13, fnd:AD-16 • CLAUDE.md Rule 1 / Rule 2 (Mason)
 **Given** `pyforge/mason/resolve.py`'s chain (flag → `MASON_CFE_ROOT` → cwd walk) **When** it runs in a foundry checkout **Then** the whole CFE cell (skill, `scripts/`, `tools/conda_forge_server.py`, the 76 `pixi.toml` references) lives under `skills/domain/conda-forge-expert/`, `_CFE_MARKER` and both detectors' path literals are rewritten, `MASON_CFE_ROOT` resolves there as a repo root, recipe build / submit / update are `pixi run --manifest-path factory/pixi.toml` subprocesses, and `mason-cfe-surface-check` + `cfe-rebuild-guard-check` pass **with the foundry epoch as their range floor** (a zero-commit range is exit 2, never clean)
 **And** the story invokes `conda-forge-expert` and closes with a Rule-2 CFE retro
+**And** — reciprocal note, not a `Deps:` token: **mason Story 15.1 (close the CFE rebuild campaign; delete-on-cutover) must land BEFORE this story moves the CFE cell to `skills/domain/`.** The rebuild Spec's surface and slice map are written against `.claude/skills/conda-forge-expert/**`; moving the cell first leaves that Spec pointing at a path that no longer exists and makes this story intractable (fleet readiness 2026-09-09, mason-E2 / § 2.3 C2)
 
 ### Story 44.7: The factory island
 
@@ -2653,6 +2657,7 @@ So that recipe churn never re-solves the estate and `mason recipe build factory/
 **Type:** feature • **Effort:** L • **Deps:** S-44.3 • **FR/AD:** fnd:CAP-4 • fnd:AD-3, fnd:AD-4, fnd:AD-8 • R-17b • `DW-RT-2026-09-02-1`
 **Given** `factory/pixi.toml` + `factory/pixi.lock`, `factory/recipes/`, `build-locally.py`, `.ci_support/`, `conda-forge.yml` **When** `mason recipe build factory/recipes/<r>` runs **Then** it matches today's CFE wrap, the estate lock carries no solver-farm dependency, and island CI triggers on `paths: factory/**` only
 **And** `DW-RT-2026-09-02-1` is resolved
+**And** — reciprocal note, not a `Deps:` token: **`spec-reusable-cicd-workflows`' trigger ("a SECOND consuming repo") fires here.** Consult that extension-point at 44.7 rather than re-deriving the island's CI shape from scratch (fleet readiness 2026-09-09, mason-E3 / Class D D11)
 
 ### Story 44.8: The working set
 
@@ -2663,6 +2668,7 @@ So that the 7,855-directory universe is never copied.
 **Type:** feature • **Effort:** M • **Deps:** S-44.7 • **FR/AD:** fnd:CAP-5 • fnd:AD-2, fnd:AD-10
 **Given** manifest rows with `reason ∈ {in-flight, sole-maintainer, referenced-by-spec}` **When** the recipes move **Then** `factory/recipes/` is exactly that set and island CI asserts `count <= manifest rows`
 **And** every other `recipes/**` row reads `stays` (archived with `local-recipes`)
+**And** — reciprocal note, not a `Deps:` token: **`spec-fleet-stewardship` CAP-1's `recipes/**` surface is mostly archived after this story**; its Dream and Spec carry a dated dormancy note (mason, 2026-09-09) so the surface is not read later as live (fleet readiness 2026-09-09, mason-E4 / Class D D11)
 
 ### Story 44.9: Mason submits to conda-forge
 
@@ -2913,6 +2919,182 @@ detectors) — this epic proves and relays (AD-7).
 **Given** the shim retirement (14.9, 30.5) and the rulebook retirement (30.2) are prerequisites the cutover text assumes **When** 44.5 gains `Deps: …, S-14.9` with the trailing prose "after marshal 30.5 and 30.2" plus a `blocked` ledger row and an in-story check (fnd:AD-10 — never a foreign-station token), and 44.13's acceptance gains "and every spine `.memlog.md` re-distills through `bmad-architecture` without loss" (recorded first as a cutover memlog `(note)`) **Then** `forward-dependency-check` reads the new edges, `cutover-readiness.md` G2/G3/G6 read relayed-and-landed, and no Epic 44 story text beyond `Deps:` and that one acceptance clause changes
 
 
+## Epic 48: The chain tells the truth (spec-pyforge-unifying-strategy Residual 2026-09-09)
+
+**Spec binding.** Decomposes `spec-pyforge-unifying-strategy` § Residual (2026-09-09) and the
+Constraints block *Correct-course 2026-09-09* — the syncer guards, the five open red-team
+directives R-18..R-22 (`DW-RT-2026-09-02-2..6`), the CAP-axis namespace pass, and the Single-Spec
+merge the Dream has named since 2026-09-01. Minted by
+`sprint-change-proposal-2026-09-09-currency-review.md` from
+`research/currency-review-pyforge-unifying-strategy-2026-09-09.md`. **HARD boundaries:** no shipped
+epic reopened, no shipped CAP re-minted; Story 48.1 dispatches first and alone, and **no
+`sprint-ledger-sync` of any form runs on this project until it lands** (the feed lagging the twin by
+this epic's keys is correct); 48.8 never renames `[feature.python-agent-platform]`.
+
+### Story 48.1: The ledger syncer guards blocked and missing keys
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Spec Constraints (2026-09-09) • review § 0
+**Surface:** `scripts/promote_sprint_status.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py` (marshal owns the test file, steward the fix — the amendment is named here, coordinated at dispatch), `_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml` (the `epic-44`…`epic-49` rollup rows), `AGENTS.md` § Running and verifying **and** `AGENTS.md:49`'s `--repair-feed` instruction (both via `bmad-project-context` refresh — managed block, never by hand), `docs/dreams/pyforge-unifying-strategy.md` § Cutover Order line
+**Given** a tracked-twin row `blocked` and the same key `backlog` in the Tier-3 feed **When** any sync runs — bare or `--repair-feed` **Then** the twin's `blocked` survives (a `STICKY_STATUSES` set mirroring `sprint_plan.py:77`), and a key present in the twin but absent from the feed is restored or refused — never silently dropped — on the bare path too (`main()` today acts on `missing` only under `--repair-feed`)
+**And** the fix is **station-agnostic by construction**: `STICKY_STATUSES` exists at `sprint_plan.py:77` and has **no syncer counterpart for ANY project** — steward is merely the station with 14 `blocked` rows to lose — so the success criterion may not be written against "the current feed" and "all 14 `blocked` rows" alone (fleet readiness 2026-09-09, stB-E4)
+**And** the **epic-rollup defect** is fixed in the same story: steward's `epic-44`…`epic-49` all read `backlog` while their stories read `done` (`epic-45` with 45.1/45.2 both `done`; `epic-46` 9/10; `epic-47` 5/5) while `epic-38`…`epic-43` read `done` — rollup stopped happening around Epic 44, which makes `fleet-picture` understate steward. It is adjacent to the sticky-status gap but a **distinct defect**, and it is not steward-only: atlas `epic-24` and warden `epic-11` show the same shape (fleet readiness 2026-09-09, stA-D8)
+**And** the regression test that pinned `TERMINAL == {"done"}` (`src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py:55`) is **amended** — it pins the bug — and rewritten to assert both guards with fail-without cases; `sprint-ledger-sync --project steward --repair-feed` run against the current feed leaves all 14 `blocked` rows intact; `AGENTS.md:49` is corrected through `bmad-project-context` (it still instructs every agent to run `sprint-ledger-sync … --repair-feed` before any ledger write, which the currency review withdrew)
+**And** the one-line **`scratch-worktree-lifecycle` landing ritual** lands in the same managed-block refresh — `steward workspace start/status/clean` as the documented way to open a landing worktree, instead of the hand-run `git worktree add` every landing pass still uses; that is the whole adoption cost of a `done` Epic 13 half that has never been invoked (fleet readiness 2026-09-09, stB-B8)
+
+### Story 48.2: R-18 sizing rewrite
+**Type:** feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-2` • red-team S-7, T-7
+**Surface:** `src/platform/deploy/charts/platform/values.yaml`, `templates/*-deployment.yaml`, a new `hpa.yaml` + `pdb.yaml`
+**Given** the review's sizing findings **When** per-pod requests/limits land for web (memory-bound; `--preload`; Langflow RSS measured), worker (CPU-bound; separate builds pool), mcp-host, DB-GPT sidecar, Liquibase Job (JVM) and Vizro **Then** HPA exists on web and worker, PodDisruptionBudgets exist, LLM inference is stated external, and `helm template` renders the resources under the chart's existing invariant tests
+**And** the **ASGI thread-pool size is set deliberately** rather than left at the framework default (`ANYIO_MAX_THREADS` or equivalent), justified against the same measured Langflow RSS this story already takes as input — closing the `spec-asgi-multiplexer-monolith` residue recorded at `spec-local-ocp-hybrid-environment/reconciliation-and-corrections.md:41` and `.memlog.md:15`, which had no story and no ledger key; the Dream's own criterion is the Python-side knob, which exists nowhere in `src/platform/` today (fleet readiness 2026-09-09, stA-B14)
+
+### Story 48.3: R-19 network baseline
+**Type:** feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-3` • red-team X-4, X-6
+**Surface:** chart `templates/networkpolicy-*.yaml`, `serviceaccount.yaml`
+**Given** the namespace today admits any egress **When** a default-deny NetworkPolicy lands with explicit allows per workload and `automountServiceAccountToken: false` **Then** the platform, worker, sidecar and mcp-host pods still reach exactly their declared peers on CRC, proven by a chart invariant test and an attended bring-up note
+
+### Story 48.4: R-20 secrets profile
+**Type:** docs+feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-4` • red-team X-7 • `canopy:AD-19`
+**Surface:** `docs/reference/enterprise-deployment.md`, `src/platform/deploy/overlays/` (an `ExternalSecret` example), `pyforge-steward` keys runbook
+**Given** age key custody is undocumented **When** the profile lands **Then** it states age key custody and rotation, ships one `ExternalSecret` example for the Vault/ESO profile, and a rotation runbook for `DJANGO_SECRET_KEY`, `REDIS_PASSWORD`, the DB roles and the assertion PEM with dual-key verify during rotation
+
+### Story 48.5: R-21 observability contract
+**Type:** feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-5` • red-team A-7, B-5
+**Surface:** `src/platform/config/observability/`, chart alert rules, `pyforge-doctor` flag kill-switch write path
+**Given** no SLO is declared **When** the contract lands **Then** SLOs exist for `/ht/`, MCP p99, queue age and event lag, alert rules render from the chart, and Doctor's flag kill-switch has a metrics write path
+
+### Story 48.6: R-22 live browser streaming, or the pillar deleted
+**Type:** decision+feat • **Effort:** M • **Deps:** — • **FR/AD:** `DW-RT-2026-09-02-6` • red-team T-8 • CAP-8
+**Surface:** `django_pyforge/events/`, a Channels consumer, or the Dream's pillar text
+**Given** `/ws/events/` is a Dream pillar with no implementation **When** this story runs **Then** either a Channels consumer over redis-broker Streams with per-`sub` filtering ships behind the `pyforge-steward[dashboard]` extra, or the pillar is deleted from the Dream with a dated operator ruling — one or the other, recorded in the same story
+
+### Story 48.7: The CAP-axis namespace pass
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** Spec Constraints (2026-09-09) • review § 1.3
+**Surface:** `ARCHITECTURE-SPINE.md` satellites (foundry → `fnd:`; bmad-suite → `suite:`; secure-live-dashboards → `sld:`), `epics.md` Epics 9, 39, 45–47, `resilience-invariants.md:25,:106`, the AD-citation check, **`stack.md`** (`scripts/pixi_env_matrix.py::render_markdown` is its generator)
+**Given** `b8b142db63` normalised ADs and FRs and left ~185 bare `CAP-n` citations in non-canopy satellites **When** the same pass runs on the CAP axis, scoped by satellite range **Then** no non-canopy satellite cites a bare `CAP-n`, the six double-prefix artifacts and two space-form stragglers are cleaned, and `ad_citation_check` gains the CAP form so the regression cannot recur
+**And** the same pass closes the **document-tier residue** the 2026-09-09 currency review left unvesselled (fleet readiness, stB-F2/D6/D7): `stack.md`'s `## Absent — feedstock work, blocking` table is retitled and dated as historical — all six rows shipped in `ed41099205` (2026-08-25), including the `cachebox` row whose premise is wrong (conda-forge ships 5.2.3, pinned at `pixi.toml:240`), and the Unifying SPEC's dangling `surface:` glob `recipes/cachebox/**` goes with it; the **High-Leverage matrix**'s five aspirational rows and three wrong-station bindings are corrected (`stack.md:68` binds `graphviz2drawio` to herald — **false**, zero hits in herald, it is an atlas prototype); the **broken regeneration command hardcoded in `scripts/pixi_env_matrix.py::render_markdown`** is fixed at its source, since it is re-stamped on every regeneration and so self-heals into staleness; the `pyforge.*` **import-rule violation** is recorded with its two named carve-outs (`src/platform/ingest/github_projects/` at 8 sites outside the import-linter's `root_packages`, `src/platform/pyproject.toml:288-289`; `django-atlas`'s portal under the `test_station_portal_shells.py:113` allow-list) rather than left as an absolute live code contradicts; and **"16 of 18 living names bind to nothing"** is either corrected or dated as aspirational — never left reading as fact
+
+### Story 48.8: The Single-Spec merge
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** Dream Grounding "Single-Spec merge — parked"; Spec § Residual • `fnd:AD-18`
+**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` (inherited-host table → full `pap:CAP-1..6` text), `specs/spec-python-agent-platform/SPEC.md` (`absorbed-into`), Epic 10–12 citations in `epics.md`, `convergence.md`, **plus the six artifacts that name the parent and were omitted** (fleet readiness 2026-09-09, stA-B13 / stB-B9): the four sibling Specs whose own frontmatter reads `absorbed-into: spec-python-agent-platform` and would otherwise become pointers to a superseded pointer — `spec-asgi-multiplexer-monolith/SPEC.md:5`, `spec-db-gpt-django-plugin/SPEC.md:5`, `spec-enterprise-multi-agent-orchestration/SPEC.md:5`, `spec-langflow-django-plugin/SPEC.md:5`; steward's own spine `architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md:281,:617` (parent pointer + the `pap:AD-n` citation form); and — **cross-station, a relay not an edit** — `_bmad-output/projects/pyforge-mason/…/spec-django-accelerator-framework/SPEC.md:11,:95`
+**Given** the operator's 2026-09-09 ruling ("now, before any 44.x flip") **When** `pap:CAP-1..6` full text is copied into the Unifying SPEC, Epic 10–12 citations retarget to `pap:CAP-*` / `pap:AD-*`, and the parent Spec is superseded **Then** `dream-chain-check` and `chain-completeness-check` stay green, `extends:` is retired, and **`[feature.python-agent-platform]` is not renamed** — that is a separate named story if ever
+**And** the story states as a rule that **`pap:` stays a live id prefix** — 280 citation sites across 60 files and four other stations (`_bmad-output/projects/pyforge-{doctor,marshal,mason,scribe}/…`, `AGENTS.md`, `pixi.toml`), with `scripts/ad_citation_check.py:123-124` special-casing it in its lookbehind; the merge moves the **TEXT**, never the namespace, and folding `pap:` into `canopy:` is the exact namespace collapse Story 48.7 exists to undo
+**And** the parent Dream's two knowingly-false lines are fixed **before or inside** this merge, never carried forward by it: `docs/dreams/python-agent-platform.md`'s "no `src/platform/` tree" claim (struck through and dated 2026-09-09) and its absolutely-stated `pyforge.*` import ban — a regeneration over dangling parents and false absolutes is the failure the drill exists to catch, and 48.8 explicitly precedes that drill
+
+### Story 48.9: OIDC default profile — Keycloak in-cluster, BYO seam kept
+**Type:** decision+feat • **Effort:** M • **Deps:** S-48.4 • **FR/AD:** `spec-platform-fifteen-factors` CAP-1 (production half) • fleet readiness 2026-09-09, stB-B1 • co-decided with Story 49.6
+**Surface:** `src/platform/deploy/charts/platform/templates/` (a Keycloak `Deployment` + `Service` + its chart values), `src/platform/config/settings/production.py`, `src/platform/config/settings/base.py:564-580` (`COMPONENT_OIDC_*`), `docs/reference/enterprise-deployment.md`
+**Given** the `COMPONENT_OIDC_ISSUER` / `_CLIENT_ID` / `_JWKS_URL` / `_AUDIENCE` seam exists and is entirely unpopulated — all four default to `""` at `base.py:564-580`, `production.py` overrides none of them, and `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` are `None` at `base.py:214-215` — while the local substrate is already realm-as-code (`src/platform/compose/keycloak/realms/platform-realm.json`) **When** Keycloak is promoted to an in-cluster deployment by the Foundry chart as the **default** OIDC profile **Then** a chart-rendered deployment authenticates through it end to end, and the `COMPONENT_OIDC_*` seam remains the **BYO-IdP escape hatch** with a documented profile for an external IdP
+**And** the story states explicitly that this is **not an infra-kinds breach**: Keycloak is a chart `Deployment` and stores its state in the **existing PostgreSQL**; the lock (PostgreSQL + Redis + Kubernetes) is on backing services, and no fourth kind is introduced
+**And** it is decided **together with Story 49.6** — one deployment decision, not two: 49.6 sets the claims source in the deployed default, and this story names the provider that source points at. An external SaaS IdP was rejected as the default because an air-gapped estate cannot reach one, which would force a second profile anyway (`pap:CAP-6` air-gap parity)
+
+### Story 48.10: The one-container Guild proves itself at build time — CI builds the root Containerfile
+**Type:** feat • **Effort:** S • **Deps:** — • **FR/AD:** `spec-unified-container` CAP-5 • fleet readiness 2026-09-09, stB-B7 • **before Story 44.10**
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (a `container` job, or a pixi `guild-image-build` task the workflow invokes), `pixi.toml` (the build task beside `pyforge-steward-container-gates-test` at `:556` and `-container-volumes-test` at `:569`), `Containerfile` (root) if the build surfaces a defect
+**Given** the root `Containerfile` is 14 KB, current, and covers all eight stations — and is referenced by **no** workflow and **no** pixi task (`grep -rn "Containerfile" .github/workflows/*.yml` matches only `src/platform/Containerfile` and the two sidecar files; `pixi.toml` contains no `docker build` / `podman build`), while `pyforge-steward-container-gates-test` and `-container-volumes-test` appear in **zero** CI jobs **When** a job or pixi task invoked by `pyforge-station-tests.yml` builds the root `Containerfile` and runs `scripts/container-gates secrets-scan` + `container-volumes` against the result **Then** CAP-5 — "the image proves itself at build time" — has a build time, and a regression in the image fails CI instead of failing silently
+**And** it mirrors the existing docker/podman matrix shape at `platform-ci.yml:305-375` rather than inventing one; the cost is a job, not a design, because the gates already exist and are simply never invoked
+**And** it lands **before Story 44.10**, which disables this repo's CI — otherwise the window closes and an unbuilt image is exactly what the regeneration drill (`fnd:AD-18`) reproduces faithfully and silently
+
+### Story 48.11: The platform image can import the warden engine it calls
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** warden readiness 2026-09-09, warden-B7 / warden-E4 • fleet readiness § 2.3 C7
+**Surface:** `pixi.toml` `[feature.python-agent-platform.dependencies]` (add `pyforge-warden = { path = … }`, the same shape as `pixi.toml:181`), `environment.yaml` (regenerated — this sync check is **ungated** by the `maintenance` label), a platform-env import test
+**Given** `tasks.py:97-102` lazy-imports `pyforge.warden.cli` while the platform image installs only `python-agent-platform`, whose sole path dependency is `pyforge-steward` — so every warden job lands `FAILED` at import time **When** `pyforge-warden` is added as a path dependency of the platform feature and `environment.yaml` is regenerated (`pixi project export conda-environment -e build > environment.yaml`) **Then** `python -c "import pyforge.warden.cli"` resolves inside the platform environment, a test asserts it, and the compliance job runs instead of failing
+**And** the PR carries the `maintenance` label **and** the regenerated `environment.yaml` — the label does not suppress the env-sync check
+
+## Epic 49: Shipped becomes in effect (spec-pyforge-unifying-strategy — the realization gate)
+
+**Spec binding.** Decomposes the Constraints block *Correct-course 2026-09-09* (the `verified:`
+line; Dreams flip on effect) and Dream § *Where next — The realization gate*. Binding home is the
+open question `realization-gate-home`: bound here today (operator 2026-09-09: "Unifying now,
+re-home later"); re-homes to `hub:CAP-*` on `spec-intelligence-hub` by memlog once that Spec is
+`ready` — story text unchanged. **Widened 2026-09-09 (fleet readiness § 2.3 C6, operator-approved):**
+the gate no longer covers only this chain's CAPs. The pass found twelve more `done`-but-not-in-effect
+capabilities across five other stations; their **effect stories land on the owning station's own
+epics** (marshal Epic 33; atlas, herald, mason, scribe each a small epic), and this epic carries only
+an **index row per station** (Stories 49.9–49.13) so one board shows the gate. Doctor gets no index
+row — its relay is Story 49.2. **HARD boundaries:** no story reopens a shipped epic or re-mints a
+shipped CAP; each exercises a criterion the Spec already states; `capability-effect-check` is
+advisory and never a second PR verdict; 49.1 → 49.2 precede 49.3–49.8; **Stories 49.9–49.13 are
+index rows only — steward tracks, and never edits another station's surface**, which is the
+`spec-surface-check` hazard the alternative (everything under Epic 49) would have created.
+
+### Story 49.1: The verified column on every capability
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** Spec Constraints (2026-09-09) • review § 1.4
+**Surface:** `spec-pyforge-unifying-strategy/SPEC.md` § Capabilities (CAP-1..19)
+**Given** the review's per-CAP grading with file:line evidence **When** each capability gains a `**verified:**` line **Then** it names which success clause has a live exercise (artifact, deployed check, measured number) and which is fixture-only, with file:line; eleven read fully verified today and six read partial, and the line is the input `capability-effect-check` reads
+
+### Story 49.2: The capability effect check
+**Type:** feat • **Effort:** S • **Deps:** S-49.1; cross-station: doctor's own Dream + Spec for the implementation (ledger `blocked` until doctor's story lands — never a foreign-station `Deps:` token) • **FR/AD:** Spec Constraints (2026-09-09) • doctor advisory doctrine • fleet readiness 2026-09-09 § 2.3 C8
+**Surface:** this Spec's `verified:` column (the **criterion** stays here). The implementation lives in doctor's own chain and is **named as a relay, never edited by steward** — Dream `docs/dreams/capability-effect-check.md`, Spec `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-capability-effect-check/`, code at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/` (a new source), `pixi.toml` (`detectors` membership), doctor `report-schema.json` (additive)
+**Given** 49.1's column **When** `capability-effect-check` runs **Then** it reports every capability whose ledger stories are all `done` but whose `verified:` line names an unexercised clause — advisory, exit-code domain unchanged, never a second PR verdict — and runs in `detectors` beside `story-status`
+**And** the check's **input is widened beyond this Spec's own CAP list** to every station's Specs: the pass that minted this story found the five worst cases in steward's *own* satellites (`unified-container`, `secure-live-dashboards`, `ocp-as-a-portability-profile`, `scratch-worktree-lifecycle`, `multi-repo-workspaces`), none of which is a Unifying CAP — a detector scoped to CAP-1..19 would be built to miss its own station on day one (fleet readiness 2026-09-09, stB-D1)
+**And** it adopts the cheapest effect test the pass found: **"has a caller outside its own test file"** (fleet readiness 2026-09-09, mars-B-E6 / Class D D4)
+**And** the **implementation is relayed to a new doctor Dream + Spec** (fleet readiness § 2.3 C8): every other doctor Source came through doctor's own chain, and `sources/bmad_method.py:9-20` is doctor's own precedent for a dedicated module. **Doctor records the incoming surface claim in `spec-pyforge-doctor`'s memlog BEFORE any code lands**, otherwise `spec-surface-check` reds this story and 49.8 at merge. This story closes when doctor's story lands; it is minted `blocked` until then
+
+### Story 49.3: CAP-4 in effect — start and get on all eight, with a real disconnect
+**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-4 (`SPEC.md` success) • Stories 21.3 / 21.4 shipped the mounts
+**Surface:** the six station MCP faces without `start`/`get`, `django_pyforge/mcp_dual_era.py`, a transport-interrupting test
+**Given** `start`/`get` exists on atlas and warden only and the disconnect test never interrupts transport **When** the six other faces gain the pair over the same durable store and a test drops the connection mid-op across a multi-minute run **Then** the agent retrieves the result after reconnect on every station, and CAP-4's `verified:` line reads fully exercised
+
+### Story 49.4: CAP-7 in effect — the real board, or the criterion says fixture
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-7 (`SPEC.md` success) • Epic 23
+**Surface:** `django-atlas/src/django_atlas_portal/board.py`, `pyforge/atlas/dashboard/`, `test_host_board_row_isolation.py`, `src/platform/config/settings/base.py` (`INSTALLED_APPS`), `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/**` (adopter wiring), `convergence.md:38,:129`
+**Given** the isolation test runs against a 5-row in-process fixture and asserts the real Vizro/BSL board is not mounted **When** this story runs **Then** either Atlas's real board is reachable through the host under the isolation pattern with the same two-users test passing against it, or CAP-7's success criterion is rewritten to name the fixture as the deliverable with a dated ruling — one or the other
+**And** the **`secure-live-dashboards` adoption decision rides with it, as one decision, not two** (fleet readiness 2026-09-09, stB-B6 / § 2.3 C15): if the real board is mounted, this story **installs `pyforge.steward.dashboard` in `INSTALLED_APPS`** and routes the board's loads through `audit` + `export` — today the app is in no `INSTALLED_APPS` (`base.py` has zero `dashboard` matches), so `AuditEntry` (`models.py:43`, `migrations/0001_initial.py`) has no table anywhere and six of nine modules (`middleware`, `audit`, `views`, `navigation`, `models`, `export`) have zero consumers; if instead the criterion is rewritten to name the fixture, then `spec-secure-live-dashboards`' **Django half is rewritten as deferred in the same act**
+**And** the accuracy correction lands with it: `convergence.md:38,:129`'s "never adopted" becomes **"adopted at fixture grade (`django-atlas/board.py:17-20`, a 5-row in-process fixture); the real Vizro board (`pyforge/atlas/dashboard/app.py`) imports zero steward modules"** — the old wording understates what exists and would send an implementer to build a seam that is already there
+
+### Story 49.5: CAP-11 in effect — the eviction test
+**Type:** test • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-11 (`SPEC.md` success) • Story 40.2
+**Surface:** `src/platform/tests/` (a real-Redis test), chart `hpa.yaml` if 48.2 has not landed it
+**Given** the chart split is real and no test fills the cache **When** a test fills `redis-cache` to its `allkeys-lru` limit while tasks are queued on `redis-broker` **Then** no queued task, stream entry or PEL entry is lost, and the test fails without the split
+
+### Story 49.6: CAP-12 in effect — revocation on the next request
+**Type:** feat • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-12 (`SPEC.md` success) • Story 26.1 deferral
+**Surface:** `src/platform/config/settings/base.py:214-215`, `production.py`, `platformapp/users/current_claims.py`
+**Given** `IDP_CLAIMS_SNAPSHOT = None` / `IDP_USERINFO = None` in the deployed default so revocation lands on the next login **When** the claims source is set in the deployed default with a bounded cache **Then** revoking a role at the IdP removes portal access on the user's next request, proven by a test that fails on the login-time path
+**And** it is decided **together with Story 48.9** — one deployment decision, not two: 48.9 names the provider (Keycloak in-cluster as the default profile, `COMPONENT_OIDC_*` kept as the BYO seam) and this story sets the claims source that points at it. Neither story may name a provider the other contradicts (fleet readiness 2026-09-09, stB-B1)
+
+### Story 49.7: CAP-14 in effect — real semantic recall, or the criterion says lexical
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-14 (`SPEC.md` success) • Story 34.5 • `query-plane-scribe-cutover`
+**Surface:** `pyforge-scribe/src/pyforge/scribe/embeddings.py`, `graph_store_plugins.py`, the plane `vss` index
+**Given** "semantic" recall is a 32-dim SHA-256 bag-of-concepts over a hardcoded 7-entry synonym map, off by default (`recall.py:94` `mode="lexical"`; `cli.py:316-320` opt-in `--semantic`), while CAP-14's *other* clause — "the same graph operations pass against both drivers" — is already satisfied and exercised in CI (`conftest.py:119-138` parametrized over both drivers; `pyforge-station-tests.yml:215-238` pgvector service) and single-plugin selection is the documented design (`graph_store_plugins.py:36-39`, AD-1), not a shortfall **When** this story runs **Then** either recall is backed by a real embedding model over the plane's `vss` index with a test that lexical overlap fails, or the criterion is rewritten honestly — and in either branch the story states which mode (`lexical` or `semantic`) the criterion is graded against, and records that the Spec's "dual-write" wording mis-described a correct design rather than naming a gap (scribe readiness pass 2026-09-09, E-1)
+
+### Story 49.8: CAP-17 in effect — marshal publishes run state to the supervisor
+**Type:** feat • **Effort:** M • **Deps:** S-49.1; cross-station: marshal Epic 33's Track story (ledger `blocked` until it exists — never a foreign-station `Deps:` token) • **FR/AD:** CAP-17 (`SPEC.md` success) • `hub:CAP-3` (the Track, on `spec-intelligence-hub`) • token-economy CAP-7 (savings telemetry — whose five per-layer getters are stubs today, `harness_bmadloop.py:1875-1898`)
+**Surface:** `pyforge-marshal` (a publisher toward `django_pyforge.supervisor` — the same seam as the Track and savings telemetry), `pyforge-doctor/sources/marshal.py:544`, `marshal/cli/init.py:331`
+**Given** the supervisor carries MCP-`start` runs only while marshal has zero imports of `django_pyforge` and reads `~/.bmad-loops` **When** marshal publishes bmad-loop run state through one publisher shared with Epic 33's Track **Then** the front door shows a live bmad-loop run in a deployed namespace with no operator-home access, a completed run's timing survives the workstation, and marshal and doctor no longer read `~/.bmad-loops`
+**And** it carries the one-line comment at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py:223` noting that the `~/.bmad-loops` read retires under Unifying CAP-17 — **doctor minted no separate story for it**, so that comment plus the memlog line on `spec-pyforge-doctor` is doctor's whole action here (fleet readiness 2026-09-09, § 2.3 C8)
+
+
+### Story 49.9: Index — marshal realization-gate effect stories
+**Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: marshal Epic 33 (ledger `blocked` until that epic closes — never a foreign-station `Deps:` token) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C6
+**Surface:** this file only (the index row). Marshal's own `epics.md` / Specs are **named, never edited** by steward
+**Given** four marshal capabilities are `done` and not in effect — `adaptive-model-tiering` (fed on 2 of 8 stations; the floor-raise applies only on spin), `risk-tiered-review-depth` (zero callers outside `tests/unit/test_gate.py`; `core/gate.py:724,:768`), `marshal-parallel-dispatch-fanout` (`max_parallel = 1` everywhere, `cli/dispatch.py:902`; no live wave has run), and the two Epic-20 watchdogs plus Story 3.12's floor-raise, which observe `~/.bmad-loops` and have been dormant since 2026-08-22 **When** marshal's Epic 33 lands their effect stories (the `bmad-correct-course` already scheduled there also carries token-economy CAP-18 and the risk-tiered wiring story) **Then** this row flips `done` and `capability-effect-check` stops reporting them
+**And** steward's only action is this row plus the citation — the work, the surfaces and the retro are marshal's
+
+### Story 49.10: Index — atlas realization-gate effect stories
+**Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: atlas's effect epic (ledger `blocked` until it closes) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C1 / C6
+**Surface:** this file only (the index row). Atlas's own artifacts are **named, never edited** by steward
+**Given** `atlas-query-dashboards` shipped a second Lane-3 runtime at `pyforge/atlas/views/` (Epic 14, CAP-1..4, 4/4 `done`) that nothing reaches — no CLI verb, pixi task, ASGI mount or portal imports it, only `tests/unit/views/*` — and it reads the legacy SQLite store through a dynamic-import bridge whose own docstring declares the evasion of CAP-19's "no private DuckDB" ruling (`cli_bridge.py:11-17`) **When** atlas records the **retirement** (operator ruling C1: delete the package + tests, record the supersession on its Spec, keep the widget-registry idea only if a Vizro page wants it) **Then** this row flips `done`; the Unifying Dream's Kinships line has already been corrected here to say `retired 2026-09-09`
+**And** the live Lane-3 runtime is and remains the Vizro/BSL board (31 pages)
+
+### Story 49.11: Index — herald realization-gate effect stories
+**Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: herald's effect epic (ledger `blocked` until it closes) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C6 / C11
+**Surface:** this file only (the index row). Herald's own artifacts are **named, never edited** by steward
+**Given** three herald capabilities are `done` and not in effect — the live backend (`herald-live-demo.yml` is `disabled_manually` with 100 of 100 runs failed, last run 2026-08-24, and its store is `runner.temp`), the deck-QA gate (called by nothing), and the pptx pipeline (has never rendered a station deck) **When** herald lands their effect stories, or re-scopes them as a *hosting* decision deferred until the Foundry gives Herald a perimeter (steward's `deploy perimeter` cannot target an arbitrary ASGI callable today, `deploy.py:484`) **Then** this row flips `done`
+**And** steward records only the dependency: the perimeter is a Foundry capability, so herald's hosting branch is gated on steward's chart work, not on this row
+
+### Story 49.12: Index — mason realization-gate effect stories
+**Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: mason's effect epic (ledger `blocked` until it closes) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C6
+**Surface:** this file only (the index row). Mason's own artifacts are **named, never edited** by steward
+**Given** the `pyforge-mason` recipe verb family is `done` and unreachable — `mason doctor` reports `unavailable_verbs: ('recipe',)` because `[feature.pyforge-mason.dependencies]` (`pixi.toml:281-283`, two lines) lacks the `truststore` + `conda-forge-metadata` floor `cfe.py:180-186` requires, and nothing in the estate invokes `mason recipe|package|environment` **When** mason lands the dependency fix and one real invocation **Then** this row flips `done`
+**And** the fix touches `pixi.toml`, which is steward-adjacent: if the dependency lines are added in a steward PR, that PR **regenerates `environment.yaml`** (ungated by the `maintenance` label) — named here so the obligation is not discovered at CI
+
+### Story 49.13: Index — scribe realization-gate effect stories
+**Type:** index • **Effort:** S • **Deps:** S-49.2; cross-station: scribe's effect epic (ledger `blocked` until it closes) • **FR/AD:** fleet readiness 2026-09-09 § 2.3 C6
+**Surface:** this file only (the index row). Scribe's own artifacts are **named, never edited** by steward
+**Given** scribe's scheduled compile is `done` and not in effect — the store was last written 2026-08-27 and the "nightly" schedule is a hand-installed crontab line, not a declared, reproducible surface **When** scribe lands the effect story (a declared schedule the estate can see and a recorded run) **Then** this row flips `done`
+**And** steward records the placement question only: a scheduled compile that must survive the cutover is a Foundry-side surface, not a workstation crontab
+
+
 ## Currency validation note — 2026-09-05
 
 `arch→epics` cascade after the steward PRD and ARCHITECTURE-SPINE re-dated to 2026-09-05
@@ -2952,3 +3134,56 @@ for 200 and asserts nothing else.
 
 Ledger: `43-7-sidecar-runtime-validation-on-python-3-14: backlog`. Every Story heading in this
 file still maps 1:1 to a `sprint-status-ledger.yaml` key.
+
+
+## Currency validation note — 2026-09-09
+
+`spec→prd→arch→epics` cascade for `bmad-correct-course` on `spec-pyforge-unifying-strategy`
+(`SPEC.md` `updated: 2026-09-09` — `:488` amended by operator ruling, `:73`/`:315` floor corrected,
+Constraints block *Correct-course 2026-09-09*, § Residual (2026-09-09), two `open_questions`).
+Structural delta: **Epic 48** (Stories 48.1–48.8) and **Epic 49** (Stories 49.1–49.8), hand-authored
+mirroring Epic 47; every new `### Story` heading maps 1:1 to a `sprint-status-ledger.yaml` key
+minted by `sprint_plan.py generate` the same day (20 new keys, 0 changed, 14 `blocked` preserved
+sticky). Epic 44's heading paragraph gained the 2026-09-09 order amendment (47's P-lines before
+44.3; 48.1 before any ledger write; 48.8 before the regeneration drill). Validated against the
+steward spine as of 2026-09-08: **no AD added or changed** — 49.1's `verified:` column is a Spec
+shape, not an AD; Epic 49's binding home is the Spec's open question `realization-gate-home`.
+**No `sprint-ledger-sync` was run and none may run on this project until 48.1 lands.** Record:
+`sprint-change-proposal-2026-09-09-currency-review.md`.
+
+## Currency validation note — 2026-09-09 (fleet readiness)
+
+Second 2026-09-09 cascade, applying the **operator-approved** decision batch
+`research/fleet-readiness-decision-batch-2026-09-09.md` (eight read-only agents graded all 96 live
+Dreams against `main` `fe4025ea90`; every row in its § 2 is approved, § 4 is the apply order).
+Scoped to Epics **48** and **49**; **no other epic's text was altered** and no shipped CAP was
+re-minted.
+
+Structural delta — six new stories, all in existing epics:
+**48.9** (OIDC default profile — Keycloak in-cluster, `COMPONENT_OIDC_*` BYO seam kept; C7/stB-B1,
+co-decided with 49.6), **48.10** (CI builds the root `Containerfile` and runs the two container
+gates; C7/stB-B7, due before 44.10 closes the CI window), **48.11** (`pyforge-warden` path dep in
+the platform env + regenerated `environment.yaml`; C7/warden-B7), and index rows **49.9–49.13**,
+one per station whose satellites gained effect stories (marshal, atlas, herald, mason, scribe).
+Doctor gets no index row — its relay is Story 49.2.
+
+Amendments to existing stories (text widened, never re-scoped away): **48.1** gains the
+station-agnostic construction rule, the `epic-44`…`epic-49` rollup defect, the `AGENTS.md:49`
+`--repair-feed` correction and the one-line scratch-worktree landing ritual, and names the marshal
+test file (`test_promote_sprint_status_regressions.py:55`) that pins the bug; **48.2** gains the
+ASGI thread-pool clause closing the `asgi-multiplexer-monolith` residue; **48.7** gains explicit
+**document-tier residue** scope (the obsolete feedstock table, the High-Leverage matrix, the broken
+regeneration command in `pixi_env_matrix.py::render_markdown`, the `pyforge.*` import-rule
+violation, "16 of 18 living names"); **48.8**'s Surface gains the four `absorbed-into` pointers,
+steward's own spine and mason's relay, plus the rule that `pap:` stays a live prefix; **49.2** is
+widened to every station's Specs, gains the "has a caller outside its own test file" test, and its
+**implementation relays to a new doctor Dream + Spec**; **49.4** absorbs the `secure-live-dashboards`
+adoption decision and the `convergence.md` accuracy correction; **49.6** is bound to 48.9 as one
+deployment decision.
+
+Validated against the steward spine as of 2026-09-08: **no AD added or changed** — the index rows
+are tracking artifacts, and every widened clause exercises a criterion its own Spec already states.
+Ledger: keys minted with `sprint_plan.py generate` only (`48-9`, `48-10`, `48-11`, `49-9`…`49-13`),
+with `49-2` and `49-9`…`49-13` minted **`blocked`** (cross-station producers — never a foreign
+`Deps:` token). **No `sprint-ledger-sync` was run and none may run on this project until 48.1
+lands.**

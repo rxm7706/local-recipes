@@ -16,13 +16,19 @@ assumptions:
     dep (zod); decided at recipe time with conda-forge-expert."
   - "corpus/dev/contracts/satisfied-declarations.json is the canonical complete contract example
     (Dream § Grounding) and is CAP-1's compile-test target; verified at recipe time."
-open_questions:
-  - "Where does the CAP-2 driver run its Claude calls from — the local-recipes pixi env or a
-    dedicated eval env — and which station's [adapter.review].model is the reference?"
-  - "How is a CAP-2 trial's cost recorded fleet-wide — steward budget (44.15 Actions-minutes
-    metering) or a local ledger under evals/?"
-  - "Which pixi environment carries bmad-eval-quality for daily use — local-recipes (default) or
-    only bmad-suite-full?"
+updated: "2026-09-09"
+open_questions: []
+  # ANSWERED 2026-09-09 (batch rows stA-C3 and stA-B1) — all three, in code:
+  # 1. Driver env / reference model: the local-recipes pixi env (`pixi.toml:1044-1055`), with
+  #    `evals/review-catches-planted-defect/driver.py:52-79` resolving `[adapter.review].model`
+  #    through Marshal's own chain.
+  # 2. Trial cost: a LOCAL LEDGER UNDER `evals/`, now — `driver.py:198` already reads
+  #    `total_cost_usd` out of the `claude -p` envelope and `--max-budget-usd` bounds each run,
+  #    while Story 44.15 is `blocked` behind the whole cutover. Fold into 44.15 metering only if
+  #    that story ever ships. This Spec is the SINGLE OWNER of the question; the verbatim
+  #    duplicate on `spec-bmad-suite-lifecycle` is deleted and cites this one.
+  # 3. Daily-use env: local-recipes (`pixi.toml:1611`), the default env; `bmad-suite-full` is not
+  #    the daily-use carrier.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability — consult them only if you need narrative rationale this contract intentionally omits.
@@ -44,11 +50,12 @@ with zero evidence about the last line of defence.
 
 - **CAP-1 — Suite membership.** *Intent:* `eval-quality` installs the suite's way as a
   `bmad-suite` member (recipe, manifest line, pixi pin, channel) so every fleet consumer gets
-  the 0.2.0-line binary that has `score`. *Success:* `recipe-build` green; `eval-quality
-  --version` prints `0.2.0`, `--help` lists `score`, `compile` on a shipped corpus contract exits
+  the tagged binary that has `score`. *Success:* `recipe-build` green; `eval-quality --version`
+  prints the **pinned TAG version** (`1.4.1` today — `recipes/bmad-eval-quality/recipe.yaml:5,:35`),
+  `--help` lists `score`, `compile` on a shipped corpus contract exits
   0; enrolment is ONE line in `recipes/bmad-suite/suite-members.yaml` (auto-flows to metapackage
   run deps, doctor's drift watch, steward's pipeline-truth); pixi pin `bmad-eval-quality
-  >=0.2.0.dev0` with `environment.yaml` regenerated; baseline pin set, install-matrix,
+  >=1.4.1` (`pixi.toml:1611`) with `environment.yaml` regenerated; baseline pin set, install-matrix,
   install-class and `library-llms-full.md` rows present; the PR carries `maintenance`.
 - **CAP-2 — Pilot contract `review-catches-planted-defect`.** *Intent:* one Behavioral
   Evaluation Contract, run twin-arm (clean vs one planted `file:line` defect) against the
@@ -65,9 +72,11 @@ with zero evidence about the last line of defence.
 
 - Dream-first and the CFE rules bind: the recipe goes through `conda-forge-expert` (Rule 1); the
   effort closes with a CFE retro (Rule 2).
-- Exact commit pin (`0.2.0.dev0 @ 3172162fbdc7c4bb70ed11c1367dc3e433797535`); `version` and
-  `commit` bump together; never a floating HEAD; flip to tag-mode the day `v0.2.0` lands. A
-  schema mismatch fails `compile` loudly — never papered over.
+- **Tag-mode since 1.3.0** *(2026-09-09; the original `0.2.0.dev0 @ 3172162fbd…` commit pin is
+  retired to historical record once upstream shipped v0.2.0..v1.4.1)*. Pin an **exact tag**, never
+  a floating HEAD. **CFE G109 binds:** re-derive the version of record from the default branch on
+  every bump — never assume the awaited tag. A schema mismatch fails `compile` loudly, never
+  papered over.
 - The pilot measures the reviewer; it is not a PR gate. Warden stays the sole PR verdict;
   nothing here joins `detectors` / `detectors-ci`.
 - Every run is cost-bounded (`claude -p --max-budget-usd …`) with model and effort pinned to the
@@ -93,3 +102,26 @@ with zero evidence about the last line of defence.
 twin-run preflights both arms and the mutated arm cites `pkg/discount.py:17` while the clean arm
 does not; three trials per arm produce a catch rate the fleet can read — a number, not a feeling,
 about the reviewer every unattended landing depends on.
+
+## Currency — 2026-09-09
+
+**Version of record: 1.4.1, published, both noarch variants.** The recipe moved
+`0.2.0.dev0 @ 3172162fbd` → **1.3.0** (tag-mode; the awaited `v0.2.0` was five releases stale, CFE
+G109) → **1.4.0** → **1.4.1** in one day. The 1.4.0→1.4.1 step is a live G109 recurrence and the
+sharpest case for the rule: upstream cut v1.4.1 at 12:15Z *while this recipe was being updated to
+v1.4.0* — the version of record moved mid-task, so a tag named in a request is never authority.
+G110 re-read across every bump: the bin map (`eval-quality → dist/cli/main.js`), `files`,
+`engines.node >=22.20.0` and the single `zod` prod dep never moved, so `build.sh` / `build.bat`
+stayed untouched, the `Apache-2.0 AND MIT` expression and both `license_file` entries stayed
+correct, and `build.number` stayed 0 (G113 — version moved).
+
+Both variants are **confirmed in the SERVED repodata** (G66, not merely the file API): `__unix`
+`h07402fc_0` built on a macos-14 runner, `__win` `h2fd06db_0` on windows-2022. `steward suite
+pipeline-truth` reports `drifts: -` for this member — upstream, recipe, channel and installed all
+read 1.4.1.
+
+**Owner Dream flips `specified → realized`** (batch Class B row stA): CAP-1 and CAP-2 are both
+exercised — recipe + channel + pixi pin, and `evals/review-catches-planted-defect/` with three pixi
+tasks and live `--trials 3` twin runs. `specified` understated the gate. **This Spec stays
+`shipped`**; only its version text moved. Read literally before this pass, the shipped recipe
+failed its own Spec (batch row stA-D4) — that is what the CAP-1 and Constraints re-texts above fix.

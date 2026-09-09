@@ -85,3 +85,16 @@ mono/panel language).
 - **2026-07-23** — retro-seeded as a Dream (the console predates the
   Dream-first model); Dreamscape lifecycle board added the same day —
   the console now lists every Dream and its stage.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized` (in effect
+  via Lane 1); **the governing Spec's `surface:` no longer describes its own files.**
+  `spec-factory-console` is `superseded` yet still governs two paths whose meaning changed under it:
+  `docs/dashboard/index.html` is now a **14-line "console moved" stub** since steward Story 30.2, and
+  `scripts/fleet_scan.py` is a **parser library only** — the `data.js` write CLI is retired
+  (`fleet_scan.py:6`, `:93`; `main()` returns 2 at `:3505-3511`) and `docs/dashboard/data.js` is gone
+  from disk. **Cross-station:** steward Cutover **Story 44.1** requires 100 % of tracked files to
+  resolve to `stays` / `dies` / a destination, and both of these currently resolve only to a
+  superseded Spec whose surface no longer describes them. A destination decision for both is owed to
+  44.1 — and it is the same decision [[dashboard-velocity-captures-hand-driven-work]] needs for
+  `scan_timing`'s orphaned CAP-1..3. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

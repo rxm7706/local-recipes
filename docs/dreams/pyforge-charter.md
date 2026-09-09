@@ -2,7 +2,7 @@
 title: The PyForge Charter
 type: dream
 owner: guild
-status: pitched
+status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized`: CAP-3 and CAP-7 name enforcement that no longer exists — see the Realization log.
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission
@@ -801,3 +801,44 @@ herald broadcast slack,email --channel engineering-updates
   BMAD project dissolved (see that Dream's Realization log and `_bmad-output/EXEMPLAR-STANDARD.md`'s
   amendment). No Smith absorbed it — the Charter still names no station accountable for itself.
   The Charter's own text is unchanged.
+- **2026-09-09 (status correction, not an amendment)** — `pitched` → `specified`, per the
+  fleet-readiness decision batch 2026-09-09 (row guild-B1 and Table A). This Dream's own Spec
+  has been at `in-progress` since the 2026-08-08 fold and has carried CAP-1..CAP-8 through five
+  executed amendments, so `pitched` named an act two steps behind — `docs/dreams/README.md:63-78`
+  defines the ladder as "the act that completed" and states that `specified` requires a Spec at
+  `ready` or beyond. **Not advanced to `realized`, and the reason is CAP-2**: two of this
+  document's own enforcement claims no longer map to a detector that fails.
+  - **§5's `GUILD_DREAMS` mirror-pair is gone, and a third mirror has appeared.** The 2026-08-08
+    entry above records "`GUILD_DREAMS` drops to one entry in **both** mirrors
+    (`scripts/bmad_drift_check.py`, `pyforge.doctor.sources.fleet_scan`)". Neither mirror exists
+    today: Doctor Story 6-8 moved the constants into `docs/governance/guild-roster.json` and
+    Story 6-9 retired `bmad_drift_check.py`'s copies (the reasoning survives verbatim at
+    `scripts/fleet_scan.py:995-1003`). Today's readers are `scripts/fleet_scan.py:1002-1003` and
+    `pyforge.doctor.sources.factory:1295`, both reading the one JSON. **But
+    `pyforge.doctor.sources.chain:96` hardcodes `CONSTITUTIVE = frozenset({"pyforge-charter"})`
+    and gates on it at `:634` without reading the roster**, while the same module reads statuses,
+    types and stations from it (`chain.py:838-852`) — the identical duplication hazard, in a new
+    file, agreeing by luck rather than by construction. A doctor story is minted to re-point it
+    (batch row C8); this is doctor's verb under §5's outcome/mechanism rule.
+  - **§7's gate has no successor.** The 2026-07-28 amendment made the Guildhall *gate* on the
+    ownership through-line, "correcting an inversion in which `check_render.js` exited non-zero
+    on a JavaScript `TypeError` while the retired `generate.py` printed `· UNOWNED: …` and
+    exited clean". Both files are now retired and `retired-console-check` guards against their
+    return (`scripts/detectors.py:216`). The live board is Atlas's Vizro/BSL dashboard, and
+    `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/` contains **zero** references
+    to `owner` or `unowned`. The inversion was not re-introduced — the gate simply ceased to
+    exist, so §7's "a hall that cannot say who is accountable for a row does not put that row on
+    the wall" is currently an assertion, not an enforcement.
+  - **Two questions are now open on the Spec's memlog, one closed.** Closed: `owner: guild`
+    **stays** — it names the *absence of a station*, the one legal way a Dream has no accountable
+    Smith, which is a job no other value does, so CAP-4 is satisfied rather than strained; §5
+    gains that reason on the next re-derive. Open: the **Guildhall referent** — `[[factory-console]]`
+    is `superseded`, the Pages console retired-and-guarded, and the three live surfaces (Atlas's
+    Vizro board, the Wagtail CMS, eight `django-*` portals) include none of Marshal's, while
+    Herald's Spec still cites "the Guildhall is Marshal's"; because §7 is a Lexicon noun the
+    ruling is a **Charter amendment**, and the Intelligence Hub's Track/Frame answers are its
+    natural input (a Track is what a Guildhall displays). Also recorded: the **Intelligence Hub
+    vocabulary cross-walk** lands here, not in the Unifying Strategy, as a `###` subsection
+    inside § The Lexicon carrying a reverse block (Charter, Guild, Stations have no Hub
+    counterpart) and an explicit CAP-4 ruling that an external vocabulary is cross-walked and
+    never enters the seven.

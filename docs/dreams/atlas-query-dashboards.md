@@ -2,7 +2,8 @@
 title: A query against the atlas DB becomes an interactive dashboard, no SPA framework
 type: dream
 owner: atlas
-status: specified
+status: archived
+archived-reason: retired
 ---
 
 # A query against the atlas DB becomes an interactive dashboard, no SPA framework
@@ -39,9 +40,17 @@ the target of the 11 CLI query tools listed in this repo's own skill reference
 (`detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`,
 `cve-watcher`, `version-downloads`, `release-cadence`, `find-alternative`, `adoption-stage`,
 `scan-project`) — every one of them is, structurally, "a DuckDB query rendered as text"; this
-Dream is the same queries rendered as an interactive widget instead. Nothing Panel/Bokeh/Channels-shaped
-exists in this repo yet — this is a genuinely new presentation layer, not a port of anything
-already built.
+Dream is the same queries rendered as an interactive widget instead. ~~Nothing
+Panel/Bokeh/Channels-shaped exists in this repo yet — this is a genuinely new presentation layer,
+not a port of anything already built.~~ *(Written 2026-08-14; **superseded 2026-09-09**, fleet
+readiness pass. Bokeh-shaped code DID come to exist: Epic 14 built `pyforge/atlas/views/`, a
+complete static-fragment + Bokeh-WebSocket runtime over six of these CLIs, and all four of its
+stories read `done`. **Nothing ever called it** — no CLI verb, no pixi task, no ASGI mount, no
+importer outside its own unit tests — and it reached `cf_atlas.db` through a bridge whose own
+docstring records that its dynamic-import shape keeps the DuckDB-singularity gate green while the
+loaded script imports `sqlite3` (`views/cli_bridge.py:11-17`). The operator retired it on
+2026-09-09 (decision batch § 2.3 C1; atlas Story 25.1 deletes the package). The struck sentence is
+kept as the record of where this Dream started — see § Realization log.)*
 
 A related, larger finding surfaced while investigating this Dream: atlas already has a REAL,
 tested (against an in-memory mock, network-injectable) client for an EXTERNAL Wagtail/Django CMS
@@ -106,3 +115,24 @@ realized, not a dependency)
   relevant to re-scoping [[wagtail-corporate-brain]] far more favorably than this batch's
   first-pass tiering had it.
 - **2026-08-14** — Spec authored (spec-atlas-query-dashboards, pyforge-atlas) by the 2026-08-14 dream-backlog audit: curated CLI-mirroring view catalog, static-fragment mode first, Bokeh-WebSocket interactivity behind a pluggable widget registry, ASGI-host-agnostic, air-gap CDN rewriting from day one.
+
+- **2026-09-09** — **Fleet readiness pass, then RETIRED (operator batch § 2.3 C1).** Verified
+  against live code at `fe4025ea90`. Epic 14 (CAP-1..4) and Epic 20 (CAP-5..7) all read `done`;
+  `DESIGN.md`/`EXPERIENCE.md` exist; DW-D2-1 and DW-D2-2 are closed. But CAP-1..4's own runtime,
+  `src/shared/packages/pyforge-atlas/src/pyforge/atlas/views/`, has **no importer outside its own
+  unit tests** — no CLI verb, no pixi task, no ASGI mount, even though `views/__init__.py:10-13`
+  describes `asgi.py::app` as a mount target. It also reads the legacy SQLite `cf_atlas.db`
+  through `views/cli_bridge.py`, whose docstring (`:11-17`) records that its dynamic-import shape
+  keeps the F1 DuckDB-singularity gate green while the loaded script imports `sqlite3` — a
+  private, non-BSL read against the Unifying ruling "no private DuckDB … BSL is the
+  dashboard/agent SQL contract" (`pyforge-unifying-strategy.md:400`), and against
+  `spec-pyforge-atlas`'s own Non-goal "Continued SQLite". Built, merged, off — the
+  marshal-token-economy shape. **Operator decision 2026-09-09: RETIRE.** The estate's real Lane-3
+  surface is the Vizro board over the D1 BSL seam (`dashboard/app.py`, gated by
+  `dashboard-dryrun`, served by `pixi run -e local-recipes dashboard-serve`). Atlas Story 25.1
+  deletes the package and its tests; the widget-registry idea survives only if a Vizro page asks
+  for it. The declared open question about session bridging dies with the module (the estate
+  already forbids mounting an analytics runtime on the identity-bearing host —
+  `src/platform/tests/test_host_board_row_isolation.py:26`). The Spec stays `in-progress` until
+  25.1 lands and then reads `shipped` on the strength of CAP-5..CAP-7, which are real, live and
+  exercised. Status here moves `specified` → `archived` (`archived-reason: retired`).

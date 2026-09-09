@@ -40,6 +40,11 @@ Same stories landed. Same review fidelity. A fraction of the tokens.
 
 ## What is real
 
+> *2026-09-09: this section is the 2026-08-30 baseline and is kept as the record. Epic 28 has
+> since shipped every item below as **machinery** (24/24 `done`, verified against `main`), and
+> none of it is switched on — so the **behaviour** this section describes is still the live
+> behaviour. See § Addendum (2026-09-09).*
+
 **Marshal's existing token posture is brakes, not diet.** Shipped: per-story /
 per-run weighted-token and wall-clock ceilings (E3.6, defaults 50M/500M
 weighted), the idle ladder (nudge → stop-retry → defer), prompt-cache TTL
@@ -287,6 +292,114 @@ story (sibling to 6.1's graphify extra); Story 28.9 gains a fifth AC consuming i
 answer whose backing node is flagged stale falls back to the epic-context file path (Story
 28.8's proven fallback), never served silently. Landed as CAP-13 in the spec.
 
+## Addendum (2026-09-09) — built, unmeasured, and asymmetric across the two engines
+
+Epic 28 closed `done` on all 24 stories, and a code-level verification against
+`main` found the machinery real: the `[context]` block and
+`resolve_context_layers` in `core/policy.py`, the wrapper seam in
+`core/harness_profile.py` with its byte-identical prompt-prefix guarantee, the
+Genesis kit in `seed/verbs/kit.py`, the ladder and per-layer savings in
+`core/supervise.py` + `supervisor/`, `core/token_economy_benchmark.py` with a
+`marshal benchmark compare` CLI, and `scripts/index_freshness_check.py`. All
+five instruments are pinned in `pixi.toml` and three are on PATH.
+
+**And every layer is off.** No `[context]` block is declared anywhere — not in
+`_bmad-output/policy-defaults.toml`, not in any of the eight station
+`marshal-policy.toml` files, not in any of the eight rendered loop-home
+`.bmad-loop/policy.toml` files. CAP-1's own contract makes an absent block mean
+every layer off and behaviour byte-identical to before, so the loop today reads
+and says exactly what it did before Epic 28 landed. Three independent
+corroborations, none of them the ledger: no caveman skill in any loop home, no
+codegraph index in any loop home, and no benchmark comparison artifact anywhere.
+`index-freshness-check` reports "all indices fresh or layers off" — the second
+branch, a vacuous pass.
+
+**This closes both of this Dream's open gates, and neither closes well.**
+
+*"Measurement first — before any layer ships, a pinned benchmark story must
+establish the real baseline."* Every layer shipped; the baseline was never
+established. The Dream's own Why said the ledger's token findings were all
+observability gaps "because nothing has ever measured it". That is still true
+after the epic that set out to fix it.
+
+*"Where does compression config live when a run spans engines? The policy block
+must be rendered identically for both adapters or the savings comparison is
+meaningless."* The block **is** rendered identically — `resolve_context_layers`
+is the single composition site both adapters call, exactly as CAP-1 required.
+But rendering is not acting. `resolve_wire_wrap` is imported in exactly one
+place, `adapters/harness_bmadbuild.py`. On `factory spin` marshal launches
+`bmad-loop run` and bmad-loop launches the coding CLI, so there is no argv to
+prefix (`DW-FU-28-2`). Layers 3 and 4 are epic-context compile, which is
+bmad-build-auto's step 01. So the honest matrix is:
+
+| Layer | Instrument | `factory spin` | `factory dispatch` / build-auto |
+|---|---|---|---|
+| output | caveman | yes | yes |
+| structure-graph | codegraph | yes | yes |
+| wire | headroom | **no** | yes |
+| derived-context | cocoindex | **no** | yes |
+| planning-graph | graphifyy | **no** | yes |
+
+Three of five layers, including the largest single lever, pay only on
+build-auto. The open question is therefore answered in the negative: a
+cross-engine savings comparison **is** meaningless, and the drain belongs on
+dispatch whenever cost is the objective. Spin is not broken — it reports the
+wire layer inapplicable rather than failing — it is simply a two-layer engine.
+
+**Three ledger entries stop being incidental debt and start blocking a named
+outcome**, which is what should promote them out of the ledger and into stories:
+
+- `DW-FU-28-2` — spin is never wrapped; the fix shape is a loop-home
+  launcher shim, and the entry already names the seam (`bmad-loop`'s
+  `adapters/profile.py` exposes `binary` / `launch_args` / `env`, and
+  `.bmad-loop/profiles/*.toml` is an overlay marshal already writes).
+- `DW-FU-28-2-3` — `cli/dispatch.py` folds `read_repo_policy_defaults()`;
+  `cli/spin.py` does not. A repo-wide `[context]` block would act on one engine
+  and vanish silently on the other. Until that is fixed, **declare the block in
+  the per-project `marshal-policy.toml`**, which both engines read.
+- `DW-FU-28-2-2` — `headroom wrap` defaults to proxy port 8787 and attaches to
+  a running proxy instead of starting a second, so two concurrent wrapped
+  dispatches share the first launcher's CCR store. The station-in-flight guard
+  makes this rare per station and does nothing for fleet-wide parallel
+  dispatch, which is precisely the scale case.
+
+**And CAP-7 could not measure it even if it were on (found 2026-09-09, later).** The five
+per-layer savings getters in `adapters/harness_bmadloop.py:1875-1898` — `_get_caveman_savings`
+(Layer 0), `_get_headroom_savings`, `_get_codegraph_stats`, `_get_cocoindex_stats`,
+`_get_graphifyy_savings` — are stubs that
+`return None` with the comment "would integrate with actual … stats when available". So the
+supervisor journals a savings block whose every field is null, `marshal status` renders nothing,
+and the benchmark's per-layer rows (`token_economy_benchmark.py`) have no source to read. Scribe's
+side of the Layer-4 seam is real (`extras/graphify.py` writes through the `GraphStore` port;
+`compile.py:736-764` flags stale nodes); the read side is five `None`s. Epic 33's Track / CAP-7
+story must fill these before the on-leg benchmark means anything.
+
+**What the enablement actually costs.** Stages 0–2 are configuration, not code:
+record the off-leg on the pinned story (`1-1-marshal-conformance-smoke`),
+declare the block, run `marshal seed kit` (idempotent, never fails a run), then
+record the on-leg and `marshal benchmark compare`. Its equivalence gate voids
+the comparison when the on-leg does not match the off-leg's verdict, gate
+results and reviewer engagement — a void is the answer, not a failed test.
+Ceiling recalibration (§ *What Marshal itself must grow*, item 5: "50M weighted
+was sized for an uncompressed world") is downstream of that artifact and of
+nothing else.
+
+**The guard this Dream needs, learned from its sibling.**
+[`adaptive-model-tiering.md`](adaptive-model-tiering.md) is the same pathology
+on the other cost lever — its title is literally "FR-51's model tiering is fully
+wired and never turned on" — and it carries `status: realized` while its own
+README row records that no story declares a `difficulty:` and no project
+populates a real tier map. It was marked realized as chain bookkeeping when the
+code landed, not when the saving arrived. **This Dream is not `realized` when
+its next epic closes. It is `realized` when a benchmark artifact reports a
+measured saving on a real story.** Nothing else counts.
+
+Landing: `bmad-correct-course` on `spec-marshal-token-economy` (`ready`, so it
+takes the correction) mints marshal **Epic 33** — Epic 32 is the highest today,
+30 and 31 sit in backlog — carrying the enablement sequence plus the three
+entries above. Same shape as the 2026-09-02 red-team correction that minted
+steward Epic 40. No new Dream: this chain already asked both questions.
+
 ## Realization log
 
 - **2026-08-30** — Seeded already `specified` (`da458df364`): `spec-marshal-token-economy` `ready`,
@@ -296,3 +409,43 @@ answer whose backing node is flagged stale falls back to the epic-context file p
   CAP-13; the live dispatch-ordering incident added CAP-14..CAP-17 (Stories 28.12–28.15) through
   [`marshal-dependency-aware-dispatch.md`](marshal-dependency-aware-dispatch.md).
 - **2026-09-01** — Dispatch-autonomy hotfixes + Epic 28 artifact catch-up (`90c5a28bd6`).
+- **2026-09-09** — Code-level verification against `main`: Epic 28's machinery is real
+  and complete, and every layer is off — no `[context]` block is declared in any policy,
+  repo, project or rendered. Both of § *Gates and open questions*' gates closed against
+  the evidence: the measurement-first gate was bypassed (no benchmark artifact exists),
+  and the cross-engine question is answered in the negative (the block renders
+  identically on both adapters, but only dispatch/build-auto can act on the wire,
+  derived-context and planning-graph layers). Recorded as the addendum above, with the
+  `realized` guard learned from [`adaptive-model-tiering.md`](adaptive-model-tiering.md).
+  Next: `bmad-correct-course` mints marshal Epic 33.
+- **2026-09-09 (later)** — § *What is real* glossed as the dated baseline (kept as record). The
+  Unifying Strategy currency review
+  (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/currency-review-pyforge-unifying-strategy-2026-09-09.md`)
+  found the same built-but-inert shape on Unifying **CAP-17** (run state as a service): marshal has
+  zero imports of `django_pyforge` and `marshal/cli/init.py` still reads `~/.bmad-loops`, so the
+  supervisor never receives a bmad-loop run. The Hub's Track (`hub:CAP-3` on
+  `spec-intelligence-hub` — *not* this Dream's CAP-3, which is caveman output-compression
+  seeding) and this Dream's savings telemetry (CAP-7) are the same publishing seam; Epic 33
+  should land them together, not as two writers. *(Citation corrected 2026-09-09 — the first
+  draft of this line collapsed two Specs' CAP-3.)*
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **Epic 33 minted (10 stories)**
+  by `_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/sprint-change-proposal-2026-09-09-token-economy-enablement.md`.
+  Status stays **`specified`** and does not move until Story 33.1's benchmark artifact reports a
+  measured saving on a real story — this Dream's own guard, learned from
+  [`adaptive-model-tiering.md`](adaptive-model-tiering.md).
+  The epic in order: **33.1** measurement first — the on/off benchmark artifact with CAP-7's four
+  savings getters made real (`adapters/harness_bmadloop.py:1880-1898` returns `None` four times
+  today); **33.2** enable the layers on `factory dispatch` (`resolve_wire_wrap` folded); **33.3**
+  enable on `factory spin` (fold the repo defaults `cli/spin.py` never reads, `DW-FU-28-2-3`);
+  **33.4** **CAP-18 — one publisher**: run state *and* savings telemetry to
+  `django_pyforge.supervisor`, so `cli/init.py:331` and doctor's `sources/marshal.py:544` stop
+  reading `~/.bmad-loops` (this is Unifying **CAP-17** — qualified, because *this* Dream's CAP-17 is
+  `scope_violation_mode` — and the Hub's Track is **`hub:CAP-3`**; steward Story 49.8 is ledger
+  `blocked` on 33.4); **33.5** risk-tiered review wiring; **33.6** adaptive tiering fed on all eight
+  stations plus the floor-raise on dispatch; **33.7** the two Epic-20 watchdogs re-pointed off
+  `~/.bmad-loops`; **33.8** the first live fan-out wave with a real `dispatch.max_parallel` key;
+  **33.9** `verify_scope` at `factory dispatch`; **33.10** the derived CFE pin.
+  33.2 and everything after it depend on 33.1 — the measurement-first gate this Dream's § Gates named
+  and Epic 28 bypassed. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

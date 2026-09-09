@@ -1,21 +1,24 @@
 ---
 id: SPEC-dashboard-velocity-captures-hand-driven-work
 spec: dashboard-velocity-captures-hand-driven-work
-status: draft
+status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/dashboard-velocity-captures-hand-driven-work.md
 surface:
-  - pyforge.doctor.sources.fleet_scan
-  - docs/dashboard/index.html
-  - docs/dashboard/data.js
+  # SURFACE CORRECTION recorded 2026-09-09 (fleet-readiness batch rows mars-A-D1/D8). Entries are
+  # annotated, NOT re-pointed: `scripts/fleet_scan.py`'s destination is owed to steward Cutover
+  # Story 44.1, and moving governance here would pre-empt that decision. See § Residual.
+  - pyforge.doctor.sources.fleet_scan   # HAS NEVER EXISTED — the real file is `scripts/fleet_scan.py`, governed today by `spec-factory-console`
+  - docs/dashboard/index.html           # now a 14-line "console moved" stub (steward Story 30.2)
+  - docs/dashboard/data.js              # no longer on disk — retired writer (`fleet_scan.py:6`, `:93`)
 companions:
   - signal-inventory.md
 sources:
   - ../../../../../../docs/dreams/dashboard-velocity-captures-hand-driven-work.md
-open_questions:
-  - "Wall-clock bound choice: ts(final_revision) - ts(baseline_revision) overstates (the baseline commit predates dispatch by the idle gap); first-commit-in-baseline..final-range -> final understates (excludes pre-first-commit work). Story-level design; whichever bound is chosen, the caption must state what is measured."
-  - "Render surface for the wall-clock class: the timing strip only, or also a visually distinct bar class on the velocity graph? CAP-2's distinction requirement holds either way."
-  - "Partial journal coverage (a story escalated in-loop, finished by hand): the journal floor wins the velocity axis per the precedence constraint — is the hand-finished remainder ever surfaced, or accepted as under-measurement? (Proposed: accepted; the existing 'closed sessions only — a floor, not a total' caption already covers it.)"
-  - "Should bmad-dev-auto's HALT protocol additionally stamp a first-party duration (the Dream's capture point (a))? It only helps future stories, the skill lives in the regenerated BMAD install layer (override survivability requires bmad-customize), and it is probably superseded by the single-story-dispatch verb journaling sessions at source — see Assumptions."
+open_questions: []
+  # ALL FOUR RETIRED 2026-09-09 (operator, fleet-readiness batch row mars-A-B10): OQ-4 CLOSED AS
+  # MOOT, and the other three ANSWERED IN THE SHIPPED CODE. Full text with answers in
+  # § Open questions -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC and `signal-inventory.md` are the complete,
@@ -136,3 +139,39 @@ absent are those with genuinely no signal, with a caption that says exactly that
   design.
 - Claude Code session transcripts were evaluated and rejected as a signal: per-machine, not
   durable, no story-key structure (`signal-inventory.md` § rejected).
+
+## Open questions — closed 2026-09-09
+
+- ~~"Wall-clock bound choice: `ts(final_revision) - ts(baseline_revision)` overstates … whichever
+  bound is chosen, the caption must state what is measured."~~ **ANSWERED IN SHIPPED CODE:** the
+  bound is the **ceiling**, `ts(final_revision) - ts(baseline_revision)`, and the caption names the
+  bound (`scripts/fleet_scan.py:3079-3083`, `:2792`, `:2802`, `:3243`).
+- ~~"Render surface for the wall-clock class: the timing strip only, or also a visually distinct
+  bar class on the velocity graph?"~~ **ANSWERED IN SHIPPED CODE: `timing.perStory` only, never
+  `velocity.bars`.** Every sid carries a `perStoryClass` of `active-compute` | `wall-clock-ceiling`,
+  and epic rollups never blend (`epicMin` vs `epicMinWallClock`, dual `totalLabel` at
+  `:3085-3089`).
+- ~~"Partial journal coverage … is the hand-finished remainder ever surfaced, or accepted as
+  under-measurement?"~~ **ANSWERED: the journal floor wins**, and the hand-finished remainder is
+  accepted as under-measurement (SPEC.md § Constraints, unchanged in code).
+- ~~"Should `bmad-build-auto`'s HALT protocol additionally stamp a first-party duration?"~~
+  **CLOSED AS MOOT — no.** This Spec's own convergence assumption is **confirmed**: `marshal
+  factory dispatch` writes a per-run `journal.jsonl` with timestamped dispatch-launch
+  intent/outcome pairs plus a `session.log`, under
+  `_bmad-output/projects/<slug>/implementation-artifacts/dispatch-runs/<run-id>/` (four live runs
+  read: marshal 2026-09-02, atlas 2026-09-01, mason 2026-09-02, steward 2026-09-03). Stamping the
+  HALT would add a second, weaker producer in the one layer that does not survive
+  `bmad-method update` without `bmad-customize`.
+
+## Residual (2026-09-09) — implemented, zero production consumers
+
+CAP-1..CAP-3 are implemented and unit-tested (7 call sites in
+`.claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py`) but have
+**zero production consumers**: `scan_timing`'s only non-test caller is `_generate` at
+`fleet_scan.py:3591`, reachable only from a `main()` that returns 2 (`fleet_scan.py:3505-3511`,
+after steward Story 30.2 deleted the Guildhall generator). **The Success signal cannot be
+exercised.**
+
+**One decision is owed before steward Cutover Story 44.1 resolves `scripts/fleet_scan.py` to a
+destination:** re-home the derivation behind Lane 1 / the atlas Vizro board, **or** retire
+CAP-1..CAP-3 with the console that consumed them.

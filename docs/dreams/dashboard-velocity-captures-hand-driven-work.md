@@ -2,7 +2,7 @@
 title: Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
@@ -90,3 +90,18 @@ surfaced this gap — hand-driven via `bmad-dev-auto`, see the session's own pro
   whether this had been captured as backlog before ending the session. It had not — only
   noted in the assistant's own personal session-memory, not as a repo-tracked Dream. This
   file is that capture.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized` in
+  mechanism, and NOT realized in effect.** Epic 23 (23.1 wall-clock derivation, 23.2 never blended,
+  23.3 caption partitions by true reason) is 3/3 `done` and the code is
+  `scripts/fleet_scan.py::scan_timing:3067-3250`; the Spec, still reading `draft`, moves to
+  `shipped`. But steward Story 30.2 deleted the Guildhall generator: `fleet_scan.py:6` records "the
+  `data.js` write CLI is retired — `main()` exits nonzero", `docs/dashboard/data.js` is gone, and
+  `docs/dashboard/index.html` is a 14-line redirect stub. `scan_timing`'s only non-test caller is
+  `_generate` at `:3591`, reachable only from a `main()` that returns 2 — **the derivation this Dream
+  asked for exists and nothing reads it.** Seven meta-tests keep it green.
+  **OQ-4 closed as moot:** `bmad-build-auto`'s HALT does not gain a duration stamp — `marshal factory
+  dispatch` journals per-session timing at source (four live `journal.jsonl` runs read). OQ1–OQ3 were
+  answered in the shipped code. A destination decision is owed before steward Cutover 44.1 resolves
+  `scripts/fleet_scan.py`. Batch:
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

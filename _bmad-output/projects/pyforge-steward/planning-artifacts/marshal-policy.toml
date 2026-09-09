@@ -609,3 +609,64 @@ verify_commands = [
   "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
   "_bmad/skf/**",
 ]
+
+"48" = [  # the chain tells the truth (spec-pyforge-unifying-strategy Residual 2026-09-09), added 2026-09-09
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/PROJECTS.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad/skf/**",
+  "scripts/**",
+  "AGENTS.md",
+  "src/platform/deploy/**",
+  "src/shared/packages/pyforge-marshal/tests/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/**",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  # Added 2026-09-09 (fleet readiness § 2.3 C7) for the three new stories:
+  #   48.9  OIDC default profile  -> chart templates (already under src/platform/deploy/**)
+  #                                  + config/settings/{base,production}.py + the deployment doc
+  #   48.10 root Containerfile in CI -> the Containerfile itself + the station-tests workflow
+  #   48.11 pyforge-warden path dep  -> pixi.toml + pixi.lock + environment.yaml -- all three
+  #                                     were ALREADY in this array (verified 2026-09-09); the
+  #                                     environment.yaml regeneration is UNGATED by the
+  #                                     `maintenance` label, so the PR must carry it. The story
+  #                                     also adds a platform-env import test -> src/platform/tests/**.
+  "Containerfile",
+  ".github/workflows/pyforge-station-tests.yml",
+  "src/platform/config/**",
+  "src/platform/tests/**",
+  "docs/reference/**",
+]
+
+"49" = [  # shipped becomes in effect — the realization gate (spec-pyforge-unifying-strategy; re-homes to hub: by memlog), added 2026-09-09
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/PROJECTS.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad/skf/**",
+  "src/platform/**",
+  "src/shared/packages/django-*/**",
+  "src/shared/packages/pyforge-marshal/**",
+  "src/shared/packages/pyforge-doctor/**",
+  "src/shared/packages/pyforge-scribe/**",
+  "src/shared/packages/pyforge-atlas/**",
+]

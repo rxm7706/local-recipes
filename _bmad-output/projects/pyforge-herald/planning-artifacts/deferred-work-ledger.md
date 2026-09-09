@@ -720,7 +720,7 @@ deployment.
   CI job ran this package's test suite before this story either); the story's own render gate
   just makes the gap consequential for the first time, since it is the first `pyforge-herald`
   code to depend on a real Chromium binary at all.
-  status: open
+  status: resolved
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -728,6 +728,8 @@ deployment.
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/3 present (absent: .github/workflows/*.yml, _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
   verified: 2026-09-07 — resolved — CI/hygiene sweep added `.github/workflows/pyforge-station-tests.yml`'s `herald-test` job: runs `pixi run --frozen -e pyforge-herald pyforge-herald-test` on every PR touching `src/shared/packages/pyforge-herald/**`, with a "Verify a browser is present for the render gate" step (mirrors `detectors.yml`'s `check_layout` precedent: prefers ubuntu-latest's pre-installed google-chrome, falls back to `playwright install --with-deps chromium`). Confirmed locally first: full herald suite is 1254 passed / 4 skipped against this machine's own google-chrome. While auditing this gap, found it generalizes to atlas/mason/scribe/steward/warden too (only marshal and a doctor "scripts" subset had CI coverage before); the same workflow adds a job for each, gated on that station's own changed paths. Ledger status mapped to resolved.
+
+  verified: 2026-09-09 — resolved — fleet-readiness pass (decision batch `fleet-readiness-decision-batch-2026-09-09.md`, row C11). This entry is the one the fix was written against and it names itself: `.github/workflows/pyforge-station-tests.yml` lines 3-4 open with "DW-14-2-1 (pyforge-herald deferred-work ledger): no CI workflow ran herald's own pytest suite -- its Chromium-dependent render gate had zero CI coverage", and its `herald-test` job (lines 160-182) runs `pixi run --frozen -e pyforge-herald pyforge-herald-test` behind a browser-presence step that falls back to `playwright install --with-deps chromium` (line 177), which is exactly the unprovisioned dependency this entry reported. Closed at HEAD `fe4025ea90`. Residual, still open and NOT closed by this stamp: `DW-FU-13-1` — the suite runs on `ubuntu-latest` only, so `locking.py`'s `msvcrt` branch still has no CI.
 
 ### DW-14-3-1: `image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same file
 
@@ -771,11 +773,13 @@ deployment.
   origin: spec-deferred c2195376bfd1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-09-09 — resolved — fleet-readiness pass (decision batch `fleet-readiness-decision-batch-2026-09-09.md`, row C11). The claim is false at HEAD `fe4025ea90`: `.github/workflows/pyforge-station-tests.yml` carries a `herald-test` job (lines 160-182) that runs `pixi run --frozen -e pyforge-herald pyforge-herald-test`, preceded by a browser-presence step for the render gate (`playwright install --with-deps chromium` fallback, line 177) and a `setup-uv` step for the standalone skf validator. That workflow's own header (lines 3-4) names herald's ledger — `DW-14-2-1`, this entry's sibling — as its motivation, so the gap was closed deliberately and this entry simply never caught up. **Note on the prior stamp:** the 2026-09-02 mechanical re-verification recorded "source_spec path absent at HEAD" and re-marked the entry still-open without reading it. The path is present — `source_spec` is recorded relative to the PROJECT (`planning-artifacts/specs/spec-15-1-…md`) and the file exists at `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`; the verifier resolved it from the repo root. Every ledger entry using the project-relative `source_spec` form is exposed to the same false stamp — routed to doctor's sweep as batch row D5/C8 (HIGH), not fixed here.
 
 ### DW-FU-15-1-2: _resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts sharing the same name.
 

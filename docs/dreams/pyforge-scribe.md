@@ -56,20 +56,47 @@ graph is there; nobody writes it down.*
 
 ## What is real
 
-Package scaffolded at `src/shared/packages/pyforge-scribe/` (CLI `scribe`,
-module `pyforge.scribe`). Epic 1 (Team Memory — Capture & Promotion) is 3 of
-5 stories done: 1.1 package scaffold + direct `scribe capture` into
-`.claude/memory/`, 1.2 the `CLAUDE.md` `@import` wiring that puts team memory
-in every session's context, 1.3 the `scribe capture --promote`
-proposal-then-confirm workflow with team-voice rewrite. 1.4 (pointer-stub
-write-back + idempotent re-invocation) and 1.5 (seed-promoting the two real
-BMAD↔CFE feedback entries by invoking the tool itself, not by hand) are still
-backlog. Epic 2 (Knowledge Graph — Compile & Recall) — the `GraphStore` port,
-nightly compile, fact supersession, `scribe recall` — is untouched: all 4
-stories backlog. 3 of 9 stories complete overall. Spec: `spec-pyforge-scribe`
-(CAP-1..CAP-4, AD-1..AD-9). `.claude/memory/` itself is already live in this
-repo today — `feedback/`, `project/`, `reference/` subdirectories, a
+*Corrected 2026-09-09 (fleet readiness pass). The superseded 2026-07-25 reading
+was: "Epic 1 … is 3 of 5 stories done … Epic 2 (Knowledge Graph — Compile &
+Recall) … is untouched: all 4 stories backlog. **3 of 9 stories complete
+overall.**" Every clause of it is false — the station shipped 19/19 stories
+across seven epics while that paragraph stood.*
+
+Shipped at `src/shared/packages/pyforge-scribe/` (CLI `scribe`, module
+`pyforge.scribe`, ~3,700 lines across 17 modules). All seven epics are `done`
+— 19 of 19 stories:
+
+- **Epic 1 — team memory.** `scribe capture` writes `.claude/memory/<type>/*.md`;
+  `--promote` runs the proposal-then-confirm flow with team-voice rewrite and
+  pointer-stub write-back. Live in this repo: team entries across `feedback/`,
+  `project/` and `reference/`, indexed by `MEMORY.md` and `@import`-ed from
+  root `CLAUDE.md`.
+- **Epic 2 — the knowledge graph.** `GraphStore` is a real `typing.Protocol`
+  port (`graph_store.py:59`) with a flat-file v1 adapter, bi-temporal
+  supersession (`invalidate_edge`, never deletion), and `scribe recall`
+  returning cited answers or an explicit "no grounded answer found".
+- **Epic 3 — the transcript surface.** `transcripts.py` (506 lines) mines a
+  user's own raw `.jsonl` sessions for un-curated decisions and feeds them to
+  the same promote gate; the same scan joins compile as a sixth named surface.
+  See [[scribe-mines-raw-session-transcripts]].
+- **Epic 4 — plugin registration.** `GraphStore` is a `pyforge.core.hooks`
+  CAP-18 plugin; three drivers now sit behind the one port (flat-file/`scribe`,
+  PostgreSQL+pgvector/`steward`, query-plane/`atlas`).
+- **Epics 5-7** — the SKF skill + persona, the first portal slice (`recall`),
+  the graphify and cocoindex ingest extras, a graph-node staleness flag, and
+  three scribe-wielded docs skills.
+
+Spec: `spec-pyforge-scribe` (CAP-1..CAP-4, AD-1..AD-9). `.claude/memory/` is
+live in this repo — `feedback/`, `project/`, `reference/` subdirectories, a
 `MEMORY.md` index, a `README.md` documenting the schema.
+
+**Not yet true:** nothing runs the compile on a schedule. `graph compile
+--nightly` is unattended-safe, but the documented trigger is "an opt-in
+operator crontab entry" (`cli.py:290-291`, `docs/cli-runbooks.md:89-103`) that
+is not installed — `.claude/data/pyforge-scribe/graph.json` was last written
+2026-08-27. And `--semantic` recall (`cli.py:316-320`) is opt-in, off by
+default, and ranks over a 7-entry synonym map; that is carried as steward
+Story 49.7 (Unifying CAP-14), not re-minted here.
 
 ## Realization log
 
@@ -80,3 +107,19 @@ repo today — `feedback/`, `project/`, `reference/` subdirectories, a
 - **2026-08-08** — Status flipped to `realized` in the stale-status hygiene pass (`bfa9fd688d`); the
   station's planning chain is complete — read `sprint-status-ledger.yaml` under pyforge-scribe or
   `fleet-picture` for what, if anything, is left.
+- **2026-09-09 (fleet readiness pass — body re-grounded, status held)** — § *What is real* was
+  frozen at the 2026-07-25 chain derivation ("3 of 9 stories complete overall", "Epic 2 …
+  untouched") while the station shipped 19/19 stories across seven epics; rewritten above with
+  the superseded wording quoted. **Status held at `realized`** — capture, compile, recall and
+  the transcript scan all execute, and `.claude/data/pyforge-scribe/` holds a real 1.67 MB
+  `graph.json` plus a real transcript-scan cache. Two honest gaps recorded rather than papered
+  over: (1) **no scheduled compile is installed anywhere** — the "nightly" trigger is a
+  hand-installed crontab line and the graph is 13 days stale, so the Spec's own signal ("nightly
+  compile completes unattended across at least 4 consecutive scheduled runs") is unverifiable;
+  vessel is scribe **Epic 8**, minted this date (fleet-readiness decision batch 2026-09-09, row
+  C6). (2) "Semantic recall" is a 32-dim SHA-256 hash embedding over a 7-entry hardcoded synonym
+  map, opt-in and off by default (`embeddings.py:14,24-32`; `recall.py:94`) — carried as steward
+  Story 49.7 (Unifying CAP-14) under the Charter's outcome/mechanism rule, not re-minted as a
+  scribe capability. Also closed this date on `spec-pyforge-scribe`'s memlog: the ADR-numbering
+  question (kept Scribe's own vocabulary; the read-a-target-repo's-`docs/adr/` half split off as
+  deferred work), and the two remaining body questions, both answered in code.

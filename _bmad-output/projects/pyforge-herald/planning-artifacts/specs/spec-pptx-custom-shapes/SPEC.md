@@ -37,3 +37,16 @@ future question).
 ## Success signal
 The densest six-act appendix slide ships as editable objects that fit —
 measured, not guessed.
+
+**Realization status (2026-09-09): built, unexercised.** Story 15.2 shipped
+`add_card` / `add_metric_box` / `add_table` / `add_section_label` plus
+`fit_text`'s Pillow `ImageFont` autofit inside `pptx_pipeline.py`, reached from
+`content_plan.json`'s optional `"shapes"` list. No dense slide has ever been run
+through it — no `content_plan.json` exists anywhere in the tree — so the signal
+above is unexercised. Vessel: herald Epic 19 Story 19.4, the same real-deck
+render that exercises this Spec's parent.
+
+## Assumptions
+- DW-FU-15-1-2 (`_resolve_layout` picks the first match on duplicate layout
+  names) is unreachable with the stock template's 11 distinct layout names and
+  becomes live only when a branded `.potx` lands.

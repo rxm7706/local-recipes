@@ -233,3 +233,14 @@ correct — a number that hardens into terrain. Measured rather than estimated:
   plan. Operator called it directly — *"working them down is genuine
   reconciliation, not noise-suppression."* The measurement above is what made it
   a day's work instead of a campaign.
+
+- **2026-09-09 (fleet readiness pass — operator-approved batch)** — Status kept `realized`;
+  **`spec-surface-drift-reconciliation` moves `in-progress` → `shipped`** with `open_questions: []`
+  (both entries already began "RESOLVED": S-13.3 the Charter spec folder is allowlisted, S-13.4 the
+  34 `[drift]` split 9 archived-spec baseline lag / 2 genuine console change / 23 steward files whose
+  contract was already correct; the resolutions are retained in the Spec's memlog). Verified **in
+  effect**, not by ledger: `pyforge.doctor.sources.chain::gather_spec_surface` over the live tree
+  returns **6 entries** — five informational `[drift-presumed]` (pyforge-mason ×3, pyforge-steward ×2)
+  plus the green verdict *"every tracked file governed or allowlisted; no drift"*. Against this
+  Dream's own opening measurement (61 findings, then 994 presumed) the instrument is clear and the
+  signal is trustworthy. Epic 13 (13.1–13.7) all `done`. Batch: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.

@@ -2,6 +2,7 @@
 id: SPEC-quick-dev-reconciliation
 spec: quick-dev-reconciliation
 status: shipped
+updated: "2026-09-09"
 owner-dream: docs/dreams/quick-dev-reconciliation.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py
@@ -9,8 +10,10 @@ surface:
   - scripts/promote_sprint_status.py
 sources:
   - ../../../../../../docs/dreams/quick-dev-reconciliation.md
-open_questions:
-  - "Which concrete detection signal (a merge-commit heuristic, a spec-promotion event, an explicit operator-declared marker checked against observed diff/merge evidence, or some combination) answers 'did this story complete outside the loop' -- a story-level design decision, not resolved by the Dream."
+open_questions: []
+  # RETIRED 2026-09-09 (fleet-readiness batch Class B, row mars-B). It was ANSWERED by Story 5.9
+  # (FR-186, `done`) and recorded in the Spec Change Log on 2026-08-12; only the frontmatter never
+  # caught up. Full text with the answer in § Open question -- closed 2026-09-09.
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -102,9 +105,13 @@ ever touching it, reads `done` (with its completion path labelled `bmad-quick-de
 `sprint-status-ledger.yaml` and the fleet dashboard -- without an operator hand-editing either
 -- and its spec is durably promoted the same way a loop-landed story's spec is.
 
-## Open Questions
+## Open question — closed 2026-09-09
 
-- "Which concrete detection signal (a merge-commit heuristic, a spec-promotion event, an
+- ~~"Which concrete detection signal (a merge-commit heuristic, a spec-promotion event, an
   explicit operator-declared marker checked against observed diff/merge evidence, or some
-  combination) answers 'did this story complete outside the loop' -- a story-level design
-  decision, not resolved by the Dream."
+  combination) answers 'did this story complete outside the loop' — a story-level design decision,
+  not resolved by the Dream."~~ **ANSWERED by Story 5.9 (FR-186, `done`), recorded in the Spec
+  Change Log 2026-08-12:** merge-subject classification through the three-pattern chain
+  (`core/promotion.py:35-36`, `:252-256`) feeding `core.status.not_loop_native_completions`
+  (`cli/deploy.py:831-835`), labelled `not-loop-native` as the honest joint fact and narrowing
+  toward true quick-dev as FR-187 subjects accumulate. Only the frontmatter had not caught up.

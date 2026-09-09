@@ -103,7 +103,11 @@ blocked-status were deliberately left untouched. See
 practice he tends) · [[pyforge-atlas]] (maps before he builds; the rebuild
 cautionary tale) · [[pyforge-warden]] (judges what he ships) ·
 [[fleet-stewardship]] (the estate, tended with Doctor) ·
-[[enterprise-airgap]] (every artifact must resolve behind a firewall).
+[[enterprise-airgap]] (every artifact must resolve behind a firewall) ·
+**steward Epic 44** (the python-foundry cutover carries two of Mason's own capabilities:
+`fnd:CAP-3` → S-44.6 *"CFE comes home"* and `fnd:CAP-6` → S-44.9 *"Mason submits to
+conda-forge"* — both carry Mason's Rule 1/2 ACs, both read `blocked`, and mason's chain
+has no counterpart story for either; noted 2026-09-09, decision-batch D11).
 
 ## Realization log
 
@@ -134,3 +138,26 @@ cautionary tale) · [[pyforge-warden]] (judges what he ships) ·
   § Currency reconciliation sections. With this flip the chain-layers audit's
   `behind-code` flag for mason is suppressed **by design** — the chain is no
   longer being built; the artifacts are maintained as the as-built record.
+
+- **2026-09-09 (realization-gate re-read)** — `realized` is **retained**, with a caveat. The CLI
+  shell, the seam-holds proof suite and the `/stations/mason/` portal all genuinely run. Two
+  claims in the 2026-08-26 entry do **not** hold under the exercised-in-the-estate gate
+  (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2 row **mason-B5**): (1) the **`recipe` verb family is unavailable in mason's own pixi
+  env** — `mason doctor` reports `unavailable_verbs: ('recipe',)` and
+  `cfe_import_floor_missing: ('truststore', 'conda-forge-metadata')`, because
+  `[feature.pyforge-mason.dependencies]` (`pixi.toml:281-283`) declares neither package while
+  `cfe.py:180-186`'s `CFE_IMPORT_FLOOR` requires both; CAP-5's graceful degradation is working
+  exactly as designed, but CAP-2 — the station's differentiator — is unexercised in the estate
+  that built it. (2) **Nothing in the estate routes through `mason recipe`** — one comment at
+  `pixi.toml:797`, zero call sites; all recipe work still goes through
+  `pixi run -e local-recipes recipe-build`. "Mason ships Mason" remains **rehearsal-tier**: there
+  is no `recipes/pyforge-mason` recipe and no public publish. Two effect stories were minted on
+  mason's own epics to close the loop — **Story 16.1** (mason's env satisfies the CFE import
+  floor) and **Story 16.2** (a first estate caller of `mason recipe`, outside mason's own test
+  tree). Separately, the two Mason capabilities that live on steward's chain —
+  **S-44.6** (`fnd:CAP-3`, "CFE comes home") and **S-44.9** (`fnd:CAP-6`, "Mason submits to
+  conda-forge") — both carry Mason Rule 1/2 ACs and read `blocked` in steward's ledger; they are
+  now named in Kinships above so mason's decomposition is not silently incomplete against the
+  greenfield spine.
