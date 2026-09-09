@@ -5277,9 +5277,9 @@
    "recipes/bmad-eval-quality/build.bat": "05da953224d139be65f3d6b2bf729c0f9345f878",
    "recipes/bmad-eval-quality/build.sh": "03cd71d25f579b60f87d9270edd5f65d5266287c",
    "recipes/bmad-eval-quality/conda-forge.yml": "4afc355ca15688a3c6290afe5776496c6c8b649c",
-   "recipes/bmad-eval-quality/recipe.yaml": "afc53eff8a8c1d14044a351db0c2862944866e62"
+   "recipes/bmad-eval-quality/recipe.yaml": "85deb8ae2bde8063310e68437b1ced78a9ef34bb"
   },
-  "memlog": "c632ebcfe67a6ff43ab9ab9f0390f1fedf4db2a9"
+  "memlog": "102c6e81c116bcbd891d7d3e86a2e9f0d2e8eb26"
  },
  "pyforge-steward/spec-bmad-method-core-upgrade": {
   "files": {},
