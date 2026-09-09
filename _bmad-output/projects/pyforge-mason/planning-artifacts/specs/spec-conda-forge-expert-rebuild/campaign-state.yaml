@@ -612,7 +612,7 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "9427a5ff5c19dda3afdfa107dfe07ad04c2a22b5"
+    brief_mirrored_through: "9b92661d4d3d55a7237cf15743ded4a0281629c9"
                                     # ADVANCED 2026-09-09 from 02b104e573 to the
                                     # G117 pin-cap CFE retro 9427a5ff5c
                                     # (v8.89.0 -> v8.90.0, MINOR): `pixi upgrade
@@ -776,7 +776,7 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "9427a5ff5c19dda3afdfa107dfe07ad04c2a22b5"
+    brief_mirrored_through: "9b92661d4d3d55a7237cf15743ded4a0281629c9"
                                     # ADVANCED 2026-09-09 from 02b104e573 to the
                                     # G117 pin-cap CFE retro 9427a5ff5c
                                     # (v8.89.0 -> v8.90.0, MINOR): `pixi upgrade
