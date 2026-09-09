@@ -201,4 +201,7 @@ verify_commands = [
   "recipes/**",
   ".claude/skills/conda-forge-expert/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/**",
+  # Every story writes its own status here at completion, so an epic that omits
+  # it re-fires MRS-GATE-012 on its own bookkeeping (steward 43.6, 2026-09-03).
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
