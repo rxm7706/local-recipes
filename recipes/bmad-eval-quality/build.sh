@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euxo pipefail
 
-# The GitHub commit archive extracts into bmad-eval-quality-<commit>/;
+# The GitHub tag archive extracts into bmad-eval-quality-<version>/;
 # rattler-build sets SRC_DIR to that directory, so package.json is in SRC_DIR.
-if [ ! -f "package.json" ]; then
-    echo "ERROR: package.json not found in SRC_DIR: $(pwd)" >&2
+if [[ ! -f "package.json" ]]; then
+    echo "ERROR: package.json not found in SRC_DIR: ${PWD}" >&2
     ls -la
     exit 1
 fi

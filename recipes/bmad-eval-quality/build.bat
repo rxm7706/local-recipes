@@ -1,6 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: The GitHub tag archive extracts into bmad-eval-quality-<version>/;
+:: rattler-build sets SRC_DIR to that directory, so package.json is in SRC_DIR.
 if not exist "package.json" (
     echo ERROR: package.json not found in SRC_DIR: %CD%
     dir
@@ -14,7 +16,7 @@ call npm run build
 if errorlevel 1 exit /b 1
 
 :: Ship production dependencies only (one prod dep: zod).
-rmdir /S /Q node_modules
+if exist node_modules rmdir /S /Q node_modules
 call npm ci --omit=dev --no-fund --no-audit --ignore-scripts
 if errorlevel 1 exit /b 1
 
@@ -37,3 +39,7 @@ if not exist "%PREFIX%\Scripts" mkdir "%PREFIX%\Scripts"
   echo SET "DIR=%%~dp0.."
   echo node "%%DIR%%\lib\node_modules\eval-quality\dist\cli\main.js" %%*
 ) > "%PREFIX%\Scripts\eval-quality.bat"
+
+:: robocopy signals success with exit codes 0-7 (1 = files copied), so the
+:: script must not fall off the end and inherit a stale non-zero errorlevel.
+exit /b 0
