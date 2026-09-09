@@ -5998,3 +5998,62 @@ class TestAwaitingOperatorTextProjections:
         assert "awaiting-operator (run bmad-loop confirm)" in text_out
         assert "parked=25.2" in text_out
         assert "unsupervised" not in text_out
+
+
+class TestRetiredRunState:
+    """DW-STATUS-2026-09-08-1: a retired/cleaned run must not read `unknown`.
+
+    pyforge-steward read `unknown` from 2026-08-22 to 2026-09-08 because its
+    runs were retired (`.bmad-loop/runs/.retired-*`) while `latest_run_dir`
+    kept selecting one, whose harness snapshot no longer resolved. That is not
+    an unreadable journal -- the journal read fine -- so the row now reports
+    the home as free, with a WARN naming the unresolvable run.
+    """
+
+    def test_retired_run_reports_idle_not_unknown(self):
+        facts = status.FleetHomeFacts(
+            slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "idle"
+        assert finding is not None
+        assert finding.code == "MRS-STATUS-012"
+        assert finding.severity is status.Severity.WARN
+
+    def test_retired_run_is_not_confused_with_an_unreadable_journal(self):
+        """The two flags are distinct: an unreadable journal recovered NOTHING,
+        so `unknown` stays correct there."""
+        unreadable, _ = status.build_fleet_row(
+            status.FleetHomeFacts(
+                slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
+            )
+        )
+        retired, _ = status.build_fleet_row(
+            status.FleetHomeFacts(
+                slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
+            )
+        )
+        assert unreadable["state"] == "unknown"
+        assert retired["state"] == "idle"
+
+    def test_retired_run_keeps_independently_gathered_evidence(self):
+        """`unpushed_work` comes from a git probe, not the missing snapshot --
+        it must survive, the same rule the unreadable-journal row already has."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            run_state_retired=True,
+            unpushed_work="3 commits",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["unpushed_work"] == "3 commits"
+
+    def test_retired_run_is_conservatively_live_for_destructive_guards(self):
+        """`is_run_live` deliberately DISAGREES with the row above: the row says
+        what an operator should see, this says whether a branch may be deleted.
+        A retired run's state is gone, so a clean finish cannot be proven."""
+        facts = status.FleetHomeFacts(
+            slug="acme", branch="loop/acme", has_run=True, run_state_retired=True
+        )
+        assert status.is_run_live(facts) is True

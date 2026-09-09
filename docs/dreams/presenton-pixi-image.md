@@ -80,3 +80,22 @@ as an internal platform service.
   single documents per explicit user override; this Dream's own narrative and
   the epics/blocked-status were deliberately left as archived above. Originals
   moved to `archive/_bmad-output/projects/pyforge-mason/planning-artifacts/`.
+- **2026-09-08** — **the load-bearing unknown is answered; the Dream stays
+  archived.** The archive note above singles out Phase-0 exit 6(a) — whether
+  Microsoft's disconnected stack already ships a Copilot-for-PowerPoint
+  equivalent — as bearing directly on whether the core differentiator holds.
+  It does hold. Microsoft 365 Local's own capability list names exactly three
+  on-premises *server* products (Exchange Server, SharePoint Server, Skype for
+  Business Server); the Office client apps, and with them any Copilot deck
+  generation, are absent, and Foundry Local is positioned explicitly as the AI
+  layer and not the application layer. Risk R3 resolves to `infrastructure-only`,
+  the third of the PRD's three named outcomes. **Caveat, and the reason the
+  status does not move:** this is documentary evidence, whereas Story 1.6's
+  acceptance criteria require a Microsoft licensing/product conversation or
+  hands-on access to a disconnected deployment — neither of which happened, and
+  neither of which this repo can perform. The exit is ANSWERED, not formally
+  CLOSED, and the other five exits are untouched. Full finding, the contradictory
+  third-party source it corrects, and a per-exit state table:
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`
+  entries `DW-PRESENTON-1-6-1` and `DW-PRESENTON-PHASE0-1` — the first tracked
+  record this gate has ever had.

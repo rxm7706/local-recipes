@@ -924,6 +924,23 @@ def _gather_home_facts(
         harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
     )
     if snapshot is None:
+        # TWO different causes, and they must not be conflated (this
+        # distinction is the whole of DW-STATUS-2026-09-08-1's fix):
+        #
+        #   * `harness_run_id` RESOLVED, but its snapshot is gone -- the run
+        #     existed and its state was cleaned up (`.bmad-loop/runs/
+        #     .retired-*`). The run is OVER, so the home is free: report it
+        #     retired, and `build_fleet_row` says `idle` with a WARN.
+        #   * `harness_run_id` could not be resolved AT ALL -- a poisoned
+        #     journal whose launch poll timed out, or one whose only sibling
+        #     runs fall outside the correlation window (the 2026-08-15
+        #     incident). Nothing is known and the run may still be LIVE, so
+        #     `unknown` stays correct. Reporting THAT as `idle` would be the
+        #     precise false-green the CAP-2 fallback guard exists to prevent.
+        if harness_run_id is not None:
+            return status_core.FleetHomeFacts(
+                slug=slug, branch=branch, has_run=True, run_state_retired=True
+            )
         return status_core.FleetHomeFacts(
             slug=slug, branch=branch, has_run=True, journal_unreadable=True
         )

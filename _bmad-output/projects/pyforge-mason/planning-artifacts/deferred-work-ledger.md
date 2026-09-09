@@ -1448,3 +1448,95 @@ status: open
   status: open
 
   verified: 2026-09-08 — resolved — RESOLVED. The cap this entry names is gone from the local mirror: `recipes/db-gpt/recipe.yaml:16` applies `patches/0002-loosen-dbgpt-ext-onnxruntime-cap.patch`, and `:309` now declares `onnxruntime >=1.14.1` with NO upper bound -- the `<=1.18.1` ceiling that excluded cp314 is removed. The lock probe this entry said was blocked has also since run green: steward Story 43.6 (`done`) required `python-agent-platform` and `dbgpt-sidecar` to resolve on `python = "3.14.*"` with a re-lock and a regenerated `environment.yaml`, which is exactly the full-solve this entry was waiting on. Residual, recorded not hidden: `recipe.yaml:488` still notes `loosen-numpy-and-onnxruntime-caps-for-py314 (feedstock PR pending)`, so the fix lives in this repo's mirror and the upstream feedstock has not yet taken it. That is a feedstock-submission item, not this entry's blocker.
+
+### DW-PRESENTON-1-6-1: Phase-0 exit 6(a) resolved by documentary evidence — Risk R3 is `infrastructure-only`, the differentiator holds
+
+- source_spec: `planning-artifacts/epics-presenton-pixi-image.md` § Epic 1 / Story 1.6; `planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md:1650` (exit 6(a))
+  summary: The verification this exit blocks on — whether Microsoft's disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, GA 2026-02-24) ships or roadmaps a Copilot-for-PowerPoint-equivalent — resolves to the third of the PRD's three named outcomes, **infrastructure-only**. Microsoft 365 Local's authoritative capability list is three on-premises *server* products; the Office client applications, and with them any Copilot deck generation, are not in it. Foundry Local supplies models and an inference endpoint, explicitly not an application layer. The Dream's core differentiator therefore still holds, and the escalate-immediately branch of this story's third acceptance criterion does NOT fire.
+  evidence: |
+    Microsoft Learn, "What is Microsoft 365 Local on Azure Local infrastructure?"
+    (learn.microsoft.com/en-us/azure/azure-sovereign-clouds/private/m365-local/microsoft-365-local-overview,
+    ms.date 2026-02-17, updated 2026-04-26) enumerates the offering's capabilities
+    and names exactly three workloads: "Microsoft 365 Local enables organizations to
+    run Exchange Server, SharePoint Server, and Skype for Business Server on Azure
+    Local infrastructure that is entirely customer-owned and managed." The words
+    Copilot, AI, and PowerPoint do not appear anywhere on the page. Word, Excel,
+    PowerPoint and Teams are absent from the workload set; independent coverage
+    confirms Teams specifically is not part of it.
+
+    Foundry Local is the AI layer and stops below the application: it orchestrates
+    local model execution behind an OpenAI-compatible REST endpoint, handles model
+    lifecycle and caching, and supports fully disconnected operation with weights
+    sneakernetted in once. What it does not supply is the app — a caller still
+    builds or buys the UI, orchestration and agent logic on top. Generating a
+    .pptx from a prompt is squarely in that missing layer.
+
+    CONTRADICTORY SOURCE, recorded rather than dropped: at least one third-party
+    summary states M365 Local "enables productivity applications (Word, Excel,
+    Teams, SharePoint) to operate in disconnected environments." That is refuted by
+    the Learn page's own capability list and by the Teams finding above. Anyone
+    re-checking this exit will meet that claim; it is wrong, and this entry exists
+    partly so the next reader does not have to rediscover why.
+  evidence_class: |
+    DOCUMENTARY, not the evidence class the story's acceptance criteria specify.
+    Story 1.6 requires the check be performed "via a Microsoft licensing/product
+    conversation or hands-on access to a Microsoft 365 Local disconnected
+    deployment." Neither happened. What is established here is that the vendor's
+    own current product documentation does not claim the capability and positions
+    its AI layer as explicitly app-less — strong enough to rule out the
+    "materialized" outcome and to unblock further investment, NOT strong enough to
+    close the criterion as written. An unannounced roadmap item, or a capability
+    reachable only under a licensing agreement, would be invisible to this method.
+    Treat the exit as ANSWERED but not FORMALLY CLOSED.
+  sub_finding: |
+    The second acceptance criterion — "the existing RSS/keyword-watch mechanism's
+    channel coverage is audited against learn.microsoft.com/Azure product-doc
+    channels ... and fixed if it would have missed the 2026-02-24 announcement" —
+    has no subject. A repo-wide search for the watch mechanism finds nothing: it
+    exists only as PRD prose and was never implemented. So the question "would it
+    have missed the announcement?" answers itself trivially — yes, because there is
+    nothing to miss it. The remedy is not an audit but a build, and it is not worth
+    building until the surrounding Dream is unblocked.
+  status: open
+  blocked-on: nothing further for 6(a) at the documentary evidence class; formal closure needs a Microsoft licensing/product conversation or hands-on M365 Local access, both external actions outside this repo's reach.
+
+  verified: 2026-09-08 — answered-not-closed — researched during the Phase-0 gate pass on branch `fix/marshal-status-findings-and-ci-lanes-2026-09-08`. Recorded here rather than written back into the PRD because the PRD is `pyforge-mason`'s live spine document and editing it would cascade a full prd→arch→epics reconcile across the station for a finding that does not yet formally close its criterion.
+
+### DW-PRESENTON-PHASE0-1: The six Phase-0 exits, their true state, and the external action each still needs
+
+- source_spec: `planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md` § Phase 0 Exit Criteria (lines 1613-1652); `planning-artifacts/epics-presenton-pixi-image.md` § Epic 1
+  summary: |
+    `docs/dreams/presenton-pixi-image.md` is `status: archived`, `blocked-on:
+    Phase-0 decision gate (Epic 1)`. The full planning chain (research → brief →
+    PRD → architecture → 7 epics / 30 stories) landed 2026-07-25 and no story has
+    entered implementation since. This entry makes the gate's contents durable and
+    inspectable, so the block is a known quantity rather than a pointer into a PRD
+    section nobody re-reads. NONE of the 30 stories is `done`; the epics stay
+    `epics_role: historical` and must not be promoted.
+
+    | Exit | What it needs | State | Who can do it |
+    |---|---|---|---|
+    | 1 — build-complete-hold (critical path; gates 2 and 3) | GGUF model family + quantization tier chosen; bench methodology on public datasets (GovReport, BillSum) covering ≥8/12 deck archetypes with uncovered ones named as Phase-1 risk; bench fixtures committed; a source-pathway commitment carrying the alt-source clause for GRC estates that ban HuggingFace | open | needs a benching decision by the steering persona; the bench itself is repo work once the model is chosen |
+    | 2 — Tier-1 reference LLM class | one named class committed for methodology purposes | open, gated by exit 1 | steering persona; a commitment, not an investigation |
+    | 3 — fixture-capture v1 | one-time ONLINE capture against a locked upstream Presenton tag, signed, committed under `tests/fixtures/upstream-baseline/v<V>/` | open, gated by exit 1 | repo work, but deliberately run outside the air-gapped pipeline and never in CI |
+    | 4 — JFrog allowlist gap analysis | per-dependency gap report across the conda + npm + GGUF closure; which packages are mirrored, which need allowlist requests, which carry licensing flags (`psycopg` LGPL-3.0-only), security-review SLA per gap | open, independent | needs the customer's actual JFrog allowlist — external |
+    | 5 — Capability Claim Statement | one canonical buyer-facing sentence through a content-review checkpoint that forbids cloud-product comparisons | open, independent | steering/content review — external |
+    | 6(a) — Redmond-contingency check | see DW-PRESENTON-1-6-1 | **answered 2026-09-08 at documentary evidence class: infrastructure-only.** Not formally closed | formal closure is external |
+    | 6(b) — memory-subsystem scope | decide whether `mem0ai` + `fastembed-vectorstore` become two more v1 recipes or the memory/chat-history subsystem ships disabled, contingent on tracing the import graph to confirm a clean no-op path needs no Presenton-side patch | open, independent | **the import-graph trace is repo-doable now** and is the one part of this gate not waiting on anyone outside |
+  evidence: |
+    Read directly from the PRD's Phase 0 Exit Criteria section and Epic 1's seven
+    stories on 2026-09-08. Confirmed against the ledger and the Dream's own
+    frontmatter that no Epic-1 story has been implemented.
+
+    PRD INTERNAL INCONSISTENCY, flagged not fixed: line 1615 states "6 exits total
+    (revised 2026-07-25, was 5)", while the MVP gate at line 1668 still reads
+    "Phase 0 exit criteria all met (5 exits, phased a→b→c+d)". The 6 is correct and
+    the 5 is a stale survivor of the revision. Left unedited deliberately — the PRD
+    is `pyforge-mason`'s live spine, so a one-word fix pulls a full prd→arch→epics
+    currency reconcile behind it. Worth folding into the next genuine mason PRD
+    revision, not worth a cascade of its own.
+  status: open
+  blocked-on: exits 1, 2, 4, 5 and the formal closure of 6(a) all need decisions or access outside this repo. Exit 6(b)'s import-graph trace, and exit 3's one-time online capture, are the only two the repo can advance unaided.
+  severity: medium
+
+  verified: 2026-09-08 — still-open — first tracked record of this gate. Before today the six exits existed only inside the PRD body; `pyforge-mason`'s ledger had no presenton entry at all, so the block on 30 planned stories was invisible to every ledger-driven view of the fleet.
