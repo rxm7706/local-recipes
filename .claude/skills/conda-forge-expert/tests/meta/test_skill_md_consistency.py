@@ -53,6 +53,19 @@ class TestSkillMdConsistency:
         # `project_level` allowlist below, which is for EXTERNAL and illustrative
         # filenames that have no file in this repo at all.
         existing |= {p.name for p in (PROJECT_ROOT / "scripts").glob("*.py")}
+        # Station-package test suites (src/shared/packages/*/tests/**). Same
+        # rationale as the repo-root scripts above: these are REAL files in
+        # this repo, so they belong here and not in `project_level` (which is
+        # explicitly for filenames with no file in this repo at all). A gotcha
+        # may legitimately cite a station's own gate as its corroborating
+        # signal -- G117 names pyforge-steward's `test_invariants.py` pin-sync
+        # check as the one machine-detectable case of a stripped version cap.
+        existing |= {
+            p.name
+            for p in (PROJECT_ROOT / "src" / "shared" / "packages").glob(
+                "*/tests/**/test_*.py"
+            )
+        }
 
         # Project-level scripts that SKILL.md is allowed to reference
         project_level = {

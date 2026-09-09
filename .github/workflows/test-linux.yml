@@ -29,7 +29,15 @@ on:
         description: 'Python version'
         required: false
         type: string
-        default: '3.12'
+        default: '3.14'
+      upload_channel:
+        description: >-
+          anaconda.org channel to upload the built packages to (e.g.
+          SelfExplainML). Leave EMPTY to only publish the GitHub artifact.
+          Requires the ANACONDA_API_TOKEN repo secret.
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       recipes:
@@ -68,13 +76,21 @@ on:
       python_version:
         description: 'Python version for builds'
         required: false
-        default: '3.12'
+        default: '3.14'
         type: choice
         options:
-          - '3.10'
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
+      upload_channel:
+        description: >-
+          anaconda.org channel to upload the built packages to (e.g.
+          SelfExplainML). Leave EMPTY to only publish the GitHub artifact.
+          Requires the ANACONDA_API_TOKEN repo secret.
+        required: false
+        default: ''
+        type: string
 
 env:
   CI: github_actions
@@ -273,6 +289,47 @@ jobs:
             build_artifacts/noarch/*.tar.bz2
           if-no-files-found: ignore
           retention-days: 7
+
+      # Linux counterpart of test-windows.yml's upload step. Without this the
+      # repo had a publish path for the `__win` variant of a selector-carrying
+      # noarch recipe and NONE for `__unix` (CFE G115), so the channel could
+      # only ever be completed by hand. Deliberately mirrors the Windows step:
+      # same input name, same fail-loudly-on-missing-token rule, same `-s`
+      # pinned destination.
+      - name: Upload to anaconda.org
+        if: inputs.upload_channel != ''
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Fail loudly rather than skip: a silent no-op here would read as a
+          # successful publish and the channel would stay quietly incomplete.
+          if [ -z "${ANACONDA_API_TOKEN:-}" ]; then
+            echo "::error::upload_channel='${{ inputs.upload_channel }}' was requested but the" \
+                 "ANACONDA_API_TOKEN repo secret is not set. Add it (Settings > Secrets and" \
+                 "variables > Actions) or leave upload_channel empty to publish only the" \
+                 "GitHub artifact."
+            exit 1
+          fi
+
+          # The build runs inside Docker; this host has no conda, so bring the
+          # client in with pip rather than provisioning a whole conda install.
+          python -m pip install --quiet anaconda-client
+
+          shopt -s nullglob
+          pkgs=(build_artifacts/noarch/*.conda build_artifacts/linux-64/*.conda)
+          if [ ${#pkgs[@]} -eq 0 ]; then
+            echo "::error::No .conda packages found under build_artifacts/ to upload."
+            exit 1
+          fi
+
+          for pkg in "${pkgs[@]}"; do
+            echo "Uploading $(basename "$pkg") -> ${{ inputs.upload_channel }}"
+            # `-s` pins the destination: the bare client blocks on an
+            # interactive anaconda.com-vs-.org prompt under a non-TTY runner.
+            anaconda -s https://api.anaconda.org -t "${ANACONDA_API_TOKEN}" \
+              upload --user "${{ inputs.upload_channel }}" "$pkg"
+          done
 
   build-linux-aarch64:
     needs: detect-recipes
@@ -498,7 +555,7 @@ jobs:
           echo "- Linux version: ${{ github.event.inputs.linux_version || 'alma9' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Architecture: ${{ github.event.inputs.architecture || 'linux-64' }}" >> $GITHUB_STEP_SUMMARY
           echo "- CUDA: ${{ github.event.inputs.cuda_version || 'disabled' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Python: ${{ github.event.inputs.python_version || '3.12' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Python: ${{ github.event.inputs.python_version || '3.14' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Build Status" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY

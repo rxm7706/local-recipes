@@ -34,7 +34,7 @@ requirements:
     - bmad-builder >=2.2.2                               # BMad Core expansion module for creating, sharing and discovering AI modules and agents. # https://github.com/bmad-code-org/bmad-builder # https://bmad-builder-docs.bmad-method.org
     - bmad-creative-intelligence-suite >=0.3.2           # Creative agent suite for innovation, design thinking, storytelling and presentations. # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite # http://cis-docs.bmad-method.org
     - bmad-module-skill-forge >=2.1.0                    # Turns code and docs into instructions AI agents can actually follow (Quick/Forge/Forge+/Deep tiers). # https://github.com/armelhbobdad/bmad-module-skill-forge
-    - bmad-eval-quality >=1.3.0                          # Compiles, seals, preflights and scores Behavioral Evaluation Contracts via a clean-vs-planted-defect twin run. # https://github.com/bmad-code-org/bmad-eval-quality
+    - bmad-eval-quality >=1.4.1                          # Compiles, seals, preflights and scores Behavioral Evaluation Contracts via a clean-vs-planted-defect twin run. # https://github.com/bmad-code-org/bmad-eval-quality
     - bmad-utility-skills >=2.0.0                        # Utility skills for BMad Method contributors — PR review, triage, changelog, root-cause analysis. # https://github.com/bmad-code-org/bmad-utility-skills
     - bmad-labs-skills >=1.0.0.dev0                      # Community BMAD skills marketplace for Claude Code (22 general-purpose skills). # https://github.com/bmad-labs/skills
     - bmad-module-template >=0.1.0                       # Scaffolding template for authoring a new installable BMad Method module. # https://github.com/bmad-code-org/bmad-module-template
@@ -67,9 +67,9 @@ about:
   homepage: https://github.com/rxm7706/local-recipes/tree/main/recipes/bmad-suite
   license: MIT
   license_file: LICENSE
-  summary: Metapackage installing the full SelfExplainML bmad-suite at latest upstream-aligned pins
+  summary: Metapackage installing the full PrivateChannel bmad-suite at latest upstream-aligned pins
   description: |
-    Pulls every **active** member of the SelfExplainML bmad-suite channel product
+    Pulls every **active** member of the PrivateChannel bmad-suite channel product
     (see ``suite-members.yaml``; ``deprecated: true`` entries are catalogued but
     excluded) in one transaction. Member recipes remain the unit of autotick, build, and publish; refresh this metapackage after member bumps
     via ``pixi run -e local-recipes generate-bmad-suite``.

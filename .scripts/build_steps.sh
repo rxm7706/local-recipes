@@ -43,26 +43,77 @@ git config --global --add safe.directory "${FEEDSTOCK_ROOT}"
 
 # Copy the host recipes folder so we don't ever muck with it
 # Skip build_artifacts and other big items because it gets huge with time
+#
+# `.claude` and `src` are excluded FOR THIS REPO, and they are load-bearing
+# exclusions, not tidying: `build_all.py` walks the copied tree and hard-errors
+# on any recipe file outside `recipes/<name>/` --
+#   RuntimeError: recipe .claude/skills/conda-forge-expert/examples/
+#   python-compiled/recipe.yaml in wrong directory; must be under recipes/<name>/
+# staged-recipes has no such trees, so upstream never trips this. Here there are
+# 14 recipe/meta.yaml under `.claude/` (conda-forge-expert's worked examples) and
+# 1,993 under `src/` (station test fixtures) -- derived with
+# `git ls-files | grep -E '(^|/)(recipe|meta)\.yaml$' | grep -v '^recipes/'`,
+# so the list is complete rather than the first offender the runner happened to
+# hit. Skipping `src` also spares the copy the whole platform tree.
 mkdir -p ~/staged-recipes-copy
 shopt -s extglob dotglob
-cp -r "${FEEDSTOCK_ROOT}"/!(.|..|build_artifacts|.pixi|miniforge3|MacOSX*.sdk.tar.xz|SDKs|output) ~/staged-recipes-copy
+cp -r "${FEEDSTOCK_ROOT}"/!(.|..|build_artifacts|.pixi|miniforge3|MacOSX*.sdk.tar.xz|SDKs|output|.claude|src) ~/staged-recipes-copy
 shopt -u extglob dotglob
 
 # Remove any macOS system files
 find ~/staged-recipes-copy/recipes -maxdepth 1 -name ".DS_Store" -delete
 
-# Find the recipes from main in this PR and remove them.
+# Select which recipes to build.
+#
+# `build_all.py` has no recipe selector -- it builds every folder under
+# `recipes/`. In conda-forge/staged-recipes the SELECTION is therefore done by
+# deletion: `recipes/` on `main` holds only recipes not yet graduated to a
+# feedstock, so removing everything already on `main` leaves exactly the new
+# recipe the PR added.
+#
+# That premise is FALSE in this repo, in two ways, and both are fatal:
+#   1. `main` here permanently carries every recipe (7,867 paths as of
+#      2026-09-09), including the one being built -- so the staged-recipes
+#      pruning deletes the build target and `build_all.py` then "succeeds"
+#      having built nothing.
+#   2. `git fetch --force origin main:main` assumes an anonymous fetch works.
+#      staged-recipes is public; this repo is PRIVATE, so inside the container
+#      (which has no credential helper) it dies with
+#      `fatal: could not read Username for 'https://github.com'` -- exit 128,
+#      which is how this surfaced.
+#
+# So when TEST_RECIPE names a recipe, select it POSITIVELY and skip the fetch
+# entirely. The staged-recipes path is kept verbatim as the `else` branch so an
+# upstream-shaped checkout still behaves exactly as conda-smithy generated it.
 echo "Pending recipes."
 ls -la ~/staged-recipes-copy/recipes
-echo "Finding recipes merged in main and removing them from the build."
-pushd "${FEEDSTOCK_ROOT}/recipes" > /dev/null
-if [ "${CI:-}" != "" ]; then
-    git fetch --force origin main:main
-fi
+# `shopt -s extglob` must run BEFORE this `if`, not inside its `else`. bash reads
+# a compound command in full and PARSES it before executing any branch, so the
+# `!(example|example-v1)` below is parsed at `if`-read time -- while extglob is
+# still off, which is a hard `syntax error near unexpected token '('` that no
+# branch condition can avoid. (Upstream got away with the toggle inline because
+# the line sat at top level, where bash parses one command at a time, after the
+# preceding `shopt` had already executed.)
 shopt -s extglob dotglob
-git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+if [ -n "${TEST_RECIPE:-}" ]; then
+    echo "TEST_RECIPE=${TEST_RECIPE}: keeping only that recipe in the build copy."
+    if [ ! -d ~/staged-recipes-copy/recipes/"${TEST_RECIPE}" ]; then
+        echo "ERROR: recipes/${TEST_RECIPE} is not in the build copy." >&2
+        exit 1
+    fi
+    find ~/staged-recipes-copy/recipes -mindepth 1 -maxdepth 1 -type d \
+        ! -name "${TEST_RECIPE}" -exec rm -rf {} +
+    ls -la ~/staged-recipes-copy/recipes
+else
+    echo "Finding recipes merged in main and removing them from the build."
+    pushd "${FEEDSTOCK_ROOT}/recipes" > /dev/null
+    if [ "${CI:-}" != "" ]; then
+        git fetch --force origin main:main
+    fi
+    git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
+    popd > /dev/null
+fi
 shopt -u extglob dotglob
-popd > /dev/null
 
 # Update environment
 mv /opt/conda/conda-meta/history /opt/conda/conda-meta/history.$(date +%Y-%m-%d-%H-%M-%S)

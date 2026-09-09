@@ -218,3 +218,42 @@ Boundaries, tracking the Epic 14 spec's own explicit HARD boundaries.
 - Read the updated `install-matrix.md` row and confirm it does not overclaim
   (no "closed", no "3-platform" wording) — it must read as "ready, not yet
   shipped."
+
+## Closing note — 2026-09-09 (PR #1090)
+
+**This story is now genuinely `done`.** The three review layers that caught the first
+implementation marking it complete were right: the AC's closing clauses ("the pixi pin can
+leave the target tables"; "`pipeline-truth` reads the member current on all three platforms
+*after the operator uploads*") were unmet, and it correctly sat `in-progress` until they were.
+
+What closed them, in order:
+
+1. **The `__win` artifact exists.** Built on a GitHub Actions `windows-2022` runner and
+   uploaded, because a staged-recipes PR builds that variant and then discards it (CFE
+   **G115**, authored from this same investigation). `__unix` comes from a `macos-14` runner
+   via `test-macos.yml` — Linux could not do it, see below.
+2. **The pin left the target tables.** `bmad-eval-quality` moved from
+   `[feature.local-recipes.target.{linux-64,osx-arm64}.dependencies]` into the shared table.
+   The lock proves the win-64 solve resolves it: a new `SelfExplainML/noarch/
+   bmad-eval-quality-…-h2fd06db_0.conda` entry. `test_eval_quality_pin_lives_in_the_unix_
+   target_tables` is renamed and inverted to `…_lives_in_the_shared_table`.
+3. **`pipeline-truth` is clean.** `drifts: -` — upstream, recipe, channel and installed all
+   **1.4.1**. (Upstream cut 1.4.0 and then 1.4.1 *during* this work; both were published,
+   both variants each, per G109's re-derive rule.)
+
+Corrections to this spec's own recorded text, so it is not read as still true:
+
+- **Residual risk 1 is resolved** — "No `__win` artifact exists on the channel; the pixi pin,
+  `environment.yaml`, and `steward suite pipeline-truth`'s 3-platform read all remain exactly
+  where they were" no longer holds. All three moved.
+- **G114 still stands and still bounds the local claim** — a noarch `recipe-build` here proves
+  only the linux-64 leg. That is precisely why the Windows and macOS *runners*, not a local
+  build, are what produced the shipped artifacts.
+- The Epic 14 HARD boundary ("the anaconda upload is the operator's step") was honored: the
+  operator authorized the uploads and supplied the `ANACONDA_API_TOKEN` repo secret; the
+  workflows perform them, never a local credential.
+
+Discovered while closing this, and tracked in PR #1090 rather than here: `test-linux.yml`
+cannot build this repo at all (staged-recipes' `build_steps.sh` prunes every recipe already on
+`main` — which here is *all* of them, including the build target — and does a credentialed
+`git fetch` that fails on a private repo). Fixed in the same PR by honoring `TEST_RECIPE`.

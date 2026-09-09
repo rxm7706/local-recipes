@@ -37,7 +37,7 @@ development_status:
   12-8-the-slice-2-re-scope-checkpoint: done
   13-1-langflow-base-onnxruntime-pin-admits-python-3-14: done
   13-2-dbgpt-client-sqlalchemy-cap-admits-python-3-14: done
-  14-1-bmad-eval-quality-builds-a-__win-variant: in-progress
+  14-1-bmad-eval-quality-builds-a-__win-variant: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -85,7 +85,7 @@ development_status:
   epic-12-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
-  epic-14: backlog
+  epic-14: done
   epic-14-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional

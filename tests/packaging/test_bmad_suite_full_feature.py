@@ -20,21 +20,29 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 
-# The 11 explicit bmad-* member pins carried under
-# [feature.local-recipes.dependencies] at spec time (baseline_revision
+# The explicit bmad-* member pins carried under
+# [feature.local-recipes.dependencies] (baseline_revision
 # a35b7d5e59b731ef6bc7b9c42bb96c148cc57521; bmad-method-wds-expansion left the set
-# 2026-09-05 when upstream deprecated it and bmad-eval-quality took its suite seat --
-# that pin lives in the unix target tables, see the last test). This story must not remove or
-# replace any of them -- the factory default keeps every explicit pin for
-# pipeline-truth / doctor drift granularity. (Two more active suite members,
-# bmad-module-skill-forge and mybmad-dashboard, live in
-# [feature.local-recipes.target.linux-64.dependencies] and
+# 2026-09-05 when upstream deprecated it and bmad-eval-quality took its suite seat).
+# No story may remove or replace any of them -- the factory default keeps every
+# explicit pin for pipeline-truth / doctor drift granularity.
+#
+# bmad-eval-quality JOINED this set 2026-09-09 (mason Story 14.1). It had been
+# parked in the linux-64/osx-arm64 target tables for exactly one reason -- the
+# channel carried only the `__unix` noarch variant, so a win-64 solve could not
+# resolve it. Both variants of 1.3.0 are published now, so the platform split was
+# retired and the pin became platform-agnostic; `test_eval_quality_pin_lives_in_
+# the_shared_table` below asserts the new placement.
+#
+# (Two more active suite members, bmad-module-skill-forge and mybmad-dashboard,
+# live in [feature.local-recipes.target.linux-64.dependencies] and
 # [feature.bmad-ui.dependencies] respectively -- out of this AC's scope.)
 BASELINE_LOCAL_RECIPES_BMAD_PINS = {
     "bmad-method",
     "bmad-builder",
     "bmad-creative-intelligence-suite",
     "bmad-dashboard",
+    "bmad-eval-quality",
     "bmad-loop",
     "bmad-method-test-architecture-enterprise",
     "bmad-module-template",
@@ -146,15 +154,25 @@ def test_pixi_lock_check_resolves_the_bmad_suite_full_environment() -> None:
     )
 
 
-def test_eval_quality_pin_lives_in_the_unix_target_tables() -> None:
-    """Story 45.1 (2026-09-05): SelfExplainML carries only the ``__unix`` noarch
-    variant of bmad-eval-quality (the ``__win`` variant needs a Windows build), so
-    the pin sits in the linux-64 / osx-arm64 target tables -- the same shape as
-    bmad-module-skill-forge -- and never in the platform-agnostic table, or the
-    win-64 solve of the local-recipes environment breaks."""
+def test_eval_quality_pin_lives_in_the_shared_table() -> None:
+    """Mason Story 14.1 (2026-09-09) reverses Story 45.1's platform split.
+
+    45.1 put this pin in the linux-64 / osx-arm64 target tables for one reason:
+    the channel carried only the ``__unix`` noarch variant, so a win-64 solve of
+    the local-recipes feature could not resolve it. Both variants of 1.3.0 are
+    now published (``__unix`` heeef243_0 and ``__win`` h2fd06db_0, confirmed in
+    the SERVED repodata), which was the story's own stated precondition for the
+    pin "leaving the target tables" -- so the split has no reason to exist and
+    the pin is platform-agnostic again.
+
+    The floor tracks the newest PUBLISHED build, never the newest the recipe
+    builds -- a floor above what the channel serves reds every solve. 1.4.1 was
+    published (both ``__unix`` and ``__win``) in the same change that raised
+    this floor, so the two moved together.
+    """
     feat = _data()["feature"]["local-recipes"]
-    assert "bmad-eval-quality" not in feat["dependencies"]
+    assert feat["dependencies"]["bmad-eval-quality"] == ">=1.4.1"
     assert "bmad-method-wds-expansion" not in feat["dependencies"]
-    for plat in ("linux-64", "osx-arm64"):
-        assert feat["target"][plat]["dependencies"]["bmad-eval-quality"] == ">=0.2.0.dev0", plat
-    assert "bmad-eval-quality" not in feat["target"].get("win-64", {}).get("dependencies", {})
+    for plat in ("linux-64", "osx-arm64", "win-64"):
+        deps = feat["target"].get(plat, {}).get("dependencies", {})
+        assert "bmad-eval-quality" not in deps, plat

@@ -47,6 +47,7 @@ DETECTOR = {"scope": "repo"}
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -111,6 +112,12 @@ def commit_subject(root: pathlib.Path, sha: str) -> str:
     return git(root, "log", "-1", "--format=%s", sha)
 
 
+# `retro:` or `retro(<scope>):` -- kept in step with
+# pyforge.testing_kit.branch_diff_guard.unsanctioned_commits, which carries the
+# full rationale. The repo's recent retros are all `retro(cfe):`.
+_RETRO_SUBJECT = re.compile(r"^retro(\([^)]*\))?:")
+
+
 def scan(root: pathlib.Path, shas: list[str]) -> list[dict]:
     findings: list[dict] = []
     sanctioned: list[str] = []
@@ -123,7 +130,7 @@ def scan(root: pathlib.Path, shas: list[str]) -> list[dict]:
         subject = commit_subject(root, sha)
         changelog_status = next(
             (status[:1] for status, path in status_lines if path == CFE_CHANGELOG), None)
-        if subject.startswith("retro:") and changelog_status in ("A", "M"):
+        if _RETRO_SUBJECT.match(subject) and changelog_status in ("A", "M"):
             sanctioned.append(sha)
             continue
         findings.append({

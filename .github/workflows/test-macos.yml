@@ -14,7 +14,7 @@ on:
         description: 'macOS x86_64 deployment target'
         required: false
         type: string
-        default: '10.15'
+        default: '11.0'
       osx_arm64_deployment_target:
         description: 'macOS ARM64 deployment target'
         required: false
@@ -25,6 +25,14 @@ on:
         required: false
         type: string
         default: 'both'
+      upload_channel:
+        description: >-
+          anaconda.org channel to upload the built packages to (e.g.
+          SelfExplainML). Leave EMPTY to only publish the GitHub artifact.
+          Requires the ANACONDA_API_TOKEN repo secret.
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       recipes:
@@ -35,12 +43,9 @@ on:
       osx_64_deployment_target:
         description: 'macOS x86_64 deployment target'
         required: false
-        default: '10.15'
+        default: '11.0'
         type: choice
         options:
-          - '10.13'
-          - '10.14'
-          - '10.15'
           - '11.0'
           - '12.0'
           - '13.0'
@@ -74,10 +79,25 @@ on:
           - 'both'
           - 'osx-64'
           - 'osx-arm64'
+      upload_channel:
+        description: >-
+          anaconda.org channel to upload the built packages to (e.g.
+          SelfExplainML). Leave EMPTY to only publish the GitHub artifact.
+          Requires the ANACONDA_API_TOKEN repo secret.
+        required: false
+        default: ''
+        type: string
 
 env:
-  # Default SDK versions from conda_build_config.yaml
-  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '10.15'
+  # Deployment targets, NOT SDK versions -- and the authority is
+  # conda-forge-pinning's `c_stdlib_version` (osx), not the retired
+  # `MACOSX_DEPLOYMENT_TARGET`/`MACOSX_SDK_VERSION` keys, which no longer exist
+  # in conda_build_config.yaml at all. As of conda-forge-pinning
+  # 2026.09.09.05.43.13 that value is a SINGLE `11.0` covering both
+  # architectures -- osx-64 is no longer pinned lower than osx-arm64, so the
+  # long-standing 10.15 here was stale. Re-read it, never hardcode:
+  #   grep -A6 '^c_stdlib_version:' .pixi/envs/local-recipes/conda_build_config.yaml
+  DEFAULT_OSX_64_DEPLOYMENT_TARGET: '11.0'
   DEFAULT_OSX_ARM64_DEPLOYMENT_TARGET: '11.0'
 
 jobs:
@@ -134,7 +154,7 @@ jobs:
         recipe: ${{ fromJson(needs.detect-recipes.outputs.recipes) }}
     env:
       CONFIG: osx64
-      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ github.event.inputs.osx_64_deployment_target || '11.0' }}
       MACOSX_SDK_VERSION: ${{ github.event.inputs.osx_64_sdk_version || '' }}
 
     steps:
@@ -147,7 +167,7 @@ jobs:
           conda-solver: libmamba
           conda-remove-defaults: true
           activate-environment: build
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Install build tools
         shell: bash -el {0}
@@ -230,12 +250,14 @@ jobs:
             rattler-build build \
               --recipe "${RECIPE_PATH}/recipe.yaml" \
               --target-platform osx-64 \
-              --variant-config .ci_support/osx64.yaml
+              --variant-config .ci_support/osx64.yaml \
+              --output-dir build_artifacts
           else
             echo "Using conda-build"
             conda-build "${RECIPE_PATH}" \
               -c conda-forge \
-              --variant-config-files .ci_support/osx64.yaml
+              --variant-config-files .ci_support/osx64.yaml \
+              --output-folder build_artifacts
           fi
 
       - name: Upload artifacts
@@ -244,11 +266,51 @@ jobs:
         with:
           name: osx-64-${{ matrix.recipe }}
           path: |
-            ${{ env.CONDA_PREFIX }}/conda-bld/osx-64/*.conda
-            ${{ env.CONDA_PREFIX }}/conda-bld/osx-64/*.tar.bz2
-            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.conda
-            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.tar.bz2
+            build_artifacts/osx-64/*.conda
+            build_artifacts/osx-64/*.tar.bz2
+            build_artifacts/noarch/*.conda
+            build_artifacts/noarch/*.tar.bz2
           if-no-files-found: ignore
+
+      # Mirrors the Linux/Windows upload steps. macOS matters here even though
+      # a noarch build yields the same `__unix` variant Linux would: this is the
+      # only macOS route to the channel, and unlike test-linux.yml it does NOT
+      # go through staged-recipes' build_steps.sh, so it has neither the
+      # private-repo `git fetch` nor the "prune recipes already on main"
+      # assumption that break there.
+      - name: Upload to anaconda.org
+        if: inputs.upload_channel != ''
+        shell: bash -el {0}
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Fail loudly rather than skip: a silent no-op here would read as a
+          # successful publish and the channel would stay quietly incomplete.
+          if [ -z "${ANACONDA_API_TOKEN:-}" ]; then
+            echo "::error::upload_channel='${{ inputs.upload_channel }}' was requested but the" \
+                 "ANACONDA_API_TOKEN repo secret is not set. Add it (Settings > Secrets and" \
+                 "variables > Actions) or leave upload_channel empty to publish only the" \
+                 "GitHub artifact."
+            exit 1
+          fi
+
+          conda install -y anaconda-client
+
+          shopt -s nullglob
+          pkgs=(build_artifacts/noarch/*.conda build_artifacts/osx-64/*.conda)
+          if [ ${#pkgs[@]} -eq 0 ]; then
+            echo "::error::No .conda packages found under build_artifacts/ to upload."
+            exit 1
+          fi
+
+          for pkg in "${pkgs[@]}"; do
+            echo "Uploading $(basename "$pkg") -> ${{ inputs.upload_channel }}"
+            # `-s` pins the destination: the bare client blocks on an
+            # interactive anaconda.com-vs-.org prompt under a non-TTY runner.
+            anaconda -s https://api.anaconda.org -t "${ANACONDA_API_TOKEN}" \
+              upload --user "${{ inputs.upload_channel }}" "$pkg"
+          done
 
   build-osx-arm64:
     needs: detect-recipes
@@ -275,7 +337,7 @@ jobs:
           conda-solver: libmamba
           conda-remove-defaults: true
           activate-environment: build
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Install build tools
         shell: bash -el {0}
@@ -334,12 +396,14 @@ jobs:
             rattler-build build \
               --recipe "${RECIPE_PATH}/recipe.yaml" \
               --target-platform osx-arm64 \
-              --variant-config .ci_support/osxarm64.yaml
+              --variant-config .ci_support/osxarm64.yaml \
+              --output-dir build_artifacts
           else
             echo "Using conda-build"
             conda-build "${RECIPE_PATH}" \
               -c conda-forge \
-              --variant-config-files .ci_support/osxarm64.yaml
+              --variant-config-files .ci_support/osxarm64.yaml \
+              --output-folder build_artifacts
           fi
 
       - name: Upload artifacts
@@ -348,11 +412,51 @@ jobs:
         with:
           name: osx-arm64-${{ matrix.recipe }}
           path: |
-            ${{ env.CONDA_PREFIX }}/conda-bld/osx-arm64/*.conda
-            ${{ env.CONDA_PREFIX }}/conda-bld/osx-arm64/*.tar.bz2
-            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.conda
-            ${{ env.CONDA_PREFIX }}/conda-bld/noarch/*.tar.bz2
+            build_artifacts/osx-arm64/*.conda
+            build_artifacts/osx-arm64/*.tar.bz2
+            build_artifacts/noarch/*.conda
+            build_artifacts/noarch/*.tar.bz2
           if-no-files-found: ignore
+
+      # Mirrors the Linux/Windows upload steps. macOS matters here even though
+      # a noarch build yields the same `__unix` variant Linux would: this is the
+      # only macOS route to the channel, and unlike test-linux.yml it does NOT
+      # go through staged-recipes' build_steps.sh, so it has neither the
+      # private-repo `git fetch` nor the "prune recipes already on main"
+      # assumption that break there.
+      - name: Upload to anaconda.org
+        if: inputs.upload_channel != ''
+        shell: bash -el {0}
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Fail loudly rather than skip: a silent no-op here would read as a
+          # successful publish and the channel would stay quietly incomplete.
+          if [ -z "${ANACONDA_API_TOKEN:-}" ]; then
+            echo "::error::upload_channel='${{ inputs.upload_channel }}' was requested but the" \
+                 "ANACONDA_API_TOKEN repo secret is not set. Add it (Settings > Secrets and" \
+                 "variables > Actions) or leave upload_channel empty to publish only the" \
+                 "GitHub artifact."
+            exit 1
+          fi
+
+          conda install -y anaconda-client
+
+          shopt -s nullglob
+          pkgs=(build_artifacts/noarch/*.conda build_artifacts/osx-arm64/*.conda)
+          if [ ${#pkgs[@]} -eq 0 ]; then
+            echo "::error::No .conda packages found under build_artifacts/ to upload."
+            exit 1
+          fi
+
+          for pkg in "${pkgs[@]}"; do
+            echo "Uploading $(basename "$pkg") -> ${{ inputs.upload_channel }}"
+            # `-s` pins the destination: the bare client blocks on an
+            # interactive anaconda.com-vs-.org prompt under a non-TTY runner.
+            anaconda -s https://api.anaconda.org -t "${ANACONDA_API_TOKEN}" \
+              upload --user "${{ inputs.upload_channel }}" "$pkg"
+          done
 
   summary:
     needs: [detect-recipes, build-osx-64, build-osx-arm64]
@@ -375,5 +479,5 @@ jobs:
           echo "| osx-arm64 | ${{ needs.build-osx-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '10.15' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- osx-64 deployment target: ${{ github.event.inputs.osx_64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY
           echo "- osx-arm64 deployment target: ${{ github.event.inputs.osx_arm64_deployment_target || '11.0' }}" >> $GITHUB_STEP_SUMMARY

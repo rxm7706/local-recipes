@@ -1,5 +1,5 @@
 #                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.79.0/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.80.0/schema/manifest/schema.json"
 
 [workspace]
 name = "staged-recipes"
@@ -7,7 +7,7 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.79.0"  # single pixi floor for the workspace. SIXTEEN places carry a pixi version and must be kept in step. COUNT THE LIST, DO NOT TRUST THE NUMERAL — two earlier revisions of this comment stated a total its own enumeration contradicted (see below), so the enumeration is the authority: (1) this key (floor), (2) the `"$schema"` URL two lines above (EXACT), (3-5) feature.python/local-recipes/build `pixi = ">=0.77.0"` (3 floors), (6) `environment.yaml`'s `pixi >=0.77.0` (floor, DERIVED — regenerate, never hand-edit), (7) the `pixi-version` pin in .github/workflows/dashboard.yml (EXACT), (8) the same pin in .github/workflows/kedro-viz-publish.yml (EXACT), (9-11) THREE such pins in .github/workflows/herald-live-demo.yml (EXACT), (12) the same pin in .github/actions/sync-pypi-mappings/action.yml (EXACT), (13) the micromamba create-arg in .github/workflows/staged-recipes-linter.yml (floor), (14) the root Containerfile's builder-stage `ghcr.io/prefix-dev/pixi:` image tag (EXACT, Story 7.1), (15) `src/platform/Containerfile`'s builder-stage image tag (EXACT, Story 10.3), and (16) `src/platform/compose/dbgpt/Containerfile`'s builder-stage image tag (EXACT, Story 10.5 -- the site this same 2026-08-21 pass discovered had NEVER been registered here at all, see below). AS OF 2026-08-21, ALL SIXTEEN ARE 0.77.0, and for the first time this is ENFORCED, not just asserted: `scripts/pixi_version_registry.py` is now the single source of truth for every site (this comment is a narrative pointer to it, not the registry), `pixi run -e local-recipes pixi-version-check` (repo-scope, CI-safe) fails on any drift, and `pixi run -e local-recipes bump-pixi-version -- <version>` rewrites every site plus regenerates environment.yaml in one pass. Read the rest of this comment as history, not as an instruction to hand-edit anything below the requires-pixi key above -- the registry is authoritative now.
+requires-pixi = ">=0.80.0"  # single pixi floor for the workspace. SIXTEEN places carry a pixi version and must be kept in step. COUNT THE LIST, DO NOT TRUST THE NUMERAL — two earlier revisions of this comment stated a total its own enumeration contradicted (see below), so the enumeration is the authority: (1) this key (floor), (2) the `"$schema"` URL two lines above (EXACT), (3-5) feature.python/local-recipes/build `pixi = ">=0.77.0"` (3 floors), (6) `environment.yaml`'s `pixi >=0.77.0` (floor, DERIVED — regenerate, never hand-edit), (7) the `pixi-version` pin in .github/workflows/dashboard.yml (EXACT), (8) the same pin in .github/workflows/kedro-viz-publish.yml (EXACT), (9-11) THREE such pins in .github/workflows/herald-live-demo.yml (EXACT), (12) the same pin in .github/actions/sync-pypi-mappings/action.yml (EXACT), (13) the micromamba create-arg in .github/workflows/staged-recipes-linter.yml (floor), (14) the root Containerfile's builder-stage `ghcr.io/prefix-dev/pixi:` image tag (EXACT, Story 7.1), (15) `src/platform/Containerfile`'s builder-stage image tag (EXACT, Story 10.3), and (16) `src/platform/compose/dbgpt/Containerfile`'s builder-stage image tag (EXACT, Story 10.5 -- the site this same 2026-08-21 pass discovered had NEVER been registered here at all, see below). AS OF 2026-08-21, ALL SIXTEEN ARE 0.77.0, and for the first time this is ENFORCED, not just asserted: `scripts/pixi_version_registry.py` is now the single source of truth for every site (this comment is a narrative pointer to it, not the registry), `pixi run -e local-recipes pixi-version-check` (repo-scope, CI-safe) fails on any drift, and `pixi run -e local-recipes bump-pixi-version -- <version>` rewrites every site plus regenerates environment.yaml in one pass. Read the rest of this comment as history, not as an instruction to hand-edit anything below the requires-pixi key above -- the registry is authoritative now.
 
 # The road to that registry, preserved as motivation for why it exists.
 # Read that sentence as the CURRENT STATE, not as history: an earlier revision said "NINE places … ALL NINE ARE 0.76.1", the state DW-7-1-2 recorded and resolved on 2026-08-09, and everything except the root Containerfile has since moved to 0.76.2. The TOTAL has now been wrong three times: it omitted herald-live-demo.yml's three pins, then Story 10.3 added a site of its own, then a revision numbered the list correctly while leaving the headline at THIRTEEN — the numeral is the part that rots, which is why counting the enumeration beats reading the total. DW-7-1-2 itself is RESOLVED (see the pyforge-steward deferred-work ledger); what survives it is its residual, restated here: the four-plus EXACT sites are the sharp ones — any one below this floor installs a pixi that refuses to parse this manifest, which is exactly the failure `sync-pypi-mappings` shipped at 0.73.0. 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it. The pin sites should follow the LOCK'S PRODUCER, the rule dashboard.yml states for itself ("pixi-version stays pinned to the lock's producer... Bump it in step with pixi.lock"). NOTHING ENFORCES ANY OF THIS — the equality is comment-maintained, which is how it drifted three ways before, how the herald pins and the root Containerfile went unnoticed, and how this very sentence's own total went stale three times; a detector is the durable fix -- and, as of the dbgpt-sidecar Containerfile's discovery (a FOURTH drift, an entire unregistered site rather than a stale numeral), finally exists: see the requires-pixi comment above.
@@ -34,12 +34,12 @@ platforms = [
 
 [feature.python.dependencies]
 python = ">=3.14.7,3.14.*"        # Python language interpreter
-pixi = ">=0.79.0"                 # Pixi package & environment manager
-gh = ">=2.99.0"                   # GitHub CLI for PR / issue / repo automation
-gitpython = ">=3.1.61"            # Pythonic Git wrapper for complex repo interactions
+pixi = ">=0.80.0"                 # Pixi package & environment manager
+gh = ">=2.100.0"                   # GitHub CLI for PR / issue / repo automation
+gitpython = ">=3.1.62"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 bmad-method = ">=6.12.0"          # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=1.0.4"              # Spec-kit for spec-driven development
+spec-kit = ">=1.0.5"              # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 # Canonical upgrade command (19 excludes). tomlkit / structlog / sqlglot / pyarrow / pandas
@@ -54,7 +54,15 @@ conda-index = ">=0.3.0"           # repodata.json index generator
 conda-forge-ci-setup = ">=4.9.3,<5.0"  # conda-forge CI bootstrap scripts (CI fidelity)
 conda-forge-pinning = "*"         # global conda-forge version pinning manifest
 frozendict = "*"                  # immutable dict (transitive build dep)
-#networkx = "2.4.*"                # graph library; pinned to 2.4 for conda-build compat
+networkx = ">=3.0"                # REQUIRED by .ci_support/build_all.py (`import networkx as nx`, line 8), which
+                                  # `.scripts/build_steps.sh` runs from THIS env -- it installs
+                                  # `environment.yaml`, exported from [feature.build]. Commented out until
+                                  # 2026-09-09, which is a third, independent reason the Linux Docker lane could
+                                  # never build anything here (see build_steps.sh's own header for the other two):
+                                  # every run died on `ModuleNotFoundError: No module named 'networkx'` before it
+                                  # reached a single recipe. Restored WITHOUT the old `2.4.*` pin -- that ceiling
+                                  # dates to 2019 and its stated reason ("conda-build compat") no longer holds;
+                                  # build_all.py uses only DiGraph/topological_sort, stable since 2.x.
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 
 [feature.linux]
@@ -250,10 +258,10 @@ django-environ = ">=0.14.0"
 django-model-utils = ">=5.0.0"
 django-allauth = ">=65.19.2"
 django-crispy-forms = ">=2.6"
-crispy-bootstrap5 = ">=2026.3"
+crispy-bootstrap5 = ">=2026.9"
 django-compressor = ">=4.6.0"
 django-redis = ">=7.0.0"
-django-anymail = ">=15.1"
+django-anymail = ">=15.2"
 django-structlog = ">=10.1.0"
 django-ipware = ">=7.0.1"
 python-ipware = ">=3.0.0"
@@ -383,12 +391,12 @@ django-allauth = ">=65.19.2"
 fido2 = ">=2.2.1"                 # django-allauth[mfa]
 qrcode = ">=8.2"                  # django-allauth[mfa]
 django-crispy-forms = ">=2.6"
-crispy-bootstrap5 = ">=2026.3"
+crispy-bootstrap5 = ">=2026.9"
 django-compressor = ">=4.6.0"
 django-redis = ">=7.0.0"
 # formerly requirements/production.txt (now pixi-owned)
 gunicorn = ">=26.2.0"
-django-anymail = ">=15.1"
+django-anymail = ">=15.2"
 # formerly requirements/local.txt (now pixi-owned)
 werkzeug = ">=3.1.8"
 watchdog = ">=6.0.0"              # werkzeug[watchdog]
@@ -403,7 +411,7 @@ sphinx = ">=9.1.0"
 sphinx-autobuild = ">=2025.8.25"
 ruff = ">=0.16.6"
 coverage = ">=7.16.0"
-djlint = ">=1.45.2"
+djlint = ">=1.46.1"
 pre-commit = ">=4.6.2"
 import-linter = ">=2.15"
 httpx = ">=0.28.1"
@@ -436,7 +444,7 @@ wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on t
 mcp = ">=2.1.1"
 mcp-types = ">=2.1.1"
 httpx2 = ">=2.12.0"
-sse-starlette = ">=3.4.10"
+sse-starlette = ">=3.4.11"
 python-multipart = ">=0.0.32"
 # steward 26.4 / FR-34 — FILE provider for Platform CI pytest (image gets
 # these from python-agent-platform conda; do not loosen the 0.5.0 pin).
@@ -583,7 +591,7 @@ pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # St
 # Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
-copier = ">=9.18.1"               # Library and command-line utility for rendering projects templates.
+copier = ">=9.18.2"               # Library and command-line utility for rendering projects templates.
 hatchling = ">=1.32.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -1556,19 +1564,19 @@ twine = ">=7.0.0"                 # PyPI artifact uploader
 uv = ">=0.12.10"                   # Fast Rust-based Python package installer / resolver
 wheel = ">=0.48.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=12.3.4"                # Fast disk-efficient Node package manager
+pnpm = ">=12.4.0"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
-conda-pypi = ">=0.11.0"           # Better PyPI interoperability for the conda ecosystem
+conda-pypi = ">=0.12.0"           # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
 #feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0, transitively re-importing the click==8.2.1 wall this pass removed from local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.79.0"                 # Pixi package & environment manager
+pixi = ">=0.80.0"                 # Pixi package & environment manager
 # pixitainer moved to [feature.local-recipes.target.linux-64.dependencies] (Story 10.2):
 # its own recipe is `build.skip: "not linux"`, so an unscoped placement here breaks
 # the win-64/osx-arm64-min solves.
-rattler-build = ">=0.75.0"        # Rust-native v1 conda recipe build engine
+rattler-build = ">=0.76.0"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.6"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.4.6"      # pixi build backend for CMake projects
 pixi-build-python = ">=0.8.6"     # pixi build backend for Python projects
@@ -1600,8 +1608,9 @@ bmad-method = ">=6.12.0"          # BMAD Method installer/CLI (upgrade from the 
 bmad-builder = ">=2.2.2"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
 bmad-creative-intelligence-suite = ">=0.3.2"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
+bmad-eval-quality = ">=1.4.1"     # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading) # Story 45.1 / mason 14.1 # https://github.com/bmad-code-org/bmad-eval-quality
 bmad-loop = ">=0.11.1"            # deterministic ralph-loop orchestrator (+TUI); 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.24.0"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-method-test-architecture-enterprise = ">=1.25.0"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run; 1.25.0 ships review-provenance.js, which needs package.json copied into SHARE) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
@@ -1613,8 +1622,8 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #caveman = "*"                     # moved to [feature.local-recipes.target.linux-64.dependencies] 2026-08-30 (SelfExplainML build is linux-64-only, like codegraph)
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
 headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
-cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.54"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+cocoindex = ">=1.0.21"            # Incremental engine for long horizon agents
+graphifyy = ">=0.9.56"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ppt-master = ">=5.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
 pptxgenjs = ">=4.0.1"             # JavaScript library for creating PowerPoint presentations (used by ppt-master)
 pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.node >=24). NODE_PATH=$CONDA_PREFIX/lib/node_modules
@@ -1635,7 +1644,7 @@ dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pan
 # unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
 # (nothing here invokes it; it lives on in the grayskull env) rather than
 # waiting on the feedstock fix.
-dbt-core = ">=1.12.3"             # With dbt, data analysts and engineers can build analytics the way engineers build applications.
+dbt-core = ">=1.12.4"             # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 dbt-duckdb = ">=1.11.0"           # dbt DuckDB adapter
 dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
 # dlt: genuinely blocked on python 3.14, in two stages.
@@ -1663,7 +1672,7 @@ kedro-dagster = ">=0.8.0"         # Kedro-Dagster makes it easy to deploy Kedro 
 kedro-datasets = ">=9.6.0"        # Kedro-Datasets is where you can find all of Kedro's data connectors.
 graphviz = ">=14.1.2"             # Graph layout engine (the `dot` binary) — drives the kedro-viz prototype's regenerate-kedro-viz-proto DAG-image (SVG) emitter
 python-graphviz = ">=0.21"        # Python interface to graphviz (imports as `graphviz`) — used by the prototype's DAG-image generator
-numpy = ">=2.5.2"                 # Numerical computing
+numpy = ">=2.5.3"                 # Numerical computing
 polars = ">=1.44.1"               # Rust-backed columnar DataFrame library
 tablib = ">=3.10.0"               # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
@@ -1714,11 +1723,11 @@ pdf2image = ">=1.17.0"            # Convert PDF pages to PIL images (Poppler-bac
 pdfplumber = ">=0.11.10"          # Extract text, tables, and metadata from PDFs
 pillow = ">=12.3.0"               # Python imaging library (PIL fork)
 playwright-python = ">=1.62.0"    # Python bindings (the existing 'playwright' is the Node binary)
-plotly = ">=6.9.0"                # Interactive web-based plotting library
-poppler = ">=26.7.0"              # PDF rendering library (pdf2image backend)
+plotly = ">=7.0.0"                # Interactive web-based plotting library
+poppler = ">=26.9.0"              # PDF rendering library (pdf2image backend)
 pydub = ">=0.25.1"                # Audio processing library for Python (used in speechrecognition for audio manipulation)
 pymupdf = ">=1.28.0"              # MuPDF Python bindings — fast PDF text/layout extraction
-pypdf = ">=6.17.0"                # Pure-Python PDF reader / writer / splitter
+pypdf = ">=6.18.0"                # Pure-Python PDF reader / writer / splitter
 pytesseract = ">=0.3.13"          # OCR fallback for scanned-PDF style extraction (FR-46c style_loader); pairs with existing tesseract binary
 python-docx = ">=1.2.0"           # Read / write Microsoft Word .docx files
 python-pptx = ">=1.0.2"           # Read / write Microsoft PowerPoint .pptx files
@@ -1753,10 +1762,10 @@ agno = ">=2.6.22"                 # Agno is a lightweight framework for building
 a2a-sdk = ">=1.1.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 google-genai = ">=2.22.0"         # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.75.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.75.1"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
-fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
+fasta2a = ">=2.0.0"               # FastAPI-style implementation of the A2A protocol
 # Workspace channel-priority is strict: conda-forge having ANY fastmcp /
 # fastmcp-slim build (today 3.4.7, mcp<2) hides SelfExplainML's 4.0.0b5
 # even when 3.x is infeasible against mcp>=2.1.1. Pin the channel so the
@@ -1773,7 +1782,7 @@ langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
 mcp = ">=2.1.1"                   # Official Model Context Protocol Python SDK. Ceiling lifted 2026-08-29: .claude/tools/{conda_forge_server,gemini_server}.py (the "factory FastMCP servers" the old <2.0 ceiling existed for) migrated off the third-party `fastmcp` package onto the official SDK's own `mcp.server.fastmcp.FastMCP`/`Context` -- same decorator API (`@mcp.tool()`, `Context.info()`, `mcp.run()`), verified with a live stdio initialize handshake. `fastmcp` is no longer a dependency of this feature at all.
 ollama = ">=0.32.15"              # Ollama Go server (local LLM runtime)
-pydantic-ai = ">=2.40.0"          # Pydantic-AI agent framework
+pydantic-ai = ">=2.42.0"          # Pydantic-AI agent framework
 "llama.cpp" = ">=10751"           # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
@@ -1809,7 +1818,7 @@ daphne = ">=4.2.3,<5.0"           # Pin to LTS version for Django
 wagtail = ">=7.4.3,<8.0"          # Content Management System (CMS) framework for Django # Pin to LTS version for Django
 coderedcms = ">=6.0.0,<7.0"       # Pin to LTS version for Django
 django-lasuite = ">=0.0.29"       # Common Django library for La Suite numerique projects
-openlineage-python = ">=1.52.0"   # OpenLineage client
+openlineage-python = ">=1.53.0"   # OpenLineage client
 opentelemetry-sdk = ">=1.44.0"    # OTel SDK
 opentelemetry-api = ">=1.44.0"    # OTel API
 httpx = ">=0.28.1"                # HTTP client for Python
@@ -1838,7 +1847,6 @@ mlx = ">=0.32.0"                  # Apple's array framework (Linux build via lib
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 bmad-module-skill-forge = ">=2.1.0"  # Skill Forge npx-wrapper CLI (the skf module itself installs into _bmad via bmad-method). linux-64 only here: the SelfExplainML build is linux-64 (spec-bmad-suite-channel-product — the suite's one pixi-installability gap, closed 2026-08-22)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); tag-sourced since 1.3.0 (left the 0.2.0.dev0 commit pin 2026-09-09, CFE G109). BOTH noarch variants are now on SelfExplainML: `__unix` from the staged-recipes artifact and `__win` built on a GH Actions windows-2022 runner, because a staged-recipes PR builds the `__win` variant and then discards it (CFE G115). Windows is therefore no longer blocked on the artifact. The FLOOR deliberately stays at 0.2.0.dev0 (which 1.3.0 satisfies): raising it would make pixi.lock stale and red every `pixi run --frozen` lane until a full re-lock, which is a separate change # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 ocrmypdf = ">=17.11.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
@@ -1846,7 +1854,7 @@ pixitainer = ">=0.8.3"            # Containerize your Pixi workspace with a sing
                                   # its own recipe is `build.skip: "not linux"` -- placing it in the cross-platform
                                   # [feature.local-recipes.dependencies] table (its former, stale ">=0.7.1" home)
                                   # breaks win-64/osx-arm64-min solves (Story 10.2, Story 10.3's pixitainer eval).
-caveman = ">=2.4.0"               # Claude Code token-compression skill (~65% output-token cut). linux-64 only: SelfExplainML build. UNBLOCKED 2026-08-30 via patched rebuild: build 1's host resolved nodejs 26.6.0, whose run-export (`>=26.6,<27`) made it mutually exclusive with codegraph (nodejs >=24.19,<25); build 2 (ha52a1c0_2) holds host nodejs at 24.* so the run-export lands in codegraph's window (upstream engines floor is >=18 — see recipes/caveman). Lift the hold when the env moves to nodejs 26 (marp-cli/a2a-sdk libabseil gap).
+caveman = ">=2.6.0"               # Claude Code token-compression skill (~65% output-token cut). linux-64 only: SelfExplainML build. UNBLOCKED 2026-08-30 via patched rebuild: build 1's host resolved nodejs 26.6.0, whose run-export (`>=26.6,<27`) made it mutually exclusive with codegraph (nodejs >=24.19,<25); build 2 (ha52a1c0_2) holds host nodejs at 24.* so the run-export lands in codegraph's window (upstream engines floor is >=18 — see recipes/caveman). Lift the hold when the env moves to nodejs 26 (marp-cli/a2a-sdk libabseil gap).
 cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
 codegraph = ">=1.6.0"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local. linux-64 only: SelfExplainML build is linux-64-only.
 graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
@@ -1859,7 +1867,6 @@ headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + l
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
 mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers this on M-series
 tmux = ">=3.7c_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
-bmad-eval-quality = ">=0.2.0.dev0"  # eval-quality CLI (compile/seal/preflight/score — twin-run evaluation grading); tag-sourced since 1.3.0 (left the 0.2.0.dev0 commit pin 2026-09-09, CFE G109). BOTH noarch variants are now on SelfExplainML: `__unix` from the staged-recipes artifact and `__win` built on a GH Actions windows-2022 runner, because a staged-recipes PR builds the `__win` variant and then discards it (CFE G115). Windows is therefore no longer blocked on the artifact. The FLOOR deliberately stays at 0.2.0.dev0 (which 1.3.0 satisfies): raising it would make pixi.lock stale and red every `pixi run --frozen` lane until a full re-lock, which is a separate change # Story 45.1 # https://github.com/bmad-code-org/bmad-eval-quality
 
 # --- bmad-ui: BMad Method UI dashboards (bmad-loop-adoption W4) ---------------
 # Consumes the consume-not-submit mirrors of staged-recipes#33513
@@ -1925,7 +1932,7 @@ bmad-suite = ">=2026.9.5"         # SelfExplainML metapackage (spec-bmad-suite-m
 [dependencies]
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
-pixi = ">=0.79.0"                 # Pixi package & environment manager
+pixi = ">=0.80.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.2.1"                  # Python package installer
 uv = ">=0.12.10"                   # fast Rust-based Python package installer / resolver
@@ -2317,7 +2324,7 @@ postgresql = ">=18.3,<19"         # server binaries: initdb / pg_ctl / psql / pg
                                   # psycopg2, whereas scribe's `psycopg >=3.3.4` pulls
                                   # psycopg-c, which requires libpq >=18.3. Pinning <18
                                   # here made the solve fail on libpq ==17.11 vs 18.3.
-pgvector = ">=0.8.1"              # the `vector` extension conftest.py requires by name
+pgvector = ">=0.8.6"              # the `vector` extension conftest.py requires by name
 
 [feature.scribe-pg.tasks.scribe-pg-up]
 description = "Start the per-user PostgreSQL+pgvector cluster pyforge-scribe's durable GraphStore tests require, on 127.0.0.1:5433 with database `scribe_graph` -- the DSN tests/unit/conftest.py hard-codes. Idempotent: re-running against a live cluster re-asserts the database and extension rather than failing. Cluster state lives under gitignored var/scribe-pg/, never a container."
