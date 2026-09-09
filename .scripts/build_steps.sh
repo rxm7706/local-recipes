@@ -75,6 +75,14 @@ find ~/staged-recipes-copy/recipes -maxdepth 1 -name ".DS_Store" -delete
 # upstream-shaped checkout still behaves exactly as conda-smithy generated it.
 echo "Pending recipes."
 ls -la ~/staged-recipes-copy/recipes
+# `shopt -s extglob` must run BEFORE this `if`, not inside its `else`. bash reads
+# a compound command in full and PARSES it before executing any branch, so the
+# `!(example|example-v1)` below is parsed at `if`-read time -- while extglob is
+# still off, which is a hard `syntax error near unexpected token '('` that no
+# branch condition can avoid. (Upstream got away with the toggle inline because
+# the line sat at top level, where bash parses one command at a time, after the
+# preceding `shopt` had already executed.)
+shopt -s extglob dotglob
 if [ -n "${TEST_RECIPE:-}" ]; then
     echo "TEST_RECIPE=${TEST_RECIPE}: keeping only that recipe in the build copy."
     if [ ! -d ~/staged-recipes-copy/recipes/"${TEST_RECIPE}" ]; then
@@ -90,11 +98,10 @@ else
     if [ "${CI:-}" != "" ]; then
         git fetch --force origin main:main
     fi
-    shopt -s extglob dotglob
     git ls-tree --name-only main -- !(example|example-v1)  | xargs -I {} sh -c "rm -rf ~/staged-recipes-copy/recipes/{} && echo Removing recipe: {}"
-    shopt -u extglob dotglob
     popd > /dev/null
 fi
+shopt -u extglob dotglob
 
 # Update environment
 mv /opt/conda/conda-meta/history /opt/conda/conda-meta/history.$(date +%Y-%m-%d-%H-%M-%S)
