@@ -8,7 +8,7 @@ runs:
   using: composite
   steps:
     - name: setup-pixi (platform-ci-test)
-      uses: prefix-dev/setup-pixi@v0.10.0
+      uses: prefix-dev/setup-pixi@v0.10.2
       with:
         pixi-version: v0.80.0
         environments: platform-ci-test

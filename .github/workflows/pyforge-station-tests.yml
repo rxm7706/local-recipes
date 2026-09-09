@@ -137,7 +137,7 @@ jobs:
         run: pixi run --frozen -e pyforge-atlas python -m playwright install --with-deps chromium
       - name: Provision the DuckDB httpfs extension
         run: pixi run --frozen -e pyforge-atlas python -c "import duckdb; duckdb.connect().execute('INSTALL httpfs')"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Build the WASM smoke-test artifact
