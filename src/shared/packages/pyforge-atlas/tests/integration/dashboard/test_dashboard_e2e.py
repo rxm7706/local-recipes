@@ -26,6 +26,27 @@ def get_free_port() -> int:
     return port
 
 
+def wait_for_server(port: int, proc: multiprocessing.Process, timeout: float = 60.0) -> None:
+    """Block until the server accepts connections on `port`.
+
+    Vizro builds every page before werkzeug binds the socket, so how long that
+    takes varies with the machine. Polling instead of sleeping a fixed interval
+    keeps the fixture from handing out a URL that is not listening yet.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not proc.is_alive():
+            raise RuntimeError(
+                f"dashboard server exited (code {proc.exitcode}) before binding port {port}"
+            )
+        with socket.socket() as probe:
+            probe.settimeout(0.5)
+            if probe.connect_ex(("127.0.0.1", port)) == 0:
+                return
+        time.sleep(0.1)
+    raise RuntimeError(f"dashboard server did not bind port {port} within {timeout:.0f}s")
+
+
 def run_vizro_server(port: int, data_root: str, stamp: str, now: int, sprint_path: str, epics_path: str, specs_dir: str) -> None:
     """Target function for background server process."""
     os.environ["PORT"] = str(port)
@@ -79,9 +100,9 @@ def dashboard_server(feedstock_health_parquet, package_maintainers_parquet, pack
     )
     proc.start()
     
-    # Give the server a couple of seconds to spin up and bind to the port
-    time.sleep(3.0)
-    
+    # Wait for the server to actually bind, however long the Vizro build takes
+    wait_for_server(port, proc)
+
     yield f"http://localhost:{port}"
     
     # Clean up background process

@@ -266,7 +266,7 @@
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/conftest.py": "f792ac69084410deff246908e06ea772ce3902b6",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py": "986e92b68b8fedf3052780b84983d7a20399e547",
-   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py": "c1681dd66c9d46329d6cb0d5d1d03db57d6d4c0e",
+   "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py": "6b1e75b886472c9211efdc5827f6ff3876721641",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py": "0bf66be8bf60ed9e458e25901bde4d57ae735e91",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": "e1d846311a8e13c50f91a1bd223ff720d215148c",
    "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py": "09a8b0480ec6799344677b84e4d1b6ff408007ca",
@@ -477,7 +477,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "711124632c1c97ef0a8b76cd188f07eacb285855"
+  "memlog": "492fec416431e26b51a657447a0b32d4ce05d95b"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
