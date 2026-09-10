@@ -93,6 +93,7 @@ on:
       - '.github/workflows/platform-deploy.yml'
       - '.github/actions/platform-test-setup/**'
       - 'scripts/platform-golden-path-promotion.sh'
+      - 'scripts/platform-provision-osv-offline-db.sh'
       - 'scripts/platform-deploy-verify-promotion.py'
   push:
     branches: [main]
@@ -113,6 +114,7 @@ on:
       - '.github/workflows/platform-deploy.yml'
       - '.github/actions/platform-test-setup/**'
       - 'scripts/platform-golden-path-promotion.sh'
+      - 'scripts/platform-provision-osv-offline-db.sh'
       - 'scripts/platform-deploy-verify-promotion.py'
   workflow_dispatch:
     inputs:
@@ -718,6 +720,31 @@ jobs:
           locked: true
           cache: true
 
+      # Story 12.4 (CAP-3): explicit OSV DB provisioning — never silent egress
+      # during the Warden scan. Cache keyed by UTC date so the daily roll owns
+      # refresh; Warden's zip-mtime snapshot_at + 7-day staleness apply at scan.
+      - name: Resolve OSV offline DB cache date key
+        id: osv-db-date
+        run: echo "utc_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore OSV offline DB cache
+        id: osv-db-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: osv-offline-db
+          key: osv-offline-db-${{ steps.osv-db-date.outputs.utc_date }}
+
+      - name: Provision OSV offline DB (connected runner; explicit download)
+        env:
+          OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY: ${{ github.workspace }}/osv-offline-db
+        run: bash scripts/platform-provision-osv-offline-db.sh
+
+      - name: Save OSV offline DB cache
+        uses: actions/cache/save@v6
+        with:
+          path: osv-offline-db
+          key: osv-offline-db-${{ steps.osv-db-date.outputs.utc_date }}
+
       - name: Record digests + Warden verdict (golden-path promotion)
         env:
           PLATFORM_REF: ${{ env.PLATFORM_CI_IMAGE_REF }}
@@ -725,6 +752,7 @@ jobs:
           MCP_HOST_REF: ${{ env.PLATFORM_CI_MCP_HOST_REF }}
           PIXI_ENVIRONMENT: python-agent-platform
           PIXI_PLATFORM: linux-64
+          OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY: ${{ github.workspace }}/osv-offline-db
           OUT: golden-path-promotion.json
         run: bash scripts/platform-golden-path-promotion.sh
 
