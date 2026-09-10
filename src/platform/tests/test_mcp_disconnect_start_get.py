@@ -87,21 +87,23 @@ def _clear_station_mcp_cache(station: str) -> None:
         mod._CACHE.clear()  # noqa: SLF001
 
 
-def _mcp_app(station: str):
+def _build_mcp_face(station: str):
     _clear_station_mcp_cache(station)
     if station == "atlas":
         from django_pyforge.mcp_http import asgi_for_server  # noqa: PLC0415
         from django_pyforge.mcp_start_get import attach_start_get  # noqa: PLC0415
         from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
 
-        mcp_app = asgi_for_server(
+        return asgi_for_server(
             attach_start_get(MCPServer("pyforge-atlas-atlas"), station="atlas"),
         )
-    else:
-        by_name = {portal.station_name: portal for portal in iter_portal_configs()}
-        mcp_app = by_name[station].mcp_asgi_app()
+    by_name = {portal.station_name: portal for portal in iter_portal_configs()}
+    mcp_app = by_name[station].mcp_asgi_app()
     assert mcp_app is not None
+    return mcp_app
 
+
+def _host_app(station: str, mcp_app: Any):
     async def application(scope, receive, send):
         register_station_mcp_app(station, mcp_app)
         if scope["type"] == "lifespan":
@@ -119,6 +121,10 @@ def _mcp_app(station: str):
         await send({"type": "http.response.body", "body": b"not mcp"})
 
     return application
+
+
+def _mcp_app(station: str):
+    return _host_app(station, _build_mcp_face(station))
 
 
 def _tool_call(
@@ -241,9 +247,28 @@ def _reset_slow_gate():
     _SLOW_GATE.set()
 
 
+@pytest.fixture
+def preserve_test_runner(monkeypatch):
+    """First ``register_runner`` wins — rebuilds must not clobber test doubles."""
+
+    import django_pyforge.supervisor as supervisor  # noqa: PLC0415
+
+    original = supervisor.register_runner
+
+    def _preserve(station: str, tool: str, fn: object) -> None:
+        key = (station, tool)
+        if key not in supervisor._runners:  # noqa: SLF001
+            original(station, tool, fn)
+
+    monkeypatch.setattr(supervisor, "register_runner", _preserve)
+
+
 @pytest.fixture(autouse=True)
 def _reset_mcp_app_caches():
     """Each TestClient lifespan needs a fresh StreamableHTTPSessionManager."""
+    import django_pyforge.supervisor as supervisor  # noqa: PLC0415
+
+    supervisor._runners.clear()  # noqa: SLF001
     import django_atlas_portal.mcp_asgi as atlas_mcp  # noqa: PLC0415
     import django_doctor_portal.mcp_asgi as doctor_mcp  # noqa: PLC0415
     import django_herald_portal.mcp_asgi as herald_mcp  # noqa: PLC0415
@@ -305,6 +330,7 @@ def test_start_get_tools_are_listed(face: StationStartGet) -> None:
 def test_mcp_disconnect_then_get_retrieves_result(
     face: StationStartGet,
     monkeypatch,
+    preserve_test_runner,
 ) -> None:
     """Drop transport mid-get while the op runs, then reconnect and retrieve."""
     calls = {"n": 0}
@@ -330,8 +356,10 @@ def test_mcp_disconnect_then_get_retrieves_result(
         else {"target": ".", "assertion": assertion}
     )
 
-    with TestClient(_mcp_app(face.station)) as client:
-        register_runner(face.station, face.run_tool, counting_slow_runner)
+    register_runner(face.station, face.run_tool, counting_slow_runner)
+    mcp_face = _build_mcp_face(face.station)
+
+    with TestClient(_host_app(face.station, mcp_face)) as client:
         started = _tool_call(
             client,
             face.station,
@@ -351,7 +379,8 @@ def test_mcp_disconnect_then_get_retrieves_result(
     worker.start()
 
     # Attempt get while worker is blocked — transport disconnect injected.
-    disconnect_app = _disconnect_on_get_asgi(_mcp_app(face.station))
+    fresh_face = _build_mcp_face(face.station)
+    disconnect_app = _disconnect_on_get_asgi(_host_app(face.station, fresh_face))
     with TestClient(disconnect_app) as drop_client:
         try:
             _tool_call(
@@ -366,13 +395,12 @@ def test_mcp_disconnect_then_get_retrieves_result(
             pass
 
     time.sleep(0.05)
-    # Rebuild paths call ensure_* and overwrite the counting runner mid-flight.
-    register_runner(face.station, face.run_tool, counting_slow_runner)
     _SLOW_GATE.set()
     worker.join(timeout=10.0)
     assert not worker.is_alive()
 
-    with TestClient(_mcp_app(face.station)) as reconnect:
+    reconnect_face = _build_mcp_face(face.station)
+    with TestClient(_host_app(face.station, reconnect_face)) as reconnect:
         fetched = _tool_call(
             reconnect,
             face.station,
