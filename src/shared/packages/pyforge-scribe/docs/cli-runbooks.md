@@ -13,15 +13,15 @@ precedent this one mirrors).
 checkout, *your* per-user session transcripts
 (`~/.claude/projects/<encoded-repo-path>/*.jsonl`), and the gitignored
 derived graph store (`.claude/data/pyforge-scribe/graph.json`). That is
-why the documented trigger below is a **checked-in systemd-user timer,
-installed by a documented, repeatable act** (`scribe-install-nightly-
-trigger` — Story 8.1, replacing the hand-typed `crontab -e` line this
-section used to document) and **never a GitHub Actions workflow** — see
-"Scope note" under "Installing the nightly trigger" below for the full
-reasoning. The CLI verb itself is the schedulable unit; no scheduler
-dependency (APScheduler, Celery, or similar) is added for one nightly
-invocation, and Scribe's compile does **not** couple into `herald
-scheduler run` — two stations, two schedules, two databases.
+why the documented trigger below is **checked-in and installed by one
+documented, repeatable act** (`scribe-install-nightly-trigger` — Story 8.1,
+replacing the hand-typed `crontab -e` line this section used to document)
+and **never a GitHub Actions workflow** — see "Scope note" under
+"Installing the nightly trigger" below for the full reasoning. The
+installer is pluggable across four backends (`crontab` by default,
+`systemd`, `apscheduler`, `supercronic`); Scribe's compile does **not**
+couple into `herald scheduler run` regardless of backend — two stations,
+two schedules, two databases.
 
 `scribe` is not on `PATH` in a bare shell — run it through the pixi env
 (`pixi run -e pyforge-scribe scribe ...`) from the **repo root**: the CLI
@@ -89,62 +89,55 @@ derived store are pure waste):
 ### Installing the nightly trigger
 
 Story 8.1 replaced the former hand-typed `crontab -e` line with a
-**checked-in, reviewable trigger definition** — a systemd-user timer
-rendered from
-`src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-
-compile.service.tmpl` + `.timer` — installed by one documented,
+**checked-in, reviewable trigger definition**, installed by one documented,
 repeatable pixi task rather than an operator hand-editing their own
-crontab:
+crontab. The installer is **pluggable across four backends**, chosen via
+`--backend NAME` or `PYFORGE_SCRIBE_TRIGGER_BACKEND` (default: `crontab`):
+
+| Backend | What it needs | Persists across logout/reboot on its own? |
+|---|---|---|
+| `crontab` (**default**) | the system `crontab` CLI (from your distro's cron package — virtually always already installed) | **Yes** — standard cron ignores login/linger state entirely |
+| `systemd` | `systemctl`/`loginctl` (Linux systemd-user) | Yes, but only after `loginctl enable-linger $USER` |
+| `apscheduler` | nothing beyond the pixi env | **No** — in-process library, not a service manager; you must launch and keep the runner alive yourself |
+| `supercronic` | the `supercronic` binary — **manual, out-of-pixi install** (no conda-forge or PyPI package; github.com/aptible/supercronic releases) | **No** — same as apscheduler, nothing supervises the process |
+
+Only `crontab` and `systemd` are genuinely install-and-forget, because both
+delegate to a host-managed service that starts and restarts the job on its
+own. `crontab` is the default specifically because it gets that same
+"survives full logout" guarantee `systemd` needs an extra `loginctl` step
+for, with no `systemctl`/`loginctl` call at all.
 
 ```
 $ cd /path/to/local-recipes
 $ pixi run -e pyforge-scribe scribe-install-nightly-trigger
-scribe-install-nightly-trigger: installed and enabled pyforge-scribe-nightly-compile.timer
-  status:     systemctl --user status pyforge-scribe-nightly-compile.timer
-  next run:   systemctl --user list-timers pyforge-scribe-nightly-compile.timer
-  unit files: /home/you/.config/systemd/user
+scribe-install-nightly-trigger: installed crontab entry (30 2 * * *)
+  view: crontab -l
+  log:  /home/you/.cache/scribe-nightly-compile.log
+  standard cron fires regardless of login/linger state -- no loginctl step needed for this backend
 ```
 
-This renders the checked-in template with this checkout's absolute path
-and the resolved `pixi` binary substituted, copies both units into
-`~/.config/systemd/user/`, then runs `systemctl --user daemon-reload` and
-`enable --now` — idempotent, safe to re-run any time (after moving the
-checkout, for example). The rendered `.service` unit runs
-`pyforge-scribe-nightly-compile` (`scripts/scribe_nightly_trigger.py`),
-which invokes `scribe graph compile --nightly` and propagates its exit
-code unchanged; the `.timer` unit fires it at 02:30 daily
-(`Persistent=true` catches up a firing missed while the machine was off).
-Logs append to `~/.cache/scribe-nightly-compile.log` (stdout and stderr,
-including every `warning:` line — the unit's own `StandardOutput`/
-`StandardError=append:...` directives, mirroring the former cron line's
-redirection), so `tail` that file, or `journalctl --user -u
-pyforge-scribe-nightly-compile.service`, to see what recent runs did.
+The crontab entry it writes runs the same
+`pyforge-scribe-nightly-compile` pixi task every backend schedules
+(`scripts/scribe_nightly_trigger.py`, which invokes `scribe graph compile
+--nightly` and propagates its exit code unchanged), at 02:30 daily,
+appending both streams to `~/.cache/scribe-nightly-compile.log` — `tail`
+that file to see what recent runs did. Re-running the installer is
+idempotent: it finds and replaces its own prior entry (matched by a fixed
+crontab comment) rather than accumulating duplicates.
 
 To validate a fresh install without waiting for the next 02:30 firing, run
-the service once by hand:
+the same task by hand:
 
 ```
-$ systemctl --user start pyforge-scribe-nightly-compile.service
+$ pixi run -e pyforge-scribe pyforge-scribe-nightly-compile
 ```
 
 then check `tail ~/.cache/scribe-nightly-compile.log` or run `pixi run -e
 local-recipes scribe-graph-freshness-check` to confirm the graph store's
 mtime just advanced.
 
-To disable/uninstall the trigger, stop and disable the timer:
-
-```
-$ systemctl --user disable --now pyforge-scribe-nightly-compile.timer
-```
-
-**Linger requirement.** A systemd-user timer only fires on its own while
-the invoking user has an active login session; `Persistent=true` (below)
-catches up a firing missed while the machine was briefly off, but it does
-**not** fire while the user is fully logged out for an extended period. If
-this machine is not kept continuously logged in, run `loginctl
-enable-linger $USER` once so the timer keeps firing regardless — the
-installer checks this (best-effort) and prints an advisory to stderr when
-linger is off.
+To disable/uninstall the `crontab` backend's entry, edit it out by hand:
+`crontab -e` and delete the line commented `pyforge-scribe-nightly-compile`.
 
 This installation act is still **opt-in** — nothing forces an operator to
 run it, and a checkout without it simply has a staler compiled graph
@@ -168,14 +161,57 @@ rather than ever reporting a red scheduled run for a driver this machine
 cannot confirm live. The default `FlatFileGraphStore` path needs none of
 this and is unaffected.
 
-A systemd-user unit does not inherit an operator's own interactive shell
-environment, so `PYFORGE_GRAPHSTORE_OWNER` must be baked into the rendered
-`.service` file at install time (exactly like `PIXI_BIN` already is) for
-the scheduled run to ever see it — **re-run `pixi run -e pyforge-scribe
-scribe-install-nightly-trigger` any time you set or change
+None of the four backends' scheduled runs inherit an operator's own
+interactive shell environment, so `PYFORGE_GRAPHSTORE_OWNER` must be baked
+into whatever the installer writes (the crontab command line, the rendered
+`.service` unit, the apscheduler runner script, or the supercronic job
+file) at install time — **re-run the installer any time you set or change
 `PYFORGE_GRAPHSTORE_OWNER`**, or the nightly run keeps silently compiling
 against the default `FlatFileGraphStore` regardless of what you configured
 for interactive use.
+
+#### The `systemd` backend
+
+`PYFORGE_SCRIBE_TRIGGER_BACKEND=systemd pixi run -e pyforge-scribe
+scribe-install-nightly-trigger` renders
+`src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-
+compile.service.tmpl` + `.timer` (this checkout's absolute path and the
+resolved `pixi` binary substituted) into `~/.config/systemd/user/`, then
+runs `systemctl --user daemon-reload` and `enable --now` — idempotent,
+safe to re-run any time (after moving the checkout, for example).
+
+```
+$ PYFORGE_SCRIBE_TRIGGER_BACKEND=systemd pixi run -e pyforge-scribe scribe-install-nightly-trigger
+scribe-install-nightly-trigger: installed and enabled pyforge-scribe-nightly-compile.timer
+  status:     systemctl --user status pyforge-scribe-nightly-compile.timer
+  next run:   systemctl --user list-timers pyforge-scribe-nightly-compile.timer
+  unit files: /home/you/.config/systemd/user
+```
+
+Validate with `systemctl --user start pyforge-scribe-nightly-compile.service`;
+uninstall with `systemctl --user disable --now pyforge-scribe-nightly-compile.timer`.
+
+**Linger requirement.** A systemd-user timer only fires on its own while
+the invoking user has an active login session; `Persistent=true` catches
+up a firing missed while the machine was briefly off, but it does **not**
+fire while the user is fully logged out for an extended period. If this
+machine is not kept continuously logged in, run `loginctl enable-linger
+$USER` once so the timer keeps firing regardless — the installer checks
+this (best-effort) and prints an advisory to stderr when linger is off.
+The `crontab` backend needs none of this.
+
+#### The `apscheduler` and `supercronic` backends
+
+Both write a job definition (an apscheduler runner script under
+`~/.config/pyforge-scribe/nightly_scheduler.py`, or a crontab-format job
+file at `~/.config/pyforge-scribe/supercronic.crontab`) but **do not
+supervise the process themselves** — the installer prints this caveat to
+stderr on every run. Pick one of these only if you already have your own
+process supervisor (tmux, nohup, a systemd-user service pointed at the
+runner file, ...) you'd rather point at scribe's job than adopt `crontab`
+or `systemd` directly. `supercronic` additionally needs its own binary
+installed by hand first (github.com/aptible/supercronic releases) — it has
+no conda-forge or PyPI package, so `pixi install` cannot provide it.
 
 #### Scope note: why not a GitHub Actions workflow
 

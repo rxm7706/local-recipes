@@ -2314,6 +2314,8 @@ hatchling = ">=1.32.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+python-crontab = ">=3.4.0"        # Story 8.1: scribe_install_nightly_trigger.py's DEFAULT `crontab` backend -- pure-Python crontab read/write, no systemctl/loginctl needed (standard cron ignores session/linger state)
+apscheduler = ">=3.11.3"          # Story 8.1: the opt-in `apscheduler` backend (PYFORGE_SCRIBE_TRIGGER_BACKEND=apscheduler) -- in-process only, does not persist across logout/reboot on its own; see the installer's own printed caveat
 # --- pyforge-herald (Herald): pixi build workspace member (warden/atlas mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-herald (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2453,7 +2455,7 @@ description = "Story 8.1 (spec-8-1): the nightly-compile TRIGGER body -- the one
 cmd = "python scripts/scribe_nightly_trigger.py"
 
 [feature.pyforge-scribe.tasks.scribe-install-nightly-trigger]
-description = "Story 8.1 (spec-8-1): installs the checked-in nightly-compile trigger as a systemd-user timer -- renders ops/systemd/pyforge-scribe-nightly-compile.service.tmpl (repo root + resolved `pixi` path substituted) and copies the static .timer unit into ~/.config/systemd/user/, then `systemctl --user daemon-reload` + `enable --now`. Idempotent: re-running re-renders and re-asserts enablement. Replaces the former hand-typed `crontab -e` line documented in docs/cli-runbooks.md -- this IS the documented, repeatable installation act. Linux systemd-user only (see the runbook's Scope note)."
+description = "Story 8.1 (spec-8-1): installs the checked-in nightly-compile trigger via a pluggable backend (`--backend NAME` or PYFORGE_SCRIBE_TRIGGER_BACKEND, default `crontab`). `crontab` (default) writes a plain user-crontab entry via python-crontab -- no systemctl/loginctl needed. `systemd` is the original systemd-user timer (`ops/systemd/pyforge-scribe-nightly-compile.service.tmpl` + `.timer`, `systemctl --user daemon-reload` + `enable --now`). `apscheduler` and `supercronic` are in-process/foreground-only options that write their job definition but do not supervise the process themselves -- the installer prints that caveat. Idempotent: re-running re-asserts the trigger for whichever backend is selected. Replaces the former hand-typed `crontab -e` line documented in docs/cli-runbooks.md -- this IS the documented, repeatable installation act."
 cmd = "python scripts/scribe_install_nightly_trigger.py"
 
 [feature.pyforge-herald.tasks.pyforge-herald-test]
