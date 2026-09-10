@@ -395,6 +395,11 @@ class FakeHarness:
         }
         self.fail_adapter: Exception | None = None
         self.feed_error: str | None = None
+        # 2026-09-10: Tier-3-vs-ledger drift check. Empty by default on
+        # both sides -- `ledger_raw or tier3_raw` is falsy, so the drift
+        # block is skipped and existing tests see no new findings/calls.
+        self.ledger_statuses_map: dict[str, tuple[tuple[str, str], ...]] = {}
+        self.fail_ledger_story_statuses: Exception | None = None
         # Story 6.3: `run_preflight`'s own new `gather_conformance_findings`
         # step. Empty by default -- no configured adapter's declared tree
         # differs from canonical -- so existing preflight tests (none of
@@ -438,6 +443,12 @@ class FakeHarness:
     def story_feed_error(self, project: Path) -> str | None:
         self.calls.append("story_feed_error")
         return self.feed_error
+
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        self.calls.append(f"ledger_story_statuses:{path.name}")
+        if self.fail_ledger_story_statuses:
+            raise self.fail_ledger_story_statuses
+        return self.ledger_statuses_map.get(path.name, ())
 
     def adapter_skill_trees(self, project: Path) -> dict[str, str]:
         """Story 6.3: `run_preflight`'s own new `gather_conformance_findings`

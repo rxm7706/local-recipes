@@ -16,6 +16,7 @@ from pyforge.marshal.core.refresh import (
     STEP_FAST_FORWARD,
     STEP_PUSH,
     STEP_RENDER_POLICY,
+    STEP_SYNC_STATUS,
     RefreshStep,
     is_incomplete_refresh,
     ordered_steps,
@@ -37,6 +38,7 @@ def test_is_incomplete_when_ff_done_and_render_failed():
         fast_forward=RefreshStep(STEP_FAST_FORWARD, "done"),
         push=RefreshStep(STEP_PUSH, "done"),
         render_policy=RefreshStep(STEP_RENDER_POLICY, "failed", "boom"),
+        sync_status=RefreshStep(STEP_SYNC_STATUS, "done"),
     )
     assert is_incomplete_refresh(steps) is True
 
@@ -46,6 +48,7 @@ def test_not_incomplete_when_ff_skipped():
         fast_forward=RefreshStep(STEP_FAST_FORWARD, "skipped", "already current"),
         push=RefreshStep(STEP_PUSH, "done"),
         render_policy=RefreshStep(STEP_RENDER_POLICY, "failed"),
+        sync_status=RefreshStep(STEP_SYNC_STATUS, "done"),
     )
     assert is_incomplete_refresh(steps) is False
 
@@ -255,3 +258,119 @@ def test_cli_wired_through_main(tmp_path, monkeypatch):
 
     monkeypatch.chdir(tmp_path)
     assert main(["refresh", "--help"]) == 0
+
+
+def test_sync_status_step_skips_when_no_epics_md(tmp_path):
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "skipped"
+    assert "epics.md" in result.detail
+
+
+def test_sync_status_step_skips_when_script_missing(tmp_path):
+    epics = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
+    )
+    epics.parent.mkdir(parents=True)
+    epics.write_text("# Epic 1\n", encoding="utf-8")
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "skipped"
+    assert "sprint_plan.py" in result.detail
+
+
+def _seed_epics_and_script(tmp_path: Path) -> None:
+    epics = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
+    )
+    epics.parent.mkdir(parents=True)
+    epics.write_text("# Epic 1\n", encoding="utf-8")
+    script = (
+        tmp_path
+        / ".claude"
+        / "skills"
+        / "bmad-sprint-planning"
+        / "scripts"
+        / "sprint_plan.py"
+    )
+    script.parent.mkdir(parents=True)
+    script.write_text("# stub\n", encoding="utf-8")
+
+
+def test_sync_status_step_reports_done_with_new_entries(tmp_path, monkeypatch):
+    _seed_epics_and_script(tmp_path)
+
+    class _Result:
+        returncode = 0
+        stdout = json.dumps({"ok": True, "new_entries": ["epic-2", "2-1-x"]})
+        stderr = ""
+
+    monkeypatch.setattr(
+        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
+    )
+    findings: list = []
+    result = refresh_mod._sync_status_step("acme", tmp_path, findings)
+    assert result.status == "done"
+    assert "2 new entries" in result.detail
+    assert findings == []
+
+
+def test_sync_status_step_reports_in_sync_with_no_new_entries(tmp_path, monkeypatch):
+    _seed_epics_and_script(tmp_path)
+
+    class _Result:
+        returncode = 0
+        stdout = json.dumps({"ok": True, "new_entries": []})
+        stderr = ""
+
+    monkeypatch.setattr(
+        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
+    )
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "done"
+    assert result.detail == "in sync"
+
+
+def test_sync_status_step_reports_failure_and_finding(tmp_path, monkeypatch):
+    _seed_epics_and_script(tmp_path)
+
+    class _Result:
+        returncode = 1
+        stdout = ""
+        stderr = "boom"
+
+    monkeypatch.setattr(
+        refresh_mod.subprocess, "run", lambda argv, **kw: _Result()
+    )
+    findings: list = []
+    result = refresh_mod._sync_status_step("acme", tmp_path, findings)
+    assert result.status == "failed"
+    assert any(f.code == "MRS-REFRESH-008" for f in findings)
+
+
+def test_sync_status_step_reports_failure_when_launch_raises(tmp_path, monkeypatch):
+    _seed_epics_and_script(tmp_path)
+
+    def _boom(argv, **kw):
+        raise OSError("no uv on PATH")
+
+    monkeypatch.setattr(refresh_mod.subprocess, "run", _boom)
+    findings: list = []
+    result = refresh_mod._sync_status_step("acme", tmp_path, findings)
+    assert result.status == "failed"
+    assert any(f.code == "MRS-REFRESH-008" for f in findings)
+
+
+def test_run_refresh_includes_sync_status_step(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "acme"
+    home.mkdir()
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        behind={"acme": 2},
+    )
+    monkeypatch.setattr(vcs, "repo_common_root", lambda start: tmp_path)
+    run_refresh(_ns(), vcs=vcs)
+    out = json.loads(capsys.readouterr().out)
+    row = out["data"]["homes"][0]
+    steps = {s["name"]: s for s in row["steps"]}
+    assert "sync_status" in steps
+    assert steps["sync_status"]["status"] == "skipped"  # no epics.md under tmp_path

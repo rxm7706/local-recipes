@@ -233,6 +233,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-REFRESH-005",
             "MRS-REFRESH-006",
             "MRS-REFRESH-007",
+            "MRS-REFRESH-008",
             "MRS-CHAIN-001",
             "MRS-CHAIN-002",
             "MRS-CHAIN-003",
@@ -340,6 +341,7 @@ def test_registered_codes_contains_the_real_codes():
             # unloadable packaged seed manifest. WARN, the same tier and the
             # same reason as the two Story 28.2 codes above.
             "MRS-PREFLIGHT-015",
+            "MRS-PREFLIGHT-016",
             # Story 28.15 (scope-violation enforcement mode, policy-declared,
             # default warn, CAP-17): MRS-GATE-012/013 are the warn-mode
             # advisory siblings of MRS-GATE-007/008.
