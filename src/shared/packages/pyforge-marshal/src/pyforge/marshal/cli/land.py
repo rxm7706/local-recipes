@@ -1327,6 +1327,36 @@ def _load_promote_sprint_status_module() -> object | None:
     return module
 
 
+def _land_feed_sync_refusal(
+    promote_mod: object,
+    existing: dict[str, str],
+    incoming: dict[str, str],
+) -> tuple[str, str] | None:
+    """``(label, detail)`` naming why a feed-sync promotion must be refused,
+    or ``None`` when the incoming feed is safe to promote as-is.
+
+    ``regressions()`` only catches a key MOVING out of a protected state
+    (done / story blocked) -- it does not catch a key the feed drops
+    entirely while never having promoted it in the first place (e.g. a
+    still-backlog story in a freshly-authored epic the Tier-3 feed has
+    never seen). Mirrors ``promote_sprint_status.main()``'s own ``missing``
+    computation (Story 48.1) -- that fix landed in the standalone CLI's
+    ``main()`` only; ``_promote_sprint_ledger`` never routes through it, so
+    the same guard is duplicated here rather than assumed inherited. Live
+    incident 2026-09-10: this exact gap silently dropped pyforge-warden's
+    Epic 12 backlog stories 6 seconds after this function auto-landed
+    Story 12.1 (restored by hand, PR #1117)."""
+    lost = promote_mod.regressions(existing, incoming)
+    missing = [k for k in existing if k not in incoming]
+    if not lost and not missing:
+        return None
+    if lost:
+        detail = ", ".join(f"{k} ({old} -> {new})" for k, old, new in lost)
+        return "un-finish", detail
+    detail = ", ".join(sorted(missing))
+    return "drop", detail
+
+
 def _promote_sprint_ledger(
     fs: FsPort,
     vcs: VcsPort,
@@ -1489,19 +1519,16 @@ def _promote_sprint_ledger(
                     if fresh_ledger.strip()
                     else {}
                 )
-                lost = promote_mod.regressions(existing, incoming)
-                if lost:
-                    detail = ", ".join(
-                        f"{k} ({old} -> {new})" for k, old, new in lost
-                    )
+                refusal = _land_feed_sync_refusal(promote_mod, existing, incoming)
+                if refusal is not None:
+                    label, detail = refusal
                     findings.append(
                         Finding(
                             code=_MRS_LAND_011,
                             severity=Severity.WARN,
                             message=(
                                 f"refusing to promote sprint ledger for "
-                                f"{slug!r}: feed would un-finish "
-                                f"{len(lost)} key(s): {detail}"
+                                f"{slug!r}: feed would {label} key(s): {detail}"
                             ),
                             path=str(ledger_path),
                         )
