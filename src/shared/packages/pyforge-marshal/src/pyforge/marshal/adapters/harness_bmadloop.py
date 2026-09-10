@@ -221,6 +221,7 @@ from ..core.harness_profile import (
     bmadloop_adapter_for_preference,
     load_packaged_profiles,
     resolve_wire_wrap,
+    substitute_wire_port,
 )
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.model_cost import (
@@ -990,10 +991,13 @@ def attempt_spin_wire_layer(
             )
 
     try:
+        resolved_wrapper_argv = substitute_wire_port(
+            profile.wrapper.argv, worktree=loop_home
+        )
         overlay = _render_bmadloop_wire_profile_overlay(
             adapter_name=adapter_name,
             wrapper_binary=profile.wrapper.binary,
-            wrapper_argv=profile.wrapper.argv,
+            wrapper_argv=resolved_wrapper_argv,
             wire_env=wire.env,
         )
         write_spin_wire_profile_overlay(loop_home, adapter_name, overlay)
