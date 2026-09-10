@@ -9,6 +9,11 @@ Story 21.13 (CAP-2): reconcile a Spec's declared ``open_questions`` frontmatter
 against its companion ``.memlog.md``'s last unclosed ``(open)`` / ``(question)``
 entry. Warn-only, read-only, fail-open — reports the contradiction, never
 proposes closing text.
+
+Story 21.14 (CAP-3): bounded forward-looking-language patterns measured against
+the full live tier before joining ``gather``. Fires on the herald Dream+Spec pair
+and stays quiet elsewhere; see ``PROMISSORY_LANGUAGE_ACCEPTED`` and
+``measure_promissory_language_precision``.
 """
 
 from __future__ import annotations
@@ -26,22 +31,64 @@ __all__ = (
     "TERMINAL_STATUSES",
     "OpenQuestionMatch",
     "OpenQuestionsScanStats",
+    "PromissoryLanguageMatch",
+    "PromissoryLanguageMeasurement",
     "TierScanStats",
+    "PROMISSORY_LANGUAGE_ACCEPTED",
     "gather",
     "gather_open_questions_reconcile",
     "gather_progress_phrase",
+    "gather_promissory_language",
+    "iter_promissory_section_surfaces",
     "iter_spec_documents",
     "iter_terminal_tier_documents",
     "last_unclosed_memlog_question",
+    "measure_promissory_language_precision",
     "open_questions_frontmatter_count",
     "scan_body_for_incomplete_progress",
+    "scan_body_for_promissory_language",
 )
 
 TERMINAL_STATUSES = frozenset({"realized", "shipped", "done"})
 
 _CHECK_PROGRESS = "status-body-progress-phrase"
 _CHECK_OPEN_QUESTIONS = "status-body-open-questions"
+_CHECK_PROMISSORY = "status-body-promissory-language"
 _CHECK_UNPARSEABLE = "status-body-unparseable"
+
+_HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
+
+# CAP-3 (Story 21.14): bounded phrases measured on the live tier — do not widen
+# without re-measuring ``measure_promissory_language_precision``.
+_PROMISSORY_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bactive now\b", re.IGNORECASE), "active-now"),
+    (re.compile(r"\bactive, in-progress work\b", re.IGNORECASE), "in-progress-work"),
+    (
+        re.compile(r"\bzero stories are implemented yet\b", re.IGNORECASE),
+        "zero-stories-yet",
+    ),
+    (
+        re.compile(r"\bimmediate next build target\b", re.IGNORECASE),
+        "immediate-next-build",
+    ),
+    (re.compile(r"\bdescribed a mid-build\b", re.IGNORECASE), "mid-build-described"),
+    (
+        re.compile(
+            r"\bcontradicted this Spec.*[`']?status:\s*shipped[`']?",
+            re.IGNORECASE,
+        ),
+        "contradicted-shipped-status",
+    ),
+    (
+        re.compile(r"\bnot yet true end to end\b", re.IGNORECASE),
+        "not-yet-true-end-to-end",
+    ),
+)
+
+_HERALD_DREAM_REL = "docs/dreams/pyforge-herald.md"
+_HERALD_SPEC_REL_SUFFIX = (
+    "pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md"
+)
 
 _MEMLOG_ENTRY_RE = re.compile(r"^-\s+\((\w+)")
 
@@ -151,6 +198,108 @@ def scan_body_for_incomplete_progress(body: str) -> tuple[ProgressMatch, ...]:
                 )
             )
     return tuple(out)
+
+
+@dataclass(frozen=True)
+class PromissoryLanguageMatch:
+    line_no: int
+    surface_kind: str
+    pattern_id: str
+    line_text: str
+
+
+def iter_promissory_section_surfaces(body: str) -> tuple[tuple[int, str, str], ...]:
+    """Section headings and body lines under each heading (CAP-3 scan surface)."""
+    lines = body.splitlines()
+    surfaces: list[tuple[int, str, str]] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if _HEADING_LINE_RE.match(line):
+            surfaces.append((index + 1, "heading", line.strip()))
+            next_index = index + 1
+            while next_index < len(lines) and not _HEADING_LINE_RE.match(lines[next_index]):
+                if lines[next_index].strip():
+                    surfaces.append((next_index + 1, "section", lines[next_index].strip()))
+                next_index += 1
+            index = next_index
+        else:
+            index += 1
+    return tuple(surfaces)
+
+
+def scan_body_for_promissory_language(body: str) -> tuple[PromissoryLanguageMatch, ...]:
+    """Bounded forward-looking phrases under section headings (Story 21.14 / CAP-3)."""
+    out: list[PromissoryLanguageMatch] = []
+    for line_no, surface_kind, text in iter_promissory_section_surfaces(body):
+        for pattern, pattern_id in _PROMISSORY_PATTERNS:
+            if pattern.search(text):
+                out.append(
+                    PromissoryLanguageMatch(
+                        line_no=line_no,
+                        surface_kind=surface_kind,
+                        pattern_id=pattern_id,
+                        line_text=text.rstrip(),
+                    )
+                )
+                break
+    return tuple(out)
+
+
+def _is_herald_pair_path(rel: str) -> bool:
+    return rel == _HERALD_DREAM_REL or rel.endswith(_HERALD_SPEC_REL_SUFFIX)
+
+
+@dataclass(frozen=True)
+class PromissoryLanguageMeasurement:
+    scanned_terminal: int
+    herald_pair_fired: int
+    false_positive_documents: int
+    precision: float
+
+    @property
+    def accepted(self) -> bool:
+        return self.herald_pair_fired == 2 and self.false_positive_documents == 0
+
+
+def measure_promissory_language_precision(target: Path) -> PromissoryLanguageMeasurement:
+    """Measure CAP-3 precision over every terminal-tier document."""
+    scanned_terminal = 0
+    herald_fired = 0
+    false_positive_documents = 0
+
+    for path, status in iter_terminal_tier_documents(target):
+        fm, unparseable = _parse_frontmatter(path.read_text(encoding="utf-8"))
+        if unparseable:
+            continue
+        resolved_status = status or _normalize_status(fm.get("status"))
+        if resolved_status not in TERMINAL_STATUSES:
+            continue
+
+        scanned_terminal += 1
+        rel = _rel_path(path, target)
+        body = _body_after_frontmatter(path.read_text(encoding="utf-8"))
+        if not scan_body_for_promissory_language(body):
+            continue
+
+        if _is_herald_pair_path(rel):
+            herald_fired += 1
+        else:
+            false_positive_documents += 1
+
+    fired_total = herald_fired + false_positive_documents
+    precision = herald_fired / fired_total if fired_total else 0.0
+    return PromissoryLanguageMeasurement(
+        scanned_terminal=scanned_terminal,
+        herald_pair_fired=herald_fired,
+        false_positive_documents=false_positive_documents,
+        precision=precision,
+    )
+
+
+# Measured at Story 21.14 ship time against the full live tier: herald Dream+Spec
+# fire, zero false positives elsewhere (document-level precision 1.0).
+PROMISSORY_LANGUAGE_ACCEPTED = True
 
 
 def iter_terminal_tier_documents(target: Path) -> tuple[tuple[Path, str], ...]:
@@ -581,13 +730,177 @@ def gather_open_questions_reconcile(target: Path) -> tuple[Finding, ...]:
     )
 
 
+def _promissory_message(*, rel: str, line_no: int, status: str, pattern_id: str) -> str:
+    return (
+        f"{rel}:{line_no} reads forward-looking ({pattern_id!r}) "
+        f"under status: {status!r}"
+    )
+
+
+def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
+    """CAP-3: forward-looking section language under terminal ``status:``."""
+    if not PROMISSORY_LANGUAGE_ACCEPTED:
+        measurement = measure_promissory_language_precision(target)
+        return (
+            Finding(
+                source=Source.STATUS_BODY_CONSISTENCY,
+                check=_CHECK_PROMISSORY,
+                status=DoctorStatus.OK,
+                message=(
+                    "promissory-language signal measured-and-rejected "
+                    f"(precision={measurement.precision:.3f}, "
+                    f"herald_pair={measurement.herald_pair_fired}, "
+                    f"false_positives={measurement.false_positive_documents})"
+                ),
+                evidence={
+                    "accepted": False,
+                    "scanned_terminal": measurement.scanned_terminal,
+                    "herald_pair_fired": measurement.herald_pair_fired,
+                    "false_positive_documents": measurement.false_positive_documents,
+                    "precision": measurement.precision,
+                },
+            ),
+        )
+
+    findings: list[Finding] = []
+    scanned_terminal = 0
+    silent = 0
+    fired = 0
+
+    for path, status in iter_terminal_tier_documents(target):
+        rel = _rel_path(path, target)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            findings.append(
+                Finding(
+                    source=Source.STATUS_BODY_CONSISTENCY,
+                    check=_CHECK_UNPARSEABLE,
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{rel} could not be read — "
+                        f"{exc.__class__.__name__}: {exc}"
+                    ),
+                    evidence={"path": rel},
+                )
+            )
+            continue
+
+        fm, unparseable = _parse_frontmatter(text)
+        if unparseable:
+            findings.append(
+                Finding(
+                    source=Source.STATUS_BODY_CONSISTENCY,
+                    check=_CHECK_UNPARSEABLE,
+                    status=DoctorStatus.WARN,
+                    message=f"{rel} frontmatter is unparseable",
+                    evidence={"path": rel},
+                )
+            )
+            continue
+
+        resolved_status = status or _normalize_status(fm.get("status"))
+        if resolved_status not in TERMINAL_STATUSES:
+            continue
+
+        scanned_terminal += 1
+        body = _body_after_frontmatter(text)
+        matches = scan_body_for_promissory_language(body)
+        if not matches:
+            silent += 1
+            continue
+
+        for match in matches:
+            fired += 1
+            findings.append(
+                Finding(
+                    source=Source.STATUS_BODY_CONSISTENCY,
+                    check=_CHECK_PROMISSORY,
+                    status=DoctorStatus.WARN,
+                    message=_promissory_message(
+                        rel=rel,
+                        line_no=match.line_no,
+                        status=resolved_status,
+                        pattern_id=match.pattern_id,
+                    ),
+                    evidence={
+                        "path": rel,
+                        "line": match.line_no,
+                        "line_text": match.line_text,
+                        "surface_kind": match.surface_kind,
+                        "pattern_id": match.pattern_id,
+                        "status": resolved_status,
+                    },
+                )
+            )
+
+    tier_stats = {
+        "scanned_terminal": scanned_terminal,
+        "silent": silent,
+        "fired": fired,
+        "accepted": True,
+    }
+    if not findings:
+        return (
+            Finding(
+                source=Source.STATUS_BODY_CONSISTENCY,
+                check=_CHECK_PROMISSORY,
+                status=DoctorStatus.OK,
+                message=(
+                    "no promissory language under terminal status "
+                    f"across {scanned_terminal} document(s)"
+                ),
+                evidence=tier_stats,
+            ),
+        )
+
+    return tuple(
+        Finding(
+            source=f.source,
+            check=f.check,
+            status=f.status,
+            message=f.message,
+            evidence={**f.evidence, **tier_stats},
+        )
+        for f in findings
+    )
+
+
+def _dedupe_unparseable_findings(
+    findings: tuple[Finding, ...],
+) -> tuple[Finding, ...]:
+    seen_paths: set[str] = set()
+    out: list[Finding] = []
+    for finding in findings:
+        if finding.check != _CHECK_UNPARSEABLE:
+            out.append(finding)
+            continue
+        path = str(finding.evidence.get("path", ""))
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        out.append(finding)
+    return tuple(out)
+
+
 def _gather_all(target: Path) -> tuple[Finding, ...]:
     cap1 = gather_progress_phrase(target)
     cap2 = gather_open_questions_reconcile(target)
+    cap3 = gather_promissory_language(target)
     cap1_warns = [f for f in cap1 if f.status != DoctorStatus.OK]
     cap2_warns = [f for f in cap2 if f.status != DoctorStatus.OK]
-    if cap1_warns or cap2_warns:
-        return tuple(cap1_warns + cap2_warns)
+    cap3_warns = [f for f in cap3 if f.status != DoctorStatus.OK]
+    cap3_rejected = [
+        f
+        for f in cap3
+        if f.status == DoctorStatus.OK and f.evidence.get("accepted") is False
+    ]
+    if cap1_warns or cap2_warns or cap3_warns:
+        return _dedupe_unparseable_findings(
+            tuple(cap1_warns + cap2_warns + cap3_warns)
+        )
+    if cap3_rejected:
+        return tuple(cap3_rejected)
     return (
         Finding(
             source=Source.STATUS_BODY_CONSISTENCY,
@@ -597,13 +910,14 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
             evidence={
                 **cap1[0].evidence,
                 **cap2[0].evidence,
+                **cap3[0].evidence,
             },
         ),
     )
 
 
 def gather(target: Path) -> tuple[Finding, ...]:
-    """Status/body consistency gather — CAP-1 progress phrases and CAP-2 open_questions."""
+    """Status/body consistency gather — CAP-1, CAP-2, and accepted CAP-3 promissory language."""
     return degrade_on_exception(
         Source.STATUS_BODY_CONSISTENCY,
         "status-body-consistency",

@@ -120,6 +120,13 @@ empty or partial glob cannot pass vacuously.
 - Note: no `conda-forge-expert` involvement — this touches no recipe and no CFE surface, so
   Rules 1/2 do not apply to this story.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log

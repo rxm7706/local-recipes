@@ -84,6 +84,13 @@ content rather than by code.
 - It degrades to a named finding when a ledger or `pixi.toml` cannot be read.
 - CAP-1/2/3/5 are left alone — they are descriptions of ledgers the Dream already contains, satisfied by its own content, not by code.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log

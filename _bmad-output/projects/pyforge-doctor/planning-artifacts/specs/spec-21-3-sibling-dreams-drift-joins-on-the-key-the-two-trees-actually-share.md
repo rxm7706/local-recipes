@@ -84,6 +84,13 @@ cannot reproduce the live failure.
 - The token-absent and fetch-failed paths emit a warn-only `sibling-dreams-unreachable` finding naming the reason instead of `return ()`, so "could not look" never renders as "looked and agreed."
 - The unit test is rebuilt on the real 8-shared-filename shape rather than the single synthetic `_DECK_TITLE`, which by construction cannot reproduce the live failure.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log

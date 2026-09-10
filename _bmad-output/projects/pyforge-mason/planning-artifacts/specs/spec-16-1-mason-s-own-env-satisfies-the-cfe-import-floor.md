@@ -109,6 +109,13 @@ reported unavailable, never a hard failure).
 - Rule 1/2: this is CFE-floor work — the change is driven by `cfe.py`'s import floor, so the story
   runs through `conda-forge-expert` and ends with the Rule-2 retro.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
