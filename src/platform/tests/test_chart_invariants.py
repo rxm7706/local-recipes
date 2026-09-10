@@ -2302,7 +2302,13 @@ def test_story_48_9_bundled_keycloak_and_oidc_env_on_platform_pods():
     ]
     assert len(keycloak_deployments) == 1, keycloak_deployments
     by_component = _pod_specs_by_component(docs)
-    for component in ("web", "worker", "beat", "migrate", "liquibase"):
+    for component in (
+        "web",
+        "worker",
+        "beat",
+        "migrate",
+        *_CONSUME_EVENTS_COMPONENTS,
+    ):
         env = _collect_env_by_name(by_component[component])
         for name in _OIDC_ENV_NAMES:
             assert env.get(name, {}).get("value"), f"{component} missing {name}"
@@ -2314,7 +2320,6 @@ def test_story_48_9_byo_profile_skips_keycloak():
     """AC (Story 48.9): BYO profile omits Keycloak and uses explicit OIDC env."""
     docs = _render(
         _CORE_CHART,
-        release="platform",
         "--set",
         "oidc.profile=byo",
         "--set",
@@ -2323,6 +2328,7 @@ def test_story_48_9_byo_profile_skips_keycloak():
         "oidc.byo.jwksUrl=https://idp.example/realms/platform/protocol/openid-connect/certs",
         "--set",
         "oidc.byo.clientId=platform-web",
+        release="platform",
     )
     keycloak_workloads = [
         doc

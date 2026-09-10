@@ -55,7 +55,8 @@ kubectl create secret generic platform-secrets \
     --from-literal=DATABASE_URL=postgres://platform_app:...@platform-postgres:5432/platform \
     --from-literal=MIGRATION_DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
     --from-literal=POSTGRES_PASSWORD=... \
-    --from-literal=REDIS_PASSWORD=...
+    --from-literal=REDIS_PASSWORD=... \
+    --from-literal=KEYCLOAK_ADMIN_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
     --set-file flags.tree=src/platform/config/flags.json \
     --set image.digest=sha256:<digest-from-platform-ci>

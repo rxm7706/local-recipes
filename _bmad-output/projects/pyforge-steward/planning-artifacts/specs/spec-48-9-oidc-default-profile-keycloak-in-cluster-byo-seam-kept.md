@@ -3,7 +3,7 @@ title: "Story 48.9: OIDC default profile — Keycloak in-cluster, BYO seam kept"
 type: story
 created: 2026-09-10
 baseline_revision: 64ea7659d022c4d2c97938c6ac39e936d65c27c4
-status: ready-for-dev
+status: in-review
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

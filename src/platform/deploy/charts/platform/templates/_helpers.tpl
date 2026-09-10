@@ -341,7 +341,7 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
        visibility timeout agree with the --time-limit the builds pod passes. */}}
 - name: CELERY_BUILDS_TASK_TIME_LIMIT
   value: {{ int .Values.worker.builds.taskTimeLimitSeconds | quote }}
-{{ include "platform.oidcEnv" . }}
+{{- include "platform.oidcEnv" . }}
 {{- end }}
 
 {{/*
