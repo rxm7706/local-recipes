@@ -13,7 +13,8 @@ Ships ONLY behind the `pyforge-steward[dashboard]` optional extra, never a
 base dependency. This module deliberately imports nothing from `django` or
 `channels` at package level. Its submodules split two ways: `apps.py`,
 `cache.py`, — since Story 9.3 — `models.py`, `audit.py` and `migrations/`,
-and — since Story 9.2 — `views.py` import `django`; `declarations.py`,
+and — since Story 9.2 — `views.py`, and — since Story 48.6 — `consumers.py`,
+`routing.py`, and `asgi.py` import `django`/`channels`; `declarations.py`,
 `middleware.py`, — since Story 9.4 — `export.py` (`ExportPolicy` +
 `authorize_export`/`maybe_encrypt_export`), and — since Story 9.2 —
 `navigation.py`/`filtering.py` are plain Python (the ASGI3 callable shape
