@@ -533,31 +533,41 @@ def gather_fleet_finalize_escalations(
     fs: FsPort,
     repo_root: Path,
 ) -> dict[str, dispatch_fleet.FinalizeEscalation]:
-    """Active supervisor-finalize shell failures (Story 28.24, CAP-7)."""
+    """Active supervisor-finalize shell failures (Story 28.24, CAP-7).
+
+    Examines only the newest dispatch run per station (Story 28.25) -- an
+    older failed finalize that a later run has since superseded is not an
+    active escalation, so the search does not walk past it. A failure whose
+    worktree has since been removed (e.g. a manual push+PR recovery) is
+    likewise treated as resolved rather than reported forever.
+    """
     escalations: dict[str, dispatch_fleet.FinalizeEscalation] = {}
     for slug in dispatch_core.list_station_slugs(repo_root):
         feed_slug = dispatch_fleet.normalize_station_slug(slug)
-        for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
-            journal_path = run_dir / _JOURNAL_FILENAME
-            text = fs.read_text(journal_path)
-            if text is None:
-                continue
-            folded = fold(text.splitlines())
-            if not finalize_attempt_failed(folded, run_dir.name):
-                continue
-            journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-            if journal.story_key is None:
-                continue
-            worktree = finalize_failure_worktree_path(folded, run_dir.name)
-            if worktree is None:
-                worktree = journal.worktree_path
-            if worktree is None:
-                continue
-            escalations[feed_slug] = dispatch_fleet.FinalizeEscalation(
-                story=journal.story_key,
-                worktree_path=worktree,
-            )
-            break
+        run_dir = latest_dispatch_run_dir(repo_root, slug)
+        if run_dir is None:
+            continue
+        journal_path = run_dir / _JOURNAL_FILENAME
+        text = fs.read_text(journal_path)
+        if text is None:
+            continue
+        folded = fold(text.splitlines())
+        if not finalize_attempt_failed(folded, run_dir.name):
+            continue
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key is None:
+            continue
+        worktree = finalize_failure_worktree_path(folded, run_dir.name)
+        if worktree is None:
+            worktree = journal.worktree_path
+        if worktree is None:
+            continue
+        if not Path(worktree).is_dir():
+            continue
+        escalations[feed_slug] = dispatch_fleet.FinalizeEscalation(
+            story=journal.story_key,
+            worktree_path=worktree,
+        )
     return escalations
 
 

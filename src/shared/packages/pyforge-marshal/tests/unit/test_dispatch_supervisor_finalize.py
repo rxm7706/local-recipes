@@ -251,6 +251,132 @@ def test_gather_fleet_finalize_escalations(tmp_path: Path) -> None:
     assert escalations["pyforge-marshal"].worktree_path == str(wt)
 
 
+def test_gather_fleet_finalize_escalations_superseded_by_success(tmp_path: Path) -> None:
+    """Story 28.25: a newer, successfully-finalized run clears an older failure."""
+    slug = "pyforge-marshal"
+    runs_parent = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs"
+    )
+    wt_old = tmp_path / "wt-old"
+    wt_old.mkdir()
+    old_run = runs_parent / "run-1-fail"
+    old_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-01T00:00:00.000Z",
+            run_id="run-1-fail",
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": "28.24",
+                "worktree_path": str(wt_old),
+                "baseline_head_sha": "aaa111",
+            },
+        )
+    ).line
+    old_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-01T00:00:01.000Z",
+            run_id="run-1-fail",
+            kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"ok": False, "worktree_path": str(wt_old), "failed_step": "commit"},
+        )
+    ).line
+    old_run.mkdir(parents=True, exist_ok=True)
+    old_text = old_intent + "\n" + old_outcome + "\n"
+    (old_run / "journal.jsonl").write_text(old_text, encoding="utf-8")
+
+    wt_new = tmp_path / "wt-new"
+    wt_new.mkdir()
+    new_run = runs_parent / "run-2-success"
+    new_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-02T00:00:00.000Z",
+            run_id="run-2-success",
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": "28.10",
+                "worktree_path": str(wt_new),
+                "baseline_head_sha": "bbb222",
+            },
+        )
+    ).line
+    new_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-02T00:00:01.000Z",
+            run_id="run-2-success",
+            kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"ok": True},
+        )
+    ).line
+    new_run.mkdir(parents=True, exist_ok=True)
+    new_text = new_intent + "\n" + new_outcome + "\n"
+    (new_run / "journal.jsonl").write_text(new_text, encoding="utf-8")
+
+    (tmp_path / "_bmad-output/projects/pyforge-marshal").mkdir(parents=True, exist_ok=True)
+    fs = FakeFs(
+        {
+            old_run / "journal.jsonl": old_text,
+            new_run / "journal.jsonl": new_text,
+        }
+    )
+    escalations = gather_fleet_finalize_escalations(fs=fs, repo_root=tmp_path)
+    assert slug not in escalations
+
+
+def test_gather_fleet_finalize_escalations_worktree_already_gone(tmp_path: Path) -> None:
+    """Story 28.25: a failed finalize whose worktree no longer exists is resolved."""
+    slug = "pyforge-marshal"
+    wt = tmp_path / "wt-removed"
+    run_dir = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run-fail"
+    )
+    intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-01T00:00:00.000Z",
+            run_id="run-fail",
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": "28.24",
+                "worktree_path": str(wt),
+                "baseline_head_sha": "aaa111",
+            },
+        )
+    ).line
+    outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-01T00:00:01.000Z",
+            run_id="run-fail",
+            kind=dispatch_core.KIND_DISPATCH_FINALIZE,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"ok": False, "worktree_path": str(wt), "failed_step": "commit"},
+        )
+    ).line
+    run_dir.mkdir(parents=True, exist_ok=True)
+    journal_text = intent + "\n" + outcome + "\n"
+    (run_dir / "journal.jsonl").write_text(journal_text, encoding="utf-8")
+    (tmp_path / "_bmad-output/projects/pyforge-marshal").mkdir(parents=True, exist_ok=True)
+    fs = FakeFs({run_dir / "journal.jsonl": journal_text})
+
+    assert not wt.exists()
+    escalations = gather_fleet_finalize_escalations(fs=fs, repo_root=tmp_path)
+    assert slug not in escalations
+
+
 def test_finalize_escalation_surfaces_awaiting_operator() -> None:
     facts = status.FleetHomeFacts(
         slug="pyforge-marshal",

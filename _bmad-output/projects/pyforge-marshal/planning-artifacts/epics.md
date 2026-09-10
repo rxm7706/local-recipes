@@ -4518,7 +4518,7 @@ So that fleet status stops naming a worktree that is already gone and work that 
 **Given** a station whose most recent dispatch run for one story failed to finalize, and a later dispatch run for a different story on the same station has since completed **When** `gather_fleet_finalize_escalations` (`cli/dispatch.py`) walks that station's run history **Then** it reports no escalation for the station once a newer run supersedes the failed one, instead of walking arbitrarily far back past successful runs to the oldest matching failure
 **And** an escalation naming a worktree path that no longer exists on disk is treated as resolved, not active
 **And** `marshal status`/`fleet-picture`'s `awaiting-operator` row clears accordingly, with no change to the case where the newest run is itself the one still stuck
-**Status:** backlog
+**Status:** done
 
 ## Epic 29: Done-spec dispatch does not review-loop
 
