@@ -90,10 +90,9 @@ __all__ = (
 # owner-dream, INV-1 every Dream has a Spec, INV-2 the chain follows the owner,
 # INV-3 the 6.10 sharded planning tree).
 
-#: The constitutive Dream (Charter §5): owned by `guild` and terminal there --
-#: verbatim from the original (see its own comment for the 2026-08-02 merge
-#: history this set survived).
-CONSTITUTIVE = frozenset({"pyforge-charter"})
+#: Fallback when ``guild-roster.json`` is unreadable -- today's single-entry
+#: roster value, not a parallel source of truth (Story 21.4).
+_CONSTITUTIVE_FALLBACK: frozenset[str] = frozenset({"pyforge-charter"})
 
 #: Sentinel `project` value for a Dream/Spec owned by `guild` -- verbatim.
 GOVERNANCE_PROJECT = "docs/governance"
@@ -629,9 +628,14 @@ def _check_dream_chain(
                 "detail": f"{slug} (owner={owner}) has no Spec — {remedy}",
             })
 
+    guild_owned = any(d.get("owner") == "guild" for d in dreams.values())
+    constitutive = (
+        _load_constitutive(target, findings) if guild_owned else frozenset()
+    )
+
     # INV-2a -- a buildable Dream owned by `guild` has no station yet.
     for slug, d in sorted(dreams.items()):
-        if d.get("owner") == "guild" and slug not in CONSTITUTIVE:
+        if d.get("owner") == "guild" and slug not in constitutive:
             remedy = "assign a station (guild is intake, not a terminal owner)"
             findings.append({
                 "inv": "INV-2", "kind": "owner-unassigned", "subject": slug,
@@ -838,8 +842,8 @@ def gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
 
 def _load_dream_roster(
     target: Path,
-) -> tuple[frozenset[str], frozenset[str], frozenset[str], dict | None]:
-    """Return ``(statuses, types, stations, error_finding_dict_or_None)``.
+) -> tuple[frozenset[str], frozenset[str], frozenset[str], frozenset[str], dict | None]:
+    """Return ``(statuses, types, stations, guild_dreams, error_finding_dict_or_None)``.
 
     Vocabulary lives in ``docs/governance/guild-roster.json`` (same source
     factory's ``check_dream_vocab`` / ``check_dream_owners`` read). A missing
@@ -853,7 +857,7 @@ def _load_dream_roster(
     except Exception:  # noqa: BLE001 -- unreadable ancestor
         found = None
     if not found:
-        return frozenset(), frozenset(), frozenset(), {
+        return frozenset(), frozenset(), frozenset(), frozenset(), {
             "kind": "dreams-hygiene-unevaluable",
             "detail": f"{rel} missing — Dream hygiene vocabulary cannot be evaluated",
             "subject": rel,
@@ -861,13 +865,13 @@ def _load_dream_roster(
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
-        return frozenset(), frozenset(), frozenset(), {
+        return frozenset(), frozenset(), frozenset(), frozenset(), {
             "kind": "dreams-hygiene-unevaluable",
             "detail": f"{rel} is unreadable — Dream hygiene vocabulary cannot be evaluated",
             "subject": rel,
         }
     if not isinstance(data, dict):
-        return frozenset(), frozenset(), frozenset(), {
+        return frozenset(), frozenset(), frozenset(), frozenset(), {
             "kind": "dreams-hygiene-unevaluable",
             "detail": f"{rel} is not a mapping — Dream hygiene vocabulary cannot be evaluated",
             "subject": rel,
@@ -876,16 +880,58 @@ def _load_dream_roster(
         statuses = frozenset(str(s) for s in data["dream_statuses"])
         types = frozenset(str(t) for t in data["dream_types"])
         stations = frozenset(str(s) for s in data["stations"])
+        guild_dreams = frozenset(str(g) for g in data["guild_dreams"])
     except (KeyError, TypeError):
-        return frozenset(), frozenset(), frozenset(), {
+        return frozenset(), frozenset(), frozenset(), frozenset(), {
             "kind": "dreams-hygiene-unevaluable",
             "detail": (
-                f"{rel} missing dream_statuses/dream_types/stations — "
+                f"{rel} missing dream_statuses/dream_types/stations/guild_dreams — "
                 "Dream hygiene vocabulary cannot be evaluated"
             ),
             "subject": rel,
         }
-    return statuses, types, stations, None
+    return statuses, types, stations, guild_dreams, None
+
+
+def _load_constitutive(target: Path, findings: list[dict]) -> frozenset[str]:
+    """Derive the constitutive Dream slugs from ``guild-roster.json`` ``guild_dreams``.
+
+    On roster read failure, append one named WARN and fall back to
+    ``_CONSTITUTIVE_FALLBACK`` rather than an empty set (Story 21.4).
+    """
+    _statuses, _types, _stations, guild_dreams, roster_err = _load_dream_roster(target)
+    rel = _GUILD_ROSTER_REL.as_posix()
+    if roster_err is not None:
+        findings.append({
+            "inv": "INV-2",
+            "kind": "constitutive-roster-degraded",
+            "subject": rel,
+            "owner": "",
+            "status": "",
+            "remedy": f"restore {rel} so guild_dreams is authoritative",
+            "detail": (
+                f"{roster_err['detail']} — constitutive gate falls back to "
+                f"{sorted(_CONSTITUTIVE_FALLBACK)}"
+            ),
+            "warn": True,
+        })
+        return _CONSTITUTIVE_FALLBACK
+    if not guild_dreams:
+        findings.append({
+            "inv": "INV-2",
+            "kind": "constitutive-roster-degraded",
+            "subject": rel,
+            "owner": "",
+            "status": "",
+            "remedy": f"add guild_dreams to {rel}",
+            "detail": (
+                f"{rel} guild_dreams is empty — constitutive gate falls back to "
+                f"{sorted(_CONSTITUTIVE_FALLBACK)}"
+            ),
+            "warn": True,
+        })
+        return _CONSTITUTIVE_FALLBACK
+    return guild_dreams
 
 
 def _parse_readme_dream_statuses(readme: Path) -> dict[str, str]:
@@ -931,7 +977,7 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
             ),
         )
 
-    statuses, types, stations, roster_err = _load_dream_roster(target)
+    statuses, types, stations, _guild_dreams, roster_err = _load_dream_roster(target)
     if roster_err is not None:
         return (
             Finding(

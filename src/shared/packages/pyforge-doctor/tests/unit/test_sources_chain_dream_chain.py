@@ -14,12 +14,44 @@ here -- see the story spec's own Tasks & Acceptance for the requirement.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import chain
 
 # --- fixture helpers ---------------------------------------------------------
+
+
+def _write_roster(target: Path) -> None:
+    path = target / "docs" / "governance" / "guild-roster.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "stations": [
+                    "herald",
+                    "marshal",
+                    "atlas",
+                    "warden",
+                    "mason",
+                    "doctor",
+                    "scribe",
+                    "steward",
+                ],
+                "guild_dreams": ["pyforge-charter"],
+                "dream_statuses": [
+                    "dreamt",
+                    "pitched",
+                    "specified",
+                    "realized",
+                    "archived",
+                ],
+                "dream_types": ["dream", "practice"],
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def _write_dream(
@@ -614,6 +646,7 @@ def test_guild_spec_is_collected_from_docs_governance(tmp_path: Path) -> None:
     gather never walks -- and then assert the ABSENCE of a finding, which a
     never-collected Spec satisfies trivially. Deleting the whole governance
     loop left them green."""
+    _write_roster(tmp_path)
     _write_dream(tmp_path, "pyforge-charter", "guild")
     sd = tmp_path / "docs" / "governance" / "spec-pyforge-charter"
     sd.mkdir(parents=True)
