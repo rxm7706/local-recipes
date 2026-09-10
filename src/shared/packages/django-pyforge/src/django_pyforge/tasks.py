@@ -35,17 +35,23 @@ from typing import Any
 
 from celery import shared_task
 
-from django_pyforge.events.tracing import bind_structlog_trace
-from django_pyforge.events.tracing import trace_headers
-from django_pyforge.events.tracing import traceparent_from_task_request
+from django_pyforge.events.tracing import (
+    bind_structlog_trace,
+    trace_headers,
+    traceparent_from_task_request,
+)
 from django_pyforge.models import RunState
-from django_pyforge.supervisor import begin_attempt
-from django_pyforge.supervisor import complete_run
-from django_pyforge.supervisor import lookup_runner
-from django_pyforge.supervisor import prune_run_state
-from django_pyforge.supervisor import sweep_lost_runs
+from django_pyforge.supervisor import (
+    begin_attempt,
+    complete_run,
+    lookup_runner,
+    prune_run_state,
+    sweep_lost_runs,
+)
 
 logger = logging.getLogger(__name__)
+
+OBSERVABILITY_PROBE_TASK = "django_pyforge.tasks.observability_probe_task"
 
 SUBJECT_HEADER = "sub"
 
@@ -171,3 +177,28 @@ def prune_run_state_task() -> dict[str, Any]:
 def sweep_lost_runs_task() -> dict[str, Any]:
     """Fail live runs whose worker is gone (Story 42.4 / BS-8 partial)."""
     return sweep_lost_runs()
+
+
+@shared_task(name=OBSERVABILITY_PROBE_TASK)
+def observability_probe_task() -> dict[str, float]:
+    """Refresh queue-age and event-lag gauges (Story 48.5 / R-21)."""
+    from django.conf import settings
+
+    from django_pyforge.celery_probes import oldest_queue_age_seconds
+    from django_pyforge.events.probes import event_stream_lag_seconds
+    from django_pyforge.observability_hooks import (
+        publish_celery_queue_age,
+        publish_event_stream_lag,
+    )
+
+    try:
+        import redis
+    except ImportError:  # pragma: no cover
+        return {"queue_age_seconds": 0.0, "event_lag_seconds": 0.0}
+
+    broker = redis.from_url(settings.CELERY_BROKER_URL)
+    queue_age = oldest_queue_age_seconds(broker)
+    event_lag = event_stream_lag_seconds(broker)
+    publish_celery_queue_age(queue_age)
+    publish_event_stream_lag(event_lag)
+    return {"queue_age_seconds": queue_age, "event_lag_seconds": event_lag}

@@ -437,6 +437,7 @@ opentelemetry-instrumentation-wsgi = ">=0.65b0"
 opentelemetry-instrumentation-celery = ">=0.65b0"
 opentelemetry-instrumentation-psycopg = ">=0.65b0"
 opentelemetry-instrumentation-redis = ">=0.65b0"
+prometheus_client = ">=0.22.1"
 # steward 20.1 / canopy AD-13: Lane 1 CMS (pytest must import wagtail)
 wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host # Pin to LTS version for Django
 # steward 21.2 / canopy AD-5: official MCP SDK 2.x (dual-era). This env has no
@@ -2265,6 +2266,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # run-deps) into the dedicated lean `pyforge-doctor` env. Spec:
 # _bmad-output/projects/pyforge-doctor/planning-artifacts/.
 [feature.pyforge-doctor.dependencies]
+prometheus_client = ">=0.22.1"
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-3/CAP-4: verdict.py's Lattice + __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...) -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)

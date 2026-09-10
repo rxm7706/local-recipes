@@ -15,6 +15,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from wagtail.images import urls as wagtailimages_urls
 
 from config.legacy_compliance import redirect_to_warden
+from config.observability.views import metrics_view
 
 urlpatterns = [
     path(
@@ -98,6 +99,7 @@ urlpatterns = [
         "ht/",
         HealthCheckView.as_view(checks=["health_check.Database", "health_check.Cache"]),
     ),
+    path("metrics", metrics_view, name="metrics"),
     # steward 20.1: Wagtail admin at /cms/ so it does not collide with Django ADMIN_URL.
     path("cms/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),

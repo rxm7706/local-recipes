@@ -17,6 +17,12 @@ spec:
       app.kubernetes.io/component: web
   template:
     metadata:
+      {{- if .Values.observability.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+      {{- end }}
       labels:
         {{- include "platform.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: web

@@ -4,13 +4,17 @@ Nothing under the installed ``pyforge.doctor`` package may write outside a
 ``tempfile``-scoped path (architecture spine Consistency Conventions: "v1 is
 read-only everywhere — no module under pyforge.doctor may write outside a
 tempfile-scoped path or mutate scanned trees", mirroring warden's own
-NFR-S4 discipline) -- EXCEPT ``fleet_surface.py`` (Story 4.2, FR-11, AD-8),
-the ONE sanctioned write site this v1.x addition deliberately introduces
-(mirrors ``sources/atlas.py``'s own sole-``mcp``-import-site exemption
-pattern, applied to the filesystem-write surface instead): AD-8 bounds what
-that write may do (strictly derived from already-gathered findings, no
-independent gather, idempotent, schema-versioned) even though NFR-1's own
-blanket rule predates it. This is a best-effort STATIC AST scan for
+NFR-S4 discipline) -- EXCEPT two sanctioned write sites this v1.x
+deliberately introduces (mirrors ``sources/atlas.py``'s own sole-``mcp``-
+import-site exemption pattern, applied to the filesystem-write surface
+instead): ``fleet_surface.py`` (Story 4.2, FR-11, AD-8 -- strictly derived
+from already-gathered findings, no independent gather, idempotent,
+schema-versioned) and ``actuators/flag_kill_switch.py`` (Story 48.5, R-21 --
+opt-in only via the explicit ``doctor flags kill-switch`` CLI subcommand,
+never invoked during ordinary ``check``/``monitor``, and scoped to patching
+a single named flag's state in a caller-supplied flags-tree file). Both
+predate this file's own NFR-1 blanket rule as named, bounded exceptions,
+never a general license to write. This is a best-effort STATIC AST scan for
 filesystem-write call sites: ``open(..., "w"/"a"/"x"/...)``, ``Path.write_text``/
 ``Path.write_bytes``, and the common ``os``/``shutil`` mutation calls
 (``remove``/``unlink``/``rename``/``mkdir``/``makedirs``/``chmod``/
@@ -36,10 +40,12 @@ if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 
-# The one sanctioned filesystem-write site (Story 4.2) -- exempted from this
-# scan, mirroring `test_atlas_sole_mcp_import.py`'s identical
+# The two sanctioned filesystem-write sites (Stories 4.2, 48.5) -- exempted
+# from this scan, mirroring `test_atlas_sole_mcp_import.py`'s identical
 # `_EXEMPT_RELATIVE_PATHS` pattern for the mcp-import surface.
-_EXEMPT_RELATIVE_PATHS = frozenset({Path("fleet_surface.py")})
+_EXEMPT_RELATIVE_PATHS = frozenset(
+    {Path("fleet_surface.py"), Path("actuators/flag_kill_switch.py")}
+)
 
 _WRITE_METHOD_NAMES = frozenset(
     {
@@ -152,6 +158,29 @@ def test_fleet_surface_itself_writes_somewhere():
     permission, not an accidentally-unused one."""
     violations = _read_only_violations(_parse(PACKAGE_DIR / "fleet_surface.py"))
     assert violations, "fleet_surface.py does not write to the filesystem at all"
+
+
+def test_flag_kill_switch_module_exists():
+    kill_switch_path = PACKAGE_DIR / "actuators" / "flag_kill_switch.py"
+    assert kill_switch_path.is_file(), (
+        f"expected {kill_switch_path} -- the Story 48.5 sanctioned write "
+        "site is missing"
+    )
+
+
+def test_flag_kill_switch_is_exempted_from_this_scan():
+    modules = {path.relative_to(PACKAGE_DIR) for path in _package_modules()}
+    assert Path("actuators/flag_kill_switch.py") not in modules
+
+
+def test_flag_kill_switch_itself_writes_somewhere():
+    """Non-vacuous proof: the sanctioned site actually contains a
+    filesystem-write call site -- so this exemption is narrowing a real
+    permission, not an accidentally-unused one."""
+    violations = _read_only_violations(
+        _parse(PACKAGE_DIR / "actuators" / "flag_kill_switch.py")
+    )
+    assert violations, "flag_kill_switch.py does not write to the filesystem at all"
 
 
 def test_no_filesystem_write_call_sites_in_package():

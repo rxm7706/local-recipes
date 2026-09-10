@@ -1,0 +1,42 @@
+{{- if .Values.observability.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform.fullname" . }}-observability-alerts
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: observability
+data:
+  prometheus.rules.yaml: |
+    groups:
+      - name: pyforge-r21
+        rules:
+          - alert: PyforgeHealthCheckFailures
+            expr: increase(pyforge_health_check_failure_total[5m]) > 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "/ht/ health check failures detected"
+          - alert: PyforgeMcpP99High
+            expr: histogram_quantile(0.99, sum(rate(pyforge_mcp_request_duration_seconds_bucket[5m])) by (le)) > {{ .Values.observability.thresholds.mcpP99Seconds }}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "MCP p99 latency above SLO"
+          - alert: PyforgeCeleryQueueAgeHigh
+            expr: pyforge_celery_queue_oldest_age_seconds > {{ .Values.observability.thresholds.queueAgeSeconds }}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Celery queue age above SLO"
+          - alert: PyforgeEventStreamLagHigh
+            expr: pyforge_event_stream_lag_seconds > {{ .Values.observability.thresholds.eventLagSeconds }}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Event stream lag above SLO"
+{{- end }}

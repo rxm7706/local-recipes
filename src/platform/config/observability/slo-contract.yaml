@@ -1,0 +1,31 @@
+# R-21 observability contract (Story 48.5).
+# Metric names here MUST match app exports and chart alert rules.
+version: 1
+slos:
+  health_check:
+    description: "/ht/ readiness — DB + cache connectivity"
+    target_availability: 0.999
+    latency_p99_seconds: 0.5
+    metrics:
+      success_total: pyforge_health_check_success_total
+      failure_total: pyforge_health_check_failure_total
+      duration_seconds: pyforge_health_check_duration_seconds
+  mcp:
+    description: "POST /stations/<name>/mcp Streamable HTTP dispatch"
+    latency_p99_seconds: 2.0
+    metrics:
+      duration_seconds: pyforge_mcp_request_duration_seconds
+  celery_queue:
+    description: "Oldest pending task age across general worker queues"
+    max_age_seconds: 300
+    metrics:
+      oldest_age_seconds: pyforge_celery_queue_oldest_age_seconds
+  event_stream:
+    description: "Oldest pending entry idle time on pyforge.events consumer groups"
+    max_lag_seconds: 60
+    metrics:
+      lag_seconds: pyforge_event_stream_lag_seconds
+  doctor_flag_kill_switch:
+    description: "Doctor opt-in flag disable actuator"
+    metrics:
+      total: pyforge_doctor_flag_kill_switch_total
