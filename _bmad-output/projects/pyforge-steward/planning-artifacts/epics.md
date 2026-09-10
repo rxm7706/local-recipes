@@ -3197,3 +3197,81 @@ Ledger: keys minted with `sprint_plan.py generate` only (`48-9`, `48-10`, `48-11
 with `49-2` and `49-9`…`49-13` minted **`blocked`** (cross-station producers — never a foreign
 `Deps:` token). **No `sprint-ledger-sync` was run and none may run on this project until 48.1
 lands.**
+
+## Epic 50: Object storage is consumable, without pyforge operating it (spec-platform-object-storage-kind)
+
+Minted 2026-09-10 via `bmad-correct-course`
+(`sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md`, seeded from
+`docs/dreams/platform-object-storage-kind.md`). **CAP-1** (the AD-1 exception itself) is
+**already landed** by that correct-course pass, not a separate story: `spec-pyforge-
+unifying-strategy/SPEC.md`'s AD-1 gained a dated, bounded exception bullet — S3-compatible
+object storage is permitted **consumed**, never **self-hosted** — production target NetApp
+StorageGRID (ops-provided, externally operated), and `stack.md`'s own "Never" line was
+qualified to match. Stories 50.1-50.3 below decompose the Spec's remaining CAP-2..4:
+local-dev equivalent Silo (default) / Garage (alternative), both pixi-installable. Does not
+reopen Lane 1 media's own RWX-PVC answer (2026-09-05); no consumer is wired to the new
+capability in this epic.
+
+### Story 50.1: The Silo conda-forge recipe exists and is pixi-installable
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-object-storage-kind
+CAP-2 (`SPEC.md` success)
+**Note:** `pgsty/silo` has no conda-forge feedstock today (live-verified 2026-09-10). Recipe work
+under `recipes/` is governed by `.claude/skills/conda-forge-expert/` per this repo's Rule 1 —
+this story invokes that skill for the recipe lifecycle itself; this entry only tracks the story.
+**Surface:** `recipes/silo/recipe.yaml` (new), `recipes/silo/` supporting files (patches, tests)
+per the CFE recipe-authoring convention.
+**Given** `pgsty/silo` ships real, versioned per-platform release binaries (`linux_amd64`,
+`linux_arm64`, `darwin_amd64`, `darwin_arm64`, `windows_amd64`, `windows_arm64`) but no
+conda-forge feedstock **When** a v1-format `recipe.yaml` is authored wrapping the upstream
+release binary for this repo's supported platforms and carried through the full CFE
+lifecycle (`validate_recipe`, `optimize_recipe`, `scan_for_vulnerabilities`, a green linux-64
+`recipe-build`) **Then** the recipe is genuinely buildable and testable locally
+**And** the built package is published to the `SelfExplainML` anaconda.org channel (this repo's
+own documented staging path — `commands-cheatsheet.md` § *Publishing to the SelfExplainML
+channel*), so it is pixi-installable immediately without waiting on upstream
+`conda-forge/staged-recipes` review
+**And** submitting to `conda-forge/staged-recipes` for long-term community packaging is named as
+the normal follow-up, not a blocker for this story
+**Status:** backlog
+
+### Story 50.2: Local-dev object storage — Silo default, Garage alternative, pixi-provisioned
+
+**Type:** feature • **Effort:** M • **Deps:** S-50.1 (Silo must be pixi-installable first) •
+**FR/AD:** spec-platform-object-storage-kind CAP-3 (`SPEC.md` success)
+**Note:** Mirrors `scripts/scribe_pg.py`'s exact shape (Story 28.1's own local-database
+precedent): a real local server, never a mock, `up`/`down`/`status` pixi tasks, gitignored
+`var/`-scoped data dir, idempotent. A SEPARATE pixi feature (not folded into `platform-dev`),
+matching the `scribe-pg`/pgvector win-64 precedent — Garage has no win-64 build, and folding it
+into a feature that inherits the full workspace platform list would break that solve outright.
+**Surface:** new `[feature.platform-object-storage]` in `pixi.toml` (`silo` + `garage`
+dependencies), `scripts/platform_object_storage.py` (new), `var/platform-object-storage/`
+(gitignored).
+**Given** neither Silo nor Garage is provisioned anywhere in this repo today **When** the new
+pixi feature and script are added, backend selected via `PYFORGE_OBJECT_STORAGE_BACKEND`
+(default `silo`, mirroring `PYFORGE_SCRIBE_TRIGGER_BACKEND`'s own pattern) **Then**
+`platform-object-storage-up`/`-down`/`-status` pixi tasks start/stop/report a real local
+S3-compatible server, idempotently, with data under gitignored `var/`
+**And** switching to `PYFORGE_OBJECT_STORAGE_BACKEND=garage` runs the identical lifecycle
+against Garage instead, with an honest note that Garage lacks a win-64 build (refuses cleanly
+on that platform, never a silent no-op)
+**And** a fresh `pixi install -e platform-object-storage` resolves cleanly
+**Status:** backlog
+
+### Story 50.3: A minimal S3-client seam proves the exception end-to-end
+
+**Type:** feature • **Effort:** S • **Deps:** S-50.2 • **FR/AD:** spec-platform-object-storage-kind
+CAP-4 (`SPEC.md` success)
+**Note:** Endpoint and credentials are configuration only, never hardcoded — the same client
+code points at the local Silo/Garage instance or real StorageGRID interchangeably, mirroring
+`canopy:AD-19`'s reference-not-embed pattern for the external IdP. Explicitly does **not**
+migrate Lane 1 media or any other existing feature onto object storage in this story.
+**Surface:** one new `src/platform/` module (a thin S3-client wrapper), one round-trip test.
+**Given** the exception now permits object-storage consumption but nothing in `src/platform/`
+can reach one **When** a minimal client module resolves an endpoint URL + credentials from
+configuration (env vars / settings, never hardcoded) and performs a put/get round trip
+**Then** the same client code proves out against the local Story-50.2 backend in a test
+**And** no existing feature (Lane 1 media, CycloneDX SBOM handling, or anything else) is wired
+to consume it in this story — the seam exists and is proven; consumption is separate, future,
+story-by-story work
+**Status:** backlog

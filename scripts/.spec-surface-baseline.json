@@ -5093,6 +5093,10 @@
   },
   "memlog": "8513214ac1a337563ae3283b9179eeb82cae9ed3"
  },
+ "pyforge-steward/spec-platform-object-storage-kind": {
+  "files": {},
+  "memlog": "2ce53efb303f3197cc3695ffbe5634407e037195"
+ },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
    ".steward/keys-inventory.yaml": "2ebd99317bcbe390f53c502c780d87fc148369de",

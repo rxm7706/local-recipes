@@ -516,6 +516,17 @@ they are why this is not merely a UI project.
   fourth backing service has failed its design review. DuckDB is a **library / query face**
   (in-process or an optional `duckdb-server` process on the platform image), not a fourth
   Helm backing store.
+- **Exception (dated 2026-09-10, AD-1 object storage).** An S3-compatible object store is
+  permitted as a **consumed**, never **self-hosted**, backing service — the same shape
+  `canopy:AD-19` already trusts for the identity provider (pod specs / application config carry
+  an endpoint URL and credentials only; no object-storage server process ships inside the
+  platform image or Helm chart). Production target: NetApp StorageGRID, ops-provided and
+  externally operated. This does not reopen Lane 1 media's own 2026-09-05 re-affirmation (RWX
+  PVC stands); it authorizes object-storage consumption for capability that specifically needs
+  S3 API semantics, decided story-by-story, never assumed. Self-hosting MinIO, Silo, Garage, or
+  any object-store server inside the deployed platform remains forbidden without a further,
+  separately-justified exception. See
+  `sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md`.
 - **Always:** CAP-19 is one analytical engine and one writer (canopy:FR-27 intent). `ATTACH` joins
   sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
   and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.

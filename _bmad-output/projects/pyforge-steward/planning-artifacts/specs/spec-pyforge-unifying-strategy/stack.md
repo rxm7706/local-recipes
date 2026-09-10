@@ -73,10 +73,15 @@ for pipelines, Vizro for Lane 3, one Atlas Kedro home (see canopy:AD-21 / canopy
 | `taplo`, `sqlfluff`, `yamllint` | doctor, warden | `pixi.toml` / `recipe.yaml` / DuckDB SQL preflight (`doctor check --syntax`) | **bind** (sqlfluff also lints CAP-19 SQL) |
 | `playwright` + `playwright-python` | herald, testing-kit | `.dc.html` + Vizro board PNG/PDF; both pins required (CLI ≠ Python module) | **extend** (herald already; Vizro thumbs after Lane 3 plane board) |
 
-**Never:** a fourth backing service (Vault-in-pod, MinIO, extra bus). OpenLineage events ride
-the existing Redis CloudEvents fabric or a documented emit from the same process — they do
-not mint a lineage server. cocoindex/graphifyy stay behind Scribe `GraphStore`; they do not
-become a second vector store beside CAP-19.
+**Never:** a fourth *self-hosted* backing service (Vault-in-pod, MinIO/Silo/Garage as an
+in-cluster Deployment, extra bus). OpenLineage events ride the existing Redis CloudEvents
+fabric or a documented emit from the same process — they do not mint a lineage server.
+cocoindex/graphifyy stay behind Scribe `GraphStore`; they do not become a second vector
+store beside CAP-19. **Dated exception (2026-09-10, AD-1 object storage):** *consuming*
+an externally-operated S3-compatible endpoint (production: NetApp StorageGRID, ops-provided)
+is permitted — client library + configured endpoint/credentials only, never a server pyforge
+deploys inside its own platform image or Helm chart. See
+`sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md`.
 
 ## Absent — feedstock work, historical (shipped `ed41099205` 2026-08-25)
 
