@@ -582,6 +582,14 @@ cmd = "pytest tests/scripts/test_container_gates.py -q"
 description = "scripts/container-gates's volumes-roundtrip subcommand (Story 7.4; needs a real `docker` binary on PATH)."
 cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
 
+# Story 48.10: CI/local driver for the root `Containerfile` — builds the
+# whole-Guild image and runs post-build `container-gates secrets-scan` +
+# `volumes-roundtrip`. Optional arg selects the engine (`docker` default,
+# `podman` for the platform-ci-style matrix leg).
+[feature.pyforge-steward.tasks.pyforge-steward-guild-image-build]
+description = "Build the root Containerfile and run post-build container gates (Story 48.10; needs docker or podman)."
+cmd = "bash scripts/guild_image_ci.sh"
+
 # --- pyforge-marshal (Marshal): pixi build workspace member (doctor/warden mirror, Story 1.1) --
 # Task names mirror the sibling convention verbatim. Story 1.1 delivers the
 # package spine, the closed verdict lattice + finding-code registry
