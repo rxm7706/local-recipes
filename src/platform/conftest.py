@@ -36,13 +36,21 @@ def _isolate_caches():
     import django_herald_portal.mcp_asgi as herald_mcp  # noqa: PLC0415
     import django_marshal_portal.mcp_asgi as marshal_mcp  # noqa: PLC0415
     import django_mason_portal.mcp_asgi as mason_mcp  # noqa: PLC0415
-    import django_pyforge.supervisor as supervisor  # noqa: PLC0415
     import django_scribe_portal.mcp_asgi as scribe_mcp  # noqa: PLC0415
     import django_steward_portal.mcp_asgi as steward_mcp  # noqa: PLC0415
     import django_warden_fabric.mcp_asgi as warden_mcp  # noqa: PLC0415
+    from django_pyforge import supervisor  # noqa: PLC0415
 
     atlas_mcp._APP = None  # noqa: SLF001
     warden_mcp._SERVER = None  # noqa: SLF001
-    for mod in (doctor_mcp, herald_mcp, marshal_mcp, mason_mcp, scribe_mcp, steward_mcp):
+    _cache_mods = (
+        doctor_mcp,
+        herald_mcp,
+        marshal_mcp,
+        mason_mcp,
+        scribe_mcp,
+        steward_mcp,
+    )
+    for mod in _cache_mods:
         mod._CACHE.clear()  # noqa: SLF001
     supervisor._runners.clear()  # noqa: SLF001

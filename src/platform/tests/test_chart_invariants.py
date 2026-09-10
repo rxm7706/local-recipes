@@ -245,7 +245,7 @@ def _default_image_references() -> frozenset[str]:
     yaml = _import_yaml()
     values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
     references: set[str] = set()
-    images = (
+    images: tuple[Any, ...] = (
         values["image"],
         values["postgres"]["image"],
         values["redis"]["image"],
@@ -2340,7 +2340,9 @@ def test_story_48_9_byo_profile_skips_keycloak():
     ]
     assert not keycloak_workloads, keycloak_workloads
     env = _collect_env_by_name(_pod_specs_by_component(docs)["web"])
-    assert env["COMPONENT_OIDC_ISSUER"]["value"] == "https://idp.example/realms/platform"
+    assert (
+        env["COMPONENT_OIDC_ISSUER"]["value"] == "https://idp.example/realms/platform"
+    )
     secret_ref = (env["COMPONENT_OIDC_CLIENT_SECRET"].get("valueFrom") or {}).get(
         "secretKeyRef",
     )

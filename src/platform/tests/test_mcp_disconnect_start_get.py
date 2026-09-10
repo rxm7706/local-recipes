@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import threading
 import time
-from collections.abc import Awaitable
-from collections.abc import Callable
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import TYPE_CHECKING
 from typing import Any
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
+    from collections.abc import Callable
 
 import pytest
 from django_pyforge.assertion.crypto import mint_assertion
@@ -126,7 +130,7 @@ def _mcp_app(station: str):
     return _host_app(station, _build_mcp_face(station))
 
 
-def _tool_call(
+def _tool_call(  # noqa: PLR0913, PLR0917 -- a test helper's own call-shape knobs
     client: TestClient,
     station: str,
     tool: str,
@@ -184,7 +188,8 @@ def _extract_run_status(body: dict[str, Any]) -> str:
 
 
 def _disconnect_on_get_asgi(inner: Callable[..., Awaitable[None]]):
-    """Inject ``http.disconnect`` on the first ``get_*`` tools/call — real transport drop."""
+    """Inject ``http.disconnect`` on the first ``get_*`` call -- a real transport
+    drop."""
 
     state = {"armed": True}
 
@@ -203,10 +208,6 @@ def _disconnect_on_get_asgi(inner: Callable[..., Awaitable[None]]):
                 body_chunks.append(message.get("body", b""))
                 if not message.get("more_body", False):
                     payload = json.loads(b"".join(body_chunks).decode("utf-8"))
-                    tool = (
-                        (payload.get("params") or {}).get("name")
-                        or scope.get("headers", {})
-                    )
                     # headers arrive as bytes tuples; check mcp-name header too
                     headers = {
                         k.decode("latin-1").lower(): v.decode("latin-1")
@@ -215,11 +216,7 @@ def _disconnect_on_get_asgi(inner: Callable[..., Awaitable[None]]):
                     tool_name = headers.get("mcp-name") or (
                         (payload.get("params") or {}).get("name")
                     )
-                    if (
-                        state["armed"]
-                        and tool_name
-                        and tool_name.startswith("get_")
-                    ):
+                    if state["armed"] and tool_name and tool_name.startswith("get_"):
                         state["armed"] = False
                         disconnected = True
                         return {"type": "http.disconnect"}
@@ -247,7 +244,7 @@ def _reset_slow_gate():
 
 
 def _install_runner(station: str, tool: str, fn: object) -> None:
-    import django_pyforge.supervisor as supervisor  # noqa: PLC0415
+    from django_pyforge import supervisor  # noqa: PLC0415
 
     supervisor._runners[(station, tool)] = fn  # noqa: SLF001
 
@@ -285,13 +282,22 @@ def test_start_get_tools_are_listed(face: StationStartGet) -> None:
     assert face.get_tool in names, names
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize("face", ALL_STATIONS)
 def test_mcp_disconnect_then_get_retrieves_result(
     face: StationStartGet,
     monkeypatch,
 ) -> None:
-    """Drop transport mid-get while the op runs, then reconnect and retrieve."""
+    """Drop transport mid-get while the op runs, then reconnect and retrieve.
+
+    ``transaction=True`` (not the default atomic-rollback mode): the worker
+    thread below runs ``execute_supervised_run`` on its own DB connection,
+    which does not participate in the main thread's test transaction --
+    plain ``django_db`` would silently leak the RunState rows it commits
+    into later tests. ``transaction=True`` flushes tables after the test
+    instead, which correctly cleans up regardless of which connection
+    wrote the rows.
+    """
     calls = {"n": 0}
     delayed: list[tuple] = []
 
@@ -341,18 +347,19 @@ def test_mcp_disconnect_then_get_retrieves_result(
     fresh_face = _build_mcp_face(face.station)
     _install_runner(face.station, face.run_tool, counting_slow_runner)
     disconnect_app = _disconnect_on_get_asgi(_host_app(face.station, fresh_face))
-    with TestClient(disconnect_app) as drop_client:
-        try:
-            _tool_call(
-                drop_client,
-                face.station,
-                face.get_tool,
-                {"handle": handle, "assertion": assertion},
-                assertion,
-                11,
-            )
-        except Exception:
-            pass
+    with TestClient(disconnect_app) as drop_client, contextlib.suppress(Exception):
+        # The injected disconnect above is expected to raise from the client
+        # side (a real dropped connection) -- this call's own result is
+        # discarded; the test's real assertion is the reconnect-and-fetch
+        # below.
+        _tool_call(
+            drop_client,
+            face.station,
+            face.get_tool,
+            {"handle": handle, "assertion": assertion},
+            assertion,
+            11,
+        )
 
     time.sleep(0.05)
     _SLOW_GATE.set()
