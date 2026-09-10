@@ -30,6 +30,7 @@ from unittest.mock import patch
 import pytest
 
 import pyforge.mason.doctor as doctor_module
+from pyforge.mason import cfe
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.doctor import DoctorReport, build_report
 from pyforge.mason.engines import EngineStatus
@@ -334,7 +335,7 @@ def test_build_report_never_raises_against_a_real_unresolved_environment(tmp_pat
     assert all(not status.available for status in report.engines)
 
 
-# --- Story 16.1: mason's own env must satisfy cfe.py's CFE_IMPORT_FLOOR -----
+# --- Story 16.1: mason's own env must satisfy cfe.py's CFE_IMPORT_FLOOR ------
 
 def test_real_environment_satisfies_the_cfe_import_floor():
     """Regression pin (Story 16.1): `[feature.pyforge-mason.dependencies]`
@@ -350,8 +351,26 @@ def test_real_environment_satisfies_the_cfe_import_floor():
     A future dependency edit that drops either package must fail this test
     rather than silently re-disabling the `recipe` verb family via
     `unavailable_verbs`."""
-    from pyforge.mason import cfe
-
     result = cfe.probe_import_floor(sys.executable)
 
     assert result.missing == ()
+
+
+def test_real_environment_and_root_report_recipe_as_available():
+    """Sibling of the probe-level pin above, one layer up: the acceptance
+    criteria quote `mason doctor`'s REPORT surface (`cfe_import_floor_
+    satisfied`, `unavailable_verbs`), not just `cfe.probe_import_floor`, so
+    this calls the real, unmocked `build_report()` -- mirroring `test_
+    build_report_never_raises_against_a_real_unresolved_environment` above,
+    which covers the pre-fix BROKEN case, but for the now-fixed one.
+
+    `start_directory=Path(__file__)` is this test file's own location,
+    guaranteed to sit inside the local-recipes worktree whose `.claude/
+    scripts/conda-forge-expert` marker directory `resolve_cfe_root`'s
+    upward walk finds -- so both halves of `unavailable_verbs`'s gate (root
+    resolution AND the import floor) are exercised together against the
+    real environment, not just the floor half."""
+    report = build_report(None, None, {}, Path(__file__))
+
+    assert report.cfe_import_floor_satisfied is True
+    assert report.unavailable_verbs == ()

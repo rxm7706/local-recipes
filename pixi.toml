@@ -476,7 +476,7 @@ python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 truststore = ">=0.10.4"           # Story 16.1: cfe.py's CFE_IMPORT_FLOOR entry -- mason's own env must satisfy the CFE import floor for `mason doctor` to report the `recipe` verb family available (mirrors [feature.python.dependencies]'s identical pin)
-conda-forge-metadata = ">=2026.9.5"  # Story 16.1: cfe.py's CFE_IMPORT_FLOOR entry (imports as conda_forge_metadata) -- mirrors [feature.vuln-db.dependencies]'s identical pin
+conda-forge-metadata = ">=2026.9.5" # Story 16.1: cfe.py's CFE_IMPORT_FLOOR entry (imports as conda_forge_metadata) -- mirrors [feature.vuln-db.dependencies]'s identical pin
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."

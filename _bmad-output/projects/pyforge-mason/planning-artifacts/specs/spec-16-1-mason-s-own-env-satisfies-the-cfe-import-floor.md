@@ -2,13 +2,34 @@
 title: "Mason's own env satisfies the CFE import floor"
 type: 'fix'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '57c001c9d7c8864ec235b871c8e3dc024845e414'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      Only `truststore` and `conda-forge-metadata` are explicitly pinned in
+      `[feature.pyforge-mason.dependencies]`; `requests` and `ruamel.yaml`
+      (two of the other four `CFE_IMPORT_FLOOR` entries) rely on transitive
+      resolution, so an unrelated future dependency drop could re-break the
+      floor.
+    evidence: |-
+      Verified real: `pixi.toml`'s `[feature.pyforge-mason.dependencies]`
+      declares `pyyaml` and (via the package's own `pyproject.toml`)
+      `packaging`, but never `requests` or `ruamel.yaml` explicitly -- both
+      are currently satisfied only as transitive pulls. Pre-existing (this
+      predates Story 16.1, whose Problem statement scoped the fix to
+      exactly the two entries `mason doctor` reported missing) and
+      substantially mitigated: the new regression test
+      (`test_real_environment_satisfies_the_cfe_import_floor`) asserts
+      `cfe.probe_import_floor(...).missing == ()` across all six floor
+      entries, so it would already catch this exact regression if it ever
+      recurred.
+    location: >-
+      pixi.toml:469-479
+    severity: low
 declared_low_risk: false
 ---
 
@@ -155,3 +176,23 @@ reported unavailable, never a hard failure).
   this story's Never boundary protects.
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 15 findings — high 0, medium 0, low 9, false 6, maybe-false 0
+- findings:
+  - `[low]` `[patch]` SKILL.md's `## Version History` section has no bullet for v8.90.3 though the frontmatter version and `CHANGELOG.md` both show 8.90.3, and every prior release (through v8.90.2) has a mirrored bullet — verified live (`grep` found only the v8.90.2 bullet). Action: add a mirrored v8.90.3 bullet.
+  - `[low]` `[defer]` Only `truststore`/`conda-forge-metadata` are explicitly pinned in `[feature.pyforge-mason.dependencies]`; `requests`/`ruamel.yaml` (and `packaging`, already covered via the package's own `pyproject.toml`) rely on transitive resolution, so an unrelated future dep drop (e.g. `twine`) could re-break the floor — verified real but pre-existing (predates this story; the Problem statement scoped the fix to exactly the two entries that were actually missing) and substantially mitigated: the new regression test asserts `cfe.probe_import_floor(...).missing == ()` across all six floor entries, so it would already catch this exact regression. Recorded as deferred, not patched — declaring all six explicitly is out of this story's stated scope.
+  - `[false]` `library-llms-full.md` claimed not updated for the two new deps ("no mention of truststore/conda-forge-metadata") — refuted: live `pixi run -e local-recipes llms-full-check` (the repo's sanctioned drift detector) reports 0 findings for either package; both are already documented at matching floors (`>=0.10.4`, `>=2026.9.5`) from their pre-existing use in `[feature.python.dependencies]`/`[feature.vuln-db.dependencies]` (verified via grep, lines 116-117 and 789-792 of the catalog).
+  - `[low]` `[patch]` CHANGELOG.md's v8.90.3 entry states `environment.yaml` "lands in the mason story's own commit(s)," but it never changed (`git diff` across both commits is empty for that file, since the `build` pixi env excludes the `pyforge-mason` feature) — verified true, the claim is inaccurate. Action: reword to state it was re-exported and confirmed unchanged, not that it landed in a commit. (Same root cause as the Intent Alignment Auditor's point (a) below — grouped, one action.)
+  - `[low]` `[patch]` `pixi.toml`'s new `conda-forge-metadata = ">=2026.9.5"` line's trailing `#` comment starts at column 38, three columns out of step with every sibling line in the block (column 35, confirmed via direct inspection, including this diff's own `truststore` line). Action: realign to column 35.
+  - `[low]` `[reject]` Adding `conda-forge-metadata` transitively pulls in `conda-oci-mirror`/`oras-py` — a chain `pixi.toml` elsewhere flags as blocked for CVE-DB-snapshot use — verified true via `pixi.lock` diff, but rejected: mason never invokes that code path (dead weight only, no functional harm), unlikely to be encountered in everyday use, and there is no trivial fix (excluding/pinning around a transitive dep adds complexity rather than being a direct correction).
+  - `[low]` `[patch]` New test-file section-separator comment (`# --- Story 16.1: ... -----`) is 78 characters; every other `# --- ... ---` divider in `test_doctor.py` is 79 (verified: lines 57/105/253/291 all 79, new line 337 is 78). Action: pad to 79.
+  - `[low]` `[patch]` The new test's `from pyforge.mason import cfe` import sits inside the function body — verified via direct read (line 353) — the only local import in an otherwise fully top-imported test file. Action: move to the module-level import block.
+  - `[low]` `[patch]` The new regression test pins the floor only at the probe surface (`cfe.probe_import_floor(sys.executable).missing == ()`), one layer beneath the `mason doctor` report surface the acceptance criteria literally quote (`cfe_import_floor_satisfied`, `unavailable_verbs`) — verified real: no test calls the real, unmocked `build_report()` for the now-fixed environment (the existing `test_root_resolved_and_floor_satisfied_reports_no_unavailable_verbs` covers the same surface but with mocks; the existing real-env test only covers the broken case). Action: add one more real-env assertion/sibling test mirroring `test_build_report_never_raises_against_a_real_unresolved_environment`'s pattern, asserting `unavailable_verbs == ()` for the real, current (now-fixed) environment.
+  - `[false]` Claimed gating spec-surface FAIL for `pyforge-mason/spec-pyforge-mason` over the unreconciled `test_doctor.py` change — refuted: live `pixi run -e pyforge-doctor python -m pyforge.doctor.sources spec-surface` (exit 0) reports final verdict "spec-surface: ok -- every tracked file governed or allowlisted; no drift" with zero `FAIL` lines anywhere in the output and no mention of `spec-pyforge-mason` at all.
+  - `[false]` Claimed gating spec-surface FAIL for 8 other specs governing the root `pixi.toml` (besides the correctly-reconciled `pyforge-marshal/spec-pyforge-core`) — refuted by the same live run: the only `pixi.toml`-related `drift-presumed: warn` lines concern a different file (`src/shared/packages/pyforge-atlas/pixi.toml`), pre-existing and unrelated to this story's root-`pixi.toml` edit; the root `pixi.toml` shows no drift finding under any other spec.
+  - `[low]` `[patch]` (Intent Alignment point (a)) `environment.yaml`'s regeneration is claimed in the spec's own Change Log and the CHANGELOG but the diff contains no corresponding hunk, with no note explaining the (legitimate) zero-diff outcome — same root cause and action as the CHANGELOG.md row above; grouped.
+  - `[low]` `[patch]` (Intent Alignment point (b)) Same underlying gap as the probe-vs-report-surface finding above — grouped with that row; same action.
+  - `[false]` (Intent Alignment point (c)) Claimed CAP-5 re-verification "lives entirely in narrative, not in a runnable artifact" — refuted: an existing automated (mocked) test (`test_doctor.py` ~lines 76-85, asserting `cfe_import_floor_missing == ("pyyaml", "requests")` and `unavailable_verbs == ("recipe",)`) already encodes the exact degradation contract and remains green, unaffected by this diff; the live manual CLI re-verification (`--cfe-python /usr/bin/python3`) supplements but does not solely constitute the coverage.
+  - `[false]` (Intent Alignment point (d), foreign-spec-surface touch outside the intent's named scope) — refuted by the auditor's own text: "not a contradiction of the Never bullets ... defensible under a separate, repo-wide convention."
+  - `[false]` (Intent Alignment point (e), lockfile-wide footprint vs the intent's two-line description) — refuted by the auditor's own text: "normal fallout of 're-solve the lock' and isn't a contract violation."
