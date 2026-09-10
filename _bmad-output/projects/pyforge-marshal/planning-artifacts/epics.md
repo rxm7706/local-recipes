@@ -4557,7 +4557,71 @@ So that CAP-4's fully-autonomous auto-land path cannot silently wipe a freshly-a
 **And** the existing `regressions()`-based refusal (a key moving OUT of `done`) is unchanged, this is additive
 **Status:** done
 
-## Epic 29: Done-spec dispatch does not review-loop
+### Story 28.27: Planning-graph is proven live for dispatch — extend the win fleet-wide
+
+As a marshal operator,
+I want the `planning-graph` context layer enabled for every station, not just marshal,
+So that every dispatch session's epic-routing gets grounded, token-cheap planning context instead of loading `epics.md`/`PRD.md` wholesale.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** token-economy CAP-6/CAP-13 (verified live 2026-09-10)
+**Note:** Live-verified before filing, not assumed: `marshal context retrieve --project pyforge-marshal --epic 20 --format json` (the exact command `bmad-build-auto`'s own `step-01-clarify-and-route.md` runs during dispatch) returned `"verdict": "clean"`, `"mode": "graph"`, `"grounded": true`, `"tokens_saved": 109500` — a single real call. Unlike the other four layers, this one requires ZERO new engineering: the skill-file wiring (Story 28.9), the CLI command, and scribe's `recall` grammar are all already built and working end-to-end. The only reason it isn't fleet-wide already is that `[context].planning-graph` was only ever turned on in `pyforge-marshal`'s own `marshal-policy.toml` (Story 33.2, scoped to marshal as a canary).
+**Given** the other 7 stations' `marshal-policy.toml` (`pyforge-atlas`, `-steward`, `-warden`, `-doctor`, `-herald`, `-mason`, `-scribe`) **When** each gets a `[context.planning-graph]` `enabled = true` override, mirroring marshal's own **Then** `marshal context retrieve --project <slug> --epic <N> --format json` returns `grounded: true` with a positive `tokens_saved` for at least one real epic per station
+**And** a station whose scribe graph has no coverage for a given epic degrades to `epic-context-fallback` cleanly (already-proven behavior, not a regression risk)
+**And** `wire`/`output`/`structure-graph`/`derived-context` stay exactly as they are for these stations — this story touches only the one proven-working layer
+**Status:** done — a second, deeper bug was found and fixed in the same pass: `scribe recall`'s lexical/semantic scoring had no project-scoping at all, so a query naming any project could be outscored by a DIFFERENT project's more lexically-dense document (verified live: a `pyforge-warden` query returned a `pyforge-marshal` citation before the fix). Closed by adding `scope=`/`--scope` end-to-end (`recall.py::answer`/`_answer_semantic`, `scribe recall --scope`, marshal's `render_scribe_recall_argv`/`ScribeCli.recall`/`run_context_retrieve`) — filters candidates to the requested project's own `_bmad-output/projects/<slug>/` citation tree before scoring. Re-verified after the fix: all 7 stations return `grounded: true` with a citation genuinely under their own project tree.
+
+### Story 28.28: Scribe exposes caller-declared derived-context refresh, closing the CAP-5/CAP-6 gap
+
+As a marshal operator,
+I want `scribe index refresh` to accept a caller-declared artifact manifest, not just its own two hardcoded registrations,
+So that marshal's `derived-context` layer (Story 28.8) — plumbing already built and already invoked by every dispatch session — actually engages instead of degrading every single time.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-5 (scribe-side half; marshal's consumer half already shipped, Story 28.8) — live incident 2026-09-10
+**Note:** `adapters/scribe_cli.py`'s own docstring already names this exact gap: "Scribe 6.2 shipped the generic 'declare sources -> derived artifact' ENGINE (`DerivedArtifact`/`refresh_incremental`) and wired its own two registrations into `scribe index refresh`... The caller-declaration option itself is scribe-side surface that had not landed when this story was implemented, and marshal may not add it." Live-verified 2026-09-10: `marshal context refresh --project pyforge-marshal --epic 20` reports `MRS-CTX-002`, `scribe index refresh --declare ... exited 2`; direct check confirms `scribe index refresh --help` has no `--declare` option at all, only `--target`. `refresh_incremental()`'s `DerivedArtifact.derive` is a zero-arg callback scribe cannot synthesize for an arbitrary caller-declared artifact (the actual content regeneration is the AI agent's own job, done via its skill instructions when told a source changed) — so the CLI addition's `derive` per declared artifact must be a no-op (fingerprint-bookkeeping only), never content generation; scribe's role here is staleness-tracking, not authoring.
+**Given** a manifest JSON (marshal's own `declarations[].{name,sources,output}` shape, already written today at `.claude/data/pyforge-marshal/derived-context/<slug>-epic-<N>.json`) **When** `scribe index refresh --declare <manifest-path>` runs **Then** it fingerprints each declared artifact's sources via the existing `refresh_incremental()` engine (scoped to a caller-namespaced index file, never colliding with scribe's own graph/move-list index), and prints the same `refreshed: ...; skipped (unchanged): ...` report line `core/derived_context.py::parse_refresh_report` already parses
+**And** a `derive()` no-op means `refresh_incremental()` only ever reports an artifact `refreshed` (first-seen or source-changed) or `skipped` (unchanged) — it never fails from a derive-side exception
+**And** an unparseable or missing manifest exits non-zero with a clear message — `ScribeCli.refresh()`'s existing degrade-to-off handling on the marshal side already covers that failure shape, unchanged
+**And** `marshal context refresh --project pyforge-marshal --epic 20 --format json` (the exact live-verification command from this story's own Note) returns `"mode": "incremental"` with no `MRS-CTX-*` finding, proving the fix end-to-end
+**Status:** backlog
+
+### Story 28.29: Wire is dead for cursor specifically — copilot is a real but uncertain alternative, documented either way
+
+As a marshal operator,
+I want the `wire` layer's dispatch-time reason to name the real, permanent cause for cursor, and a recorded, evidence-based verdict on whether switching to copilot is worth it,
+So that a future operator does not re-discover either finding from scratch, and does not assume "wire is just broken everywhere."
+
+**Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** token-economy CAP-2 (incompatibility + alternative-harness finding, 2026-09-10)
+**Note:** Live-verified 2026-09-10, two-part finding. **Cursor is dead**: `headroom wrap cursor --help` is IDE-only — "Cursor reads its API configuration from its settings UI, not from environment variables... open Cursor and configure Settings > Models > OpenAI API Key > Advanced > Override Base URL" — a human clicking a GUI. Marshal's dispatch fleet uses `cursor-agent`, the headless standalone CLI, launched detached with no GUI at all; there is no headless integration path, full stop. **Copilot is a real, more complex, quota-uncertain alternative**: `headroom wrap copilot [COPILOT_ARGS]...` IS a genuine headless wrap (BYOK provider routing through a local proxy, positional passthrough args — no GUI dependency), and marshal already ships a `copilot.toml` harness profile (Story 22.8). But: (a) the wrap invocation is materially more complex than claude's simple argv-prefix (`--backend`/`--provider-type`/`--subscription`/`--native` flags select how Copilot's BYOK routing works — `core/harness_profile.py::resolve_wire_wrap`/`render_dispatch_argv`'s current wrap-composition logic assumes claude's simple shape and would need real adaptation, not a one-line profile edit); (b) `copilot.toml`'s own `notes` already record a LIVE, OBSERVED quota failure on this exact machine (2026-08-27: "reached the service but failed rc=1 'You have no quota'") — Copilot has its own billing/quota ceiling, so switching to it is not a free lunch, just a different spend to manage; (c) of headroom's other wrap targets (`codex`, `aider`, `grok`, `goose`, `openhands`, `opencode`, etc.), none match any of marshal's other four harness profiles (`devin`, `gemini` have no headroom wrap support either) — copilot is the ONLY currently-viable alternative, not one of several.
+**Given** a station whose `harness_preference` resolves to `cursor` (all eight, today) **When** a dispatch session launches **Then** `wire.reason` names the structural cause explicitly for cursor ("cursor-agent has no headless wire-compression path; headroom's cursor support is Cursor-IDE-only") rather than the current generic "declares no [wrapper]" message, which reads as an oversight
+**And** `cursor.toml`'s own `[wrapper]`-absence is annotated with a comment citing this story, so a future harness-profile author does not attempt to add one
+**And** the copilot alternative is recorded as an operator decision point, not silently pursued or silently dropped — a real go/no-go given the quota history and the wrap-composition rework cost, not this story's own call to make
+**Status:** backlog
+
+### Story 28.30: Output (caveman) compresses dispatch sessions too, not just spin
+
+As a marshal operator,
+I want the caveman skill genesis-seeded into every dispatch worktree and `bmad-build-auto`'s own skill files to reference it,
+So that a dispatched story's own dev-session speech compresses the same way a spun story's already does — verdicts, journals, and escalation context still fully articulated.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-3 (dispatch half; spin half already shipped, Story 28.3)
+**Note:** Confirmed live 2026-09-10: `.claude/skills/bmad-build-auto/*.md` has zero references to caveman today (unlike `derived-context`/`planning-graph`, which ARE wired into `step-01-clarify-and-route.md`) — this is a real gap, not a proven-but-off layer like 28.27's. `seed/verbs/kit.py::_apply_caveman_skill` already knows how to deploy `<home>/.claude/skills/caveman/SKILL.md` for a loop home; the dispatch worktree equivalent needs the same deployment at worktree-creation time in `cli/dispatch.py`, gated on `[context].output.enabled`.
+**Given** a dispatch worktree for a project with `[context].output.enabled = true` **When** the worktree is created (`dispatch_once`'s existing worktree-seed step) **Then** `<worktree>/.claude/skills/caveman/SKILL.md` is deployed from the same packaged payload `seed/verbs/kit.py` uses, and `bmad-build-auto`'s own skill files reference it the way `step-01-clarify-and-route.md` already references `derived-context`/`planning-graph` (a new instruction block, same file)
+**And** a project with the layer declared off deploys nothing — today's behavior, byte-identical
+**And** an unavailable/unresolvable caveman payload disables the layer with a named finding (matching Story 28.3's own degrade contract) and dispatch proceeds unwrapped
+**Status:** backlog
+
+### Story 28.31: Structure-graph (codegraph) for dispatch — provisioning cost weighed against a single-story session
+
+As a marshal operator,
+I want a documented decision on whether a per-dispatch-worktree codegraph index is worth building, before any code assumes the answer is yes,
+So that dispatch does not pay an index-build cost that exceeds what a single story's own navigation would have spent without it.
+
+**Type:** spike • **Effort:** M • **Deps:** — • **FR/AD:** token-economy CAP-3 (structure-graph half; spin half already shipped, Story 28.3)
+**Note:** Unlike `output` (a skill-file deploy, cheap and clearly net-positive), `structure-graph` needs a real index (`codegraph init -y`), and Story 28.3's own docstring already flags "a first codegraph index build runs unattended and can take minutes" — for a LOOP HOME running many stories across its lifetime, that one-time cost amortizes; for a DISPATCH worktree living one story's lifetime, it may not. No `.codegraph/` index exists anywhere in this repo today (checked live), so there is no existing artifact to measure against — this spike produces the measurement `bmad-build-auto`'s own skill files would need before wiring a reference to codegraph the way 28.27's planning-graph reference already exists.
+**Given** a representative dispatch worktree and a representative story **When** the spike measures (a) `codegraph init -y`'s wall-clock/token cost for this repo's actual size and (b) the token cost the SAME story's own file-navigation would have spent without a graph **Then** the comparison is recorded as a real artifact (matching Story 28.5's own benchmark-artifact precedent), not an assumption
+**And** the spike's own recommendation — build it per-worktree, share a repo-level index across worktrees (if codegraph supports incremental sync from a shared base, matching `kit.py`'s existing `init`-vs-`sync` split), or leave this layer spin-only — is the acceptance criterion, not a specific implementation
+**And** if the recommendation is "build it," the follow-on implementation story is filed separately, scoped by the spike's own findings — this story does not pre-commit to writing that code
+**Status:** backlog
 
 **Goal:** FR-193 CAP-11 (`spec-marshal-single-story-dispatch`, Dream addendum
 2026-09-02). A harness halt of `done` is the end of the *session*, not the
