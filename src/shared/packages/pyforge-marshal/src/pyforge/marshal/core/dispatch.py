@@ -220,16 +220,58 @@ def read_declared_difficulty(spec_text: str) -> str | None:
 def resolve_dispatch_model(
     policy: EffectivePolicy, *, difficulty: str | None
 ) -> str | None:
+    model, _, _, _ = resolve_dispatch_model_with_retry_escalation(
+        policy, difficulty=difficulty
+    )
+    return model
+
+
+def resolve_dispatch_model_with_retry_escalation(
+    policy: EffectivePolicy,
+    *,
+    difficulty: str | None,
+    prior_failed_attempts: int = 0,
+) -> tuple[str | None, bool, str | None, str | None]:
+    """Resolve the launch model and optionally floor-raise on dispatch retry.
+
+    Story 33.6 (spec-adaptive-model-tiering CAP-2 on factory dispatch):
+    when ``prior_failed_attempts`` reaches ``max_dev_attempts``, the dev-stage
+    model is floor-raised to the review-tier model from the tier map — never
+    a downgrade, never a spin-style on-disk policy.toml write.
+    """
+    from .dispatch_retry import (
+        apply_dispatch_retry_floor_raise,
+        should_dispatch_retry_escalate,
+    )
+
     resolution = resolve_tier_launch(
         policy, difficulty, allow_unmapped_fallback=True
     )
     dev_model = resolution.resolved_models.get("dev")
+    base_model: str | None
     if isinstance(dev_model, str) and dev_model:
-        return dev_model
-    for model in resolution.resolved_models.values():
-        if isinstance(model, str) and model:
-            return model
-    return None
+        base_model = dev_model
+    else:
+        base_model = None
+        for model in resolution.resolved_models.values():
+            if isinstance(model, str) and model:
+                base_model = model
+                break
+
+    review_model = resolution.resolved_models.get("review")
+    review_model_str = review_model if isinstance(review_model, str) else None
+
+    seed = policy.seed_view()
+    max_dev_field = seed.get("max_dev_attempts")
+    max_dev_attempts = (
+        max_dev_field.value if max_dev_field is not None else 2
+    )
+    if not isinstance(max_dev_attempts, int) or isinstance(max_dev_attempts, bool):
+        max_dev_attempts = 2
+
+    if should_dispatch_retry_escalate(prior_failed_attempts, max_dev_attempts):
+        return apply_dispatch_retry_floor_raise(base_model, review_model_str)
+    return base_model, False, None, None
 
 
 def resolve_tier_harness(

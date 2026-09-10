@@ -17,11 +17,7 @@
 # ABSENT:
 #   * `worktree_seed_paths` -- generated from the project slug, so restating it would
 #     create a second truth that could drift.
-#   * `model_tier_map` -- it maps DIFFICULTY CLASS to {stage: model}, and which
-#     difficulty applies to a story is explicitly "a later story's concern", so the
-#     vocabulary does not exist yet. The rendered template already carries the stage
-#     baselines (`[adapter] model = "sonnet"`, `[adapter.review] model = "fable"`),
-#     so per-stage tiering works without it. Populate when FR-51 tier-batching lands.
+#   (`model_tier_map` lives at file end — Story 33.6 / FR-51.)
 #
 # gate_mode: unattended (operator direction, 2026-07-26). This is the HUMAN approval
 # gate ONLY -- the independent reviewer still runs on every story.
@@ -205,3 +201,17 @@ verify_commands = [
   # it re-fires MRS-GATE-012 on its own bookkeeping (steward 43.6, 2026-09-03).
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
+
+# model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
+# Must stay LAST in this file (TOML table scoping).
+[model_tier_map.heavy]
+dev = "composer-2.5-fast"
+review = "composer-2.5"
+
+[model_tier_map.medium]
+dev = "composer-2.5-fast"
+review = "composer-2.5"
+
+[model_tier_map.easy]
+dev = "composer-2.5-fast"
+

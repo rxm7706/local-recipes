@@ -547,6 +547,28 @@ def _last_failed_dispatch_session_log(
     return None
 
 
+def _count_prior_failed_dispatch_attempts(
+    fs: FsPort, repo_root: Path, slug: str, story_key: str
+) -> int:
+    """Count failed dispatch runs for this story since the last completion.
+
+    Story 33.6 (CAP-2): mirrors spin's per-run struggle counter — a
+    successful completion resets the streak so an old failure history does
+    not floor-raise an unrelated later retry.
+    """
+    feed_story = render_feed_key(normalize(story_key))
+    count = 0
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key != feed_story:
+            continue
+        if journal.completion_verdict == DispatchSessionVerdict.COMPLETED.value:
+            break
+        if journal.completion_verdict == DispatchSessionVerdict.FAILED.value:
+            count += 1
+    return count
+
+
 @dataclass(frozen=True)
 class DispatchWorktreeResolution:
     """A provisioned dispatch worktree, or the refusal that stopped it (22.9)."""
@@ -1392,15 +1414,28 @@ def dispatch_once(
     session_log = _last_failed_dispatch_session_log(
         fs, repo_root, slug, render_feed_key(story_key)
     )
+    prior_failed_attempts = _count_prior_failed_dispatch_attempts(
+        fs, repo_root, slug, render_feed_key(story_key)
+    )
     tier_resolution = dispatch_core.resolve_tier_harness(
         effective_policy,
         difficulty=difficulty,
         session_log=session_log,
     )
-    model = dispatch_core.resolve_dispatch_model(effective_policy, difficulty=difficulty)
+    model, escalated, from_model, to_model = (
+        dispatch_core.resolve_dispatch_model_with_retry_escalation(
+            effective_policy,
+            difficulty=difficulty,
+            prior_failed_attempts=prior_failed_attempts,
+        )
+    )
     budget_env = dispatch_core.build_budget_env(effective_policy)
     data["model"] = model
     data["budget_env"] = dict(budget_env)
+    if escalated:
+        data["escalated"] = True
+        data["from_model"] = from_model
+        data["to_model"] = to_model
     if tier_resolution.resolved_models:
         data["resolved_models"] = dict(tier_resolution.resolved_models)
     if tier_resolution.serving_pools:
@@ -1692,6 +1727,15 @@ def dispatch_once(
             "baseline_head_sha": baseline_head_sha,
             "harness_profile": resolution.profile,
             "context": context_payload,
+            **(
+                {
+                    "escalated": True,
+                    "from_model": from_model,
+                    "to_model": to_model,
+                }
+                if escalated
+                else {}
+            ),
         },
     )
     try:
