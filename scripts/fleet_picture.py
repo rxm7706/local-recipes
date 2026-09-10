@@ -378,6 +378,42 @@ def loop_home_staleness(
     return stale
 
 
+def primary_checkout_staleness(
+    repo: pathlib.Path = REPO, threshold: int = 1
+) -> int | None:
+    """Commits `repo`'s current branch is behind a live-fetched `origin/main`,
+    or ``None`` if under `threshold` (default 1 -- any drift matters here,
+    unlike a loop home's 20) or the check could not be made.
+
+    Story 20.12: marshal's unattended CAP-4 land path can commit, push, open
+    a PR, verify, and merge a story with zero operator action -- the primary
+    checkout (where the operator's own next push/merge/worktree-creation
+    happens) has no other signal this occurred and can silently drift behind
+    `origin/main`. Same live-fetch-then-`rev-list` idiom and fault-tolerant
+    degrade as `loop_home_staleness()` -- this is the one checkout that
+    function's own `loop_root.iterdir()` walk never covers."""
+    try:
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=repo, capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+        if not branch:
+            return None  # detached HEAD
+        subprocess.run(
+            ["git", "fetch", "--quiet", "origin", "main"],
+            cwd=repo, capture_output=True, text=True, timeout=60, check=True,
+        )
+        count = subprocess.run(
+            ["git", "rev-list", "--count", f"{branch}..origin/main"],
+            cwd=repo, capture_output=True, text=True, timeout=30, check=True,
+        ).stdout.strip()
+        if count.isdigit() and int(count) >= threshold:
+            return int(count)
+    except Exception:
+        pass
+    return None
+
+
 def bmad_core_drift_findings(
     repo: pathlib.Path = REPO, timeout: int = 30
     # 30s vs the source's own ~25s worst-case network design budget: since
@@ -989,6 +1025,15 @@ def main() -> int:
                          f"origin/main -- resync the loop home before its next spin")
     except Exception:
         watch.append("could not check loop-home staleness")
+
+    try:
+        primary_behind = primary_checkout_staleness()
+        if primary_behind is not None:
+            needs.append(f"primary checkout is {primary_behind} commit(s) behind "
+                         f"origin/main -- run `git pull` (an unattended CAP-4 land "
+                         f"can merge without you noticing)")
+    except Exception:
+        watch.append("could not check primary-checkout staleness")
 
     try:
         for finding in bmad_core_drift_findings():
