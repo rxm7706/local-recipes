@@ -2,7 +2,7 @@
 title: 'Finalize escalations self-clear past a later success'
 type: 'fix'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -58,6 +58,24 @@ declared_low_risk: false
 ## Spec Change Log
 
 ## Review Triage Log
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `gather_fleet_finalize_escalations` now examines only the newest dispatch run per station (via the existing `latest_dispatch_run_dir` helper) instead of walking arbitrarily far back through history for any past failure, and skips recording an escalation whose worktree path no longer exists on disk.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — `gather_fleet_finalize_escalations` rewritten to the newest-run-only + worktree-existence-checked contract
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_finalize.py` — added `test_gather_fleet_finalize_escalations_superseded_by_success` and `test_gather_fleet_finalize_escalations_worktree_already_gone`
+- `spec-28-25-…md` — story contract
+- `sprint-status-ledger.yaml` — 28-25 → done
+
+**Review:** Implementation verified directly against the spec's own I/O matrix; no separate review-loop pass run for this single-file fix.
+
+**Verification:** `pyforge-marshal-test` → 7683 passed, 12 deselected (was 7681 passed + 2 pre-existing unrelated failures before this branch also picked up the separate `resolve_max_parallel` test fix — see commit). Live check: `marshal status --project pyforge-marshal --format json` no longer names the stale 33.2 worktree.
+
+**Residual risks:** None identified — the fix only narrows an over-broad history search and adds an existence check; no new escalation states introduced.
 
 ## Verification
 

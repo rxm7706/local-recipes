@@ -466,10 +466,10 @@ def test_resolve_max_parallel_cli_override_floors_at_one() -> None:
 def test_resolve_max_parallel_policy_flag_wins_over_default() -> None:
     from pyforge.marshal.cli.dispatch import _compose_policy, resolve_max_parallel
 
-    effective = _compose_policy("pyforge-marshal")
-    assert (
-        resolve_max_parallel(effective, policy_flags={"max_parallel": 4}) == 4
+    effective = _compose_policy(
+        "pyforge-marshal", flags={"dispatch": {"max_parallel": 4}}
     )
+    assert resolve_max_parallel(effective) == 4
 
 
 def test_resolve_max_parallel_defaults_from_effective_policy() -> None:
@@ -477,5 +477,5 @@ def test_resolve_max_parallel_defaults_from_effective_policy() -> None:
 
     effective = _compose_policy("pyforge-marshal")
     assert resolve_max_parallel(effective) == int(
-        effective.seed_view()["max_parallel"].value
+        effective.dispatch.value["max_parallel"]
     )
