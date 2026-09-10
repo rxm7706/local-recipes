@@ -340,3 +340,118 @@ def test_recall_makes_zero_network_calls(
 
     result = answer("why did we drop Kuzu?", FlatFileGraphStore(repo_with_citation / "graph.json"), repo_root=repo_with_citation)
     assert result.grounded is True
+
+
+@pytest.fixture()
+def repo_with_two_project_citations(tmp_path: Path) -> Path:
+    (tmp_path / '_bmad-output' / 'projects' / 'pyforge-marshal' / 'planning-artifacts').mkdir(parents=True)
+    (tmp_path / '_bmad-output' / 'projects' / 'pyforge-warden' / 'planning-artifacts').mkdir(parents=True)
+    (tmp_path / '_bmad-output' / 'projects' / 'pyforge-marshal' / 'planning-artifacts' / 'notes.md').write_text('content', encoding='utf-8')
+    (tmp_path / '_bmad-output' / 'projects' / 'pyforge-warden' / 'planning-artifacts' / 'notes.md').write_text('content', encoding='utf-8')
+    return tmp_path
+
+
+def test_scope_excludes_other_projects_denser_match(repo_with_two_project_citations: Path) -> None:
+    """Live incident 2026-09-10 (marshal Story 28.27): a query naming
+    pyforge-warden tokenizes to {pyforge, warden} -- pyforge alone matches
+    every project's own documents, so an unscoped query let a more
+    generically-worded marshal node outscore the correct-project warden
+    node. scope= closes exactly this gap."""
+    store = FlatFileGraphStore(repo_with_two_project_citations / 'graph.json')
+    store.reset()
+    store.upsert_node(_node(
+        id='memory:marshal/dense',
+        citation='_bmad-output/projects/pyforge-marshal/planning-artifacts/notes.md',
+        title='epic planning context requirements constraints',
+        text='epic planning context requirements constraints epic planning context',
+    ))
+    store.upsert_node(_node(
+        id='memory:warden/sparse',
+        citation='_bmad-output/projects/pyforge-warden/planning-artifacts/notes.md',
+        title='warden retro',
+        text='warden epic retro notes',
+    ))
+    store.commit()
+
+    unscoped = answer(
+        'Epic 1 planning context requirements constraints for pyforge-warden',
+        FlatFileGraphStore(repo_with_two_project_citations / 'graph.json'),
+        repo_root=repo_with_two_project_citations,
+    )
+    assert unscoped.node_id == 'memory:marshal/dense'  # reproduces the bug unscoped
+
+    scoped = answer(
+        'Epic 1 planning context requirements constraints for pyforge-warden',
+        FlatFileGraphStore(repo_with_two_project_citations / 'graph.json'),
+        repo_root=repo_with_two_project_citations,
+        scope='pyforge-warden',
+    )
+    assert scoped.grounded is True
+    assert scoped.node_id == 'memory:warden/sparse'
+    assert scoped.citation.startswith('_bmad-output/projects/pyforge-warden/')
+
+
+def test_scope_excludes_non_project_citations(repo_with_two_project_citations: Path) -> None:
+    """A commit:/code/transcript citation has no reliable per-project
+    attribution in the citation string -- scope excludes it rather than
+    guessing, even when it would otherwise win lexically."""
+    store = FlatFileGraphStore(repo_with_two_project_citations / 'graph.json')
+    store.reset()
+    store.upsert_node(_node(
+        id='memory:commit/dense',
+        citation='commit:' + ('a' * 40),
+        title='warden epic planning',
+        text='warden epic planning context is discussed at length here',
+    ))
+    store.commit()
+
+    result = answer(
+        'warden epic planning context',
+        FlatFileGraphStore(repo_with_two_project_citations / 'graph.json'),
+        repo_root=repo_with_two_project_citations,
+        scope='pyforge-warden',
+    )
+    assert result.grounded is False
+
+
+def test_scope_none_is_unscoped_behavior_unchanged(repo_with_citation: Path) -> None:
+    store = FlatFileGraphStore(repo_with_citation / 'graph.json')
+    store.reset()
+    store.upsert_node(_node())
+    store.commit()
+
+    result = answer(
+        'why did we drop Kuzu?',
+        FlatFileGraphStore(repo_with_citation / 'graph.json'),
+        repo_root=repo_with_citation,
+        scope=None,
+    )
+    assert result.grounded is True
+    assert result.citation == 'notes/kuzu-drop.md'
+
+
+def test_semantic_scope_excludes_other_projects(repo_with_two_project_citations: Path) -> None:
+    marshal_node = _node(
+        id='memory:marshal/x',
+        citation='_bmad-output/projects/pyforge-marshal/planning-artifacts/notes.md',
+    )
+    warden_node = _node(
+        id='memory:warden/x',
+        citation='_bmad-output/projects/pyforge-warden/planning-artifacts/notes.md',
+        text='warden-specific answer text',
+    )
+    # query_similar returns its ranked candidates in order -- marshal first,
+    # simulating it winning the embedding-similarity ranking despite being
+    # the wrong project, exactly as it won lexically in the live incident.
+    store = _FakeSimilarStore([marshal_node, warden_node])
+
+    unscoped = _answer_semantic(
+        'planning context', store, repo_root=repo_with_two_project_citations
+    )
+    assert unscoped.node_id == 'memory:marshal/x'
+
+    scoped = _answer_semantic(
+        'planning context', store, repo_root=repo_with_two_project_citations, scope='pyforge-warden'
+    )
+    assert scoped.grounded is True
+    assert scoped.node_id == 'memory:warden/x'

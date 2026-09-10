@@ -164,6 +164,16 @@ harness_preference = ["cursor"]
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 
+# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
+# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
+# real measured savings, zero further engineering needed. scribe recall's
+# own project-scoping gap was found and fixed in the same pass -- see
+# scribe recall.py's own scope= parameter. wire/output/structure-graph/
+# derived-context stay declared-off (undeclared = default off) pending
+# Stories 28.28-28.31.
+[context."planning-graph"]
+enabled = true
+
 # model_tier_map must be last in this file (TOML table scoping).
 [model_tier_map.heavy]
 dev = "composer-2.5-fast"

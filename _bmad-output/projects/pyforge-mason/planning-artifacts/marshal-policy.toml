@@ -204,6 +204,17 @@ verify_commands = [
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
+# context.planning-graph (Story 28.27, token-economy CAP-6/CAP-13): verified
+# live 2026-09-10 against pyforge-marshal (the canary) -- grounded retrieval,
+# real measured savings, zero further engineering needed. scribe recall's
+# own project-scoping gap (a lexical query naming a project slug could still
+# be outscored by another project's denser-vocabulary node) was found and
+# fixed in the same pass -- see scribe Story marshal-28.27 / recall.py's own
+# scope= parameter. wire/output/structure-graph/derived-context stay
+# declared-off (undeclared = default off) pending Stories 28.28-28.31.
+[context."planning-graph"]
+enabled = true
+
 [model_tier_map.heavy]
 dev = "composer-2.5-fast"
 review = "composer-2.5"
