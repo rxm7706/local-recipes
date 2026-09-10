@@ -4877,12 +4877,12 @@
  "pyforge-scribe/spec-pyforge-scribe": {
   "files": {
    "scripts/scribe_graph_freshness_check.py": "992380215b7243a111a4e968a6fd50ea7f8b5dae",
-   "scripts/scribe_install_nightly_trigger.py": "3b5eead67639ec55ed06e0e6ed9c47a76e5749ed",
+   "scripts/scribe_install_nightly_trigger.py": "a4a0daff11a85afb65b75a2294d3e311398e9e92",
    "scripts/scribe_nightly_trigger.py": "55804ff34ddf956a61a57a08645e8dee35ea000b",
    "scripts/scribe_pg.py": "5a4b3203e0c2532d9b3362a3adc991553ef0e3f3",
    "src/shared/packages/pyforge-scribe/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-scribe/README.md": "16f927209eac082500a7844e9e4f68f0967ab3b4",
-   "src/shared/packages/pyforge-scribe/docs/cli-runbooks.md": "e3bf7f7213b29fec5ae04e7ae808e2b814125637",
+   "src/shared/packages/pyforge-scribe/docs/cli-runbooks.md": "67aebca5839e882915c33f8367e0db33a8f8c530",
    "src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.service.tmpl": "4e52be76a1ccc0933276f06b3a7c3336929e5667",
    "src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer": "0ffb071de14899280af5f17ec4c90bb81d712029",
    "src/shared/packages/pyforge-scribe/pixi.toml": "f2bd85333684355efa73df3006d4c8139368795c",
@@ -4926,7 +4926,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "13adaac3a4f0b230990bffc63fdd339f2928c5fe",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "11deb7ca51cf731178888df9ec7d95ffff1a47b2"
   },
-  "memlog": "2ef98a8712e4e800020779918145d6a1baa5c1b8"
+  "memlog": "0115bec01e85899646a7b49f090f84f416689fd5"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
