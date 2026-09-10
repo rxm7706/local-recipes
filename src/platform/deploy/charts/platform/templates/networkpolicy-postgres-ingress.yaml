@@ -1,0 +1,44 @@
+{{/*
+Story 48.3 / R-19: postgres accepts connections only from platform-image
+pods that carry DATABASE_URL plus liquibase and the backup CronJob.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.postgres.fullname" . }}-ingress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "platform.selectorLabels" . | nindent 14 }}
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                  - web
+                  - worker
+                  - worker-builds
+                  - beat
+                  - migrate
+                  - liquibase
+                  {{- if .Values.postgres.backup.enabled }}
+                  - postgres-backup
+                  {{- end }}
+                  {{- range $station := uniq .Values.events.consumers }}
+                  - consume-events-{{ $station }}
+                  {{- end }}
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

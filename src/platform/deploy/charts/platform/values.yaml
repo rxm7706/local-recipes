@@ -374,3 +374,26 @@ flags:
   mountPath: /etc/pyforge
   fileName: flags.json
   tree: ""
+
+# Story 48.3 / R-19: default-deny NetworkPolicy envelope with explicit allows.
+networkPolicy:
+  enabled: true
+  dns:
+    namespace: kube-system
+    podLabels:
+      k8s-app: kube-dns
+  # Namespaces whose pods may reach web:8000 (Route/Ingress). Defaults cover
+  # CRC/OCP (`openshift-ingress`) and vanilla nginx Ingress.
+  webIngressFrom:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-ingress
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+  workerBuilds:
+    # Mason build tasks reach external registries; general worker does not.
+    allowExternalEgress: true
+  dbgpt:
+    # When sidecar.llm.apiBase points at an external LLM, allow HTTPS egress.
+    allowLlmEgress: true

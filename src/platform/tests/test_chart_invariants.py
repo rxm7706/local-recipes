@@ -1605,6 +1605,7 @@ def test_redis_network_policy_restricts_ingress_to_platform_pods():
             .get("matchLabels", {})
             .get("app.kubernetes.io/component", ""),
         ).startswith("redis-")
+        and "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
     ]
     components = {
         policy["spec"]["podSelector"]["matchLabels"]["app.kubernetes.io/component"]
@@ -1628,21 +1629,27 @@ def test_mcp_host_network_policy_admits_web_pods_only():
     it (they keep their own web/worker/migrate rule on 6379).
     """
     docs = _render(_CORE_CHART, release="platform")
-    named = [
-        doc["metadata"]["name"]
+    mcp_policies = [
+        doc
         for doc in docs
         if doc.get("kind") == "NetworkPolicy"
         and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
         == _MCP_HOST_COMPONENT
     ]
-    assert len(named) == 1, (
-        f"the default render must carry exactly one mcp-host NetworkPolicy "
-        f"(red-team X-5: without it any pod in the namespace can call the "
-        f"sidecar), got {named}"
+    mcp_ingress = [
+        doc
+        for doc in mcp_policies
+        if "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
+    ]
+    assert len(mcp_ingress) == 1, (
+        f"the default render must carry exactly one mcp-host ingress "
+        f"NetworkPolicy (red-team X-5: without it any pod in the namespace "
+        f"can call the sidecar), got "
+        f"{[doc['metadata']['name'] for doc in mcp_policies]}"
     )
     _assert_mcp_host_network_policy_admits_web_only(
         docs,
-        policy_name=named[0],
+        policy_name=mcp_ingress[0]["metadata"]["name"],
         scoping_labels=_release_scoping_labels(docs),
     )
 
@@ -1655,6 +1662,7 @@ def test_mcp_host_network_policy_admits_web_pods_only():
             .get("matchLabels", {})
             .get("app.kubernetes.io/component", ""),
         ).startswith("redis-")
+        and "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
     ]
     assert len(redis_policies) == len(_REDIS_COMPONENTS), redis_policies
     for policy in redis_policies:
@@ -2071,6 +2079,136 @@ def test_autoscaling_disabled_omits_hpa():
     )
     hpas = [doc for doc in docs if doc.get("kind") == "HorizontalPodAutoscaler"]
     assert not hpas, f"expected no HPAs when autoscaling disabled, got {hpas!r}"
+
+
+def _network_policies_for_component(
+    docs: list[dict[str, Any]], component: str
+) -> list[dict[str, Any]]:
+    return [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and (doc.get("spec") or {})
+        .get("podSelector", {})
+        .get("matchLabels", {})
+        .get("app.kubernetes.io/component")
+        == component
+    ]
+
+
+def _egress_peer_components(policy: dict[str, Any]) -> set[str]:
+    """Return component labels targeted by podSelector egress peers."""
+    peers: set[str] = set()
+    for rule in policy.get("spec", {}).get("egress") or []:
+        for entry in rule.get("to") or []:
+            labels = (entry.get("podSelector") or {}).get("matchLabels") or {}
+            component = labels.get("app.kubernetes.io/component")
+            if component:
+                peers.add(component)
+    return peers
+
+
+@requires_helm
+def test_story_48_3_default_deny_network_policy_renders():
+    """AC (Story 48.3): default-deny selects all pods with Ingress and Egress types."""
+    docs = _render(_CORE_CHART, release="platform")
+    default_deny = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"] == "platform-default-deny"
+    ]
+    assert len(default_deny) == 1, default_deny
+    spec = default_deny[0]["spec"]
+    assert spec.get("podSelector") == {}
+    assert set(spec.get("policyTypes") or []) == {"Ingress", "Egress"}
+
+
+@requires_helm
+def test_story_48_3_service_accounts_disable_token_automount():
+    """AC (Story 48.3): both ServiceAccounts set automountServiceAccountToken false."""
+    docs = _render(_CORE_CHART, release="platform")
+    accounts = [doc for doc in docs if doc.get("kind") == "ServiceAccount"]
+    assert len(accounts) == 2, accounts  # noqa: PLR2004 -- platform + data SA
+    for account in accounts:
+        assert account.get("automountServiceAccountToken") is False, account
+
+
+@requires_helm
+def test_story_48_3_web_worker_mcp_host_dbgpt_egress_peers():
+    """AC (Story 48.3): named workloads carry egress to chart-declared peers."""
+    docs = _render(_CORE_CHART, release="platform")
+
+    web_policies = _network_policies_for_component(docs, "web")
+    assert len(web_policies) == 2, web_policies  # noqa: PLR2004 -- ingress + egress
+    web_egress = next(p for p in web_policies if "Egress" in (p["spec"].get("policyTypes") or []))
+    web_peers = _egress_peer_components(web_egress)
+    assert web_peers >= {"postgres", "redis-cache", "redis-broker", "mcp-host", "dbgpt"}
+
+    worker_egress = next(
+        p
+        for p in _network_policies_for_component(docs, "worker")
+        if "Egress" in (p["spec"].get("policyTypes") or [])
+    )
+    worker_peers = _egress_peer_components(worker_egress)
+    assert worker_peers >= {"postgres", "redis-cache", "redis-broker", "dbgpt"}
+
+    mcp_egress = next(
+        p
+        for p in _network_policies_for_component(docs, "mcp-host")
+        if "Egress" in (p["spec"].get("policyTypes") or [])
+    )
+    assert _egress_peer_components(mcp_egress) == set()
+
+    dbgpt_egress = next(
+        p
+        for p in _network_policies_for_component(docs, "dbgpt")
+        if "Egress" in (p["spec"].get("policyTypes") or [])
+    )
+    assert _egress_peer_components(dbgpt_egress) == set()
+
+
+@requires_helm
+def test_story_48_3_postgres_and_dbgpt_ingress_restrict_clients():
+    """AC (Story 48.3): postgres and dbgpt ingress admit platform clients only."""
+    docs = _render(_CORE_CHART, release="platform")
+
+    postgres_ingress = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"] == "platform-postgres-ingress"
+    ]
+    assert len(postgres_ingress) == 1, postgres_ingress
+    pg_rule = postgres_ingress[0]["spec"]["ingress"][0]
+    pg_expr = pg_rule["from"][0]["podSelector"]["matchExpressions"][0]
+    assert pg_expr["operator"] == "In"
+    assert set(pg_expr["values"]) >= set(_PLATFORM_COMPONENTS) | {"liquibase", "postgres-backup"}
+
+    dbgpt_ingress = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"] == "platform-dbgpt-ingress"
+    ]
+    assert len(dbgpt_ingress) == 1, dbgpt_ingress
+    dbgpt_expr = dbgpt_ingress[0]["spec"]["ingress"][0]["from"][0]["podSelector"][
+        "matchExpressions"
+    ][0]
+    assert set(dbgpt_expr["values"]) == set(_PLATFORM_COMPONENTS)
+
+
+@requires_helm
+def test_network_policy_disabled_omits_baseline():
+    """Story 48.3: networkPolicy.enabled=false omits R-19 policies."""
+    docs = _render(_CORE_CHART, "--set", "networkPolicy.enabled=false")
+    default_deny = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"].endswith("-default-deny")
+    ]
+    assert not default_deny, default_deny
 
 
 @requires_helm
