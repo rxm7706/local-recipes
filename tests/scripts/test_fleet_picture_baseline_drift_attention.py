@@ -172,7 +172,7 @@ def test_needs_lines_recovered_equivalent_is_silence(tmp_path, monkeypatch):
     det = _load_detector()
     monkeypatch.setattr(det, "LOOP_ROOT", loop_root)
     monkeypatch.setattr(det, "REPO", repo)
-    findings = det.collect_findings()
+    findings, _obs = det.collect_findings()
     assert findings == []
 
     mod = _load_fleet()

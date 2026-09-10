@@ -131,7 +131,7 @@ def test_drift_fire_names_story_baselines_and_preserve_ref(
     assert f"orchestrator-recorded {DRIFTED_BASELINE}" in out
     assert PRESERVE_REF in out
     assert "recover from:" in out
-    assert "[unrecovered]" in out
+    assert "unrecovered" in out
 
 
 def test_clean_silent_exits_zero_with_no_finding(tmp_path, monkeypatch, capsys):
@@ -256,7 +256,7 @@ def test_collect_findings_returns_unrecovered_dicts(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
     monkeypatch.setattr(mod, "REPO", repo)
 
-    findings = mod.collect_findings()
+    findings, _obs = mod.collect_findings()
     assert len(findings) == 1
     f = findings[0]
     assert f["slug"] == "marshal"
@@ -279,7 +279,8 @@ def test_collect_findings_empty_when_recovered(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
     monkeypatch.setattr(mod, "REPO", repo)
 
-    assert mod.collect_findings() == []
+    findings, _obs = mod.collect_findings()
+    assert findings == []
 
 
 def test_json_flag_prints_findings_and_exits_nonzero(tmp_path, monkeypatch, capsys):
@@ -305,6 +306,56 @@ def test_json_flag_prints_findings_and_exits_nonzero(tmp_path, monkeypatch, caps
     assert data[0]["drifted"] == DRIFTED_BASELINE
     assert PRESERVE_REF in data[0]["refs"]
     assert "[unrecovered]" not in out  # no human banner mixed into --json
+
+
+def test_empty_planes_exit_two(tmp_path, monkeypatch, capsys):
+    """Story 33.7: neither loop-home nor dispatch-runs has runs → exit 2."""
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _seed_repo_ledger(repo, ledger_fixture=None)
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    rc = mod.main()
+    out = capsys.readouterr().out
+
+    assert rc == 2, out
+    assert "could-not-observe" in out
+
+
+def test_dispatch_plane_drift_fires(tmp_path, monkeypatch, capsys):
+    """Story 33.7: baseline-drift defer under dispatch-runs → exit 1."""
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_preserve_branch(repo)
+    run_dir = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "implementation-artifacts"
+        / "dispatch-runs"
+        / RUN_ID
+    )
+    run_dir.mkdir(parents=True)
+    shutil.copy(
+        FIXTURES / "journal_9_6_drift.jsonl",
+        run_dir / "journal.jsonl",
+    )
+    _seed_repo_ledger(repo, ledger_fixture=None)
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    rc = _run_main(mod, loop_root, repo, monkeypatch)
+    out = capsys.readouterr().out
+
+    assert rc == 1, out
+    assert STORY_KEY in out
+    assert "dispatch-runs" in out or "dispatch" in out
 
 
 def test_json_flag_empty_array_on_clean(tmp_path, monkeypatch, capsys):

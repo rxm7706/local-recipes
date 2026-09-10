@@ -47,8 +47,10 @@ having to understand recovery-PR shape or commit-message conventions.
 ``bmad_loop``.
 
 EXIT
-    0  no unrecovered baseline-drift defer found
+    0  no unrecovered baseline-drift defer found (at least one run observed)
     1  at least one unrecovered baseline-drift defer found
+    2  could-not-observe — neither loop-home nor dispatch-runs had any run
+       to examine (never exit 0 on an empty observation plane)
 
 ``--json`` (Story 20.2 / CAP-2): stdout is a bare JSON list of unrecovered
 finding objects (keys: slug, run, story, real, drifted, refs). Exit codes
@@ -66,6 +68,7 @@ import json
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -74,6 +77,21 @@ LOOP_ROOT = Path.home() / ".bmad-loops"
 DRIFT_RE = re.compile(
     r"spec baseline (\S+) does not match orchestrator-recorded baseline (\S+)"
 )
+
+_DISPATCH_RUNS_DIRNAME = "dispatch-runs"
+_COULD_NOT_OBSERVE = "could-not-observe"
+
+
+@dataclass(frozen=True)
+class ObservationState:
+    """How many run directories were examined on each observation plane."""
+
+    loop_runs: int = 0
+    dispatch_runs: int = 0
+
+    @property
+    def any_runs(self) -> bool:
+        return self.loop_runs > 0 or self.dispatch_runs > 0
 
 
 def tracked_status(slug: str) -> dict[str, str]:
@@ -125,35 +143,126 @@ def find_defers(journal: Path) -> list[dict]:
     return out
 
 
-def collect_findings() -> list[dict]:
-    """Unrecovered baseline-drift defers across every loop home.
-
-    Pure collection for human stdout, ``--json``, and fleet-picture ATTENTION
-    (Story 20.2). Empty when ``LOOP_ROOT`` is missing or every defer is already
-    ``done`` in the tracked sprint-status ledger.
-    """
-    if not LOOP_ROOT.is_dir():
-        return []
-
-    findings: list[dict] = []
-    for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
-        slug = home.name.replace("pyforge-", "")
-        status = tracked_status(slug)
+def _count_loop_runs(loop_root: Path) -> int:
+    if not loop_root.is_dir():
+        return 0
+    count = 0
+    for home in sorted(p for p in loop_root.iterdir() if (p / ".git").exists()):
         runs_dir = home / ".bmad-loop" / "runs"
         if not runs_dir.is_dir():
             continue
         for run in sorted(runs_dir.glob("*/")):
-            for defer in find_defers(run / "journal.jsonl"):
-                story = defer["story_key"]
-                if status.get(story) == "done":
-                    continue  # recovered -- the tracked ledger already says so
-                refs = preserve_refs(run.name)
-                findings.append({
-                    "slug": slug, "run": run.name, "story": story,
-                    "real": defer["real"], "drifted": defer["drifted"],
-                    "refs": refs,
-                })
-    return findings
+            if run.is_dir():
+                count += 1
+    return count
+
+
+def _iter_dispatch_run_journals(repo: Path):
+    """Yield ``(slug, run_id, journal_path)`` under in-repo dispatch-runs."""
+    projects = repo / "_bmad-output" / "projects"
+    if not projects.is_dir():
+        return
+    for proj in sorted(projects.iterdir()):
+        if not proj.is_dir():
+            continue
+        slug = proj.name.replace("pyforge-", "")
+        runs = proj / "implementation-artifacts" / _DISPATCH_RUNS_DIRNAME
+        if not runs.is_dir():
+            continue
+        for run in sorted(runs.iterdir()):
+            if not run.is_dir() or run.name == "waves":
+                continue
+            journal = run / "journal.jsonl"
+            if journal.is_file():
+                yield slug, run.name, journal
+
+
+def _count_dispatch_runs(repo: Path) -> int:
+    return sum(1 for _ in _iter_dispatch_run_journals(repo))
+
+
+def observe_planes(
+    *,
+    loop_root: Path | None = None,
+    repo: Path | None = None,
+) -> ObservationState:
+    loop_root = LOOP_ROOT if loop_root is None else loop_root
+    repo = REPO if repo is None else repo
+    return ObservationState(
+        loop_runs=_count_loop_runs(loop_root),
+        dispatch_runs=_count_dispatch_runs(repo),
+    )
+
+
+def _collect_from_journal(
+    *,
+    slug: str,
+    run_id: str,
+    journal: Path,
+    status: dict[str, str],
+    findings: list[dict],
+) -> None:
+    for defer in find_defers(journal):
+        story = defer["story_key"]
+        if status.get(story) == "done":
+            continue
+        refs = preserve_refs(run_id)
+        findings.append({
+            "slug": slug,
+            "run": run_id,
+            "story": story,
+            "real": defer["real"],
+            "drifted": defer["drifted"],
+            "refs": refs,
+            "plane": "loop-home",
+        })
+
+
+def collect_findings() -> tuple[list[dict], ObservationState]:
+    """Unrecovered baseline-drift defers across loop-home and dispatch planes.
+
+    Pure collection for human stdout, ``--json``, and fleet-picture ATTENTION
+    (Story 20.2). The second return value classifies observability so callers
+    can exit 2 when both planes are empty.
+    """
+    findings: list[dict] = []
+
+    if LOOP_ROOT.is_dir():
+        for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
+            slug = home.name.replace("pyforge-", "")
+            status = tracked_status(slug)
+            runs_dir = home / ".bmad-loop" / "runs"
+            if not runs_dir.is_dir():
+                continue
+            for run in sorted(runs_dir.glob("*/")):
+                if not run.is_dir():
+                    continue
+                _collect_from_journal(
+                    slug=slug,
+                    run_id=run.name,
+                    journal=run / "journal.jsonl",
+                    status=status,
+                    findings=findings,
+                )
+
+    for slug, run_id, journal in _iter_dispatch_run_journals(REPO):
+        status = tracked_status(slug)
+        for defer in find_defers(journal):
+            story = defer["story_key"]
+            if status.get(story) == "done":
+                continue
+            refs = preserve_refs(run_id)
+            findings.append({
+                "slug": slug,
+                "run": run_id,
+                "story": story,
+                "real": defer["real"],
+                "drifted": defer["drifted"],
+                "refs": refs,
+                "plane": "dispatch-runs",
+            })
+
+    return findings, observe_planes()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -169,20 +278,30 @@ def main(argv: list[str] | None = None) -> int:
     # the parent process's argv (e.g. pytest). CLI passes sys.argv[1:].
     args = ap.parse_args([] if argv is None else argv)
 
-    findings = collect_findings()
+    findings, obs = collect_findings()
+
+    if not obs.any_runs:
+        msg = (
+            f"{_COULD_NOT_OBSERVE}: no loop-home runs under "
+            f"{LOOP_ROOT} and no dispatch-runs journals under "
+            f"{REPO / '_bmad-output' / 'projects'}"
+        )
+        if args.json:
+            print(json.dumps({"error": msg, "findings": findings}))
+            return 2
+        print(msg)
+        return 2
 
     if args.json:
         print(json.dumps(findings))
         return 1 if findings else 0
 
-    if not LOOP_ROOT.is_dir():
-        print(f"no loop homes at {LOOP_ROOT} -- nothing to check")
-        return 0
-
-    print(f"baseline-drift-check -- {len(findings)} unrecovered defer(s)\n")
+    print(f"baseline-drift-check -- {len(findings)} unrecovered defer(s) "
+          f"(loop-home runs={obs.loop_runs}, dispatch-runs={obs.dispatch_runs})\n")
     if findings:
         for f in findings:
-            print(f"  ✗ [unrecovered] {f['slug']}/{f['story']} (run {f['run']}): "
+            plane = f.get("plane", "loop-home")
+            print(f"  ✗ [unrecovered/{plane}] {f['slug']}/{f['story']} (run {f['run']}): "
                   f"real basis {f['real']} != orchestrator-recorded {f['drifted']}")
             if f["refs"]:
                 print(f"      recover from: {', '.join(f['refs'])}")
@@ -194,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
               f"as a normal PR (same shape as PRs #482-484, #510).")
         return 1
 
-    print("OK: no unrecovered baseline-drift defer in any loop home.")
+    print("OK: no unrecovered baseline-drift defer on either observation plane.")
     return 0
 
 
