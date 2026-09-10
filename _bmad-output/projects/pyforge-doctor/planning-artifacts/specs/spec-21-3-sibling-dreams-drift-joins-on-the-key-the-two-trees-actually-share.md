@@ -2,7 +2,8 @@
 title: '`sibling-dreams-drift` joins on the key the two trees actually share'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '69192cd1b967436ed5cca1f628910f6ff866cb48'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

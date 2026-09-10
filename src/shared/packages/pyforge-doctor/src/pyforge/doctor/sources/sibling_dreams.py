@@ -1,10 +1,11 @@
-"""Sibling-dreams drift gather (Story 16.1 / CAP-1).
+"""Sibling-dreams drift gather (Story 16.1 / CAP-1; re-key Story 21.3).
 
-Diffs shared Dream titles between this repo's ``docs/dreams/`` and the one
+Diffs shared Dream filenames between this repo's ``docs/dreams/`` and the one
 named sibling PyForge tree (``OpenTeams-WFT-CDO/mgmt-wf-python-modernization``)
-on status, owner, and content-hash. Warn-only, fail-open without a token or
-when the sibling is unreachable. Never stores sibling prose — fingerprints
-only.
+on status, owner, content-hash, and title. Warn-only, fail-open without a token
+or when the sibling is unreachable — but unreachable paths emit an explicit
+``sibling-dreams-unreachable`` finding rather than silence. Never stores sibling
+prose — fingerprints only.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ _SIBLING_REPO = "mgmt-wf-python-modernization"
 _SIBLING_DREAMS_PATH = "docs/dreams"
 _SIBLING_FETCH_TOTAL_BUDGET_SECONDS = 10.0
 _API_BASE = f"https://api.github.com/repos/{_SIBLING_OWNER}/{_SIBLING_REPO}/contents"
+_COMPARED_AXES = ("status", "owner", "content_hash", "title")
 
 
 def gather(target: Path) -> tuple[Finding, ...]:
@@ -45,11 +47,25 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         return ()
     token = _operator_token()
     if not token:
-        return ()
+        return _unreachable_finding(
+            "no operator token (set GH_TOKEN or GITHUB_TOKEN to reach sibling)"
+        )
     sibling = _fetch_sibling_fingerprints(token)
     if sibling is None:
-        return ()
-    return _diff_shared_titles(local, sibling)
+        return _unreachable_finding("sibling dreams fetch failed")
+    return _diff_shared_slugs(local, sibling)
+
+
+def _unreachable_finding(reason: str) -> tuple[Finding, ...]:
+    return (
+        Finding(
+            source=Source.SIBLING_DREAMS_DRIFT,
+            check="sibling-dreams-unreachable",
+            status=DoctorStatus.WARN,
+            message=f"sibling dreams tree unreachable: {reason}",
+            evidence={"reason": reason},
+        ),
+    )
 
 
 def _operator_token() -> str | None:
@@ -115,7 +131,7 @@ def _local_fingerprints(target: Path) -> dict[str, dict[str, str]]:
         fp = _parse_dream_fingerprint(text)
         if fp is None:
             continue
-        out[fp["title"]] = fp
+        out[path.stem] = fp
     return out
 
 
@@ -152,7 +168,7 @@ def _fetch_sibling_fingerprints(token: str) -> dict[str, dict[str, str]] | None:
         del text
         if fp is None:
             continue
-        out[fp["title"]] = fp
+        out[name.removesuffix(".md")] = fp
     return out
 
 
@@ -181,18 +197,14 @@ def _http_text(url: str, token: str, *, timeout: float) -> str:
         return resp.read().decode("utf-8")
 
 
-def _diff_shared_titles(
+def _diff_shared_slugs(
     local: dict[str, dict[str, str]],
     sibling: dict[str, dict[str, str]],
 ) -> tuple[Finding, ...]:
     findings: list[Finding] = []
-    for title in sorted(set(local) & set(sibling)):
-        left, right = local[title], sibling[title]
-        axes = [
-            axis
-            for axis in ("status", "owner", "content_hash")
-            if left[axis] != right[axis]
-        ]
+    for slug in sorted(set(local) & set(sibling)):
+        left, right = local[slug], sibling[slug]
+        axes = [axis for axis in _COMPARED_AXES if left[axis] != right[axis]]
         if not axes:
             continue
         findings.append(
@@ -201,12 +213,13 @@ def _diff_shared_titles(
                 check="sibling-dreams-drift",
                 status=DoctorStatus.WARN,
                 message=(
-                    f"sibling dream {title!r} diverges on "
-                    + ", ".join(axes)
+                    f"sibling dream {slug!r} diverges on " + ", ".join(axes)
                 ),
                 evidence={
-                    "title": title,
+                    "slug": slug,
                     "axes": axes,
+                    "local_title": left["title"],
+                    "sibling_title": right["title"],
                     "local_status": left["status"],
                     "sibling_status": right["status"],
                     "local_owner": left["owner"],
@@ -217,3 +230,7 @@ def _diff_shared_titles(
             )
         )
     return tuple(findings)
+
+
+# Backward-compatible alias for tests that patch internals by name.
+_diff_shared_titles = _diff_shared_slugs
