@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: "Wrap warden's engine-availability self-check (FR-1)"
 type: 'feature'
@@ -117,7 +116,8 @@ def gather(target: Path) -> tuple[Finding, ...]:
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full unit + meta suite passes (this worktree's path is 135 chars, well under the ~173-250 byte threshold that panicked `pixi-build-python` for spec-1-1, so this should run to completion; if it still hits that same environmental panic, fall back to the next command and record it as environmental, not a story defect).
+- `PYTHONPATH=src/shared/packages/pyforge-doctor/src:src/shared/packages/pyforge-warden/src python3 -m pytest src/shared/packages/pyforge-doctor/tests -q` -- expected: full suite green, substitute verification if the pixi task cannot run.
 
 **Actual results (2026-07-30):**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` ran to completion with no `pixi-build-python` panic (worktree path 135 chars, as predicted) -- **85 passed**. Note: the new `pyforge-warden` path dependency required one non-frozen `pixi install -e pyforge-doctor` first to re-solve and update `pixi.lock` (adds warden's own transitive deps: deptry, osv-scanner, cyclonedx-python-lib, etc. -- the same shape `pyforge-atlas`'s environment already carries); `--frozen` then ran clean against the updated lock.
