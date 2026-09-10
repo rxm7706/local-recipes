@@ -181,7 +181,7 @@ development_status:
   47-3-_bmad-joins-epic-44-s-surface-and-projects-md-carries-the-cutover-layout: done
   47-4-the-foundry-stack-carries-a-bmad-floor-row: done
   47-5-epic-44-depends-on-the-era-tail-and-44-13-s-scope-names-the-spines: done
-  48-1-the-ledger-syncer-guards-blocked-and-missing-keys: backlog
+  48-1-the-ledger-syncer-guards-blocked-and-missing-keys: done
   48-10-the-one-container-guild-proves-itself-at-build-time-ci-builds-the-root-containerfile: backlog
   48-11-the-platform-image-can-import-the-warden-engine-it-calls: backlog
   48-2-r-18-sizing-rewrite: backlog
@@ -307,13 +307,13 @@ development_status:
   epic-43-retrospective: done
   epic-44: backlog
   epic-44-retrospective: optional
-  epic-45: backlog
+  epic-45: done
   epic-45-retrospective: optional
-  epic-46: backlog
+  epic-46: in-progress
   epic-46-retrospective: optional
-  epic-47: backlog
+  epic-47: done
   epic-47-retrospective: optional
-  epic-48: backlog
+  epic-48: in-progress
   epic-48-retrospective: optional
   epic-49: backlog
   epic-49-retrospective: optional
