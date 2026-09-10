@@ -305,7 +305,17 @@ def station_state(*, running: bool, story: str, hstate: str, done: int,
     "needs re-spin" bucket: the parked story's work is already committed,
     so `bmad-loop confirm` is the next action, not a re-spin."""
     if running:
-        if verification_verdict == "refused":
+        # `dispatch_verification_verdict` is dispatch-specific state that
+        # persists on the row until the NEXT dispatch run overwrites it --
+        # it does NOT get cleared when a different engine (spin) starts
+        # running on the same station. Found live 2026-09-10: a station
+        # whose current live run was a `factory spin` session still carried
+        # a `refused` verdict from an unrelated `factory dispatch` attempt
+        # 10 days earlier, mislabeling a healthy running spin as STUCK.
+        # `dispatch_phase` is only ever set while dispatch itself is the
+        # live engine (see BUILDING/VERIFY/CHAIN below), so requiring it
+        # here scopes the refused verdict to the run it actually describes.
+        if verification_verdict == "refused" and dispatch_phase is not None:
             gate = verification_failed_gate or "?"
             short = story[:28]
             return f"STUCK   {short} (verify refused {gate})"
@@ -929,7 +939,17 @@ def main() -> int:
             )
         except Exception:  # noqa: BLE001 -- ATTENTION never kills the report
             watch.append(f"{slug}: could not check stranded dispatch work")
-        if live_row.get("dispatch_verification_verdict") == "refused" and run:
+        # Same scoping as station_state()'s STUCK label above: a `refused`
+        # verdict is dispatch-specific state that outlives the dispatch run
+        # it describes, so `run` alone (true for ANY live engine on this
+        # station, including an unrelated spin session) is not enough --
+        # require `dispatch_phase` to confirm dispatch is the CURRENT
+        # engine, not a stale field from an earlier, unrelated attempt.
+        if (
+            live_row.get("dispatch_verification_verdict") == "refused"
+            and run
+            and live_row.get("dispatch_phase") is not None
+        ):
             gate = live_row.get("dispatch_verification_failed_gate") or "?"
             needs.append(
                 f"{slug}: dispatch verify REFUSED ({gate}) on {current.get(slug, '?')}"
