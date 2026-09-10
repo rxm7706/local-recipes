@@ -28,6 +28,7 @@ from pyforge.doctor.sources import (
     bmad_config,
     bmad_method,
     board,
+    capability_effect,
     chain,
     deps,
     factory,
@@ -58,6 +59,7 @@ _EXPECTED_DISPATCH = {
     "platform-policy-suite": platform_policy.gather,
     "bmad-render-config-ambiguity": bmad_config.gather,
     "frozen-path-changed": frozen_path.gather,
+    "capability-effect": capability_effect.gather,
 }
 
 

@@ -489,6 +489,23 @@ def sibling_dreams_drift_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def capability_effect_findings(
+    repo: pathlib.Path = REPO, timeout: int = 60
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s capability-effect source
+    (Stories 21.10/21.11 -- missing ``verified:`` lines on terminal Spec
+    CAPs). Same subprocess discipline as ``sibling_dreams_drift_findings``;
+    raises on failure so ATTENTION can degrade.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "capability-effect", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def verification_staleness_findings(
     repo: pathlib.Path = REPO, timeout: int = 180
     # Originally 90s (~2x margin over a ~48s measured baseline) -- not
@@ -1110,6 +1127,14 @@ def main() -> int:
             watch.append(f"{check}: {message}")
     except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
         watch.append("could not check sibling-dreams drift")
+
+    try:
+        for finding in capability_effect_findings():
+            check = finding.get("check", "capability-effect")
+            message = finding.get("message", "capability effect gap").split(chr(10))[0][:110]
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check capability-effect")
 
     print("\nATTENTION:")
     if needs:

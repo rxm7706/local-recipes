@@ -8,8 +8,8 @@ on each declared CAP in ``SPEC.md``, render it beside the capability, and
 report a ``shipped``/``realized`` Spec whose CAP carries none. Read-only —
 never authors a ``verified:`` line (doctor NFR-1).
 
-``REGISTRY`` registration lands in Story 21.10; ``__main__`` dispatch,
-``detectors``, and fleet-picture wiring land in Story 21.11.
+``REGISTRY`` registration landed in Story 21.10; ``__main__`` dispatch,
+``detectors``, and fleet-picture wiring landed in Story 21.11.
 """
 
 from __future__ import annotations
