@@ -2,7 +2,8 @@
 title: '`CONSTITUTIVE` is derived from the roster, not hardcoded beside it'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'eb339e189e2e10e5d001d91ca25775a205ec34e9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -82,6 +83,36 @@ producing an empty set.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
+## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 3, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Duplicate `_write_roster` helper in `test_sources_chain.py` and `test_sources_chain_dream_chain.py` — cosmetic duplication only; extracting a shared fixture module adds scope beyond this story.
+  - `[false]` `[reject]` `_CONSTITUTIVE_FALLBACK` is still a hardcoded frozenset beside the roster — spec explicitly requires degrade-to-`{"pyforge-charter"}` on roster failure; this is the documented fallback, not a parallel source of truth.
+  - `[false]` `[reject]` Constitutive roster warn is skipped when no guild-owned dreams are collected — without guild-owned dreams the INV-2a gate is vacuous; warn fires whenever the gate is evaluated and the roster is unreadable (verified by new tests).
+  - `[false]` `[reject]` Verification gap for live-repo `gather_dream_chain` without tmp roster — production repo always ships `docs/governance/guild-roster.json`; tmp tests cover degrade path explicitly.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Replaced module-level `CONSTITUTIVE` with roster-derived `_load_constitutive()`, extended `_load_dream_roster()` to parse `guild_dreams`, and added unit tests for single-entry roster, second entry, and degrade-with-named-warn paths.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — derive constitutive slugs from roster; named WARN + fallback on failure
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain.py` — Story 21.4 matrix tests (new)
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py` — roster fixture for guild governance collection test
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-21-4-constitutive-is-derived-from-the-roster-not-hardcoded-beside-it.md` — build-auto metadata
+
+**Review:** 0 patches applied; 0 deferred; 4 findings rejected (see triage log).
+
+**Follow-up review recommendation:** false
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1555 passed, 1 skipped.
+
+**Residual risks:** `_CONSTITUTIVE_FALLBACK` must stay aligned with the Charter's documented single-entry roster if that value ever changes; that is intentional degrade behavior, not drift.
 
 ## Spec Change Log
 
