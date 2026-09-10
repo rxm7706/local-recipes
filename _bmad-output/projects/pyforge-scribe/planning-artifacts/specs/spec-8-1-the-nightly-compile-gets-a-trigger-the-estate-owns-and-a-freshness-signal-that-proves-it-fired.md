@@ -124,6 +124,34 @@ gets the already-shipped Story 3.3 capability into effect and makes it provable.
   up (`scribe-pg-up`), which the trigger must either start or refuse cleanly, never fail red on a
   machine without it.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: full suite green
+
 ## Spec Change Log
+
+- **2026-09-10 (root-cause fix):** added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-34-2`/`spec-21-13`'s own dispatch runs, which hit the identical refusal.
+- **2026-09-10 (post-implementation, pre-land):** the trigger installer
+  (`scripts/scribe_install_nightly_trigger.py`) was redesigned from a single
+  systemd-user-timer implementation into a **pluggable four-backend**
+  installer (`crontab` DEFAULT, `systemd`, `apscheduler`, `supercronic`),
+  selected via `--backend NAME` or `PYFORGE_SCRIBE_TRIGGER_BACKEND`.
+  Motivation: the systemd-only implementation required two actions outside
+  pixi/conda/PyPI entirely (`systemctl --user enable --now`, `loginctl
+  enable-linger`) before it could be verified; `crontab` (via the
+  conda-forge `python-crontab` package) needs neither — standard cron fires
+  regardless of login/linger state — so it became the new default. `systemd`
+  stays available as an explicit opt-in. `apscheduler` (conda-forge) and
+  `supercronic` (no conda-forge/PyPI package — verified, manual install
+  only) are included per an explicit operator request for parity across
+  common scheduling mechanisms, with an honest caveat printed on every run:
+  neither is a service manager, so neither restarts its own process across
+  logout/reboot the way `crontab`/`systemd` do. This is within the story's
+  original "Code Map" note that the exact trigger mechanism was "an
+  implementation choice within the story's Surface note" — no Boundaries &
+  Constraints changed; `docs/cli-runbooks.md` § *Installing the nightly
+  trigger* and the `scribe-install-nightly-trigger` pixi task description
+  were updated to match.
 
 ## Review Triage Log

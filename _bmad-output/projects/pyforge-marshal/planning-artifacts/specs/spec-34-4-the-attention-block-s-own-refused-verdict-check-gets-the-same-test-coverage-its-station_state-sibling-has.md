@@ -68,6 +68,13 @@ change; this story is test-coverage-only.
 - Given the 2026-09-10 fix closed the stale-verdict bug at both `station_state()` and the ATTENTION-block site, but only the first has direct unit coverage, when a test exercises `main()`'s ATTENTION-block branch with a mocked `marshal status` response, then it pins both outcomes: a genuine live-dispatch refusal produces the ATTENTION line, and a stale refusal from a different live engine does not.
 - No behavior change to `fleet_picture.py` itself.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green, including the new ATTENTION-block staleness test
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch, to avoid the `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) refusal `spec-34-2`'s own dispatch run hit for the identical omission.
 
 ## Review Triage Log

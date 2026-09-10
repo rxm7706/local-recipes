@@ -70,6 +70,13 @@ exactly one HTTP round-trip per `AqlRequest`.
 - Given `AqlTransport` has only a stub wired anywhere, when a live transport factory is added mirroring `_http.py`'s JFrog auth convention, then it resolves API-key or Basic auth correctly, raises a typed error when neither is configured, and performs exactly one HTTP round-trip per request.
 - No credential value or real network call is touched by this story's own tests.
 
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-atlas kedro-test` — expected: full suite green, including the new live_artifactory_transport tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-34-2`/`spec-21-13`'s own dispatch runs, which hit the identical refusal.
 
 ## Review Triage Log

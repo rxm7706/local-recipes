@@ -78,7 +78,14 @@ on demand.
 - Given four separate crash recoveries in one session each required the operator to manually checkpoint uncommitted worktree changes before a story could be safely relaunched, when the supervisor's own poll loop detects the worktree has uncommitted changes and the session has been idle past a threshold (or an explicit `factory checkpoint <slug>` call is made), then it commits a local-only `wip: <story> (auto-checkpoint)` commit — never pushed, never opens a PR.
 - A fixture simulates a mid-session crash after the checkpoint fires and asserts the worktree's uncommitted changes survive as a commit, not as working-tree state a `git worktree remove --force` could destroy.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green, including the new checkpoint tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) unconditionally refuse this story's own dispatch verification -- live journal: "no Success signal to bind against -- the story has no tracked spec, or its tracked spec has no parseable ## Verification -> **Commands:** section."
 
 ## Review Triage Log
 

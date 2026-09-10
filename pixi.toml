@@ -967,6 +967,10 @@ cmd = "python scripts/bmad_loop_baseline_drift_check.py"
 description = "Detector: codegraph and cocoindex indices in loop homes are present and fresh (Story 28.7, SPEC-marshal-token-economy CAP-10). Advisory only: staleness never blocks a run; the findings inform admission decisions. For each loop home, reads its rendered `.bmad-loop/policy.toml`, checks the `[context]` layer declarations, and for each ENABLED layer (structure-graph → codegraph, derived-context → cocoindex), verifies the index is present and its mtime is at or after HEAD's commit timestamp — the same git-timestamp discipline CAP-13 requires for graph-node staleness. If git cannot report HEAD (not a repo, no commits, no git binary), freshness is not evaluated; presence alone reports OK. scope=runtime (loop homes live in ~/.bmad-loops, a gitignored Tier-3 directory), excluded from detectors-ci."
 cmd = "python scripts/index_freshness_check.py"
 
+[feature.local-recipes.tasks.scribe-graph-freshness-check]
+description = "Detector (Story 8.1, spec-8-1): the compiled scribe knowledge graph (.claude/data/pyforge-scribe/graph.json) is fresh -- its mtime is no older than the nightly trigger's own 24h period (pyforge-scribe-nightly-compile.timer). Advisory only: never a PR gate, never a second verdict alongside the detector set's existing gates -- proof the nightly trigger fired, nothing more. Missing graph.json (never compiled, or the trigger was never installed) is its own advisory finding, not an error. scope=runtime (a gitignored, host-local derived artifact a CI runner never populates), excluded from detectors-ci."
+cmd = "python scripts/scribe_graph_freshness_check.py"
+
 [feature.local-recipes.tasks.missing-preserve-check]
 description = "Watchdog: an intent-gap halt left no preserve artifact (Story 20.5 / CAP-3 of spec-bmad-loop-intent-gap-work-preservation). Story 20.4 parks attempt-preserve/* or failed/<story>/changes.patch before the halt reverts; if that seam is bypassed or upstream shifts, the halt still looks clean while the attempt is gone. Scans marshal journals under ~/.bmad-loops for escalation-detected (intent-gap reason) or intent-gap-preserve-failed; trips when no preserve branch/patch is present. scope=runtime (excluded from detectors-ci), same placement as loop-stall-check / baseline-drift-check — NOT pyforge.doctor.sources. Never imports bmad_loop. Contract: spec-20-5-missing-preserve-detector."
 cmd = "python scripts/missing_preserve_check.py"
@@ -2325,6 +2329,8 @@ hatchling = ">=1.32.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+python-crontab = ">=3.4.0"        # Story 8.1: scribe_install_nightly_trigger.py's DEFAULT `crontab` backend -- pure-Python crontab read/write, no systemctl/loginctl needed (standard cron ignores session/linger state)
+apscheduler = ">=3.11.3"          # Story 8.1: the opt-in `apscheduler` backend (PYFORGE_SCRIBE_TRIGGER_BACKEND=apscheduler) -- in-process only, does not persist across logout/reboot on its own; see the installer's own printed caveat
 # --- pyforge-herald (Herald): pixi build workspace member (warden/atlas mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-herald (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -2458,6 +2464,15 @@ cwd = "src/shared/packages/pyforge-scribe"
 [feature.pyforge-scribe.tasks.pyforge-scribe-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-scribe-build-conda", "pyforge-scribe-build-dist"]
+
+[feature.pyforge-scribe.tasks.pyforge-scribe-nightly-compile]
+description = "Story 8.1 (spec-8-1): the nightly-compile TRIGGER body -- the one command the checked-in systemd-user timer (pyforge-scribe-nightly-compile.timer, under src/shared/packages/pyforge-scribe/ops/systemd/, installed by `scribe-install-nightly-trigger`) invokes every night. When PYFORGE_GRAPHSTORE_OWNER=steward (PostgreSQL GraphStore), ensures the local cluster is up (`pixi run -e pyforge-scribe-pg scribe-pg-up`) or refuses cleanly (exit 0, never red) rather than compiling against an unconfirmed store; the default FlatFileGraphStore path needs no service and is unaffected. Otherwise invokes `scribe graph compile --nightly` (Story 3.3's own flock-safe, prompt-free, exit-0-on-overlap contract) and propagates its exit code unchanged. Builds no new compile capability -- only triggers the existing one."
+cmd = "python scripts/scribe_nightly_trigger.py"
+
+[feature.pyforge-scribe.tasks.scribe-install-nightly-trigger]
+description = "Story 8.1 (spec-8-1): installs the checked-in nightly-compile trigger via a pluggable backend (`--backend NAME` or PYFORGE_SCRIBE_TRIGGER_BACKEND, default `crontab`). `crontab` (default) writes a plain user-crontab entry via python-crontab -- no systemctl/loginctl needed. `systemd` is the original systemd-user timer (`ops/systemd/pyforge-scribe-nightly-compile.service.tmpl` + `.timer`, `systemctl --user daemon-reload` + `enable --now`). `apscheduler` and `supercronic` are in-process/foreground-only options that write their job definition but do not supervise the process themselves -- the installer prints that caveat. Idempotent: re-running re-asserts the trigger for whichever backend is selected. Replaces the former hand-typed `crontab -e` line documented in docs/cli-runbooks.md -- this IS the documented, repeatable installation act."
+cmd = "python scripts/scribe_install_nightly_trigger.py"
+
 [feature.pyforge-herald.tasks.pyforge-herald-test]
 description = "Run the pyforge.herald test suite"
 cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
