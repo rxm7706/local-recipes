@@ -152,13 +152,30 @@ def test_cap3_five_and_skip_class_untouched():
 def test_cli_class_is_runnable_only_when_bin_on_path(tmp_path: Path, monkeypatch):
     eq = _by_name()["bmad-eval-quality"]
     monkeypatch.setenv("PATH", str(tmp_path))
-    missing = probe_wired(Path("."), eq)
+    missing = probe_wired(tmp_path, eq)
     assert missing.value == "missing"
     assert missing.ok is True
     exe = tmp_path / "eval-quality"
     exe.write_text("#!/bin/sh\n", encoding="utf-8")
     exe.chmod(0o755)
-    runnable = probe_wired(Path("."), eq)
+    runnable = probe_wired(tmp_path, eq)
+    assert runnable.value == "runnable"
+    assert str(exe) in runnable.detail
+
+
+def test_cli_class_falls_back_to_the_local_recipes_env_bin_dir(tmp_path: Path, monkeypatch):
+    # A CLI-only bmad-suite tool (bmad-eval-quality) is pixi-pinned under
+    # local-recipes's own env, never a station env -- a probe run under a
+    # station env's own isolated PATH must still find it there before
+    # declaring it missing.
+    eq = _by_name()["bmad-eval-quality"]
+    monkeypatch.setenv("PATH", str(tmp_path))
+    local_recipes_bin = tmp_path / ".pixi" / "envs" / "local-recipes" / "bin"
+    local_recipes_bin.mkdir(parents=True)
+    exe = local_recipes_bin / "eval-quality"
+    exe.write_text("#!/bin/sh\n", encoding="utf-8")
+    exe.chmod(0o755)
+    runnable = probe_wired(tmp_path, eq)
     assert runnable.value == "runnable"
     assert str(exe) in runnable.detail
 

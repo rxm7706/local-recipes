@@ -705,6 +705,17 @@ def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
             exe = shutil.which(exe_name)
             if exe:
                 return StageProbe(value="runnable", ok=True, detail=f"cli: {exe}")
+            # A CLI-only bmad-suite tool (e.g. bmad-eval-quality) is pixi-pinned
+            # under `local-recipes`'s own env, never a station env -- pixi
+            # isolates each env's PATH, so a probe run under `-e pyforge-steward`
+            # (or any other station) never sees it via `shutil.which` even when
+            # it is genuinely provisioned on this machine. Fall back to the
+            # repo's own default env bin dir before declaring it missing.
+            local_recipes_exe = repo / ".pixi" / "envs" / "local-recipes" / "bin" / exe_name
+            if local_recipes_exe.is_file():
+                return StageProbe(
+                    value="runnable", ok=True, detail=f"cli: {local_recipes_exe}"
+                )
             return StageProbe(
                 value="missing",
                 ok=True,
