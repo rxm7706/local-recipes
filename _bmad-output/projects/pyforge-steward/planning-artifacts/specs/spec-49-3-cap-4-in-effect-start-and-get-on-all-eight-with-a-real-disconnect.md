@@ -2,7 +2,8 @@
 title: 'CAP-4 in effect -- start and get on all eight, with a real disconnect'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: c0039b60ee94f7517d55e7293c8b4efe299bb804
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

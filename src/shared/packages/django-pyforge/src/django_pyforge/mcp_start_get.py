@@ -10,11 +10,13 @@ for. ``supervisor._tool_refusal`` is where that contract is spelled out.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from django_pyforge.supervisor import ATLAS_STATION
 from django_pyforge.supervisor import RUN_PIPELINE_TOOL
 from django_pyforge.supervisor import get_run as supervisor_get_run
+from django_pyforge.supervisor import register_runner
 from django_pyforge.supervisor import start_bounded
 
 
@@ -38,3 +40,60 @@ def attach_start_get(server: Any, *, station: str = ATLAS_STATION) -> Any:
         return supervisor_get_run(station=station, handle=handle, assertion=assertion)
 
     return server
+
+
+def attach_supervised_start_get(
+    server: Any,
+    *,
+    station: str,
+    start_tool: str,
+    get_tool: str,
+    run_tool: str,
+) -> Any:
+    """Register station-scoped ``start_*`` / ``get_*`` tools over the supervisor."""
+
+    @server.tool(name=start_tool)
+    def _start(target: str, assertion: str) -> dict[str, str]:
+        """Return a handle immediately; work publishes through the supervisor."""
+        handle = start_bounded(
+            station=station,
+            assertion=assertion,
+            tool=run_tool,
+            payload={"target": target},
+        )
+        return {"handle": handle}
+
+    @server.tool(name=get_tool)
+    def _get(handle: str, assertion: str) -> dict[str, Any]:
+        """Fetch a supervisor run by handle. Assertion required."""
+        return supervisor_get_run(station=station, handle=handle, assertion=assertion)
+
+    return server
+
+
+def build_station_mcp_asgi(
+    *,
+    station: str,
+    server_label: str,
+    start_tool: str,
+    get_tool: str,
+    run_tool: str,
+    runner: Callable[[dict[str, Any] | None], dict[str, Any]],
+    cache: dict[str, Any],
+) -> Any:
+    """Lazy MCP ASGI app for a station face with supervisor start/get."""
+    from django_pyforge.mcp_http import asgi_for_server  # noqa: PLC0415
+
+    if cache.get("app") is None:
+        from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
+
+        register_runner(station, run_tool, runner)
+        server = attach_supervised_start_get(
+            MCPServer(server_label),
+            station=station,
+            start_tool=start_tool,
+            get_tool=get_tool,
+            run_tool=run_tool,
+        )
+        cache["app"] = asgi_for_server(server)
+    return cache["app"]
