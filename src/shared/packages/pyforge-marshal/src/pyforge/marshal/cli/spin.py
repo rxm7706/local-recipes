@@ -1065,6 +1065,23 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
     # Story 22.7 (FR-193 CAP-7): the fleet-wide sibling of `dispatch`.
     add_factory_drain_subparser(factory_subparsers)
 
+    from .checkpoint import run_factory_checkpoint
+
+    checkpoint_parser = factory_subparsers.add_parser(
+        "checkpoint",
+        help="Commit a local-only WIP checkpoint for an in-flight session (Story 34.2).",
+        description=(
+            "Stages and commits every uncommitted change in the active "
+            "dispatch worktree or spin loop home as "
+            "'wip: <story> (auto-checkpoint)' — never pushed, never opens a PR."
+        ),
+    )
+    checkpoint_parser.add_argument(
+        "slug",
+        help="The BMAD project slug whose in-flight worktree to checkpoint.",
+    )
+    checkpoint_parser.set_defaults(handler=run_factory_checkpoint)
+
 
 def _spawn_supervisor_sidecar(
     process: ProcessPort,

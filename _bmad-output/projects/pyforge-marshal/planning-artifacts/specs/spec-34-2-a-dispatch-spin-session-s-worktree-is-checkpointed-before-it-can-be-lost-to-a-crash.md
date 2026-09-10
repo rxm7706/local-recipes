@@ -2,9 +2,10 @@
 title: "A dispatch/spin session's worktree is checkpointed before it can be lost to a crash"
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
 followup_review_recommended: false
+baseline_revision: b19ad5971acd608fd0bcc23d7935c05d9cd2e181
+review_loop_iteration: 0
 context: []
 warnings: []
 deferred: []
@@ -80,3 +81,35 @@ on demand.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 12 findings — high 0, medium 2, low 3, false 2, maybe-false 0, reject 5
+- findings:
+  - `[medium]` `[patch]` FakeVcs lacked checkpoint port methods, breaking two NUDGE supervisor tests — extended FakeVcs with has_uncommitted_changes/changed_files/commit_paths stubs.
+  - `[medium]` `[defer]` No supervisor tick-loop integration tests for dispatch/spin auto-checkpoint — core helper and crash fixture covered; supervisor wiring deferred to follow-up.
+  - `[low]` `[reject]` Legacy pre-verify WIP message shape differs from auto-checkpoint format — pre-existing path, out of story scope.
+  - `[low]` `[reject]` Spin checkpoint uses NUDGE ladder gate instead of should_checkpoint_on_idle — equivalent idle threshold at first rung; acceptable for v1.
+  - `[low]` `[reject]` Dispatch idle keyed on session.log not worktree mtime — pragmatic proxy for build-auto sessions; file-write-without-log edge deferred.
+  - `[false]` `[reject]` Checkpoint runs while deferred=True on spin — deferred path ends the tick loop; checkpoint block is inside not-deferred branch.
+  - `[false]` `[reject]` No journal on checkpoint failure — intentional best-effort safety net; failures return skipped_reason to caller.
+  - `[patch]` `[patch]` CLI factory checkpoint untested — deferred; handler is thin wrapper over tested commit_worktree_checkpoint.
+  - `[defer]` `[defer]` Explicit CLI falls back to slug as story_key for spin homes — minor message divergence vs feed-key form.
+  - `[defer]` `[defer]` No checkpoint after session process dies — post-crash dirty state needs operator explicit checkpoint or 34.3 drain work.
+  - `[defer]` `[defer]` Missing worktree.is_dir guard on explicit checkpoint — VcsCommandError surfaces via commit_paths skip reason.
+  - `[defer]` `[defer]` Incomplete dispatch journal falls through to spin home — _load_latest_dispatch_context requires complete journal before dispatch path.
+
+## Auto Run Result
+
+- **Summary:** Added local-only worktree auto-checkpointing for dispatch and spin supervisors plus `marshal factory checkpoint <slug>`.
+- **Files changed:**
+  - `core/worktree_checkpoint.py` — checkpoint message, idle gate helper, commit primitive
+  - `dispatch_supervisor/__main__.py` — idle session-log checkpoint in poll loop
+  - `supervisor/__main__.py` — NUDGE-idle checkpoint in spin poll loop
+  - `cli/checkpoint.py` — explicit factory checkpoint command
+  - `cli/spin.py` — register checkpoint subcommand
+  - `tests/unit/test_worktree_checkpoint.py` — unit + crash-recovery fixture
+  - `tests/unit/test_supervisor.py` — FakeVcs checkpoint stubs for Story 34.2
+- **Review:** One patch applied (FakeVcs); supervisor integration tests and CLI tests deferred; five low/false findings rejected as out of scope or acceptable v1 tradeoffs.
+- **Follow-up review recommended:** false
+- **Verification:** `pytest src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py` — 6 passed; `pytest …/test_supervisor.py …/test_worktree_checkpoint.py` — 128 passed
+- **Residual risks:** Dispatch idle proxy is session-log-based; supervisor tick-loop paths lack dedicated integration tests.
