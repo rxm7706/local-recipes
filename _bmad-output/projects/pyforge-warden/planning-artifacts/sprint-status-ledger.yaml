@@ -31,7 +31,7 @@ development_status:
   12-2-environment-scoped-lockfile-extraction: done
   12-3-the-promotion-scans-the-shipped-closure: done
   12-4-the-offline-osv-database-is-provisioned-in-ci: done
-  12-5-the-verdict-is-honest-and-specific: backlog
+  12-5-the-verdict-is-honest-and-specific: done
   12-6-deploy-gates-on-the-verdict-preserve-the-clean-only-promotion-gate: backlog
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
   2-2-non-rendering-extraction-differential-oracle: done

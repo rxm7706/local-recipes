@@ -43,11 +43,10 @@ if [ -z "$WARDEN_TARGET" ]; then
   WARDEN_TARGET="$SCRATCH/workspace"
 fi
 WARDEN_JSON="$SCRATCH/warden.json"
-# The verdict is RECORDED here, whatever it is; the deploy workflow is what
-# refuses a digest whose verdict is not clean. Warden exits non-zero for any
-# non-clean composed status (today: `indeterminate`, since its vulnerability
-# axis cannot yet assess conda-sourced components), so the exit code is
-# captured into the record instead of aborting the promotion.
+# The verdict is RECORDED here, whatever it is; platform-deploy is what
+# refuses a digest whose verdict is not clean (Story 12.1). Warden exits
+# non-zero for any non-clean composed status, so the exit code is captured
+# into the record instead of aborting the promotion job (CAP-4 honesty).
 set +e
 warden scan "$WARDEN_TARGET" \
   --pixi-environment "$PIXI_ENVIRONMENT" \
