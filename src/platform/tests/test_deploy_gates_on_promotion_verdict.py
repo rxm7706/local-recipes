@@ -1,6 +1,6 @@
 """Story 12.6 — deploy gate preserved under honest promotion verdicts (CAP-5).
 
-Bridges the promotion record assembly path (Stories 12.3–12.5) to the deploy
+Bridges the promotion record assembly path (Stories 12.3-12.5) to the deploy
 verifier (Story 12.1). Synthetic-only regression lives in
 ``test_deploy_verify_promotion_clean_only.py``; this suite proves the two
 halves land together: whatever Warden composed is what deploy judges, and
@@ -154,7 +154,9 @@ def test_honest_non_clean_promotion_record_is_refused_by_deploy(
     warden_exit, report = _run_warden_scan(workspace)
     status = (report.get("status") or {}).get("value")
     assert status != "clean", "repo closure unexpectedly clean without full DB"
-    promotion_path = _assemble_promotion_record(tmp_path, report, warden_exit=warden_exit)
+    promotion_path = _assemble_promotion_record(
+        tmp_path, report, warden_exit=warden_exit
+    )
     payload = json.loads(promotion_path.read_text(encoding="utf-8"))
     assert payload["warden_status"] == status
 
@@ -191,7 +193,9 @@ def test_clean_promotion_record_from_real_scan_is_accepted_by_deploy(
         extra_args=[],
     )
     assert (report.get("status") or {}).get("value") == "clean"
-    promotion_path = _assemble_promotion_record(tmp_path, report, warden_exit=warden_exit)
+    promotion_path = _assemble_promotion_record(
+        tmp_path, report, warden_exit=warden_exit
+    )
     result = _run_deploy_verifier(promotion_path)
     assert result.returncode == 0, result.stderr
     assert "clean Warden verdict" in result.stdout
@@ -213,7 +217,8 @@ def test_platform_deploy_runs_verifier_before_helm_template() -> None:
     )
     helm_idx = next(i for i, name in enumerate(step_names) if "helm template" in name)
     download_idx = next(
-        i for i, step in enumerate(steps)
+        i
+        for i, step in enumerate(steps)
         if step.get("uses", "").startswith("actions/download-artifact")
     )
     assert download_idx < verify_idx < helm_idx
