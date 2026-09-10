@@ -1605,7 +1605,7 @@ def test_redis_network_policy_restricts_ingress_to_platform_pods():
             .get("matchLabels", {})
             .get("app.kubernetes.io/component", ""),
         ).startswith("redis-")
-        and "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
+        and "Ingress" in ((doc.get("spec") or {}).get("policyTypes") or [])
     ]
     components = {
         policy["spec"]["podSelector"]["matchLabels"]["app.kubernetes.io/component"]
@@ -1639,7 +1639,7 @@ def test_mcp_host_network_policy_admits_web_pods_only():
     mcp_ingress = [
         doc
         for doc in mcp_policies
-        if "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
+        if "Ingress" in ((doc.get("spec") or {}).get("policyTypes") or [])
     ]
     assert len(mcp_ingress) == 1, (
         f"the default render must carry exactly one mcp-host ingress "
@@ -1662,7 +1662,7 @@ def test_mcp_host_network_policy_admits_web_pods_only():
             .get("matchLabels", {})
             .get("app.kubernetes.io/component", ""),
         ).startswith("redis-")
-        and "Ingress" in (doc.get("spec") or {}).get("policyTypes") or []
+        and "Ingress" in ((doc.get("spec") or {}).get("policyTypes") or [])
     ]
     assert len(redis_policies) == len(_REDIS_COMPONENTS), redis_policies
     for policy in redis_policies:
@@ -2141,7 +2141,9 @@ def test_story_48_3_web_worker_mcp_host_dbgpt_egress_peers():
 
     web_policies = _network_policies_for_component(docs, "web")
     assert len(web_policies) == 2, web_policies  # noqa: PLR2004 -- ingress + egress
-    web_egress = next(p for p in web_policies if "Egress" in (p["spec"].get("policyTypes") or []))
+    web_egress = next(
+        p for p in web_policies if "Egress" in (p["spec"].get("policyTypes") or [])
+    )
     web_peers = _egress_peer_components(web_egress)
     assert web_peers >= {"postgres", "redis-cache", "redis-broker", "mcp-host", "dbgpt"}
 
@@ -2183,7 +2185,10 @@ def test_story_48_3_postgres_and_dbgpt_ingress_restrict_clients():
     pg_rule = postgres_ingress[0]["spec"]["ingress"][0]
     pg_expr = pg_rule["from"][0]["podSelector"]["matchExpressions"][0]
     assert pg_expr["operator"] == "In"
-    assert set(pg_expr["values"]) >= set(_PLATFORM_COMPONENTS) | {"liquibase", "postgres-backup"}
+    assert set(pg_expr["values"]) >= set(_PLATFORM_COMPONENTS) | {
+        "liquibase",
+        "postgres-backup",
+    }
 
     dbgpt_ingress = [
         doc
