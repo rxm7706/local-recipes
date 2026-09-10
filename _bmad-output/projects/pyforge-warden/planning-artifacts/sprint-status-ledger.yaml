@@ -27,7 +27,7 @@ development_status:
   10-2-first-portal-slice-audit-start-get: done
   11-1-bmad-os-review-pr-and-findings-triage-are-warden-wielded-advisory-lenses: done
   11-2-tea-test-review-is-a-warden-advisory-finding: done
-  12-1-regression-test-the-promotion-verifier-s-clean-only-refusal-cannot-be-removed-silently: backlog
+  12-1-regression-test-the-promotion-verifier-s-clean-only-refusal-cannot-be-removed-silently: done
   12-2-environment-scoped-lockfile-extraction: backlog
   12-3-the-promotion-scans-the-shipped-closure: backlog
   12-4-the-offline-osv-database-is-provisioned-in-ci: backlog
