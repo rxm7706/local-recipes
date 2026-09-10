@@ -101,7 +101,7 @@ def test_all_eight_stations_declare_model_tier_map(station: str) -> None:
     parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
     tier_map = parsed.get("model_tier_map")
     assert isinstance(tier_map, dict) and tier_map
-    assert "medium" in tier_map
+    assert {"heavy", "medium", "easy"}.issubset(tier_map)
 
 
 @pytest.mark.parametrize(
@@ -115,8 +115,9 @@ def test_all_eight_stations_declare_model_tier_map(station: str) -> None:
         "pyforge-warden",
     ],
 )
+@pytest.mark.parametrize("difficulty", ["heavy", "medium", "easy"])
 def test_newly_fed_station_policies_compose_non_null_dispatch_model(
-    station: str,
+    station: str, difficulty: str
 ) -> None:
     """Story 33.6 CAP-1: composed station policy resolves a dev model on dispatch."""
     repo_root = Path(__file__).resolve().parents[6]
@@ -131,7 +132,7 @@ def test_newly_fed_station_policies_compose_non_null_dispatch_model(
     project = tomllib.loads(policy_path.read_text(encoding="utf-8"))
     effective, _ = policy.compose(project_slug=station, project=project, flags={})
     model, escalated, _, _ = resolve_dispatch_model_with_retry_escalation(
-        effective, difficulty="medium", prior_failed_attempts=0
+        effective, difficulty=difficulty, prior_failed_attempts=0
     )
     assert model == "composer-2.5-fast"
     assert escalated is False

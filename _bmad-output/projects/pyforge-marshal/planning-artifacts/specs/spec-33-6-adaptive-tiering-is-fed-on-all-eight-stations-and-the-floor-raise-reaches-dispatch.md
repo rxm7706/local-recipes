@@ -3,9 +3,9 @@ title: 'Adaptive tiering is fed on all eight stations, and the floor-raise reach
 type: 'feature'
 created: '2026-09-09'
 status: 'done'
-review_loop_iteration: 1
-followup_review_recommended: true
-final_revision: '63e9987529c90e150cb46e703075c0b1f9231304'
+review_loop_iteration: 0
+followup_review_recommended: false
+final_revision: '2cfa26e815e382546c761eafeda8ed2005a640ac'
 context:
   - ../../../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-adaptive-model-tiering/SPEC.md
   - ../../../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
@@ -89,29 +89,46 @@ baseline_revision: '78fc2be72b980c64725efdb6764e1f74e57d7e32'
   - `[maybe-false]` `[defer]` Double journal scan per launch — optimization only; behavior correct
   - `[maybe-false]` `[defer]` Other fleet specs still carry empty difficulty — out of story scope (only 11-1/2/3 required)
 
+### 2026-09-09 — Follow-up review pass
+- verdicts: 14 findings — high 0, medium 2, low 1, false 3, maybe-false 2, reject 4, defer 2
+- findings:
+  - `[medium]` `[patch]` COMPLETED verdict must reset prior-failure streak — added `test_dispatch_failure_count_resets_after_completed_run` pinning FAILED→COMPLETED→FAILED count=1 and no escalation
+  - `[medium]` `[patch]` CAP-1 compose proof covered only `medium` — parametrized compose test over heavy/medium/easy; tier-map presence test now requires all three keys
+  - `[low]` `[patch]` Truncated/stale `model_tier_map` ABSENT header in six policies — replaced with pointer comment at file end
+  - `[false]` `[reject]` `[carried]` Journal must include `escalated: false` on first dispatch — intentional spin-parity omission unchanged
+  - `[false]` `[reject]` easy tier missing `review` blocks floor-raise — marshal canonical omits easy review by design
+  - `[false]` `[reject]` Spec frontmetadata transient inconsistency — in-review state during follow-up pass only
+  - `[low]` `[reject]` Verification section omits test file list — fix would edit spec contract, not code
+  - `[low]` `[reject]` Empty Spec Change Log — orchestration metadata; not a code defect
+  - `[low]` `[reject]` No marshal-canonical byte-equality regression — hardcoded copy is the chosen approach; compose tests guard drift
+  - `[maybe-false]` `[defer]` `stopped_externally` verdict not counted toward failure streak — dispatch path new; spin uses deferred attempt counters not journal verdicts
+  - `[maybe-false]` `[defer]` `[carried]` Sessions with missing `completion_verdict` undercount failures — would need production journal survey to confirm reachability
+  - `[maybe-false]` `[defer]` `[carried]` Double journal scan per launch — optimization only
+  - `[maybe-false]` `[defer]` `[carried]` Fleet-wide empty `difficulty:` beyond spec-11 trio — out of scope
+
 ## Auto Run Result
 
 Status: done
 
-**Summary:** Story 33.6 lands CAP-1 fleet tier-map adoption on six stations and wires CAP-2 dispatch retry floor-raise (dev→review) with journal evidence, plus empty-difficulty fixes on spec-11-1/2/3.
+**Summary:** Story 33.6 lands CAP-1 fleet tier-map adoption on six stations and wires CAP-2 dispatch retry floor-raise (dev→review) with journal evidence, plus empty-difficulty fixes on spec-11-1/2/3. Follow-up review closed verification gaps (COMPLETED-reset test, heavy/easy compose coverage, policy header hygiene).
 
 **Files changed:**
-- Six station `marshal-policy.toml` files — canonical `[model_tier_map.*]` blocks appended last
+- Six station `marshal-policy.toml` files — canonical `[model_tier_map.*]` blocks appended last; header comments corrected
 - `core/dispatch_retry.py` — pure escalation helpers
 - `core/dispatch.py` — `resolve_dispatch_model_with_retry_escalation`
 - `cli/dispatch.py` — prior-failure counting (reset on COMPLETED) and launch journaling
-- `tests/unit/test_dispatch_retry.py` — new unit + compose regression tests
-- `tests/unit/test_dispatch.py` — escalation integration tests
+- `tests/unit/test_dispatch_retry.py` — unit + compose regression tests (all difficulties)
+- `tests/unit/test_dispatch.py` — escalation + COMPLETED-reset integration tests
 - `spec-11-1/2/3` — `difficulty: medium`
 - `spec-33-6-…md` — story contract + review artifacts
 
-**Review:** 4 patches applied (4 medium); 3 rejected; 3 deferred.
+**Review:** First pass: 4 medium patches, 3 rejected, 3 deferred. Follow-up pass: 3 patches applied (2 medium, 1 low); 4 rejected; 4 deferred (2 carried).
 
-**Follow-up review recommended:** true — three medium patches landed on first pass (failure-streak reset, compose-path CAP-1 proof, first-attempt baseline test); unverified risk that real multi-run dispatch journals always record COMPLETED/FAILED verdicts consistently across harness profiles.
+**Follow-up review recommended:** false — follow-up pass closed the prior verification gaps; no high-severity patches remain.
 
-**Verification:** 24 targeted pytest cases passed (`test_dispatch_retry.py` + dispatch escalation tests).
+**Verification:** 29 targeted pytest cases passed (dispatch retry + escalation + COMPLETED-reset suite).
 
-**Residual risks:** Review-cycle axis and `escalated_stories` remain spin-only by design; fleet-wide empty `difficulty:` beyond spec-11 trio not addressed.
+**Residual risks:** Review-cycle axis and `escalated_stories` remain spin-only by design; `stopped_externally` streak semantics unset; fleet-wide empty `difficulty:` beyond spec-11 trio not addressed.
 
 ## Verification
 
