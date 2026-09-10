@@ -2,6 +2,9 @@
 surface:
   - src/shared/packages/pyforge-scribe/**   # the CLI this Spec builds
   - scripts/scribe_pg.py                    # the local PostgreSQL+pgvector this Spec's durable GraphStore tests require
+  - scripts/scribe_nightly_trigger.py       # Story 8.1: the nightly-compile trigger body (PostgreSQL preflight, then `scribe graph compile --nightly`)
+  - scripts/scribe_install_nightly_trigger.py  # Story 8.1: installs the checked-in systemd-user timer, replacing the hand-typed crontab line
+  - scripts/scribe_graph_freshness_check.py # Story 8.1: advisory graph.json age check, reachable from the repo's detector set
 id: SPEC-scribe
 status: shipped
 owner-dream: docs/dreams/pyforge-scribe.md
