@@ -115,6 +115,9 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (SPEC-marshal-token-economy
         # CAP-11) -- mapping-typed declared price table; project layer only.
         "model_cost_catalog",
+        # Story 33.8's `dispatch` (CAP-6) -- mapping-typed factory wave cap;
+        # project layer only.
+        "dispatch",
     }
 )
 
@@ -205,6 +208,9 @@ _UNSETTABLE_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (CAP-11) -- nested mapping of
         # provider/model prices, same exclusion reason as `context`.
         "model_cost_catalog",
+        # Story 33.8's `dispatch` (CAP-6) -- nested mapping with one int knob,
+        # same exclusion reason as `context`.
+        "dispatch",
     }
 )
 
@@ -252,6 +258,9 @@ _FIELD_ORDER: tuple[str, ...] = (
     # Story 28.10's `model_cost_catalog` (CAP-11) -- declared price table,
     # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
     "model_cost_catalog",
+    # Story 33.8's `dispatch` (CAP-6) -- factory wave cap,
+    # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
+    "dispatch",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",

@@ -282,6 +282,13 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # data with a dated snapshot, never fetched live, never narrowed at
         # runtime by a journal entry. See `_valid_model_cost_catalog` below.
         "model_cost_catalog",
+        # Story 33.8's 17th STATIC key, the vocabulary's 34th
+        # (spec-marshal-parallel-dispatch-fanout CAP-6): factory-dispatch
+        # wave concurrency -- ``Mapping[str, int]`` with a closed
+        # ``max_parallel`` knob, independent of bmad-loop scm ``max_parallel``
+        # (SEED). STATIC for the identical reason ``context`` is: declared
+        # project policy, never narrowed at runtime by a journal entry.
+        "dispatch",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -613,6 +620,10 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # `marshal status`, and the benchmark artifact byte-identical to pre-
     # 28.10 behavior (no dollar fields, never fabricated).
     "model_cost_catalog": {},
+    # Story 33.8's `dispatch` (CAP-6): serial factory drain when absent --
+    # ``max_parallel = 1`` matches Story 28.16's conservative default and
+    # keeps pre-33.8 behavior byte-identical until a project declares more.
+    "dispatch": {"max_parallel": 1},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -905,6 +916,21 @@ def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
             return None
         seen.add(entry)
     return base
+
+
+def _valid_dispatch_block(value: object) -> dict[str, object] | None:
+    """``dispatch`` (Story 33.8, CAP-6): ``Mapping[str, int]`` with a closed
+    ``max_parallel`` knob only -- the factory-dispatch wave cap, independent
+    of bmad-loop scm ``max_parallel`` (SEED). Unknown keys reject the whole
+    block; ``max_parallel`` is validated via ``_valid_parallel_count``."""
+    if not isinstance(value, Mapping):
+        return None
+    if set(value.keys()) != {"max_parallel"}:
+        return None
+    max_parallel = _valid_parallel_count(value.get("max_parallel"))
+    if max_parallel is None:
+        return None
+    return {"max_parallel": max_parallel}
 
 
 def _valid_context_block(value: object) -> dict[str, object] | None:
@@ -1677,7 +1703,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 16 public STATIC
+    """The composed, immutable policy value (AD-10): 17 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     17 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1706,6 +1732,7 @@ class EffectivePolicy:
     context: PolicyField
     scope_violation_mode: PolicyField
     model_cost_catalog: PolicyField
+    dispatch: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1726,6 +1753,7 @@ class EffectivePolicy:
             "context",
             "scope_violation_mode",
             "model_cost_catalog",
+            "dispatch",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1778,6 +1806,7 @@ class EffectivePolicy:
                 "context",
                 "scope_violation_mode",
                 "model_cost_catalog",
+                "dispatch",
             )
         )
         seed = ", ".join(
@@ -1834,6 +1863,7 @@ class EffectivePolicy:
             "context": _field_payload(self.context),
             "scope_violation_mode": _field_payload(self.scope_violation_mode),
             "model_cost_catalog": _field_payload(self.model_cost_catalog),
+            "dispatch": _field_payload(self.dispatch),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -2093,6 +2123,16 @@ def compose(
         findings,
         "MRS-POLICY-002",
     )
+    dispatch = _merge_field(
+        "dispatch",
+        _valid_dispatch_block,
+        DEFAULT_POLICY["dispatch"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
     seed = {
         "gate_mode": _merge_field(
             "gate_mode",
@@ -2297,6 +2337,7 @@ def compose(
         context=context,
         scope_violation_mode=scope_violation_mode,
         model_cost_catalog=model_cost_catalog,
+        dispatch=dispatch,
         _seed=seed,
     )
     return effective, tuple(findings)

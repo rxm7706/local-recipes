@@ -261,10 +261,9 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
 
 
 def test_config_prints_all_thirty_three_keys(capsys, monkeypatch):
-    """AC: every one of the 33 policy keys (Story 31.3's `review_min_score`
-    joining Story 28.10's `model_cost_catalog`, Story 28.15's
-    `scope_violation_mode`, Story 28.1's `context`, …) prints its effective
-    value and winning layer — checked exhaustively."""
+    """AC: every one of the 34 policy keys (Story 33.8's `dispatch` joining
+    Story 31.3's `review_min_score`, Story 28.10's `model_cost_catalog`, …)
+    prints its effective value and winning layer — checked exhaustively."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -303,9 +302,10 @@ def test_config_prints_all_thirty_three_keys(capsys, monkeypatch):
         "stream_capture_kb",
         "review_min_score",
         "model_cost_catalog",
+        "dispatch",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 33
+    assert captured.out.count("(layer=") == 34
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):

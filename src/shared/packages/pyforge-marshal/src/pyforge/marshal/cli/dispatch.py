@@ -943,13 +943,19 @@ def resolve_max_parallel(
     cli_override: int | None = None,
     policy_flags: dict[str, object] | None = None,
 ) -> int:
-    """Factory-dispatch parallel cap (Story 28.16, CAP-4). Default serial (=1)."""
+    """Factory-dispatch parallel cap (Story 28.16, CAP-4; Story 33.8, CAP-6).
+
+    Reads ``dispatch.max_parallel`` only -- never bmad-loop scm
+    ``max_parallel`` (SEED). Default serial (=1)."""
+    del policy_flags  # compose() already merged flags into ``effective_policy``.
     if cli_override is not None:
         return max(1, int(cli_override))
-    flags = dict(policy_flags or {})
-    if "max_parallel" in flags:
-        return max(1, int(flags["max_parallel"]))
-    return max(1, int(effective_policy.seed_view()["max_parallel"].value))
+    dispatch_block = effective_policy.dispatch.value
+    if not isinstance(dispatch_block, Mapping):
+        return 1
+    raw = dispatch_block.get("max_parallel", 1)
+    validated = policy._valid_parallel_count(raw)
+    return max(1, int(validated if validated is not None else 1))
 
 
 def _live_dispatch_story_keys(
@@ -1321,6 +1327,7 @@ def run_dispatch(
             campaign=None,
             format=getattr(args, "format", "text"),
             harness=getattr(args, "harness", None),
+            max_in_flight=getattr(args, "max_in_flight", None),
         )
         return run_fleet_drain(
             drain_args,
@@ -2811,6 +2818,18 @@ def _classify_attempt(
     )
 
 
+def _wave_journal_writer_id(wave_id: str) -> str:
+    """Filesystem-safe journal writer id for a dispatch wave (Story 33.8).
+
+    ``wave_id`` embeds ISO-8601 timestamps with uppercase ``T``/``Z`` that
+    violate ``core.journal``'s ``writer_id`` pattern; hash instead.
+    """
+    import hashlib
+
+    digest = hashlib.sha256(wave_id.encode()).hexdigest()[:24]
+    return f"wave-{digest}"
+
+
 def _journal_dispatch_wave(
     fs: FsPort,
     repo_root: Path,
@@ -2841,7 +2860,7 @@ def _journal_dispatch_wave(
     )
     fs.ensure_dir(wave_run)
     intent = build_entry(
-        id=JournalEntryId(f"wave-{wave.wave_id}", 0),
+        id=JournalEntryId(_wave_journal_writer_id(wave.wave_id), 0),
         ts=_format_entry_ts(_now_utc()),
         run_id=wave.wave_id,
         kind=dispatch_core.KIND_DISPATCH_WAVE,

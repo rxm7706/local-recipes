@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.cli.dispatch import dispatch_once, run_dispatch
+from pyforge.marshal.cli.dispatch import dispatch_once, resolve_max_parallel, run_dispatch
+from pyforge.marshal.core import policy
 from scope_triangle import point_scope_triangle
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core import dispatch as dispatch_core
@@ -1243,7 +1244,11 @@ def test_dispatch_stories_dispatches_the_first_key_in_the_given_order(
     )
     build_harness = FakeBuildHarness()
     args = argparse.Namespace(
-        slug=slug, story=None, stories="22-12-next,22-11-fleet", format="json"
+        slug=slug,
+        story=None,
+        stories="22-12-next,22-11-fleet",
+        format="json",
+        max_in_flight=1,
     )
     code = run_dispatch(
         args,
@@ -1702,6 +1707,26 @@ def test_dispatch_failure_count_resets_after_completed_run(
     )
     assert attempt.data.get("model") == "composer-2.5-fast"
     assert "escalated" not in attempt.data
+
+
+def test_resolve_max_parallel_ignores_seed_max_parallel() -> None:
+    """Story 33.8: factory cap reads dispatch only, not scm max_parallel."""
+    effective, _ = policy.compose(
+        project_slug="acme",
+        project={"max_parallel": 4},
+        flags={},
+    )
+    assert effective.seed_view()["max_parallel"].value == 4
+    assert resolve_max_parallel(effective) == 1
+
+
+def test_resolve_max_parallel_cli_override_wins() -> None:
+    effective, _ = policy.compose(
+        project_slug="acme",
+        project={"dispatch": {"max_parallel": 1}},
+        flags={},
+    )
+    assert resolve_max_parallel(effective, cli_override=2) == 2
 
 
 # --------------------------------------------------------------------------

@@ -56,15 +56,13 @@ notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocat
 # the installed 0.37.0's own `--help`; the seam itself is proven by the
 # station tests through an injectable stub wrapper.
 #
-# Operator caveat: `headroom wrap` defaults to proxy port 8787 and attaches
-# to an already-running proxy rather than starting a second one. Two
-# concurrent wrapped dispatches therefore share the FIRST launcher's CCR
-# store, not their own worktree's. Marshal's station-in-flight guard makes
-# that rare per station; it is a headroom-side property, not something this
-# seam can scope away.
+# Operator caveat (updated Story 33.8): each dispatch now passes a per-
+# worktree ``--port {wire_port}`` (8800--9799, hash-derived) so parallel
+# wrapped launches no longer share headroom's default 8787 proxy. Two
+# dispatches on the SAME worktree still share a port by design.
 [wrapper]
 binary = "headroom"
-argv = ["wrap", "claude", "--code-memory", "none", "--"]
+argv = ["wrap", "claude", "--code-memory", "none", "--port", "{wire_port}", "--"]
 fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
 # HEADROOM_WORKSPACE_DIR is headroom's canonical read-write state root
 # (headroom/paths.py::workspace_dir), and the CCR store defaults to

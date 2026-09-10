@@ -117,6 +117,7 @@ from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
 
+import hashlib
 import tomllib
 from pyforge.core.errors import PyforgeError
 
@@ -136,7 +137,19 @@ OVERLAY_RELPATH = "_bmad-output/harness-profiles"
 _PROMPT_TOKEN = "{prompt}"
 _MODEL_ARGS_TOKEN = "{model_args}"
 _WORKTREE_TOKEN = "{worktree}"
+_WIRE_PORT_TOKEN = "{wire_port}"
 _MODEL_TOKEN = "{model}"
+
+_WIRE_PORT_BASE = 8800
+_WIRE_PORT_SPAN = 1000
+
+
+def wire_port_for_worktree(worktree: Path) -> int:
+    """Deterministic headroom proxy port in 8800--9799 from ``worktree`` path
+    (Story 33.8, DW-FU-28-2-2): stable per worktree, distinct across typical
+    parallel dispatches."""
+    digest = hashlib.sha256(str(worktree.resolve()).encode()).hexdigest()
+    return _WIRE_PORT_BASE + (int(digest[:8], 16) % _WIRE_PORT_SPAN)
 
 #: A profile name is a filename stem and a policy-preference entry -- the
 #: same conservative shape a project slug takes, minus dots (a profile
@@ -798,6 +811,7 @@ def render_dispatch_argv(
     prompt: str,
     model: str | None,
     wire: WireWrap | None = None,
+    wire_port: int | None = None,
 ) -> tuple[tuple[str, ...], str | None, str | None]:
     """Render the full launch argv for one dispatch:
     ``(argv, rendered_model, model_omitted_reason)``. Placeholder
@@ -814,7 +828,19 @@ def render_dispatch_argv(
     the adapter keeps ``binary_path``'s own directory on the child ``PATH``
     so a CLI that only lives in a profile fallback dir stays reachable."""
     rendered_model, omitted_reason = translate_model(profile, model)
-    argv: list[str] = list(wire.argv_prefix) if wire is not None and wire else [binary_path]
+    port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
+
+    def _substitute_launch_token(token: str) -> str:
+        return (
+            token.replace(_WORKTREE_TOKEN, str(worktree))
+            .replace(_PROMPT_TOKEN, prompt)
+            .replace(_WIRE_PORT_TOKEN, str(port))
+        )
+
+    if wire is not None and wire:
+        argv = [_substitute_launch_token(token) for token in wire.argv_prefix]
+    else:
+        argv = [binary_path]
     for token in profile.argv:
         if token == _MODEL_ARGS_TOKEN:
             if rendered_model is None:
@@ -823,9 +849,7 @@ def render_dispatch_argv(
                 arg.replace(_MODEL_TOKEN, rendered_model) for arg in profile.model_args
             )
             continue
-        argv.append(
-            token.replace(_WORKTREE_TOKEN, str(worktree)).replace(_PROMPT_TOKEN, prompt)
-        )
+        argv.append(_substitute_launch_token(token))
     return tuple(argv), rendered_model, omitted_reason
 
 
