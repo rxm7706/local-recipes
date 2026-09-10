@@ -138,6 +138,7 @@ development_status:
   28-22-verify-blast-radius-pre-existing-gate: done
   28-23-stranded-work-signal-after-terminal-verify-fail: done
   28-24-supervisor-finalizes-when-harness-cannot-run-shell: done
+  28-25-finalize-escalations-self-clear-past-a-later-success: backlog
   28-3-genesis-seeds-the-token-economy-kit: done
   28-4-savings-telemetry-in-journals-and-status: done
   28-5-the-pinned-wrapped-vs-unwrapped-benchmark: done

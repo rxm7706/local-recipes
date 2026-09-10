@@ -4508,6 +4508,18 @@ So that a “done + dirty leftover” story does not wait for chat (28.18 / PR #
 **And** if supervisor shell also fails, the station is `awaiting-operator` naming the worktree path
 **Status:** done
 
+### Story 28.25: Finalize escalations self-clear past a later success
+
+As a marshal operator,
+I want a station's finalize-escalation report to reflect its newest dispatch run, not any past failure buried in history,
+So that fleet status stops naming a worktree that is already gone and work that already landed.
+
+**Type:** fix • **Effort:** S • **Deps:** 28.24 • **FR/AD:** spec-marshal-drain-self-resolution CAP-7 (incident 2026-09-10: pyforge-marshal/33.2)
+**Given** a station whose most recent dispatch run for one story failed to finalize, and a later dispatch run for a different story on the same station has since completed **When** `gather_fleet_finalize_escalations` (`cli/dispatch.py`) walks that station's run history **Then** it reports no escalation for the station once a newer run supersedes the failed one, instead of walking arbitrarily far back past successful runs to the oldest matching failure
+**And** an escalation naming a worktree path that no longer exists on disk is treated as resolved, not active
+**And** `marshal status`/`fleet-picture`'s `awaiting-operator` row clears accordingly, with no change to the case where the newest run is itself the one still stuck
+**Status:** backlog
+
 ## Epic 29: Done-spec dispatch does not review-loop
 
 **Goal:** FR-193 CAP-11 (`spec-marshal-single-story-dispatch`, Dream addendum
