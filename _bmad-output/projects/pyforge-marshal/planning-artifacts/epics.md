@@ -4622,7 +4622,7 @@ So that dispatch does not pay an index-build cost that exceeds what a single sto
 **Given** a representative dispatch worktree and a representative story **When** the spike measures (a) `codegraph init -y`'s wall-clock/token cost for this repo's actual size and (b) the token cost the SAME story's own file-navigation would have spent without a graph **Then** the comparison is recorded as a real artifact (matching Story 28.5's own benchmark-artifact precedent), not an assumption
 **And** the spike's own recommendation — build it per-worktree, share a repo-level index across worktrees (if codegraph supports incremental sync from a shared base, matching `kit.py`'s existing `init`-vs-`sync` split), or leave this layer spin-only — is the acceptance criterion, not a specific implementation
 **And** if the recommendation is "build it," the follow-on implementation story is filed separately, scoped by the spike's own findings — this story does not pre-commit to writing that code
-**Status:** backlog
+**Status:** done
 
 ### Story 28.32: Derived-context and output roll out fleet-wide
 

@@ -1,0 +1,79 @@
+{
+  "environment_digest": "ba9f814f27a19a83",
+  "index_build": {
+    "codegraph_reported_seconds": 11.1,
+    "edges": 197032,
+    "files_indexed": 18460,
+    "index_bytes": 232570880,
+    "llm_tokens": 0,
+    "nodes": 65363,
+    "wall_clock_seconds": 18.92
+  },
+  "ledger_key": "28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session",
+  "loop_home_reference": {
+    "index_bytes": 240123904,
+    "note": "Loop-home index amortizes across many stories; dispatch is one story.",
+    "source": "marshal preflight pyforge-marshal (2026-09-10 live reference)",
+    "wall_clock_seconds": 21
+  },
+  "measured_at": "2026-09-10T19:45:36.950410+00:00",
+  "navigation_without_graph": {
+    "estimated_tokens": 51774,
+    "files": [
+      {
+        "bytes": 5116,
+        "estimated_tokens": 1279,
+        "relpath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-31-structure-graph-codegraph-for-dispatch-provisioning-cost-weighed-against-a-single-story-session.md"
+      },
+      {
+        "bytes": 24265,
+        "estimated_tokens": 6066,
+        "relpath": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py"
+      },
+      {
+        "bytes": 21904,
+        "estimated_tokens": 5476,
+        "relpath": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/kit.py"
+      },
+      {
+        "bytes": 11254,
+        "estimated_tokens": 2813,
+        "relpath": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py"
+      },
+      {
+        "bytes": 45786,
+        "estimated_tokens": 11446,
+        "relpath": "src/shared/packages/pyforge-marshal/tests/unit/test_seed_kit.py"
+      },
+      {
+        "bytes": 6736,
+        "estimated_tokens": 1684,
+        "relpath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-5-the-pinned-wrapped-vs-unwrapped-benchmark.md"
+      },
+      {
+        "bytes": 4785,
+        "estimated_tokens": 1196,
+        "relpath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-33-the-structure-graph-reference-is-wired-for-spin-unblocking-the-already-built-loop-home-index.md"
+      },
+      {
+        "bytes": 4166,
+        "estimated_tokens": 1041,
+        "relpath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md"
+      },
+      {
+        "bytes": 14055,
+        "estimated_tokens": 3513,
+        "relpath": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/token_economy_benchmark.py"
+      }
+    ],
+    "manifest_bytes": 138067,
+    "overhead_factor": 1.5
+  },
+  "recommendation": "share-repo-level-index",
+  "recommendation_rationale": "A shared base index plus ``codegraph sync -q`` (4.2s) costs far less than a fresh ``codegraph init -y`` (18.9s, 221MiB) while the same story would spend ~51774 tokens on unaided file navigation (~31064 recoverable). ``seed/verbs/kit.py`` already distinguishes init (create) from sync (refresh) \u2014 dispatch should copy or reference the loop-home/primary ``.codegraph/`` and sync, not init per worktree.",
+  "representative_story_key": "28-31",
+  "schema": "marshal-structure-graph-dispatch-benchmark/v1",
+  "sync_from_base": {
+    "wall_clock_seconds": 4.16
+  }
+}
