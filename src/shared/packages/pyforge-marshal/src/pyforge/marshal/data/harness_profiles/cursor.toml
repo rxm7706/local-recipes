@@ -41,3 +41,16 @@ authcheck_args = ["status"]
 authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; binary corrected cursor->cursor-agent."
+
+# No [wrapper] section -- deliberate, not an omission (Story 28.29,
+# SPEC-marshal-token-economy CAP-2, live-verified 2026-09-10). `headroom
+# wrap cursor --help` is Cursor-IDE-only: it tells a human to open Cursor
+# and set Settings > Models > OpenAI API Key > Advanced > Override Base
+# URL, not an env-var-driven headless wrap. Marshal's dispatch fleet
+# launches the headless `cursor-agent` CLI (above) detached, with no GUI
+# at all, so there is no reachable wire-compression path for this profile
+# -- do not add a [wrapper] here without first reversing the reason cursor
+# was chosen (avoiding Claude spend). `headroom wrap copilot` is the one
+# other genuinely headless target among marshal's harness profiles, but
+# switching carries its own cost/quota tradeoff -- see this story's spec
+# for the recorded operator decision point.

@@ -314,6 +314,10 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-040",
             # Story 33.9: verify_scope at factory dispatch boundary.
             "MRS-DISP-041",
+            # Story 28.30 (CAP-3, dispatch half of the `output` layer):
+            # deploying the caveman skill into a dispatch worktree
+            # degraded -- unavailable instrument or a write failure.
+            "MRS-DISP-042",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             "MRS-DRAIN-013",

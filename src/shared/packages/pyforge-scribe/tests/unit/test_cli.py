@@ -116,7 +116,13 @@ def test_capture_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
     result = runner.invoke(
         app,
-        ["capture", "--type", "project", "--text", "ADR-005b: in-house gateway replaces LiteLLM"],
+        [
+            "capture",
+            "--type",
+            "project",
+            "--text",
+            "ADR-005b: in-house gateway replaces LiteLLM",
+        ],
     )
 
     assert result.exit_code == 0
@@ -132,7 +138,9 @@ def test_capture_invalid_type_writes_nothing_and_exits_2(
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
-    result = runner.invoke(app, ["capture", "--type", "decision", "--text", "some text"])
+    result = runner.invoke(
+        app, ["capture", "--type", "decision", "--text", "some text"]
+    )
 
     assert result.exit_code == 2
     for capture_type in ("feedback", "project", "reference"):
@@ -219,11 +227,15 @@ def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
     assert "run-tests-first" in output
     assert "pointer-stub:" in output
 
-    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(
+        encoding="utf-8"
+    )
     assert "run-tests-first" in memory_md
 
     # Source is rewritten to a pointer stub (Story 1.4, FR-5), not left untouched.
-    source_content = (source_root / "feedback_run_tests_first.md").read_text(encoding="utf-8")
+    source_content = (source_root / "feedback_run_tests_first.md").read_text(
+        encoding="utf-8"
+    )
     assert "promoted: true" in source_content
     assert "I prefer that contributors run the full test suite" not in source_content
     assert ".claude/memory/feedback/run-tests-first.md" in source_content
@@ -247,7 +259,9 @@ def test_capture_promote_reinvocation_after_confirm_reports_nothing_to_promote(
         app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
     )
     assert first.exit_code == 0
-    written_after_first = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    written_after_first = list(
+        (tmp_path / ".claude" / "memory" / "feedback").glob("*.md")
+    )
     assert len(written_after_first) == 1
 
     # Re-invocation: no input needed -- if the code still called
@@ -256,7 +270,9 @@ def test_capture_promote_reinvocation_after_confirm_reports_nothing_to_promote(
 
     assert second.exit_code == 0
     assert "Nothing to promote" in _combined_output(second)
-    written_after_second = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    written_after_second = list(
+        (tmp_path / ".claude" / "memory" / "feedback").glob("*.md")
+    )
     assert written_after_second == written_after_first
 
 
@@ -376,7 +392,9 @@ def test_capture_promote_mutually_exclusive_with_type_and_text_exits_2(
     assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
 
 
-def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z") -> str:
+def _assistant_transcript_line(
+    text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z"
+) -> str:
     entry = {
         "type": "assistant",
         "timestamp": timestamp,
@@ -385,7 +403,9 @@ def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:
     return json.dumps(entry)
 
 
-def _scaffold_transcript_entry(transcript_root: Path, filename: str, lines: list[str]) -> Path:
+def _scaffold_transcript_entry(
+    transcript_root: Path, filename: str, lines: list[str]
+) -> Path:
     path = transcript_root / filename
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
@@ -419,7 +439,9 @@ def test_capture_transcripts_confirm_yes_writes_file_and_prints_proposal(
     assert "session-a.jsonl:L1" in output
     assert "captured:" in output
 
-    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(
+        encoding="utf-8"
+    )
     assert "SQLite" in memory_md
 
     # No pointer-stub write-back (unlike --promote): the source transcript
@@ -465,7 +487,9 @@ def test_capture_transcripts_nothing_to_promote_skips_confirm_prompt(
 
     # No input provided -- if the code incorrectly still called typer.confirm()
     # for an empty proposal, CliRunner would raise/abort for lack of stdin.
-    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)])
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(transcript_root)]
+    )
 
     assert result.exit_code == 0
     assert "Nothing to promote" in _combined_output(result)
@@ -761,7 +785,9 @@ def test_index_report_writes_derived_gitignored_artifact(
     fake_nodes = {"a": {"label": "A", "source_file": "src/shared/packages/a.py"}}
     god = [{"id": "a", "label": "A", "degree": 3}]
     monkeypatch.setattr(
-        graphify_module, "_import_graphify", lambda: _FakeGraphifyModule(fake_nodes, god)
+        graphify_module,
+        "_import_graphify",
+        lambda: _FakeGraphifyModule(fake_nodes, god),
     )
 
     result = runner.invoke(app, ["index", "report"])
@@ -851,7 +877,9 @@ def test_index_refresh_off_by_default_always_rebuilds_both_artifacts(
         assert "cocoindex extra off, full rebuild" in output
         assert "graphify-ingest (1 node(s))" in output
         assert "move-list (0 finding(s))" in output
-    index_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
+    index_path = (
+        tmp_path / ".claude" / "data" / "pyforge-scribe" / "cocoindex-index.json"
+    )
     assert not index_path.exists()
 
 
@@ -862,7 +890,9 @@ def test_index_refresh_on_mode_second_run_unchanged_skips_both(
     zero recompute on the second run."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
-    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -880,7 +910,10 @@ def test_index_refresh_on_mode_second_run_unchanged_skips_both(
     first = runner.invoke(app, ["index", "refresh"])
     assert first.exit_code == 0
     first_output = _combined_output(first)
-    assert "refreshed: move-list (0 finding(s)), graphify-ingest (1 node(s))" in first_output
+    assert (
+        "refreshed: move-list (0 finding(s)), graphify-ingest (1 node(s))"
+        in first_output
+    )
     assert "skipped (unchanged): (none)" in first_output
 
     second = runner.invoke(app, ["index", "refresh"])
@@ -898,7 +931,9 @@ def test_index_refresh_on_mode_one_changed_source_refreshes_only_that_artifact(
     derived artifact stays skipped/untouched."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
-    monkeypatch.setattr(cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule())
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
     target = tmp_path / "src" / "shared" / "packages"
     target.mkdir(parents=True)
     (target / "example.py").write_text("x = 1\n", encoding="utf-8")
@@ -969,6 +1004,203 @@ def test_index_refresh_cocoindex_unavailable_exits_2(
     monkeypatch.setenv("SCRIBE_COCOINDEX_EXTRA", "1")
 
     result = runner.invoke(app, ["index", "refresh"])
+
+    assert result.exit_code == 2
+    assert "cocoindex" in _combined_output(result).lower()
+
+
+# --- Story 28.28 (marshal token-economy CAP-5): `index refresh --declare` --
+
+
+def _write_declare_manifest(
+    cwd: Path, *, sources_a: str = "a.md", sources_b: str = "b.md"
+) -> Path:
+    (cwd / sources_a).write_text("a\n", encoding="utf-8")
+    (cwd / sources_b).write_text("b\n", encoding="utf-8")
+    manifest = {
+        "artifacts": [
+            {
+                "name": "marshal:demo:epic-1-context",
+                "sources": [sources_a],
+                "output": "out/epic-1-context.md",
+            },
+            {
+                "name": "marshal:demo:epic-1-continuity",
+                "sources": [sources_b],
+                "output": None,
+            },
+        ]
+    }
+    manifest_path = cwd / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return manifest_path
+
+
+def test_index_refresh_declare_first_run_refreshes_all_declared_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A caller-declared manifest's artifacts are all `refreshed` (never
+    seen before), independent of `SCRIBE_COCOINDEX_EXTRA` -- the explicit
+    `--declare` invocation is its own opt-in."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SCRIBE_COCOINDEX_EXTRA", raising=False)
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
+    manifest_path = _write_declare_manifest(tmp_path)
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert (
+        "refreshed: marshal:demo:epic-1-context, marshal:demo:epic-1-continuity"
+        in output
+    )
+    assert "skipped (unchanged): (none)" in output
+
+
+def test_index_refresh_declare_second_run_unchanged_sources_skips_all(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
+    manifest_path = _write_declare_manifest(tmp_path)
+    assert (
+        runner.invoke(
+            app, ["index", "refresh", "--declare", str(manifest_path)]
+        ).exit_code
+        == 0
+    )
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "refreshed: (none)" in output
+    assert (
+        "skipped (unchanged): marshal:demo:epic-1-context, marshal:demo:epic-1-continuity"
+        in output
+    )
+
+
+def test_index_refresh_declare_one_changed_source_refreshes_only_that_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
+    manifest_path = _write_declare_manifest(tmp_path)
+    assert (
+        runner.invoke(
+            app, ["index", "refresh", "--declare", str(manifest_path)]
+        ).exit_code
+        == 0
+    )
+
+    (tmp_path / "a.md").write_text("a changed\n", encoding="utf-8")
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "refreshed: marshal:demo:epic-1-context" in output
+    assert "skipped (unchanged): marshal:demo:epic-1-continuity" in output
+
+
+def test_index_refresh_declare_uses_its_own_index_file_not_the_graph_move_list_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The `--declare` path's fingerprint index is namespaced apart from
+    `default_cocoindex_index_path` -- it must never read or write
+    `cocoindex-index.json`, the graph/move-list index."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        cocoindex_module, "_import_cocoindex", lambda: _FakeCocoindexModule()
+    )
+    manifest_path = _write_declare_manifest(tmp_path)
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 0
+    data_dir = tmp_path / ".claude" / "data" / "pyforge-scribe"
+    assert (data_dir / "declared-artifacts-index.json").is_file()
+    assert not (data_dir / "cocoindex-index.json").exists()
+
+
+def test_index_refresh_declare_malformed_json_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{not json", encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 2
+    assert "not valid JSON" in _combined_output(result)
+
+
+def test_index_refresh_declare_missing_artifacts_key_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({}), encoding="utf-8")
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 2
+    assert "no non-empty 'artifacts' list" in _combined_output(result)
+
+
+def test_index_refresh_declare_malformed_entry_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps({"artifacts": [{"sources": ["a.md"]}]}), encoding="utf-8"
+    )
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
+
+    assert result.exit_code == 2
+    assert "malformed artifact entry" in _combined_output(result)
+
+
+def test_index_refresh_declare_missing_manifest_file_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app, ["index", "refresh", "--declare", str(tmp_path / "does-not-exist.json")]
+    )
+
+    assert result.exit_code == 2
+    assert "could not read declare manifest" in _combined_output(result)
+
+
+def test_index_refresh_declare_cocoindex_unavailable_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Mirrors `test_index_refresh_cocoindex_unavailable_exits_2` -- a
+    `--declare` run needs the real `cocoindex` package exactly as much as
+    the built-in path does, even though it never consults
+    `SCRIBE_COCOINDEX_EXTRA`."""
+    try:
+        import cocoindex  # noqa: F401
+    except ImportError:
+        pass
+    else:
+        pytest.skip("cocoindex is installed in this environment")
+    monkeypatch.chdir(tmp_path)
+    manifest_path = _write_declare_manifest(tmp_path)
+
+    result = runner.invoke(app, ["index", "refresh", "--declare", str(manifest_path)])
 
     assert result.exit_code == 2
     assert "cocoindex" in _combined_output(result).lower()
