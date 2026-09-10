@@ -3,9 +3,9 @@ title: "Story 48.6: R-22 live browser streaming, or the pillar deleted"
 type: story
 created: 2026-09-10
 baseline_revision: da71ab4b1d2f6ba7b2f39cf848942b60c37e4bee
-status: in-progress
-review_loop_iteration: 0
-followup_review_recommended: false
+status: done
+review_loop_iteration: 1
+followup_review_recommended: true
 context:
   - src/platform/config/asgi.py
   - src/platform/config/websocket.py
@@ -95,8 +95,49 @@ declared_low_risk: false
 
 ## Review Triage Log
 
+### 2026-09-10 — Review pass
+- verdicts: 18 findings — high 0, medium 5, low 3, false 6, maybe-false 0, reject 4
+- findings:
+  - `[medium]` `[patch]` `browser_relay._xread` did not await coroutine objects returned by sync `redis.asyncio.Redis.xread` — fixed to await `inspect.isawaitable` results after `to_thread`
+  - `[medium]` `[patch]` Channels `URLRouter` pattern used leading `/` so path `ws/events/` never matched — fixed routing to `^ws/events/$`
+  - `[medium]` `[patch]` Platform ping websocket test never sent disconnect, hanging in stub loop — fixed receive sequence to include disconnect
+  - `[medium]` `[patch]` `test_ws_events.py` used `importorskip("langflow")`, skipping entire module in `platform-ci-test` — replaced with langflow stub per CAP-5 peer tests
+  - `[medium]` `[patch]` No test asserted CloudEvent JSON delivery through `EventsStreamConsumer._relay_loop` — added `test_relay_loop_sends_matching_cloudevent_frame`
+  - `[false]` `[reject]` Claim AC1 requires replay of pre-connect stream entries — Design Notes specify `$` tail-only; intentional
+  - `[false]` `[reject]` `[dashboard]` extra missing from diff — already present in checkpoint commit `da71ab4`
+  - `[low]` `[reject]` Empty `REDIS_BROKER_URL` leaves accepted socket open with no relay — acceptable first slice; broker required in production
+  - `[low]` `[reject]` Silent swallow of relay exceptions — defensive; client can reconnect
+  - `[low]` `[reject]` Token in query string log exposure — documented HTMX trade-off in Design Notes
+  - `[false]` `[defer]` Archive topology dream not updated — intent forbids deleting/changing historical archive text
+  - `[false]` `[reject]` `/ws/events` without trailing slash not routed — platform mounts at `/ws/events/` per contract
+
 ## Design Notes
 
 Browser relay uses `$` blocking XREAD (not XREADGROUP) so it never competes with station consumer groups or ACK semantics. The connect-time assertion uses query param `token` so HTMX `hx-ext="ws"` can pass it without a custom subprotocol. Public key comes from `PYFORGE_ASSERTION_PUBLIC_KEY` env (same as MCP/supervisor). Only `run.started` currently publishes `data.subject`; other event types are dropped until publishers add the field — acceptable for R-22's first slice.
 
 ## Auto Run Result
+
+Status: done
+
+**Summary:** Implemented R-22 live browser streaming pillar: `EventsStreamConsumer` at `/ws/events/` with RS256 assertion auth (`mcp:events` audience), non-group Redis tail-read relay with per-`sub` filtering, platform ASGI delegation with 4403 when dashboard extra absent, and Dream checklist update. Review pass fixed routing pattern, redis.asyncio XREAD await handling, platform test hang/CI skip, and added end-to-end relay frame test.
+
+**Files changed:**
+- `django_pyforge/events/browser_relay.py` — tail-read relay helpers + redis.asyncio XREAD fix
+- `django_pyforge/assertion/schema.py` — `EVENTS_AUDIENCE`
+- `pyforge/steward/dashboard/{consumers,routing,asgi}.py` — websocket consumer stack
+- `src/platform/config/asgi.py` — `/ws/events/` delegation
+- `src/platform/tests/test_ws_events.py` — ASGI routing/auth tests (langflow stub for CI)
+- `pyforge-steward/tests/unit/test_events_stream_consumer.py` — relay/filter/connect tests
+- `docs/dreams/pyforge-unifying-strategy.md` — capability checklist shipped note
+- `pixi.toml` / `pixi.lock` — channels deps for platform-dev and pyforge-steward envs
+
+**Review:** 5 medium patches applied; 4 low/false rejected; archive-dream sync deferred per intent.
+
+**Follow-up review recommended:** true — patched 5 medium findings including production redis.asyncio relay path and CI collection gap; recommend one follow-up pass to confirm live-broker relay under load.
+
+**Verification:**
+- `pixi run -e pyforge-steward pyforge-steward-test -- -q -k events_stream` — 6 passed
+- `pixi run -e platform-dev pytest -c /dev/null src/platform/tests/test_ws_events.py -q` — 4 passed
+- `platform-ci-test` collects 4 tests in `test_ws_events.py` (no skip)
+
+**Residual risks:** Relay tails from `$` only (no backlog on connect). Empty/missing broker URL accepts then sends nothing. HTMX query-string token exposure remains a documented trade-off.

@@ -13,7 +13,6 @@ from collections.abc import AsyncIterator
 from collections.abc import Callable
 from typing import Any
 
-from django_pyforge.events.constants import EVENT_FIELD
 from django_pyforge.events.constants import STREAM
 from django_pyforge.events.fabric import parse_cloudevent
 
@@ -79,17 +78,21 @@ async def _xread(client: Any, streams: dict[str, str]) -> list[list[Any]]:
         msg = "event broker must support XREAD"
         raise TypeError(msg)
     if inspect.iscoroutinefunction(xread):
-        return await xread(
+        result = await xread(
             streams,
             count=_XREAD_COUNT,
             block=_XREAD_BLOCK_MS,
-        ) or []
-    return await asyncio.to_thread(
-        xread,
-        streams,
-        count=_XREAD_COUNT,
-        block=_XREAD_BLOCK_MS,
-    ) or []
+        )
+    else:
+        result = await asyncio.to_thread(
+            xread,
+            streams,
+            count=_XREAD_COUNT,
+            block=_XREAD_BLOCK_MS,
+        )
+        if inspect.isawaitable(result):
+            result = await result
+    return result or []
 
 
 def cloudevent_from_fields(fields: dict[str, Any]) -> dict[str, Any] | None:

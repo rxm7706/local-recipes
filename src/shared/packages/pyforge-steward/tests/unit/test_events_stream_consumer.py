@@ -145,6 +145,61 @@ def test_consumer_connect_rejects_missing_token():
     assert asyncio.run(_run()) == [4401]
 
 
+def test_relay_loop_sends_matching_cloudevent_frame(monkeypatch):
+    broker = MemoryRedis()
+
+    class _AsyncMemoryRedis:
+        def __init__(self, memory: MemoryRedis) -> None:
+            self._memory = memory
+
+        def xread(self, streams, count=None, block=None):
+            async def _read():
+                return self._memory.xread(streams, count=count, block=block)
+
+            return _read()
+
+        async def aclose(self) -> None:
+            return None
+
+    async def _run() -> list[str]:
+        consumer = EventsStreamConsumer()
+        consumer._subject = "alice"
+        consumer._stop_relay = False
+        frames: list[str] = []
+
+        async def _capture_send(*, text_data: str | None = None, **kwargs: object) -> None:
+            if text_data:
+                frames.append(text_data)
+                consumer._stop_relay = True
+
+        consumer.send = _capture_send  # type: ignore[method-assign]
+        monkeypatch.setattr(
+            "pyforge.steward.dashboard.consumers._broker_url",
+            lambda: "redis://memory",
+        )
+        monkeypatch.setattr(
+            "redis.asyncio.from_url",
+            lambda *_args, **_kwargs: _AsyncMemoryRedis(broker),
+        )
+        relay = asyncio.create_task(consumer._relay_loop())
+        await asyncio.sleep(0.05)
+        broker.xadd(
+            STREAM,
+            {EVENT_FIELD: json.dumps(_run_started_event(subject="alice"))},
+        )
+        broker.xadd(
+            STREAM,
+            {EVENT_FIELD: json.dumps(_run_started_event(subject="bob"))},
+        )
+        await asyncio.wait_for(relay, timeout=2.0)
+        return frames
+
+    frames = asyncio.run(_run())
+    assert len(frames) == 1
+    payload = json.loads(frames[0])
+    assert payload["data"]["subject"] == "alice"
+
+
 def test_consumer_connect_accepts_verified_subject(monkeypatch):
     async def _run() -> tuple[bool, str | None]:
         consumer = EventsStreamConsumer()

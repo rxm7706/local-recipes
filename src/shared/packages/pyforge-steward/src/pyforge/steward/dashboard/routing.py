@@ -7,5 +7,5 @@ from django.urls import re_path
 from pyforge.steward.dashboard.consumers import EventsStreamConsumer
 
 websocket_urlpatterns = [
-    re_path(r"^/ws/events/$", EventsStreamConsumer.as_asgi()),
+    re_path(r"^ws/events/$", EventsStreamConsumer.as_asgi()),
 ]

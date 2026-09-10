@@ -1,4 +1,9 @@
-"""Story 48.6 — host ASGI routing and auth for ``/ws/events/``."""
+"""Story 48.6 — host ASGI routing and auth for ``/ws/events/``.
+
+Runs in ``platform-ci-test`` where ``langflow`` is intentionally absent (CAP-5).
+Stubs Langflow at import time so ``config.asgi.application`` can be exercised
+without the factory conda package.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +13,7 @@ import sys
 from datetime import UTC
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PLATFORM_ROOT = _REPO_ROOT / "src" / "platform"
@@ -24,10 +30,16 @@ for _segment in (
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
 os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
+# Stub Langflow before langflow_integration.asgi imports it.
+_langflow_asgi_app = MagicMock()
+_langflow_pkg = MagicMock()
+_langflow_pkg.main.create_app.return_value = _langflow_asgi_app
+sys.modules.setdefault("langflow", _langflow_pkg)
+sys.modules.setdefault("langflow.main", _langflow_pkg.main)
+
 import jwt
 import pytest
 
-pytest.importorskip("langflow")
 pytest.importorskip("channels")
 
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
@@ -91,19 +103,16 @@ async def _drive_websocket(
 
 
 def test_ping_websocket_still_returns_pong():
-    async def receive() -> dict:
-        return {"type": "websocket.receive", "text": "ping"}
-
     async def _run() -> list[dict]:
         recorder = _WsRecorder()
-        connect_seen = False
+        steps = [
+            {"type": "websocket.connect"},
+            {"type": "websocket.receive", "text": "ping"},
+            {"type": "websocket.disconnect", "code": 1000},
+        ]
 
         async def receive_wrapper() -> dict:
-            nonlocal connect_seen
-            if not connect_seen:
-                connect_seen = True
-                return {"type": "websocket.connect"}
-            return await receive()
+            return steps.pop(0)
 
         scope = {"type": "websocket", "path": "/ws/ping", "headers": []}
         await application(scope, receive_wrapper, recorder)
