@@ -440,6 +440,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # BMAD_RENDER_CONFIG_AMBIGUITY/PLATFORM_POLICY_SUITE above -- unlike
     # both of those, this one CAN report FAIL (see models.Source's own
     # comment for why).
+    SourceRegistration(
+        source=Source.CAPABILITY_EFFECT,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 21.10 -- sources/capability_effect.py. Reads every station's
+    # SPEC.md CAP ``verified:`` lines (CAP-2); caller reach (CAP-1) and
+    # ``detectors`` / ``__main__`` dispatch wiring land in Stories 21.9/21.11.
 )
 
 

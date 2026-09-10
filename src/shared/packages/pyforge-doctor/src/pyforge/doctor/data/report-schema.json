@@ -83,7 +83,8 @@
             "chain-layers-audit",
             "platform-policy-suite",
             "bmad-render-config-ambiguity",
-            "frozen-path-changed"
+            "frozen-path-changed",
+            "capability-effect"
           ]
         },
         "check": { "type": "string" },
