@@ -3908,12 +3908,12 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "scripts/promote_sprint_status.py": "5e097cd13f2653d0d1547b630a20a9c9347fff10",
+   "scripts/promote_sprint_status.py": "abe92cd71e006e0a7ea24bf975737fb25e6cc619",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "3f5f9036dcf2e58a6901bca8fc4732543fef3e8b",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py": "eaff756cd5600b689ea76147afde04bbdb2c822b",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py": "0c8de593d3390a8ed718c25c34c3eea91625076c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py": "3747f3b13fe9274a29413e484b354c312ec7134a"
   },
-  "memlog": "4400214e232dab3e7f18d83abd832f7d54e1fcd0"
+  "memlog": "e5f34904992e10bb2017b767e612a6bb2bbca622"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
