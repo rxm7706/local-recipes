@@ -116,7 +116,11 @@ def _seed_ground_truth(repo: Path, version: str = "1.0.0") -> None:
         ']\n',
         encoding="utf-8",
     )
-    (skill / "SKILL.md").write_text("### G1\nfoo\n### G3\nbar\n### G5\nbaz\n", encoding="utf-8")
+    (skill / "SKILL.md").write_text(
+        f"---\nname: conda-forge-expert\nversion: {version}\n---\n"
+        "### G1\nfoo\n### G3\nbar\n### G5\nbaz\n",
+        encoding="utf-8",
+    )
     tools = repo / ".claude" / "tools"
     tools.mkdir(parents=True, exist_ok=True)
     (tools / "conda_forge_server.py").write_text(
@@ -232,18 +236,19 @@ def test_pin_missing_is_not_reported_for_a_snapshot_category_doc(tmp_path: Path)
 # ------------------------------------------------------------------- pin-behind
 
 
-def test_pin_behind_on_a_living_doc_reports_warn(tmp_path: Path) -> None:
+def test_living_doc_with_old_pin_does_not_report_pin_behind(tmp_path: Path) -> None:
+    """Story 33.10: ``source_pin`` on living docs is a re-grounding record,
+    not a currency claim — an old pin must not emit ``pin-behind``."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
     _pinned_md(repo, "planning-artifacts/index.md", "0.9.0")
 
     findings = factory.gather(repo)
 
+    assert not any(f.check == "pin-behind" for f in findings)
     assert len(findings) == 1
-    finding = findings[0]
-    assert finding.check == "pin-behind"
-    assert finding.status is DoctorStatus.WARN
-    assert "0.9.0" in finding.message and "1.0.0" in finding.message
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
 
 
 def test_pin_behind_on_a_snapshot_doc_reports_ok(tmp_path: Path) -> None:
@@ -302,23 +307,14 @@ def test_compound_pin_with_matching_live_version_reports_clean(tmp_path: Path) -
     assert findings[0].status is DoctorStatus.OK
 
 
-def test_compound_pin_behind_reports_the_conda_forge_expert_version_not_bmad_core(
-    tmp_path: Path,
-) -> None:
-    """Same compound-pin shape as above, but the live skill version (9.0.0)
-    sits ABOVE the pinned conda-forge-expert version (8.84.0) while sitting
-    BELOW the pinned BMAD-core number (6.11.0 lexically looks unrelated, but
-    a landmine fix could still latch onto it) -- the discriminating case:
-    a correct parse reports ``pin-behind`` naming ``8.84.0``; a landmine fix
-    that captured ``6.11.0`` instead would report EITHER no finding at all
-    (6.11 > nothing meaningful to compare cleanly) or a differently-worded
-    finding citing the wrong number. Asserting the exact version substrings
-    in the message pins the fix to reading the RIGHT half of the compound
-    value, not merely "some version was found"."""
+def test_compound_pin_on_snapshot_still_reports_behind(tmp_path: Path) -> None:
+    """Compound pins on snapshot docs still compare the conda-forge-expert
+    half against live ``SKILL.md`` ``version:`` (Story 33.10 leaves snapshot
+    ``pin-behind`` at INFO). Living/plan docs suppress behind-ness entirely."""
     repo = tmp_path / "repo"
     _bootstrap(repo, "9.0.0")
     _pinned_md_raw(
-        repo, "planning-artifacts/architecture-bmad-infra.md",
+        repo, "planning-artifacts/validation-report-PRD.md",
         "source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'",
     )
 
@@ -327,7 +323,8 @@ def test_compound_pin_behind_reports_the_conda_forge_expert_version_not_bmad_cor
     assert len(findings) == 1
     finding = findings[0]
     assert finding.check == "pin-behind"
-    assert finding.status is DoctorStatus.WARN
+    assert finding.status is DoctorStatus.OK
+    assert finding.evidence["severity"] == "INFO"
     assert "8.84.0" in finding.message
     assert "6.11.0" not in finding.message
 
@@ -1240,12 +1237,10 @@ def test_non_utf8_byte_does_not_discard_a_sibling_docs_real_finding(
 def test_unknown_live_version_warns_but_keeps_the_pin_missing_half(
     tmp_path: Path,
 ) -> None:
-    """``_parse_ver(None)`` turned an unreadable skill CHANGELOG into a live
-    version of ``(0, 0, 0)`` -- which no real pin can be behind, so every
-    ``pin-behind`` finding vanished silently. The behind-ness half is now an
-    honest WARN, while ``pin-missing`` (which never needed the live version)
-    still runs, mirroring ``check_tier_alignment``'s own git-unavailable
-    shape."""
+    """An unreadable ``SKILL.md`` ``version:`` makes the behind-ness half
+    unanswerable — an honest WARN — while ``pin-missing`` (which never needed
+    the live version) still runs, mirroring ``check_tier_alignment``'s own
+    git-unavailable shape."""
     repo = tmp_path / "repo"
     _init_repo(repo)
     _seed_ground_truth(repo)
@@ -1256,9 +1251,10 @@ def test_unknown_live_version_warns_but_keeps_the_pin_missing_half(
     _commit_all(repo, "seed behind-pinned project")
 
     before = {f.check for f in factory.gather(repo)}
-    assert {"pin-behind", "pin-missing"} <= before
+    assert "pin-missing" in before
 
-    (repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md").unlink()
+    skill_md = repo / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md"
+    skill_md.write_text("### G1\nno frontmatter version\n", encoding="utf-8")
     after = factory.gather(repo)
 
     assert not any(f.check == "pin-behind" for f in after)
@@ -1482,12 +1478,12 @@ def test_unreadable_unrelated_ground_truth_leaves_check_pins_untouched(
 
 
 @_needs_unprivileged
-def test_unreadable_changelog_degrades_only_the_behind_half_of_check_pins(
+def test_unreadable_skill_md_degrades_only_the_behind_half_of_check_pins(
     tmp_path: Path,
 ) -> None:
     """The companion to the test above, for the file ``_live_version``
     genuinely DOES need. ``_read`` raises ``PermissionError`` on an
-    unreadable ``CHANGELOG.md``, and ``check_pins``' ``except ValueError``
+    unreadable ``SKILL.md``, and ``check_pins``' ``except ValueError``
     caught only the absent case -- so the readable-but-denied case took the
     whole check with it, ``pin-missing`` included.
 
@@ -1498,16 +1494,16 @@ def test_unreadable_changelog_degrades_only_the_behind_half_of_check_pins(
     (factory._proj(repo) / "planning-artifacts" / "PRD.md").write_text(
         "# PRD\nno frontmatter pin here\n", encoding="utf-8"
     )
-    changelog = repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md"
+    skill_md = repo / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md"
 
-    changelog.chmod(0o000)
+    skill_md.chmod(0o000)
     try:
         after = factory.gather(repo)
     finally:
-        changelog.chmod(0o644)
+        skill_md.chmod(0o644)
 
     assert "pin-missing" in {f.check for f in after}, (
-        f"an unreadable CHANGELOG.md discarded a real HARD finding: {after}"
+        f"an unreadable SKILL.md discarded a real HARD finding: {after}"
     )
     assert "check_pins" in _unevaluable_checks(after), (
         f"the unanswerable behind-ness half went silently clean: {after}"
