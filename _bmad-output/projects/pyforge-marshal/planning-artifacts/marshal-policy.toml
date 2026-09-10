@@ -346,6 +346,26 @@ ungated = true
 command = "marshal-mcp"
 args = []
 
+# [context] (Story 33.2, spec-marshal-token-economy CAP-1/2/5/6): enable all five
+# token-economy layers on factory dispatch. Absent block = every layer off
+# (Story 28.1 contract); this is the first enablement on the dispatch path.
+# Placed BEFORE model_tier_map — TOML table-scoping nests trailing root keys
+# under the last opened table if order is wrong (see test_spin.py Design Notes).
+[context.wire]
+enabled = true
+
+[context.output]
+enabled = true
+
+[context."structure-graph"]
+enabled = true
+
+[context."derived-context"]
+enabled = true
+
+[context."planning-graph"]
+enabled = true
+
 # model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
 # the LAST thing in this file -- see the comment block above. "heavy"/"easy" reuse
 # Story 6.1's own test-fixture vocabulary (`test_spin.py::_model_tier_map_policy_path`)
