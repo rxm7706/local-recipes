@@ -28,17 +28,20 @@ overwrite the twin wholesale could — and did — destroy real completions: on 
 a stale marshal feed silently dropped six `done` keys and printed success. Measured the
 same day, `pyforge-atlas` was one command away from losing **35**.
 
-This script therefore refuses any write that moves a key backwards out of `done`, or
-drops a `done` key entirely, naming every affected key and exiting non-zero. Override
-with `--allow-regression` only when the twin is genuinely the wrong one. The pre-existing
-empty-feed guard below is the same idea at whole-file granularity; this is its per-key
-counterpart, which is where the real losses happen.
+This script therefore refuses any write that moves a key backwards out of `done` or
+story `blocked`, or drops such a key entirely, naming every affected key and exiting
+non-zero. Twin-only keys absent from the feed are refused on the bare path too — not
+only under ``--repair-feed``. Override with ``--allow-regression`` only when the twin
+is genuinely the wrong one. The pre-existing empty-feed guard below is the same idea
+at whole-file granularity; this is its per-key counterpart, which is where the real
+losses happen.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -85,26 +88,85 @@ def render(project: str, src_rel: str, statuses: dict[str, str]) -> str:
     return _HEADER.format(src=src_rel, project=project, count=len(statuses)) + body
 
 
-# Statuses that must never move backwards. `done` is the only terminal state in this
-# vocabulary — everything else (backlog / in-progress / blocked / optional) is a
-# legitimate two-way transition and is deliberately NOT guarded.
+# Statuses that must never move backwards. `done` is terminal; `blocked` is sticky
+# on stories (mirrors sprint_plan.py:77) — both are protected from feed overwrite.
 TERMINAL = frozenset({"done"})
+STICKY_STATUSES = {"story": frozenset({"blocked"})}
+
+_EPIC_KEY_RE = re.compile(r"^epic-(\d+)$")
+_RETRO_KEY_RE = re.compile(r"^epic-(\d+)-retrospective$")
+_STORY_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z]?)-.+")
+_STORY_PROGRESS_RANK = {
+    "backlog": 0,
+    "ready-for-dev": 1,
+    "in-progress": 2,
+    "review": 3,
+    "done": 4,
+}
+
+
+def _classify_key(key: str) -> tuple[str, int] | None:
+    m = _RETRO_KEY_RE.match(key)
+    if m:
+        return "retro", int(m.group(1))
+    m = _EPIC_KEY_RE.match(key)
+    if m:
+        return "epic", int(m.group(1))
+    m = _STORY_KEY_RE.match(key)
+    if m:
+        return "story", int(m.group(1))
+    return None
+
+
+def _is_protected(kind: str | None, status: str) -> bool:
+    if status in TERMINAL:
+        return True
+    return kind == "story" and status in STICKY_STATUSES.get("story", frozenset())
 
 
 def regressions(existing: dict[str, str], incoming: dict[str, str]) -> list[tuple[str, str, str]]:
-    """Keys the incoming feed would move OUT of a terminal state, as
-    ``(key, old, new)`` where ``new`` is ``"<absent>"`` if the feed drops the key
-    entirely. Dropping a `done` key is the more dangerous of the two — it leaves no
-    trace in the rendered file at all — so it is reported the same way, not skipped."""
+    """Keys the incoming feed would move OUT of a protected state (``done`` or story
+    ``blocked``), as ``(key, old, new)`` where ``new`` is ``"<absent>"`` if the feed
+    drops the key entirely."""
     out: list[tuple[str, str, str]] = []
     for key, old in sorted(existing.items()):
-        if old not in TERMINAL:
+        kind = _classify_key(key)
+        kind_name = kind[0] if kind else None
+        if not _is_protected(kind_name, old):
             continue
         new = incoming.get(key)
         if new is None:
             out.append((key, old, "<absent>"))
-        elif new not in TERMINAL:
+        elif not _is_protected(kind_name, new):
             out.append((key, old, new))
+    return out
+
+
+def _compute_epic_status(story_statuses: list[str]) -> str:
+    if not story_statuses:
+        return "backlog"
+    if all(s == "done" for s in story_statuses):
+        return "done"
+    active = [s for s in story_statuses if s != "blocked"]
+    if not active:
+        return "backlog"
+    if max(_STORY_PROGRESS_RANK.get(s, 0) for s in active) >= 1:
+        return "in-progress"
+    return "backlog"
+
+
+def apply_epic_rollups(statuses: dict[str, str]) -> dict[str, str]:
+    """Refresh ``epic-N`` rows from child story statuses before writing the twin."""
+    by_epic: dict[int, list[str]] = {}
+    for key, value in statuses.items():
+        parsed = _classify_key(key)
+        if parsed and parsed[0] == "story":
+            by_epic.setdefault(parsed[1], []).append(value)
+    out = dict(statuses)
+    for epic_num, story_values in by_epic.items():
+        epic_key = f"epic-{epic_num}"
+        if epic_key in out:
+            out[epic_key] = _compute_epic_status(story_values)
     return out
 
 
@@ -215,10 +277,6 @@ def main(argv: list[str] | None = None) -> int:
         if not dest.parent.is_dir():
             skipped.append(f"{key} (no planning-artifacts dir at {dest.parent})")
             continue
-        text = render(key, rel, statuses)
-        if dest.is_file() and dest.read_text(encoding="utf-8") == text:
-            unchanged.append(f"{key} ({len(statuses)})")
-            continue
 
         # Per-key monotonic guard (DW-SYNC-2026-08-08-1). Read the twin we are about
         # to overwrite and refuse to un-finish anything, unless explicitly allowed.
@@ -251,17 +309,29 @@ def main(argv: list[str] | None = None) -> int:
                       f"{len(missing)} missing key(s) into the Tier-3 feed from the "
                       f"tracked twin")
                 statuses = merged
-                text = render(key, rel, statuses)
                 lost = []
-            if lost:
-                detail = ", ".join(f"{k} ({old} -> {new})" for k, old, new in lost)
+                missing = []
+            if lost or missing:
+                if lost:
+                    detail = ", ".join(f"{k} ({old} -> {new})" for k, old, new in lost)
+                    label = "un-finish"
+                else:
+                    detail = ", ".join(sorted(missing))
+                    label = "drop"
                 if not args.allow_regression:
                     refused.append(
-                        f"{key} — feed would un-finish {len(lost)} key(s): {detail}"
+                        f"{key} — feed would {label} {len(lost or missing)} "
+                        f"twin key(s): {detail}"
                     )
                     continue
-                print(f"  WARNING   {key}: --allow-regression, un-finishing "
-                      f"{len(lost)} key(s): {detail}")
+                print(f"  WARNING   {key}: --allow-regression, {label}ing "
+                      f"{len(lost or missing)} key(s): {detail}")
+
+        statuses = apply_epic_rollups(statuses)
+        text = render(key, rel, statuses)
+        if dest.is_file() and dest.read_text(encoding="utf-8") == text:
+            unchanged.append(f"{key} ({len(statuses)})")
+            continue
 
         _write_ledger_locked(dest, text)
         wrote.append(f"{key} ({len(statuses)})")
