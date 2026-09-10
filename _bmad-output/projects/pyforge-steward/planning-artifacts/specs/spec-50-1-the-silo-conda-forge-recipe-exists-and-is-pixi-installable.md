@@ -2,7 +2,7 @@
 title: 'The Silo conda-forge recipe exists and is pixi-installable'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -89,5 +89,15 @@ follow-up, not part of this story's own scope.
   steward code changes; this story is recipe-only, this command proves nothing else regressed)
 
 ## Spec Change Log
+
+### 2026-09-10 — Landed
+- `recipes/silo/recipe.yaml` authored (v1, binary-repackage of `pgsty/silo` release
+  `RELEASE.2026-09-03T13-18-01Z`, conda version `20260903131801.0.0`), full CFE gate green
+  (validate/optimize/scan/build all clean, linux-64 build + test), published to
+  `https://anaconda.org/SelfExplainML/silo`. Landed via PR
+  `rxm7706/local-recipes#1183` (merged `af704b562a`), based on local verification per the
+  confirmed CI billing outage. `staged-recipes` submission deliberately NOT done — named
+  follow-up per this story's own scope, and per an explicit operator instruction (no
+  conda-forge PRs without confirmation).
 
 ## Review Triage Log
