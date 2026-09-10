@@ -694,8 +694,20 @@ def _check_project_chain_completeness(
             # degrades to "no frontmatter, no declared CAP ids" here rather
             # than aborting this project's whole INV-A/B/C/D pass.
             spec_text = ""
-        status = str(_frontmatter_from_text(spec_text).get("status", "")).strip()
-        if status not in OPEN_SPEC_STATUSES or slug in DEFERRED_SPECS:
+        fm = _frontmatter_from_text(spec_text)
+        if slug in DEFERRED_SPECS:
+            continue
+        if "status" not in fm:
+            findings.append({
+                "inv": "INV-A", "kind": "spec-status-missing",
+                "project": project, "subject": slug, "status": "",
+                "detail": f"Spec {slug!r} has no status: in frontmatter",
+                "remedy": (f"add a status: line to {slug}, or add the slug to "
+                           f"DEFERRED_SPECS with the reason"),
+            })
+            continue
+        status = str(fm.get("status", "")).strip()
+        if status not in OPEN_SPEC_STATUSES:
             continue
 
         declared = _parse_declared_cap_ids(spec_text)

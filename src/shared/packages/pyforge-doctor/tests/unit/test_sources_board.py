@@ -53,6 +53,21 @@ def test_deferred_specs_entries_name_open_specs_live() -> None:
     )
 
 
+def test_live_tree_reports_zero_spec_status_missing() -> None:
+    """After Class-B status flips, no tracked Spec should lack a ``status:``
+    key — the live monorepo must report zero ``spec-status-missing`` findings."""
+    repo_root = _require_repo_root()
+    findings = board.gather_chain_completeness(repo_root)
+    missing = [f for f in findings if f.check == "spec-status-missing"]
+    assert not missing, (
+        "live tree still has Specs with no status: key:\n  "
+        + "\n  ".join(
+            f"{f.evidence['project']}/{f.evidence['subject']}: {f.message}"
+            for f in missing
+        )
+    )
+
+
 def test_deferred_specs_story_21_1_reconciliation() -> None:
     """Pin Story 21.1 de-registrations and registrations against silent regression."""
     assert "spec-intelligence-hub" not in board.DEFERRED_SPECS
