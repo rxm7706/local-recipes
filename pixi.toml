@@ -222,6 +222,7 @@ elevenlabs = ">=1.52.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs
 # results); conda-forge current is 3.3.x.
 psycopg = ">=3.2.10"
 httpx = ">=0.28.1"                # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
+boto3 = ">=1.43.0"                # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client -- same client construction works against Story 50.2's local Silo/Garage or real StorageGRID; no consumer wired in yet
 dlt = ">=1.30.0"                  # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 48.11 (warden-B7 / fleet readiness C7): django_warden_fabric/tasks.py lazy-imports pyforge.warden.cli — platform image must ship the engine it calls
@@ -465,6 +466,7 @@ channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests
 daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)
 asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels adapter layer
 channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer for EventsStreamConsumer in Platform CI
+boto3 = ">=1.43.0"                # Story 50.3 (pap:AD-1 dated exception): config.object_storage's S3 client — the round-trip test needs a real S3-compatible client, this is not an AWS dependency
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
