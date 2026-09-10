@@ -2471,6 +2471,10 @@ description = "Export .herald/claims.json -> web/public/success.json for the web
 cmd = "python scripts/export_web_snapshot.py"
 cwd = "src/shared/packages/pyforge-herald"
 
+[feature.pyforge-herald.tasks.deck-qa]
+description = "Story 19.3: run Herald's deck visual-QA gates against a built deck — JSON report plus render artifacts under .herald/deck-qa/<slug>/. Advisory only (never a PR gate). Run from repo root: pixi run -e pyforge-herald deck-qa <slug>. See docs/specs/presentation-deck.md."
+cmd = "herald deck qa"
+
 [feature.pyforge-core.tasks.pyforge-core-test]
 description = "Run the pyforge.core test suite"
 cmd = "pytest src/shared/packages/pyforge-core/tests -q"

@@ -66,8 +66,13 @@ a deck about the deck engine.
    per deck.
 4. **Run the pipeline:** `npm run extract` → `npm run dev` to review →
    `npm run build` for the static bundle. Generate the Marp + PPTX exports.
-5. **Verify** against [Acceptance criteria](#acceptance-criteria).
-6. **Append a new Worked Example** recording the concrete parameters, slide
+5. **Run deck visual QA (advisory):** from the **repo root**, after step 4 has produced
+   `presentations/<slug>/dist/`, run `pixi run -e pyforge-herald deck-qa <slug>` — invokes
+   `herald deck qa <slug>`, writes a gate-keyed JSON report to stdout and render artifacts
+   (PNG contact sheet + per-slide captures) under `.herald/deck-qa/<slug>/`. Failures inform
+   human/LLM review; this step does **not** block merge and is not a second PR gate.
+6. **Verify** against [Acceptance criteria](#acceptance-criteria).
+7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
 
 ---
