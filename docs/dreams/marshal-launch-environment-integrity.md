@@ -76,14 +76,43 @@ an eyeballed YAML diff, because the tool itself reported `verdict: ok` or
    paths from "feed says `backlog`" to "feed says anything other than
    `done`," with `20-4`'s live regression as the reproduction case.
 
-**The pattern underneath all four.** Every one of them is a silent-success
-failure mode: the tool's own reported verdict (`ok`, `clean`, `0 done`) gave
-no signal that anything was wrong, and each required manual archaeology
-(`bmad-loop diagnose`, raw stderr, an eyeballed diff) to even locate, let
-alone fix. Three of the four are now closed with a **loud** failure or an
-automated repair in their place; the fourth (`promote_sprint_status.py`) is
-mid-fix. What remains open, found in the same session and not yet
-decomposed into a story:
+5. **The operator's own fleet report trusted a stale verdict over a live
+   one.** `scripts/fleet_picture.py` reads `marshal status`'s per-station row,
+   which carries `dispatch_verification_verdict`/`dispatch_verification_
+   failed_gate` fields that persist until the NEXT `factory dispatch` run
+   overwrites them — they are not cleared when a different engine (`factory
+   spin`) starts running on the same station. Scribe's row still carried a
+   `refused` `MRS-GATE-007` verdict from a dispatch attempt on 2026-08-31
+   (10 days stale) when a brand-new, healthy `factory spin` session
+   (confirmed alive via `bmad-loop diagnose`, genuinely `dev-running`) was
+   labeled **STUCK** in both the station-state cell and the ATTENTION block
+   — the exact same pattern as findings 1-4: two pieces of state (a live
+   process fact and a recorded verdict) sitting in the same JSON row,
+   un-cross-checked. **Fixed 2026-09-10:** both call sites now require
+   `dispatch_phase is not None` (only ever set while dispatch is genuinely
+   the live engine) alongside the refused verdict before trusting it
+   (`fix/fleet-picture-stale-dispatch-verdict`). **Known gap, not yet
+   built:** the `station_state()` fix has direct unit coverage; the
+   ATTENTION-block site's own ~10-line `needs.append` branch inside
+   `main()` does not — it would need `subprocess.run` mocked the way
+   `test_fleet_picture_verification_staleness.py` already mocks
+   `marshal status`'s JSON output for a different ATTENTION probe in the
+   same file, rather than driving the real fleet's own ledger state.
+
+**The pattern underneath all five.** Every one of them is a silent-success
+failure mode: the tool's own reported verdict (`ok`, `clean`, `0 done`,
+`STUCK`) gave no signal that anything was wrong, and each required manual
+archaeology (`bmad-loop diagnose`, raw stderr, an eyeballed diff, a raw
+`marshal status --format json` dump) to even locate, let alone fix. Four of
+the five are now closed with a **loud** failure, an automated repair, or a
+cross-check against live process state in their place; the fourth
+(`promote_sprint_status.py`) landed the same session too. What remains open,
+found in the same session and not yet decomposed into a story:
+
+- **The ATTENTION-block test-coverage gap** named in finding 5 above — the
+  fix is live and correct (confirmed against the real fleet), but the
+  `needs.append` branch inside `main()` has no dedicated unit test the way
+  `station_state()`'s does.
 
 - **No mid-session checkpointing.** A dispatch or spin session that crashes
   (terminal/IDE crash, not a code failure) loses every uncommitted change in
@@ -129,3 +158,15 @@ decomposed into a story:
   two resilience findings (no mid-session checkpoint, crashed-vs-failed
   indistinguishable to drain) are captured here, not yet decomposed into
   marshal epics.md stories — next step.
+- **2026-09-10 (later, same session)** — `promote_sprint_status.py`'s
+  regression guard fix landed
+  (`fix/promote-sprint-status-done-strictly-senior`); the three resilience
+  findings decomposed into marshal **Epic 34** (Stories 34.1-34.3, fully
+  specced and dispatch-ready). A fifth environment-integrity finding
+  surfaced immediately after, from the operator's own next fleet-picture
+  check: `fleet_picture.py` mislabeled a healthy live spin as STUCK off a
+  10-day-stale dispatch verdict — same silent-success pattern as the first
+  four. Fixed the same session
+  (`fix/fleet-picture-stale-dispatch-verdict`); the fix itself has direct
+  unit coverage, but its ATTENTION-block sibling site does not — decomposed
+  as **Story 34.4** below.

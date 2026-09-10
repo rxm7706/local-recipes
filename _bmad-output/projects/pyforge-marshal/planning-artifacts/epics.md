@@ -5067,6 +5067,14 @@ to tell "the session died before doing anything" apart from "the session ran and
 **Then** it classifies the block as **environment** rather than **story**, and `--mode skip_on_blocked`'s existing escape hatch (or a new explicit `--retry-environment-blocks` flag) is sanctioned to clear ONLY environment-classified blocks — a genuine story failure (real git progress, a failed verify run, an escalation) still requires the existing manual override, unchanged
 **And** a fixture reproduces one of each (a crashed-before-any-progress run, a real verify failure) and asserts only the crashed one is eligible for the new retry path
 
+### Story 34.4: The ATTENTION-block's own refused-verdict check gets the same test coverage its `station_state()` sibling has
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** `docs/dreams/marshal-launch-environment-integrity.md` § finding 5, `fix/fleet-picture-stale-dispatch-verdict`
+**Surface:** `scripts/fleet_picture.py` (`main()`'s ATTENTION-block `needs.append` branch, the `station_state()`-adjacent but separately-inlined check), `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dispatch_phase.py` or a new sibling test file
+**Given** `fleet_picture.py`'s live 2026-09-10 fix (`fix/fleet-picture-stale-dispatch-verdict`) closed the stale-verdict mislabeling at BOTH call sites — `station_state()`'s STUCK cell and `main()`'s ATTENTION-block `needs.append` line — but only the first got direct unit coverage (`test_not_stuck_when_refused_verdict_is_stale_and_a_different_engine_is_running`); the second is an inline ~10-line branch inside `main()` with no dedicated test, verified only by hand against the live fleet at fix time
+**When** a test exercises `main()`'s ATTENTION-block branch directly, mocking `subprocess.run` for the `marshal status --format json` call the way `test_fleet_picture_verification_staleness.py` already mocks a DIFFERENT ATTENTION probe's subprocess call in the same file — not by driving the real fleet's own ledger state
+**Then** a fixture pins: (1) a station with a live run, a `dispatch_phase` set, and a `refused` verdict produces the `dispatch verify REFUSED` ATTENTION line; (2) the SAME refused verdict with `dispatch_phase=None` (a different engine live, e.g. spin) produces NO such line — the exact regression this story guards against recurring
+**And** no behavior changes — this story is test-coverage-only, closing the one gap the 2026-09-10 fix's own landing PR named explicitly
+
 ## Deferred-work verification state — reconciled 2026-09-08
 
 The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all
