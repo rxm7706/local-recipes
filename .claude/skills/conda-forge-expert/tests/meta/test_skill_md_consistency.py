@@ -74,6 +74,7 @@ class TestSkillMdConsistency:
             "script.py",          # rare, generic
             "conda_forge_server.py",  # MCP server, lives at .claude/tools/
             "post-tool-call.py",      # provenance hook, lives at .claude/hooks/ (AUD-CFE-009)
+            "cfe.py",                 # mason's own src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py -- Rule-2 retro entries cite its CFE_IMPORT_FLOOR by path; not a CFE skill script (v8.90.3, Story 16.1)
             # Universal Python conventions — appear in shell-example prose
             # (e.g. `tar tzf <sdist> | grep '__init__.py$'` in G7 gotcha) and
             # in package-path illustrations, not as references to repo scripts.
