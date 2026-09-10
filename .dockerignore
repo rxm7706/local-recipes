@@ -59,6 +59,9 @@ src/**/.pixi/
 # along on any checkout where more than one station has run.
 _bmad-output/implementation-artifacts/
 _bmad-output/projects/*/implementation-artifacts
+# Per-project planning specs cite synthetic secret fixtures in prose; never
+# needed to run a station CLI (Story 48.10 guild-image secrets-scan gate).
+_bmad-output/projects/*/planning-artifacts
 _bmad-output/projects/*/_root-fallback-fork-*
 
 # bmad-loop run state -- a loop home is itself a full repo checkout (this
