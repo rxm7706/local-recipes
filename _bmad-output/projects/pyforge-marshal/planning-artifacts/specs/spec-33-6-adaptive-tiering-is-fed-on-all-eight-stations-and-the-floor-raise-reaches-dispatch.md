@@ -5,7 +5,7 @@ created: '2026-09-09'
 status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-final_revision: '2cfa26e815e382546c761eafeda8ed2005a640ac'
+final_revision: '7c4d3823d73acb21e1474e74d54021d584d01e53'
 context:
   - ../../../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-adaptive-model-tiering/SPEC.md
   - ../../../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/SPEC.md
