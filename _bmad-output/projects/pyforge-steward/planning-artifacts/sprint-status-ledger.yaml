@@ -153,7 +153,7 @@ development_status:
   44-10-archive-local-recipes: blocked
   44-11-windows-native-estate: blocked
   44-12-cutover-flag-and-replay-harness: blocked
-  44-13-memlog-fidelity: backlog
+  44-13-memlog-fidelity: done
   44-14-rebuild-harness-and-oracle-gate: blocked
   44-15-actions-minutes-metering: blocked
   44-2-the-red-team-document-fixes: blocked
