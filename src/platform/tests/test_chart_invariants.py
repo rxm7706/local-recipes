@@ -53,6 +53,8 @@ _VANILLA_KINDS = frozenset(
         "PersistentVolumeClaim",
         "NetworkPolicy",
         "ConfigMap",
+        "HorizontalPodAutoscaler",
+        "PodDisruptionBudget",
     },
 )
 _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job", "CronJob"})
@@ -1919,6 +1921,156 @@ def test_redis_broker_memory_limit_is_required():
             "--set",
             "redis.broker.resources.limits.memory=",
         )
+
+
+def _assert_container_has_resource_limits(
+    pod_spec: dict[str, Any],
+    *,
+    container_name: str,
+    where: str,
+) -> None:
+    """Story 48.2: a named container must carry requests and limits.memory."""
+    containers = {c["name"]: c for c in _iter_pod_containers(pod_spec) if c.get("name")}
+    assert container_name in containers, (
+        f"{where}: container {container_name!r} not found "
+        f"(containers: {sorted(containers)!r})"
+    )
+    resources = containers[container_name].get("resources") or {}
+    assert resources.get("requests"), f"{where}: {container_name} missing requests"
+    assert resources.get("limits", {}).get("memory"), (
+        f"{where}: {container_name} missing limits.memory"
+    )
+
+
+def _assert_hpa_targets_deployment(
+    docs: list[dict[str, Any]],
+    *,
+    deployment_name: str,
+) -> None:
+    matches = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "HorizontalPodAutoscaler"
+        and (doc.get("spec") or {}).get("scaleTargetRef", {}).get("name")
+        == deployment_name
+    ]
+    assert matches, f"no HorizontalPodAutoscaler targets Deployment {deployment_name!r}"
+
+
+def _assert_pdb_selects_component(
+    docs: list[dict[str, Any]],
+    *,
+    component: str,
+) -> None:
+    matches = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PodDisruptionBudget"
+        and (doc.get("spec") or {})
+        .get("selector", {})
+        .get("matchLabels", {})
+        .get("app.kubernetes.io/component")
+        == component
+    ]
+    assert matches, (
+        f"no PodDisruptionBudget selects app.kubernetes.io/component={component!r}"
+    )
+
+
+@requires_helm
+def test_story_48_2_default_render_carries_sizing_hpa_and_pdb():
+    """AC (Story 48.2): sized pods, HPA on web/worker, PDB on web/worker."""
+    docs = _render(_CORE_CHART, release="platform")
+    by_component = _pod_specs_by_component(docs)
+
+    for component, container in (
+        ("web", "web"),
+        ("worker", "worker"),
+        ("worker-builds", "worker-builds"),
+        ("mcp-host", "mcp-host"),
+        ("dbgpt", "dbgpt"),
+    ):
+        _assert_container_has_resource_limits(
+            by_component[component],
+            container_name=container,
+            where=component,
+        )
+
+    liquibase_jobs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Job"
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        == "liquibase"
+    ]
+    assert liquibase_jobs, "liquibase hook Job not found in render"
+    _assert_container_has_resource_limits(
+        _workload_pod_spec(liquibase_jobs[0]),
+        container_name="liquibase",
+        where="liquibase",
+    )
+
+    web_pod = by_component["web"]
+    web_container = next(c for c in web_pod["containers"] if c["name"] == "web")
+    args = web_container.get("args") or []
+    assert "--preload" in args, f"web gunicorn args missing --preload: {args!r}"
+    assert "--workers" in args, f"web gunicorn args missing --workers: {args!r}"
+    env = _collect_env_by_name(web_pod)
+    assert env.get("ANYIO_MAX_THREADS", {}).get("value"), (
+        "web pod missing ANYIO_MAX_THREADS env"
+    )
+
+    _assert_hpa_targets_deployment(docs, deployment_name="platform")
+    _assert_hpa_targets_deployment(docs, deployment_name="platform-worker")
+    _assert_pdb_selects_component(docs, component="web")
+    _assert_pdb_selects_component(docs, component="worker")
+
+    hpas = [doc for doc in docs if doc.get("kind") == "HorizontalPodAutoscaler"]
+    assert len(hpas) == 2, f"expected exactly 2 HPAs, got {len(hpas)}"  # noqa: PLR2004 -- web + platform-worker, the two autoscaled deployments
+    builds_hpa = [
+        doc
+        for doc in hpas
+        if (doc.get("spec") or {}).get("scaleTargetRef", {}).get("name")
+        == "platform-worker-builds"
+    ]
+    assert not builds_hpa, "worker-builds must not be autoscaled"
+
+    workers_idx = args.index("--workers")
+    assert args[workers_idx + 1] == "2", (
+        f"web.workers default must render as 2, got {args[workers_idx + 1]!r}"
+    )
+
+
+@requires_helm
+def test_web_memory_limit_is_required():
+    """AC (Story 48.2): clearing web resources.limits.memory fails the render."""
+    with pytest.raises(AssertionError, match="resources.limits.memory is required"):
+        _render(_CORE_CHART, "--set", "resources.limits.memory=")
+
+
+@requires_helm
+def test_worker_memory_limit_is_required():
+    """AC (Story 48.2): clearing worker.resources.limits.memory fails the render."""
+    with pytest.raises(
+        AssertionError, match="worker.resources.limits.memory is required"
+    ):
+        _render(_CORE_CHART, "--set", "worker.resources.limits.memory=")
+
+
+@requires_helm
+def test_autoscaling_disabled_omits_hpa():
+    """AC (Story 48.2): disabled autoscaling omits HorizontalPodAutoscaler objects."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "autoscaling.web.enabled=false",
+        "--set",
+        "autoscaling.worker.enabled=false",
+    )
+    hpas = [doc for doc in docs if doc.get("kind") == "HorizontalPodAutoscaler"]
+    assert not hpas, f"expected no HPAs when autoscaling disabled, got {hpas!r}"
 
 
 @requires_helm

@@ -86,12 +86,33 @@ def _tokenize(text: str) -> set[str]:
     return {token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOPWORDS and len(token) > 1}
 
 
+def _scope_prefix(scope: str) -> str:
+    return f"_bmad-output/projects/{scope}/"
+
+
+def _citation_in_scope(citation: str, scope: str | None) -> bool:
+    """Whether `citation` belongs to `scope` (a project slug).
+
+    `scope=None` admits every citation -- today's unscoped behavior,
+    unchanged. A given `scope` admits only citations under that project's
+    own `_bmad-output/projects/<scope>/` tree; every other citation shape
+    (`commit:<sha>`, a transcript `<jsonl>:L<n>`, or a bare code path) has
+    no reliable per-project attribution in the citation string itself, so
+    it is excluded rather than guessed at -- a scoped caller asked for THIS
+    project's planning facts, not an arbitrary commit or code line that
+    happens to score well lexically."""
+    if scope is None:
+        return True
+    return citation.startswith(_scope_prefix(scope))
+
+
 def answer(
     query: str,
     store: GraphStore,
     *,
     repo_root: Path,
     mode: str = "lexical",
+    scope: str | None = None,
 ) -> RecallAnswer:
     """Deterministic, cited retrieval over the compiled graph (AD-6/AD-8).
 
@@ -102,9 +123,20 @@ def answer(
     Semantic candidates come from `store.query_similar` (Story 28.2) — the
     caller does not select a driver. Then citation resolvability filters
     the ranked list -- an unresolvable top match is skipped, never returned.
+
+    `scope` (marshal Story 28.27's own finding, 2026-09-10): lexical
+    token-overlap has no notion of "project" beyond whatever words the
+    query happens to share with a node's title/text -- a query naming
+    project slug `pyforge-warden` tokenizes to `{pyforge, warden}` (the
+    `-` is not a token character), and `pyforge` alone matches every
+    project's own documents equally, so a topically-strong wrong-project
+    node can outscore a correct-project node using less generic
+    vocabulary. `scope` filters candidates to one project's own citation
+    tree BEFORE scoring, closing that gap for both lexical and semantic
+    modes; `scope=None` is the prior, unscoped behavior, byte-for-byte.
     """
     if mode == "semantic":
-        return _answer_semantic(query, store, repo_root=repo_root)
+        return _answer_semantic(query, store, repo_root=repo_root, scope=scope)
     if mode != "lexical":
         raise ValueError(f"unknown recall mode {mode!r}; expected 'lexical' or 'semantic'")
 
@@ -115,6 +147,8 @@ def answer(
     scored: list[tuple[int, GraphNode]] = []
     for node in store.iter_nodes():
         if not node.is_current or node.stale:
+            continue
+        if not _citation_in_scope(node.citation, scope):
             continue
         node_tokens = _tokenize(f"{node.title} {node.text}")
         overlap = len(query_tokens & node_tokens)
@@ -131,11 +165,15 @@ def answer(
     return _no_grounded_answer()
 
 
-def _answer_semantic(query: str, store: GraphStore, *, repo_root: Path) -> RecallAnswer:
+def _answer_semantic(
+    query: str, store: GraphStore, *, repo_root: Path, scope: str | None = None
+) -> RecallAnswer:
     if not query.strip():
         return _no_grounded_answer()
     for node in store.query_similar(query, limit=16):
         if not node.is_current or node.stale:
+            continue
+        if not _citation_in_scope(node.citation, scope):
             continue
         if _citation_is_resolvable(node.citation, repo_root):
             return RecallAnswer(

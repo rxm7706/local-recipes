@@ -67,10 +67,9 @@ spec:
             - name: wagtail-media
               mountPath: {{ .Values.media.mountPath | quote }}
             {{- include "platform.flagsVolumeMount" . | nindent 12 }}
-          {{- with .Values.worker.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- $_ := required "worker.resources.limits.memory is required" .Values.worker.resources.limits.memory }}
+            {{- toYaml .Values.worker.resources | nindent 12 }}
       volumes:
         - name: wagtail-media
           persistentVolumeClaim:
