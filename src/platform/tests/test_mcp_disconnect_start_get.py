@@ -61,7 +61,34 @@ def _assertion(station: str, sub: str = "agent-49-3") -> str:
     )
 
 
+def _clear_station_mcp_cache(station: str) -> None:
+    import django_atlas_portal.mcp_asgi as atlas_mcp  # noqa: PLC0415
+    import django_doctor_portal.mcp_asgi as doctor_mcp  # noqa: PLC0415
+    import django_herald_portal.mcp_asgi as herald_mcp  # noqa: PLC0415
+    import django_marshal_portal.mcp_asgi as marshal_mcp  # noqa: PLC0415
+    import django_mason_portal.mcp_asgi as mason_mcp  # noqa: PLC0415
+    import django_scribe_portal.mcp_asgi as scribe_mcp  # noqa: PLC0415
+    import django_steward_portal.mcp_asgi as steward_mcp  # noqa: PLC0415
+    import django_warden_fabric.mcp_asgi as warden_mcp  # noqa: PLC0415
+
+    if station == "atlas":
+        atlas_mcp._APP = None  # noqa: SLF001
+    elif station == "warden":
+        warden_mcp._SERVER = None  # noqa: SLF001
+    else:
+        mod = {
+            "doctor": doctor_mcp,
+            "herald": herald_mcp,
+            "marshal": marshal_mcp,
+            "mason": mason_mcp,
+            "scribe": scribe_mcp,
+            "steward": steward_mcp,
+        }[station]
+        mod._CACHE.clear()  # noqa: SLF001
+
+
 def _mcp_app(station: str):
+    _clear_station_mcp_cache(station)
     by_name = {portal.station_name: portal for portal in iter_portal_configs()}
     mcp_app = by_name[station].mcp_asgi_app()
     assert mcp_app is not None
@@ -205,6 +232,32 @@ def _reset_slow_gate():
     _SLOW_GATE.set()
 
 
+@pytest.fixture(autouse=True)
+def _reset_mcp_app_caches():
+    """Each TestClient lifespan needs a fresh StreamableHTTPSessionManager."""
+    import django_atlas_portal.mcp_asgi as atlas_mcp  # noqa: PLC0415
+    import django_doctor_portal.mcp_asgi as doctor_mcp  # noqa: PLC0415
+    import django_herald_portal.mcp_asgi as herald_mcp  # noqa: PLC0415
+    import django_marshal_portal.mcp_asgi as marshal_mcp  # noqa: PLC0415
+    import django_mason_portal.mcp_asgi as mason_mcp  # noqa: PLC0415
+    import django_scribe_portal.mcp_asgi as scribe_mcp  # noqa: PLC0415
+    import django_steward_portal.mcp_asgi as steward_mcp  # noqa: PLC0415
+    import django_warden_fabric.mcp_asgi as warden_mcp  # noqa: PLC0415
+
+    atlas_mcp._APP = None  # noqa: SLF001
+    warden_mcp._SERVER = None  # noqa: SLF001
+    for mod in (
+        doctor_mcp,
+        herald_mcp,
+        marshal_mcp,
+        mason_mcp,
+        scribe_mcp,
+        steward_mcp,
+    ):
+        mod._CACHE.clear()  # noqa: SLF001
+    yield
+
+
 @pytest.mark.django_db
 @pytest.mark.parametrize("face", ALL_STATIONS)
 def test_start_get_tools_are_listed(face: StationStartGet) -> None:
@@ -216,12 +269,18 @@ def test_start_get_tools_are_listed(face: StationStartGet) -> None:
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/list",
-                "params": {},
+                "params": {
+                    "_meta": {
+                        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                        "io.modelcontextprotocol/clientCapabilities": {},
+                    },
+                },
             },
             headers={
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
                 "mcp-protocol-version": "2026-07-28",
+                "mcp-method": "tools/list",
                 "authorization": f"Bearer {assertion}",
             },
         )
