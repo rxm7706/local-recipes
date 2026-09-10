@@ -62,15 +62,15 @@ declared_low_risk: false
 - If it cannot do both, the honest outcome is to ship it measured-and-rejected with the precision number recorded in the Spec's memlog rather than to widen the threshold until it looks clean.
 - Either way, the signal's measured precision at ship time is recorded beside it.
 
-## Spec Change Log
-
-- 2026-09-10: CAP-3 promissory-language signal implemented in `status_body_consistency.py`, measured on the live tier (105 terminal docs, herald pair 2/2, 0 false positives, precision 1.0), accepted and wired into `gather()`.
-
 ## Verification
 
-```bash
-pixi run -e pyforge-doctor pyforge-doctor-test -- tests/unit/test_sources_status_body_promissory.py -v
-```
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
+## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
+- 2026-09-10: CAP-3 promissory-language signal implemented in `status_body_consistency.py`, measured on the live tier (105 terminal docs, herald pair 2/2, 0 false positives, precision 1.0), accepted and wired into `gather()`. (Targeted single-file check while developing: `pixi run -e pyforge-doctor pyforge-doctor-test -- tests/unit/test_sources_status_body_promissory.py -v` — the tracked Success signal above is the full-suite command policy actually binds to.)
 
 ## Review Triage Log
 

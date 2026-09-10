@@ -78,6 +78,13 @@ makes those CAPs' inertness inevitable, rather than patching the CAPs themselves
 - The refusal names the missing field and what a resolvable one looks like.
 - The never-verified population stops growing — the companion's own recommendation #1, and the reason CAP-2/CAP-3/CAP-6 are left as written rather than rewritten to describe their own inertness.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log

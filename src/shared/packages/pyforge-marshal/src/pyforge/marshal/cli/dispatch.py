@@ -1348,7 +1348,7 @@ def cross_station_surface_overlap_advisories(
     return tuple(advisories)
 
 
-def station_story_blocked_evidence(
+def station_story_block_facts(
     *,
     fs: FsPort,
     vcs: VcsPort,
@@ -1357,8 +1357,8 @@ def station_story_blocked_evidence(
     slug: str,
     story_key: str,
     effective_policy: policy.EffectivePolicy,
-) -> str | None:
-    """Evidence that ``story_key``'s most recent dispatch on ``slug`` HALTed.
+) -> dispatch_fleet.StationBlockEvidence | None:
+    """Evidence + environment/story classification for a blocked story (34.3).
 
     Story 22.7: the fleet driver needs to know "is this station's next story
     blocked?" without inventing a second completion judgment. It reuses
@@ -1384,6 +1384,7 @@ def station_story_blocked_evidence(
         if verdict == DispatchSessionVerdict.FAILED:
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
             changed_path_count = 0
+            git_progress_unknown = False
             if journal.worktree_path is not None and journal.baseline_head_sha:
                 try:
                     git_facts = gather_dispatch_git_facts(
@@ -1397,7 +1398,7 @@ def station_story_blocked_evidence(
                     )
                     changed_path_count = len(git_facts.changed_paths)
                 except (VcsCommandError, ValueError):
-                    changed_path_count = 0
+                    git_progress_unknown = True
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -1407,12 +1408,47 @@ def station_story_blocked_evidence(
                 return None
             gate = journal.verification_failed_gate
             detail = f", failed gate {gate}" if gate else ""
-            return (
+            reason = (
                 f"the last dispatch of {feed_story!r} (run {run_dir.name!r}) "
                 f"ended 'failed' by git and process facts{detail}"
             )
+            block_class = dispatch_fleet.classify_fleet_block(
+                changed_path_count=changed_path_count,
+                has_review_verify_evidence=dispatch_fleet.has_review_verify_cycle_evidence(
+                    verification_verdict=journal.verification_verdict,
+                    verification_failed_gate=journal.verification_failed_gate,
+                    completion_stop_reason=journal.completion_stop_reason,
+                ),
+            )
+            if git_progress_unknown:
+                block_class = dispatch_fleet.FleetBlockClass.STORY
+            return dispatch_fleet.StationBlockEvidence(
+                reason=reason, block_class=block_class
+            )
         return None
     return None
+
+
+def station_story_blocked_evidence(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    effective_policy: policy.EffectivePolicy,
+) -> str | None:
+    facts = station_story_block_facts(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        effective_policy=effective_policy,
+    )
+    return facts.reason if facts is not None else None
 
 
 def live_dispatch_conflict(
@@ -2629,6 +2665,16 @@ def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) 
             "policy value or 1 (serial, byte-identical to today's drain)."
         ),
     )
+    parser.add_argument(
+        "--retry-environment-blocks",
+        action="store_true",
+        help=(
+            "Under drain_to_zero or leave_one, skip past environment-classified "
+            "blocks (zero git progress, zero review/verify evidence) so the "
+            "next story dispatches. Story-classified failures still halt the "
+            "station. Also honored under skip_on_blocked (the default there)."
+        ),
+    )
     parser.set_defaults(handler=run_fleet_drain)
 
 
@@ -2904,7 +2950,7 @@ def _station_blocked_map(
     configured_skips: dict[str, str],
     campaign_blocked: dict[str, str],
     effective_policy: policy.EffectivePolicy,
-) -> dict[str, str]:
+) -> tuple[dict[str, str], dict[str, dispatch_fleet.FleetBlockClass]]:
     """DERIVED blocks at the HEAD of ``backlog``, with their evidence.
 
     Walks the backlog only as far as the first dispatchable story: under
@@ -2919,14 +2965,16 @@ def _station_blocked_map(
     is what the campaign mode governs (see ``plan_station_queue``).
     """
     blocked: dict[str, str] = {}
+    block_classes: dict[str, dispatch_fleet.FleetBlockClass] = {}
     for story in backlog:
         if story in configured_skips:
             continue
         if story in campaign_blocked:
             blocked[story] = campaign_blocked[story]
+            block_classes[story] = dispatch_fleet.FleetBlockClass.STORY
             continue
         try:
-            evidence = station_story_blocked_evidence(
+            facts = station_story_block_facts(
                 fs=fs,
                 vcs=vcs,
                 process=process,
@@ -2936,11 +2984,12 @@ def _station_blocked_map(
                 effective_policy=effective_policy,
             )
         except (VcsCommandError, ValueError):
-            evidence = None
-        if evidence is None:
+            facts = None
+        if facts is None:
             break
-        blocked[story] = evidence
-    return blocked
+        blocked[story] = facts.reason
+        block_classes[story] = facts.block_class
+    return blocked, block_classes
 
 
 def _classify_attempt(
@@ -3061,6 +3110,7 @@ def execute_fleet_cycle(
     explicit_stories: tuple[str, ...] | None = None,
     policy_flags: dict[str, object] | None = None,
     max_in_flight: int | None = None,
+    retry_environment_blocks: bool = False,
 ) -> FleetCycleReport:
     """One fleet-drain cycle: plan every station, dispatch the eligible ones.
 
@@ -3171,7 +3221,7 @@ def execute_fleet_cycle(
         )
         effective_policy = _compose_policy(slug, flags=policy_flags)
         station_skips = configured_skips.get(slug, {})
-        blocked = _station_blocked_map(
+        blocked, block_classes = _station_blocked_map(
             fs=fs,
             vcs=vcs,
             process=process,
@@ -3188,6 +3238,8 @@ def execute_fleet_cycle(
             mode=mode,
             leave_remaining=leave_remaining,
             blocked=blocked,
+            block_classes=block_classes,
+            retry_environment_blocks=retry_environment_blocks,
             declared_skips=station_skips,
         )
         for story, reason in plan.skipped:
@@ -3197,7 +3249,12 @@ def execute_fleet_cycle(
                 else (
                     "harness-done CAP-4 (MRS-DISP-040); remaining backlog continues"
                     if dispatch_fleet.is_harness_done_advance_reason(reason)
-                    else f"blocked, and {mode.value} skips past it"
+                    else (
+                        "environment-classified block"
+                        if block_classes.get(story)
+                        is dispatch_fleet.FleetBlockClass.ENVIRONMENT
+                        else f"blocked, and {mode.value} skips past it"
+                    )
                 )
             )
             findings.append(
@@ -3212,17 +3269,34 @@ def execute_fleet_cycle(
                 )
             )
         if plan.outcome is dispatch_fleet.StationQueueOutcome.BLOCKED:
+            blocked_class = (
+                block_classes.get(plan.blocked_story or "")
+                if plan.blocked_story
+                else dispatch_fleet.FleetBlockClass.STORY
+            )
+            retry_hint = (
+                f"re-run with --mode "
+                f"{dispatch_fleet.FleetCampaignMode.SKIP_ON_BLOCKED.value} "
+                "or --retry-environment-blocks"
+                if blocked_class is dispatch_fleet.FleetBlockClass.ENVIRONMENT
+                else (
+                    f"re-run with --mode "
+                    f"{dispatch_fleet.FleetCampaignMode.SKIP_ON_BLOCKED.value} "
+                    "does not skip genuine story failures -- manual override "
+                    "required"
+                )
+            )
             findings.append(
                 Finding(
                     code="MRS-DRAIN-005",
                     severity=Severity.WARN,
                     message=(
                         f"station {slug!r}: story {plan.blocked_story!r} is "
-                        f"blocked -- {plan.blocked_reason}. It stays in the "
+                        f"blocked ({blocked_class.value}) -- "
+                        f"{plan.blocked_reason}. It stays in the "
                         "backlog, is never auto-retried, and is never forced "
-                        f"past; re-run with --mode "
-                        f"{dispatch_fleet.FleetCampaignMode.SKIP_ON_BLOCKED.value} "
-                        "to move on to this station's next story."
+                        f"past; {retry_hint} to move on to this station's "
+                        "next story."
                     ),
                 )
             )
@@ -3423,7 +3497,7 @@ def execute_fleet_cycle(
                     parallel_cap <= 1
                     and dispatch_fleet.is_harness_done_advance_reason(detail or "")
                 ):
-                    follow_blocked = _station_blocked_map(
+                    follow_blocked, follow_classes = _station_blocked_map(
                         fs=fs,
                         vcs=vcs,
                         process=process,
@@ -3440,6 +3514,8 @@ def execute_fleet_cycle(
                         mode=mode,
                         leave_remaining=leave_remaining,
                         blocked=follow_blocked,
+                        block_classes=follow_classes,
+                        retry_environment_blocks=retry_environment_blocks,
                         declared_skips=station_skips,
                     )
                     if follow.next_story and follow.next_story not in seen_dispatch:
@@ -3990,6 +4066,9 @@ def run_fleet_drain(
             explicit_stories=explicit_stories,
             policy_flags=policy_flags or None,
             max_in_flight=getattr(args, "max_in_flight", None),
+            retry_environment_blocks=bool(
+                getattr(args, "retry_environment_blocks", False)
+            ),
         )
         _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
     finally:

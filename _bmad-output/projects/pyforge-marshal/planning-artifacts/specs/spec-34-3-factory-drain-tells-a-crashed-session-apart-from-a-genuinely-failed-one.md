@@ -2,8 +2,10 @@
 title: '`factory drain` tells a crashed session apart from a genuinely failed one'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '64ea7659d022c4d2c97938c6ac39e936d65c27c4'
+review_loop_iteration: 1
+followup_review_recommended: false
 followup_review_recommended: false
 context: []
 warnings: []
@@ -86,3 +88,38 @@ behavior for genuine story failures completely unchanged.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch, to avoid the `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) refusal `spec-34-2`'s own dispatch run hit for the identical omission.
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 14 findings — high 0, medium 2, low 5, false 3, maybe-false 4
+- findings:
+  - `[medium]` `[patch]` Git gather errors defaulted to environment classification — fixed: unknown git progress forces STORY in `station_story_block_facts`
+  - `[medium]` `[patch]` Escalation pause I/O matrix row untested — added `test_escalation_pause_is_story_block_and_not_skipped_under_skip_on_blocked`
+  - `[low]` `[patch]` CLI `--retry-environment-blocks` wiring untested — added `test_retry_environment_blocks_cli_wiring_moves_past_crash`
+  - `[low]` `[reject]` `leave_one` + flag untested — defer; same code path as drain_to_zero in `plan_station_queue`
+  - `[low]` `[reject]` fleet-drain-playbook.md stale — documentation follow-up, not story scope
+  - `[low]` `[reject]` Structured block class not in cycle JSON payloads — enhancement, not AC
+  - `[low]` `[reject]` Misleading CLI help "also honored under skip_on_blocked" — acceptable; flag is additive for drain modes
+  - `[false]` `[reject]` stopped_externally + zero progress scenario — CAP-2 yields FAILED for zero progress; covered by crash fixture
+  - `[false]` `[reject]` No shared helper with dispatch-resume — spec intent satisfied via same journal/git facts, not shared function requirement
+  - `[false]` `[reject]` skip_on_blocked narrowing breaks R4 reading — R3 matches spec Never clause; intentional behavior change
+  - `[maybe-false]` `[defer]` Substring escalation heuristic too narrow — `"escalation"` in stop_reason matches live marshal markers; escalation fixture added
+  - `[maybe-false]` `[defer]` Transient failures classified environment — pre-existing TRANSIENT short-circuit returns None before classification
+  - `[maybe-false]` `[defer]` Harness-done follow replan with environment block — edge case; follow path passes retry flag
+  - `[maybe-false]` `[defer]` Git-progress-only story block without verify journal — covered indirectly via progressed FakeVcs + terminal gate
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `factory drain` now classifies derived blocks as `environment` (zero git progress, zero review/verify evidence) or `story` (everything else). Environment blocks skip only under explicit `--mode skip_on_blocked` or `--retry-environment-blocks`; story failures still halt the station.
+
+**Files changed:**
+- `dispatch_fleet.py` — `FleetBlockClass`, classification helpers, narrowed skip logic in `plan_station_queue`
+- `cli/dispatch.py` — `station_story_block_facts`, `--retry-environment-blocks` flag, block-class plumbing through fleet cycle
+- `test_dispatch_fleet.py` — unit + integration fixtures for crash vs verify-failure vs escalation
+
+**Review:** 2 medium patches applied (git-error conservative STORY, escalation + CLI tests); 5 low rejected; 3 false; 4 deferred unverified.
+
+**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7764 passed, 12 deselected.
+
+**Residual risks:** Operators who relied on `skip_on_blocked` skipping genuine story failures must use manual single-story dispatch instead (spec-intended). Playbook docs not updated in this story.
