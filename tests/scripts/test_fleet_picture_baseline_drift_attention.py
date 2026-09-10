@@ -423,3 +423,75 @@ def test_dispatch_branch_candidates_do_not_import_marshal():
         n == "pyforge.marshal" or n.startswith("pyforge.marshal.")
         for n in sys.modules
     )
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True)
+
+
+def _init_origin_and_clone(tmp_path: Path) -> tuple[Path, Path]:
+    """A bare `origin` repo plus a real clone with an `origin` remote and one commit."""
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git(origin, "init", "--bare", "-b", "main")
+
+    seed = tmp_path / "seed"
+    seed.mkdir()
+    _git(seed, "init", "-b", "main")
+    _git(seed, "config", "user.email", "test@example.com")
+    _git(seed, "config", "user.name", "test")
+    (seed / "README").write_text("seed\n", encoding="utf-8")
+    _git(seed, "add", "README")
+    _git(seed, "commit", "-m", "init")
+    _git(seed, "remote", "add", "origin", str(origin))
+    _git(seed, "push", "origin", "main")
+
+    checkout = tmp_path / "checkout"
+    _git(tmp_path, "clone", str(origin), str(checkout))
+    _git(checkout, "config", "user.email", "test@example.com")
+    _git(checkout, "config", "user.name", "test")
+    return origin, checkout
+
+
+def test_primary_checkout_staleness_reports_behind_count(tmp_path: Path) -> None:
+    fleet = _load_fleet()
+    origin, checkout = _init_origin_and_clone(tmp_path)
+
+    # Advance origin/main by 2 commits from a second clone, without the
+    # checkout under test ever fetching them itself.
+    advancer = tmp_path / "advancer"
+    _git(tmp_path, "clone", str(origin), str(advancer))
+    _git(advancer, "config", "user.email", "test@example.com")
+    _git(advancer, "config", "user.name", "test")
+    for i in range(2):
+        (advancer / f"file{i}.txt").write_text("x\n", encoding="utf-8")
+        _git(advancer, "add", f"file{i}.txt")
+        _git(advancer, "commit", "-m", f"advance {i}")
+    _git(advancer, "push", "origin", "main")
+
+    behind = fleet.primary_checkout_staleness(repo=checkout, threshold=1)
+    assert behind == 2
+
+
+def test_primary_checkout_staleness_silent_when_current(tmp_path: Path) -> None:
+    fleet = _load_fleet()
+    _origin, checkout = _init_origin_and_clone(tmp_path)
+    assert fleet.primary_checkout_staleness(repo=checkout, threshold=1) is None
+
+
+def test_primary_checkout_staleness_silent_on_detached_head(tmp_path: Path) -> None:
+    fleet = _load_fleet()
+    _origin, checkout = _init_origin_and_clone(tmp_path)
+    head_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=checkout, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    _git(checkout, "checkout", head_sha)
+    assert fleet.primary_checkout_staleness(repo=checkout, threshold=1) is None
+
+
+def test_primary_checkout_staleness_silent_on_missing_repo(tmp_path: Path) -> None:
+    fleet = _load_fleet()
+    not_a_repo = tmp_path / "not-a-repo"
+    not_a_repo.mkdir()
+    assert fleet.primary_checkout_staleness(repo=not_a_repo, threshold=1) is None

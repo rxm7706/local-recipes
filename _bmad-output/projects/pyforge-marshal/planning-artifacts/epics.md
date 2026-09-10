@@ -3389,6 +3389,30 @@ shorter one, e.g. "11.10" vs "11-1") still fails exactly as today, and neither
 `pyforge.core.landing_evidence` nor `pyforge.marshal.core.promotion` changes — the fix is entirely
 local to doctor's own port, scoped to an advisory finding.
 
+### Story 20.12: fleet-picture names a stale primary checkout, not just stale loop homes
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** FR-188 lineage (extends 20.1's staleness-detection family) — incident 2026-09-10
+**Note:** found live 2026-09-10 running concurrent multi-station dispatch campaigns: Marshal's
+own unattended CAP-4 land path (`gate_mode: none`) auto-landed pyforge-warden's Story 12.1 — commit,
+push, open PR, verify, merge — with zero operator action. The operator's own primary checkout
+(the repo root they run `git`/`gh`/pixi commands from) had no signal this happened; it silently
+fell 3 commits behind `origin/main` and was only discovered by an explicit `git fetch` + `git
+rev-list --count HEAD..origin/main`, run because the operator happened to double-check. `fleet-
+picture` already has this exact detection shape for loop homes (`loop_home_staleness()`,
+`STALE_BEHIND_THRESHOLD = 20`) — it has no equivalent for the primary checkout itself, the one
+location that matters most since it's where the operator's own next push/merge/worktree-creation
+happens.
+**Given** the primary checkout is N commits behind a live-fetched `origin/main` (N >= 1) **When**
+`fleet-picture` runs **Then** the ATTENTION block names it ("primary checkout is N commit(s)
+behind origin/main — run `git pull`"), on its own line separate from the per-loop-home staleness
+lines, using a lower threshold than loop homes' 20 (any drift on the operator's own working
+checkout is worth surfacing immediately, unlike a loop home which only matters right before its
+next spin)
+**And** a checkout already current with `origin/main` produces no such line
+**And** the check live-fetches before measuring and degrades silently on any fetch/rev-list
+failure (network error, no `origin` remote, detached HEAD) — the same fault-tolerant idiom
+`loop_home_staleness()` already uses, never a hard failure of the read-only, never-gating report
+**Status:** backlog
+
 ## Epic 21: The planning chain regenerates itself, and audits whether it's coherent
 
 **Goal:** FR-192 (the second, full decomposition — completes FR-148..152's Epic 17
