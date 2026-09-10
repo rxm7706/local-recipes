@@ -210,6 +210,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "bmad-render-config-ambiguity",
         "frozen-path-changed",
         "capability-effect",
+        "status-body-consistency",
     }
 
 

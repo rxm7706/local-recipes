@@ -84,7 +84,8 @@
             "platform-policy-suite",
             "bmad-render-config-ambiguity",
             "frozen-path-changed",
-            "capability-effect"
+            "capability-effect",
+            "status-body-consistency"
           ]
         },
         "check": { "type": "string" },

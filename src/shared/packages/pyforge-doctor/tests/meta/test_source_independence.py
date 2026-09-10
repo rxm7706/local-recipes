@@ -131,6 +131,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.BMAD_RENDER_CONFIG_AMBIGUITY: "bmad_config.py",  # Story 20.2 (Epic 20)
     Source.FROZEN_PATH_CHANGED: "frozen_path.py",  # Story 20.3 (Epic 20)
     Source.CAPABILITY_EFFECT: "capability_effect.py",  # Story 21.10 (Epic 21)
+    Source.STATUS_BODY_CONSISTENCY: "status_body_consistency.py",  # Story 21.12
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
