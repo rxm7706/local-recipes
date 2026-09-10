@@ -257,6 +257,92 @@ def test_json_mode_lists_findings(tmp_path, monkeypatch, capsys):
     assert findings[0]["story"] == STORY_KEY
 
 
+def test_empty_planes_exit_two(tmp_path, monkeypatch, capsys):
+    """Story 33.7: neither plane has journals → exit 2, never 0."""
+    mod = _load_detector()
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    rc = mod.main()
+    out = capsys.readouterr().out
+    assert rc == 2, out
+    assert "could-not-observe" in out
+
+
+def test_dispatch_plane_missing_preserve_fires(tmp_path, monkeypatch, capsys):
+    """Story 33.7: intent-gap halt in dispatch-runs without artifact → exit 1."""
+    mod = _load_detector()
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    run_dir = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "implementation-artifacts"
+        / "dispatch-runs"
+        / RUN_ID
+    )
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text(
+        _journal_line(
+            "escalation-detected",
+            {
+                "story_key": STORY_KEY,
+                "reason": "Blocking condition: intent gap",
+                "spec_file": "spec-20-5.md",
+            },
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    assert mod.main() == 1
+    out = capsys.readouterr().out
+    assert "missing-preserve" in out
+    assert STORY_KEY in out
+
+
+def test_dispatch_plane_present_patch_passes_clean(tmp_path, monkeypatch):
+    """Story 33.7: dispatch-runs failed/<story>/changes.patch satisfies preserve."""
+    mod = _load_detector()
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    run_dir = (
+        repo
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "implementation-artifacts"
+        / "dispatch-runs"
+        / RUN_ID
+    )
+    run_dir.mkdir(parents=True)
+    patch = run_dir / "failed" / STORY_KEY / "changes.patch"
+    patch.parent.mkdir(parents=True)
+    patch.write_text("diff --git a/x\n", encoding="utf-8")
+    (run_dir / "journal.jsonl").write_text(
+        _journal_line(
+            "escalation-detected",
+            {
+                "story_key": STORY_KEY,
+                "reason": "intent gap halt",
+                "spec_file": "spec-20-5.md",
+            },
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    assert mod.main() == 0
+
+
 def test_placement_is_scripts_runtime_not_doctor():
     """Placement decision: scripts/*_check.py + scope=runtime (not doctor)."""
     source = DETECTOR_PATH.read_text(encoding="utf-8")
