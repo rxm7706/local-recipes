@@ -66,6 +66,24 @@ def test_stuck_on_verify_refused():
     assert "MRS-GATE-007" in cell
 
 
+def test_not_stuck_when_refused_verdict_is_stale_and_a_different_engine_is_running():
+    """Live incident 2026-09-10: `dispatch_verification_verdict` persists on
+    the row until the NEXT dispatch run overwrites it -- it is not cleared
+    when a different engine (spin) starts running on the same station. A
+    station whose CURRENT live run is a spin session (`dispatch_phase=None`)
+    must not be labeled STUCK off a `refused` verdict from an unrelated,
+    much older dispatch attempt."""
+    mod = _load_fleet_picture()
+    cell = _state(
+        mod,
+        dispatch_phase=None,
+        verification_verdict="refused",
+        verification_failed_gate="MRS-GATE-007",
+    )
+    assert not cell.startswith("STUCK")
+    assert cell.startswith("RUNNING")
+
+
 def test_story_completeness_includes_all_backlog():
     mod = _load_fleet_picture()
     stories = {"a": "done", "b": "backlog", "c": "blocked"}
