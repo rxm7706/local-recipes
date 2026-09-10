@@ -35,7 +35,7 @@ host capabilities — and within that boundary decomposition is exhaustive. Unif
 | The 15-factor baseline | `spec-platform-fifteen-factors` CAP-1..5; steward Epic 16 (`done`) | Pixi as sole dependency authority, two-stage startup validation, structlog + OTel, policy-as-test-suite. |
 | Health probes for K8s | Story 10.1 + 11.1 (`done`) | `src/platform/config/fastapi_app.py` → `GET /api/health`; `/ht/` via `django-health-check`; probes wired in `deploy/charts/platform/templates/platform-deployment.yaml`. |
 | Station portals | warden 8-1/8-2 then canopy Epic 19 (`done`) | Eight Lane-2 shells under `/stations/<name>/`; warden left `/compliance/` as a permanent redirect. |
-| A role-isolated live-dashboard pattern | `spec-secure-live-dashboards`; steward Epic 9 (`9-1`..`9-7` all `done`) | `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/` — middleware, cache, filtering, export, audit trail. **Adopted at fixture grade** (`django-atlas/board.py:17-20`, 5-row JSON board at `/stations/atlas/board/`); full Django half (INSTALLED_APPS, audit/export) deferred per Story 49.4 (2026-09-10). |
+| A role-isolated live-dashboard pattern | `spec-secure-live-dashboards`; steward Epic 9 (`9-1`..`9-7` all `done`) | `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/` — middleware, cache, filtering, export, audit trail. **Adopted at fixture grade** (`django-atlas/src/django_atlas_portal/board.py:17-20`, 5-row JSON board at `/stations/atlas/board/`); full Django half (INSTALLED_APPS, audit/export) deferred per Story 49.4 (2026-09-10). |
 | An MCP server, proving the pattern | atlas (shipped) | `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` `build_server()`. MCP is not greenfield; the residual is per-station reach, not the mechanism. |
 | Shared stdlib primitives for the estate | `spec-pyforge-core` CAP-1..7; marshal Epic 14 (`done`); canopy 18.3 | `pyforge.core` ships `atomic_write`, `errors`, `verdict`, `report`, `process`, `landing_evidence`, hooks. Trusted client is CAP-6 / Story 18.3 — do not re-mint. |
 | All-stations-in-one-image delivery | `unified-container` (dream `realized`); steward Epic 7 (`done`) | The Dream's "Mode A single all-in-one container" is this, already shipped. |
@@ -127,7 +127,8 @@ there rather than left to inherit:
   read `done`; mason epics 2–3 show the same shape. Pre-existing, cross-station, and not this
   chain's to fix; flagged so nobody mistakes a `backlog` rollup for remaining scope.
 - **Atlas adopted `spec-secure-live-dashboards` at fixture grade** (Story 49.4, 2026-09-10):
-  `django-atlas/board.py:17-20` consumes `cache`, `declarations`, and `filtering` over a 5-row
+  `django-atlas/src/django_atlas_portal/board.py:17-20` consumes `cache`, `declarations`, and
+  `filtering` over a 5-row
   in-process fixture at `/stations/atlas/board/`. Atlas's real Vizro board
   (`pyforge/atlas/dashboard/app.py`) imports zero steward modules and stays package-local —
   mounting it on the host is atlas's own story, not CAP-7's deliverable.

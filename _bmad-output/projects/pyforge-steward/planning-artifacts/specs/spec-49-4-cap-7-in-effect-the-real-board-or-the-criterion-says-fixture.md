@@ -2,7 +2,8 @@
 title: 'CAP-7 in effect — the real board, or the criterion says fixture'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 47afe2e983346381768071e644df772d171e14d3
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
