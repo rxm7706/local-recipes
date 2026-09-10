@@ -20,7 +20,12 @@ class DoctorPortalConfig(PortalConfig):
     promotion_date = date(2026, 8, 24)
     urlconf = "django_doctor_portal.urls"
 
-    def mcp_asgi_app(self):
-        from django_pyforge.mcp_http import asgi_for_station  # noqa: PLC0415
+    def ready(self) -> None:
+        from django_doctor_portal.mcp_asgi import ensure_doctor_runner  # noqa: PLC0415
 
-        return asgi_for_station(self.station_name)
+        ensure_doctor_runner()
+
+    def mcp_asgi_app(self):
+        from django_doctor_portal.mcp_asgi import build_doctor_mcp_asgi  # noqa: PLC0415
+
+        return build_doctor_mcp_asgi()

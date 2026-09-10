@@ -20,7 +20,12 @@ class StewardPortalConfig(PortalConfig):
     promotion_date = date(2026, 8, 24)
     urlconf = "django_steward_portal.urls"
 
-    def mcp_asgi_app(self):
-        from django_pyforge.mcp_http import asgi_for_station  # noqa: PLC0415
+    def ready(self) -> None:
+        from django_steward_portal.mcp_asgi import ensure_steward_runner  # noqa: PLC0415
 
-        return asgi_for_station(self.station_name)
+        ensure_steward_runner()
+
+    def mcp_asgi_app(self):
+        from django_steward_portal.mcp_asgi import build_steward_mcp_asgi  # noqa: PLC0415
+
+        return build_steward_mcp_asgi()
