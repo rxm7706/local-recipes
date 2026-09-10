@@ -1,0 +1,24 @@
+# Rendered by scripts/scribe_install_nightly_trigger.py (Story 8.1) --
+# {repo_root} and {pixi_bin} are substituted at install time, along with an
+# optional extra Environment= line for the GraphStore owner (present only
+# when that env var was set for the installer -- empty otherwise). This
+# template IS the checked-in, reviewable trigger definition (spec-8-1's
+# Boundaries & Constraints: "installed by a documented, repeatable act,
+# never a hand-typed `crontab -e`") -- see this package's
+# docs/cli-runbooks.md section "Installing the nightly trigger".
+[Unit]
+Description=pyforge-scribe nightly knowledge-graph compile (Story 8.1)
+
+[Service]
+Type=oneshot
+WorkingDirectory={repo_root}
+Environment=PIXI_BIN={pixi_bin}
+{graphstore_owner_line}ExecStart={pixi_bin} run -e pyforge-scribe pyforge-scribe-nightly-compile
+# %h is a systemd specifier (the invoking user's home directory) -- resolved
+# by systemd itself, never by this template's own {repo_root}/{pixi_bin}
+# substitution. Mirrors the former cron line's own
+# `>> ~/.cache/scribe-nightly-compile.log 2>&1` redirection, so the run log
+# this story's acceptance criteria name (proof of consecutive scheduled
+# runs) is a plain file regardless of the local journald retention policy.
+StandardOutput=append:%h/.cache/scribe-nightly-compile.log
+StandardError=append:%h/.cache/scribe-nightly-compile.log

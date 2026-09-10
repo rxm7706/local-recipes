@@ -1,0 +1,15 @@
+# Checked-in, reviewable nightly schedule (Story 8.1) -- installed via
+# `pixi run -e pyforge-scribe scribe-install-nightly-trigger`, never a
+# hand-typed `crontab -e`. Mirrors the 02:30 slot the former (unused) cron
+# example in docs/cli-runbooks.md documented. `Persistent=true` catches up
+# a missed firing (machine off/asleep at 02:30) shortly after the next
+# systemd-user session starts, rather than silently skipping a whole night.
+[Unit]
+Description=Run pyforge-scribe-nightly-compile.service nightly (Story 8.1)
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
