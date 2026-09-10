@@ -3,11 +3,33 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import sys
 from datetime import UTC
 from datetime import datetime
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_PLATFORM_ROOT = _REPO_ROOT / "src" / "platform"
+_SHARED = _REPO_ROOT / "src" / "shared" / "packages"
+for _segment in (
+    str(_PLATFORM_ROOT),
+    str(_SHARED / "django-pyforge" / "src"),
+    str(_SHARED / "pyforge-core" / "src"),
+    str(_SHARED / "pyforge-steward" / "src"),
+):
+    if _segment not in sys.path:
+        sys.path.insert(0, _segment)
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
+os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
 import jwt
 import pytest
+
+pytest.importorskip("langflow")
+pytest.importorskip("channels")
+
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
 from django_pyforge.assertion.schema import ALG

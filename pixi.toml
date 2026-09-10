@@ -301,6 +301,10 @@ platforms = ["linux-64", "osx-arm64-min"]
 postgresql = ">=17.11,<18"        # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
 pgvector = ">=0.8.1"              # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
 redis-server = ">=8.10.1"         # per-user local Redis server process -- cache + Celery broker (AD-1)
+channels = ">=4.3.2,<5.0"         # Story 48.6: host `/ws/events/` delegates to pyforge.steward.dashboard when importable
+daphne = ">=4.2.3,<5.0"           # Story 48.6: ASGI websocket termination for the dashboard extra face
+asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels load-bearing adapter (matches pyforge-steward `[dashboard]` extra)
+channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer backend when the dashboard relay is exercised locally
 kubernetes-helm = ">=4.2.4"       # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
 kubernetes-client = ">=1.34.3"    # kubectl, for the same chart/deploy work
 
@@ -455,6 +459,10 @@ openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = ">=0.5.2"
 cachebox = ">=5.2.3,<6"
+channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests import pyforge.steward.dashboard
+daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)
+asgiref = ">=3.12.1,<4.0"         # Story 48.6: Channels adapter layer
+channels_redis = ">=4.3.0,<5.0"   # Story 48.6: channel layer for EventsStreamConsumer in Platform CI
 
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --

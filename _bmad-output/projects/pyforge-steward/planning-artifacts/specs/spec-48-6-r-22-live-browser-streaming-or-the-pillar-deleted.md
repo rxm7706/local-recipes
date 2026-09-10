@@ -2,7 +2,7 @@
 title: "Story 48.6: R-22 live browser streaming, or the pillar deleted"
 type: story
 created: 2026-09-10
-baseline_revision: c83aafd3fcda9ebf3a8e03366646f49c3cb4c859
+baseline_revision: da71ab4b1d2f6ba7b2f39cf848942b60c37e4bee
 status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false

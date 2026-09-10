@@ -7,6 +7,7 @@ not join station consumer groups or ACK entries on behalf of browsers.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 from collections.abc import AsyncIterator
 from collections.abc import Callable
@@ -77,7 +78,7 @@ async def _xread(client: Any, streams: dict[str, str]) -> list[list[Any]]:
     if xread is None:
         msg = "event broker must support XREAD"
         raise TypeError(msg)
-    if asyncio.iscoroutinefunction(xread):
+    if inspect.iscoroutinefunction(xread):
         return await xread(
             streams,
             count=_XREAD_COUNT,
