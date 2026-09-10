@@ -43,8 +43,8 @@ def test_scan_body_fires_on_active_now_heading():
 def test_scan_body_fires_on_mid_build_spec_phrase():
     matches = sbc.scan_body_for_promissory_language(
         "## Why\n\n"
-        "**Current state (re-grounded; described a mid-build station and "
-        "contradicted this Spec's own `status: shipped`).**\n"
+        "**Current state (re-grounded; described a mid-build\n"
+        "station and contradicted this Spec's own `status: shipped`).**\n"
     )
     assert {m.pattern_id for m in matches} == {
         "mid-build-described",

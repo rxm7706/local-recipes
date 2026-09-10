@@ -2,7 +2,7 @@
 title: 'Promissory language under a terminal status is measured before it ships'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '64ea7659d022c4d2c97938c6ac39e936d65c27c4'
 review_loop_iteration: 0
 followup_review_recommended: false
