@@ -77,7 +77,7 @@ development_status:
   23-8-workbook-free-metrics-universe: done
   23-9-quartet-workbook-retirement: done
   24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face: done
-  25-1-retire-the-second-lane-3-runtime: backlog
+  25-1-retire-the-second-lane-3-runtime: done
   25-2-materialize-cap-8-s-canonical-parquets-one-recorded-run: blocked
   25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
@@ -140,7 +140,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: backlog
   epic-24-retrospective: optional
-  epic-25: backlog
+  epic-25: in-progress
   epic-25-retrospective: optional
   epic-3: done
   epic-3-retrospective: done

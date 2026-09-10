@@ -67,7 +67,7 @@ Unit suite, under 80%:
 - `pyforge.atlas.mcp.session` — 75.0%
 - `pyforge.atlas.pipelines.query_plane_cache.nodes` — 75.0%
 - `pyforge.atlas.trending_candidates.handoff_main` — 76.0%
-- `pyforge.atlas.views.render` — 76.9%
+- `pyforge/atlas/views/render.py` — 76.9% (module retired Story 25.1)
 - `pyforge.atlas.datasets.tier3_sources` — 78.5%
 
 Integration suite: none under floor, or no integration suite at this station.

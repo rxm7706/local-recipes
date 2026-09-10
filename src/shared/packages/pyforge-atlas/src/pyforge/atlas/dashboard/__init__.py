@@ -5,7 +5,7 @@ gets its data by QUERYING the D1 Boring-Semantic-Layer models
 (``pyforge.atlas.semantic``) — the single metric-translation interface (AD-8) — never
 by re-writing SQL or re-implementing a metric in this layer.
 
-Scope: the full 28-page inventory ships (Story 20.5, CAP-7 — closes DW-D2-1), ported
+Scope: the full 34-page inventory ships (Story 20.5, CAP-7 — closes DW-D2-1), ported
 against the CIS two-spine design (``planning-artifacts/{DESIGN,EXPERIENCE}.md``, Story
 20.4). Pages whose migrated data is not yet in the store are BSL-wired SHELLS that
 render empty (never fabricated) and carry a documented data-gap note; 4 pages are

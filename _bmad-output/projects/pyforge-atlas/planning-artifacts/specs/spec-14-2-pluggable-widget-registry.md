@@ -246,7 +246,7 @@ validated at dispatch" convention (`a2a/schema.py`'s `_KIND_TO_MODEL`,
 Status: done
 
 **Summary.** Extracted Story 14.1's hardcoded `render_rows` Bokeh-rendering body into a
-pluggable widget-type registry (Story 14.2, Epic 14 CAP-3): a new `pyforge.atlas.views.widgets`
+pluggable widget-type registry (Story 14.2, Epic 14 CAP-3): a new `views/widgets.py`
 module holds a `Widget` dataclass (`name`, `static_renderer`, and a `websocket_renderer` slot
 left `None` for Story 14.3) plus a `WIDGETS` name→`Widget` dict and `get_widget()` lookup.
 `View` gained an explicit `widget: str` field; all 6 `STATIC_VIEWS` entries now declare
