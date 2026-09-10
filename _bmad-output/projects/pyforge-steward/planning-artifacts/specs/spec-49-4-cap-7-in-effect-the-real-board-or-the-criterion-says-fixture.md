@@ -2,7 +2,7 @@
 title: 'CAP-7 in effect — the real board, or the criterion says fixture'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: 47afe2e983346381768071e644df772d171e14d3
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -62,7 +62,7 @@ stays package-local (`dashboard-dryrun`, `:8050` serve) — out of CAP-7 scope.
 
 ## Code Map
 
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md:308-317` — CAP-7 intent/success/verified; `:776-780` Residual six-cap list
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md:308-317` — CAP-7 intent/success/verified; `:779-783` Residual four-cap list
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/convergence.md:38` — secure-dashboard pattern row; `:129-131` Atlas adoption note
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md:190-216` — built-not-adopted grading + 49.4 decision block
 - `src/shared/packages/django-atlas/src/django_atlas_portal/board.py:17-36` — fixture imports + `_MASTER_ROWS`
@@ -78,7 +78,7 @@ stays package-local (`dashboard-dryrun`, `:8050` serve) — out of CAP-7 scope.
 - `test_host_board_row_isolation.py` — update module/test docstrings so fixture-grade boundary is documented as deliverable, not absence-as-failure — docs-only comment
 
 **Acceptance Criteria:**
-- Given CAP-7 listed CAP-7 on the Residual as "fixture board; real Vizro asserted absent", when this story runs with the fixture ruling, then CAP-7's criterion names the JSON fixture as the host deliverable, the Residual no longer lists CAP-7 as unexercised, and `convergence.md` reads "adopted at fixture grade".
+- Given CAP-7 was on the Residual as "fixture board; real Vizro asserted absent", when this story runs with the fixture ruling, then CAP-7's criterion names the JSON fixture as the host deliverable, the Residual no longer lists CAP-7 as unexercised, and `convergence.md` reads "adopted at fixture grade".
 - And `spec-secure-live-dashboards` Django half (INSTALLED_APPS + audit/export) is marked deferred in the same act with the dated ruling reference.
 - And `test_host_board_row_isolation.py` passes without behavioral change.
 
@@ -90,7 +90,34 @@ stays package-local (`dashboard-dryrun`, `:8050` serve) — out of CAP-7 scope.
 
 ## Spec Change Log
 
+### 2026-09-10 — Review loopback
+- Trigger: residual count said "Five" / "Twelve CAPs" after closing two CAPs; path citations used `django-atlas/board.py` shorthand.
+- Amended: Residual → four unexercised / thirteen verified; citations → `django-atlas/src/django_atlas_portal/board.py`; secure-live-dashboards section retitled; Not-scope boundary updated.
+- KEEP: Branch B fixture ruling and all CAP-7 intent/success/verified rewrites.
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 19 findings — high 0, medium 4, low 0, false 10, maybe-false 5
+- findings:
+  - `[medium]` `[patch]` Residual header said five unexercised / twelve verified — fixed to four / thirteen
+  - `[medium]` `[patch]` Wrong module path `django-atlas/board.py` in convergence and secure-live-dashboards — fixed to `django_atlas_portal/board.py`
+  - `[medium]` `[patch]` Not-scope still said atlas never adopted secure-dashboard pattern — rewritten for fixture ruling
+  - `[medium]` `[patch]` secure-live-dashboards "Built, not adopted" heading contradicted fixture ruling — retitled and consolidated
+  - `[false]` `[reject]` stack.md Vizro/CAP-7 mapping stale — out of story scope (stack.md not in spec tasks)
+  - `[false]` `[reject]` epics.md unchanged — epic text is contract source; story spec records ruling
+  - `[false]` `[reject]` dreams tier stale — deferred; Tier-0 dreams not in story surface
+  - `[false]` `[reject]` memlog required for SPEC.md — policy noted; memlog append deferred to operator
+  - `[maybe-false]` `[defer]` brief addendum still says never adopted — downstream doc outside story tasks
+  - `[maybe-false]` `[defer]` currency-review artifacts still name real board — historical planning record
+
+## Auto Run Result
+
+- **Summary:** Recorded 2026-09-10 operator ruling (Branch B): CAP-7's deliverable is the fixture-grade JSON board at `/stations/atlas/board/`. Rewrote CAP-7 intent/success/verified, removed CAP-7 from Residual, corrected convergence.md and spec-secure-live-dashboards, deferred Django half of secure-live-dashboards.
+- **Files changed:** `spec-pyforge-unifying-strategy/SPEC.md`, `convergence.md`, `spec-secure-live-dashboards/SPEC.md`, `test_host_board_row_isolation.py` (docstrings), `sprint-status-ledger.yaml`, new story spec.
+- **Review:** 4 patch / 2 defer / 13 reject.
+- **Follow-up review recommended:** false
+- **Verification:** `pyforge-steward-test -k dashboard` — all dashboard tests passed; `platform-ci-test` isolation tests — 3 static/AST tests passed (7 HTTP tests require PostgreSQL, unchanged behavior).
 
 ## Design Notes
 

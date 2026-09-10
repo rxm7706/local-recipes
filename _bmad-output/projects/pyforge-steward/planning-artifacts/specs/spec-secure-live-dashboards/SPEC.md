@@ -187,38 +187,24 @@ behind the corporate proxy by declaring its access column and its role vocabular
 the same isolation suite unchanged. No audit schema, container stack, or filtering pipeline is
 written for it.
 
-## Built, not adopted — graded 2026-09-09 against live code
+## Adopted at fixture grade — graded 2026-09-09, ruling 2026-09-10 (Story 49.4)
 
 Epic 9 is 7/7 `done` and nine modules ship under `pyforge/steward/dashboard/`. **Only `cache`,
 `filtering` and `declarations` have any consumer outside the package** — all three in
 `django-atlas/src/django_atlas_portal/board.py:17-20`, over a **5-row in-process fixture**
-(`board.py:28-36`). `middleware`, `audit`, `views`, `navigation`, `models` and `export` have
-**zero consumers**. `pyforge.steward.dashboard` appears in no `INSTALLED_APPS`
+(`board.py:28-36`) at `/stations/atlas/board/`. `middleware`, `audit`, `views`, `navigation`,
+`models` and `export` have **zero consumers** — deferred with the Django half (below), not by
+omission. `pyforge.steward.dashboard` appears in no `INSTALLED_APPS`
 (`src/platform/config/settings/base.py` has zero `dashboard` matches), so `AuditEntry`
 (`models.py:43`, `migrations/0001_initial.py`) has **no table in any running deployment** and Story
-9.3's "every load, filter, navigation and export lands in an audit trail" is unexercised.
-
-**Accuracy correction owed downstream:** `convergence.md:38` and `:129` say Atlas "never adopted"
-this Spec. Strictly it did — **at fixture grade** (`django-atlas/board.py:17-20`); Atlas's real
-Vizro board (`pyforge/atlas/dashboard/app.py`) imports **zero** steward dashboard modules. "Never
-adopted" understates what exists and would send an implementer to build a seam that is already
-there.
-
-## The Django half gets an adopter — 2026-09-09
-
-**Decision (operator, batch rows stB-B6 / C15), scoped to what Epic 49 already funds — Story
-49.4.** One decision, not two:
-
-- **If 49.4 mounts Atlas's real Vizro board on the host**, it must install
-  `pyforge.steward.dashboard` in `INSTALLED_APPS` and route the board's loads through `audit` +
-  `export`.
-- **If 49.4 instead rewrites CAP-7's criterion to name the fixture**, this Spec's Django half is
-  rewritten as deferred in the same act.
+9.3's full audit trail is unexercised until a future board mount needs it. Atlas's real Vizro board
+(`pyforge/atlas/dashboard/app.py`) imports **zero** steward dashboard modules and stays
+package-local.
 
 ## Django half deferred — 2026-09-10 (Story 49.4 ruling)
 
 **Ruling:** Branch B — CAP-7's deliverable is the fixture-grade JSON board at
-`/stations/atlas/board/` (`django-atlas/board.py:17-36`). The Django half of this Spec
+`/stations/atlas/board/` (`django-atlas/src/django_atlas_portal/board.py:17-36`). The Django half of this Spec
 (`INSTALLED_APPS` entry, `AuditEntry` migrations, audit/export/middleware wiring for board loads)
 is **deferred** until a future story mounts a production analytical board that needs the full
 nine-module pattern. The three consumed modules (`cache`, `declarations`, `filtering`) remain
