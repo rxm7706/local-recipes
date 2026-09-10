@@ -2,7 +2,8 @@
 title: '`sibling-dreams-drift` joins on the key the two trees actually share'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '69192cd1b967436ed5cca1f628910f6ff866cb48'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -94,3 +95,29 @@ cannot reproduce the live failure.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 2, maybe-false 1
+- findings:
+  - `[false]` `[reject]` Evidence key rename from `title` to `slug` breaks fleet consumers — fleet_picture.py uses `finding.get("check")` and `message` only; no code reads `evidence["title"]`.
+  - `[false]` `[reject]` Unreachable findings filtered out of ATTENTION — `sibling_dreams_drift_findings()` returns all WARN findings including `sibling-dreams-unreachable`.
+  - `[maybe-false]` `[reject]` `_diff_shared_titles` alias is dead code — alias exists for backward compatibility; no import references it; zero runtime cost; not worth a patch.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Re-keyed sibling-dreams drift detection from frontmatter `title` to filename slug; demoted `title` to a compared axis; token-absent and fetch-failed paths now emit `sibling-dreams-unreachable` WARN findings instead of silent empty tuples.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py` — slug-keyed fingerprints, unreachable finding helper, title in compared axes
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py` — rebuilt on 8 shared-filename fixture with live divergence shape
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-21-3-sibling-dreams-drift-joins-on-the-key-the-two-trees-actually-share.md` — spec status and run metadata
+
+**Review:** 0 patches applied; 3 findings rejected (2 false, 1 maybe-false not worth fixing).
+
+**Follow-up review recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — exit 0, full suite green (824 tests).
+
+**Residual risks:** Live sibling fetch still requires operator token; unreachable finding surfaces in fleet ATTENTION when token absent (intentional per spec).
