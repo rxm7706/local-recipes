@@ -76,7 +76,14 @@ one" precedent for dispatch's own guard.
 - Given two `marshal factory spin pyforge-mason` calls six seconds apart launched cleanly on 2026-09-10 with no refusal, producing two live `bmad-loop run` processes against the same loop home, when `factory spin <slug>` is invoked while a prior spin run for that same slug is still live, then the second call refuses before launching anything, naming the live run's id/pid, using the same `station_in_flight_conflict` check `factory dispatch` already applies.
 - A fixture reproduces the exact 2026-09-10 race and asserts the second call refuses.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green, including the new spin-concurrency-guard tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for this and every other spec hand-authored the same way this session -- confirmed live against `spec-34-2`'s own dispatch run, which hit the identical refusal.
 
 ## Review Triage Log
 

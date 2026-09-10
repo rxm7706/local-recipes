@@ -83,7 +83,14 @@ document is a named finding, never silence.
 - It stays silent across the rest of the live tier, with that count recorded.
 - It is warn-only, read-only and fail-open — an unparseable document is a named finding, never silence.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green, including the new status_body_consistency tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, which hit the identical refusal.
 
 ## Review Triage Log
 

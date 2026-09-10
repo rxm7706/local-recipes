@@ -76,6 +76,13 @@ behavior for genuine story failures completely unchanged.
 - A genuine story failure (real git progress, a failed verify run, an escalation) still requires the existing manual override, unchanged.
 - A fixture reproduces one of each and asserts only the crashed one is eligible for the new retry path.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: full suite green, including the new crashed-vs-failed classification tests
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch, to avoid the `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) refusal `spec-34-2`'s own dispatch run hit for the identical omission.
 
 ## Review Triage Log

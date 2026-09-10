@@ -124,8 +124,14 @@ gets the already-shipped Story 3.3 capability into effect and makes it provable.
   up (`scribe-pg-up`), which the trigger must either start or refuse cleanly, never fail red on a
   machine without it.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: full suite green
+
 ## Spec Change Log
 
+- **2026-09-10 (root-cause fix):** added the missing `## Verification` -> `**Commands:**` section. Its absence made `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-34-2`/`spec-21-13`'s own dispatch runs, which hit the identical refusal.
 - **2026-09-10 (post-implementation, pre-land):** the trigger installer
   (`scripts/scribe_install_nightly_trigger.py`) was redesigned from a single
   systemd-user-timer implementation into a **pluggable four-backend**
