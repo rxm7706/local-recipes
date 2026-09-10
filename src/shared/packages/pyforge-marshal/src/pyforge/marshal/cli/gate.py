@@ -168,6 +168,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
+from ..core.spec_low_risk import LowRiskParseError, parse_declared_low_risk
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
@@ -660,6 +661,62 @@ def _run_scope_check(
     return data, scope_findings
 
 
+def _gather_review_depth(
+    *,
+    project_slug: str,
+    story_key: StoryKey,
+    spec_text: str | None,
+    effective: policy.EffectivePolicy,
+    vcs: VcsPort,
+) -> dict[str, object]:
+    """Impure edge for Story 33.5 review-tier classification: reads the story's
+    own ``declared_low_risk`` declaration from its tracked spec, gathers
+    ``changed_files`` via ``VcsPort``, and delegates tier/cycle resolution to
+    ``core.gate`` (pure). Returns a ``review_depth`` payload for the envelope."""
+    if not project_slug or not policy._is_valid_project_slug(project_slug):
+        return {"checked": False, "reason": "no resolvable active project"}
+
+    try:
+        declared_low_risk = (
+            parse_declared_low_risk(spec_text) if spec_text is not None else False
+        )
+    except LowRiskParseError as exc:
+        return {
+            "checked": False,
+            "story": str(story_key),
+            "reason": f"malformed declared_low_risk declaration: {exc}",
+        }
+
+    home = _home_path(project_slug)
+    try:
+        git_repo_root = vcs.repo_common_root(home)
+        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+    except VcsCommandError as exc:
+        return {
+            "checked": False,
+            "story": str(story_key),
+            "reason": f"cannot resolve changed files: {exc}",
+        }
+
+    tier_report = gate.classify_review_tier(
+        declared_low_risk=declared_low_risk, changed_files=changed
+    )
+    default_max_review_cycles = effective.seed_view()["max_review_cycles"].value
+    resolved_cycles = gate.resolve_review_cycles(
+        str(tier_report["tier"]),
+        default_max_review_cycles=default_max_review_cycles,
+    )
+    return {
+        "checked": True,
+        "story": str(story_key),
+        "tier": tier_report["tier"],
+        "declared_low_risk": tier_report["declared_low_risk"],
+        "changed_files": list(tier_report["changed_files"]),
+        "default_max_review_cycles": default_max_review_cycles,
+        "max_review_cycles": resolved_cycles,
+    }
+
+
 def evaluate_gate(
     args: argparse.Namespace,
     *,
@@ -1007,6 +1064,20 @@ def evaluate_gate(
             }
             command_findings.extend(binding_findings)
 
+    # Story 33.5 (spec-risk-tiered-review-depth enablement): whenever --story
+    # resolved to a real key, classify review depth from the story's own
+    # declaration plus observed diff shape. Skipped under the same --run fold
+    # unavailability guard as spec_binding (MRS-GATE-005 is the one report).
+    if story_key is not None and not (args.run_id is not None and fold_result is None):
+        review_depth = _gather_review_depth(
+            project_slug=project_slug,
+            story_key=story_key,
+            spec_text=spec_text,
+            effective=effective,
+            vcs=vcs,
+        )
+        data["review_depth"] = review_depth
+
     # Same "io/policy findings before per-command findings" ordering
     # rationale as above, one level up: the operator should meet policy-level
     # causes (an unreadable --project-policy, a malformed slug) before the
@@ -1151,6 +1222,19 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
             f"spec binding: {spec_binding_data['story']} -- "
             f"{spec_binding_data['violations']} violation(s)"
         )
+    if "review_depth" in data:
+        review_depth = data["review_depth"]
+        if review_depth.get("checked"):
+            lines.append(
+                f"review depth: {review_depth['story']} -- "
+                f"tier={review_depth['tier']!r}, "
+                f"max_review_cycles={review_depth['max_review_cycles']} "
+                f"(default {review_depth['default_max_review_cycles']})"
+            )
+        else:
+            lines.append(
+                f"review depth: not evaluated ({review_depth.get('reason', 'unknown')})"
+            )
     if findings:
         lines.append("findings:")
         for finding in findings:
