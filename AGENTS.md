@@ -16,7 +16,7 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 - Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling rejects it.
 - Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first. Never author a new file under `docs/specs/` (legacy).
-- Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`. Exception: `spec-pyforge-unifying-strategy` is hand-edited past its memlog; never re-derive it.
+- Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`.
 - Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e local-recipes sprint-ledger-sync -- --project <station>`.
 - Never track anything under `implementation-artifacts/`; it is Tier 3 and gitignored.
 - Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` and write physical `_bmad-output/projects/<slug>/` paths.
