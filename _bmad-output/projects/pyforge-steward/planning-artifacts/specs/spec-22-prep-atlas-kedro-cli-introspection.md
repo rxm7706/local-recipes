@@ -2,11 +2,12 @@
 title: Atlas Kedro CLI introspection (preparatory)
 type: chore
 created: '2026-08-25'
-status: ready
-updated: '2026-08-25'
+status: superseded
+superseded_by: spec-25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate
 context: []
 warnings: []
 deferred: []
+updated: '2026-09-10'
 ---
 
 <intent-contract>
