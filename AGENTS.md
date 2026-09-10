@@ -46,7 +46,8 @@ A conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` ski
 
 - The merge gate is `detectors-ci` measured as no new findings against `main`; it has been green at `main` since PR #1072 (2026-09-06), so a red run is yours.
 - Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit.
-- Before any ledger write: `sprint-ledger-sync -- --project <station> --repair-feed`, then `story-status-check`; a Tier-3 feed behind its tracked twin makes a bare sync refuse.
+- Before any ledger write: `sprint-ledger-sync -- --project <station>`, then `story-status-check`; use `--repair-feed` only when deliberately reconciling a stale Tier-3 feed toward the tracked twin — a bare sync refuses when the feed would drop twin-only keys or overwrite `done`/`blocked` rows.
+- To open a landing worktree, prefer `pyforge steward workspace start` / `status` / `clean` over hand-run `git worktree add` (see `spec-scratch-worktree-lifecycle`).
 - Lint and types are per package (`[tool.ruff]`, `[tool.mypy]` in each `pyproject.toml`); `src/platform` still targets py312 while the interpreter is 3.14. TODO (decided 2026-09-04, not landed): repo-level `ruff` and `mypy` pixi tasks, a `.pre-commit-config.yaml`, mypy strict for `pyforge-core`, py314 targets, and a target-version registry check like `pixi-version-check`. Do not invent these invocations.
 - BMAD skill renders need `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` in this shell.
 
