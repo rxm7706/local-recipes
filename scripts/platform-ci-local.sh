@@ -210,7 +210,7 @@ PY
   if PROMOTION_JSON="$out" PLATFORM_DIGEST="$d1" SIDECAR_DIGEST="$d2" MCP_HOST_DIGEST="$d3" "$CIT/python" scripts/platform-deploy-verify-promotion.py; then
     printf 'INFO\tpromotion\tdeploy verifier: clean, would promote\n' >>"$RESULTS"
   else
-    printf 'INFO\tpromotion\tdeploy verifier: refused (verdict not clean) — expected until Warden can assess conda components\n' >>"$RESULTS"
+    printf 'INFO\tpromotion\tdeploy verifier: refused (verdict not clean) — deploy promotes clean only (Story 12.1)\n' >>"$RESULTS"
   fi
 }
 
