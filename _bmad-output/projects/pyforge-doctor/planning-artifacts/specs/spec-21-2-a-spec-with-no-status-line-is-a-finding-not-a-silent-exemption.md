@@ -2,7 +2,8 @@
 title: 'A Spec with no `status:` line is a finding, not a silent exemption'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '0c75d60935d60a30448aee10f62079411ad98348'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
