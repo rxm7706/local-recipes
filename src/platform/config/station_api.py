@@ -12,6 +12,7 @@ contract probe routes here.
 
 from __future__ import annotations
 
+import importlib
 import re
 from typing import Any
 
@@ -108,6 +109,19 @@ def _register_warden_v1(app: FastAPI) -> None:
         }
 
 
+def _register_herald_v1(app: FastAPI) -> None:
+    prefix = "/stations/herald/api/v1"
+
+    @app.get(f"{prefix}/health")
+    async def herald_health() -> dict[str, str]:
+        return {"status": "ok", "station": "herald"}
+
+    # ``src/platform/`` never imports ``pyforge.*`` — load herald's mount
+    # helper by module name (Story 19.1 / pap:AD-2).
+    herald_station_api = importlib.import_module("pyforge.herald.station_api")
+    herald_station_api.attach_webhook_asgi(app)
+
+
 def _build_station_app(station: str, version: int) -> FastAPI:
     openapi_url = f"/stations/{station}/api/v{version}/openapi.json"
     app = FastAPI(
@@ -119,6 +133,8 @@ def _build_station_app(station: str, version: int) -> FastAPI:
     )
     if station == "warden" and version == 1:
         _register_warden_v1(app)
+    elif station == "herald" and version == 1:
+        _register_herald_v1(app)
     return app
 
 
@@ -142,5 +158,6 @@ def assert_routes_are_versioned(app: FastAPI) -> list[str]:
     return violations
 
 
-# Seed the first station API (warden v1) at import time.
+# Seed station APIs at import time (warden v1, herald v1).
 register_station_api("warden", 1)
+register_station_api("herald", 1)

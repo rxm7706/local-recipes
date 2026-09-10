@@ -366,6 +366,7 @@ platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
+pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # herald Epic 19.1: station_api mounts webhook_host on the herald v1 seam
 python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
 python-slugify = ">=8.0.4"
