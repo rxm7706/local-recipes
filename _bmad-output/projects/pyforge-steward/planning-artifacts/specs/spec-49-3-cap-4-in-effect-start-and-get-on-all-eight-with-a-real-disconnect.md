@@ -101,6 +101,9 @@ agent operation would experience.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test -- -k "start_get or mcp_disconnect"` — expected: pass for steward's own face
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: full suite green,
+  including the new `start`/`get`/disconnect tests
+
+**Manual checks (if no CLI):**
 - Cross-station: each of the six stations' own test suite (`pixi run -e pyforge-<station> pyforge-<station>-test -- -k "start_get or mcp_disconnect"`) — expected: pass
-- Manual: confirm the multi-minute disconnect test genuinely interrupts transport (inspect the test's mechanism, not just its assertion)
+- Confirm the multi-minute disconnect test genuinely interrupts transport (inspect the test's mechanism, not just its assertion)
