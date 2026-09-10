@@ -106,6 +106,42 @@ def test_regressions_preserves_blocked_without_regression(promote):
     assert lost == []
 
 
+def test_regressions_detects_done_to_blocked(promote):
+    """Live incident 2026-09-10: a genuinely `done` story (pyforge-doctor 20.4)
+    had a stale Tier-3 `blocked` value the original guard did not catch, because
+    `done` and story `blocked` were both treated as an undifferentiated
+    "protected" class -- a lateral move between them was never flagged. `done`
+    is strictly senior to `blocked`: this transition must be refused too."""
+    lost = promote.regressions(
+        {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"},
+        {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"},
+    )
+    assert lost == [
+        ("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")
+    ]
+
+
+def test_regressions_detects_done_to_any_other_status(promote):
+    """The fix widens detection from "feed says backlog" to "feed says anything
+    other than done" -- pin the other non-done statuses too, not just blocked."""
+    for other in ("ready-for-dev", "in-progress", "review"):
+        lost = promote.regressions(
+            {"1-1-demo": "done"},
+            {"1-1-demo": other},
+        )
+        assert lost == [("1-1-demo", "done", other)], other
+
+
+def test_regressions_blocked_to_done_is_not_a_regression(promote):
+    """A story reaching done from blocked is a real completion, not a loss --
+    only a move AWAY from done is ever flagged."""
+    lost = promote.regressions(
+        {"44-3-open-the-foundry": "blocked"},
+        {"44-3-open-the-foundry": "done"},
+    )
+    assert lost == []
+
+
 def test_terminal_is_only_done(promote):
     assert promote.TERMINAL == frozenset({"done"})
 
@@ -157,6 +193,30 @@ def test_main_refuses_missing_twin_key(tmp_path, promote, monkeypatch):
     rc = promote.main(["--project", "acme"])
     assert rc == 1
     assert twin.read_text(encoding="utf-8") == before
+
+
+def test_repair_feed_restores_done_lost_to_blocked(tmp_path, promote):
+    """--repair-feed's write-back half must catch the same done->blocked case
+    regressions() now does -- it calls regressions() internally, so this pins
+    that the fix reaches the repair path too, not just the refusal path."""
+    feed_path = tmp_path / "feed.yaml"
+    _write_status_file(
+        feed_path, {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"}
+    )
+    incoming = {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "blocked"}
+    twin_values = {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"}
+
+    merged, lost, missing = promote.repair_feed(feed_path, incoming, twin_values)
+
+    assert merged == {"20-4-bmad-os-root-cause-analysis-is-doctor-wielded": "done"}
+    assert lost == [
+        ("20-4-bmad-os-root-cause-analysis-is-doctor-wielded", "done", "blocked")
+    ]
+    assert missing == []
+    assert (
+        "20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done"
+        in feed_path.read_text(encoding="utf-8")
+    )
 
 
 def test_main_repair_feed_restores_missing_key(tmp_path, promote, monkeypatch):
