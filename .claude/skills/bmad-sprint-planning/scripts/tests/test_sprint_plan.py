@@ -141,6 +141,21 @@ def test_merge_preserves_and_never_downgrades(tmp_path, capsys):
     assert result["kept_keys"] == []
 
 
+def test_blocked_status_survives_regenerate(tmp_path, capsys):
+    """Regression for Epic-44 blocked restore: `blocked` is sticky and must not
+    be downgraded to `backlog`/`ready-for-dev` on regenerate."""
+    existing = EXISTING.replace(
+        "1-2-account-management: backlog", "1-2-account-management: blocked"
+    )
+    status_file = run_generate(tmp_path, existing=existing)
+    result = out_json(capsys)
+    data = load(status_file)
+    assert data["development_status"]["1-2-account-management"] == "blocked"
+    assert {"key": "1-2-account-management", "status": "blocked"} in result[
+        "preserved_sticky"
+    ]
+
+
 def test_generate_keeps_existing_key_when_slugger_would_change_the_tail(tmp_path, capsys):
     """Identity is N.M. A longer tail (pre-truncation mint) or a retitled
     heading must not orphan a done row — steward's 13-key regenerate bug."""

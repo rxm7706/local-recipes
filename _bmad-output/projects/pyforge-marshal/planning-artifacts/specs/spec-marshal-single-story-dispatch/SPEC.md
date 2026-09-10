@@ -17,6 +17,9 @@ surface:
   - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
   - .claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py
   - .claude/skills/bmad-sprint-planning/references/generate-tracking.md
+  - .claude/skills/bmad-sprint-planning/sprint-status-template.yaml
+  - .claude/skills/bmad-retrospective/scripts/sprint_status.py
+  - .claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py
 companions:
   - fleet-drain-playbook.md
 sources:
