@@ -336,15 +336,15 @@ bmad-build-auto's step 01. So the honest matrix is:
 |---|---|---|---|
 | output | caveman | yes | yes |
 | structure-graph | codegraph | yes | yes |
-| wire | headroom | **no** | yes |
+| wire | headroom | **yes** (Story 33.3 — bmad-loop profile overlay) | yes |
 | derived-context | cocoindex | **no** | yes |
 | planning-graph | graphifyy | **no** | yes |
 
-Three of five layers, including the largest single lever, pay only on
-build-auto. The open question is therefore answered in the negative: a
-cross-engine savings comparison **is** meaningless, and the drain belongs on
-dispatch whenever cost is the objective. Spin is not broken — it reports the
-wire layer inapplicable rather than failing — it is simply a two-layer engine.
+Wire compression now acts on both engines when the configured bmad-loop adapter
+has a marshal harness ``[wrapper]`` and headroom resolves (Story 33.3). Layers 3
+and 4 remain build-auto-only (epic-context compile is bmad-build-auto step 01).
+Cost-sensitive derived/planning work still belongs on ``factory dispatch``; wire
+is no longer spin-exclusive.
 
 **Three ledger entries stop being incidental debt and start blocking a named
 outcome**, which is what should promote them out of the ledger and into stories:
@@ -449,3 +449,12 @@ steward Epic 40. No new Dream: this chain already asked both questions.
   33.2 and everything after it depend on 33.1 — the measurement-first gate this Dream's § Gates named
   and Epic 28 bypassed. Batch:
   `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+- **2026-09-09 (Story 33.3 shipped)** — Ruling: the loop-home launcher shim **succeeds** through
+  bmad-loop's ``adapters/profile.py`` seam. ``factory spin`` now folds
+  ``read_repo_policy_defaults()`` (closing ``DW-FU-28-2-3``), and when the wire layer is enabled it
+  writes a loop-home ``.bmad-loop/profiles/<adapter>.toml`` overlay that points ``binary`` at
+  headroom with ``launch_args = ["wrap", "<cli>", ...]`` (closing ``DW-FU-28-2`` for the claude-class
+  adapters that declare a marshal ``[wrapper]``). Spin is **not** declared a two-layer-only engine:
+  wire acts on spin the same way it acts on dispatch; derived-context and planning-graph remain
+  dispatch/build-auto-only. Cost-sensitive drain for those two layers still belongs on
+  ``factory dispatch``.

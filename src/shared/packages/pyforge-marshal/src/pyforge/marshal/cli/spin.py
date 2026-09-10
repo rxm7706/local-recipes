@@ -269,6 +269,7 @@ from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
     HarnessError,
     HarnessPolicyWriteError,
+    attempt_spin_wire_layer,
     render_policy_toml,
     resolve_loop_runner,
     write_policy_document,
@@ -304,6 +305,7 @@ from .config import (
     _read_project_policy,
     _suppress_downstream_pipe_close,
     conventional_project_policy_path,
+    read_repo_policy_defaults,
 )
 from .init import _home_path
 
@@ -574,6 +576,29 @@ def _resolve_governing_difficulty(
     return governing, batching_report
 
 
+def _compose_spin_policy(
+    slug: str, *, flags: dict[str, object] | None = None
+) -> tuple[policy.EffectivePolicy, list[Finding]]:
+    """Story 22.8 / 33.3: fold repo defaults the same way dispatch does."""
+    repo_defaults, _repo_finding = read_repo_policy_defaults()
+    project_data: dict[str, object] = {}
+    candidate = conventional_project_policy_path(slug)
+    if candidate.is_file():
+        try:
+            project_data = dict(_read_project_policy(candidate))
+        except PolicyIOError:
+            project_data = {}
+        except Exception:  # noqa: BLE001 -- mirrors _spawn_supervisor_sidecar
+            project_data = {}
+    effective, findings = policy.compose(
+        project_slug=slug,
+        repo_defaults=repo_defaults,
+        project=project_data,
+        flags=dict(flags or {}),
+    )
+    return effective, list(findings)
+
+
 def _resolve_model_tiering(
     harness: HarnessPort,
     home: Path,
@@ -641,20 +666,7 @@ def _resolve_model_tiering(
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
 
-    project_policy_path = conventional_project_policy_path(slug)
-    project_policy_data: Mapping[str, object] = {}
-    if project_policy_path.is_file():
-        try:
-            project_policy_data = _read_project_policy(project_policy_path)
-        except Exception:  # noqa: BLE001 -- mirrors _spawn_supervisor_sidecar's
-            # own identical broad catch around this same read, for the same
-            # reason: a supplementary read must never abort an otherwise-
-            # successful launch over a corrupt or unreadable project-policy
-            # file.
-            project_policy_data = {}
-    effective_policy, _policy_findings = policy.compose(
-        project_slug=slug, project=project_policy_data, flags={}
-    )
+    effective_policy, _policy_findings = _compose_spin_policy(slug)
     tier_resolution = resolve_tier_launch(effective_policy, governing)
     data["resolved_models"] = dict(tier_resolution.resolved_models)
     if tier_resolution.serving_pools:
@@ -731,6 +743,20 @@ def _resolve_model_tiering(
                 ),
             )
         )
+
+    adapter_for_wire = tier_resolution.adapter_name
+    if not isinstance(adapter_for_wire, str) or not adapter_for_wire:
+        adapter_for_wire = data.get("adapter_name")
+    if isinstance(adapter_for_wire, str) and adapter_for_wire:
+        context_layers = policy.resolve_context_layers(effective_policy)
+        wire = attempt_spin_wire_layer(
+            loop_home=home,
+            adapter_name=adapter_for_wire,
+            wire_layer=context_layers[harness_profile.WIRE_LAYER_NAME],
+            repo_root=Path.cwd(),
+        )
+        data["wire"] = wire.journal_payload()
+
     return False
 
 
@@ -1093,36 +1119,7 @@ def _spawn_supervisor_sidecar(
     # a launch precondition, so it must never abort an otherwise-successful
     # harness launch the way a `--project-policy` read failure aborts
     # `marshal config` itself.
-    project_policy_path = conventional_project_policy_path(slug)
-    project_policy_data: Mapping[str, object] = {}
-    if project_policy_path.is_file():
-        try:
-            project_policy_data = _read_project_policy(project_policy_path)
-        except Exception:  # noqa: BLE001 -- deliberate, see below
-            # BROAD on purpose (review finding), and the only broad except in
-            # this module. This read is the LAST step on the post-launch
-            # path: by the time it runs a real bmad-loop process is already
-            # live and journalled, and the detached supervisor has not been
-            # spawned yet. Anything that escapes here therefore leaves the
-            # worst state this command can produce -- a running, UNSUPERVISED
-            # harness -- and exits non-zero, which invites the caller to
-            # retry and double-dispatch the very story the live run is
-            # already working (the exact hazard this story's Design Notes
-            # give as the reason `stop`+`resume` is the retry primitive).
-            #
-            # `PolicyIOError` alone was under-inclusive against this
-            # module's own stated rule one comment up ("must never abort an
-            # otherwise-successful harness launch"): `_read_project_policy`
-            # translates the I/O and parse failures it anticipates, but
-            # `tomllib.load` raises a bare `RecursionError` on a deeply
-            # nested document, which is neither an `OSError` nor a
-            # `ValueError` and so passed straight through. The value being
-            # read is a supplementary tuning number for a soft ladder; no
-            # failure to obtain it justifies abandoning a live run.
-            project_policy_data = {}
-    effective_policy, policy_findings = policy.compose(
-        project_slug=slug, project=project_policy_data, flags={}
-    )
+    effective_policy, policy_findings = _compose_spin_policy(slug)
     # Surfaced into this report -- but RE-TIERED, never extended verbatim
     # (review finding, two passes). The findings themselves must reach the
     # operator: this variable was once captured and never looked at again,
@@ -1167,53 +1164,48 @@ def _spawn_supervisor_sidecar(
                 ),
             )
         )
-    # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-compression
-    # layer on THIS engine, resolved from the same single composition site
-    # (`policy.resolve_context_layers`) `cli/dispatch.py` and
-    # `render_policy_toml` read. Marshal's harness-seam wrapper wraps a
-    # command marshal itself launches; on this engine marshal launches
-    # `bmad-loop run`, and bmad-loop launches the coding CLI inside its own
-    # multiplexer -- there is no coding-CLI argv here to prefix, so an
-    # enabled wire layer reports what did NOT happen instead of silently
-    # doing nothing (the spec's own "never a silent no-op"). Making it real
-    # on this engine needs a loop-home-provisioned launcher shim plus a
-    # bmad-loop profile overlay pointing `binary` at it, which is Story
-    # 28.3's loop-home provisioning surface, not this seam's.
-    #
-    # Echoed into `data` unconditionally (like `supervisor_log` above) so a
-    # spin report always states the layer's disposition, and raised as a
-    # finding ONLY when the layer was actually enabled -- a disabled layer
-    # has no degradation to name.
-    #
-    # Composed as a `WireWrap` and projected through `journal_payload()`
-    # rather than hand-spelled: that method is the ONE spelling of this
-    # payload (`cli/dispatch.py` emits the same shape from the same place),
-    # so a future field on `WireWrap` reaches both engines instead of
-    # silently drifting one of them.
-    wire_layer = policy.resolve_context_layers(effective_policy)[
-        harness_profile.WIRE_LAYER_NAME
-    ]
-    enabled = bool(wire_layer["enabled"])
-    reason = (
-        (
-            "the declared [context] wire layer is enabled, but this engine "
-            "launches 'bmad-loop run' and bmad-loop -- not marshal -- launches "
-            "the coding CLI, so marshal's harness-seam wrapper has no command "
-            "to wrap here; the run proceeds UNWRAPPED (factory dispatch is the "
-            "engine this layer applies to today)"
-        )
-        if enabled
-        else None
-    )
-    data["wire"] = harness_profile.WireWrap(
-        applied=False,
-        reason=reason,
-        aggressiveness=wire_layer["aggressiveness"] if enabled else None,
-    ).journal_payload()
-    if reason is not None:
-        findings.append(
-            Finding(code="MRS-SPIN-017", severity=Severity.WARN, message=reason)
-        )
+    # Story 28.2 / 33.3: wire disposition is resolved before ``harness.spin``
+    # (``_resolve_model_tiering`` writes the bmad-loop profile overlay when
+    # the layer applies). Reuse that payload here when present; otherwise
+    # compute from the same composition site for resume-only paths.
+    wire_payload = data.get("wire")
+    if not isinstance(wire_payload, Mapping):
+        context_layers = policy.resolve_context_layers(effective_policy)
+        adapter_name = data.get("adapter_name")
+        if not isinstance(adapter_name, str) or not adapter_name:
+            preference = effective_policy.harness_preference.value
+            adapter_name = harness_profile.bmadloop_adapter_for_preference(preference)
+        if isinstance(adapter_name, str) and adapter_name:
+            wire = attempt_spin_wire_layer(
+                loop_home=home,
+                adapter_name=adapter_name,
+                wire_layer=context_layers[harness_profile.WIRE_LAYER_NAME],
+                repo_root=Path.cwd(),
+            )
+            wire_payload = wire.journal_payload()
+        else:
+            wire_layer = context_layers[harness_profile.WIRE_LAYER_NAME]
+            enabled = bool(wire_layer["enabled"])
+            wire_payload = harness_profile.WireWrap(
+                applied=False,
+                reason=(
+                    "the declared [context] wire layer is enabled, but no "
+                    "adapter was resolved to attempt a bmad-loop profile overlay"
+                )
+                if enabled
+                else None,
+                aggressiveness=(
+                    wire_layer["aggressiveness"] if enabled else None
+                ),
+            ).journal_payload()
+        data["wire"] = wire_payload
+    reason = wire_payload.get("reason")
+    if wire_payload.get("applied") is False and isinstance(reason, str) and reason:
+        context_layers = policy.resolve_context_layers(effective_policy)
+        if bool(context_layers[harness_profile.WIRE_LAYER_NAME]["enabled"]):
+            findings.append(
+                Finding(code="MRS-SPIN-017", severity=Severity.WARN, message=reason)
+            )
     idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
     # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
     # `effective_policy` composition idle_threshold_minutes above already

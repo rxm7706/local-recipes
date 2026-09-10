@@ -22,11 +22,29 @@ import tomlkit
 from pyforge.marshal.adapters.harness_bmadloop import (
     _SURFACE_RECONCILE_COMMAND,
     HarnessPolicyWriteError,
+    _load_model_cost_catalog,
+    _plain_json,
+    _read_policy_adapter_and_model,
+    _token_counts_from_task,
+    _usage_dollar_fields,
+    _write_model_cost_catalog_sidecar,
     render_policy_toml,
     write_policy_document,
     write_policy_toml,
 )
 from pyforge.marshal.core.policy import compose
+from pyforge.marshal.ports.harness import LayerSavings
+
+_SAMPLE_CATALOG = {
+    "providers": {
+        "cursor": {
+            "subscription_pool": "cursor-ultra",
+            "models": {
+                "composer-2.5": {"input_per_million": 0.50, "output_per_million": 2.50},
+            },
+        },
+    },
+}
 
 
 def _compose(**project_overrides):
@@ -651,3 +669,224 @@ def test_cli_write_harness_policy_warns_when_no_counterpart_exists(tmp_path):
     written = home / ".bmad-loop" / "policy.toml"
     parsed = tomllib.loads(written.read_text(encoding="utf-8"))
     assert parsed["adapter"]["name"] == "claude", "template default must stand"
+
+
+# --- model-cost-catalog sidecar (Story 28.10, CAP-11) ------------------------
+
+
+def test_plain_json_recursively_coerces_mappings_and_sequences():
+    assert _plain_json({"a": (1, 2), "b": {"c": "d"}}) == {"a": [1, 2], "b": {"c": "d"}}
+
+
+def test_plain_json_passes_through_scalars():
+    assert _plain_json(3) == 3
+    assert _plain_json("x") == "x"
+
+
+def test_write_model_cost_catalog_sidecar_writes_when_catalog_declared(tmp_path):
+    effective = _compose(model_cost_catalog=_SAMPLE_CATALOG)
+    _write_model_cost_catalog_sidecar(effective, tmp_path)
+    sidecar = tmp_path / ".bmad-loop" / "marshal-model-cost-catalog.json"
+    assert sidecar.is_file()
+    assert _load_model_cost_catalog(tmp_path) == _SAMPLE_CATALOG
+
+
+def test_write_model_cost_catalog_sidecar_removes_stale_sidecar_when_catalog_absent(
+    tmp_path,
+):
+    sidecar_dir = tmp_path / ".bmad-loop"
+    sidecar_dir.mkdir()
+    sidecar = sidecar_dir / "marshal-model-cost-catalog.json"
+    sidecar.write_text("{}", encoding="utf-8")
+
+    _write_model_cost_catalog_sidecar(_compose(), tmp_path)
+
+    assert not sidecar.exists()
+
+
+def test_write_model_cost_catalog_sidecar_removal_is_a_noop_when_nothing_to_remove(
+    tmp_path,
+):
+    _write_model_cost_catalog_sidecar(_compose(), tmp_path)
+    assert not (tmp_path / ".bmad-loop" / "marshal-model-cost-catalog.json").exists()
+
+
+def test_load_model_cost_catalog_returns_none_when_sidecar_missing(tmp_path):
+    assert _load_model_cost_catalog(tmp_path) is None
+
+
+def test_load_model_cost_catalog_returns_none_when_sidecar_is_not_a_declared_catalog(
+    tmp_path,
+):
+    sidecar_dir = tmp_path / ".bmad-loop"
+    sidecar_dir.mkdir()
+    (sidecar_dir / "marshal-model-cost-catalog.json").write_text("{}", encoding="utf-8")
+    assert _load_model_cost_catalog(tmp_path) is None
+
+
+def test_read_policy_adapter_and_model_returns_none_none_when_policy_missing(tmp_path):
+    assert _read_policy_adapter_and_model(tmp_path) == (None, None)
+
+
+def test_read_policy_adapter_and_model_reads_the_dev_model_override(tmp_path):
+    loop_dir = tmp_path / ".bmad-loop"
+    loop_dir.mkdir()
+    (loop_dir / "policy.toml").write_text(
+        '[adapter]\nname = "claude"\n[adapter.dev]\nmodel = "opus"\n',
+        encoding="utf-8",
+    )
+    assert _read_policy_adapter_and_model(tmp_path) == ("claude", "opus")
+
+
+def test_read_policy_adapter_and_model_falls_back_to_the_top_level_model(tmp_path):
+    loop_dir = tmp_path / ".bmad-loop"
+    loop_dir.mkdir()
+    (loop_dir / "policy.toml").write_text(
+        '[adapter]\nname = "claude"\nmodel = "sonnet"\n', encoding="utf-8"
+    )
+    assert _read_policy_adapter_and_model(tmp_path) == ("claude", "sonnet")
+
+
+def test_read_policy_adapter_and_model_returns_none_none_without_an_adapter_table(
+    tmp_path,
+):
+    loop_dir = tmp_path / ".bmad-loop"
+    loop_dir.mkdir()
+    (loop_dir / "policy.toml").write_text("other = 1\n", encoding="utf-8")
+    assert _read_policy_adapter_and_model(tmp_path) == (None, None)
+
+
+# --- token counts + usage-dollar fields (Story 28.10, CAP-11) ----------------
+
+
+class _FakeTokens:
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+class _FakeTask:
+    def __init__(self, tokens=None):
+        self.tokens = tokens
+
+
+def test_token_counts_from_task_returns_none_when_task_has_no_tokens():
+    assert _token_counts_from_task(_FakeTask(tokens=None)) is None
+
+
+def test_token_counts_from_task_coerces_missing_fields_to_zero():
+    counts = _token_counts_from_task(_FakeTask(tokens=_FakeTokens(input_tokens=10)))
+    assert counts.input_tokens == 10
+    assert counts.output_tokens == 0
+    assert counts.cache_read_tokens == 0
+    assert counts.cache_creation_tokens == 0
+
+
+def test_token_counts_from_task_reads_all_four_fields():
+    tokens = _FakeTokens(
+        input_tokens=1, output_tokens=2, cache_read_tokens=3, cache_creation_tokens=4
+    )
+    counts = _token_counts_from_task(_FakeTask(tokens=tokens))
+    assert (counts.input_tokens, counts.output_tokens) == (1, 2)
+    assert (counts.cache_read_tokens, counts.cache_creation_tokens) == (3, 4)
+
+
+def _tokens(**overrides):
+    from pyforge.marshal.core.model_cost import TokenCounts
+
+    base = dict(
+        input_tokens=1_000_000, output_tokens=1_000_000,
+        cache_read_tokens=0, cache_creation_tokens=0,
+    )
+    base.update(overrides)
+    return TokenCounts(**base)
+
+
+def test_usage_dollar_fields_none_when_adapter_has_no_provider():
+    cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="devin",
+        model_name="composer-2.5",
+        story_tokens=_tokens(),
+        layer_savings=None,
+    )
+    assert (cost, savings) == (None, None)
+
+
+def test_usage_dollar_fields_none_when_story_tokens_absent():
+    cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="composer-2.5",
+        story_tokens=None,
+        layer_savings=None,
+    )
+    assert (cost, savings) == (None, None)
+
+
+def test_usage_dollar_fields_none_when_model_has_no_declared_price():
+    cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="not-a-priced-model",
+        story_tokens=_tokens(),
+        layer_savings=None,
+    )
+    assert (cost, savings) == (None, None)
+
+
+def test_usage_dollar_fields_computes_cost_with_no_layer_savings():
+    cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="composer-2.5",
+        story_tokens=_tokens(),
+        layer_savings=None,
+    )
+    assert cost == pytest.approx(0.50 + 2.50)
+    assert savings is None
+
+
+def test_usage_dollar_fields_computes_savings_across_every_layer_shape():
+    layer_savings = LayerSavings(
+        output_compression_saved=100,
+        wire_compression_saved="unavailable",
+        graph_hits_vs_file_reads=(4, 1),
+        derived_context_cache_hits=7,
+        planning_graph_tokens_saved=500,
+    )
+    cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="composer-2.5",
+        story_tokens=_tokens(),
+        layer_savings=layer_savings,
+    )
+    assert cost == pytest.approx(3.0)
+    assert savings is not None
+    assert "planning_graph_tokens_saved" in savings
+
+
+def test_usage_dollar_fields_string_graph_stat_is_recorded_verbatim():
+    layer_savings = LayerSavings(graph_hits_vs_file_reads="degraded: index missing")
+    _cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="composer-2.5",
+        story_tokens=_tokens(),
+        layer_savings=layer_savings,
+    )
+    # Only planning_graph_tokens_saved prices into a dollar figure today; a
+    # bare string stat with nothing priced yields no savings dict.
+    assert savings is None
+
+
+def test_usage_dollar_fields_savings_none_when_layer_savings_is_all_none():
+    _cost, savings = _usage_dollar_fields(
+        catalog=_SAMPLE_CATALOG,
+        adapter_name="cursor",
+        model_name="composer-2.5",
+        story_tokens=_tokens(),
+        layer_savings=LayerSavings(),
+    )
+    assert savings is None

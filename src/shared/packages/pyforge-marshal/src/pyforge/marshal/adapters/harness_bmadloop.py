@@ -215,7 +215,13 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core import policy
 from ..core.egress import to_redacted
-from ..core.harness_profile import bmadloop_adapter_for_preference
+from ..core.harness_profile import (
+    PROFILE_BY_BMADLOOP_ADAPTER,
+    WireWrap,
+    bmadloop_adapter_for_preference,
+    load_packaged_profiles,
+    resolve_wire_wrap,
+)
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.model_cost import (
     TokenCounts,
@@ -839,6 +845,168 @@ def _atomic_write_policy_text(text: str, loop_home: Path) -> Path:
         raise HarnessPolicyWriteError(
             f"cannot write policy.toml to {bmad_loop_dir}: {exc}"
         ) from exc
+
+
+def _resolve_wrapper_binary(
+    binary: str, fallback_bin_dirs: tuple[str, ...], repo_root: Path | None
+) -> str | None:
+    """Resolve a wire-wrapper binary the same way dispatch does."""
+    on_path = shutil.which(binary)
+    if on_path is not None:
+        return on_path
+    if repo_root is None:
+        return None
+    for rel_dir in fallback_bin_dirs:
+        candidate = Path(repo_root) / rel_dir / binary
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
+def _render_bmadloop_wire_profile_overlay(
+    *,
+    adapter_name: str,
+    wrapper_binary: str,
+    wrapper_argv: tuple[str, ...],
+    wire_env: Mapping[str, str],
+) -> str:
+    """Build a complete bmad-loop profile overlay that prepends headroom.
+
+    Project overlays replace the packaged profile wholesale, so this copies
+    the packaged ``bmad_loop.data.profiles/<adapter>.toml`` and rewrites only
+    ``binary``, ``launch_args``, and ``env`` -- the three fields
+    ``adapters/profile.py`` exposes at the launch seam (Story 33.3).
+    """
+    from importlib import resources
+
+    packaged = resources.files("bmad_loop.data").joinpath(f"profiles/{adapter_name}.toml")
+    doc = tomlkit.parse(packaged.read_text(encoding="utf-8"))
+    doc["binary"] = wrapper_binary
+    doc["launch_args"] = list(wrapper_argv)
+    env_table = doc.get("env")
+    if not isinstance(env_table, tomlkit.items.Table):
+        env_table = tomlkit.table()
+    for key, value in wire_env.items():
+        env_table[key] = value
+    doc["env"] = env_table
+    header = (
+        "# marshal Story 33.3 wire-compression overlay — written by factory spin\n"
+        "# Do not hand-edit; the next spin overwrites this file when the wire layer is on.\n"
+    )
+    return header + tomlkit.dumps(doc)
+
+
+def write_spin_wire_profile_overlay(loop_home: Path, adapter_name: str, text: str) -> Path:
+    """Atomically write ``<loop_home>/.bmad-loop/profiles/<adapter>.toml``."""
+    profiles_dir = Path(loop_home) / ".bmad-loop" / "profiles"
+    target = profiles_dir / f"{adapter_name}.toml"
+    try:
+        atomic_write_bytes(target, text.encode("utf-8"))
+    except OSError as exc:
+        raise HarnessPolicyWriteError(
+            f"cannot write wire profile overlay to {target}: {exc}"
+        ) from exc
+    return target
+
+
+def attempt_spin_wire_layer(
+    *,
+    loop_home: Path,
+    adapter_name: str,
+    wire_layer: Mapping[str, object] | None,
+    repo_root: Path | None,
+) -> WireWrap:
+    """Story 33.3: try to enable wire compression on ``factory spin``.
+
+    When the declared ``wire`` layer is enabled and the configured bmad-loop
+    adapter has a marshal harness profile with a reversible ``[wrapper]``,
+    render a loop-home profile overlay that points ``binary`` at headroom and
+    sets ``launch_args`` to the wrapper argv prefix. Otherwise degrade with a
+    named reason -- never a silent no-op.
+    """
+    profile_stem = PROFILE_BY_BMADLOOP_ADAPTER.get(adapter_name)
+    if profile_stem is None:
+        enabled = bool((wire_layer or {}).get("enabled", False))
+        if not enabled:
+            return WireWrap(applied=False)
+        return WireWrap(
+            applied=False,
+            reason=(
+                f"bmad-loop adapter {adapter_name!r} has no marshal harness "
+                "profile with a wire-compression wrapper declaration"
+            ),
+            aggressiveness=(
+                wire_layer.get("aggressiveness")
+                if isinstance((wire_layer or {}).get("aggressiveness"), str)
+                else None
+            ),
+        )
+
+    marshal_profiles = load_packaged_profiles()
+    profile = marshal_profiles.get(profile_stem)
+    if profile is None:
+        enabled = bool((wire_layer or {}).get("enabled", False))
+        if not enabled:
+            return WireWrap(applied=False)
+        return WireWrap(
+            applied=False,
+            reason=f"marshal harness profile {profile_stem!r} is missing",
+            aggressiveness=(
+                wire_layer.get("aggressiveness")
+                if isinstance((wire_layer or {}).get("aggressiveness"), str)
+                else None
+            ),
+        )
+
+    wrapper_binary_path = None
+    if profile.wrapper is not None:
+        wrapper_binary_path = _resolve_wrapper_binary(
+            profile.wrapper.binary,
+            profile.wrapper.fallback_bin_dirs,
+            repo_root,
+        )
+
+    wire = resolve_wire_wrap(
+        profile,
+        wire_layer=wire_layer,
+        home=loop_home,
+        wrapper_binary_path=wrapper_binary_path,
+    )
+    if not wire.applied or profile.wrapper is None:
+        return wire
+
+    if wire.store_dir is not None:
+        try:
+            Path(wire.store_dir).mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            return WireWrap(
+                applied=False,
+                reason=(
+                    f"wire-compression store {wire.store_dir!r} could not be "
+                    f"created: {exc} -- the layer is off for this launch"
+                ),
+                aggressiveness=wire.aggressiveness,
+            )
+
+    try:
+        overlay = _render_bmadloop_wire_profile_overlay(
+            adapter_name=adapter_name,
+            wrapper_binary=profile.wrapper.binary,
+            wrapper_argv=profile.wrapper.argv,
+            wire_env=wire.env,
+        )
+        write_spin_wire_profile_overlay(loop_home, adapter_name, overlay)
+    except (HarnessPolicyWriteError, OSError, KeyError, ValueError) as exc:
+        return WireWrap(
+            applied=False,
+            reason=(
+                f"could not write bmad-loop wire profile overlay for "
+                f"{adapter_name!r}: {exc}"
+            ),
+            aggressiveness=wire.aggressiveness,
+        )
+
+    return wire
 
 
 # Story 3.12 (retry escalation, AD-26) -- _POLICY_TEMPLATE's own baseline

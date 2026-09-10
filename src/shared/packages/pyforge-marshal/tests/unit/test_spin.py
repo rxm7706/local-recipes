@@ -2257,34 +2257,67 @@ def test_spin_states_the_wire_layer_disposition_on_every_run(home, capsys):
     assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
 
 
-def test_spin_names_an_enabled_wire_layer_this_engine_cannot_apply(
+def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(
     home, capsys, monkeypatch, tmp_path
 ):
-    """The spec's "never a silent no-op", on the engine that structurally
-    cannot wrap: ``marshal factory spin`` launches ``bmad-loop run``, and
-    bmad-loop -- not marshal -- launches the coding CLI, so marshal's
-    harness-seam wrapper has no command to prefix here. Enabling the layer
-    for a spin run therefore REPORTS what did not happen (``MRS-SPIN-017``,
-    WARN over a live run) instead of leaving the operator believing a
-    bmad-loop run was compressed. Factory dispatch is the engine this layer
-    applies to today."""
+    """Story 33.3: when headroom resolves, factory spin writes a bmad-loop
+    profile overlay and reports ``wire.applied=True`` instead of the pre-33.3
+    hard-coded inapplicability message.
+
+    ``headroom`` lives in the sibling ``local-recipes`` pixi env
+    (``fallback_bin_dirs``), not ``pyforge-marshal``'s own -- real on a full
+    operator checkout, absent in a scoped CI job that only installs this
+    one env. Patch the resolver to a fixed path, same as the sibling
+    "missing" test already does for its own branch, so this test proves the
+    wire-applied behavior deterministically rather than depending on which
+    pixi environments happen to be installed."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
     exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
-    # WARN: the run launched, and it launched unwrapped.
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"] == []
+    assert envelope["data"]["wire"]["applied"] is True
+    assert envelope["data"]["wire"]["aggressiveness"] == "high"
+    overlay = home / ".bmad-loop" / "profiles" / "claude.toml"
+    assert overlay.is_file()
+    assert "headroom" in overlay.read_text(encoding="utf-8")
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_degrades_enabled_wire_layer_when_wrapper_binary_missing(
+    home, capsys, monkeypatch, tmp_path
+):
+    """Story 33.3 negative branch: an enabled wire layer with no resolvable
+    wrapper still reports degradation (``MRS-SPIN-017``) rather than silently
+    skipping."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
+    _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_args, **_kwargs: None
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
     assert exit_code == EXIT_OK
     envelope = json.loads(capsys.readouterr().out)
     [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-017"]
     assert finding["severity"] == "warn"
-    assert "UNWRAPPED" in finding["message"]
     assert envelope["data"]["wire"]["applied"] is False
     assert envelope["data"]["wire"]["reason"] == finding["message"]
-    assert envelope["data"]["wire"]["aggressiveness"] == "high"
-    assert len(harness.spin_calls) == 1
 
 
 def test_spin_wire_payload_has_exactly_the_single_spellings_fields(
@@ -2311,8 +2344,17 @@ def test_spin_wire_payload_has_exactly_the_single_spellings_fields(
 def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch, tmp_path):
     """Text is the DEFAULT format -- a layer visible only under
     ``--format json`` is invisible on the surface an unattended operator
-    actually reads (the same defect ``escalated`` was fixed for)."""
+    actually reads (the same defect ``escalated`` was fixed for).
+
+    Resolver patched to a fixed path -- see the "when_available" test above
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2320,8 +2362,8 @@ def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch,
     run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
 
     out = capsys.readouterr().out
-    assert "wire: applied=False aggressiveness='high'" in out
-    assert "MRS-SPIN-017" in out
+    assert "wire: applied=True aggressiveness='high'" in out
+    assert "MRS-SPIN-017" not in out
 
 
 def test_spin_stays_silent_on_an_explicitly_disabled_wire_layer(
@@ -2380,8 +2422,18 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
     (Story 3.7's extraction), so a resumed run states the same disposition
     -- a resume that silently dropped the layer's report would be the exact
-    drifting second copy that extraction exists to prevent."""
+    drifting second copy that extraction exists to prevent.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
         home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
@@ -2396,8 +2448,8 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     )
 
     envelope = json.loads(capsys.readouterr().out)
-    assert envelope["data"]["wire"]["applied"] is False
-    assert [f["code"] for f in envelope["findings"]].count("MRS-SPIN-017") == 1
+    assert envelope["data"]["wire"]["applied"] is True
+    assert [f["code"] for f in envelope["findings"]].count("MRS-SPIN-017") == 0
 
 
 def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):

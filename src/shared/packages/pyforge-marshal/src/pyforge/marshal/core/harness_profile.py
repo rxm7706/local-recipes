@@ -199,6 +199,13 @@ BMADLOOP_ADAPTER_BY_PROFILE: Mapping[str, str] = MappingProxyType(
     }
 )
 
+#: The inverse of ``BMADLOOP_ADAPTER_BY_PROFILE`` -- bmad-loop adapter name
+#: back to the marshal harness profile stem that owns its ``[wrapper]``
+#: declaration (Story 33.3 spin wire overlay).
+PROFILE_BY_BMADLOOP_ADAPTER: Mapping[str, str] = MappingProxyType(
+    {adapter: profile for profile, adapter in BMADLOOP_ADAPTER_BY_PROFILE.items()}
+)
+
 
 class HarnessProfileError(PyforgeError, Exception):
     """Raised for a malformed profile document (closed-key violation, bad
