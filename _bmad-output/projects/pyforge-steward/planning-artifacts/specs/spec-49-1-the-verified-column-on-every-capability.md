@@ -2,7 +2,7 @@
 title: 'The verified column on every capability'
 type: 'chore'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '82626b1239a5c47dc8604676ae3066bced6c52e9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -89,3 +89,40 @@ live tests and source.
 
 **Manual checks (if no CLI):**
 - Each CAP block in SPEC.md § Capabilities has `**verified:**` immediately after its `**success:**` paragraph and before the next CAP or section break.
+
+## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 12 findings — high 0, medium 2, low 3, false 2, maybe-false 0, reject 5
+- findings:
+  - `[medium]` `[patch]` CAP-9 accidental whitespace in Live proof block — reverted to single space before `/ht/`
+  - `[medium]` `[patch]` CAP-4/CAP-18/CAP-19 file anchors incomplete — normalized to full repo-relative paths with line ranges
+  - `[low]` `[reject]` Story spec grep oracle used `^` anchor — fixed to match list-item `  - **verified:**` format
+  - `[low]` `[reject]` Code Map omitted CAP-16 — added persona meta-test path
+  - `[low]` `[reject]` CAP-9 self-reference `:310-314 above` — replaced with descriptive CRC documentary note
+  - `[false]` `[reject]` Verification-gap layer reported no gaps — accepted
+  - `[false]` `[reject]` Intent-alignment: adding story spec file is expected bmad-build-auto scaffolding
+  - `[medium]` `[defer]` Eleven/six grading not encoded as machine-readable tokens — prose column matches currency review; Story 49.2 owns parsing
+  - `[low]` `[defer]` CAP lines note sub-clause gaps on otherwise-verified CAPs — honest per-story-49.1 contract
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added nineteen `**verified:**` lines to `spec-pyforge-unifying-strategy/SPEC.md` § Capabilities (CAP-1..19), each naming live-exercised vs fixture-only/unexercised success clauses with file:line anchors grounded in the 2026-09-09 currency review.
+
+Files changed:
+- `spec-pyforge-unifying-strategy/SPEC.md` — nineteen verified lines appended per CAP
+- `spec-49-1-the-verified-column-on-every-capability.md` — story contract (new)
+- `sprint-status-ledger.yaml` — promoted `49-1-the-verified-column-on-every-capability` to `done`
+
+Review: four layers run; patches applied for anchor normalization and CAP-9 whitespace; verification-gap found no gaps.
+
+Follow-up review recommended: false
+
+Verification:
+- `grep -c '  - \*\*verified:\*\*' …/SPEC.md` → 19
+- `chain-completeness-check` → exit 0 (pre-existing spec-not-decomposed advisory only)
+- `sprint-ledger-sync --project steward` → wrote steward (314)
+
+Residual risks: verified lines are prose, not a structured schema — Story 49.2 (`capability-effect-check`) may need tolerant parsing; six partial CAPs (4, 7, 11, 12, 14, 17) remain for Epic 49 effect stories.
