@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -111,6 +112,9 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
 from ..scope import format_scope_drift, verify_scope
+from ..seed.detect.kit import probe_instrument
+from ..seed.model.kit import KitItemId, kit_item
+from ..seed.verbs.kit import render_deployed_skill
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -118,6 +122,7 @@ from .config import (
     conventional_project_policy_path,
     read_repo_policy_defaults,
 )
+from .seed import packaged_seed_model_version
 
 if TYPE_CHECKING:
     from ..core.context import MarshalContext
@@ -394,6 +399,61 @@ def _surface_worktree_wip_before_dispatch(
             f"this dispatch proceeds: {detail}"
         ),
     )
+
+
+def _seed_dispatch_output_layer(
+    *, fs: FsPort, worktree: Path, context_payload: Mapping[str, object]
+) -> Finding | None:
+    """Story 28.30 (CAP-3, dispatch half of the ``output`` layer): deploy
+    the caveman output-compression skill into a fresh dispatch worktree
+    when ``[context].output`` is enabled.
+
+    Reuses ``seed/verbs/kit.py``'s own packaged-payload resolution
+    (``probe_instrument``) and render step (``render_deployed_skill``) --
+    the loop-home APPLY step itself (``_apply_caveman_skill``) is out of
+    reach here: ``seed/``'s AD-11 write boundary is scoped to a loop home,
+    and a dispatch worktree is not one, so this function writes directly
+    through the same ``FsPort`` the rest of ``dispatch_once`` already uses.
+
+    Never raises: an unavailable instrument or any write failure degrades
+    to a named WARN finding -- Story 28.3's own
+    ``kit-instrument-unavailable``/``kit-item-missing`` degrade shape --
+    and the caller proceeds with the session unwrapped either way, matching
+    every other layer's "an unavailable instrument disables its layer with
+    a named finding, never blocks a run" contract. A layer declared off
+    (the default) deploys nothing -- today's behavior, byte-identical."""
+    item = kit_item(KitItemId.CAVEMAN_SKILL)
+    layer = context_payload.get(item.layer)
+    if not isinstance(layer, Mapping) or not layer.get("enabled", False):
+        return None
+    probe = probe_instrument(item)
+    if not probe.available or probe.payload is None:
+        return Finding(
+            code="MRS-DISP-042",
+            severity=Severity.WARN,
+            message=(
+                f"the {item.layer!r} layer is enabled but "
+                f"{probe.reason or 'its instrument payload did not resolve'} -- "
+                "this dispatch session runs unwrapped"
+            ),
+        )
+    try:
+        upstream = probe.payload.read_text(encoding="utf-8")
+        model_version = packaged_seed_model_version()
+        target = worktree / item.relpath
+        fs.ensure_dir(target.parent)
+        fs.write_text_atomic(target, render_deployed_skill(upstream, model_version))
+    except (OSError, UnicodeDecodeError, ValueError, PyforgeError) as exc:
+        return Finding(
+            code="MRS-DISP-042",
+            severity=Severity.WARN,
+            message=(
+                f"could not deploy the caveman {item.layer!r}-layer skill into "
+                f"{worktree!r}: {type(exc).__name__}: {exc} -- this dispatch "
+                "session runs unwrapped"
+            ),
+        )
+    return None
 
 
 def _spec_text_prefer_worktree(
@@ -1647,6 +1707,11 @@ def dispatch_once(
         )
         return _done()
     data["worktree_path"] = str(worktree)
+    output_finding = _seed_dispatch_output_layer(
+        fs=fs, worktree=worktree, context_payload=context_payload
+    )
+    if output_finding is not None:
+        findings.append(output_finding)
     try:
         spec_path = dispatch_core.relocated_spec_path(
             spec_path, repo_root, worktree

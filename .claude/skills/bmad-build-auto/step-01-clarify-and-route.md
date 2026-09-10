@@ -13,6 +13,10 @@ followup_pass: '' # set at runtime when a `done` spec is re-dispatched for a fol
 - Treat the invocation intent as workflow input, not as a substitute for step-02 investigation and spec generation.
 - **EARLY EXIT** means: stop this step immediately, then read and follow the target file. Return here only if a later step explicitly says to loop back.
 
+## Output compression (Story 28.30, do this before the intent check)
+
+Check whether `.claude/skills/caveman/SKILL.md` exists in this worktree. If it does, invoke it now via the Skill tool (`skill: caveman`) — it is deployed only when the `[context].output` layer is declared on for this dispatch (`cli/dispatch.py::_seed_dispatch_output_layer`), and it governs how this session's own output speech compresses for the rest of the run, across every later step file, not just this one. Its own managed carve-out region names the surfaces that stay fully articulated regardless of the skill's own instruction — review verdicts, journal/status lines, escalation context, and the story contract itself (spec text, acceptance criteria, gate results) — never compress those. If the file does not exist, the layer is off (the default) or degraded (a named `MRS-DISP-042` finding on the dispatch launch, never blocking); proceed exactly as today.
+
 ## Intent check (do this first)
 
 Use the invocation prompt as the intent.

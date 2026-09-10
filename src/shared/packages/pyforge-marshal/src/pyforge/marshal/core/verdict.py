@@ -1111,6 +1111,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-040": Verdict.ERROR,
     # Story 33.9: scope triangle / env disagrees with dispatch slug.
     "MRS-DISP-041": Verdict.ERROR,
+    # Story 28.30 (CAP-3, dispatch half of the `output` layer): the SAME
+    # WARN tier as MRS-DISP-033/MRS-SPIN-017 above and for the same
+    # reason — a token-economy layer that did not engage over a launch
+    # that is otherwise entirely viable.
+    "MRS-DISP-042": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
