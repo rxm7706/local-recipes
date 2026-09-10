@@ -4,6 +4,9 @@ name: Platform Deploy
 # passed Warden in Platform CI. Host never imports pyforge.*; Warden remains
 # the sole quality gate — this workflow only verifies the CI artifact and
 # renders the chart by digest (no second scan verdict).
+# Story 12.6 (CAP-5): the verifier below refuses every verdict except `clean`;
+# honest non-clean records from golden-path-promotion (Stories 12.3–12.5) do
+# not promote — waivers compose upstream inside Warden, never at deploy.
 
 on:
   workflow_dispatch:
@@ -45,7 +48,7 @@ jobs:
           run-id: ${{ inputs.ci_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Refuse digest without a Warden verdict in the promotion artifact
+      - name: Refuse digest without a clean Warden verdict in the promotion artifact
         env:
           PLATFORM_DIGEST: ${{ inputs.platform_digest }}
           SIDECAR_DIGEST: ${{ inputs.sidecar_digest }}
