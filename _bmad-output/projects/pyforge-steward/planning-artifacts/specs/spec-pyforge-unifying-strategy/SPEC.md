@@ -272,7 +272,8 @@ they are why this is not merely a UI project.
     disconnect and still retrieves the result.
   - **verified:** atlas+warden `start`/`get` + handle TTL live in
     `src/platform/tests/test_start_get_survives_disconnect.py:82-281`; 6/8 stations lack
-    `start`/`get` (`django-atlas/.../mcp_asgi.py:28`, `django-warden/.../mcp_asgi.py:68` only);
+    `start`/`get` (`src/shared/packages/django-atlas/src/django_atlas_portal/mcp_asgi.py:28`,
+    `src/shared/packages/django-warden/src/django_warden_fabric/mcp_asgi.py:68` only);
     ingress-disconnect + multi-minute success criterion unexercised.
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
@@ -337,11 +338,12 @@ they are why this is not merely a UI project.
     **Live proof (CRC 2026-08-26, not a new CAP):** `platform_app` exists; `:2` EXECUTED;
     `/api/health` **200** as that role; `CREATE` on `public` refused. Schema `liquibase` and
     contrib/auth/Wagtail `:15`–`:19` are in the changelog. Isolated `mfa` sqlmigrate stays
-    fake.     `/ht/` 200 is steward **12-7**. See
+    fake. `/ht/` 200 is steward **12-7**. See
     `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
   - **verified:** PostgreSQL CREATE/ALTER/DROP refusal + sqlmigrate extraction gate live in
     `src/platform/tests/policy/test_liquibase_ddl_governance.py:197-224` and
-    `test_sqlmigrate_extraction.py:38-49`; CRC live DDL proof (`:310-314` above) documentary only.
+    `src/platform/tests/test_sqlmigrate_extraction.py:38-49`; CRC `/api/health` 200 as
+    `platform_app` (success Live proof block) documentary only — not an automated CI gate.
 
 - **CAP-10 — Failure is contained.**
   - **intent:** A failing dependency degrades its caller instead of cascading, concurrent writers
@@ -454,8 +456,9 @@ they are why this is not merely a UI project.
     is the default plugin for that process; a default Warden run stays green with no
     named commercial scanner plugin present.
   - **verified:** shared `pyforge.core.hooks` dummy + parallel-loader refusal + default Warden scan
-    live in `pyforge-core/tests/unit/test_hooks.py:33-59`,
-    `test_plugin_registration_conformance.py:107-128`, `test_default_warden_without_checkmarx.py`;
+    live in `src/shared/packages/pyforge-core/tests/unit/test_hooks.py:33-59`,
+    `src/shared/packages/pyforge-core/tests/meta/test_plugin_registration_conformance.py:107-128`,
+    `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py:1-42`;
     not all station hook books runtime-swapped.
   - *(Correct-course 2026-08-24, later the same day. Operator: this is the missing
     story — it does not exist in Canopy 18–30. Those epics stay chrome/portals/MCP/DDL;
@@ -479,9 +482,10 @@ they are why this is not merely a UI project.
     Tests fail if a second writable analytical engine or an agent OLTP DSN
     is reintroduced.
   - **verified:** attach+Parquet+HNSW+plane DSN+duckdb read_only boundary live in
-    `pyforge-atlas/tests/unit/test_read_only_live_attach.py`, `test_query_plane_parquet_cache.py`,
-    `test_query_plane_vectors.py`, `test_estate_dsn_is_plane.py`, `test_duckdb_boundary.py:133-137`;
-    pg attach optional-skip; DB-GPT/Langflow production plane consumers not integration-exercised.
+    `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py:1-80`,
+    `test_query_plane_parquet_cache.py:47-120`, `test_query_plane_vectors.py:47-58`,
+    `test_estate_dsn_is_plane.py:12-51`, `test_duckdb_boundary.py:133-137`; pg attach
+    optional-skip; DB-GPT/Langflow production plane consumers not integration-exercised.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
     in-progress; rebuild is allowed. First slice shipped the same day:
     34.1–34.5 + 36.1–36.2. OQs closed 2026-08-26: both faces, one boot

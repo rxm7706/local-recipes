@@ -66,6 +66,7 @@ live tests and source.
 - `src/platform/tests/test_openfeature_file_flags.py` — CAP-13 flags
 - `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` — CAP-14 semantic
 - `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` — CAP-15 roster
+- `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` — CAP-16 persona
 - `src/platform/tests/test_front_door_queries_supervisor.py` — CAP-17 runs board
 - `src/shared/packages/pyforge-core/tests/unit/test_hooks.py` — CAP-18 hooks
 - `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py` — CAP-19 plane
@@ -83,7 +84,7 @@ live tests and source.
 ## Verification
 
 **Commands:**
-- `grep -c '^\*\*verified:\*\*' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` — expected: 19
+- `grep -c '  - \*\*verified:\*\*' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` — expected: 19
 - `pixi run -e local-recipes chain-completeness-check` — expected: exit 0
 
 **Manual checks (if no CLI):**
