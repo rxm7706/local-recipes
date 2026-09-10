@@ -214,3 +214,13 @@ there.
   `export`.
 - **If 49.4 instead rewrites CAP-7's criterion to name the fixture**, this Spec's Django half is
   rewritten as deferred in the same act.
+
+## Django half deferred — 2026-09-10 (Story 49.4 ruling)
+
+**Ruling:** Branch B — CAP-7's deliverable is the fixture-grade JSON board at
+`/stations/atlas/board/` (`django-atlas/board.py:17-36`). The Django half of this Spec
+(`INSTALLED_APPS` entry, `AuditEntry` migrations, audit/export/middleware wiring for board loads)
+is **deferred** until a future story mounts a production analytical board that needs the full
+nine-module pattern. The three consumed modules (`cache`, `declarations`, `filtering`) remain
+live at fixture grade; the six unwired modules stay shipped-but-unexercised by explicit deferral,
+not by omission.
