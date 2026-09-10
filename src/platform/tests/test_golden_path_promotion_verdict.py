@@ -8,20 +8,19 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from tests.policy import readers
-from tests.test_golden_path_promotion_closure import (
-    _ENVIRONMENT,
-    _PLATFORM,
-    _ROOT_PIXI_LOCK,
-)
-from tests.test_golden_path_promotion_osv_db import (
-    _golden_path_job_block,
-    _load_osv_db_builder,
-)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+from tests.test_golden_path_promotion_closure import _ENVIRONMENT
+from tests.test_golden_path_promotion_closure import _PLATFORM
+from tests.test_golden_path_promotion_closure import _ROOT_PIXI_LOCK
+from tests.test_golden_path_promotion_osv_db import _golden_path_job_block
+from tests.test_golden_path_promotion_osv_db import _load_osv_db_builder
 
 _REPO_ROOT = readers.REPO_ROOT
 _PROMOTION_SCRIPT = _REPO_ROOT / "scripts" / "platform-golden-path-promotion.sh"
@@ -85,7 +84,8 @@ def _vuln_coverage(report: dict) -> dict:
     for row in report.get("coverage", []):
         if row.get("axis") == "vulnerability":
             return row
-    raise AssertionError("vulnerability coverage row missing")
+    msg = "vulnerability coverage row missing"
+    raise AssertionError(msg)
 
 
 def _provisioned_env(tmp_path: Path) -> dict[str, str]:
@@ -124,7 +124,7 @@ write_endoflife_cache(
 )
 """
     subprocess.run(  # noqa: S603 -- fixed argv, no shell
-        ["pixi", "run", "-e", "pyforge-warden", "python", "-c", setup],
+        ["pixi", "run", "-e", "pyforge-warden", "python", "-c", setup],  # noqa: S607 -- resolved via PATH like every other pixi invocation in this suite
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -270,7 +270,7 @@ def test_promotion_record_copies_warden_status(tmp_path: Path) -> None:
     )
     out_path = tmp_path / "record.json"
     result = subprocess.run(  # noqa: S603 -- fixed argv, no shell
-        [
+        [  # noqa: S607 -- resolved via PATH like every other pixi invocation in this suite
             "python",
             "-",
             str(warden_path),
