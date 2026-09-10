@@ -141,6 +141,15 @@ def test_doctor_source_tasks_include_capability_effect_beside_story_status():
     assert names.index("capability-effect") == names.index("story-status") + 1
 
 
+def test_doctor_source_tasks_include_status_body_beside_capability_effect():
+    """Story 21.16: status-body-consistency must stay in the detectors sweep
+    immediately after capability-effect."""
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert tasks["status-body-consistency"] == "status-body-consistency-check"
+    names = [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    assert names.index("status-body-consistency") == names.index("capability-effect") + 1
+
+
 def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unimportable(
     monkeypatch, tmp_path: Path, capsys,
 ):

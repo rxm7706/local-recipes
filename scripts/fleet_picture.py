@@ -506,6 +506,24 @@ def capability_effect_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def status_body_consistency_findings(
+    repo: pathlib.Path = REPO, timeout: int = 120
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s status-body-consistency source
+    (Stories 21.12–21.16 -- terminal-tier narrative drift beside
+    ``dream-vocab`` / ``spec-status-missing``). Same subprocess discipline
+    as ``capability_effect_findings``; raises on failure so ATTENTION can
+    degrade.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "status-body-consistency", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def verification_staleness_findings(
     repo: pathlib.Path = REPO, timeout: int = 180
     # Originally 90s (~2x margin over a ~48s measured baseline) -- not
@@ -1135,6 +1153,18 @@ def main() -> int:
             watch.append(f"{check}: {message}")
     except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
         watch.append("could not check capability-effect")
+
+    try:
+        for finding in status_body_consistency_findings():
+            check = finding.get("check", "status-body-consistency")
+            message = finding.get("message", "status/body drift").split(chr(10))[0][:110]
+            evidence = finding.get("evidence") or {}
+            precision = evidence.get("precision")
+            if precision is not None:
+                message = f"{message} (precision={precision:.3f})"
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check status-body-consistency")
 
     print("\nATTENTION:")
     if needs:

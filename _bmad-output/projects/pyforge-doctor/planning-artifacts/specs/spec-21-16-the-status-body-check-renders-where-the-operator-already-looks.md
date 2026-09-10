@@ -2,7 +2,8 @@
 title: 'The status/body check renders where the operator already looks'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '82626b1239a5c47dc8604676ae3066bced6c52e9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -74,4 +75,37 @@ declared_low_risk: false
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
+## Auto Run Result
+
+Status: done
+
+**Summary:** Registered `status-body-consistency` for operator-visible output: DISPATCH entry, detectors sweep membership + pixi task, and fleet-picture ATTENTION probe with optional precision suffix on WARN evidence.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py` — DISPATCH wiring
+- `scripts/detectors.py` — `_DOCTOR_SOURCE_TASKS` entry after capability-effect
+- `pixi.toml` — `status-body-consistency-check` task
+- `scripts/fleet_picture.py` — `status_body_consistency_findings()` + ATTENTION watch lines
+- Tests: dispatch, detectors ordering, fleet-picture ATTENTION
+
+**Review:** 0 patches applied. Deferred: CFE fleet-picture subprocess meta-test parity (precedent from 21.11, not spec-required); literal ATTENTION adjacency to `dream-vocab`/`spec-status-missing` (those checks use other surfaces — Story 21.2 not landed); precision on CAP-1/2/4 (only CAP-3 carries Story 21.14 measured precision by design).
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — green; `pytest tests/scripts/test_detectors_doctor_sources.py tests/scripts/test_fleet_picture_baseline_drift_attention.py` — 33 passed.
+
+**Follow-up review recommended:** false
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 10 findings — high 0, medium 0, low 0, false 4, maybe-false 0, reject 6
+- findings:
+  - `[false]` `[reject]` CFE meta test missing for status_body_consistency_findings — capability-effect meta test is precedent, not spec AC; scripts-layer ATTENTION test covers main() wiring
+  - `[false]` `[reject]` SKF manifest entry missing — out of story scope
+  - `[false]` `[reject]` Not literally beside dream-vocab/spec-status-missing in ATTENTION — fleet-picture never rendered dream-vocab; spec means same operator surfaces; capability-effect adjacency matches Epic 21 pattern
+  - `[false]` `[reject]` Precision required on all CAP sub-signals — Story 21.14 dual-bar measurement applies to promissory CAP-3 only; CAP-1/2/4 use tier scan stats
+  - `[false]` `[reject]` Doctor report surfacing untested — `_DOCTOR_SOURCE_TASKS` + DISPATCH + `test_detectors_doctor_sources` cover detectors report path
+  - `[false]` `[reject]` Code Map items absent from diff — registration/schema pre-landed in Story 21.12 per spec preamble
+  - `[reject]` `[defer]` Stale "ten sources" docstring in detectors — pre-existing from 21.11; count now 16
+  - `[reject]` `[defer]` Fleet-picture degrade-path test for subprocess failure — low value; same pattern untested for capability-effect in scripts suite
+  - `[reject]` `[defer]` Verification section omits standalone task — intent-contract read-only; command oracle is pyforge-doctor-test
+  - `[reject]` `[defer]` Review artifacts empty at review start — filled by this finalize pass
