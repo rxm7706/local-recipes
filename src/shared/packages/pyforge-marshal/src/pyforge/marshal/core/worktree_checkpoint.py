@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..adapters.vcs_git import VcsCommandError
 from ..ports.vcs import VcsPort
 
 _AUTO_CHECKPOINT_MARKER = "(auto-checkpoint)"
@@ -65,7 +64,7 @@ def commit_worktree_checkpoint(
             tuple(Path(path) for path in changed),
             auto_checkpoint_message(story_key),
         )
-    except VcsCommandError as exc:
+    except Exception as exc:
         return WorktreeCheckpointResult(
             committed=False, skipped_reason=str(exc)
         )
