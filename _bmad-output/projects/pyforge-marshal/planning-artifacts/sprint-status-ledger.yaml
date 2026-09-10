@@ -202,7 +202,7 @@ development_status:
   33-8-the-first-live-fan-out-wave-on-a-real-dispatch-max_parallel-key: done
   33-9-verify_scope-guards-marshal-factory-dispatch: done
   34-1-factory-spin-refuses-a-second-launch-against-a-live-loop-home: done
-  34-2-a-dispatch-spin-session-s-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: backlog
+  34-2-a-dispatch-spin-session-s-worktree-is-checkpointed-before-it-can-be-lost-to-a-crash: done
   34-3-factory-drain-tells-a-crashed-session-apart-from-a-genuinely-failed-one: backlog
   34-4-the-attention-block-s-own-refused-verdict-check-gets-the-same-test-coverage-its-station_state-sibling-has: backlog
   4-1-story-spec-promotion-with-a-durability-predicate: done

@@ -385,6 +385,9 @@ class FakeVcs:
         self.missing_branches: set[str] = set()
         #: commit sha -> the ref it is reachable from (S-3.9 ancestry proof)
         self.merged_commits: dict[str, str] = {}
+        #: Story 34.2: opt-in dirty worktree for auto-checkpoint wiring tests.
+        self.dirty_worktree = False
+        self.checkpoint_commits: list[tuple[Path, tuple[Path, ...], str]] = []
 
     def repo_common_root(self, start: Path) -> Path:
         self.repo_common_root_calls.append(start)
@@ -403,6 +406,21 @@ class FakeVcs:
     def merge_base(self, repo_root: Path, a: str, b: str) -> str:
         # Returning `a` means "a is reachable from b" to the S-3.9 classifier.
         return a if self.merged_commits.get(a) == b else "0" * 40
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        return self.dirty_worktree
+
+    def changed_files(
+        self, repo_root: Path, worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        return ("dirty.txt",) if self.dirty_worktree else ()
+
+    def commit_paths(
+        self, repo_root: Path, paths: tuple[Path, ...], message: str
+    ) -> str:
+        self.checkpoint_commits.append((repo_root, paths, message))
+        self.dirty_worktree = False
+        return "deadbeef"
 
 
 def _no_sleep(seconds: float) -> None:
