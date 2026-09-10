@@ -350,6 +350,9 @@ class _RecordingHarness:
     def story_feed_error(self, project: Path) -> str | None:
         return None
 
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        return ()
+
     def adapter_skill_trees(self, project: Path) -> dict[str, str]:
         """Story 6.3: `run_preflight`'s own new `gather_conformance_findings`
         step. Empty -- no configured adapter's declared tree differs from

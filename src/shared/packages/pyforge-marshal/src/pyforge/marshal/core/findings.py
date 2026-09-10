@@ -1506,6 +1506,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # 004 fast-forward failure (WARN); 005 push failure (WARN);
         # 006 harness-policy re-render failure (WARN);
         # 007 FF-without-render incomplete (WARN).
+        # 2026-09-10: 008 sprint-status.yaml regeneration failure (WARN) --
+        # the Tier-3 feed `marshal factory spin`/bmad-loop read had gone
+        # stale against `sprint-status-ledger.yaml` with no error anywhere.
         "MRS-REFRESH-001",
         "MRS-REFRESH-002",
         "MRS-REFRESH-003",
@@ -1513,6 +1516,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-REFRESH-005",
         "MRS-REFRESH-006",
         "MRS-REFRESH-007",
+        "MRS-REFRESH-008",
         # Story 17.4 (orchestrated chain regen, FR-148/149/151, AD-72):
         # MRS-CHAIN-001 missing planning tree (WARN/UNEVALUABLE);
         # 002 phase failure (ERROR); 003 done-key regression refuse (ERROR);
@@ -1729,6 +1733,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # MRS-SPIN-017. A home with every layer off raises nothing at all:
         # there is no degradation to report about a layer nobody enabled.
         "MRS-PREFLIGHT-015",
+        # 2026-09-10: MRS-PREFLIGHT-016 -- the Tier-3 `sprint-status.yaml`
+        # `marshal factory spin`/bmad-loop reads has drifted stale against
+        # the tracked `sprint-status-ledger.yaml` `marshal factory
+        # dispatch`/bmad-build-auto reads instead (an actionable story in
+        # the ledger missing from the Tier-3 copy). WARN, never blocking --
+        # `marshal refresh` is the fix; this is only the smoke detector for
+        # the silent "0 actionable stories" failure mode it replaces.
+        "MRS-PREFLIGHT-016",
         # Story 28.15 (scope-violation enforcement mode, policy-declared,
         # default warn, SPEC-marshal-token-economy CAP-17): MRS-GATE-012/013
         # are the `warn`-mode advisory siblings of MRS-GATE-007/008 --
