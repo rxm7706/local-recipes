@@ -164,6 +164,21 @@ capability-naming reason where helm/PyYAML are absent.
   `--maxmemory` strictly below the container memory limit, and
   `noeviction`. Clusters without a CNI that enforces NetworkPolicy get
   AUTH only, not network isolation.
+- **Network baseline (Story 48.3 / R-19).** When `networkPolicy.enabled`
+  is true (the default), the chart renders a namespace default-deny
+  NetworkPolicy plus per-workload egress and ingress allows: web reaches
+  postgres, both redis roles, mcp-host, and dbgpt; worker reaches
+  postgres, redis, and dbgpt; mcp-host egress is DNS-only; postgres and
+  dbgpt accept ingress only from platform-image clients. Both
+  ServiceAccounts set `automountServiceAccountToken: false`. **CRC attended
+  bring-up:** after `helm upgrade`, confirm the Route still serves `/ht/`
+  (web ingress allows `openshift-ingress` by default in
+  `networkPolicy.webIngressFrom`); exec into web and worker pods and curl
+  postgres/redis Services; confirm dbgpt and mcp-host are reachable from
+  web only on :5670/:8090. Trim `webIngressFrom` if your ingress controller
+  lives in a different namespace. `worker-builds` may set
+  `networkPolicy.workerBuilds.allowExternalEgress=true` for Mason builds
+  that reach external registries.
 - **Event delivery (Story 42.3).** `events.consumers` renders one
   `consume-events-<station>` Deployment per station
   (`manage.py consume_events --station <name>`; consumer group = station).

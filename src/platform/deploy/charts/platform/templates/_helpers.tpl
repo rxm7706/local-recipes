@@ -368,3 +368,87 @@ to the FILE provider poll without a new process.
   configMap:
     name: {{ include "platform.fullname" . }}-flags
 {{- end }}
+
+{{/*
+Story 48.3 / R-19: reusable NetworkPolicy egress fragments. Peers are
+release-scoped podSelectors in the release namespace -- never ipBlock for
+in-cluster Services.
+*/}}
+{{- define "platform.networkPolicy.dnsEgress" -}}
+- to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: {{ .Values.networkPolicy.dns.namespace | quote }}
+      podSelector:
+        matchLabels:
+          {{- toYaml .Values.networkPolicy.dns.podLabels | nindent 10 }}
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+{{- end }}
+
+{{- define "platform.networkPolicy.egressToPostgres" -}}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "platform.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+{{- end }}
+
+{{- define "platform.networkPolicy.egressToRedis" -}}
+{{- range $role := tuple "cache" "broker" }}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "platform.selectorLabels" $ | nindent 10 }}
+          app.kubernetes.io/component: redis-{{ $role }}
+  ports:
+    - protocol: TCP
+      port: 6379
+{{- end }}
+{{- end }}
+
+{{- define "platform.networkPolicy.egressToMcpHost" -}}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "platform.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: mcp-host
+  ports:
+    - protocol: TCP
+      port: 8090
+{{- end }}
+
+{{- define "platform.networkPolicy.egressToDbgpt" -}}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "platform.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: dbgpt
+  ports:
+    - protocol: TCP
+      port: 5670
+{{- end }}
+
+{{- define "platform.networkPolicy.platformDataPlaneEgress" -}}
+{{ include "platform.networkPolicy.egressToPostgres" . }}
+{{ include "platform.networkPolicy.egressToRedis" . }}
+{{- end }}
+
+{{- define "platform.networkPolicy.webEgressRules" -}}
+{{ include "platform.networkPolicy.platformDataPlaneEgress" . }}
+{{ include "platform.networkPolicy.egressToMcpHost" . }}
+{{ include "platform.networkPolicy.egressToDbgpt" . }}
+{{ include "platform.networkPolicy.dnsEgress" . }}
+{{- end }}
+
+{{- define "platform.networkPolicy.workerEgressRules" -}}
+{{ include "platform.networkPolicy.platformDataPlaneEgress" . }}
+{{ include "platform.networkPolicy.egressToDbgpt" . }}
+{{ include "platform.networkPolicy.dnsEgress" . }}
+{{- end }}

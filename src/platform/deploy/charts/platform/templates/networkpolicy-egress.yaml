@@ -1,0 +1,200 @@
+{{/*
+Story 48.3 / R-19: per-workload egress allows. Each policy selects one
+component and lists exactly the peers that workload's env wiring needs.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . }}
+{{- $fullname := include "platform.fullname" . }}
+
+{{- /* web: postgres, redis, mcp-host, dbgpt, DNS */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-egress-web
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.webEgressRules" . | nindent 4 }}
+
+{{- /* worker + beat + migrate + consume-events: data plane + dbgpt + DNS */}}
+{{- range $component := list "worker" "beat" "migrate" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-egress-{{ $component }}
+  labels:
+    {{- include "platform.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ $component }}
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.workerEgressRules" $root | nindent 4 }}
+{{- end }}
+
+{{- range $station := uniq $root.Values.events.consumers }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.consumeEvents.fullname" (dict "root" $root "station" $station) }}-egress
+  labels:
+    {{- include "platform.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: consume-events-{{ $station }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: consume-events-{{ $station }}
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.workerEgressRules" $root | nindent 4 }}
+{{- end }}
+
+{{- /* worker-builds: worker egress + optional external HTTPS */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-egress-worker-builds
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker-builds
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker-builds
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.workerEgressRules" . | nindent 4 }}
+    {{- if .Values.networkPolicy.workerBuilds.allowExternalEgress }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+    {{- end }}
+
+{{- /* mcp-host: DNS only -- stations run in-process */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.mcpHost.fullname" . }}-egress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-host
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-host
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
+
+{{- /* dbgpt: DNS + optional external LLM */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.dbgpt.fullname" . }}-egress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dbgpt
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: dbgpt
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
+    {{- if and .Values.networkPolicy.dbgpt.allowLlmEgress .Values.sidecar.llm.apiBase }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+
+{{- /* liquibase: postgres + DNS only */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.liquibase.fullname" . }}-egress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: liquibase
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: liquibase
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.egressToPostgres" . | nindent 4 }}
+    {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
+
+{{- if .Values.postgres.backup.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "platform.postgresBackup.fullname" . }}-egress
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-backup
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres-backup
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.egressToPostgres" . | nindent 4 }}
+    {{- include "platform.networkPolicy.dnsEgress" . | nindent 4 }}
+{{- end }}
+
+{{- /* data services: DNS only */}}
+{{- range $component := list "postgres" "redis-cache" "redis-broker" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-egress-{{ $component }}
+  labels:
+    {{- include "platform.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "platform.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ $component }}
+  policyTypes:
+    - Egress
+  egress:
+    {{- include "platform.networkPolicy.dnsEgress" $root | nindent 4 }}
+{{- end }}
+{{- end }}
