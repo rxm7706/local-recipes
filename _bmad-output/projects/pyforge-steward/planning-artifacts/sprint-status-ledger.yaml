@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 313
+# stories: 314
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -192,7 +192,7 @@ development_status:
   48-7-the-cap-axis-namespace-pass: done
   48-8-the-single-spec-merge: done
   48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: done
-  49-1-the-verified-column-on-every-capability: backlog
+  49-1-the-verified-column-on-every-capability: done
   49-10-index-atlas-realization-gate-effect-stories: blocked
   49-11-index-herald-realization-gate-effect-stories: blocked
   49-12-index-mason-realization-gate-effect-stories: blocked
@@ -316,7 +316,7 @@ development_status:
   epic-47-retrospective: optional
   epic-48: in-progress
   epic-48-retrospective: optional
-  epic-49: backlog
+  epic-49: in-progress
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
