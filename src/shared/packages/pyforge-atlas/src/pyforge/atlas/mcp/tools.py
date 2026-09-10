@@ -26,6 +26,64 @@ from pyforge.atlas import provenance as _provenance
 from pyforge.atlas.trending_candidates import query as _trending
 from pyforge.core.errors import PyforgeError
 
+# FR-155 inventory registry (Story 25.3): one entry per MCP tool registered on
+# ``server.build_server``. ``cli`` is the argv template AFTER the program name;
+# ``None`` marks a tool-only helper with no ``pyforge-atlas`` counterpart.
+TOOL_SPECS: dict[str, dict[str, Any]] = {
+    "run_core_pipeline": {
+        "description": "Trigger the `core` pipeline run.",
+        "cli": ["run", "--pipeline", "core"],
+    },
+    "run_vcs_health_pipeline": {
+        "description": "Trigger the `vcs_health` pipeline run.",
+        "cli": ["run", "--pipeline", "vcs_health"],
+    },
+    "run_pypi_intelligence_pipeline": {
+        "description": "Trigger the `pypi_intelligence` pipeline run.",
+        "cli": ["run", "--pipeline", "pypi_intelligence"],
+    },
+    "run_vulnerability_pipeline": {
+        "description": "Trigger the `vulnerability` pipeline run.",
+        "cli": ["run", "--pipeline", "vulnerability"],
+    },
+    "run_seed_gaps_pipeline": {
+        "description": "Trigger the `seed_gaps` pipeline run.",
+        "cli": ["run", "--pipeline", "seed_gaps"],
+    },
+    "run_universal_sbom_pipeline": {
+        "description": "Trigger the `universal_sbom` pipeline run.",
+        "cli": ["run", "--pipeline", "universal_sbom"],
+    },
+    "run_derived_artifacts_pipeline": {
+        "description": "Trigger the `derived_artifacts` pipeline run.",
+        "cli": ["run", "--pipeline", "derived_artifacts"],
+    },
+    "run_upstream_discovery_pipeline": {
+        "description": "Trigger the `upstream_discovery` pipeline run.",
+        "cli": ["run", "--pipeline", "upstream_discovery"],
+    },
+    "read_atlas_dataset": {
+        "description": "Read a catalog dataset with build-provenance envelope.",
+        "cli": None,
+    },
+    "list_atlas_pipelines": {
+        "description": "List registered atlas pipeline names.",
+        "cli": None,
+    },
+    "list_atlas_datasets": {
+        "description": "List declared catalog dataset names.",
+        "cli": None,
+    },
+    "query_vizro_ai": {
+        "description": "Natural-language Vizro-AI query over the BSL graph.",
+        "cli": None,
+    },
+    "query_trending_candidates": {
+        "description": "Query tiered GitHub-trending candidates (CAP-3).",
+        "cli": None,
+    },
+}
+
 # The authoritative registry mirror: the four registered pipelines from
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
 # Kept STATIC — not computed from a live registry — so list_pipelines()

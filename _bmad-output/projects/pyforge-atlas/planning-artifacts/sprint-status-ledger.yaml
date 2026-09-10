@@ -79,7 +79,7 @@ development_status:
   24-1-mcp-builder-is-atlas-wielded-for-the-mcp-face: done
   25-1-retire-the-second-lane-3-runtime: done
   25-2-materialize-cap-8-s-canonical-parquets-one-recorded-run: blocked
-  25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate: backlog
+  25-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done
