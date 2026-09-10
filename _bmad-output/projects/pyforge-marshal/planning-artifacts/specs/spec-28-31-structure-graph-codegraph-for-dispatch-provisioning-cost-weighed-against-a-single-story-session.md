@@ -7,7 +7,7 @@ review_loop_iteration: 0
 baseline_revision: 'd7280cee9791e1602a6e62d98df8ce2a2e0bd7c9'
 followup_review_recommended: false
 context:
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/kit.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/kit.py
 declared_low_risk: false
 ---
 
