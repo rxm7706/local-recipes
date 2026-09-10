@@ -90,7 +90,7 @@ architecture (the RWX storage-class prerequisite; the undefined exception proced
 | 2.4 | New epics | Done | None. Object-storage as a product (seed Scopes B / C) is outside this chain by the seed's own verdict. |
 | 2.5 | Order / priority | N/A | — |
 | 3.1 | PRD | Done | FR-8 ("media and cache survive multiple replicas") and NFR-C2 stand as written. No FR change. |
-| 3.2 | Architecture | Action-needed | Canopy canopy:AD-13 gains the storage-class prerequisite and the multi-mount reason; the canopy conflict paragraph defines the exception procedure; parent AD-1 gets a dated re-affirmation in the AD-6 style. |
+| 3.2 | Architecture | Action-needed | canopy:AD-13 gains the storage-class prerequisite and the multi-mount reason; the canopy conflict paragraph defines the exception procedure; parent AD-1 gets a dated re-affirmation in the AD-6 style. |
 | 3.3 | UI/UX | N/A | — |
 | 3.4 | Other artifacts | Action-needed | Dream Grounding bullet + Realization entry; seed Dream § Reopening gets a dated correction so the later fold carries the corrected finding; `deploy/README.md:211`, `values.yaml:250`, `NOTES.txt:22`. |
 | 4.1 | Direct adjustment | Viable | Prose plus three doc lines. Effort **Low**. Risk **Low**. |

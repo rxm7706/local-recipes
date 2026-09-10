@@ -17,7 +17,7 @@ deferred:
       Applied-id keys on redis-broker have no TTL, so
       pyforge.events.applied:* grows on a noeviction instance.
     evidence: |-
-      EventFabric._mark_applied uses SET NX with no EXPIRE. Canopy canopy:AD-10
+      EventFabric._mark_applied uses SET NX with no EXPIRE. canopy:AD-10
       binds redis-broker as noeviction. Story 24.1 ACs do not require a
       retention policy for idempotency keys.
     location: >-

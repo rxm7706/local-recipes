@@ -1583,10 +1583,10 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-### DW-FU-23-1: Canopy canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+### DW-FU-23-1: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
 
 - source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
-  summary: Canopy canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+  summary: canopy:AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
   evidence: Story 23.1 ACs and FR-16 name same-URL row isolation via filter_by_role / AccessDeclaration. Audit and build_navigation are already in pyforge.steward.dashboard from Epic 9 and were not wired onto /stations/atlas/board/.
   location: src/shared/packages/django-atlas/src/django_atlas_portal/board.py
   origin: spec-deferred 02b35407712b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
@@ -1600,7 +1600,7 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
 
 - source_spec: `planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md`
   summary: Applied-id keys on redis-broker have no TTL, so pyforge.events.applied:* grows on a noeviction instance.
-  evidence: EventFabric._mark_applied uses SET NX with no EXPIRE. Canopy canopy:AD-10 binds redis-broker as noeviction. Story 24.1 ACs do not require a retention policy for idempotency keys.
+  evidence: EventFabric._mark_applied uses SET NX with no EXPIRE. canopy:AD-10 binds redis-broker as noeviction. Story 24.1 ACs do not require a retention policy for idempotency keys.
   location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
   origin: spec-deferred a9be7ed463af — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium

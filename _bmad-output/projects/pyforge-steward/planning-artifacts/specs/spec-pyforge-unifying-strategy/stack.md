@@ -15,7 +15,7 @@ depending on it can be built, and per repo Rule 1 each of those stories invokes
 
 ## Fixed floor
 
-Django `>=5.2.15,<6` and Python `3.12.*`, inherited from `spec-python-agent-platform` CAP-5. Django
+Django `>=5.2.17,<6` and Python `3.14.*`, inherited from `pap:CAP-5`. Django
 6 is unavailable to this chain.
 
 **A live packaging risk sits underneath that pin.** conda-forge's Django 5.2 line **stopped at
@@ -62,14 +62,14 @@ for pipelines, Vizro for Lane 3, one Atlas Kedro home (see canopy:AD-21 / canopy
 | `vizro` + BSL | atlas, steward Lane 3 | Boards over plane metrics; CAP-7 isolation | **shipped 36.1–36.2 (`estate-cache`)** |
 | `vizro-mcp` + `vizro-e2e-flow` | herald/atlas authoring | Replace Vizro-AI for new boards | **still later** (not 36.2) |
 | `cocoindex` + `graphifyy` | scribe | `scribe index`: AST graph + incremental index; link functions to Dream/PRD/spec_id | **bind** (not Epic 34) |
-| `openlineage-python` | marshal, steward | CloudEvents already CAP-8; emit OpenLineage on Dream→Spec→Mason→Warden→Steward | **bind** (CAP-8 face, not a fourth bus) |
+| `openlineage-python` | atlas | CloudEvents already canopy:CAP-8; emit OpenLineage on Dream→Spec→Mason→Warden→Steward | **bind** (canopy:CAP-8 face, not a fourth bus) |
 | `boring-semantic-layer` | atlas | Metrics on the plane (`package_download_velocity`, `ecosystem_cve_risk_score`, new CAP-19 relations) | **36.1 reads estate cache** |
 | `markitdown` | herald, scribe | docx/xlsx/pptx/pdf → markdown for Wagtail / Scribe memory | **bind** |
-| `graphviz2drawio` | herald | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
+| `graphviz2drawio` | atlas | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
 | `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (canopy:FR-27). Same primitive for worktrees / scribe files | **extend** |
 | `go-sops` + `age` | steward | Offline X25519 vaulting — in-estate path | **landed / keep** |
 | HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy:AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
-| `pandera` | warden, mason | Schema contracts on lockfiles / CycloneDX feeds | **bind** |
+| `pandera` | atlas | Schema contracts on lockfiles / CycloneDX feeds | **bind** |
 | `taplo`, `sqlfluff`, `yamllint` | doctor, warden | `pixi.toml` / `recipe.yaml` / DuckDB SQL preflight (`doctor check --syntax`) | **bind** (sqlfluff also lints CAP-19 SQL) |
 | `playwright` + `playwright-python` | herald, testing-kit | `.dc.html` + Vizro board PNG/PDF; both pins required (CLI ≠ Python module) | **extend** (herald already; Vizro thumbs after Lane 3 plane board) |
 
@@ -78,22 +78,18 @@ the existing Redis CloudEvents fabric or a documented emit from the same process
 not mint a lineage server. cocoindex/graphifyy stay behind Scribe `GraphStore`; they do not
 become a second vector store beside CAP-19.
 
-## Absent — feedstock work, blocking
+## Absent — feedstock work, historical (shipped `ed41099205` 2026-08-25)
 
 | Package | Serves | Consequence |
 |---|---|---|
-| `openfeature-sdk` | CAP-13 | **Zero runtime dependencies** — as simple as a `noarch: python` recipe gets. Start here. |
-| `openfeature-flagd-api` | CAP-13 | Transitive, via flagd-core. |
-| `openfeature-flagd-core` | CAP-13 | Carries the targeting engine. |
-| `openfeature-provider-flagd` | CAP-13 | The FILE resolver itself. |
-| `cachebox` 5.x | CAP-13 | conda-forge ships **6.2.5**; the flagd provider pins `>=5.1,<6`. A 5.x build is required alongside the four above. |
-| `liquibase` | CAP-9 | **Not on conda-forge** — sole anaconda.org hit is third-party `maize-genetics/liquibase` 4.21.0, 0 downloads, two majors behind Community 5.0.4. **Feedstock committed 2026-08-24.** Shape precedent: `apache-tika` (Maven jars into `$PREFIX/share/java/…`, `openjdk` run-dep, CLI wrapper), one of ~12 JVM recipes already here. `openjdk` 25.0.2 clears the Java 17+ floor. **Vendor the PostgreSQL JDBC driver** — 5.0 Community stopped bundling it and LPM fetches over the network. |
+| `openfeature-sdk` | CAP-13 | **Zero runtime dependencies** — as simple as a `noarch: python` recipe gets. Shipped 2026-08-25. |
+| `openfeature-flagd-api` | CAP-13 | Transitive, via flagd-core. Shipped 2026-08-25. |
+| `openfeature-flagd-core` | CAP-13 | Carries the targeting engine. Shipped 2026-08-25. |
+| `openfeature-provider-flagd` | CAP-13 | The FILE resolver itself. Shipped 2026-08-25. |
+| `liquibase` | CAP-9 | **Not on conda-forge** at authoring — feedstock committed 2026-08-24, shipped 2026-08-25. Shape precedent: `apache-tika` (Maven jars into `$PREFIX/share/java/…`, `openjdk` run-dep, CLI wrapper). **Vendor the PostgreSQL JDBC driver** — 5.0 Community stopped bundling it and LPM fetches over the network. |
 
-Nothing OpenFeature-related exists anywhere on anaconda.org: a global search returns zero results.
-Five *builds* are the committed cost of CAP-13, ruled 2026-08-24 — four new feedstocks plus the
-`cachebox` 5.x downgrade on an existing one, which is a different size of task and should not be
-scheduled as a fifth new recipe. `liquibase` is a sixth build for CAP-9,
-committed the same day. **Stories 26.3 and 27.1 are ledger-`done` (2026-08-25).** Do not
+Nothing OpenFeature-related existed on anaconda.org at authoring; four feedstocks plus `liquibase`
+landed in commit `ed41099205` (2026-08-25). **Stories 26.3 and 27.1 are ledger-`done`.** Do not
 re-open those epics as “start with packaging.” CRC did not close live CAP-9 (`/ht/` after
 Liquibase).
 

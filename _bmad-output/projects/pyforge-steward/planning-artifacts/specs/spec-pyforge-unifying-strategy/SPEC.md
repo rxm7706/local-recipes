@@ -29,7 +29,6 @@ surface:
   - src/shared/packages/pyforge-atlas/**
   - .claude/skills/pyforge-*/**
   - recipes/openfeature-*/**
-  - recipes/cachebox/**
   - recipes/liquibase/**
   - pixi.toml
   - environment.yaml
@@ -705,6 +704,13 @@ Reopened by the currency review; each line names its vessel.
   `graph_store.py:59`, with `_pg`, `_plane`, `_plugins` drivers; the two prose sites below are
   annotated, not deleted); `resilience-invariants.md:103` BS-5 (`read_only=True` appears twice,
   AST-enforced) and `:104` BS-6 (CloudEvents 1.0 ships at `events/constants.py`).
+
+- **`pyforge.*` import carve-outs (2026-09-10, Story 48.7).** `pap:AD-2` / host Non-goals state
+  the host never imports `pyforge.*`; two brownfield sites remain until their owning stories land:
+  `src/platform/ingest/github_projects/*` (eight `pyforge.steward.*` imports — successor in
+  `fnd:AD-7` / Story 44.4) and `django-atlas` portal tests (allow-listed `pyforge.steward.dashboard`
+  imports). These are recorded exceptions, not a repeal of the rule; Story 48.8 merge must not
+  copy the absolute Non-goal forward without this carve-out.
 
 ## Open Questions
 

@@ -57,7 +57,7 @@ from config.station_api import station_application  # noqa: E402
 from config.websocket import websocket_application  # noqa: E402
 
 # Station MCP faces (canopy AD-5) are discovered via django_pyforge.mcp_http.
-# Story 11.1 (spec-python-agent-platform CAP-2, AD-14 Pattern A): Langflow's
+# Story 11.1 (pap:CAP-2, AD-14 Pattern A): Langflow's
 # own FastAPI app, built once at import time. Imported only after Django's
 # settings have executed (via django_application above), which is what
 # exports the derived LANGFLOW_DATABASE_URL/LANGFLOW_CACHE_TYPE/... env vars
@@ -65,7 +65,7 @@ from config.websocket import websocket_application  # noqa: E402
 from langflow_integration.asgi import _LifespanManager  # noqa: E402
 from langflow_integration.asgi import langflow_application  # noqa: E402
 
-# Story 11.2 (spec-python-agent-platform CAP-3, AD-17): the registry-consult
+# Story 11.2 (pap:CAP-3, AD-17): the registry-consult
 # touchpoint for DB-GPT. DB-GPT is configured to Pattern B (its own sidecar
 # container, reached over Celery/REST -- `dbgpt_integration/tasks.py`), never
 # an ASGI mount, so there is nothing Pattern-A to build here. This assertion

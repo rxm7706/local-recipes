@@ -65,6 +65,7 @@ PROJECTS = ROOT / "_bmad-output" / "projects"
 #: title-run 100% precise but covering only 12 of the 151. The rest need
 #: reading, so they are recorded rather than guessed at.
 _BASELINE_PATH = ROOT / "scripts" / ".ad-citation-baseline.json"
+_CAP_BASELINE_PATH = ROOT / "scripts" / ".cap-citation-baseline.json"
 
 #: Citations to a THIRD-PARTY tool's own documented ADs. These can never
 #: resolve against a spine in this fleet, because the tool that defines them
@@ -125,6 +126,20 @@ _AD_DEF = re.compile(
 #: counted as bare.
 _AD_CITE = re.compile(r"(?<![\w:-])AD-(\d+)")
 
+#: A CAP DEFINITION: same heading/bold split as AD; qualified `fnd:CAP-1` is a
+#: separate namespace from bare `CAP-1` (mirrors the 2026-09-08 AD fold).
+_CAP_DEF = re.compile(
+    r"^(?:"
+    r"#{1,6}\s*(?P<hp>[a-z][\w-]*:)?CAP-(?P<h>\d+)\b"
+    r"|"
+    r"(?:[-*+]\s+)?\*\*(?P<bp>[a-z][\w-]*:)?CAP-(?P<b>\d+)\b"
+    r")",
+    re.M,
+)
+
+#: An unprefixed CAP citation. The lookbehind rejects `suite:CAP-1` / `fnd:CAP-1`.
+_CAP_CITE = re.compile(r"(?<![\w:-])CAP-(\d+)")
+
 #: Spines live under `planning-artifacts/architecture/<run>/`, and -- when a
 #: Spec adopts one as a companion -- beside that Spec. Both are conformant:
 #: `spec-python-agent-platform/SPEC.md` declares
@@ -144,6 +159,43 @@ def _spines(project: pathlib.Path) -> list[pathlib.Path]:
     for glob in _SPINE_GLOBS:
         out.extend(sorted(project.glob(glob)))
     return out
+
+
+def _capabilities_block(text: str) -> tuple[int, int] | None:
+    """Return (start, end) line indices for a SPEC's ``## Capabilities`` block."""
+    lines = text.splitlines()
+    start: int | None = None
+    for i, line in enumerate(lines):
+        if re.match(r"^## Capabilities\b", line):
+            start = i
+            continue
+        if start is not None and re.match(r"^## ", line):
+            return start, i
+    if start is not None:
+        return start, len(lines)
+    return None
+
+
+def _defined_caps(project: pathlib.Path) -> set[int]:
+    """Bare CAP ids defined in ``project`` (spines + SPEC capabilities blocks)."""
+    ids: set[int] = set()
+    for sp in _spines(project):
+        for m in _CAP_DEF.finditer(_read(sp)):
+            if m.group("hp") or m.group("bp"):
+                continue
+            ids.add(int(m.group("h") or m.group("b")))
+    for spec in project.glob("planning-artifacts/specs/*/SPEC.md"):
+        text = _read(spec)
+        block = _capabilities_block(text)
+        if block is None:
+            continue
+        start, end = block
+        chunk = "\n".join(text.splitlines()[start:end])
+        for m in _CAP_DEF.finditer(chunk):
+            if m.group("hp") or m.group("bp"):
+                continue
+            ids.add(int(m.group("h") or m.group("b")))
+    return ids
 
 
 def _defined_ads(project: pathlib.Path) -> dict[pathlib.Path, set[int]]:
@@ -178,13 +230,16 @@ def main() -> int:
         return 2
 
     defined: dict[str, set[int]] = {}
+    defined_caps: dict[str, set[int]] = {}
     per_spine: dict[str, dict[pathlib.Path, set[int]]] = {}
     for proj in projects:
         slug = proj.name
         per_spine[slug] = _defined_ads(proj)
         defined[slug] = set().union(*per_spine[slug].values()) if per_spine[slug] else set()
+        defined_caps[slug] = _defined_caps(proj)
 
     unresolvable: list[str] = []
+    cap_unresolvable: list[str] = []
     cross_project = 0
     ambiguous: list[str] = []
     misnamed: list[str] = []
@@ -259,6 +314,29 @@ def main() -> int:
                     f"project does not define -- qualify it (`<spine>:AD-{n}`) or fix the id"
                 )
 
+    # --- FAIL: a bare CAP citation that does not resolve IN ITS OWN PROJECT -
+    for proj in projects:
+        slug = proj.name
+        for path in sorted(proj.rglob("*.md")):
+            if "/architecture/" in str(path):
+                continue
+            text = _read(path)
+            skip_lines: set[int] = set()
+            if path.name == "SPEC.md" and (block := _capabilities_block(text)):
+                start, end = block
+                skip_lines.update(range(start, end))
+            for line_no, line in enumerate(text.splitlines()):
+                if line_no in skip_lines:
+                    continue
+                for raw in _CAP_CITE.findall(line):
+                    n = int(raw)
+                    if n in defined_caps[slug]:
+                        continue
+                    cap_unresolvable.append(
+                        f"{slug}: {path.relative_to(ROOT)} cites bare CAP-{n}, which this "
+                        f"project does not define -- qualify it (`<spine>:CAP-{n}`) or fix the id"
+                    )
+
     # --- WARN: one project, several spines, overlapping id ranges -----------
     for slug, spine_map in per_spine.items():
         if len(spine_map) < 2:
@@ -280,6 +358,10 @@ def main() -> int:
         print(f"[ad-citation] broken: {line}")
     if len(unresolvable) > 15:
         print(f"[ad-citation] broken: ... and {len(unresolvable) - 15} more")
+    for line in cap_unresolvable[:15]:
+        print(f"[cap-citation] broken: {line}")
+    if len(cap_unresolvable) > 15:
+        print(f"[cap-citation] broken: ... and {len(cap_unresolvable) - 15} more")
     for line in misnamed:
         print(f"[ad-citation] misnamed-spine: {line}")
     for line in malformed:
@@ -288,11 +370,16 @@ def main() -> int:
         print(f"[ad-citation] ambiguous: {line}")
 
     total_defined = sum(len(v) for v in defined.values())
+    total_caps = sum(len(v) for v in defined_caps.values())
     print(
         f"[ad-citation] {total_defined} AD(s) defined across "
         f"{sum(len(v) for v in per_spine.values())} spine(s) in {len(projects)} project(s); "
         f"{cross_project} qualified cross-project citation(s); "
         f"{external} external-tool citation(s)"
+    )
+    print(
+        f"[cap-citation] {total_caps} bare CAP(s) defined across "
+        f"{len(projects)} project(s); {len(set(cap_unresolvable))} distinct broken citation(s)"
     )
 
     # One ratchet over every FAIL class. `unresolvable` is deduplicated first:
@@ -300,6 +387,15 @@ def main() -> int:
     # counting occurrences would make the baseline shrink or grow on edits that
     # change nothing.
     findings = sorted(set(unresolvable) | set(misnamed) | set(malformed))
+    cap_findings = sorted(set(cap_unresolvable))
+
+    if "--write-cap-baseline" in sys.argv:
+        _CAP_BASELINE_PATH.write_text(
+            json.dumps({"recorded": "2026-09-10", "known": cap_findings}, indent=1) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[cap-citation] baseline written: {len(cap_findings)} known issue(s)")
+        return 0
 
     if "--write-baseline" in sys.argv:
         _BASELINE_PATH.write_text(
@@ -317,28 +413,60 @@ def main() -> int:
             print(f"[ad-citation] cannot run: {_BASELINE_PATH.name} is unreadable", file=sys.stderr)
             return 2
 
+    cap_baseline: set[str] = set()
+    if _CAP_BASELINE_PATH.is_file():
+        try:
+            cap_baseline = set(
+                json.loads(_CAP_BASELINE_PATH.read_text(encoding="utf-8")).get("known", [])
+            )
+        except (OSError, ValueError):
+            print(
+                f"[cap-citation] cannot run: {_CAP_BASELINE_PATH.name} is unreadable",
+                file=sys.stderr,
+            )
+            return 2
+
     new = [f for f in findings if f not in baseline]
+    cap_new = [f for f in cap_findings if f not in cap_baseline]
     healed = sorted(baseline - set(findings))
+    cap_healed = sorted(cap_baseline - set(cap_findings))
     if baseline:
         print(
             f"[ad-citation] {len(findings)} distinct issue(s) "
             f"({len(unresolvable)} citation occurrence(s)); {len(baseline)} baselined"
             + (f", {len(healed)} since fixed" if healed else "")
         )
+    if cap_baseline:
+        print(
+            f"[cap-citation] {len(cap_findings)} distinct issue(s) "
+            f"({len(cap_unresolvable)} citation occurrence(s)); {len(cap_baseline)} baselined"
+            + (f", {len(cap_healed)} since fixed" if cap_healed else "")
+        )
+    exit_code = 0
     if new:
         print(f"[ad-citation] {len(new)} NEW issue(s), not in the baseline:")
         for line in new[:10]:
             print(f"[ad-citation]   NEW: {line}")
-        return 1
+        exit_code = 1
+    if cap_new:
+        print(f"[cap-citation] {len(cap_new)} NEW issue(s), not in the baseline:")
+        for line in cap_new[:10]:
+            print(f"[cap-citation]   NEW: {line}")
+        exit_code = 1
+    if exit_code:
+        return exit_code
     if findings:
         # Known debt: reported every run, bounded by the baseline, never a
         # false green. Re-stamp with --write-baseline only when it SHRINKS.
         print("[ad-citation] ok: no new issues; the baselined set is unchanged or smaller")
-        return 0
-    if ambiguous:
+    elif ambiguous:
         print("[ad-citation] ok: every citation resolves; ambiguity above is advisory")
-        return 0
-    print("[ad-citation] ok: every AD citation resolves to exactly one spine")
+    else:
+        print("[ad-citation] ok: every AD citation resolves to exactly one spine")
+    if cap_findings:
+        print("[cap-citation] ok: no new issues; the baselined set is unchanged or smaller")
+    else:
+        print("[cap-citation] ok: every CAP citation resolves in its project")
     return 0
 
 

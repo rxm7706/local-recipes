@@ -19,7 +19,7 @@ warnings:
   - oversized
 deferred:
   - summary: >-
-      Canopy canopy:AD-20 also names audit write and role-built navigation; this
+      canopy:AD-20 also names audit write and role-built navigation; this
       story's board is JSON filter-then-search only.
     evidence: |-
       Story 23.1 ACs and canopy:FR-16 name same-URL row isolation via

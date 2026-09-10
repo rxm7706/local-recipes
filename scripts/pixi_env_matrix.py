@@ -90,7 +90,7 @@ def render_markdown(rows: list[EnvRow], *, lock_path: Path) -> str:
         f"{BEGIN_MARKER} lock-sha256={digest} -->",
         "",
         "Measured from ``pixi.lock`` (not a cross-minor solver benchmark). "
-        "Regenerate with ``python scripts/pixi_env_matrix.py --update "
+        "Regenerate with ``python scripts/pixi_env_matrix.py --update --dream "
         "docs/dreams/pyforge-unifying-strategy.md`` after lock changes.",
         "",
         "| Environment | Python | Conda records | Platforms |",

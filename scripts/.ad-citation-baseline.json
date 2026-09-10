@@ -1,19 +1,10 @@
 {
  "recorded": "2026-09-08",
  "known": [
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/bmad-dev-auto-result-8-2-zero-loop-guarantee.md cites bare AD-10, which this project does not define -- qualify it (`<spine>:AD-10`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/deferred-work.md cites bare AD-10, which this project does not define -- qualify it (`<spine>:AD-10`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/deferred-work.md cites bare AD-12, which this project does not define -- qualify it (`<spine>:AD-12`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/deferred-work.md cites bare AD-14, which this project does not define -- qualify it (`<spine>:AD-14`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-12-context.md cites bare AD-12, which this project does not define -- qualify it (`<spine>:AD-12`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-12-context.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-12-context.md cites bare AD-15, which this project does not define -- qualify it (`<spine>:AD-15`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-12-context.md cites bare AD-16, which this project does not define -- qualify it (`<spine>:AD-16`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-16-context.md cites bare AD-17, which this project does not define -- qualify it (`<spine>:AD-17`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/epic-8-context.md cites bare AD-10, which this project does not define -- qualify it (`<spine>:AD-10`) or fix the id",
-  "pyforge-steward: _bmad-output/projects/pyforge-steward/implementation-artifacts/spec-16-3-every-process-speaks-structlog-otel.md cites bare AD-17, which this project does not define -- qualify it (`<spine>:AD-17`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md cites bare AD-11, which this project does not define -- qualify it (`<spine>:AD-11`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
+  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-4-r-20-secrets-profile.md cites bare AD-12, which this project does not define -- qualify it (`<spine>:AD-12`) or fix the id",
+  "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-5-r-21-observability-contract.md cites bare AD-11, which this project does not define -- qualify it (`<spine>:AD-11`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md cites bare AD-13, which this project does not define -- qualify it (`<spine>:AD-13`) or fix the id",
   "pyforge-steward: _bmad-output/projects/pyforge-steward/planning-artifacts/test-design-architecture.md cites bare AD-24, which this project does not define -- qualify it (`<spine>:AD-24`) or fix the id"
