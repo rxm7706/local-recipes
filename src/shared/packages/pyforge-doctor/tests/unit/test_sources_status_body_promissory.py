@@ -108,6 +108,12 @@ def test_gather_combined_includes_cap3(tmp_path: Path):
     assert any(f.check == sbc._CHECK_PROMISSORY for f in findings)
 
 
+def test_scan_body_silent_on_quiet_fixture():
+    body = Path(_FIXTURES / "quiet-realized-dream.md").read_text(encoding="utf-8")
+    body = sbc._body_after_frontmatter(body)
+    assert sbc.scan_body_for_promissory_language(body) == ()
+
+
 def test_gather_measured_and_rejected_when_not_accepted(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
@@ -118,3 +124,16 @@ def test_gather_measured_and_rejected_when_not_accepted(
     assert findings[0].status == DoctorStatus.OK
     assert "measured-and-rejected" in findings[0].message
     assert findings[0].evidence["accepted"] is False
+
+    combined = sbc.gather(repo)
+    assert len(combined) == 1
+    assert "measured-and-rejected" in combined[0].message
+    assert combined[0].evidence["accepted"] is False
+
+
+def test_gather_live_includes_cap1_and_cap3_together():
+    repo_root = Path(__file__).resolve().parents[6]
+    findings = sbc.gather(repo_root)
+    checks = {f.check for f in findings}
+    assert sbc._CHECK_PROGRESS in checks
+    assert sbc._CHECK_PROMISSORY in checks

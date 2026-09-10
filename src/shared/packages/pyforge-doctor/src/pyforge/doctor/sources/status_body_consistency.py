@@ -866,6 +866,23 @@ def gather_promissory_language(target: Path) -> tuple[Finding, ...]:
     )
 
 
+def _dedupe_unparseable_findings(
+    findings: tuple[Finding, ...],
+) -> tuple[Finding, ...]:
+    seen_paths: set[str] = set()
+    out: list[Finding] = []
+    for finding in findings:
+        if finding.check != _CHECK_UNPARSEABLE:
+            out.append(finding)
+            continue
+        path = str(finding.evidence.get("path", ""))
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        out.append(finding)
+    return tuple(out)
+
+
 def _gather_all(target: Path) -> tuple[Finding, ...]:
     cap1 = gather_progress_phrase(target)
     cap2 = gather_open_questions_reconcile(target)
@@ -873,8 +890,17 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     cap1_warns = [f for f in cap1 if f.status != DoctorStatus.OK]
     cap2_warns = [f for f in cap2 if f.status != DoctorStatus.OK]
     cap3_warns = [f for f in cap3 if f.status != DoctorStatus.OK]
+    cap3_rejected = [
+        f
+        for f in cap3
+        if f.status == DoctorStatus.OK and f.evidence.get("accepted") is False
+    ]
     if cap1_warns or cap2_warns or cap3_warns:
-        return tuple(cap1_warns + cap2_warns + cap3_warns)
+        return _dedupe_unparseable_findings(
+            tuple(cap1_warns + cap2_warns + cap3_warns)
+        )
+    if cap3_rejected:
+        return tuple(cap3_rejected)
     return (
         Finding(
             source=Source.STATUS_BODY_CONSISTENCY,

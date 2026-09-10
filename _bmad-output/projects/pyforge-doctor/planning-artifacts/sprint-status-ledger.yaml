@@ -56,7 +56,7 @@ development_status:
   21-11-the-effect-check-renders-beside-story-status-check: done
   21-12-a-body-that-says-3-of-9-under-realized-is-a-finding: done
   21-13-open_questions-over-a-live-memlog-question-is-a-finding: done
-  21-14-promissory-language-under-a-terminal-status-is-measured-before-it-ships: backlog
+  21-14-promissory-language-under-a-terminal-status-is-measured-before-it-ships: done
   21-15-a-status-comment-that-contradicts-its-own-ledger-is-a-finding: backlog
   21-16-the-status-body-check-renders-where-the-operator-already-looks: backlog
   21-2-a-spec-with-no-status-line-is-a-finding-not-a-silent-exemption: backlog
