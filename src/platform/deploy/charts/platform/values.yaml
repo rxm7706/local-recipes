@@ -375,6 +375,14 @@ flags:
   fileName: flags.json
   tree: ""
 
+# Story 48.5 / R-21: SLO contract alert rules as a vanilla ConfigMap.
+observability:
+  enabled: true
+  thresholds:
+    mcpP99Seconds: 2.0
+    queueAgeSeconds: 300
+    eventLagSeconds: 60
+
 # Story 48.3 / R-19: default-deny NetworkPolicy envelope with explicit allows.
 networkPolicy:
   enabled: true

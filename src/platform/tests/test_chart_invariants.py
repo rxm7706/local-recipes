@@ -2229,6 +2229,52 @@ _REQUIRED_PLATFORM_SECRET_KEYS = frozenset(
 )
 
 
+@requires_helm
+def test_story_48_5_default_render_carries_observability_alerts():
+    """AC (Story 48.5): observability ConfigMap renders four R-21 alert rules."""
+    docs = _render(_CORE_CHART, release="platform")
+    configmaps = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "ConfigMap"
+        and doc["metadata"]["name"] == "platform-observability-alerts"
+    ]
+    assert len(configmaps) == 1, configmaps
+    rules = configmaps[0]["data"]["prometheus.rules.yaml"]
+    assert "PyforgeHealthCheckFailures" in rules
+    assert "PyforgeMcpP99High" in rules
+    assert "PyforgeCeleryQueueAgeHigh" in rules
+    assert "PyforgeEventStreamLagHigh" in rules
+    web_deployments = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        == "web"
+    ]
+    assert web_deployments, "web Deployment not found"
+    annotations = web_deployments[0]["spec"]["template"]["metadata"].get(
+        "annotations", {}
+    )
+    assert annotations.get("prometheus.io/scrape") == "true"
+    assert annotations.get("prometheus.io/path") == "/metrics"
+
+
+@requires_helm
+def test_observability_disabled_omits_alerts_configmap():
+    """Story 48.5: observability.enabled=false omits alert ConfigMap."""
+    docs = _render(_CORE_CHART, "--set", "observability.enabled=false")
+    configmaps = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "ConfigMap"
+        and doc["metadata"]["name"].endswith("-observability-alerts")
+    ]
+    assert not configmaps, configmaps
+
+
 def test_story_48_4_eso_example_lists_required_platform_secret_keys():
     """AC (Story 48.4): ESO example ExternalSecret maps every chart-required key."""
     yaml = pytest.importorskip("yaml")

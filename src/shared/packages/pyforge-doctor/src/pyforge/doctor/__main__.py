@@ -102,6 +102,7 @@ def _build_parser() -> tuple[
     argparse.ArgumentParser,
     argparse.ArgumentParser,
     argparse.ArgumentParser,
+    argparse.ArgumentParser,
 ]:
     parser = argparse.ArgumentParser(
         prog="doctor",
@@ -323,7 +324,33 @@ def _build_parser() -> tuple[
         action="store_true",
         help="emit one schema-valid DoctorReport document on stdout",
     )
-    return parser, check, monitor, diagnose, backlog_intake_parser
+
+    flags_parser = subparsers.add_parser(
+        "flags",
+        help="feature-flag actuators (Story 48.5 / R-21)",
+    )
+    flags_sub = flags_parser.add_subparsers(dest="flags_command", required=True)
+    kill_switch_parser = flags_sub.add_parser(
+        "kill-switch",
+        help="disable one FILE-resolver flag and record the kill-switch metric",
+    )
+    kill_switch_parser.add_argument(
+        "--flag",
+        required=True,
+        help="OpenFeature flag key to disable (e.g. pyforge.three_surfaces)",
+    )
+    kill_switch_parser.add_argument(
+        "--reason",
+        required=True,
+        help="short operator reason recorded on the kill-switch metric label",
+    )
+    kill_switch_parser.add_argument(
+        "--flags-path",
+        default=None,
+        help="path to flags.json (default: resolve via django_pyforge.flags)",
+    )
+
+    return parser, check, monitor, diagnose, backlog_intake_parser, flags_parser
 
 
 def _validate_check_names(
@@ -508,9 +535,14 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser, check_parser, monitor_parser, _diagnose_parser, backlog_intake_parser = (
-        _build_parser()
-    )
+    (
+        parser,
+        check_parser,
+        monitor_parser,
+        _diagnose_parser,
+        backlog_intake_parser,
+        _flags_parser,
+    ) = _build_parser()
     try:
         try:
             args = parser.parse_args(argv)
@@ -557,6 +589,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_diagnose(args)
         if args.command == "backlog-intake":
             return _run_backlog_intake(args)
+        if args.command == "flags":
+            return _run_flags(args)
         return _run_check(args)
     except KeyboardInterrupt:
         return EXIT_SIGINT
@@ -871,6 +905,43 @@ def _run_diagnose(args: argparse.Namespace) -> int:
             grade_result=grade_result,
         )
     return exit_code
+
+
+def _run_flags(args: argparse.Namespace) -> int:
+    """Story 48.5: opt-in flag actuators (never part of check/monitor)."""
+    if args.flags_command != "kill-switch":
+        return 2
+    from pyforge.doctor.actuators.flag_kill_switch import kill_switch
+
+    if args.flags_path:
+        flags_path = Path(args.flags_path)
+    else:
+        try:
+            from django_pyforge.flags import resolve_flags_path
+        except ImportError as exc:
+            _stderr(
+                "doctor flags kill-switch: --flags-path is required when "
+                "django_pyforge is not importable"
+            )
+            return 2
+        resolved = resolve_flags_path()
+        if resolved is None:
+            _stderr("doctor flags kill-switch: could not resolve flags.json")
+            return 2
+        flags_path = resolved
+    if not flags_path.is_file():
+        _stderr(f"doctor flags kill-switch: flags file not found: {flags_path}")
+        return 2
+    try:
+        result = kill_switch(flags_path, args.flag, args.reason)
+    except KeyError as exc:
+        _stderr(f"doctor flags kill-switch: {exc}")
+        return 2
+    _write_stdout(
+        f"disabled {result.flag} in {result.path} "
+        f"({result.previous_state} -> {result.new_state})\n"
+    )
+    return 0
 
 
 def _run_backlog_intake(args: argparse.Namespace) -> int:

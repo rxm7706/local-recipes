@@ -21,15 +21,21 @@ from config.observability.logging import add_otel_context
 from config.observability.logging import build_logging_config
 from config.observability.logging import configure_structlog
 from config.observability.logging import resolve_log_format
+from config.observability.metrics import configure_metrics
+from config.observability.metrics import observe_mcp_duration
+from config.observability.metrics import set_celery_queue_oldest_age
+from config.observability.metrics import set_event_stream_lag
 from config.observability.telemetry import configure_telemetry
 
 __all__ = [
     "add_otel_context",
     "build_logging_config",
+    "configure_metrics",
     "configure_observability",
     "configure_structlog",
     "configure_telemetry",
     "load_django_settings",
+    "observe_mcp_duration",
     "read_dot_env",
     "resolve_log_format",
 ]
@@ -98,4 +104,16 @@ def configure_observability(service_version: str | None = None) -> bool:
     """
     read_dot_env()
     load_django_settings()
+    configure_metrics()
+    _register_platform_observability_hooks()
     return configure_telemetry(service_version)
+
+
+def _register_platform_observability_hooks() -> None:
+    from django_pyforge.observability_hooks import set_celery_queue_age_writer
+    from django_pyforge.observability_hooks import set_event_stream_lag_writer
+    from django_pyforge.observability_hooks import set_mcp_duration_observer
+
+    set_mcp_duration_observer(observe_mcp_duration)
+    set_celery_queue_age_writer(set_celery_queue_oldest_age)
+    set_event_stream_lag_writer(set_event_stream_lag)

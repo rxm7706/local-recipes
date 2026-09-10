@@ -187,7 +187,7 @@ development_status:
   48-2-r-18-sizing-rewrite: done
   48-3-r-19-network-baseline: done
   48-4-r-20-secrets-profile: done
-  48-5-r-21-observability-contract: backlog
+  48-5-r-21-observability-contract: done
   48-6-r-22-live-browser-streaming-or-the-pillar-deleted: backlog
   48-7-the-cap-axis-namespace-pass: backlog
   48-8-the-single-spec-merge: backlog

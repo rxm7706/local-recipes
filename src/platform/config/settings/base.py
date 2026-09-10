@@ -255,6 +255,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
 MIDDLEWARE = [
+    "config.observability.middleware.HealthCheckMetricsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -536,6 +537,10 @@ CELERY_BEAT_SCHEDULE = {
     "sweep-lost-runs": {
         "task": SWEEP_LOST_RUNS_TASK,
         "schedule": RUN_STATE_SWEEP_INTERVAL_SECONDS,
+    },
+    "observability-probe": {
+        "task": "django_pyforge.tasks.observability_probe_task",
+        "schedule": 60,
     },
 }
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events

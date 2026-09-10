@@ -24,6 +24,7 @@ import contextlib
 import logging
 import math
 import os
+import time
 from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
@@ -48,6 +49,7 @@ from django_pyforge.mcp_dual_era import (  # noqa: F401
     read_body,
     send_http,
 )
+from django_pyforge.observability_hooks import observe_mcp_duration
 from django_pyforge.rate_limit import MCP_SCOPE
 from django_pyforge.rate_limit import consume
 
@@ -239,22 +241,26 @@ async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -
     if limited is not None:
         await _refuse(send, station, limited)
         return True
-    base = sidecar_base_url()
-    if base:
-        await proxy_station_mcp(
-            base,
-            station,
-            scope,
-            receive,
-            send,
-            assertion=authorized.token,
-        )
+    started = time.perf_counter()
+    try:
+        base = sidecar_base_url()
+        if base:
+            await proxy_station_mcp(
+                base,
+                station,
+                scope,
+                receive,
+                send,
+                assertion=authorized.token,
+            )
+            return True
+        app = station_mcp_app(station)
+        if app is None:
+            return False
+        await app(mcp_child_scope(scope, station), receive, send)
         return True
-    app = station_mcp_app(station)
-    if app is None:
-        return False
-    await app(mcp_child_scope(scope, station), receive, send)
-    return True
+    finally:
+        observe_mcp_duration(time.perf_counter() - started)
 
 
 def iter_station_mcp_apps() -> Iterator[tuple[str, Any]]:
