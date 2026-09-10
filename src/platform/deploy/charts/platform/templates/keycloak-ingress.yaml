@@ -1,0 +1,28 @@
+{{- if and (eq .Values.oidc.profile "bundled") .Values.keycloak.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "platform.keycloak.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  {{- with .Values.keycloak.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.keycloak.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.keycloak.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "platform.keycloak.fullname" . }}
+                port:
+                  name: http
+{{- end }}

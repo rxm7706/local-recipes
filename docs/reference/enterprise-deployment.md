@@ -610,3 +610,62 @@ the core chart. See `overlays/eso/README.md`.
 | Assertion PEM pair | Both | Dual-key window: publish new public PEM to verifiers, wait ≥5 minutes (assertion TTL), switch minter to new private PEM, remove old public PEM; verify with runbook one-liners |
 
 Detailed commands and ordering constraints are in the steward keys runbook.
+
+---
+
+## 8. OIDC identity profile (CAP-1 / Story 48.9)
+
+Production identity is OIDC-delegated (`COMPONENT_OIDC_*` in
+`src/platform/config/settings/base.py`). Stage-1 refuses boot without
+`COMPONENT_OIDC_ISSUER`, `COMPONENT_OIDC_JWKS_URL`, and
+`COMPONENT_OIDC_AUDIENCE` on deployed runtimes.
+
+### 8.1 Default profile — Keycloak in-cluster (bundled)
+
+**Decision (2026-09-09):** Keycloak ships as a chart `Deployment` + `Service`
++ Ingress, with realm-as-code in a ConfigMap and state stored in the
+**existing PostgreSQL** instance (separate `keycloak` database). This is
+**not** a new infra kind — the lock remains PostgreSQL + Redis + Kubernetes.
+
+| Setting | Default |
+|---------|---------|
+| `oidc.profile` | `bundled` |
+| Keycloak image | `quay.io/keycloak/keycloak:26.4.0` (matches local compose) |
+| Browser issuer | `https://<keycloak.ingress.host>/realms/platform` |
+| In-cluster JWKS | `http://<release>-keycloak:8080/realms/platform/protocol/openid-connect/certs` |
+| Client | `platform-web` (public + PKCE — no chart/realm secret sync) |
+
+**Required Secret keys (bundled):** all § 7.2 keys plus
+`KEYCLOAK_ADMIN_PASSWORD` for bootstrap admin. Platform pods receive
+computed `COMPONENT_OIDC_*` env vars from the chart — operators do not
+hand-set issuer/JWKS for bundled installs.
+
+**Co-decision with Story 49.6:** this story names the **provider**;
+49.6 sets `IDP_CLAIMS_SNAPSHOT` / `IDP_USERINFO` for per-request role
+re-read. Neither story may contradict the other's deployment choice.
+
+### 8.2 BYO IdP escape hatch (`oidc.profile=byo`)
+
+For estates with an existing IdP (including air-gapped mirrors of one):
+
+```yaml
+oidc:
+  profile: byo
+  byo:
+    issuer: https://idp.example/realms/platform
+    jwksUrl: https://idp.example/realms/platform/protocol/openid-connect/certs
+    clientId: platform-web
+    audience: platform-web
+```
+
+No Keycloak workloads render. `COMPONENT_OIDC_CLIENT_SECRET` must exist
+in `platform-secrets` when the BYO client is confidential. External SaaS
+IdPs were rejected as the **default** because air-gapped estates cannot
+reach them (`pap:CAP-6` parity) — BYO remains available for sites that
+operate their own IdP inside the boundary.
+
+### 8.3 Infra-kinds note
+
+Keycloak is application software on the chart's PostgreSQL — the same
+pattern as Langflow in-process or DB-GPT sidecar: a deployment decision,
+not a fourth backing-service kind.

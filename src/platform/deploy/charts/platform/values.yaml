@@ -383,6 +383,50 @@ observability:
     queueAgeSeconds: 300
     eventLagSeconds: 60
 
+# Story 48.9 / CAP-1: OIDC identity. Default profile deploys Keycloak
+# in-cluster (state in existing PostgreSQL); `byo` skips Keycloak and reads
+# issuer/JWKS/client from `oidc.byo.*` — the COMPONENT_OIDC_* BYO escape hatch.
+oidc:
+  # `bundled` (default): chart renders Keycloak and wires COMPONENT_OIDC_*.
+  # `byo`: no Keycloak workloads; set oidc.byo.* explicitly.
+  profile: bundled
+  providerName: Platform Keycloak
+  identityClaim: sub
+  groupClaim: groups
+  staffGroup: platform-staff
+  superuserGroup: platform-superuser
+  byo:
+    issuer: ""
+    jwksUrl: ""
+    clientId: ""
+    audience: ""
+    clientSecretKey: COMPONENT_OIDC_CLIENT_SECRET
+
+keycloak:
+  image:
+    registry: quay.io
+    repository: keycloak/keycloak
+    tag: "26.4.0"
+    pullPolicy: IfNotPresent
+  # Browser-facing hostname for OIDC discovery (TLS at ingress).
+  ingress:
+    enabled: true
+    host: auth.platform.internal
+    className: ""
+    tls: []
+  realm: platform
+  clientId: platform-web
+  # Public client + PKCE — no realm/chart secret sync chicken-egg.
+  publicClient: true
+  database: keycloak
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
 # Story 48.3 / R-19: default-deny NetworkPolicy envelope with explicit allows.
 networkPolicy:
   enabled: true

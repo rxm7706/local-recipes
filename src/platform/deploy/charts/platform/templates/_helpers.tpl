@@ -136,6 +136,10 @@ input value (Story 40.2).
 {{- printf "%s-mcp-host" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.keycloak.fullname" -}}
+{{- printf "%s-keycloak" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{/*
 The data services' own ServiceAccount name -- see serviceaccount.yaml for
 why postgres/redis get a second SA. Same truncation rule.
@@ -337,6 +341,74 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
        visibility timeout agree with the --time-limit the builds pod passes. */}}
 - name: CELERY_BUILDS_TASK_TIME_LIMIT
   value: {{ int .Values.worker.builds.taskTimeLimitSeconds | quote }}
+{{ include "platform.oidcEnv" . }}
+{{- end }}
+
+{{/*
+Story 48.9 / CAP-1: OIDC env wired for every platform-image pod. Bundled
+profile computes issuer/JWKS from in-cluster Keycloak; BYO reads values.
+*/}}
+{{- define "platform.oidcEnv" -}}
+{{- if eq .Values.oidc.profile "bundled" }}
+{{- $issuerHost := required "keycloak.ingress.host is required when oidc.profile=bundled" .Values.keycloak.ingress.host }}
+{{- $issuer := printf "https://%s/realms/%s" $issuerHost .Values.keycloak.realm }}
+{{- $jwks := printf "http://%s:8080/realms/%s/protocol/openid-connect/certs" (include "platform.keycloak.fullname" .) .Values.keycloak.realm }}
+- name: COMPONENT_IDENTITY_CLAIM
+  value: {{ .Values.oidc.identityClaim | quote }}
+- name: COMPONENT_GROUP_CLAIM
+  value: {{ .Values.oidc.groupClaim | quote }}
+- name: COMPONENT_STAFF_GROUP
+  value: {{ .Values.oidc.staffGroup | quote }}
+- name: COMPONENT_SUPERUSER_GROUP
+  value: {{ .Values.oidc.superuserGroup | quote }}
+- name: COMPONENT_OIDC_ISSUER
+  value: {{ $issuer | quote }}
+- name: COMPONENT_OIDC_CLIENT_ID
+  value: {{ .Values.keycloak.clientId | quote }}
+- name: COMPONENT_OIDC_JWKS_URL
+  value: {{ $jwks | quote }}
+- name: COMPONENT_OIDC_AUDIENCE
+  value: {{ .Values.keycloak.clientId | quote }}
+- name: COMPONENT_OIDC_PROVIDER_NAME
+  value: {{ .Values.oidc.providerName | quote }}
+{{- if not .Values.keycloak.publicClient }}
+- name: COMPONENT_OIDC_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: COMPONENT_OIDC_CLIENT_SECRET
+{{- end }}
+{{- else if eq .Values.oidc.profile "byo" }}
+{{- $issuer := required "oidc.byo.issuer is required when oidc.profile=byo" .Values.oidc.byo.issuer }}
+{{- $jwks := required "oidc.byo.jwksUrl is required when oidc.profile=byo" .Values.oidc.byo.jwksUrl }}
+{{- $clientId := required "oidc.byo.clientId is required when oidc.profile=byo" .Values.oidc.byo.clientId }}
+{{- $audience := .Values.oidc.byo.audience | default $clientId }}
+- name: COMPONENT_IDENTITY_CLAIM
+  value: {{ .Values.oidc.identityClaim | quote }}
+- name: COMPONENT_GROUP_CLAIM
+  value: {{ .Values.oidc.groupClaim | quote }}
+- name: COMPONENT_STAFF_GROUP
+  value: {{ .Values.oidc.staffGroup | quote }}
+- name: COMPONENT_SUPERUSER_GROUP
+  value: {{ .Values.oidc.superuserGroup | quote }}
+- name: COMPONENT_OIDC_ISSUER
+  value: {{ $issuer | quote }}
+- name: COMPONENT_OIDC_CLIENT_ID
+  value: {{ $clientId | quote }}
+- name: COMPONENT_OIDC_JWKS_URL
+  value: {{ $jwks | quote }}
+- name: COMPONENT_OIDC_AUDIENCE
+  value: {{ $audience | quote }}
+- name: COMPONENT_OIDC_PROVIDER_NAME
+  value: {{ .Values.oidc.providerName | quote }}
+- name: COMPONENT_OIDC_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: {{ required "oidc.byo.clientSecretKey is required when oidc.profile=byo" .Values.oidc.byo.clientSecretKey | quote }}
+{{- else }}
+{{- fail (printf "oidc.profile must be bundled or byo, got %q" .Values.oidc.profile) }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -435,6 +507,17 @@ in-cluster Services.
       port: 5670
 {{- end }}
 
+{{- define "platform.networkPolicy.egressToKeycloak" -}}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "platform.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+{{- end }}
+
 {{- define "platform.networkPolicy.platformDataPlaneEgress" -}}
 {{ include "platform.networkPolicy.egressToPostgres" . }}
 {{ include "platform.networkPolicy.egressToRedis" . }}
@@ -444,11 +527,17 @@ in-cluster Services.
 {{ include "platform.networkPolicy.platformDataPlaneEgress" . }}
 {{ include "platform.networkPolicy.egressToMcpHost" . }}
 {{ include "platform.networkPolicy.egressToDbgpt" . }}
+{{- if eq .Values.oidc.profile "bundled" }}
+{{ include "platform.networkPolicy.egressToKeycloak" . }}
+{{- end }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}
 
 {{- define "platform.networkPolicy.workerEgressRules" -}}
 {{ include "platform.networkPolicy.platformDataPlaneEgress" . }}
 {{ include "platform.networkPolicy.egressToDbgpt" . }}
+{{- if eq .Values.oidc.profile "bundled" }}
+{{ include "platform.networkPolicy.egressToKeycloak" . }}
+{{- end }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}

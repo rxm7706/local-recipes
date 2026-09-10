@@ -108,6 +108,7 @@ _SECRET_ENV_NAMES = frozenset(
         "REDIS_PASSWORD",
         "DBGPT_LLM_API_KEY",
         "COMPONENT_OIDC_CLIENT_SECRET",
+        "KEYCLOAK_ADMIN_PASSWORD",
     },
 )
 _SECRETISH_ENV_NAME = re.compile(
@@ -237,20 +238,23 @@ def _strip_image_tag(image: str) -> str:
 
 
 def _default_image_references() -> frozenset[str]:
-    """The five expected tag-stripped image references, DERIVED from the
-    core chart's own default values (registry + repository composed by the
-    same rule as the chart's imageRef helper) rather than re-declared here.
+    """Expected tag-stripped image references, DERIVED from the core chart's
+    own default values (registry + repository composed by the same rule as
+    the chart's imageRef helper) rather than re-declared here.
     """
     yaml = _import_yaml()
     values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
     references: set[str] = set()
-    for image in (
+    images = (
         values["image"],
         values["postgres"]["image"],
         values["redis"]["image"],
         values["sidecar"]["image"],
         values["mcpHost"]["image"],
-    ):
+    )
+    if values.get("oidc", {}).get("profile", "bundled") == "bundled":
+        images = (*images, values["keycloak"]["image"])
+    for image in images:
         registry = image.get("registry")
         repository = image["repository"]
         references.add(f"{registry}/{repository}" if registry else repository)
@@ -2275,6 +2279,83 @@ def test_observability_disabled_omits_alerts_configmap():
     assert not configmaps, configmaps
 
 
+_OIDC_ENV_NAMES = frozenset(
+    {
+        "COMPONENT_OIDC_ISSUER",
+        "COMPONENT_OIDC_JWKS_URL",
+        "COMPONENT_OIDC_CLIENT_ID",
+        "COMPONENT_OIDC_AUDIENCE",
+    },
+)
+
+
+@requires_helm
+def test_story_48_9_bundled_keycloak_and_oidc_env_on_platform_pods():
+    """AC (Story 48.9): bundled profile renders Keycloak and wires OIDC env."""
+    docs = _render(_CORE_CHART, release="platform")
+    keycloak_deployments = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "keycloak"
+    ]
+    assert len(keycloak_deployments) == 1, keycloak_deployments
+    by_component = _pod_specs_by_component(docs)
+    for component in ("web", "worker", "beat", "migrate", "liquibase"):
+        env = _collect_env_by_name(by_component[component])
+        for name in _OIDC_ENV_NAMES:
+            assert env.get(name, {}).get("value"), f"{component} missing {name}"
+        assert "COMPONENT_OIDC_CLIENT_SECRET" not in env
+
+
+@requires_helm
+def test_story_48_9_byo_profile_skips_keycloak():
+    """AC (Story 48.9): BYO profile omits Keycloak and uses explicit OIDC env."""
+    docs = _render(
+        _CORE_CHART,
+        release="platform",
+        "--set",
+        "oidc.profile=byo",
+        "--set",
+        "oidc.byo.issuer=https://idp.example/realms/platform",
+        "--set",
+        "oidc.byo.jwksUrl=https://idp.example/realms/platform/protocol/openid-connect/certs",
+        "--set",
+        "oidc.byo.clientId=platform-web",
+    )
+    keycloak_workloads = [
+        doc
+        for doc in docs
+        if (doc.get("metadata") or {})
+        .get("labels", {})
+        .get("app.kubernetes.io/component")
+        == "keycloak"
+    ]
+    assert not keycloak_workloads, keycloak_workloads
+    env = _collect_env_by_name(_pod_specs_by_component(docs)["web"])
+    assert env["COMPONENT_OIDC_ISSUER"]["value"] == "https://idp.example/realms/platform"
+    secret_ref = (env["COMPONENT_OIDC_CLIENT_SECRET"].get("valueFrom") or {}).get(
+        "secretKeyRef",
+    )
+    assert secret_ref and secret_ref.get("key") == "COMPONENT_OIDC_CLIENT_SECRET"
+
+
+@requires_helm
+def test_story_48_9_web_egress_includes_keycloak_when_bundled():
+    """AC (Story 48.9): web NetworkPolicy egress reaches keycloak:8080."""
+    docs = _render(_CORE_CHART, release="platform")
+    web_policy = next(
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"].endswith("-egress-web")
+    )
+    egress_yaml = str(web_policy["spec"].get("egress"))
+    assert "keycloak" in egress_yaml
+    assert "8080" in egress_yaml
+
+
 def test_story_48_4_eso_example_lists_required_platform_secret_keys():
     """AC (Story 48.4): ESO example ExternalSecret maps every chart-required key."""
     yaml = pytest.importorskip("yaml")
@@ -2435,7 +2516,8 @@ def test_chart_templates_forbid_minio_s3_and_elasticsearch():
 @requires_helm
 def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
     """AC (AD-1): across ALL rendered workload pod specs, the image set
-    reduces to exactly five -- postgres, redis, platform, sidecar, and mcp-host.
+    reduces to exactly six with bundled OIDC -- postgres, redis, platform,
+    sidecar, mcp-host, and keycloak.
     """
     docs = _render(_CORE_CHART)
     images = _collect_workload_images(docs)
