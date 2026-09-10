@@ -400,6 +400,36 @@ def test_a_deployed_skill_with_an_emptied_carve_out_is_not_conformant(home, skil
     assert "no longer matches" in caveman.detail
 
 
+def test_non_ascii_upstream_content_before_the_region_is_still_conformant(home, tmp_path_factory):
+    """Regression (live incident, 2026-09-10): ``RegionSpan.body_span`` is a
+    BYTE offset (``regions/parse.py``'s own documented contract), but
+    ``_carve_out_state`` used to slice the `str` directly with it
+    (``text[start:end]``) instead of byte-slicing
+    (``detect/hashes.py::region_body_text``). Any non-ASCII content in the
+    upstream skill BEFORE the region -- exactly what the real packaged
+    caveman SKILL.md carries -- desynced byte and character offsets enough
+    that a freshly, correctly-deployed carve-out read as `no longer
+    matches`, and `run_kit` silently re-applied it on every single
+    preflight forever. A pure-ASCII upstream (this file's own
+    `_UPSTREAM_SKILL` fixture) can never reproduce this -- byte and
+    character offsets coincide for ASCII text -- so this test uses its own
+    non-ASCII upstream body instead."""
+    upstream = "---\nname: caveman\n---\n\nRespond tersely, caveman-style — no fluff ✅.\n"
+    root = tmp_path_factory.mktemp("caveman-installer-unicode")
+    payload = root / "skills" / "caveman" / "SKILL.md"
+    payload.parent.mkdir(parents=True)
+    payload.write_text(upstream, encoding="utf-8")
+    deployed = render_deployed_skill(upstream, _VERSION)
+    skill = home / ".claude" / "skills" / "caveman" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(deployed, encoding="utf-8")
+
+    checks = kit_checks(home, _layers(output=True), probe=_payload_probe(payload))
+    caveman = next(check for check in checks if check.item_id == "caveman-skill")
+
+    assert caveman.status is KitStatus.OK, caveman.detail
+
+
 def test_a_hand_edited_carve_out_body_is_not_conformant(home, skill_payload):
     deployed = render_deployed_skill(_UPSTREAM_SKILL, _VERSION)
     tampered = deployed.replace(

@@ -51,6 +51,7 @@ If the invocation prompt does not contain enough intent to identify what to impl
 
 1. Load context.
    - List files in `{{.planning_artifacts}}` and `{{.implementation_artifacts}}`.
+   - **Structure-graph navigation (Story 28.33).** Check whether `.codegraph/codegraph.db` exists in this worktree. If it does, prefer querying it (`codegraph context "<task description>"` or `codegraph explore "<query>"`, from the repo root) over unbounded file reads when you need to locate or understand code for this story — it is a pre-built index of this codebase's own symbols and relationships. If the file does not exist (a dispatch worktree today, or the `structure-graph` layer declared off), skip this and navigate as before; this is an additional aid, never a replacement for the planning-context sources below.
    - If the invocation prompt points to an unformatted spec or intent file, ingest that file. Do not scan for unrelated intent files.
    - **Determine context strategy.** Using the intent and the artifact listing, infer whether the current work is a story from an epic. Do not rely on filename patterns or regex — reason about the intent, the listing, and any epics file content together.
 

@@ -92,6 +92,7 @@ from ..model.kit import (
 from ..regions.markers import MarkerError, RegionFormat, region_sha
 from ..regions.parse import RegionParseError, parse_regions
 from .findings import Finding, FindingType, Severity
+from .hashes import region_body_text
 
 __all__ = (
     "InstrumentProbe",
@@ -355,7 +356,7 @@ def _carve_out_state(text: str) -> str | None:
     span = next((candidate for candidate in spans if candidate.name == ARTICULATE_REGION), None)
     if span is None:
         return f"carries no {ARTICULATE_REGION!r} managed region"
-    body = text[span.body_span[0] : span.body_span[1]]
+    body = region_body_text(text, span)
     if region_sha(body.strip("\n")) != region_sha(articulate_region_body()):
         return (
             f"carries a {ARTICULATE_REGION!r} region whose body no longer matches the"
