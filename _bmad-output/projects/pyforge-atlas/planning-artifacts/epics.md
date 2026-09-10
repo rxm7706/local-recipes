@@ -2061,6 +2061,15 @@ test file?*
 **And** the `PREPARATORY_UNINTROSPECTABLE["atlas"]` entry is re-pointed at this story or removed; a silent skip stays forbidden. That one line lives in `pyforge-core` (`core/dispatch.py:29`), which is **steward's** surface — so it is either split into a steward story or recorded in steward's memlog **before** the edit lands, otherwise `spec-surface-check` reds at merge (the doctor-B8 foreign-surface hazard)
 **Cross-station note** *(prose, deliberately NOT a cross-project `Deps:` token)*: C10's other half — the **46 conda-forge-expert MCP tools** — is **mason's**, not atlas's. This story does not widen to it, and nothing here changes the ruling that the HTTP station face (`POST /stations/atlas/mcp`) is the governed front door with stdio servers as local adapters.
 
+### Story 25.4: A live Artifactory transport exists for the attended operator to plug in
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** unblocks Story 25.2's credentialed path • operator request 2026-09-10
+**Surface:** `src/shared/packages/pyforge-atlas/tools/live_artifactory_transport.py` (new — NOT inside `src/pyforge/atlas/`, which `tests/unit/catalog/test_no_inline_io.py`'s `IO_DENYLIST` bans `requests`/`urllib3`/`httpx` from anywhere in; `tools/` mirrors the existing `tools/bootstrap.py` sibling-location precedent for attended-operator scripts), `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py`
+**Given** `AqlTransport` (the sole HTTP seam `ArtifactoryAqlAdapter` takes) has only `_unconfigured_transport` wired anywhere in the package — Story 25.2 needs "an attended operator runs the pipelines end to end against live sources with the Artifactory credentials configured," but no live transport implementation exists for that operator to construct, only the injectable seam itself
+**When** a new `live_transport(base_url, *, api_key=None, username=None, password=None)` factory is added, resolving auth the SAME way `.claude/skills/conda-forge-expert/scripts/_http.py` already does for JFrog elsewhere in this repo — `JFROG_API_KEY` → `X-JFrog-Art-Api` header, else `JFROG_USERNAME`/`JFROG_PASSWORD` → HTTP Basic — and performing exactly one HTTP round-trip per `AqlRequest`, matching the seam's own documented contract
+**Then** the concrete HTTP client stays constructed OUTSIDE package import time (no top-level `requests`/`urllib` call, no credential read at import) — the factory is called explicitly by the attended operator's own run, at run time only
+**And** a test suite exercises the factory with a mocked HTTP layer (no real network, no real credentials) covering: API-key auth header, username/password Basic auth, neither-configured raises a clear typed error naming which env var is missing, and one successful request/response round-trip shape
+**And** this story does NOT itself run Story 25.2's live pipeline or touch any credential value — it only makes the missing transport exist for that attended, credentialed run to use
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
