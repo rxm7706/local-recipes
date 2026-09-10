@@ -29,7 +29,7 @@ development_status:
   11-2-tea-test-review-is-a-warden-advisory-finding: done
   12-1-regression-test-the-promotion-verifier-s-clean-only-refusal-cannot-be-removed-silently: done
   12-2-environment-scoped-lockfile-extraction: done
-  12-3-the-promotion-scans-the-shipped-closure: backlog
+  12-3-the-promotion-scans-the-shipped-closure: done
   12-4-the-offline-osv-database-is-provisioned-in-ci: backlog
   12-5-the-verdict-is-honest-and-specific: backlog
   12-6-deploy-gates-on-the-verdict-preserve-the-clean-only-promotion-gate: backlog

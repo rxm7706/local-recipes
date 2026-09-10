@@ -723,6 +723,8 @@ jobs:
           PLATFORM_REF: ${{ env.PLATFORM_CI_IMAGE_REF }}
           SIDECAR_REF: ${{ env.PLATFORM_CI_SIDECAR_REF }}
           MCP_HOST_REF: ${{ env.PLATFORM_CI_MCP_HOST_REF }}
+          PIXI_ENVIRONMENT: python-agent-platform
+          PIXI_PLATFORM: linux-64
           OUT: golden-path-promotion.json
         run: bash scripts/platform-golden-path-promotion.sh
 

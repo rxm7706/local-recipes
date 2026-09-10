@@ -7,13 +7,12 @@ set -euo pipefail
 PLATFORM_REF="${PLATFORM_REF:?PLATFORM_REF is required}"
 SIDECAR_REF="${SIDECAR_REF:?SIDECAR_REF is required}"
 MCP_HOST_REF="${MCP_HOST_REF:?MCP_HOST_REF is required}"
-# What Warden scans. `src/platform/pyproject.toml` declares no dependencies
-# (the image env is the `python-agent-platform` feature of the workspace
-# `pixi.toml`), so scanning src/platform yields "zero dependencies extracted"
-# and exit 1. Warden has no per-environment selector and its lock reader does
-# not accept this workspace's pixi.lock yet, so the honest target is the
-# workspace manifest alone, staged in a scratch dir so nothing else under the
-# repo root (symlinked skill trees, 7,800 recipes) enters discovery.
+# What Warden scans: the shipped `python-agent-platform` / `linux-64` closure
+# from the workspace `pixi.lock` (Story 12.3). Repo-root recursive discovery
+# fails closed on symlinked subtrees, so when unset we stage only `pixi.lock`
+# in an isolated dir — never a bare `pixi.toml`.
+PIXI_ENVIRONMENT="${PIXI_ENVIRONMENT:-python-agent-platform}"
+PIXI_PLATFORM="${PIXI_PLATFORM:-linux-64}"
 WARDEN_TARGET="${WARDEN_TARGET:-}"
 OUT="${OUT:-}"
 
@@ -40,7 +39,7 @@ SCRATCH="$(mktemp -d)"
 trap 'rm -rf "$SCRATCH"' EXIT
 if [ -z "$WARDEN_TARGET" ]; then
   mkdir -p "$SCRATCH/workspace"
-  cp pixi.toml "$SCRATCH/workspace/pixi.toml"
+  cp pixi.lock "$SCRATCH/workspace/pixi.lock"
   WARDEN_TARGET="$SCRATCH/workspace"
 fi
 WARDEN_JSON="$SCRATCH/warden.json"
@@ -50,7 +49,10 @@ WARDEN_JSON="$SCRATCH/warden.json"
 # axis cannot yet assess conda-sourced components), so the exit code is
 # captured into the record instead of aborting the promotion.
 set +e
-warden scan "$WARDEN_TARGET" --format json >"$WARDEN_JSON"
+warden scan "$WARDEN_TARGET" \
+  --pixi-environment "$PIXI_ENVIRONMENT" \
+  --pixi-platform "$PIXI_PLATFORM" \
+  --format json >"$WARDEN_JSON"
 WARDEN_EXIT=$?
 set -e
 export WARDEN_EXIT
