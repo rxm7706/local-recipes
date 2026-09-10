@@ -254,6 +254,7 @@ _PIN_KEY_RE = re.compile(
 _PIN_VER_AFTER_CFE_RE = re.compile(r"conda-forge-expert\s+v?(\d+)\.(\d+)\.(\d+)")
 _PIN_BARE_VER_RE = re.compile(r"^['\"]?v?(\d+)\.(\d+)\.(\d+)")
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
+_SKILL_DECLARED_VER_RE = re.compile(r"^version:\s*(\d+)\.(\d+)\.(\d+)", re.M)
 
 FINGERPRINT_KEYS = ("skill_version", "schema_version", "mcp_tools", "atlas_phases",
                     "gotcha_max", "pixi_envs", "phase_ids")
@@ -432,7 +433,13 @@ def _parse_ver(s: str | None) -> Ver:
 
 # ---------------------------------------------------------------- ground truth
 def _skill_version(target: Path) -> str | None:
-    m = _VER_RE.search(_read(_skill(target) / "CHANGELOG.md"))
+    """The live conda-forge-expert version — derived from ``SKILL.md`` frontmatter
+    ``version:`` (Story 33.10), never from a stamped doc pin or CHANGELOG."""
+    text = _read(_skill(target) / "SKILL.md")
+    fm = re.match(r"^---\n(.*?)\n---", text, re.S)
+    if not fm:
+        return None
+    m = _SKILL_DECLARED_VER_RE.search(fm.group(1))
     return f"{m.group(1)}.{m.group(2)}.{m.group(3)}" if m else None
 
 
@@ -539,16 +546,11 @@ def _live_version(target: Path) -> Ver:
     could not be read.
 
     ``_skill_version`` returns ``None`` for an absent/unreadable/unparseable
-    ``CHANGELOG.md``, and the origin's own ``_parse_ver(None)`` turns that
-    into ``(0, 0, 0)`` -- a live version no real pin can ever be behind. The
-    origin printed ``live conda-forge-expert vNone`` in its report header, so
-    an operator saw the hole; a library ``gather()`` has no header, so the
-    hole was silent. Reproduced by the follow-up review pass: deleting
-    ``CHANGELOG.md`` erased ALL 17 ``pin-behind`` findings from a project
-    pinned two minor versions back, leaving a run that looked clean. Raising
-    routes it to ``check_pins``'/``check_deferred_work``'s own
-    ``bmad-drift-unevaluable`` WARN instead -- the honest answer for a
-    comparison whose right-hand side is unknown.
+    ``SKILL.md`` frontmatter ``version:``, and the origin's own
+    ``_parse_ver(None)`` turns that into ``(0, 0, 0)`` -- a live version no
+    real pin can ever be behind. Raising routes it to ``check_pins``'/
+    ``check_deferred_work``'s own ``bmad-drift-unevaluable`` WARN instead --
+    the honest answer for a comparison whose right-hand side is unknown.
 
     Reads ``_skill_version`` DIRECTLY rather than through ``_ground_truth``:
     that dict eagerly computes all six surface facts, so routing the live
@@ -563,7 +565,7 @@ def _live_version(target: Path) -> Ver:
     if version is None:
         raise ValueError(
             "no live conda-forge-expert version in "
-            f"{_rel(_skill(target) / 'CHANGELOG.md', target)} "
+            f"{_rel(_skill(target) / 'SKILL.md', target)} frontmatter "
             "— nothing to compare the tracked docs' pins against"
         )
     return _parse_ver(version)
@@ -685,8 +687,14 @@ def _unevaluable(check_name: str, detail: str, target: Path) -> Finding:
 
 # --------------------------------------------------------------------- checks
 def check_pins(target: Path) -> list[Finding]:
-    """Every tracked doc must carry a ``source_pin``, and it must not be
-    behind the live skill version.
+    """Every tracked doc must carry a ``source_pin``.
+
+    For ``living`` and ``plan`` docs, ``source_pin`` records the skill version
+    the doc was last re-grounded against (Story 33.10) — a historical fact,
+    not a currency claim — so ``pin-behind`` is suppressed for those
+    categories. Snapshot docs still compare against the live ``SKILL.md``
+    ``version:`` at INFO severity. Genuine living-doc staleness is reported
+    by ``count-stale``, ``phase-list-stale``, and ``stale-rule``, not here.
 
     When the LIVE version cannot be read, only the behind-ness half is
     unanswerable -- a doc with no pin at all is still definitively broken.
@@ -718,9 +726,12 @@ def check_pins(target: Path) -> list[Finding]:
             if cat != "snapshot":
                 out.append(_finding(HARD, "pin-missing", rel,
                            "missing/corrupt source_pin — breaks the drift contract"))
-        elif live is not None and (pin[0], pin[1]) < (live[0], live[1]):
-            sev = INFO if cat == "snapshot" else DRIFT
-            out.append(_finding(sev, "pin-behind", rel,
+        elif (
+            cat == "snapshot"
+            and live is not None
+            and (pin[0], pin[1]) < (live[0], live[1])
+        ):
+            out.append(_finding(INFO, "pin-behind", rel,
                        f"pinned v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]} [{cat}]"))
     return out
 
