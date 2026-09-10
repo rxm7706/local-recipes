@@ -242,3 +242,18 @@ the other way around.
   all until story specs declare their own `surface:` (CAP-16 auto-derivation vs the pairwise refusal
   at `core/dispatch_fleet.py:786`). Batch:
   `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+
+- **2026-09-10 (live incident — `factory spin` has no equivalent guard at all).** This Dream's own
+  `station_in_flight_conflict` protects `factory dispatch`; `factory spin` was never given the
+  same treatment. Reproduced live: two `marshal factory spin pyforge-mason` calls six seconds apart
+  (an operator error, not a deliberate fan-out) both launched cleanly — no refusal, no warning, two
+  live `bmad-loop run` processes and two live supervisors against the SAME loop home
+  (`~/.bmad-loops/pyforge-mason`) simultaneously. Caught only because the operator happened to `ps
+  aux` before either process reached a git-mutating step; the second was killed by hand. Unlike
+  dispatch's worktree-per-story isolation, spin's `bmad-loop run` operates directly on the loop
+  home's own single checkout on `loop/<slug>` — a genuine concurrent run there risks two sessions
+  writing the same working tree, not just wasted compute. **New finding, not yet decomposed into a
+  story:** `factory spin` needs the same station-in-flight check `factory dispatch` already has
+  (`cli/dispatch.py:935`) before its own `subprocess.Popen` launch in
+  `adapters/harness_bmadloop.py` — reusing the check, not re-deriving it, mirrors this Dream's own
+  CAP-2 "narrowed conflict, not a new one" precedent.
