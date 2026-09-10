@@ -40,7 +40,6 @@ spec:
           args: ["python", "db/liquibase_update.py"]
           env:
             {{- include "platform.liquibaseEnv" . | nindent 12 }}
-          {{- with .Values.liquibase.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- $_ := required "liquibase.resources.limits.memory is required" .Values.liquibase.resources.limits.memory }}
+            {{- toYaml .Values.liquibase.resources | nindent 12 }}

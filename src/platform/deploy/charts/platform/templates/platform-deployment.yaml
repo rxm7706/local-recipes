@@ -1,5 +1,5 @@
 # Web Deployment: the Story 10.3 platform image serving gunicorn on 8000
-# (the image's own CMD -- no args override here, and NEVER a migrate step:
+# (Story 48.2 overrides args for --preload/--workers; NEVER a migrate step:
 # that belongs to the hook Job, concurrent replicas must not race
 # migrations).
 apiVersion: apps/v1
@@ -34,20 +34,39 @@ spec:
           imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.image }}
           securityContext:
             {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): image ENTRYPOINT stays; Story 48.2 adds
+          # --preload and an explicit worker count for Langflow memory sharing.
+          {{- $workers := required "web.workers is required" .Values.web.workers }}
+          {{- if le (int $workers) 0 }}
+          {{- fail "web.workers must be > 0" }}
+          {{- end }}
+          args:
+            - gunicorn
+            - config.asgi:application
+            - --bind
+            - 0.0.0.0:8000
+            - --worker-class
+            - uvicorn_worker.UvicornWorker
+            - --workers
+            - {{ $workers | quote }}
+            {{- if .Values.web.preload }}
+            - --preload
+            {{- end }}
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
+            - name: ANYIO_MAX_THREADS
+              value: {{ required "web.anyioMaxThreads is required" .Values.web.anyioMaxThreads | quote }}
           volumeMounts:
             - name: wagtail-media
               mountPath: {{ .Values.media.mountPath | quote }}
             {{- include "platform.flagsVolumeMount" . | nindent 12 }}
-          {{- with .Values.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- $_ := required "resources.limits.memory is required for web" .Values.resources.limits.memory }}
+            {{- toYaml .Values.resources | nindent 12 }}
           # Probe contract (config/urls.py + config/fastapi_app.py):
           #   /api/health = unconditional liveness (no DB/Redis)
           #   /ht/        = DB connectivity + cache = readiness

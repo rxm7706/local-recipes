@@ -1,0 +1,70 @@
+# Story 48.2 / R-18: scale web and general worker under load.
+{{- if .Values.autoscaling.web.enabled }}
+{{- if gt (int .Values.autoscaling.web.minReplicas) (int .Values.autoscaling.web.maxReplicas) }}
+{{- fail "autoscaling.web.minReplicas must be <= maxReplicas" }}
+{{- end }}
+{{- if not (or .Values.autoscaling.web.targetCPUUtilizationPercentage .Values.autoscaling.web.targetMemoryUtilizationPercentage) }}
+{{- fail "autoscaling.web needs at least one metric target" }}
+{{- end }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "platform.fullname" . }}-web
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "platform.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.web.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.web.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.web.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.web.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.web.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.web.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- if .Values.autoscaling.worker.enabled }}
+{{- if gt (int .Values.autoscaling.worker.minReplicas) (int .Values.autoscaling.worker.maxReplicas) }}
+{{- fail "autoscaling.worker.minReplicas must be <= maxReplicas" }}
+{{- end }}
+{{- if not .Values.autoscaling.worker.targetCPUUtilizationPercentage }}
+{{- fail "autoscaling.worker needs a CPU metric target" }}
+{{- end }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "platform.worker.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "platform.worker.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.worker.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.worker.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.worker.targetCPUUtilizationPercentage }}
+{{- end }}
