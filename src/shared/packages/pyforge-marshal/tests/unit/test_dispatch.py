@@ -218,11 +218,12 @@ def test_run_dispatch_surfaces_the_context_payload(
     returned AND journaled data both carry the SAME `context` payload
     `core/policy.py::resolve_context_layers` computes -- the one
     composition site both `render_policy_toml` (bmad-loop spin) and this
-    engine (factory dispatch) resolve from. No project declares a
-    `[context]` block for `pyforge-marshal` today, so every layer resolves
-    off at the default "medium" aggressiveness."""
+    engine (factory dispatch) resolve from. Story 33.2 enables layers in the
+    tracked marshal-policy.toml; this test pins an explicit layers-off
+    composition to preserve the absent-block contract."""
     import json
 
+    from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core import policy
 
     _init_git_repo(tmp_path)
@@ -232,6 +233,13 @@ def test_run_dispatch_surfaces_the_context_payload(
     specs.mkdir(parents=True)
     spec = specs / f"spec-{story}.md"
     spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+
+    effective, _ = policy.compose(project_slug=slug, project={}, flags={})
+    monkeypatch.setattr(
+        dispatch_module,
+        "_compose_policy",
+        lambda _slug, flags=None: effective,
+    )
 
     fs = FakeFs()
     args = argparse.Namespace(slug=slug, story=story, format="json")
@@ -249,6 +257,27 @@ def test_run_dispatch_surfaces_the_context_payload(
     assert payload["data"]["context"] == expected
     launch_lines = [line for _, line, _ in fs.appended if "dispatch-launch" in line]
     assert any(json.loads(line)["payload"].get("context") == expected for line in launch_lines)
+
+
+def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -> None:
+    """Story 33.2 (CAP-1): factory dispatch reads the tracked marshal-policy.toml
+    and resolves all five context layers enabled via the single composition site."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+    from pyforge.marshal.core import policy
+
+    repo_root = Path(__file__).resolve().parents[6]
+    policy_path = (
+        repo_root
+        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    )
+    if not policy_path.is_file():
+        pytest.skip("marshal-policy.toml not present in this checkout")
+
+    effective = _compose_policy("pyforge-marshal")
+    resolved = policy.resolve_context_layers(effective)
+    assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
+    for layer in policy.CONTEXT_LAYER_NAMES:
+        assert resolved[layer] == {"enabled": True, "aggressiveness": "medium"}
 
 
 def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

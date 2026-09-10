@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 
 import pytest
+import tomllib
 
 import pyforge.marshal
 from pyforge.marshal.core import policy, verdict
@@ -614,6 +615,29 @@ def test_resolve_context_layers_returns_a_fresh_plain_dict():
     import json as _json
 
     _json.dumps(resolved)  # must not raise
+
+
+def test_the_real_pyforge_marshal_policy_declares_all_five_context_layers_enabled():
+    """Story 33.2 regression: the tracked marshal-policy.toml enables every
+    CAP-1 layer on factory dispatch — not a hand-duplicated fixture."""
+    repo_root = Path(__file__).resolve().parents[6]
+    policy_path = (
+        repo_root
+        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    )
+    if not policy_path.is_file():
+        pytest.skip("marshal-policy.toml not present in this checkout")
+
+    parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
+    effective, findings = compose(
+        project_slug="pyforge-marshal", project=parsed, flags={}
+    )
+    assert findings == ()
+    resolved = policy.resolve_context_layers(effective)
+    assert set(resolved) == set(policy.CONTEXT_LAYER_NAMES)
+    for layer in policy.CONTEXT_LAYER_NAMES:
+        assert resolved[layer]["enabled"] is True
+        assert resolved[layer]["aggressiveness"] == "medium"
 
 
 def test_context_escalation_threshold_defaults_when_absent():
