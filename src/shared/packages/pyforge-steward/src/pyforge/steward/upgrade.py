@@ -100,7 +100,8 @@ _RATTLER_PKGS_CACHE_RELATIVE_PATH = Path(".cache/rattler/cache/pkgs")
 # CAP-6: where the installer's `node` / `bmad-method` live when they are not on
 # PATH — always derived from the repo path, never a machine path.
 _PIXI_LOCAL_RECIPES_BIN_RELATIVE_PATH = Path(".pixi/envs/local-recipes/bin")
-_VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+# Stable ``X.Y.Z`` plus optional npm prerelease suffix (e.g. ``6.12.1-next.0``).
+_VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[\w.]+)?$")
 
 # Trap IDs from failure-modes.md that CAP-1 must retrodict for 6.10→6.11.
 TRAP_LOCAL_MOD = 1
@@ -549,7 +550,9 @@ def catalog_dir() -> Path:
 def load_release_catalog(version: str, *, directory: Path | None = None) -> dict[str, Any]:
     """Load the curated catalog for *version* (``X.Y.Z.yaml``)."""
     if not _VERSION_RE.match(version):
-        raise UpgradeError(f"target version must be X.Y.Z, got {version!r}")
+        raise UpgradeError(
+            f"target version must be X.Y.Z or X.Y.Z-prerelease, got {version!r}"
+        )
     base = directory or catalog_dir()
     path = base / f"{version}.yaml"
     if not path.is_file():
