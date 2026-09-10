@@ -2,8 +2,9 @@
 title: 'The deferred-work verifier resolves a project-relative `source_spec` from the project root'
 type: 'fix'
 created: '2026-09-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '47afe2e983346381768071e644df772d171e14d3'
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
@@ -90,3 +91,21 @@ identical.
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` No committed mechanical re-verification script consumes the new helpers yet — the 2026-09-02 fleet refresh was operator/ad-hoc; Story 21.5's contract is the resolver + distinct verdict phrases + regression test, which land in `chain.py` for future sweep callers.
+  - `[false]` `[reject]` Project-root is tried only after repo-root, not before — spec requires repo-root-relative paths to keep working and project-root fallback before declaring absent; order matches both constraints.
+
+## Auto Run Result
+
+- **Summary:** Added `resolve_source_spec` to `chain.py` with repo-root-first then project-root fallback, distinct verdict phrases (`spec absent at HEAD` vs `spec not located by this resolver`), and `source_spec_mechanical_still_open_eligible` so resolver misses never alone justify a `still-open` stamp.
+- **Files changed:**
+  - `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — Story 21.5 resolver + verdict helpers
+  - `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py` — I/O matrix + herald `DW-FU-15-1` regression
+  - `spec-21-5-…md` — status / review metadata
+- **Review:** 0 patches, 0 deferrals; 2 rejected (see triage log).
+- **Follow-up review recommended:** false
+- **Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — full suite green (824 tests).
+- **Residual risks:** A future mechanical re-verification entrypoint must call `source_spec_mechanical_still_open_eligible` before mapping ledger status; no script ships in this story.
