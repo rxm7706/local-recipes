@@ -148,7 +148,7 @@ development_status:
   43-4-golden-path-cd-by-digest: done
   43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: done
-  43-7-sidecar-runtime-validation-on-python-3-14: backlog
+  43-7-sidecar-runtime-validation-on-python-3-14: done
   44-1-the-move-list-manifest: blocked
   44-10-archive-local-recipes: blocked
   44-11-windows-native-estate: blocked
