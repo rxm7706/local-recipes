@@ -2,7 +2,7 @@
 title: 'CAP-4 in effect -- start and get on all eight, with a real disconnect'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: c0039b60ee94f7517d55e7293c8b4efe299bb804
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -85,6 +85,18 @@ agent operation would experience.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: none
+
+## Auto Run Result
+
+- **Summary:** Added supervisor `start`/`get` MCP tools to the six remaining station faces (doctor, herald, marshal, mason, scribe, steward) via shared `attach_supervised_start_get` / `build_station_mcp_asgi` helpers; added `test_mcp_disconnect_start_get.py` exercising all eight stations with genuine `http.disconnect` mid-get while a gated worker simulates a multi-minute op; updated CAP-4 `verified:` line.
+- **Files changed:** `django_pyforge/mcp_start_get.py` (shared factory); six `django_*_portal/mcp_asgi.py` + `apps.py` pairs; `src/platform/tests/test_mcp_disconnect_start_get.py`; `src/platform/conftest.py` (MCP cache reset between tests); `spec-pyforge-unifying-strategy/SPEC.md` (CAP-4 verified).
+- **Review:** 0 patch / 0 defer / 0 reject.
+- **Follow-up review recommended:** false
+- **Verification:** `pytest tests/test_start_get_survives_disconnect.py tests/test_seven_mcp_faces.py tests/test_mcp_disconnect_start_get.py` — 85 passed (platform-ci-test env, PostgreSQL + Redis).
 
 ## Verification
 

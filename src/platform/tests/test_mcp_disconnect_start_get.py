@@ -17,7 +17,6 @@ from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_http import dispatch_station_mcp
 from django_pyforge.mcp_http import register_station_mcp_app
 from django_pyforge.models import RunState
-from django_pyforge.supervisor import register_runner
 from django_pyforge.tasks import execute_supervised_run
 from starlette.testclient import TestClient
 
