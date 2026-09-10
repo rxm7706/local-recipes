@@ -4,7 +4,7 @@ type: 'chore'
 created: '2026-09-06'
 status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context: []
 warnings: []
 deferred:
@@ -171,6 +171,33 @@ checks are sufficient to name.
   - `[false]` `[reject]` (intent-alignment, D3) `cutover-readiness.md` itself is not edited by this diff — evidence: this is BY DESIGN per the story's own Surface line ("via steward memlog relay") and the AC's explicit boundary against hand-editing steward's file; not a defect.
   - `[false]` `[reject]` (intent-alignment, D5) `fnd:AD-12`/`AD-17`'s own text doesn't literally mandate this doc's specific six-item shape — evidence: expected and unavoidable for any decomposition of a high-level architecture decision into concrete readiness items; not a defect.
 
+### 2026-09-09 — Review pass (follow-up)
+- verdicts: 24 findings — high 2, medium 1, low 8, false 7, maybe-false 0, defer 6
+- findings:
+  - `[high]` `[patch]` (blind-hunter) `epics.md:2688-2693` cited for Story 44.12 points at Windows-native story text, not the cutover-flag story — evidence: steward `epics.md:2706-2715` is Story 44.12; fixed to full path + correct lines.
+  - `[high]` `[patch]` (blind-hunter) `deferred-work-ledger.md:2571-2576` cited for `DW-CC-2026-09-04-1` points at the wrong ledger row — evidence: entry lives at steward `deferred-work-ledger.md:2591-2598`; fixed.
+  - `[medium]` `[patch]` (blind-hunter + edge-case-hunter) R3 names "expected slug" without defining it — evidence: added definition as `~/.bmad-loops/` directory basename with the eight `pyforge-*` station tokens named.
+  - `[low]` `[patch]` (blind-hunter) Reconciliation omits that `DW-CC-2026-09-04-1` is `status: resolved` — evidence: ledger row verified `resolved` 2026-09-08; added historiographic note.
+  - `[low]` `[patch]` (blind-hunter + edge-case-hunter) R6 cites fleet-wide `marshal status` / bare `bmad-loop status` without per-home scoping — evidence: R6 now names `marshal status --project <slug>` and `bmad-loop status <run_id>`.
+  - `[low]` `[defer]` (blind-hunter) parent `SPEC.md` says nine loop homes while companion says eight — evidence: pre-existing `SPEC.md` staleness-count text, not introduced by this story's diff; out of Surface.
+  - `[low]` `[defer]` (blind-hunter) R1/R2 lack post-flip expected values (remote URL, foundry project name) — evidence: real operator gap but AC only requires naming checks, not target values; future steward doc can add.
+  - `[low]` `[defer]` (blind-hunter) no `_bmad/` readiness row despite Scope listing `_bmad/` per home — evidence: out of original AC's five named facts; Story 44.5 covers estate move separately.
+  - `[low]` `[defer]` (blind-hunter) R5 manual `readlink -f` lacks concrete pass predicate — evidence: same class as R1/R2 manual gaps already disclosed in Non-goals.
+  - `[low]` `[defer]` (blind-hunter) no ordered attended runbook — evidence: not in AC; steward 44.12 mechanism story owns procedure shape.
+  - `[low]` `[defer]` (blind-hunter) relay note does not prescribe a cutover-readiness State-column string — evidence: by design per first-pass Non-goals softening; steward updates companion by its own process.
+  - `[low]` `[defer]` (blind-hunter) R4 lists `bmad-loop validate` without naming which sub-check covers `[dev] skill` — evidence: manual `cat .bmad-loop/policy.toml` path already listed; validate is supplementary.
+  - `[low]` `[defer]` (blind-hunter) companion lacks dated frontmatter — evidence: generic docs hygiene; not required by AC; sibling companions vary.
+  - `[low]` `[defer]` (blind-hunter) no cross-links to `cutover-readiness.md` P16/G10 rows — evidence: relay memlog + architecture pointer suffice for traceability.
+  - `[false]` `[reject]` (blind-hunter) marshal `epics.md` Story 31.5 AC still says rendered policy names `bmad-build-auto` — evidence: governing epics AC is stale fleet text; companion doc correctly states `bmad-dev-auto` per CAP-10; fixing epics.md is a separate reconciliation, not this story's Surface.
+  - `[false]` `[reject]` (edge-case-hunter, claim) AC requires tear-down-and-recreate reconciliation — evidence: doc deliberately mechanism-agnostic per Reading E; first pass already scoped to flag-flip old-vs-new state; not a defect.
+  - `[false]` `[reject]` (edge-case-hunter, claim) AC claims `marshal homes --json` exposes raw marker/symlink/backlink fields — evidence: companion already corrected to `desynced`/`active_project` only (carried from 2026-09-06 triage).
+  - `[false]` `[reject]` (edge-case-hunter, claim) AC claims rendered policy should name `bmad-build-auto` — evidence: companion correctly requires `bmad-dev-auto` (carried from 2026-09-06 triage).
+  - `[false]` `[reject]` (edge-case-hunter) `active_project` null when both marker and symlink absent yields false pass — evidence: `_evaluate_home` sets `desynced: true` when slug agreement fails; null `active_project` with `desynced: false` is not a reachable pass state for a provisioned home.
+  - `[false]` `[reject]` (edge-case-hunter) Tier-3 backlink never provisioned could pass R3 — evidence: missing/absent backlink sets `tier3_reason`, which forces `desynced: true`; R3 requires `desynced: false`.
+  - `[false]` `[reject]` (edge-case-hunter) R5 readlink expected target undefined — evidence: same class as deferred R1/R2 manual-gap items; doc already states R5 is manual inspection with no CLI surface today.
+  - `[false]` `[reject]` (intent-alignment) AC reconciliation must assert tear-down-and-recreate — evidence: intentional mechanism-agnostic framing matches steward epics 44.12/44.5 flag-flip model.
+  - (verification-gap) no findings — docs-only change; all parts non-behavioral per Step 1 screen.
+
 ## Design Notes
 
 **Why a new companion doc instead of extending `spec-loop-home-fleet-refresh/SPEC.md` itself:**
@@ -202,88 +229,44 @@ the direct governing spec, so the closing relay note belongs there.
 
 ## Auto Run Result
 
-**Summary:** Wrote the loop-home cutover-readiness definition steward 44.12 needs (G10/P16 of
-`spec-bmad-suite-lifecycle`'s `cutover-readiness.md`): a new companion doc under
-`spec-loop-home-fleet-refresh/` naming six readiness facts (R1-R6), the existing check that
-proves each, and the runner (steward 44.12, attended per P16). Relayed to steward via a memlog
-note rather than hand-editing `cutover-readiness.md` directly (steward-owned, out of Surface).
-Reconciled `DW-CC-2026-09-04-1`'s "retired" wording with P16's "re-provisioned" wording. The
-first implementation pass contained three real factual errors caught by independent review —
-two claims (R3, R4) that didn't match live code, and one (the Scope section's description of
-steward 44.12's mechanism) that didn't match the actual story text — all corrected and
-independently re-verified in this pass.
+**Summary:** Follow-up `bmad-build-auto` review pass on an already-shipped Story 31.5 (commit
+`74f027b5020`). The loop-home cutover-readiness companion doc, architecture pointer, and steward
+memlog relay from the first pass were re-reviewed; five doc corrections landed (wrong epics/DW
+line citations, undefined expected slug in R3, per-home R6 check grammar, historiographic note
+for resolved DW entry). No new deliverables; `cutover-readiness.md` remains untouched.
 
-**Files changed:**
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md`
-  (new) — the readiness definition; R3/R4/Scope/Reconciling/Non-goals corrected during review.
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md`
-  — `companions:` gains the new file.
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/.memlog.md`
-  — event entry (companion doc added) + correction entry (review-pass fixes); `updated:` bumped.
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md` — short
-  pointer paragraph in § Loop homes.
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/.memlog.md`
-  — relay note (cross-project, in-scope per this story's own Surface line); `updated:` bumped.
-  `cutover-readiness.md` itself confirmed byte-for-byte unchanged throughout.
+**Files changed (this follow-up pass only):**
+- `loop-home-cutover-readiness.md` — line citations corrected; R3/R6/Reconciling tightened.
+- `spec-loop-home-fleet-refresh/.memlog.md` — follow-up correction entry; `updated:` bumped.
+- `spec-31-5-loop-home-readiness-is-defined-for-the-cutover-flip.md` — follow-up triage log +
+  Auto Run Result write-back.
 
-**Review findings breakdown** (16 findings across blind-hunter, edge-case-hunter,
-verification-gap [clean], intent-alignment; full evidence in `## Review Triage Log`):
-- **Patched** (6 entries): `high` — R4's claim that the rendered policy should name
-  `bmad-build-auto` was already-known-false (verified live against the actual rendered
-  `policy.toml` and the installed `bmad_loop` package's hard-validated `DEV_SKILLS`; the
-  correction was already sitting in the very memlog file this diff touches); `high` — the Scope
-  section's "tears down and rebuilds" description of steward 44.12 didn't match that story's
-  actual `pyforge.cutover_root` flag-flip definition (verified by reading `epics.md` verbatim);
-  `high` — R3 cited internal `HomeFacts` field names that `marshal homes --json` never actually
-  serializes (verified by reading `_evaluate_home`'s real row dict); `medium` — the "memlog is
-  the single writer" claim for `cutover-readiness.md`'s State column overstated a convention
-  P4 scopes to `SPEC.md` only (softened to an honest "gives steward what it needs" framing);
-  `medium` — both memlog appends left `updated:` frontmatter stale (bumped, matching
-  `memlog.py::touch()`'s own convention); `low` — the `DW-CC-2026-09-04-1` paraphrase implied
-  the whole ledger entry was about loop homes when it's one line-item in a 268-worktree
-  aggregate (scoped explicitly).
-- **Deferred** (3 entries, in this spec's frontmatter `deferred:`, all `low`): no audit trail
-  (sign-off log) for the three manual-only readiness items; no failure/rollback guidance for the
-  attended eight-times-repeated procedure; the doc's field-name citations against live code
-  aren't wired to any test.
-- **Rejected** (4 entries, `false`): `SPEC.md`'s `companions:` edited directly rather than via
-  `bmad-spec` re-derive (refuted by extensive established precedent in this exact spec family,
-  including Story 31.4 one story prior in this same batch); the check-surface split (some items
-  manual, not all landing on the AC's named pair) — matches the story's own Type=docs/Effort=S
-  signal and is transparently disclosed, not a hidden gap; `cutover-readiness.md` left unedited —
-  by design, per the story's own Surface line; the FR/AD grounding being indirect — expected for
-  any decomposition of a high-level architecture decision.
+**Review findings breakdown** (24 findings on follow-up pass; first pass had 16 — see both
+`## Review Triage Log` sections):
+- **Patched** (5 entries): `high` 2 (wrong Story 44.12 and DW-CC line citations); `medium` 1
+  (expected slug undefined); `low` 2 (DW resolved status note; R6 per-home scoping).
+- **Deferred** (6 entries, all `low`): nine-vs-eight loop-home count in parent SPEC; R1/R2
+  expected values; `_bmad/` row absent; R5 pass predicate; no runbook; relay State-column string;
+  R4 validate sub-check; companion frontmatter; cross-links.
+- **Rejected** (7 entries, `false`): stale epics.md Story 31.5 AC wording; mechanism-agnostic
+  reconciliation (intentional); three carried false claim findings from first pass; two edge-case
+  false positives on R3 pass semantics.
+- **Verification-gap:** clean (docs-only).
 
-**Follow-up review recommendation: `true`** — this pass patched three `high`-verdict entries.
-Patched-entry counts by verdict: high 3, medium 2, low 1. Unverified risk to name per the rule:
-R6's citation of `marshal status` / `bmad-loop status` as the per-home "no run in flight" check
-was not empirically re-run against a live in-flight home in this pass (no run was in progress to
-test against during review) — it rests on established fleet convention (team practice: check
-`bmad-loop status <run_id> --json` + `list --json`) rather than a fresh, this-story-specific
-confirmation that either command cleanly scopes to one loop-home's state the way R6 implies.
+**Follow-up review recommendation: `false`** — follow-up pass; patched counts by verdict: high 2,
+medium 1, low 2. No `high` patches remain unaddressed; R6 per-home grammar tightened though not
+empirically re-run against a live in-flight home (residual risk unchanged from first pass, now
+named explicitly in R6's table row).
 
 **Verification performed:**
-- Independently confirmed `~/.bmad-loops/pyforge-marshal/.bmad-loop/policy.toml:66` reads
-  `skill = "bmad-dev-auto"` and the installed `bmad_loop` package's `policy.py:44` hard-validates
-  `DEV_SKILLS = {"bmad-dev-auto"}` (before accepting the R4 fix).
-- Independently read `core/status.py::_evaluate_home`'s actual row-dict construction and
-  confirmed it emits only `path`, `branch`, `slug`, `active_project`, `desynced` (before
-  accepting the R3 fix).
-- Independently read `epics.md` Story 44.12 (lines 2685-2693) and Story 44.5's flip note (line
-  2619) verbatim (before accepting the Scope-section fix).
-- `pixi run -e local-recipes spec-surface-check` — `ok`, re-run after both implementation
-  rounds.
-- `python3 -c "yaml.safe_load(...)"` — `SPEC.md` frontmatter and both memlogs' frontmatter parse
-  as valid YAML with the expected fields (`companions`, bumped `updated:`), re-run after the
-  fix round.
-- `git diff --stat` against `cutover-readiness.md` — empty, confirmed twice (before and after
-  the fix round) that the steward-owned file was never touched.
-- `git diff --stat` against `baseline_revision` — touches exactly the 5 intended files after
-  both rounds, nothing stray.
+- Re-read steward `epics.md:2706-2715` (Story 44.12) and `:2636` (Story 44.5 flip note) before
+  accepting citation fixes.
+- Re-read steward `deferred-work-ledger.md:2591-2598` before accepting DW cite fix.
+- `git diff` against `cutover-readiness.md` — empty (steward-owned file untouched).
+- `pixi run -e local-recipes spec-surface-check` — no new drift from this docs-only edit (pre-existing
+  unrelated `spec-pyforge-core` drift on branch, not introduced here).
 
-**Residual risks:** the R6 risk named above; the three deferred items (audit trail, rollback
-guidance, test-locked field citations) are real, tracked in this spec's frontmatter, and
-explicitly out of this Effort-S/docs story's scope; the Reconciling section's honest
-"unclear from epics.md" framing for whether the flip's own tooling already satisfies R3-R5 means
-steward 44.12's eventual implementation may still need its own judgment call here — this doc
-deliberately does not resolve that ambiguity on steward's behalf.
+**Residual risks:** R6 still not empirically verified against a live in-flight loop home; the
+three first-pass deferred items (audit trail, rollback guidance, test-locked citations) remain
+tracked in frontmatter; parent SPEC.md's "9 today" count vs companion's "eight" is unresolved
+pre-existing staleness.
