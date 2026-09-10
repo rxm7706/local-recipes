@@ -490,6 +490,11 @@ class _RunJournalFacts:
     budget_by_story_usd: dict[str, float] = field(default_factory=dict)
     layer_savings_usd: dict[str, float] = field(default_factory=dict)
     savings_usd_by_story: dict[str, dict[str, float]] = field(default_factory=dict)
+    #: ``True`` when ``journal.jsonl`` was read successfully, even when no
+    #: ``run-launch``/``run-resume`` outcome supplies a launch pid (Story
+    #: 5.11): distinguishes a readable marshal journal that simply never
+    #: recorded a marshal launch from a genuinely unreadable one.
+    journal_readable: bool = False
 
 
 def _gather_run_journal_facts(
@@ -653,7 +658,30 @@ def _gather_run_journal_facts(
         budget_by_story_usd=budget_by_story_usd,
         layer_savings_usd=layer_savings_usd,
         savings_usd_by_story=savings_usd_by_story,
+        journal_readable=True,
     )
+
+
+def _latest_bmad_loop_run_id(home: Path) -> str | None:
+    """The most recent bmad-loop run directory under ``<home>/.bmad-loop/runs/``
+    that still carries a ``state.json`` (Story 5.11, FR-196): used ONLY when
+    Marshal's own journal read fine but never recorded a launch pid -- a run
+    bmad-loop started directly, without ``marshal factory spin``. Retired
+    entries (``.retired-*``) and plain files are skipped. A plain
+    ``Path.iterdir`` read, no ``FsPort`` routing (NFR-14; mirrors
+    ``_discover_harness_run_id_by_filesystem``'s own precedent)."""
+    runs_dir = home / ".bmad-loop" / "runs"
+    try:
+        candidates = sorted(
+            path.name
+            for path in runs_dir.iterdir()
+            if path.is_dir()
+            and not path.name.startswith(".retired")
+            and (path / "state.json").is_file()
+        )
+    except OSError:
+        return None
+    return candidates[-1] if candidates else None
 
 
 # Correlation window for `_discover_harness_run_id_by_filesystem` -- TIGHT
@@ -913,6 +941,32 @@ def _gather_home_facts(
     run_id = run_dir.name
     journal_facts = _gather_run_journal_facts(fs, run_dir, run_id)
     if journal_facts.launch_pid is None:
+        if journal_facts.journal_readable:
+            harness_run_id = _latest_bmad_loop_run_id(home)
+            if harness_run_id is not None:
+                verdict = harness.run_terminal_verdict(home, harness_run_id)
+                if verdict == "terminal":
+                    snapshot = harness.run_status_snapshot(home, harness_run_id)
+                    if snapshot is not None:
+                        return status_core.FleetHomeFacts(
+                            slug=slug,
+                            branch=branch,
+                            has_run=True,
+                            harness_native_terminal=True,
+                            finished=snapshot.finished,
+                            paused_stage=snapshot.paused_stage,
+                            tasks=snapshot.tasks,
+                            supervisor_alive=False,
+                            engine_alive=False,
+                            budget_consumed=journal_facts.budget_consumed,
+                            budget_consumed_usd=journal_facts.budget_consumed_usd,
+                            layer_savings=journal_facts.layer_savings,
+                            layer_savings_usd=journal_facts.layer_savings_usd,
+                            paused_reason=snapshot.paused_reason,
+                            escalated_spec_file=snapshot.escalated_spec_file,
+                            escalated_task_phase=snapshot.escalated_task_phase,
+                            escalated_preserve_ref=snapshot.escalated_preserve_ref,
+                        )
         return status_core.FleetHomeFacts(
             slug=slug, branch=branch, has_run=True, journal_unreadable=True
         )
