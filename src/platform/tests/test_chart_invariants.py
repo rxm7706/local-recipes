@@ -1930,9 +1930,7 @@ def _assert_container_has_resource_limits(
     where: str,
 ) -> None:
     """Story 48.2: a named container must carry requests and limits.memory."""
-    containers = {
-        c["name"]: c for c in _iter_pod_containers(pod_spec) if c.get("name")
-    }
+    containers = {c["name"]: c for c in _iter_pod_containers(pod_spec) if c.get("name")}
     assert container_name in containers, (
         f"{where}: container {container_name!r} not found "
         f"(containers: {sorted(containers)!r})"
@@ -1956,9 +1954,7 @@ def _assert_hpa_targets_deployment(
         and (doc.get("spec") or {}).get("scaleTargetRef", {}).get("name")
         == deployment_name
     ]
-    assert matches, (
-        f"no HorizontalPodAutoscaler targets Deployment {deployment_name!r}"
-    )
+    assert matches, f"no HorizontalPodAutoscaler targets Deployment {deployment_name!r}"
 
 
 def _assert_pdb_selects_component(
@@ -2032,7 +2028,7 @@ def test_story_48_2_default_render_carries_sizing_hpa_and_pdb():
     _assert_pdb_selects_component(docs, component="worker")
 
     hpas = [doc for doc in docs if doc.get("kind") == "HorizontalPodAutoscaler"]
-    assert len(hpas) == 2, f"expected exactly 2 HPAs, got {len(hpas)}"
+    assert len(hpas) == 2, f"expected exactly 2 HPAs, got {len(hpas)}"  # noqa: PLR2004 -- web + platform-worker, the two autoscaled deployments
     builds_hpa = [
         doc
         for doc in hpas
