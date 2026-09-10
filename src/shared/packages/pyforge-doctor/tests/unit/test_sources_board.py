@@ -42,8 +42,7 @@ def test_deferred_specs_entries_name_open_specs_live() -> None:
     for slug in board.DEFERRED_SPECS:
         spec_md = _resolve_spec_md(repo_root, slug)
         assert spec_md is not None, f"{slug} has no tracked SPEC.md in the monorepo"
-        text = spec_md.read_text(encoding="utf-8")
-        status = str(board._frontmatter_from_text(text).get("status", "")).strip()
+        status = str(board._frontmatter(spec_md).get("status", "")).strip()
         if status not in board.OPEN_SPEC_STATUSES:
             stale.append(f"{slug} (status={status!r} at {spec_md.relative_to(repo_root)})")
 
@@ -51,4 +50,16 @@ def test_deferred_specs_entries_name_open_specs_live() -> None:
         "DEFERRED_SPECS contains entries whose Specs are no longer open — "
         "remove them rather than leaving inert exemptions:\n  "
         + "\n  ".join(stale)
+    )
+
+
+def test_deferred_specs_story_21_1_reconciliation() -> None:
+    """Pin Story 21.1 de-registrations and registrations against silent regression."""
+    assert "spec-intelligence-hub" not in board.DEFERRED_SPECS
+    assert "spec-artifact-chain-reconciliation" not in board.DEFERRED_SPECS
+    assert "spec-chain-currency-sweep" not in board.DEFERRED_SPECS
+    assert "spec-pyforge-charter" in board.DEFERRED_SPECS
+    assert board.DEFERRED_SPECS["spec-pyforge-charter"] == (
+        "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
+        "no story can pick up"
     )
