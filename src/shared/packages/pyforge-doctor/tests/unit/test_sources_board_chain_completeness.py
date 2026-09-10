@@ -707,11 +707,17 @@ def test_unreadable_spec_in_one_project_does_not_hide_a_real_finding_in_another(
 
     findings = board.gather_chain_completeness(tmp_path)
 
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.check == "spec-not-decomposed"
+    by_check = {f.check: f for f in findings}
+    assert "spec-not-decomposed" in by_check, (
+        f"alpha's real FAIL was masked: {[(f.check, f.evidence.get('project')) for f in findings]}"
+    )
+    finding = by_check["spec-not-decomposed"]
     assert finding.status is DoctorStatus.FAIL
     assert finding.evidence["project"] == "pyforge-alpha"
+    # beta's non-UTF-8 SPEC.md degrades to empty text → no status: key →
+    # spec-status-missing (no longer a silent exemption).
+    assert by_check.get("spec-status-missing") is not None
+    assert by_check["spec-status-missing"].evidence["project"] == "pyforge-beta"
 
 
 def test_non_dict_data_js_project_entry_does_not_crash_or_hide_other_findings(
