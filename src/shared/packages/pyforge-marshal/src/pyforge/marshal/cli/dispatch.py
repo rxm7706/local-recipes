@@ -1384,6 +1384,7 @@ def station_story_block_facts(
         if verdict == DispatchSessionVerdict.FAILED:
             session_log = fs.read_text(run_dir / _LOG_FILENAME)
             changed_path_count = 0
+            git_progress_unknown = False
             if journal.worktree_path is not None and journal.baseline_head_sha:
                 try:
                     git_facts = gather_dispatch_git_facts(
@@ -1397,7 +1398,7 @@ def station_story_block_facts(
                     )
                     changed_path_count = len(git_facts.changed_paths)
                 except (VcsCommandError, ValueError):
-                    changed_path_count = 0
+                    git_progress_unknown = True
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -1419,6 +1420,8 @@ def station_story_block_facts(
                     completion_stop_reason=journal.completion_stop_reason,
                 ),
             )
+            if git_progress_unknown:
+                block_class = dispatch_fleet.FleetBlockClass.STORY
             return dispatch_fleet.StationBlockEvidence(
                 reason=reason, block_class=block_class
             )

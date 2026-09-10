@@ -1126,6 +1126,131 @@ def test_verify_failure_is_story_block_and_not_skipped_under_skip_on_blocked(
     assert "story" in blocked.message
 
 
+def _seed_escalation_pause_dispatch(
+    tmp_path: Path,
+    *,
+    slug: str,
+    run_id: str,
+    story_key: str,
+) -> Path:
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    wt = str(tmp_path / ".worktrees" / f"dispatch-{slug}")
+    intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-10T00:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": story_key,
+                "worktree_path": wt,
+                "baseline_head_sha": "baseline1234",
+            },
+        )
+    ).line
+    launch_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-10T00:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"session_pid": 42},
+        )
+    ).line
+    completion_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-09-10T00:02:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.INTENT,
+            payload={"verdict": "failed", "stop_reason": "escalation-paused"},
+        )
+    ).line
+    completion_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-09-10T00:02:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={
+                "verdict": "failed",
+                "stop_reason": "escalation-paused",
+                "ok": True,
+            },
+        )
+    ).line
+    (run_dir / "journal.jsonl").write_text(
+        intent
+        + "\n"
+        + launch_outcome
+        + "\n"
+        + completion_intent
+        + "\n"
+        + completion_outcome
+        + "\n",
+        encoding="utf-8",
+    )
+    return run_dir
+
+
+def test_escalation_pause_is_story_block_and_not_skipped_under_skip_on_blocked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-escalated", "34-4-next"]})
+    _seed_escalation_pause_dispatch(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-escalation",
+        story_key="34.3",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers={
+            "pyforge-marshal": (("34-3-escalated", "backlog"), ("34-4-next", "backlog"))
+        },
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.BLOCKED
+
+
+def test_retry_environment_blocks_cli_wiring_moves_past_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-crashed", "34-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-crash",
+        story_key="34.3",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    code = _run_drain(
+        tmp_path,
+        _drain_args(once=True, retry_environment_blocks=True),
+        ledgers={"pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))},
+        build_harness=harness,
+        process=FakeProcess(alive=False),
+    )
+    assert code == EXIT_OK
+    assert harness.dispatched == [("pyforge-marshal", "34.4")]
+
+
 def test_retry_environment_blocks_moves_past_crash_under_drain_to_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1346,6 +1471,7 @@ def _drain_args(**overrides) -> argparse.Namespace:
         "campaign": None,
         "format": "json",
         "max_in_flight": 1,
+        "retry_environment_blocks": False,
     }
     base.update(overrides)
     return argparse.Namespace(**base)
