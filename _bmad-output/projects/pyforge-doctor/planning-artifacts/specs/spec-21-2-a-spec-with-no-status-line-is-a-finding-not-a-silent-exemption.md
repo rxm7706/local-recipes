@@ -2,7 +2,7 @@
 title: 'A Spec with no `status:` line is a finding, not a silent exemption'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: '0c75d60935d60a30448aee10f62079411ad98348'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -96,3 +96,42 @@ no status: in frontmatter`).
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 14 findings — high 0, medium 0, low 1, false 6, maybe-false 0, reject 7
+- findings:
+  - `[false] [reject]` Whitespace-only `status` silently exempted vs Dream check — intent limits scope to missing key only; `_frontmatter_from_text` skips value-less keys so key-absence and value-less are equivalent today
+  - `[false] [reject]` I/O matrix missing empty-whitespace row — spec edit only; out of scope for this story
+  - `[false] [reject]` No test for whitespace-only status — out of scope per intent contract
+  - `[false] [reject]` Stale line references in acceptance criteria — spec doc drift; no runtime harm
+  - `[low] [reject]` DEFERRED_SPECS block comment cites old `:716` line — comment inaccuracy only; direct fix not worth a patch pass
+  - `[false] [reject]` Code Map points at wrong test module — spec doc drift; tests live in chain_completeness module by convention
+  - `[false] [reject]` `test_unreadable_spec` omits explicit FAIL assert on spec-status-missing — finding always FAILs via `gather_chain_completeness`; presence assertion sufficient
+  - `[false] [reject]` No parametrized tests for all terminal statuses — `test_shipped_spec_is_not_open` exercises the same `continue` branch
+  - `[false] [defer]` Ledger still lists story at backlog — ledger sync is operator/build-auto finalize concern, not story acceptance
+  - `[false] [reject]` report-schema.json not updated — `check` is open string, not enumerated; task N/A
+  - `[false] [defer]` pixi task description omits new finding — detector output self-describes via finding kind
+  - `[false] [reject]` WARN vs FAIL severity vs Dream — intentional; spec says mirror "in spirit"
+  - `[false] [reject]` Only one Class-B flip visible in diff — live-tree test passes (1549 tests); tree already clean
+  - `[false] [reject]` Spec Change Log not extended pre-review — addressed in this finalize pass
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** INV-A in `board.py` now emits `spec-status-missing` when a Spec's frontmatter lacks a `status:` key, instead of silently exempting it via the terminal-status `continue`. `DEFERRED_SPECS` is checked first so the escape hatch survives.
+
+**Files changed:**
+- `board.py` — missing-key branch + reordered DEFERRED_SPECS guard
+- `test_sources_board_chain_completeness.py` — fixture tests + unreadable-spec expectation update
+- `test_sources_board.py` — live-tree zero-missing guard
+- `spec-sprint-status-promotion-regression-guard/SPEC.md` — Class-B `status: shipped` flip
+- This story spec — dispatch metadata
+
+**Review:** 0 patches applied, 0 deferred, 14 findings rejected (6 false, 1 low, 7 out-of-scope/doc). Edge-case hunter: none. Verification-gap: none.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1549 passed, 1 skipped.
+
+**Residual risks:** Unreadable/non-UTF-8 SPEC.md degrades to `{}` and now fires `spec-status-missing` (stricter than prior silent exemption). Present-but-empty `status` value (key in dict, empty after strip) remains exempt — intentionally out of scope per intent.
