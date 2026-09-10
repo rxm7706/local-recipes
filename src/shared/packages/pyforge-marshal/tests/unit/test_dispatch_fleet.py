@@ -976,7 +976,7 @@ def _seed_failed_dispatch_with_verify(
     slug: str,
     run_id: str,
     story_key: str,
-    failed_gate: str = "MRS-GATE-001",
+    failed_gate: str = "MRS-GATE-007",
 ) -> Path:
     """Seed a dead session with verify-cycle evidence (Story 34.3 story block)."""
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
@@ -1007,23 +1007,45 @@ def _seed_failed_dispatch_with_verify(
             payload={"session_pid": 42},
         )
     ).line
-    verify_outcome = prepare_for_write(
+    verify_intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 2),
+            ts="2026-09-10T00:04:59.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={},
+        )
+    ).line
+    verify_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
             ts="2026-09-10T00:05:00.000Z",
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
             phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
             payload={"verdict": "failed", "failed_gate": failed_gate},
+        )
+    ).line
+    completion_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 4),
+            ts="2026-09-10T00:05:59.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.INTENT,
+            payload={"verdict": "failed"},
         )
     ).line
     completion_outcome = prepare_for_write(
         build_entry(
-            id=JournalEntryId("w", 3),
+            id=JournalEntryId("w", 5),
             ts="2026-09-10T00:06:00.000Z",
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_COMPLETION,
             phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 4),
             payload={"verdict": "failed", "ok": True},
         )
     ).line
@@ -1032,7 +1054,11 @@ def _seed_failed_dispatch_with_verify(
         + "\n"
         + launch_outcome
         + "\n"
+        + verify_intent
+        + "\n"
         + verify_outcome
+        + "\n"
+        + completion_intent
         + "\n"
         + completion_outcome
         + "\n",
