@@ -97,3 +97,5 @@ scripts/apply_verification_verdicts.py  # DW verification-campaign verdict appli
 scripts/cfe_rebuild_guard_check.py   # mason Story 6.2 detector awaiting surface claim
 scripts/apply_actions_policy.py      # repo-governance script (applies .github/actions-policy.toml to GitHub Actions permissions) — no owning station, no pixi task, no DETECTOR marker; allowlisted pending a governance-tier home
 pyforge.toml                          # repo-root bootstrap manifest scaffolded by pyforge-steward's `initrepo` (Story 17.2, bootstrap.py::scaffold_pyforge_toml); no folder-format spec surface claims it yet — allowlisted pending steward claiming it, same class as build-pixi-mirror.py above
+scripts/memlog_fidelity_check.py      # Epic 44.13 memlog re-derivation fidelity harness (marshal Story 28.24) — no owning Spec claims it yet; allowlisted pending one, same class as cfe_rebuild_guard_check.py above
+scripts/platform-provision-osv-offline-db.sh  # Story 12.4 CI step provisioning the offline OSV DB for pyforge-warden's golden-path scan (marshal Story 28.24) — no owning Spec claims it yet; allowlisted pending one, same class as cfe_rebuild_guard_check.py above

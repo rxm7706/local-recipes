@@ -627,18 +627,24 @@ slices:
                           # compares real current hashes on both sides. See the drift report's own
                           # Provenance section for the full reconstruction rationale.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: "9b92661d4d3d55a7237cf15743ded4a0281629c9"
-                                    # ADVANCED 2026-09-09 from 02b104e573 to the
-                                    # G117 pin-cap CFE retro 9427a5ff5c
-                                    # (v8.89.0 -> v8.90.0, MINOR): `pixi upgrade
-                                    # --pinning-strategy latest-up` silently DELETES
-                                    # deliberate upper bounds (6 caps dropped in one
-                                    # refresh; only 1 was machine-caught). DOCS +
-                                    # derived config only -- SKILL.md, CHANGELOG.md,
-                                    # MANIFEST.yaml, skill-config.yaml,
-                                    # failure-catalog.yaml (117 rows) and one meta
-                                    # test; no script under scripts/ changed, so
+    brief_mirrored_through: "7b646e397f973eaf5553b3ffff7c29d31611706f"
+                                    # ADVANCED 2026-09-10 from 9b92661d4d to the
+                                    # G26 upper-bound-cap-case-study CFE retro
+                                    # a0e04feee5 (v8.90.1 -> v8.90.2, PATCH,
+                                    # mason Story 15.2): case-study addition to
+                                    # an existing gotcha, no new gotcha number.
+                                    # DOCS + derived config only -- SKILL.md,
+                                    # CHANGELOG.md, MANIFEST.yaml,
+                                    # skill-config.yaml, failure-catalog.yaml
+                                    # (117 rows, source_sha256 refresh only) --
+                                    # no script under scripts/ changed, so
                                     # neither slice needs a byte re-port.
+                                    # ADVANCED AGAIN 2026-09-10 to 7b646e397f
+                                    # (Story 15.2 review-pass fixes: release
+                                    # count, python floor, stale ledger
+                                    # pointer -- CHANGELOG.md + SKILL.md +
+                                    # deferred-work-ledger.md only, no script
+                                    # under scripts/ changed, no re-port owed.)
     coverage:
       scripts: 3
       wrappers: 3
@@ -791,18 +797,24 @@ slices:
                          # divergence (its --help text embeds a REPO_ROOT-derived default
                          # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
-    brief_mirrored_through: "9b92661d4d3d55a7237cf15743ded4a0281629c9"
-                                    # ADVANCED 2026-09-09 from 02b104e573 to the
-                                    # G117 pin-cap CFE retro 9427a5ff5c
-                                    # (v8.89.0 -> v8.90.0, MINOR): `pixi upgrade
-                                    # --pinning-strategy latest-up` silently DELETES
-                                    # deliberate upper bounds (6 caps dropped in one
-                                    # refresh; only 1 was machine-caught). DOCS +
-                                    # derived config only -- SKILL.md, CHANGELOG.md,
-                                    # MANIFEST.yaml, skill-config.yaml,
-                                    # failure-catalog.yaml (117 rows) and one meta
-                                    # test; no script under scripts/ changed, so
+    brief_mirrored_through: "7b646e397f973eaf5553b3ffff7c29d31611706f"
+                                    # ADVANCED 2026-09-10 from 9b92661d4d to the
+                                    # G26 upper-bound-cap-case-study CFE retro
+                                    # a0e04feee5 (v8.90.1 -> v8.90.2, PATCH,
+                                    # mason Story 15.2): case-study addition to
+                                    # an existing gotcha, no new gotcha number.
+                                    # DOCS + derived config only -- SKILL.md,
+                                    # CHANGELOG.md, MANIFEST.yaml,
+                                    # skill-config.yaml, failure-catalog.yaml
+                                    # (117 rows, source_sha256 refresh only) --
+                                    # no script under scripts/ changed, so
                                     # neither slice needs a byte re-port.
+                                    # ADVANCED AGAIN 2026-09-10 to 7b646e397f
+                                    # (Story 15.2 review-pass fixes: release
+                                    # count, python floor, stale ledger
+                                    # pointer -- CHANGELOG.md + SKILL.md +
+                                    # deferred-work-ledger.md only, no script
+                                    # under scripts/ changed, no re-port owed.)
     coverage:
       scripts: 22
       wrappers: 17
