@@ -27,14 +27,17 @@ from pyforge.marshal.cli.dispatch import (
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import dispatch_fleet
 from pyforge.marshal.core.dispatch_fleet import (
+    FleetBlockClass,
     FleetCampaignMode,
     InvalidCampaignModeError,
     ParsedStoryDeps,
     StationCycleStatus,
     StationQueueOutcome,
     apply_order_override,
+    classify_fleet_block,
     dependency_ordered_backlog,
     explicit_story_backlog,
+    has_review_verify_cycle_evidence,
     parse_campaign_mode,
     parse_epics_dependencies,
     plan_station_queue,
@@ -134,12 +137,35 @@ def test_leave_one_stops_at_the_configured_tail() -> None:
     assert deeper.next_story == "2-1-a"
 
 
-def test_skip_on_blocked_skips_to_the_next_story_and_reports_the_reason() -> None:
+def test_classify_fleet_block_environment_when_no_progress_or_verify_evidence() -> None:
+    assert (
+        classify_fleet_block(changed_path_count=0, has_review_verify_evidence=False)
+        is FleetBlockClass.ENVIRONMENT
+    )
+    assert (
+        classify_fleet_block(changed_path_count=2, has_review_verify_evidence=False)
+        is FleetBlockClass.STORY
+    )
+    assert (
+        classify_fleet_block(
+            changed_path_count=0,
+            has_review_verify_evidence=has_review_verify_cycle_evidence(
+                verification_verdict="failed",
+                verification_failed_gate=None,
+                completion_stop_reason=None,
+            ),
+        )
+        is FleetBlockClass.STORY
+    )
+
+
+def test_skip_on_blocked_skips_environment_blocks_only() -> None:
     plan = plan_station_queue(
         slug="pyforge-steward",
         backlog=("12-7-live-ocp", "12-8-github-projects"),
         mode=FleetCampaignMode.SKIP_ON_BLOCKED,
         blocked={"12-7-live-ocp": "needs a live OCP cluster"},
+        block_classes={"12-7-live-ocp": FleetBlockClass.ENVIRONMENT},
     )
     assert plan.outcome is StationQueueOutcome.DISPATCH
     assert plan.next_story == "12-8-github-projects"
@@ -148,12 +174,38 @@ def test_skip_on_blocked_skips_to_the_next_story_and_reports_the_reason() -> Non
     assert "12-7-live-ocp" in plan.backlog
 
 
+def test_skip_on_blocked_stops_at_story_classified_blocks() -> None:
+    plan = plan_station_queue(
+        slug="pyforge-marshal",
+        backlog=("34-3-crashed", "34-4-next"),
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        blocked={"34-3-crashed": "verify failed"},
+        block_classes={"34-3-crashed": FleetBlockClass.STORY},
+    )
+    assert plan.outcome is StationQueueOutcome.BLOCKED
+    assert plan.blocked_story == "34-3-crashed"
+
+
+def test_retry_environment_blocks_skips_under_drain_to_zero() -> None:
+    plan = plan_station_queue(
+        slug="pyforge-marshal",
+        backlog=("34-3-crashed", "34-4-next"),
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        blocked={"34-3-crashed": "session died before progress"},
+        block_classes={"34-3-crashed": FleetBlockClass.ENVIRONMENT},
+        retry_environment_blocks=True,
+    )
+    assert plan.outcome is StationQueueOutcome.DISPATCH
+    assert plan.next_story == "34-4-next"
+
+
 def test_other_modes_stop_at_a_blocked_story_and_never_force_past_it() -> None:
     plan = plan_station_queue(
         slug="pyforge-steward",
         backlog=("12-7-live-ocp", "12-8-github-projects"),
         mode=FleetCampaignMode.DRAIN_TO_ZERO,
         blocked={"12-7-live-ocp": "needs a live OCP cluster"},
+        block_classes={"12-7-live-ocp": FleetBlockClass.STORY},
     )
     assert plan.outcome is StationQueueOutcome.BLOCKED
     assert plan.blocked_story == "12-7-live-ocp"
@@ -545,6 +597,7 @@ def _cycle(
     station: str | None = None,
     explicit_stories: tuple[str, ...] | None = None,
     policy_flags: dict[str, object] | None | object = _CYCLE_POLICY_REAL,
+    retry_environment_blocks: bool = False,
 ):
     """Fleet-cycle helper.
 
@@ -590,6 +643,7 @@ def _cycle(
             station=station,
             explicit_stories=explicit_stories,
             policy_flags=resolved_policy,
+            retry_environment_blocks=retry_environment_blocks,
         )
     finally:
         dispatch_cli.dispatch_once = real_dispatch_once
@@ -914,6 +968,165 @@ def test_a_halted_story_blocks_its_station_under_drain_to_zero(
     assert "22-7-fleet" in blocked.message
     assert "skip_on_blocked" in blocked.message
     assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.BLOCKED
+
+
+def _seed_failed_dispatch_with_verify(
+    tmp_path: Path,
+    *,
+    slug: str,
+    run_id: str,
+    story_key: str,
+    failed_gate: str = "MRS-GATE-001",
+) -> Path:
+    """Seed a dead session with verify-cycle evidence (Story 34.3 story block)."""
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    wt = str(tmp_path / ".worktrees" / f"dispatch-{slug}")
+    intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-10T00:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={
+                "story_key": story_key,
+                "worktree_path": wt,
+                "baseline_head_sha": "aaa111",
+            },
+        )
+    ).line
+    launch_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-09-10T00:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 0),
+            payload={"session_pid": 42},
+        )
+    ).line
+    verify_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-09-10T00:05:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            payload={"verdict": "failed", "failed_gate": failed_gate},
+        )
+    ).line
+    completion_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-09-10T00:06:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.OUTCOME,
+            payload={"verdict": "failed", "ok": True},
+        )
+    ).line
+    (run_dir / "journal.jsonl").write_text(
+        intent
+        + "\n"
+        + launch_outcome
+        + "\n"
+        + verify_outcome
+        + "\n"
+        + completion_outcome
+        + "\n",
+        encoding="utf-8",
+    )
+    return run_dir
+
+
+def test_crashed_before_progress_is_environment_and_skips_under_skip_on_blocked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-crashed", "34-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-crash",
+        story_key="34.3",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers={
+            "pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))
+        },
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    assert harness.dispatched == [("pyforge-marshal", "34.4")]
+
+
+def test_verify_failure_is_story_block_and_not_skipped_under_skip_on_blocked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-failed", "34-4-next"]})
+    wt = tmp_path / ".worktrees" / "dispatch-pyforge-marshal"
+    wt.mkdir(parents=True)
+    vcs = FakeVcs(tmp_path)
+    vcs.progressed_worktrees.add(str(wt))
+    _seed_failed_dispatch_with_verify(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-verify-fail",
+        story_key="34.3",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers={
+            "pyforge-marshal": (("34-3-failed", "backlog"), ("34-4-next", "backlog"))
+        },
+        vcs=vcs,
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    assert harness.dispatched == []
+    assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.BLOCKED
+    blocked = next(f for f in report.findings if f.code == "MRS-DRAIN-005")
+    assert "story" in blocked.message
+
+
+def test_retry_environment_blocks_moves_past_crash_under_drain_to_zero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["34-3-crashed", "34-4-next"]})
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-crash",
+        story_key="34.3",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={
+            "pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))
+        },
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+        retry_environment_blocks=True,
+    )
+    assert harness.dispatched == [("pyforge-marshal", "34.4")]
+    skip = next(f for f in report.findings if f.code == "MRS-DRAIN-004")
+    assert "environment-classified block" in skip.message
 
 
 def test_a_halted_story_is_skipped_under_skip_on_blocked(
