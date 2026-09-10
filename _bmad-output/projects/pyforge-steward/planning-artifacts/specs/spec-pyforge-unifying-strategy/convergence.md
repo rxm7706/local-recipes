@@ -15,10 +15,10 @@ which adjacent items this Spec deliberately does not absorb.
 
 **This pass is also the chain's scoping instrument.** The Dream was written as though the Canopy
 were greenfield; the audit found the host shipped. Per the operator decisions of 2026-08-24
-(Dream § Realization log), the chain is an **extension binding `spec-python-agent-platform` as
-prior art** — it mints nothing that duplicates **`pap:CAP-1`..`pap:CAP-6`** (parent file
-headings CAP-1..6) — and within that boundary decomposition
-is exhaustive. Unifying Strategy `CAP-1`..`CAP-19` are a different set.
+(Dream § Realization log), the chain absorbed **`pap:CAP-1`..`pap:CAP-6`** from
+`spec-python-agent-platform` (Story 48.8, 2026-09-10) — it mints nothing that duplicates those
+host capabilities — and within that boundary decomposition is exhaustive. Unifying Strategy
+`CAP-1`..`CAP-19` are a different set.
 
 ## Already covered — do not re-mint
 
@@ -119,7 +119,7 @@ there rather than left to inherit:
 **Also already covered, found 2026-08-24:** the **Helm pre-upgrade hook seam** itself
 (`src/platform/deploy/charts/platform/templates/migrate-job.yaml`, Story 12.1 `done`) and the
 **internal-registry image relocation seam** (`image.registry` + `imagePullSecrets` in
-`values.yaml`, `spec-python-agent-platform` CAP-6). CAP-9 consumes both rather than minting either.
+`values.yaml`, `pap:CAP-6`). CAP-9 consumes both rather than minting either.
 
 ## Adjacent-not-absorbed
 

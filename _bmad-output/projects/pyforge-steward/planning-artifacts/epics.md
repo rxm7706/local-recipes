@@ -844,11 +844,13 @@ GitHub-Pages site — mutually exclusive with role isolation, never a second cod
 
 ## Epic 10: python-agent-platform — the host takes root
 
-**Spec binding.** Decomposes `spec-python-agent-platform` (this station's specs/ dir; all
-open questions resolved 2026-08-14, operator: OCP-first with GKE as a CI portability profile;
-in-repo at `src/platform/` per the monorepo goal; ship on py3.12 with py3.14 as a release
-gate; Docker AND Podman with rootless Podman as the reference posture). Stories cite CAP-1..6
-directly — the Spec is the contract; no new FR numbers are minted. Story 10.4 is conda-forge
+**Spec binding.** Decomposes `spec-pyforge-unifying-strategy` host platform (`pap:CAP-1..6`;
+merged from `spec-python-agent-platform` by Story 48.8). All open questions resolved
+2026-08-14, operator: OCP-first with GKE as a CI portability profile; in-repo at
+`src/platform/` per the monorepo goal; ship on py3.12 with py3.14 as a release gate; Docker
+AND Podman with rootless Podman as the reference posture. Stories cite `pap:CAP-*` /
+`pap:AD-*` directly — the Unifying Spec is the contract; no new FR numbers are minted.
+Story 10.4 is conda-forge
 feedstock work and per the repo's Rule 1 its dev session MUST invoke the
 `conda-forge-expert` skill; it is the py3.14 unblocker and rides in parallel (no deps).
 
@@ -914,8 +916,9 @@ additive counterpart for the engine that no longer fits that image, not a correc
 
 ## Epic 11: The engines join as pluggable apps
 
-**Spec binding.** pap:CAP-2, pap:CAP-3, pap:CAP-4 and the isolation/statelessness constraints of
-`spec-python-agent-platform`. Pattern A per the plugin dreams ([[langflow-django-plugin]],
+**Spec binding.** `pap:CAP-2`, `pap:CAP-3`, `pap:CAP-4` and the isolation/statelessness
+constraints of `spec-pyforge-unifying-strategy` § Host platform. Pattern A per the plugin
+dreams ([[langflow-django-plugin]],
 [[db-gpt-django-plugin]]) is the default; a sidecar fallback requires a dated deviation in
 the Dream first (pap:AD-14) and is selected through pap:AD-17's per-engine config switch, added
 2026-08-21 after DB-GPT's Pattern-B deviation — see the 2026-08-21 sprint-change-proposal.
@@ -976,8 +979,8 @@ suite that cannot fail is a failing suite (the 9.6 discipline).
 
 ## Epic 12: Deploy anywhere, including nowhere-connected
 
-**Spec binding.** pap:CAP-6 and the Q1 resolution (OCP first, GKE as a CI portability profile
-over a vanilla-Kubernetes core chart).
+**Spec binding.** `pap:CAP-6` from `spec-pyforge-unifying-strategy` § Host platform and the Q1
+resolution (OCP first, GKE as a CI portability profile over a vanilla-Kubernetes core chart).
 
 ### Story 12.1: The vanilla chart with an OCP overlay
 **Type:** infra • **Effort:** L • **Deps:** S-10.3 • **FR/AD:** pap:CAP-1, pap:CAP-6

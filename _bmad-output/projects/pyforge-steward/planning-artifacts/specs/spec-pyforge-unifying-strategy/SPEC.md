@@ -3,7 +3,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-09-09"
+updated: "2026-09-10"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -19,7 +19,6 @@ companions:
   - ../../research/fleet-readiness-decision-batch-2026-09-09.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
-extends: spec-python-agent-platform  # pap:CAP-1..6 + pap:AD-1..17 (shipped host). Unifying CAP-1..19 are a different set. Pixi env id stays python-agent-platform.
 surface:
   - src/platform/**
   - src/shared/packages/django-pyforge/**
@@ -36,7 +35,6 @@ sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
   - "realization-gate-home: Epic 49 binds on this chain today (operator 2026-09-09: 'Unifying now, re-home later'); it re-homes to hub:CAP-* on spec-intelligence-hub by memlog once the operator's reading of 'align' lands and that Spec reaches ready. Story text does not change."
-  - "single-spec-merge-timing: answered 2026-09-09 — now, as Story 48.8, before any 44.x flip; the regeneration drill must not consume an unmerged extends: chain. NOTE (fleet readiness 2026-09-09, stB-F1): this is an ANSWERED question sitting in open_questions — the same shape as the spec-unified-container defect this pass retired. It MOVES TO § Residual when Story 48.8 lands `done`; it reads correctly only while 48.8 is unlanded."
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -56,34 +54,83 @@ open_questions:
 > Residual: **see § Residual (2026-09-09)** — the three 2026-08-26 `open_questions` were answered
 > (see § Open Questions); the currency review reopened the residual. Do not re-dispatch 18–37.
 
-> **This SPEC extends `spec-python-agent-platform`, it does not replace it.** Cite host
-> capabilities as **`pap:CAP-1`..`pap:CAP-6`** and host spine as **`pap:AD-1`..`pap:AD-17`**
+> **Host contract merged 2026-09-10 (Story 48.8).** Cite host capabilities as
+> **`pap:CAP-1`..`pap:CAP-6`** and host spine as **`pap:AD-1`..`pap:AD-17`**
 > (same fully-qualified grammar as `marshal:AD-8`). Bare `CAP-1`..`CAP-19` in *this* file are
 > Unifying Strategy only. Do not re-mint `pap:CAP-*`. `convergence.md` is the split.
 > Pixi feature/env id stays `[feature.python-agent-platform]` until a named rename story.
 > CAP-9 reopened shipped DDL stories; CAP-19 reopens shipped analytical stores (Atlas RAG
 > writer, Scribe 28.x, agent DSNs) by operator ruling 2026-08-26.
+> **`pap:` stays a live id prefix** — the merge moved text here; the namespace is unchanged.
+> `spec-python-agent-platform` is superseded; spine detail remains in its ARCHITECTURE-SPINE
+> companion (`pap:AD-1`..`pap:AD-17`).
 
-## Inherited host (`pap:CAP-*`) — do not re-mint
+## Host platform (`pap:CAP-*`) — merged from spec-python-agent-platform
 
-Source of record until a merge story copies the full text: `spec-python-agent-platform`.
+**Qualified ids (cite these from anywhere outside this section):** `pap:CAP-1` … `pap:CAP-6`.
+Bare `CAP-n` below is the local heading in this file only. Unifying Strategy's `CAP-1` is
+`django-pyforge`, not this CAP-1. Pixi env id stays `python-agent-platform`.
 
-| Qualified id | Host CAP (parent file) | What it is |
-|---|---|---|
-| `pap:CAP-1` | CAP-1 | Cookiecutter Django host at `src/platform/` |
-| `pap:CAP-2` | CAP-2 | Langflow Pattern A mount + `langflow_schema` |
-| `pap:CAP-3` | CAP-3 | DB-GPT via `pap:AD-17` pattern switch (Pattern B today) |
-| `pap:CAP-4` | CAP-4 | Celery; async never blocks Django |
-| `pap:CAP-5` | CAP-5 | One factory-sourced env; Python `3.14.*` (43.6, 2026-09-03; corrected 2026-09-09) |
-| `pap:CAP-6` | CAP-6 | Air-gap parity is a failing check |
+- **pap:CAP-1 — The host renders from the accelerator shape.**
+  - **intent:** A cookiecutter-django service with FastAPI integration is the platform's one
+    control plane: `env()`-split settings, health endpoints wired to K8s liveness/readiness
+    probes, mirror endpoints (conda/pypi/registry) parameterized at render time per
+    django-accelerator-framework's air-gap entry, vendored zero-CDN static assets.
+  - **success:** The rendered host boots against PostgreSQL + Redis with no other
+    infrastructure, passes its probes on K8s, and a render pointed at internal mirrors
+    produces an image with zero external-network references.
+- **pap:CAP-2 — Langflow joins as a pluggable Django application.**
+  - **intent:** Pattern A of langflow-django-plugin: ASGI mount forwarding `/api/v1/`,
+    `/health`, `/langflow/`; `langflow_schema` isolation made real via `RunSQL` migration +
+    `LANGFLOW_DATABASE_URL` `search_path` suffix; no local-disk state.
+  - **success:** Langflow flows execute through the mounted app with its tables confined to
+    `langflow_schema` (verified by schema inspection), and killing/replacing the pod loses no
+    state.
+- **pap:CAP-3 — DB-GPT joins the platform through its configured integration pattern.**
+  - **intent:** DB-GPT integrates via whichever pattern pap:AD-17's per-engine config switch
+    selects — Pattern A of db-gpt-django-plugin (ASGI-mounted, in-process) by default, or
+    Pattern B (Celery-dispatched sidecar, `docker-compose.yml`-managed) where Pattern A is
+    demonstrably not pluggable (pap:AD-14). As of 2026-08-21, DB-GPT is configured to Pattern B —
+    `dbgpt-app`'s `fastapi<0.113.0` ceiling is disjoint from `langflow-base`'s
+    `fastapi>=0.135.0` floor in the shared environment, confirmed live. `dbgpt_schema` in the
+    shared PostgreSQL is provisioned by Django data migration (Django ORM never crosses in;
+    DB-GPT's Alembic never touches `public`) and pgvector lives there if a vector store is
+    needed — that part of the storage rule holds regardless of pattern. **DB-GPT's own
+    `service.web.database` metadata store (chat history, knowledge/RAG, flow/plugin configs)
+    is the bounded AD-6 exception**, dated 2026-08-21: `dbgpt-app` structurally cannot use
+    PostgreSQL for it (confirmed live: connector-type rejection, SQLite-only migration path,
+    MySQL-only column DDL), so it stays on SQLite behind a dedicated Kubernetes
+    `PersistentVolumeClaim` instead — never in `dbgpt_schema`, never on ephemeral local disk.
+  - **success:** Text-to-SQL / data-chat round-trips succeed end-to-end through whichever
+    pattern is configured; `dbgpt_schema` state (Django-provisioned, pgvector) loses nothing on
+    pod/container replacement; DB-GPT's own metadata store survives a kill-and-restart via its
+    PVC (Story 10.5's two-boot persistence test), not via PostgreSQL. Switching DB-GPT's
+    configured pattern later requires no code change, only a registry update (pap:AD-17); the AD-6
+    exception is independent of that switch and stays scoped to `dbgpt-app`'s own metadata
+    store regardless of pattern.
+- **pap:CAP-4 — Async work never blocks Django.**
+  - **intent:** Celery over Redis carries LLM/AWEL work (the plugin dreams' Pattern B/D
+    element); workers call the engines in-process or over the internal network, never through
+    the public edge.
+  - **success:** A long-running agent task completes via the worker path while the host stays
+    responsive; the task's failure mode (timeout/partial result) is named and handled.
+- **pap:CAP-5 — One environment, factory-sourced, 3.14-bound.**
+  - **intent:** The platform's environment is a single conda-space solve from mirrored
+    conda-forge (langflow, dbgpt, dbgpt-serve, django + host deps) — pinned, locked, and
+    rendered into the container build; python 3.14 compatibility is a tracked gate with the
+    bcrypt pin as its named prerequisite (open question 3 sequences it).
+  - **success:** The lockfile solves reproducibly from a mirror-only channel config; the 3.14
+    gate flips green the release after the bcrypt prerequisite clears.
+- **pap:CAP-6 — Air-gap parity is a test, not a hope.**
+  - **intent:** Every deployment artifact resolves inside the boundary: internal-registry
+    images, mirrored indexes, zero-CDN assets, env/secret-mount credentials (BuildKit
+    `--mount=type=secret` at build time; K8s secrets at run time), internal-CA trust.
+  - **success:** A build + deploy executed with external egress blocked succeeds end-to-end;
+    any external reference is a failing check, not a warning.
 
-Spine: `pap:AD-1`..`pap:AD-17` = parent ARCHITECTURE-SPINE (same as **parent AD-n**).
+Spine: `pap:AD-1`..`pap:AD-17` = host ARCHITECTURE-SPINE companion (same as **parent AD-n**).
 Unifying spine IDs are **canopy AD-n** (prefix only; the product is Foundry Platform).
 Qualify every citation; bare `AD-n` in epics is a review fail.
-
-Single-Spec merge (copy `pap:CAP-*` full text here, retarget Epic 10–12, supersede the
-parent Spec) is **parked** — Dream Grounding. Do not drop `extends:`. Do not rename
-`[feature.python-agent-platform]` in those stories.
 
 
 ## Absorbed (`daf:CAP-*`) — the Django accelerator contract
@@ -378,8 +425,8 @@ they are why this is not merely a UI project.
 
 ## Constraints
 
-- **Always:** `spec-python-agent-platform` CAP-1..6 are shipped and binding. This SPEC extends
-  them; `convergence.md` decides which side of the line a surface falls on.
+- **Always:** `pap:CAP-1..6` (§ Host platform) are shipped and binding. `convergence.md` decides
+  which side of the line a surface falls on.
 - **Always:** Django `>=5.2.17,<6` and Python `3.14.*` (43.6, 2026-09-03; the Django bump `daa35ee171` 2026-08-29; both corrected here 2026-09-09). Django 6 is unavailable. conda-forge ships
   exactly one qualifying build, two security patch releases behind upstream. **Audited 2026-08-24:
   5.2.16 and 5.2.17 carry seven CVEs, one rated high — and every affected path is unreachable here
@@ -392,7 +439,7 @@ they are why this is not merely a UI project.
 - **Always:** every **Python/pixi** dependency resolves from conda-forge. The egress-blocked build
   is a gate, not a warning; a PyPI-only package is new feedstock work and must be scheduled as such.
   This governs the dependency graph, not every artifact in the namespace — container images are
-  governed separately by `spec-python-agent-platform` CAP-6, which already admits third-party
+  governed separately by `pap:CAP-6`, which already admits third-party
   images (`postgres:17`, `redis:7`) under the internal-registry rule. Neither boundary is optional
   and neither substitutes for the other.
 - **Always:** infrastructure is exactly PostgreSQL + Redis + Kubernetes. A component demanding a
@@ -640,9 +687,9 @@ Reopened by the currency review; each line names its vessel.
 
 - **R-18..R-22** (`DW-RT-2026-09-02-2..6`) → Epic 48 Stories 48.2–48.6. Were "Epic 45
   candidate"; Epic 45 went to eval-quality on 2026-09-05.
-- **Single-Spec merge** → Story 48.8 (parked since 2026-09-01; due before the cutover's
-  regeneration drill consumes the `extends:` chain). Never in the same story: renaming
-  `[feature.python-agent-platform]`.
+- **Single-Spec merge** → **shipped 2026-09-10 (Story 48.8).** Full `pap:CAP-1..6` text merged
+  inline; `extends:` retired; `spec-python-agent-platform` superseded. Renaming
+  `[feature.python-agent-platform]` remains a separate named story if ever.
 - **Story 43.7** `backlog` — sidecar runtime validation on Python 3.14 (added 2026-09-08).
 - **Six capabilities with an unexercised named criterion** → Epic 49: CAP-4 (`start`/`get` on 2
   of 8, no disconnect test), CAP-7 (fixture board; real Vizro board asserted absent from the
@@ -762,7 +809,7 @@ Reopened by the currency review; each line names its vessel.
   co-published Kedro-Viz tree is **not** part of the parity obligation (no inbound link from the
   console, separate workflow) and must not be deleted with it.
 - ~~**liquibase-airgap-policy**~~ — **answered 2026-08-24.** Two boundaries, both binding:
-  conda channels govern the Python/pixi graph, `spec-python-agent-platform` CAP-6 governs
+  conda channels govern the Python/pixi graph, `pap:CAP-6` governs
   deployment images and already admits non-conda third-party images. See
   `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
 - ~~**query-plane-face**~~ — **answered 2026-08-26 (operator): both, one boot script.**
