@@ -60,6 +60,13 @@ declared_low_risk: false
 - A comment naming no key is ignored rather than guessed at.
 - A key absent from every ledger is reported as unresolvable, not as agreement.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log
