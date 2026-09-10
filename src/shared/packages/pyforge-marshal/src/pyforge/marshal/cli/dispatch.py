@@ -1184,6 +1184,101 @@ def station_in_flight_conflict(
     return None
 
 
+def _iter_spin_run_dirs(home: Path, slug: str) -> tuple[Path, ...]:
+    """Marshal spin run directories under a loop home (Story 34.1).
+
+    Mirrors ``cli/spin.py::_latest_run_dir``'s own glob location and sort
+    order, but returns every matching directory so a guard can walk newest-
+    first rather than inspecting only the lexicographically latest id.
+    """
+    runs_dir = (
+        home
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+    )
+    try:
+        return tuple(
+            sorted(
+                (path for path in runs_dir.glob(f"{slug}-*") if path.is_dir()),
+                key=lambda path: path.name,
+            )
+        )
+    except OSError:
+        return ()
+
+
+def spin_loop_home_in_flight_conflict(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    harness: HarnessPort,
+    home: Path,
+    slug: str,
+    story_key: str,
+    effective_policy: policy.EffectivePolicy,
+) -> DispatchPreflightConflict | None:
+    """Refuse ``factory spin`` when this loop home already has a live run (34.1).
+
+    A narrowed call into ``station_in_flight_conflict`` for live factory-
+    dispatch sessions on the SAME home, then the spin-specific ``runs/``
+    journals dispatch's guard does not walk. Reuses ``DispatchPreflightConflict``
+    and ``MRS-DISP-021`` -- never a second, independently-drifting guard.
+    """
+    dispatch_conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=home,
+        slug=slug,
+        story_key=story_key,
+        effective_policy=effective_policy,
+        parallel_dispatch=False,
+    )
+    if dispatch_conflict is not None:
+        return dispatch_conflict
+
+    from .status import _gather_run_journal_facts
+
+    for run_dir in reversed(_iter_spin_run_dirs(home, slug)):
+        run_id = run_dir.name
+        journal_facts = _gather_run_journal_facts(fs, run_dir, run_id)
+        launch_pid = journal_facts.launch_pid
+        supervisor_pid = journal_facts.supervisor_pid
+        launch_alive = launch_pid is not None and process.is_alive(launch_pid)
+        supervisor_alive = (
+            supervisor_pid is not None and process.is_alive(supervisor_pid)
+        )
+        if not launch_alive and not supervisor_alive:
+            continue
+        harness_run_id = journal_facts.harness_run_id
+        snapshot = (
+            harness.run_status_snapshot(home, harness_run_id)
+            if harness_run_id
+            else None
+        )
+        if snapshot is not None and snapshot.finished:
+            continue
+        evidence_parts = [f"run {run_id!r}"]
+        if launch_pid is not None:
+            evidence_parts.append(f"pid {launch_pid}")
+        if supervisor_pid is not None:
+            evidence_parts.append(f"supervisor pid {supervisor_pid}")
+        evidence = ", ".join(evidence_parts)
+        return DispatchPreflightConflict(
+            code="MRS-DISP-021",
+            message=(
+                f"refusing spin: station {slug!r} already has in-flight "
+                f"spin ({evidence})"
+            ),
+            in_flight_story_key=run_id,
+        )
+    return None
+
+
 def cross_station_surface_overlap_advisories(
     *,
     fs: FsPort,

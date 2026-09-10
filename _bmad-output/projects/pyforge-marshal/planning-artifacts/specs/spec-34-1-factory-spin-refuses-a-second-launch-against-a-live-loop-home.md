@@ -2,7 +2,8 @@
 title: '`factory spin` refuses a second launch against a live loop home'
 type: 'fix'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '7c41c11838a8a648a22350f01d51f8deb440b675'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -78,3 +79,21 @@ one" precedent for dispatch's own guard.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Guard lives in `cli/spin.py` rather than `harness_bmadloop.py` before `Popen` — acceptable: `run_spin` is the sole production caller of `HarnessPort.spin`, so the launch path is guarded before any subprocess spawn.
+  - `[false]` `[reject]` `--foreground` spin bypasses the guard — foreground mode blocks the invoking shell, so the 2026-09-10 double-detached-launch incident cannot recur through that path.
+
+## Auto Run Result
+
+- **Summary:** Added `spin_loop_home_in_flight_conflict` in `cli/dispatch.py`, a narrowed call into `station_in_flight_conflict` plus a walk of the loop home's `runs/` journals. `run_spin` invokes it before minting a run id or spawning `bmad-loop run`, surfacing `MRS-DISP-021` with the live run id and pid.
+- **Files changed:**
+  - `cli/dispatch.py` — `spin_loop_home_in_flight_conflict` and `_iter_spin_run_dirs`
+  - `cli/spin.py` — pre-launch guard in `run_spin`
+  - `tests/unit/test_spin.py` — four matrix fixtures (live refusal, terminal prior, different station, rapid second call)
+- **Review:** 0 patches applied; 2 findings rejected (see triage log).
+- **Follow-up review recommended:** false
+- **Verification:** `pixi run -e pyforge-marshal pyforge-marshal-test` — 7724 passed, 12 deselected (41.77s); targeted spin guard tests — 4 passed.
+- **Residual risks:** `--foreground` mode is intentionally unguarded (shell-blocking); a future story could extend the guard if needed.
