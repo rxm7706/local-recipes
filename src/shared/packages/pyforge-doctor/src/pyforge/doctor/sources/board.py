@@ -81,29 +81,17 @@ OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 #: recorded exemption is not silently dropped by the port.
 # NOTE (updated 2026-08-10): the former duplicate in `scripts/chain_completeness_check.py`
 # is GONE — 6-9 landed (PR #394) and deleted the shim, so this dict is now the sole copy.
-# An entry leaves this dict only when its Spec is decomposed into the owning station's
-# epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
+# Invariant: every slug here names a Spec whose `status:` is in OPEN_SPEC_STATUSES
+# (`draft`, `ready`, `in-progress`). When a Spec reaches a terminal status, `:716`'s
+# first clause exempts it anyway, so a DEFERRED_SPECS entry is never the only thing
+# standing between a terminal Spec and a finding — remove stale entries rather than
+# leaving them inert. An entry also leaves when its Spec is decomposed into the owning
+# station's epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
 # de-registered 2026-08-10 on explicit operator confirmation of doctor Epic 7).
 DEFERRED_SPECS: dict[str, str] = {
     "spec-agentic-sdlc-autonomy":
         "a standing position, explicitly 'not a deliverable' by its own text — "
         "there is nothing to decompose and an FR would manufacture one",
-    "spec-artifact-chain-reconciliation":
-        "executed serially in the operator's main session by its own SPEC constraint (the "
-        "quick-dev shape) — decomposing it into marshal's PRD/epics would place audit "
-        "stories on the very board that feeds bmad-loop dispatch, and the audit exists to "
-        "PAUSE that loop until the chain is measured true. Its deliverables are the gate "
-        "reports (traceability matrices) landing in each station's planning-artifacts, "
-        "tracked and detector-checked there. Revisit if the audit becomes a standing "
-        "practice (its own open question) — a recurring cadence would deserve board "
-        "representation",
-    "spec-chain-currency-sweep":
-        "same structural class as spec-artifact-chain-reconciliation above: CAP-1 is "
-        "explicitly titled '(SHIPPED)', and the actual procedure of record is its own "
-        "companion CHAIN-CURRENCY-RUNBOOK.md, executed directly by an operator rather than "
-        "dispatched as station epics/stories. Decomposing it into doctor's PRD/epics would "
-        "manufacture stories for a runbook, not describe undone work. Revisit if the sweep "
-        "becomes a station-dispatched recurring duty rather than an operator-run runbook",
     "spec-build-league-scorecard":
         "explicitly self-parked by its own SPEC.md: 'Parked contract... Do not implement a "
         "board until the operator drafts the measure set.' Unifying Strategy Q5 named the "
@@ -111,27 +99,21 @@ DEFERRED_SPECS: dict[str, str] = {
         "describe undone work an epic could pick up today. De-register once the operator "
         "publishes the human/agent/team measure set CAP-1 needs",
     "spec-golden-path-conda-blind-spot":
-        "a `draft` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
-        "its five CAPs sit behind five open questions (selector grammar, provisioning route, "
-        "budget, evidence shape, adoption trigger) that only the operator can answer, so "
-        "decomposing it into warden epics now would manufacture stories from guesses. "
+        "a `ready` Spec seeded 2026-09-05 (PR #1063) so the Dream's chain link is durable; "
+        "its five CAPs were gated by five open questions (selector grammar, provisioning, "
+        "coverage floor, warn-promotability, unscoped-union default) answered 2026-09-09; "
+        "warden Epic 12 now carries CAP-1..5. "
         "De-register once the open_questions are cleared and warden's epics carry CAP-1..5",
-    "spec-intelligence-hub":
-        "a `draft` Spec seeded 2026-09-05 so the Dream's chain link is durable (dream-chain "
-        "INV-1); its five CAPs are the Dream's CANDIDATE shapes — none chosen. The 2026-09-06 "
-        "research pass closed RB-1 (Frame Spec v0.2.0 is published) and RB-2 (nebari + nebi are on "
-        "conda-forge; only nebari-infrastructure-core is absent); what remains — owner, Guard "
-        "categories, Track shape, own Frames, and the two derived questions (package NIC / the "
-        "frames client? author the first conformant Frame now?) — only the operator can answer, "
-        "so decomposing it into steward epics now would manufacture stories from guesses. "
-        "De-register once the operator picks the shape(s) and steward's epics carry the chosen CAPs",
     "spec-bmad-cursor-interactive-routing":
-        "a `draft` Spec seeded 2026-09-07 so the Dream's chain link is durable (dream-chain "
+        "a `ready` Spec seeded 2026-09-07 so the Dream's chain link is durable (dream-chain "
         "INV-1); CAP-1 (a live probe of whether Cursor's interactive IDE chat can invoke a "
         "context-free subagent) gates every other CAP and has not run yet, so decomposing this "
         "into marshal epics now would manufacture stories ahead of an unanswered empirical "
         "question. De-register once CAP-1's probe result is recorded and the operator's CAP-2/ "
         "CAP-3 shape choice is settled",
+    "spec-pyforge-charter":
+        "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties "
+        "no story can pick up",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "

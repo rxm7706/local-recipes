@@ -288,6 +288,12 @@ class Source(StrEnum):
     # --append" ownership). See sources/frozen_path.py for the independence
     # rationale.
     FROZEN_PATH_CHANGED = "frozen-path-changed"
+    # Story 21.10 (Epic 21 / spec-capability-effect-check CAP-2): read-only
+    # realized-versus-verified column from each CAP's optional ``verified:``
+    # line in ``SPEC.md``; WARN when a ``shipped``/``realized`` Spec's CAP
+    # carries none. Story 21.9 (CAP-1 caller reach) and Story 21.11
+    # (detectors / fleet-picture wiring) extend the same module and member.
+    CAPABILITY_EFFECT = "capability-effect"
 
 
 class Partition(StrEnum):

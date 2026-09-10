@@ -5019,6 +5019,62 @@ fork subagent is used to dispatch any story here.
 **Then** operator-attributed journal entries carry a signature the call surface verifies (a keyed primitive whose key never lives in the worktree), an unsigned or mis-signed operator entry is refused with a printed reason, the Track published by 33.4 carries the verified attribution in its human-approvals field, and process isolation is still deferred but named as the remaining gap
 **And** this story is minted `blocked` on its trigger by design: it never outranks 33.5/33.2/33.3 on the throughput queue (operator 2026-09-09 — governance scores zero on speed-to-market until a second principal exists)
 
+## Epic 34: Launch-environment integrity — no silent-success failure and no orphaned worktree
+
+**Goal:** every finding from `docs/dreams/marshal-launch-environment-integrity.md`'s 2026-09-10
+recovery session that is NOT already closed by that Dream's four environment-integrity fixes
+(`fix/marshal-harness-preference-4-stations`, `fix/marshal-tmux-dependency`,
+`feat/marshal-sprint-status-sync-and-drift-detection`, and the in-progress
+`spec-sprint-status-promotion-regression-guard` fix) or by
+[`marshal-parallel-dispatch-fanout.md`](../../../../docs/dreams/marshal-parallel-dispatch-fanout.md)'s
+own 2026-09-10 addendum (`factory spin`'s missing station-in-flight guard). Three real gaps
+surfaced live, each hit multiple times in the same session, each costing real operator time to
+recover from by hand: `factory spin` can be launched twice against the same loop home with zero
+refusal; a crashed dispatch/spin session loses uncommitted worktree progress unless the operator
+notices and manually checkpoints it before the worktree is reprovisioned; and a crashed session's
+terminal verdict (`failed`, `stopped_externally`) is indistinguishable from a genuine code failure
+to `factory drain`, which treats both as permanently blocked with no sanctioned retry path.
+
+**HARD boundaries:** Story 34.1 reuses `cli/dispatch.py:935`'s `station_in_flight_conflict` check
+— it is a narrowed CALL, never a re-derived guard (mirrors Epic 22/28's own "narrowed conflict, not
+a new one" precedent). Story 34.2's checkpoint commit is local-only (never pushed, never opens a
+PR) — it exists purely so a crash cannot destroy uncommitted work; landing a story is still a
+human/operator-triggered act. Story 34.3 does not weaken `factory drain`'s existing
+"never-auto-retried, never-forced-past" guarantee for a GENUINE story failure — it only adds a way
+to tell "the session died before doing anything" apart from "the session ran and failed."
+
+### Story 34.1: `factory spin` refuses a second launch against a live loop home
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `docs/dreams/marshal-parallel-dispatch-fanout.md` 2026-09-10 addendum
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (spin's `subprocess.Popen` launch site), `cli/dispatch.py` (`station_in_flight_conflict`, reused not re-derived), `cli/spin.py`, `tests/unit/test_*spin*.py`
+**Given** two `marshal factory spin pyforge-mason` calls six seconds apart both launched cleanly on 2026-09-10 — no refusal, no warning — producing two live `bmad-loop run` processes and two live supervisors against the SAME loop-home checkout simultaneously, a real risk (not just wasted compute) since spin operates directly on the loop home's single working tree rather than a per-story worktree
+**When** `factory spin <slug>` is invoked while a prior spin run for that same `<slug>` is still live (session or supervisor process alive, run not yet terminal)
+**Then** the second call refuses before launching anything, naming the live run's id/pid, using the SAME `station_in_flight_conflict` check `factory dispatch` already applies — not a second, independently-drifting implementation
+**And** a fixture reproduces the exact 2026-09-10 race (two spin calls in rapid succession) and asserts the second refuses
+
+### Story 34.2: A dispatch/spin session's worktree is checkpointed before it can be lost to a crash
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `docs/dreams/marshal-launch-environment-integrity.md` § *No mid-session checkpointing*
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` (or the dispatch/spin supervisor's own polling loop), `adapters/vcs_git.py`, `tests/unit/test_supervise*.py`
+**Given** four separate crash recoveries in one session (doctor 21.1 ×2, herald 19.1, steward 48.6 ×2) each required the OPERATOR to notice uncommitted worktree changes and manually `git add -A && git commit` a recovery checkpoint before the story could be safely relaunched — real, substantial progress (a completed story once, hundreds of lines of a WebSocket-streaming feature another time) sat one worktree cleanup away from silent loss each time, and marshal's own supervisor was already polling these sessions for completion without ever checkpointing their in-flight state
+**When** the supervisor's own poll loop detects the worktree has uncommitted changes and the session has been idle past a threshold, or on an explicit `factory checkpoint <slug>` call
+**Then** it commits a local-only `wip: <story> (auto-checkpoint)` commit in the story's own worktree — never pushed, never opens a PR, purely a local safety net — so a subsequent crash can never lose more than the checkpoint interval's worth of work
+**And** a fixture simulates a mid-session crash after the checkpoint fires and asserts the worktree's uncommitted changes survive as a commit, not as working-tree state a `git worktree remove --force` could destroy
+
+### Story 34.3: `factory drain` tells a crashed session apart from a genuinely failed one
+**Type:** feature • **Effort:** M • **Deps:** 34.2 • **FR/AD:** `docs/dreams/marshal-launch-environment-integrity.md` § *A crashed session and a genuinely failed one look identical to the ledger*
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py` (blocked-story classification), `cli/dispatch.py` (`dispatch-resume`'s own `stopped_externally`/`completion_verdict` facts, already computed but not yet used to distinguish this), `tests/unit/test_dispatch_fleet*.py`
+**Given** every terminal crash this session (`completion_verdict: stopped_externally` or `failed`, confirmed via `dispatch-resume`'s own "no live dispatch to recover" check) left the story permanently blocked in `factory drain`'s eyes — correct for a genuine code failure, wrong for an external crash — and the only recovery path was an operator manually bypassing the block with a single-story `factory dispatch` and knowing that trick exists
+**When** `factory drain` encounters a blocked story whose last recorded verdict shows zero git progress AND zero review/verify-cycle evidence (i.e. the session died before doing anything a real failure would have left behind)
+**Then** it classifies the block as **environment** rather than **story**, and `--mode skip_on_blocked`'s existing escape hatch (or a new explicit `--retry-environment-blocks` flag) is sanctioned to clear ONLY environment-classified blocks — a genuine story failure (real git progress, a failed verify run, an escalation) still requires the existing manual override, unchanged
+**And** a fixture reproduces one of each (a crashed-before-any-progress run, a real verify failure) and asserts only the crashed one is eligible for the new retry path
+
+### Story 34.4: The ATTENTION-block's own refused-verdict check gets the same test coverage its `station_state()` sibling has
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** `docs/dreams/marshal-launch-environment-integrity.md` § finding 5, `fix/fleet-picture-stale-dispatch-verdict`
+**Surface:** `scripts/fleet_picture.py` (`main()`'s ATTENTION-block `needs.append` branch, the `station_state()`-adjacent but separately-inlined check), `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dispatch_phase.py` or a new sibling test file
+**Given** `fleet_picture.py`'s live 2026-09-10 fix (`fix/fleet-picture-stale-dispatch-verdict`) closed the stale-verdict mislabeling at BOTH call sites — `station_state()`'s STUCK cell and `main()`'s ATTENTION-block `needs.append` line — but only the first got direct unit coverage (`test_not_stuck_when_refused_verdict_is_stale_and_a_different_engine_is_running`); the second is an inline ~10-line branch inside `main()` with no dedicated test, verified only by hand against the live fleet at fix time
+**When** a test exercises `main()`'s ATTENTION-block branch directly, mocking `subprocess.run` for the `marshal status --format json` call the way `test_fleet_picture_verification_staleness.py` already mocks a DIFFERENT ATTENTION probe's subprocess call in the same file — not by driving the real fleet's own ledger state
+**Then** a fixture pins: (1) a station with a live run, a `dispatch_phase` set, and a `refused` verdict produces the `dispatch verify REFUSED` ATTENTION line; (2) the SAME refused verdict with `dispatch_phase=None` (a different engine live, e.g. spin) produces NO such line — the exact regression this story guards against recurring
+**And** no behavior changes — this story is test-coverage-only, closing the one gap the 2026-09-10 fix's own landing PR named explicitly
+
 ## Deferred-work verification state — reconciled 2026-09-08
 
 The fleet's tracked deferred-work backlog now reads **100% verified within 30 days on all

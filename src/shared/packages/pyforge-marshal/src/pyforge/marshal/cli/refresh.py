@@ -8,7 +8,13 @@ home is reported, never silently omitted); fast-forward ONLY a clean tree
 (dirty homes refused by name; never force-push; never ``scripts/bmad-switch``);
 push the updated branch targeting ``loop/<slug>`` only; re-render
 ``.bmad-loop/policy.toml`` via the SAME ``write_policy_toml`` path
-``marshal config --write-harness-policy`` uses. Each step reports
+``marshal config --write-harness-policy`` uses; regenerate the station's
+Tier-3 ``sprint-status.yaml`` from its tracked ``epics.md`` (the
+``sprint_plan.py generate`` script ``bmad-sprint-planning`` itself uses --
+found live 2026-09-10 that nothing kept this in sync with
+``sprint-status-ledger.yaml``, so ``marshal factory spin``/``bmad-loop``
+silently saw a stale story set while ``marshal factory dispatch``/
+``bmad-build-auto`` correctly read the tracked ledger). Each step reports
 ``done | skipped | failed``. A home whose fast-forward succeeded but whose
 policy re-render did not is marked ``incomplete`` (FR-135).
 
@@ -18,6 +24,7 @@ Finding codes:
 - ``MRS-REFRESH-003`` -- dirty-tree refusal / FF failure / push failure
 - ``MRS-REFRESH-006`` -- harness-policy re-render failure
 - ``MRS-REFRESH-007`` -- FF succeeded without successful re-render (incomplete)
+- ``MRS-REFRESH-008`` -- sprint-status.yaml regeneration failure
 
 No Story 15.2 ledger-promotion scope.
 """
@@ -26,6 +33,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
@@ -37,6 +46,7 @@ from ..core.refresh import (
     STEP_FAST_FORWARD,
     STEP_PUSH,
     STEP_RENDER_POLICY,
+    STEP_SYNC_STATUS,
     HomeRefreshResult,
     RefreshStep,
     home_result_to_dict,
@@ -57,8 +67,10 @@ _MRS_REFRESH_002 = "MRS-REFRESH-002"
 _MRS_REFRESH_003 = "MRS-REFRESH-003"
 _MRS_REFRESH_006 = "MRS-REFRESH-006"
 _MRS_REFRESH_007 = "MRS-REFRESH-007"
+_MRS_REFRESH_008 = "MRS-REFRESH-008"
 
 _DEFAULT_BASE = "main"
+_SYNC_STATUS_TIMEOUT_S = 60
 
 
 def add_refresh_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -136,6 +148,83 @@ def _render_policy_step(
         return RefreshStep(STEP_RENDER_POLICY, "failed", str(exc))
 
 
+def _sync_status_step(
+    slug: str, git_repo_root: Path, findings: list[Finding]
+) -> RefreshStep:
+    """Regenerate ``slug``'s Tier-3 ``sprint-status.yaml`` from its tracked
+    ``epics.md``, via the same script ``bmad-sprint-planning`` uses. Writes
+    to the SHARED physical ``_bmad-output/projects/<slug>/`` location every
+    worktree symlinks to -- independent of any loop home's own git state, so
+    this runs on every call regardless of the fast-forward outcome above."""
+    project_dir = git_repo_root / "_bmad-output" / "projects" / slug
+    epic_file = project_dir / "planning-artifacts" / "epics.md"
+    if not epic_file.is_file():
+        return RefreshStep(STEP_SYNC_STATUS, "skipped", "no epics.md")
+    script = (
+        git_repo_root
+        / ".claude"
+        / "skills"
+        / "bmad-sprint-planning"
+        / "scripts"
+        / "sprint_plan.py"
+    )
+    if not script.is_file():
+        return RefreshStep(STEP_SYNC_STATUS, "skipped", "sprint_plan.py not found")
+    impl_dir = project_dir / "implementation-artifacts"
+    argv = [
+        "uv",
+        "run",
+        str(script),
+        "generate",
+        "--epic-file",
+        str(epic_file),
+        "--status-file",
+        str(impl_dir / "sprint-status.yaml"),
+        "--stories-dir",
+        str(impl_dir),
+        "--project",
+        slug,
+        "--date",
+        datetime.now().strftime("%m-%d-%Y %H:%M"),
+    ]
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=git_repo_root,
+            capture_output=True,
+            text=True,
+            timeout=_SYNC_STATUS_TIMEOUT_S,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        findings.append(
+            Finding(
+                code=_MRS_REFRESH_008,
+                severity=Severity.WARN,
+                message=f"home {slug!r}: sprint-status sync failed to launch: {exc}",
+                path=str(project_dir),
+            )
+        )
+        return RefreshStep(STEP_SYNC_STATUS, "failed", str(exc))
+    try:
+        report = json.loads(result.stdout) if result.stdout else {}
+    except json.JSONDecodeError:
+        report = {}
+    if result.returncode != 0 or not report.get("ok"):
+        detail = report.get("error") or result.stderr.strip() or result.stdout.strip()
+        findings.append(
+            Finding(
+                code=_MRS_REFRESH_008,
+                severity=Severity.WARN,
+                message=f"home {slug!r}: sprint-status sync failed: {detail}",
+                path=str(project_dir),
+            )
+        )
+        return RefreshStep(STEP_SYNC_STATUS, "failed", detail)
+    new_entries = report.get("new_entries") or []
+    detail = f"{len(new_entries)} new entries" if new_entries else "in sync"
+    return RefreshStep(STEP_SYNC_STATUS, "done", detail)
+
+
 def _refresh_one_home(
     *,
     vcs: VcsPort,
@@ -166,6 +255,7 @@ def _refresh_one_home(
             fast_forward=RefreshStep(STEP_FAST_FORWARD, "skipped", "home unreadable"),
             push=RefreshStep(STEP_PUSH, "skipped", "home unreadable"),
             render_policy=RefreshStep(STEP_RENDER_POLICY, "skipped", "home unreadable"),
+            sync_status=_sync_status_step(slug, git_repo_root, findings),
         )
         return HomeRefreshResult(
             slug=slug,
@@ -198,6 +288,7 @@ def _refresh_one_home(
             render_policy=RefreshStep(
                 STEP_RENDER_POLICY, "skipped", "dirt probe failed"
             ),
+            sync_status=_sync_status_step(slug, git_repo_root, findings),
         )
         return HomeRefreshResult(
             slug=slug,
@@ -230,6 +321,7 @@ def _refresh_one_home(
             ),
             push=RefreshStep(STEP_PUSH, "skipped", "fast-forward refused"),
             render_policy=render_step,
+            sync_status=_sync_status_step(slug, git_repo_root, findings),
         )
         return HomeRefreshResult(
             slug=slug,
@@ -272,6 +364,7 @@ def _refresh_one_home(
                 fast_forward=RefreshStep(STEP_FAST_FORWARD, "failed", str(exc)),
                 push=RefreshStep(STEP_PUSH, "skipped", "fast-forward did not succeed"),
                 render_policy=render_step,
+                sync_status=_sync_status_step(slug, git_repo_root, findings),
             )
             return HomeRefreshResult(
                 slug=slug,
@@ -305,7 +398,10 @@ def _refresh_one_home(
 
     render_step = _render_policy_step(slug, home, findings)
     steps = ordered_steps(
-        fast_forward=ff_step, push=push_step, render_policy=render_step
+        fast_forward=ff_step,
+        push=push_step,
+        render_policy=render_step,
+        sync_status=_sync_status_step(slug, git_repo_root, findings),
     )
     incomplete = is_incomplete_refresh(steps)
     if incomplete:

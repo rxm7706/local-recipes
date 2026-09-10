@@ -30,9 +30,14 @@ same day, `pyforge-atlas` was one command away from losing **35**.
 
 This script therefore refuses any write that moves a key backwards out of `done` or
 story `blocked`, or drops such a key entirely, naming every affected key and exiting
-non-zero. Twin-only keys absent from the feed are refused on the bare path too — not
-only under ``--repair-feed``. Override with ``--allow-regression`` only when the twin
-is genuinely the wrong one. The pre-existing empty-feed guard below is the same idea
+non-zero. `done` is STRICTLY senior to `blocked` — a key moving `done` -> `blocked`
+is refused too, not treated as a lateral move between two protected states (found
+live 2026-09-10, DW-SYNC-2026-09-10-1: a genuinely `done` story's stale Tier-3
+`blocked` value silently overwrote the tracked twin's correct `done` because the
+original guard treated `done` and `blocked` as interchangeable). Twin-only keys
+absent from the feed are refused on the bare path too — not only under
+``--repair-feed``. Override with ``--allow-regression`` only when the twin is
+genuinely the wrong one. The pre-existing empty-feed guard below is the same idea
 at whole-file granularity; this is its per-key counterpart, which is where the real
 losses happen.
 """
@@ -127,14 +132,29 @@ def _is_protected(kind: str | None, status: str) -> bool:
 def regressions(existing: dict[str, str], incoming: dict[str, str]) -> list[tuple[str, str, str]]:
     """Keys the incoming feed would move OUT of a protected state (``done`` or story
     ``blocked``), as ``(key, old, new)`` where ``new`` is ``"<absent>"`` if the feed
-    drops the key entirely."""
+    drops the key entirely.
+
+    ``done`` is STRICTLY senior to ``blocked``: unlike the other protected pairing
+    (``blocked`` guarded only against silently reverting to an earlier-progress
+    status like ``backlog``), a ``done`` key moving to ANY other value — including
+    ``blocked`` — is a regression, never accepted as a lateral move between two
+    equally-protected states. Found live 2026-09-10: a genuinely `done` story
+    (confirmed by its own spec's frontmatter and a landed commit) had a stale
+    Tier-3 `blocked` value that neither this check nor `--repair-feed` caught,
+    because both previously treated `done` and `blocked` as interchangeable
+    "protected" states — `done -> blocked` silently overwrote the tracked twin's
+    correct `done` with no refusal and no repair."""
     out: list[tuple[str, str, str]] = []
     for key, old in sorted(existing.items()):
         kind = _classify_key(key)
         kind_name = kind[0] if kind else None
+        new = incoming.get(key)
+        if old == "done":
+            if new != "done":
+                out.append((key, old, new if new is not None else "<absent>"))
+            continue
         if not _is_protected(kind_name, old):
             continue
-        new = incoming.get(key)
         if new is None:
             out.append((key, old, "<absent>"))
         elif not _is_protected(kind_name, new):

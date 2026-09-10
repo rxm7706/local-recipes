@@ -600,6 +600,20 @@ pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 19.3 / FR-131: coverage JSON for named-module gates
 import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 
+[feature.pyforge-marshal.target.linux-64.dependencies]
+# tmux: bmad-loop's session multiplexer backend for `marshal factory spin`
+# (TmuxMultiplexer). Without it on PATH, `bmad-loop mux` reports no available
+# backend on this platform (psmux needs pwsh + Windows/WSL) and every spin
+# run finishes instantly with 0 stories done, no error surfaced to the
+# caller. Found live 2026-09-10 after a host reset removed the system tmux
+# package that spin had been relying on. linux-64/osx-arm64 only, same
+# shape as pyforge-atlas's duckdb-server scoping above: conda-forge doesn't
+# ship tmux for win-64.
+tmux = ">=3.4"
+
+[feature.pyforge-marshal.target.osx-arm64.dependencies]
+tmux = ">=3.4"
+
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
 description = "Build the pyforge-marshal conda package via pixi-build-python. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
 # NOTE: the pyforge-steward block this mirrors uses `--manifest-path`, which

@@ -263,6 +263,11 @@ ENV_MARSHAL_STATE_HOME = "MARSHAL_STATE_HOME"
 
 _STEP_NAMES: tuple[str, ...] = ("worktree", "tier3_backlink", "symlink", "marker")
 
+#: bmad_loop's own `ACTIONABLE_STATUSES` (sprintstatus.py) -- mirrored here
+#: rather than imported, matching this module's existing AD-3 discipline of
+#: never reaching into `bmad_loop` internals directly (only via `HarnessPort`).
+_PREFLIGHT_ACTIONABLE_STATUSES = frozenset({"backlog", "ready-for-dev"})
+
 #: Story 28.3: the seed subsystem's HARD/DRIFT/INFO ladder projected onto
 #: this envelope's own presentational ERROR/WARN/INFO one. Total over
 #: `SeedSeverity`, so a fourth member added there fails loudly here (a
@@ -1676,6 +1681,57 @@ def run_preflight(
         findings.append(
             Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error)
         )
+
+    # --- Tier-3 feed drift against the tracked ledger (2026-09-10) ---------------
+    # `story_feed_error`/`story_feed_keys` above only prove the Tier-3
+    # `sprint-status.yaml` bmad-loop reads PARSES -- they say nothing about
+    # whether it still agrees with the TRACKED `sprint-status-ledger.yaml`
+    # `marshal factory dispatch`/`bmad-build-auto` read instead. Nothing
+    # keeps the two in sync automatically (`marshal refresh` now
+    # regenerates the Tier-3 copy, but a spin between refreshes, or a
+    # ledger edited by hand, can still drift). A stale Tier-3 copy is not an
+    # error there -- it just silently omits stories, so `bmad-loop run`
+    # reports "no actionable stories" with no error at all. Live incident
+    # 2026-09-10: pyforge-mason's Tier-3 copy sat 4 days stale, missing two
+    # whole epics, before this check existed. WARN, never blocking --
+    # `marshal refresh` is the fix, this is only the smoke detector.
+    if feed_error is None and repo_root is not None:
+        project_dir = repo_root / "_bmad-output" / "projects" / slug
+        ledger_path = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
+        try:
+            ledger_raw = harness.ledger_story_statuses(ledger_path)
+            tier3_raw = harness.ledger_story_statuses(
+                project_dir / "implementation-artifacts" / "sprint-status.yaml"
+            )
+        except HarnessError:
+            ledger_raw = tier3_raw = ()
+        if ledger_raw or tier3_raw:
+            ledger_actionable = {
+                k for k, v in ledger_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES
+            }
+            tier3_actionable = {
+                k for k, v in tier3_raw if v in _PREFLIGHT_ACTIONABLE_STATUSES
+            }
+            missing = sorted(ledger_actionable - tier3_actionable)
+            data["story_feed"]["tier3_drift"] = missing
+            if missing:
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-016",
+                        severity=Severity.WARN,
+                        message=(
+                            f"sprint-status.yaml (Tier-3) is stale against the "
+                            f"tracked ledger: {len(missing)} actionable "
+                            f"stor{'y is' if len(missing) == 1 else 'ies are'} "
+                            f"missing (e.g. {missing[0]!r}) -- "
+                            "`marshal factory spin` will silently see fewer "
+                            "stories than `marshal factory dispatch` does. "
+                            "Run `marshal refresh --project "
+                            f"{slug}` to regenerate it."
+                        ),
+                        path=str(ledger_path),
+                    )
+                )
 
     # --- verify commands ---------------------------------------------------------
     verify_entries: list[dict[str, object]] = []
