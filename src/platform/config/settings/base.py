@@ -594,7 +594,7 @@ SOCIALACCOUNT_PROVIDERS = {
 INSTALLED_APPS += ["compressor"]
 STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
 
-# Langflow integration (Story 11.1, spec-python-agent-platform CAP-2)
+# Langflow integration (Story 11.1, pap:CAP-2)
 # ------------------------------------------------------------------------------
 # AD-5: `LANGFLOW_DATABASE_URL` is derived from this platform's OWN
 # `DATABASES["default"]` -- the SAME PostgreSQL instance, never a second
@@ -660,7 +660,7 @@ LANGFLOW_KNOWLEDGE_BASES_DIR = env(
 os.environ["LANGFLOW_CONFIG_DIR"] = LANGFLOW_CONFIG_DIR
 os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
 
-# DB-GPT integration (Story 11.2, spec-python-agent-platform CAP-3, AD-17
+# DB-GPT integration (Story 11.2, pap:CAP-3, AD-17
 # Pattern B)
 # ------------------------------------------------------------------------------
 # AD-5: `DBGPT_DATABASE_URL` is derived from this platform's OWN

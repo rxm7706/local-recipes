@@ -13,7 +13,7 @@ this seam in the dispatch order (AD-4) -- rather than through this module,
 since Langflow builds and owns its own FastAPI app
 (:mod:`langflow_integration.asgi`). Story 43.2 removed bare ``/api/v1/*``
 from Langflow's mount; ``/langflow/api/v1/...`` still reaches Langflow.
-DB-GPT's ``/api/dbgpt/`` mount (spec-python-agent-platform CAP-3, Story 11.2)
+DB-GPT's ``/api/dbgpt/`` mount (pap:CAP-3, Story 11.2)
 is not yet attached -- not assumed here.
 
 Routes here declare their own full ``/api/...`` path (see ``/api/health``

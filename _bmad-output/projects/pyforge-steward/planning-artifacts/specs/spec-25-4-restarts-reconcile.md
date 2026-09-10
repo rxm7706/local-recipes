@@ -39,7 +39,7 @@ warnings: []
 | PG-only (no RWX) | Store already has keys; `rwx_root` missing | Reconcile is a no-op upsert; row count unchanged | No error |
 | RWX files present | Empty store; two files on RWX | Two rows keyed by relative path | Directories skipped |
 | Naive insert (mechanism absent) | Same interrupted+resume against `insert_always` | Duplicate rows | Documents the trap; canopy:AD-15 |
-| Reconcile removed | AST of `boot.py` without unique-key `ON CONFLICT` upsert | Test fails | Canopy canopy:AD-15 |
+| Reconcile removed | AST of `boot.py` without unique-key `ON CONFLICT` upsert | Test fails | canopy:AD-15 |
 | No object store | `boot.py` AST import graph | No `boto3`/`minio`/`s3` | Review-blocking if present |
 
 </intent-contract>

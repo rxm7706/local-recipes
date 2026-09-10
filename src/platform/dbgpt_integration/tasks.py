@@ -1,4 +1,4 @@
-"""Story 11.2 (spec-python-agent-platform CAP-3, AD-17 Pattern B): a real
+"""Story 11.2 (pap:CAP-3, AD-17 Pattern B): a real
 text-to-SQL round trip against the Story 10.5 DB-GPT sidecar's own REST API,
 driven over Celery/Redis -- never an ASGI mount (see `dbgpt_integration/
 apps.py` for why this app is migration-only).
