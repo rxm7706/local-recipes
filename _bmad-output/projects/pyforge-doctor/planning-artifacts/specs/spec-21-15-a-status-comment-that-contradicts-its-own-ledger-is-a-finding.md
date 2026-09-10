@@ -2,7 +2,7 @@
 title: 'A status comment that contradicts its own ledger is a finding'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: be8c100c055b201a0083d0cc1be729e458f1a515
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -70,4 +70,28 @@ declared_low_risk: false
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
+## Auto Run Result
+
+Status: done
+
+**Summary:** Implemented CAP-4 in `status_body_consistency.py`: parse frontmatter `status:` comments for epic/story keys with claimed ledger statuses, reconcile against every tracked `sprint-status-ledger.yaml`, and emit WARN findings on contradiction or unresolvable keys. Wired into `_gather_all` alongside CAP-1..CAP-3.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py` — CAP-4 gather, parsers, ledger index
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_status_comment.py` — matrix row coverage + live fixture
+- `src/shared/packages/pyforge-doctor/tests/fixtures/status_body/*-dream.md` — contradiction, no-key, unresolvable, agreement fixtures
+
+**Review:** 0 patches applied; 3 findings rejected as false (quoted-status edge case latent fleet-wide, setdefault first-project ledger pick is intentional for fleet-consistent epic keys, story prefix ambiguity covered by spec's mechanical key naming). Follow-up review: false.
+
+**Verification:** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 1544 passed, 1 skipped. Live scan fires exactly one finding on `docs/dreams/bmad-method-version-drift.md` (Epic 14 backlog vs ledger `done`).
+
+**Residual risks:** Comment parser requires epic/story token immediately followed by a known ledger status word; narrative phrasing like "Epic 3 all done" is intentionally ignored.
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Quoted status values with embedded `#` could truncate comment extraction — `_scalar`-style quote handling not added; no live dream uses quoted status with inline `#`
+  - `[false]` `[reject]` `load_ledger_status_index` keeps only the first project for duplicate keys — verified epic-14 reads `done` fleet-wide; live scan fires once as intended
+  - `[false]` `[reject]` `_resolve_story_ledger_key` picks first prefix match when multiple story keys share a prefix — no live comment uses ambiguous story references; spec scopes to explicitly named keys
