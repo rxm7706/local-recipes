@@ -2,7 +2,8 @@
 title: '`DEFERRED_SPECS` stops reading as a live exemption when it is not one'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2e49ad54af52cd352a4ae25c1052e69cf1ac6fd4'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
