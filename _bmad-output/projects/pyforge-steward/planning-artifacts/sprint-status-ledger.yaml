@@ -210,7 +210,7 @@ development_status:
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   50-1-the-silo-conda-forge-recipe-exists-and-is-pixi-installable: done
   50-2-local-dev-object-storage-silo-default-garage-alternative-pixi-provisioned: done
-  50-3-a-minimal-s3-client-seam-proves-the-exception-end-to-end: backlog
+  50-3-a-minimal-s3-client-seam-proves-the-exception-end-to-end: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
@@ -323,7 +323,7 @@ development_status:
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
-  epic-50: backlog
+  epic-50: done
   epic-50-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

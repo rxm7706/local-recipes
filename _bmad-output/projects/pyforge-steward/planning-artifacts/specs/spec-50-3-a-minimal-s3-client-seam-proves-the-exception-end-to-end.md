@@ -2,7 +2,7 @@
 title: 'A minimal S3-client seam proves the exception end-to-end'
 type: 'feature'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -77,5 +77,18 @@ against Story 50.2's local backend. No existing feature is migrated onto it.
   including the new round-trip test
 
 ## Spec Change Log
+
+### 2026-09-10 — Landed
+- `src/platform/config/object_storage.py` (`object_storage_client()`, config-only resolution,
+  `ImproperlyConfigured` on any missing setting) + three new `config/settings/base.py` settings
+  (all `default=None`). `tests/test_object_storage_client.py`: a real round-trip against an
+  ephemeral local Silo (skips, does not fail, when `platform-object-storage` isn't installed) +
+  the typed-error path. `boto3` added to `python-agent-platform` + `platform-ci-test` (already
+  transitively resolvable; `pixi.lock` unchanged). `pixi run -e local-recipes platform-ci-local
+  -- --test` full green (868 passed, 6 skipped, 0 new mypy/ruff findings). Landed via
+  `rxm7706/local-recipes#1185` (merged `371361da1b`, `maintenance` label, local verification per
+  the confirmed CI billing outage). Epic 50 is now fully drained (50.1/50.2/50.3 all `done`); the
+  owner Spec (`spec-platform-object-storage-kind`) and its Dream both close as
+  `shipped`/`realized`.
 
 ## Review Triage Log

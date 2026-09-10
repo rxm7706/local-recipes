@@ -1,7 +1,7 @@
 ---
 id: SPEC-platform-object-storage-kind
 spec: platform-object-storage-kind
-status: ready
+status: shipped
 updated: "2026-09-10"
 owner-dream: docs/dreams/platform-object-storage-kind.md
 covers-dreams:
@@ -37,6 +37,9 @@ the external IdP. Processed via `bmad-correct-course`
   - **success:** `spec-pyforge-unifying-strategy/SPEC.md` carries the dated 2026-09-10 exception
     bullet under AD-1; `stack.md`'s own Never-list is qualified to match; Lane 1 media's
     2026-09-05 RWX-PVC answer is untouched. (Landed.)
+  - **verified:** the dated exception bullet is live in
+    `spec-pyforge-unifying-strategy/SPEC.md`'s Constraints and `stack.md`'s Never-list, applied via
+    `sprint-change-proposal-2026-09-10-ad-1-object-storage-exception.md`.
 
 - **CAP-2** — Silo is pixi-installable
   - **intent:** `pgsty/silo` (a maintained MinIO-codebase fork with real Linux/macOS/Windows
@@ -46,6 +49,9 @@ the external IdP. Processed via `bmad-correct-course`
     `scan_for_vulnerabilities` + a green linux-64 `recipe-build`, and the built package is
     published to the `SelfExplainML` anaconda.org channel so `pixi install` resolves it without
     waiting on upstream `conda-forge/staged-recipes` acceptance. (Story 50.1.)
+  - **verified:** all four CFE gates green locally; package live at
+    `https://anaconda.org/SelfExplainML/silo` (confirmed via the anaconda.org API); landed via
+    `local-recipes#1183`.
 
 - **CAP-3** — Local-dev object storage is pixi-provisioned
   - **intent:** A real local S3-compatible server (never a mock, matching the `scripts/scribe_pg.py`
@@ -56,6 +62,10 @@ the external IdP. Processed via `bmad-correct-course`
     `platform-dev`) resolves cleanly; `platform-object-storage-up`/`-down`/`-status` idempotently
     start/stop/report the selected backend; Garage on win-64 refuses cleanly rather than silently
     no-opping. (Story 50.2.)
+  - **verified:** live up/re-up/status/down/re-down against both real Silo and real Garage (real
+    S3 traffic confirmed: 403 on an unsigned root GET), and the Garage-on-Windows refusal exercised
+    via a `platform.system()` mock for all three verbs (`scripts/platform_object_storage.py`);
+    landed via `local-recipes#1184`.
 
 - **CAP-4** — A proven, unconsumed client seam
   - **intent:** A minimal `src/platform/` module resolves an S3 endpoint + credentials from
@@ -64,6 +74,10 @@ the external IdP. Processed via `bmad-correct-course`
   - **success:** The round-trip test passes against the local backend; no existing feature (Lane
     1 media, SBOM handling, or anything else) is wired to consume the seam in this chain.
     (Story 50.3.)
+  - **verified:** `src/platform/tests/test_object_storage_client.py` — a real put/get round trip
+    against an ephemeral local Silo server, byte-identical, plus `ImproperlyConfigured` raised when
+    unconfigured; `pixi run -e local-recipes platform-ci-local -- --test` full green (868 passed,
+    6 skipped, 0 new mypy/ruff issues); landed via `local-recipes#1185`.
 
 ## Constraints
 
