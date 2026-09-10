@@ -2216,6 +2216,35 @@ def test_network_policy_disabled_omits_baseline():
     assert not default_deny, default_deny
 
 
+_ESO_OVERLAY = _PLATFORM_DIR / "deploy" / "overlays" / "eso"
+_ESO_EXAMPLE = _ESO_OVERLAY / "externalsecret-platform-secrets.example.yaml"
+_REQUIRED_PLATFORM_SECRET_KEYS = frozenset(
+    {
+        "DJANGO_SECRET_KEY",
+        "DATABASE_URL",
+        "MIGRATION_DATABASE_URL",
+        "POSTGRES_PASSWORD",
+        "REDIS_PASSWORD",
+    },
+)
+
+
+def test_story_48_4_eso_example_lists_required_platform_secret_keys():
+    """AC (Story 48.4): ESO example ExternalSecret maps every chart-required key."""
+    yaml = pytest.importorskip("yaml")
+    assert _ESO_EXAMPLE.is_file(), _ESO_EXAMPLE
+    document = yaml.safe_load(_ESO_EXAMPLE.read_text(encoding="utf-8"))
+    assert document["kind"] == "ExternalSecret"
+    assert document["spec"]["target"]["name"] == "platform-secrets"
+    mapped = {
+        entry["secretKey"]
+        for entry in document["spec"]["data"]
+        if isinstance(entry, dict) and "secretKey" in entry
+    }
+    missing = _REQUIRED_PLATFORM_SECRET_KEYS - mapped
+    assert not missing, f"missing secretKey entries: {sorted(missing)}"
+
+
 @requires_helm
 def test_duckdb_boundary_platform_readers_do_not_mount_plane_file():
     """AC (Story 41.2): web (Vizro/BSL) pod does not mount ``atlas.duckdb``."""

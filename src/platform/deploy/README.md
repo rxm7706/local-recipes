@@ -33,6 +33,12 @@ Disaster recovery contract and restore runbook: `DR.md` and `restore.md`
   operator composes `DATABASE_URL` from them — the chart never composes it
   (that would drag the password into the render path).
 
+**Secrets profile (Story 48.4 / R-20):** custody, age rotation, and the
+Vault/ESO enterprise path are documented in
+`docs/reference/enterprise-deployment.md` § 7. Example ExternalSecret
+manifests live under `overlays/eso/`. Step-by-step rotation runbooks:
+`src/shared/packages/pyforge-steward/docs/keys-runbook.md`.
+
 ## Vanilla Kubernetes
 
 ```sh
