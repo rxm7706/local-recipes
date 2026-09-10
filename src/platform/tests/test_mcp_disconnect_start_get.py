@@ -89,8 +89,17 @@ def _clear_station_mcp_cache(station: str) -> None:
 
 def _mcp_app(station: str):
     _clear_station_mcp_cache(station)
-    by_name = {portal.station_name: portal for portal in iter_portal_configs()}
-    mcp_app = by_name[station].mcp_asgi_app()
+    if station == "atlas":
+        from django_pyforge.mcp_http import asgi_for_server  # noqa: PLC0415
+        from django_pyforge.mcp_start_get import attach_start_get  # noqa: PLC0415
+        from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
+
+        mcp_app = asgi_for_server(
+            attach_start_get(MCPServer("pyforge-atlas-atlas"), station="atlas"),
+        )
+    else:
+        by_name = {portal.station_name: portal for portal in iter_portal_configs()}
+        mcp_app = by_name[station].mcp_asgi_app()
     assert mcp_app is not None
 
     async def application(scope, receive, send):
@@ -309,20 +318,20 @@ def test_mcp_disconnect_then_get_retrieves_result(
             target = payload["target"]
         return {"target": target, "seq": calls["n"], "completed": True}
 
-    register_runner(face.station, face.run_tool, counting_slow_runner)
-
     def capture_delay(*args: object, **kwargs: object) -> None:
         delayed.append((args, kwargs))
 
     monkeypatch.setattr(execute_supervised_run, "apply_async", capture_delay)
     assertion = _assertion(face.station)
 
+    start_args = (
+        {"name": "core", "assertion": assertion}
+        if face.station == "atlas"
+        else {"target": ".", "assertion": assertion}
+    )
+
     with TestClient(_mcp_app(face.station)) as client:
-        start_args = (
-            {"name": "core", "assertion": assertion}
-            if face.station == "atlas"
-            else {"target": ".", "assertion": assertion}
-        )
+        register_runner(face.station, face.run_tool, counting_slow_runner)
         started = _tool_call(
             client,
             face.station,
@@ -335,41 +344,43 @@ def test_mcp_disconnect_then_get_retrieves_result(
         assert delayed
         assert calls["n"] == 0
 
-        worker = threading.Thread(
-            target=lambda: execute_supervised_run(*delayed[0][1]["args"]),
-            daemon=True,
-        )
-        worker.start()
+    worker = threading.Thread(
+        target=lambda: execute_supervised_run(*delayed[0][1]["args"]),
+        daemon=True,
+    )
+    worker.start()
 
-        # Attempt get while worker is blocked — transport disconnect injected.
-        disconnect_app = _disconnect_on_get_asgi(_mcp_app(face.station))
-        with TestClient(disconnect_app) as drop_client:
-            try:
-                _tool_call(
-                    drop_client,
-                    face.station,
-                    face.get_tool,
-                    {"handle": handle, "assertion": assertion},
-                    assertion,
-                    11,
-                )
-            except Exception:
-                pass
-
-        time.sleep(0.05)
-        _SLOW_GATE.set()
-        worker.join(timeout=10.0)
-        assert not worker.is_alive()
-
-        with TestClient(_mcp_app(face.station)) as reconnect:
-            fetched = _tool_call(
-                reconnect,
+    # Attempt get while worker is blocked — transport disconnect injected.
+    disconnect_app = _disconnect_on_get_asgi(_mcp_app(face.station))
+    with TestClient(disconnect_app) as drop_client:
+        try:
+            _tool_call(
+                drop_client,
                 face.station,
                 face.get_tool,
                 {"handle": handle, "assertion": assertion},
                 assertion,
-                12,
+                11,
             )
+        except Exception:
+            pass
+
+    time.sleep(0.05)
+    # Rebuild paths call ensure_* and overwrite the counting runner mid-flight.
+    register_runner(face.station, face.run_tool, counting_slow_runner)
+    _SLOW_GATE.set()
+    worker.join(timeout=10.0)
+    assert not worker.is_alive()
+
+    with TestClient(_mcp_app(face.station)) as reconnect:
+        fetched = _tool_call(
+            reconnect,
+            face.station,
+            face.get_tool,
+            {"handle": handle, "assertion": assertion},
+            assertion,
+            12,
+        )
 
     assert _extract_run_status(fetched) == RunState.Status.SUCCEEDED
     assert calls["n"] == 1
