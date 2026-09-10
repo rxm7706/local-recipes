@@ -28,6 +28,7 @@ from pyforge.marshal.core.journal import (
 from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
+from scope_triangle import point_scope_triangle
 
 
 def _init_git_repo(path: Path) -> None:
@@ -409,6 +410,10 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
                 return "bbb222"
             return self.head_sha
 
+    import os
+
+    point_scope_triangle(tmp_path, free_slug)
+    os.environ["BMAD_ACTIVE_PROJECT"] = free_slug
     args = argparse.Namespace(slug=free_slug, story=story, format="json")
     monkeypatch.chdir(tmp_path)
     code = run_dispatch(
@@ -475,6 +480,10 @@ def test_overlap_advisory_is_warn_and_dispatch_proceeds(
     assert advisories[0].code == "MRS-DISP-022"
     assert "LOUD ADVISORY" in advisories[0].message
 
+    import os
+
+    point_scope_triangle(tmp_path, slug_b)
+    os.environ["BMAD_ACTIVE_PROJECT"] = slug_b
     args = argparse.Namespace(slug=slug_b, story=requested_story, format="json")
     monkeypatch.chdir(tmp_path)
     code = run_dispatch(

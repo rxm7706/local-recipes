@@ -1109,6 +1109,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-039": Verdict.ERROR,
     # Story 29.2: harness-done CAP-4 fail / park — never another session.
     "MRS-DISP-040": Verdict.ERROR,
+    # Story 33.9: scope triangle / env disagrees with dispatch slug.
+    "MRS-DISP-041": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
