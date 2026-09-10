@@ -22,6 +22,7 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
+from starlette.routing import Mount
 
 _STATION_API_RE = re.compile(
     r"^/stations/(?P<station>[a-z][a-z0-9-]*)/api/v(?P<version>\d+)(?:/|$)",
@@ -150,6 +151,10 @@ def assert_routes_are_versioned(app: FastAPI) -> list[str]:
     """Return route paths that violate the ``/api/v<N>/`` prefix contract."""
     violations: list[str] = []
     for route in app.routes:
+        if isinstance(route, Mount):
+            # ASGI mounts (e.g. herald's lazy webhook app) delegate to a
+            # sub-callable; their Mount.path is a prefix, not a route literal.
+            continue
         path = getattr(route, "path", None)
         if not isinstance(path, str) or path.endswith("/openapi.json"):
             continue
