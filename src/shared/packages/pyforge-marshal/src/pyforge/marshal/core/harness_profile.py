@@ -749,12 +749,26 @@ def resolve_wire_wrap(
 
     wrapper = profile.wrapper
     if wrapper is None:
+        # Story 28.29 (CAP-2, documented incompatibility, live-verified
+        # 2026-09-10): `cursor`'s absent [wrapper] is not an oversight --
+        # `headroom wrap cursor --help` is IDE-only (a human configuring
+        # Cursor's Settings UI, not an env-var-driven headless wrap), and
+        # marshal's dispatch fleet launches the headless `cursor-agent` CLI
+        # detached, with no GUI at all. Name that structural cause
+        # explicitly rather than the generic "declares no [wrapper]"
+        # wording, which reads as a gap someone forgot to fill in.
+        detail = (
+            f"harness profile {profile.name!r} declares no [wrapper] because "
+            "cursor-agent has no headless wire-compression path -- "
+            "headroom's cursor support is Cursor-IDE-only"
+            if profile.name == "cursor"
+            else f"harness profile {profile.name!r} declares no [wrapper]"
+        )
         return WireWrap(
             applied=False,
             reason=(
-                f"harness profile {profile.name!r} declares no [wrapper] -- the "
-                "wire-compression layer is off for this launch and the session "
-                "runs unwrapped"
+                f"{detail} -- the wire-compression layer is off for this "
+                "launch and the session runs unwrapped"
             ),
             aggressiveness=aggressiveness,
         )

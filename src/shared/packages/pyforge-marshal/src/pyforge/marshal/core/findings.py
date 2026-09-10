@@ -1699,6 +1699,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # site): `verify_scope` at `factory dispatch` — marker/symlink
         # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
         "MRS-DISP-041",
+        # Story 28.30 (CAP-3, dispatch half of the `output` layer): the
+        # caveman skill's instrument is unavailable, or deploying it into
+        # the dispatch worktree failed — the layer is off for this
+        # iteration and the session runs unwrapped.
+        "MRS-DISP-042",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
