@@ -224,6 +224,7 @@ psycopg = ">=3.2.10"
 httpx = ">=0.28.1"                # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
 dlt = ">=1.30.0"                  # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 48.11 (warden-B7 / fleet readiness C7): django_warden_fabric/tasks.py lazy-imports pyforge.warden.cli — platform image must ship the engine it calls
 pytest = ">=9.1.1"                # Story 12.8: github_metrics dlt ingest tests
 duckdb = ">=1.5.5"                # Story 12.8: dry-run destination for github-metrics-dlt --dry-run
 wagtail = ">=7.4.3,<8.0"          # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host
