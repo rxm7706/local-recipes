@@ -85,6 +85,13 @@ no status: in frontmatter`).
 - The branch mirrors the Dream-side check that already exists at `chain.py:993` ("Dream {slug!r} has no status: in frontmatter").
 - A fixture carrying a status-less `SPEC.md` fires the new finding, while today's tree — after the Class-B flips of this same pass — reports zero.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live against `spec-21-13`'s own dispatch run, and again against `spec-21-14`'s.
 
 ## Review Triage Log

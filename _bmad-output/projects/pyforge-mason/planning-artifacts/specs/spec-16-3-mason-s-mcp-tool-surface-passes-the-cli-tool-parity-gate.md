@@ -126,6 +126,13 @@ passes clean today and can actually fail (fixture-injected mismatches in each di
   credential leak survived a "durable fix," and the CFE skill records that lesson explicitly.
   Rule 1 applies throughout; the effort ends with the Rule-2 retro.
 
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: full suite green
+
 ## Spec Change Log
+
+- 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch. Its absence makes `core.gate.check_spec_binding` (marshal Story 2.7, MRS-GATE-010) unconditionally refuse dispatch verification for any spec authored this way -- confirmed live across doctor's own Epic 21 backlog this session.
 
 ## Review Triage Log
