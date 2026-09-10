@@ -4,7 +4,7 @@ type: 'chore'
 created: '2026-09-06'
 status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context: []
 warnings: []
 deferred:
@@ -19,22 +19,6 @@ deferred:
     location: >-
       .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
     severity: low
-  - summary: >-
-      bmad-retrospective's sprint_status.py has an independent ruamel.yaml factory
-      that shares the same file format and the same fleet_scan.parse_sprint_status
-      downstream reader, but was never given the width fix -- a long story key is
-      silently dropped by its own `update` subcommand.
-    evidence: |-
-      Confirmed by live reproduction (verification-gap review layer, 2026-09-06):
-      seeded a fixture with an 86-char story key, ran `sprint_status.py update`
-      touching only `last_updated`, and the key was folded onto a continuation line
-      and read as absent by the real `fleet_scan.parse_sprint_status`. Real and
-      demonstrated, not this story's problem -- `bmad-retrospective` is a different
-      skill, not part of this story's declared Surface
-      (`.claude/skills/bmad-sprint-planning/*` + the two named SPEC.md files).
-    location: >-
-      .claude/skills/bmad-retrospective/scripts/sprint_status.py:40-54 (_load_yaml)
-    severity: high
 baseline_revision: 'a35c8218566ff2a0c37e72380de7f42f0d70fe57'
 ---
 
@@ -163,6 +147,33 @@ coverage, not a behavior change.
   - `[low]` `[patch]` (intent-alignment, D1) the intent names both `spec-marshal-single-story-dispatch` and `spec-marshal-token-economy`'s `surface:` lists "via memlog... update," but only the first spec's memlog got an entry — `spec-marshal-token-economy`'s own memlog has no corroborating note explaining why it needs no new surface entries; grouped with the blind-hunter memlog-clarity finding above.
   - `[false]` `[reject]` (intent-alignment, D2) the diff's bug-fix mechanism (`yaml.width` instance attribute, test against `fleet_scan.parse_sprint_status` directly) diverges from the AC's literal wording (`yaml.dump(doc, buf, width=...)` call-site kwarg, test "through the promoter") — evidence: confirmed `ruamel.yaml.YAML.dump()` has no `width` keyword (the Design Notes already document this), and confirmed `scripts/promote_sprint_status.py:189,208,226` has no parsing logic of its own — it loads `scripts/fleet_scan.py` via the identical `importlib.util.spec_from_file_location` mechanism and calls `gen.parse_sprint_status(...)` directly, so testing `fleet_scan.parse_sprint_status` IS testing "through the promoter"; the substitutions are functionally identical, not a divergence.
 
+### 2026-09-09 — Follow-up review pass
+- verdicts: 24 findings — high 5, medium 3, low 5, false 8, maybe-false 0, carried 3
+- findings:
+  - `[high]` `[patch]` (blind-hunter) three D9-amended files edited in the diff (`sprint-status-template.yaml`, `bmad-retrospective/scripts/sprint_status.py`, `test_sprint_status.py`) absent from `spec-marshal-single-story-dispatch` `surface:` — evidence: confirmed SPEC.md listed only the sprint-planning trio from the first pass; patched by adding all three paths + memlog + scoped baseline restamp.
+  - `[false]` `[reject]` (blind-hunter) story spec intent-contract still names seven files while epics D9 amended to eleven — evidence: the first pass shipped the original seven-file contract; this follow-up closed the D9 gap without re-deriving `<intent-contract>`; epics AC is the amended oracle.
+  - `[medium]` `[defer]` (blind-hunter) story spec `status: done` but ledger key still `backlog` — evidence: confirmed `sprint-status-ledger.yaml:171`; ledger promotion is CAP-4 `sprint-ledger-sync` machinery and was intentionally not run pending steward 48.1; not a code defect in this story's surface.
+  - `[medium]` `[patch]` (blind-hunter) frontmatter `deferred:` high item claimed retrospective width fix was never applied — evidence: diff already patches `sprint_status.py` with `yaml.width` + `MAX_SIMPLE_KEY_LENGTH`; removed the stale deferred entry.
+  - `[false]` `[reject]` (blind-hunter) Scribe 7.1 stale `docs/reference/` paths untouched — evidence: out of story 31.4 declared Surface; unrelated fleet hygiene.
+  - `[false]` `[reject]` (blind-hunter) `test-charter.md` only got governance-currency ignore markers — evidence: out of scope; CAP-6 work belongs elsewhere.
+  - `[low]` `[defer]` (blind-hunter, carried) `yaml.Emitter.MAX_SIMPLE_KEY_LENGTH` mutates a shared class attribute — carried: first-pass residual risk still applies; no new cross-module failure observed.
+  - `[false]` `[reject]` (blind-hunter) branch bundles Story 33.5 production code — evidence: branch-wide diff envelope; not caused by 31.4 patches in this pass.
+  - `[medium]` `[defer]` (blind-hunter) STICKY `blocked` fix ships without `sprint-ledger-sync` — evidence: memlog explicitly records sync deferred until steward 48.1; generator fix is still correct.
+  - `[false]` `[reject]` (edge-case-hunter) key length ≥4096 still wraps — evidence: no realistic story key approaches 4096 chars; theoretical only.
+  - `[low]` `[defer]` (edge-case-hunter, carried) global `RoundTripEmitter` class mutation — carried from first pass; unchanged risk profile.
+  - `[false]` `[reject]` (edge-case-hunter) indented line exceeding `yaml.width` 4096 — evidence: same theoretical ceiling as ≥4096-char keys.
+  - `[high]` `[patch]` (edge-case-hunter) `sprint-status-template.yaml` edited but not surface-governed — evidence: grouped with blind-hunter surface gap; fixed in same patch.
+  - `[false]` `[reject]` (edge-case-hunter, carried) regenerate/update redump path untested — carried: first pass verified shared `_make_yaml()` factory on load-then-redump by direct reproduction.
+  - `[false]` `[reject]` (edge-case-hunter) `_slug()` drift could break 100-char key assertion — evidence: test uses fixed title with `assert len(key) == 100` as sanity guard, not a brittle external dependency.
+  - `[low]` `[defer]` (edge-case-hunter) STICKY_STATUSES behavior bundled beyond width fix — evidence: intentional Epic-44 adjacent fix documented in template + memlog; now covered by new blocked test.
+  - `[false]` `[reject]` (edge-case-hunter, claim, carried) single-attribute width fix claim — carried: first pass already recorded and accepted.
+  - `[false]` `[reject]` (edge-case-hunter, claim) "never change status values" vs STICKY — evidence: STICKY preserves hand-set `blocked`, it does not rewrite ledger values; adjacent fix is intentional.
+  - `[false]` `[reject]` (edge-case-hunter, claim, carried) memlog "never recur" absolute wording — carried: memlog already qualifies both ceilings.
+  - `[high]` `[patch]` (verification-gap) eleven-file surface incomplete in SPEC + baseline — evidence: baseline JSON lacked all sprint-planning/retrospective/template hashes before restamp; fixed.
+  - `[high]` `[patch]` (verification-gap) `STICKY_STATUSES` / `blocked` preservation has no regression test — evidence: searched `test_sprint_plan.py` for `blocked`/`preserved_sticky` before patch — zero matches; added `test_blocked_status_survives_regenerate`.
+  - `[low]` `[patch]` (verification-gap) baseline lag after first-pass surface widen — evidence: scoped `--write-baseline --spec pyforge-marshal/spec-marshal-single-story-dispatch` restamped 13 governed files.
+  - `[false]` `[reject]` (intent-alignment) branch-wide diff vs narrow story envelope — evidence: descriptive only; 31.4 scoped files are the review target, not the whole branch delta.
+
 ## Design Notes
 
 **Why `spec-marshal-single-story-dispatch` and not `spec-marshal-token-economy` for the trio:**
@@ -194,93 +205,44 @@ they all go through that one factory.
 
 ## Auto Run Result
 
-**Summary:** All seven installer-owned skill files marshal edits in place (four `bmad-build-auto`
-files + three `bmad-sprint-planning` files) now sit under a marshal spec `surface:` — the three
-`bmad-sprint-planning` files were added to `spec-marshal-single-story-dispatch` (chosen as the
-ledger-owning spec of the two named in the story's Surface line). `sprint_plan.py::_make_yaml()`
-was fixed so ruamel never folds or explicit-keys a long `key: value` line into a form
-`fleet_scan.parse_sprint_status`'s line-based reader can't see — closing the root cause of the
-2026-08-31 Story 22.11 corruption for realistic key lengths, with a regression test using a
-literal 100-char key as the story AC specified.
+**Summary:** All eleven in-place-edited installer-owned skill files (four `bmad-build-auto` +
+three `bmad-sprint-planning` + `sprint-status-template.yaml` + two `bmad-retrospective`) now sit
+under marshal spec `surface:` lists — the first pass added the sprint-planning trio; this
+follow-up review completed D9 governance for the template and retrospective pair, restamped the
+scoped baseline with all thirteen governed paths, removed a stale deferred item (retrospective
+width fix was already landed), and added `test_blocked_status_survives_regenerate` for the
+Epic-44 `STICKY_STATUSES` / `blocked` preservation bundled in `sprint_plan.py`.
 
-**Files changed:**
-- `.claude/skills/bmad-sprint-planning/scripts/sprint_plan.py` — `_make_yaml()` sets
-  `yaml.width = 4096` and `yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096` (the latter added during
-  review — `width` alone does not close ruamel's separate >=128-char explicit-key threshold).
-- `.claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py` — new regression test
-  `test_long_key_line_is_not_wrapped_and_survives_fleet_scan_parse` (literal 100-char key,
-  round-trips through the real `fleet_scan.parse_sprint_status`); PEP 723 header bumped to
-  `requires-python = ">=3.11"` (the test transitively execs `fleet_scan.py`'s unconditional
-  `import tomllib`, stdlib only since 3.11).
+**Files changed (follow-up pass):**
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md`
-  — `surface:` gains the three `bmad-sprint-planning` files.
+  — `surface:` gains `sprint-status-template.yaml` and the two `bmad-retrospective` paths.
 - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/.memlog.md`
-  — decision entry closing the 2026-09-06 steward direction (reworded during review to spell out
-  the 6+1 = 7 split explicitly); event entry recording the width + explicit-key-length fix.
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md`
-  — note-only entry (added during review) recording that the sprint-planning trio was evaluated
-  for this spec and assigned elsewhere; no surface/file change here.
-- `scripts/.spec-surface-baseline.json` — scoped stamp (`--write-baseline --spec
-  pyforge-marshal/spec-marshal-single-story-dispatch`), restamped twice (once per review round).
+  — decision entry closing the D9 eleven-file pool.
+- `.claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py` — new
+  `test_blocked_status_survives_regenerate`.
+- `scripts/.spec-surface-baseline.json` — scoped restamp for
+  `pyforge-marshal/spec-marshal-single-story-dispatch` (13 file hashes + memlog).
+- This story spec — follow-up triage log, stale retrospective `deferred:` entry removed,
+  `status: done`.
 
-**Review findings breakdown** (13 findings across blind-hunter, edge-case-hunter,
-verification-gap, intent-alignment; see `## Review Triage Log` for full evidence):
-- **Patched** (4 entries): `high` — ruamel's separate >=128-char explicit-key threshold also
-  bypassed the width fix (fixed with `MAX_SIMPLE_KEY_LENGTH = 4096`, verified live before/after);
-  `medium` — `test_sprint_plan.py`'s PEP 723 header under-declared its Python floor for the new
-  `tomllib`-importing code path (bumped to `>=3.11`); `low` — the AC's literal "100-char key"
-  wording vs. the initially-chosen ~85-char key (resolved as a side effect of the above,
-  switched to a literal 100-char key); `low` — the two-spec surface split wasn't self-documented
-  in both specs' memlogs (reworded one, added a note to the other).
-- **Deferred** (2 entries, both recorded in this spec's frontmatter `deferred:`): `low` — no
-  fleet-wide audit for latent pre-existing wrap corruption in other already-materialized
-  `sprint-status.yaml` files (out of this story's declared Surface); `high` — `bmad-retrospective`'s
-  independent `sprint_status.py::_load_yaml()` factory has the identical unpatched bug
-  (demonstrated live by the verification-gap reviewer), but that file is a different skill, not
-  part of this story's declared Surface — a pre-existing, cross-skill defect this story did not
-  cause.
-- **Rejected** (4 entries, `false`): the new test's fresh-generate-only coverage (verified the
-  shared factory also fixes the load-then-redump path, by direct reproduction); the
-  `fleet_scan.py` import side effect (established precedent already in this repo,
-  `test_dashboard_resolve_project.py`); `SPEC.md`'s `updated:` frontmatter not bumped (established
-  convention: that field tracks capability changes, not surface-list housekeeping — confirmed
-  against this same file's own prior history); the bug-fix "mechanism"/"test target" divergence
-  from the AC's literal wording (confirmed `ruamel.yaml.YAML.dump()` has no `width` kwarg, and
-  confirmed `promote_sprint_status.py` has no parser of its own — it calls
-  `fleet_scan.parse_sprint_status` directly, so testing that function IS testing "through the
-  promoter").
+**Review findings breakdown (follow-up pass):**
+- **Patched** (5 entries): `high` — complete eleven-file surface + baseline (3 grouped);
+  `high` — blocked sticky regression test; `medium` — remove stale retrospective deferred item;
+  `low` — baseline lag after first-pass widen.
+- **Deferred** (3 entries): `low` — fleet-wide latent wrap-corruption audit (unchanged);
+  `low`/`medium` — class-attribute mutation risk + ledger sync timing (carried/deferred).
+- **Rejected** (8 entries, `false`): branch-wide diff noise, out-of-scope doc hygiene, theoretical
+  ≥4096-char keys, carried first-pass items already settled.
 
-**Follow-up review recommendation: `true`** — this pass patched a `high`-verdict entry (the
-`MAX_SIMPLE_KEY_LENGTH` fix). Patched-entry counts by verdict: high 1 (group), medium 1, low 2
-(one grouped, one standalone). Unverified risk to name per the rule: `yaml.Emitter` is the
-`ruamel.yaml.emitter.RoundTripEmitter` **class** (not an instance), so
-`yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096` mutates a class attribute shared by every
-`RoundTripEmitter` instance in the process, not just this factory's. I verified this has no
-observed effect in `sprint_plan.py`'s own process (it is the only `ruamel.yaml` user in that
-script) and confirmed no other code in the diff's surface shares that class, but a fresh
-independent pass has not re-examined whether any other in-repo `ruamel.yaml.YAML(typ="rt")` user
-sharing the same Python process (e.g. a future test run importing both `sprint_plan.py` and
-another `ruamel`-using module in the same interpreter) could be silently affected by this global
-class-attribute mutation.
+**Follow-up review recommendation: `false`** — forced at HALT for the single allowed follow-up
+pass per CAP-11; this pass patched remaining `high` surface/baseline gaps and the blocked test.
 
-**Verification performed:**
-- `uv run .claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py` — 41/41 passed
-  (independently re-run after both implementation rounds).
-- `pixi run -e pyforge-marshal pyforge-marshal-test` — 7510 passed, 12 deselected, green
-  (independently re-run after both rounds).
-- `pixi run -e local-recipes spec-surface-check` — `ok`, zero uncovered/drift (independently
-  re-run after both rounds).
-- `pixi run -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py -k drift -q`
-  — 10 passed (covers the "planted drift" I/O matrix row generically).
-- Live repro (by the reviewing session, independent of the implementation subagent's own report):
-  reproduced the pre-fix wrap with `yaml.width` unset; reproduced the pre-fix explicit-key
-  bypass with only `width=4096` set (still broke at 130 chars); confirmed the post-fix dump
-  stays on one line at 85/100/130/200-char keys; confirmed `git diff --stat` against
-  `baseline_revision` touches only the 6 intended files after both rounds; confirmed the
-  frontmatter `deferred:` list parses as valid YAML.
+**Verification performed (follow-up pass):**
+- `uv run .claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py` — 42/42 passed.
+- `python scripts/spec_surface_check.py --write-baseline --spec pyforge-marshal/spec-marshal-single-story-dispatch` — stamped 13 files.
+- `pixi run -e local-recipes spec-surface-check` — no `uncovered`/`drift` for
+  `spec-marshal-single-story-dispatch`.
 
-**Residual risks:** the class-attribute-mutation risk named above (untriggered in this repo's
-actual usage, not independently re-reviewed); the two deferred items (fleet-wide latent-corruption
-audit; `bmad-retrospective`'s sibling unpatched factory) are real, tracked, and explicitly out of
-this story's declared Surface — they need their own follow-up story/Dream, not silent absorption
-here.
+**Residual risks:** `yaml.Emitter.MAX_SIMPLE_KEY_LENGTH` class-attribute mutation (carried from
+first pass); fleet-wide latent wrap-corruption audit still deferred; ledger key remains `backlog`
+until operator runs `sprint-ledger-sync` after steward 48.1.

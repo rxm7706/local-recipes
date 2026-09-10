@@ -2848,15 +2848,21 @@
  },
  "pyforge-marshal/spec-marshal-single-story-dispatch": {
   "files": {
-   ".claude/skills/bmad-build-auto/spec-template.md": "8ad38537954548bcb4040e0cd8dbfe350a4a527a",
+   ".claude/skills/bmad-build-auto/spec-template.md": "910f67c85b2ba13fcdb4c7e3a52c12aa50dd7b79",
    ".claude/skills/bmad-build-auto/step-01-clarify-and-route.md": "1fb7bb823731f4b33f639be7223d1602e03089f0",
    ".claude/skills/bmad-build-auto/step-04-review.md": "41b272817045771cf7e1288dcc2e2b140697323e",
+   ".claude/skills/bmad-retrospective/scripts/sprint_status.py": "87d0d5590b6766b41795b0d8c0d4a7df053fc6a9",
+   ".claude/skills/bmad-retrospective/scripts/tests/test_sprint_status.py": "14499390782e044ede2f839fe94f86024e5f1218",
+   ".claude/skills/bmad-sprint-planning/references/generate-tracking.md": "26b76467f9599a9c5e0f6c987ed9e471cbec0a2f",
+   ".claude/skills/bmad-sprint-planning/scripts/sprint_plan.py": "f218b0c72d4721592442126c34d70dd249c3f83c",
+   ".claude/skills/bmad-sprint-planning/scripts/tests/test_sprint_plan.py": "7d3f2a880a461182634310e5b8c5ff3657e077a7",
+   ".claude/skills/bmad-sprint-planning/sprint-status-template.yaml": "a549cdb9c9a059c51397ad11f7c9850068877be2",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "0177191dd318f0399da99aead2a2e9d2d9e955bb",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "7bbff4437689e0cb36ccb03918003404796cbf1d",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "0a550a1a42abc91915ba5a40c1ba0d9d3e2969aa",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "0aa95c4d241ff9e16f4172c3049393d5bef1dc12",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py": "a63515374012e5620e5594f7021caa31d1d64cde",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "ac50e702427c8102d5a359233c174b6ba000eac8"
   },
-  "memlog": "021648c7c82170c6c421f08065ea0fca4253f1d3"
+  "memlog": "69f493798d4c070669347363898f833ae504c017"
  },
  "pyforge-marshal/spec-marshal-status-harness-run-id-poisoning": {
   "files": {},
