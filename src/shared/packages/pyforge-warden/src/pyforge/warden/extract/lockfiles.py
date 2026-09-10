@@ -47,12 +47,10 @@ Ownership decisions recorded:
   resolves (``IdentitySource.MAP`` + the map's own confidence tier); a
   ``likely``/untrusted hit or an outright miss withholds as
   ``UNMAPPED_ECOSYSTEM`` — never guessed, never dropped.
-* Scope: the flat top-level ``packages:``/``package:`` list only (every
-  package the file ever resolved, across all environments/platforms) — no
-  per-environment/per-platform selection. Mirrors this repo's own sibling
-  parser (``.claude/skills/conda-forge-expert/scripts/scan_project.py::
-  parse_pixi_lock``); avoids host-platform-dependent behavior and errs
-  toward more coverage, not less.
+* Scope: unscoped (``environment``/``platform`` both ``None``) reads the flat
+  top-level ``packages:`` union (Story 2.6). Scoped (``environment`` set,
+  Story 12.2 / CAP-1) reads ``environments.<env>.packages.<platform>``
+  only; ``platform`` defaults to the host for interactive use when omitted.
 * NFR-S5: the whole file is size-capped and line-length-capped BEFORE
   ``yaml.safe_load`` (either cap exceeded raises ``UnparsableManifestError``
   rather than risk a hang/OOM on hostile input); the basename regex has no
@@ -68,6 +66,7 @@ Ownership decisions recorded:
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import yaml
@@ -126,6 +125,21 @@ _MAX_LINE_BYTES = 8_192
 # ``value.rsplit("/", 1)[-1]`` ONLY, never the raw URL/path. No nested
 # unbounded quantifiers (NFR-S5).
 _CONDA_BASENAME_RE = re.compile(r"^(.+)-([^-]+)-[^-]+\.(?:conda|tar\.bz2)$")
+_CONDA_SOURCE_RE = re.compile(r"^([^\[]+)\[([^\]]+)\]\s*@\s*.+$")
+
+
+def _host_platform() -> str:
+    """Interactive default platform — mirrors ``test-recipes.py::get_host_platform``."""
+    if sys.platform in {"linux", "linux2"}:
+        return "linux-64"
+    if sys.platform == "darwin":
+        import platform
+
+        arch = "arm64" if platform.machine() == "arm64" else "64"
+        return f"osx-{arch}"
+    if sys.platform == "win32":
+        return "win-64"
+    raise RuntimeError(f"unsupported host platform: {sys.platform!r}")
 
 
 def _read_bounded(manifest_path: Path, manifest: ScannedManifest) -> str:
@@ -180,33 +194,104 @@ def _optional_str_field(
 
 
 class PixiLockExtractor:
-    """Extract the locked closure from a pixi.lock's flat top-level
-    ``packages:`` list (every environment/platform the file ever resolved —
-    no per-environment/per-platform selection, see module docstring)."""
+    """Extract the locked closure from a pixi.lock.
 
-    def __init__(self, router: Router) -> None:
+    Unscoped (``environment`` and ``platform`` both ``None``): the flat
+    top-level ``packages:`` union (Story 2.6). Scoped (``environment`` set):
+    ``environments.<env>.packages.<platform>`` only (Story 12.2 / CAP-1).
+    """
+
+    def __init__(
+        self,
+        router: Router,
+        *,
+        environment: str | None = None,
+        platform: str | None = None,
+    ) -> None:
         self._router = router
+        self._environment = environment
+        self._platform = platform
+        self._warnings: tuple[str, ...] = ()
+
+    @property
+    def warnings(self) -> tuple[str, ...]:
+        """Structured diagnostics from the last ``extract`` call (stderr-owned)."""
+        return self._warnings
 
     def extract(
         self, manifest_path: Path, manifest: ScannedManifest
     ) -> tuple[Component, ...]:
         document = _load_yaml(manifest_path, manifest)
         if document is None:
+            self._warnings = ()
             return ()
         if not isinstance(document, dict):
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: top-level document "
                 "is not a mapping"
             )
-        packages = document.get("packages")
-        if packages is None:
-            packages = []
-        if not isinstance(packages, list):
-            raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'packages' must be "
-                "a list"
-            )
+        packages, self._warnings = self._package_entries(document, manifest)
         return tuple(self._component(entry, manifest) for entry in packages)
+
+    def _package_entries(
+        self, document: dict[str, object], manifest: ScannedManifest
+    ) -> tuple[list[object], tuple[str, ...]]:
+        if self._environment is None:
+            environments = document.get("environments")
+            env_count = (
+                len(environments)
+                if isinstance(environments, dict)
+                else 0
+            )
+            warnings: tuple[str, ...] = ()
+            if env_count > 1:
+                warnings = (
+                    f"WARNING: pixi.lock spans {env_count} pixi environments; "
+                    "extracting union of top-level packages "
+                    "(pass --pixi-environment and --pixi-platform to scope)",
+                )
+            packages = document.get("packages")
+            if packages is None:
+                packages = []
+            if not isinstance(packages, list):
+                raise UnparsableManifestError(
+                    f"unparsable manifest {manifest.path}: 'packages' must "
+                    "be a list"
+                )
+            return packages, warnings
+
+        platform = self._platform if self._platform is not None else _host_platform()
+        environments = document.get("environments")
+        if not isinstance(environments, dict):
+            raise UnparsableManifestError(
+                f"unparsable manifest {manifest.path}: 'environments' must "
+                "be a mapping for scoped pixi.lock extraction"
+            )
+        env_block = environments.get(self._environment)
+        if not isinstance(env_block, dict):
+            raise UnparsableManifestError(
+                f"unparsable manifest {manifest.path}: unknown pixi "
+                f"environment {self._environment!r}"
+            )
+        packages_by_platform = env_block.get("packages")
+        if not isinstance(packages_by_platform, dict):
+            raise UnparsableManifestError(
+                f"unparsable manifest {manifest.path}: environment "
+                f"{self._environment!r} has no 'packages' mapping"
+            )
+        platform_entries = packages_by_platform.get(platform)
+        if platform_entries is None:
+            raise UnparsableManifestError(
+                f"unparsable manifest {manifest.path}: environment "
+                f"{self._environment!r} has no platform {platform!r}"
+            )
+        if not isinstance(platform_entries, list):
+            raise UnparsableManifestError(
+                f"unparsable manifest {manifest.path}: environment "
+                f"{self._environment!r} platform {platform!r} 'packages' "
+                "must be a list"
+            )
+        return platform_entries, ()
 
     def _component(
         self, entry: object, manifest: ScannedManifest
@@ -220,9 +305,11 @@ class PixiLockExtractor:
             return self._conda_row(entry, manifest)
         if "pypi" in entry:
             return self._pypi_row(entry, manifest)
+        if "conda_source" in entry:
+            return self._conda_source_row(entry, manifest)
         raise UnparsableManifestError(
             f"unparsable manifest {manifest.path}: a 'packages' entry has "
-            "neither a 'conda' nor a 'pypi' key"
+            "neither a 'conda', 'pypi', nor 'conda_source' key"
         )
 
     def _conda_row(
@@ -254,6 +341,19 @@ class PixiLockExtractor:
             url = _optional_str_field(entry, "pypi", manifest) or ""
             return _raw_malformed(ecosystem, url, provenance)
         return _pypi_component(name, version, provenance)
+
+    def _conda_source_row(
+        self, entry: dict[str, object], manifest: ScannedManifest
+    ) -> Component:
+        ecosystem = self._router.route(manifest.kind, PIXI_LOCK_CONDA_SECTION)
+        provenance = (
+            Provenance(manifest=manifest.path, section=PIXI_LOCK_CONDA_SECTION),
+        )
+        value = _optional_str_field(entry, "conda_source", manifest) or ""
+        match = _CONDA_SOURCE_RE.match(value)
+        if match is None:
+            return _raw_malformed(ecosystem, value, provenance)
+        return _conda_component(match.group(1), match.group(2), provenance)
 
 
 class CondaLockExtractor:
