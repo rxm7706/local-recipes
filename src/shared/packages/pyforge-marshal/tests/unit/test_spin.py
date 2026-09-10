@@ -2262,8 +2262,21 @@ def test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available(
 ):
     """Story 33.3: when headroom resolves, factory spin writes a bmad-loop
     profile overlay and reports ``wire.applied=True`` instead of the pre-33.3
-    hard-coded inapplicability message."""
+    hard-coded inapplicability message.
+
+    ``headroom`` lives in the sibling ``local-recipes`` pixi env
+    (``fallback_bin_dirs``), not ``pyforge-marshal``'s own -- real on a full
+    operator checkout, absent in a scoped CI job that only installs this
+    one env. Patch the resolver to a fixed path, same as the sibling
+    "missing" test already does for its own branch, so this test proves the
+    wire-applied behavior deterministically rather than depending on which
+    pixi environments happen to be installed."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2331,8 +2344,17 @@ def test_spin_wire_payload_has_exactly_the_single_spellings_fields(
 def test_spin_text_output_states_the_wire_disposition(home, capsys, monkeypatch, tmp_path):
     """Text is the DEFAULT format -- a layer visible only under
     ``--format json`` is invisible on the surface an unattended operator
-    actually reads (the same defect ``escalated`` was fixed for)."""
+    actually reads (the same defect ``escalated`` was fixed for).
+
+    Resolver patched to a fixed path -- see the "when_available" test above
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -2400,8 +2422,18 @@ def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
     (Story 3.7's extraction), so a resumed run states the same disposition
     -- a resume that silently dropped the layer's report would be the exact
-    drifting second copy that extraction exists to prevent."""
+    drifting second copy that extraction exists to prevent.
+
+    Resolver patched to a fixed path -- see
+    ``test_spin_applies_wire_layer_via_bmadloop_profile_overlay_when_available``
+    for why real PATH/fallback-dir resolution isn't deterministic across
+    environments."""
+    from pyforge.marshal.adapters import harness_bmadloop as bmadloop_module
+
     _declare_wire_layer(monkeypatch, tmp_path, enabled=True)
+    monkeypatch.setattr(
+        bmadloop_module, "_resolve_wrapper_binary", lambda *_a, **_k: "/usr/bin/headroom"
+    )
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
         home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
