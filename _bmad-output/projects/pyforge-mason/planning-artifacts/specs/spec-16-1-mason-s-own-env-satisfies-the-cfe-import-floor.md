@@ -2,7 +2,7 @@
 title: "Mason's own env satisfies the CFE import floor"
 type: 'fix'
 created: '2026-09-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: '57c001c9d7c8864ec235b871c8e3dc024845e414'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -196,3 +196,39 @@ reported unavailable, never a hard failure).
   - `[false]` (Intent Alignment point (c)) Claimed CAP-5 re-verification "lives entirely in narrative, not in a runnable artifact" — refuted: an existing automated (mocked) test (`test_doctor.py` ~lines 76-85, asserting `cfe_import_floor_missing == ("pyyaml", "requests")` and `unavailable_verbs == ("recipe",)`) already encodes the exact degradation contract and remains green, unaffected by this diff; the live manual CLI re-verification (`--cfe-python /usr/bin/python3`) supplements but does not solely constitute the coverage.
   - `[false]` (Intent Alignment point (d), foreign-spec-surface touch outside the intent's named scope) — refuted by the auditor's own text: "not a contradiction of the Never bullets ... defensible under a separate, repo-wide convention."
   - `[false]` (Intent Alignment point (e), lockfile-wide footprint vs the intent's two-line description) — refuted by the auditor's own text: "normal fallout of 're-solve the lock' and isn't a contract violation."
+
+## Auto Run Result
+
+**Summary:** `[feature.pyforge-mason.dependencies]` was missing two of `cfe.py`'s six-entry `CFE_IMPORT_FLOOR` (`truststore`, `conda-forge-metadata`), so `mason doctor` reported `unavailable_verbs: ('recipe',)` in mason's own pixi env. Both were added at floors matching the identical pins already used elsewhere in the repo, the lock was re-solved, `environment.yaml` was re-exported (confirmed byte-unchanged — the `build` env excludes the `pyforge-mason` feature), and a regression test now pins the real environment against the floor. A review pass found and fixed six documentation/test-coverage issues; the CFE Rule-2 retro landed with the fix.
+
+**Files changed:**
+- `pixi.toml` — `truststore >=0.10.4` + `conda-forge-metadata >=2026.9.5` added to `[feature.pyforge-mason.dependencies]`, aligned to the block's comment column.
+- `pixi.lock` — re-solved for the `pyforge-mason` and `pyforge-container` (composite) environments.
+- `environment.yaml` — re-exported; confirmed byte-identical to baseline (the `build` env doesn't include the `pyforge-mason` feature).
+- `src/shared/packages/pyforge-mason/tests/unit/test_doctor.py` — two new tests: `test_real_environment_satisfies_the_cfe_import_floor` (real, unmocked probe-level pin) and `test_real_environment_and_root_report_recipe_as_available` (real, unmocked `build_report()`-level pin, added during review to match the acceptance criteria's report surface); import cleanup.
+- `.claude/skills/conda-forge-expert/{SKILL.md,CHANGELOG.md,MANIFEST.yaml,config/skill-config.yaml}` — Rule-2 retro, v8.90.2 → v8.90.3 (PATCH; no skill-behavior changes — the finding is entirely in mason's own environment declaration).
+- `.claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py` — allowlisted mason's `cfe.py` (a repo-internal, non-CFE-skill file the new Version History bullet cites).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` + `scripts/.spec-surface-baseline.json` — foreign-spec-surface reconciliation (`pyforge-marshal/spec-pyforge-core` claims all of `pixi.toml`), scoped-stamped twice (once for the dependency addition, once for the review pass's comment-alignment follow-up).
+- This spec file — Review Triage Log, `deferred` entry, this section.
+
+**Review findings breakdown** (15 findings across 4 layers; 0 high, 0 medium, 9 low, 6 false, 0 maybe-false):
+- **Patched (6 distinct fixes, 7 rows):** SKILL.md missing a v8.90.3 Version History bullet; CHANGELOG.md's misleading "environment.yaml lands in a commit" wording (grouped with the Intent Alignment auditor's matching point); `pixi.toml`'s misaligned trailing comment (fixed to the closest TOML-feasible column — exact column 35 is unreachable for this key's length); a test-file separator comment one character short; a test's local (function-scoped) import moved to module scope; the regression test's surface gap (probe-level only) closed with a new sibling test at the `mason doctor` report surface the acceptance criteria quote.
+- **Deferred (1):** only `truststore`/`conda-forge-metadata` are explicitly pinned; `requests`/`ruamel.yaml` rely on transitive resolution — pre-existing, out of this story's stated scope, and already substantially mitigated by the new regression test (which checks all six floor entries, not just the two added). See frontmatter `deferred:`.
+- **Rejected, low (1):** `conda-forge-metadata` transitively pulls in `conda-oci-mirror`/`oras-py` (a chain flagged elsewhere as blocked for CVE-DB-snapshot use) — real but inert (mason never invokes that code path); no trivial fix exists that wouldn't add complexity.
+- **Rejected, false (6):** two Edge Case Hunter claims of gating spec-surface `FAIL`s (refuted live — the actual check reports `ok`, zero `FAIL` lines, and the cited specs/paths were either unaffected or a different file entirely); the `library-llms-full.md` "undocumented dependency" claim (refuted — the live drift detector shows both new deps already cataloged at matching floors); the Intent Alignment auditor's CAP-5-narrative-only claim (refuted — an existing automated mocked test already covers it, unaffected by this diff) and its two purely-descriptive divergence points ((d) foreign-spec-surface touch, (e) lockfile footprint), both explicitly non-violations by the auditor's own text.
+
+**Follow-up review recommendation: false.** All patched entries were `low` severity (0 `high`, 0 `medium`) — below both the first-pass and follow-up thresholds.
+
+**Verification performed:**
+- Live `pixi run -e pyforge-mason mason doctor`: `cfe_import_floor_satisfied: True`, `cfe_import_floor_missing: ()`, `unavailable_verbs: ()`.
+- Live CAP-5 re-check (`mason doctor --cfe-python /usr/bin/python3`): exits 0, `unavailable_verbs: ('recipe',)` — graceful degradation intact.
+- `diff <(pixi project export conda-environment -e build) environment.yaml`: in sync.
+- `python -m pyforge.doctor.sources spec-surface` (via `pyforge-doctor` env): exit 0, `spec-surface: ok — every tracked file governed or allowlisted; no drift`.
+- `pixi run -e pyforge-mason pyforge-mason-test`: 1579 passed, 3 deselected, 2 pre-existing/unrelated failures (see Residual risks).
+- `pixi run -e local-recipes test-skill --meta`: 7664 passed, 3 skipped, 6 pre-existing/unrelated failures (see Residual risks).
+- Matrix Test Audit: all five I/O & Edge-Case Matrix rows covered by a test that ran and passed (the "Regression pin" and "Floor satisfied"/"recipe verb available" rows now covered at both the probe and `mason doctor` report surfaces).
+
+**Residual risks:**
+- Two pre-existing meta-test failures (`test_persona_consults_cfe.py::test_conda_forge_expert_not_replaced_or_skf_nested`, `test_portal_last_diagnose.py::test_cfe_not_replaced_and_claude_agents_untouched`) were already failing before this story — root cause: the baseline merge commit (`57c001c9d7`, this spec's own `baseline_revision`) has a subject that doesn't match the sanctioned `retro:`/`retro(<scope>):` pattern `unsanctioned_commits()` requires. **This pass adds a second, disclosed contributing cause to the same pre-existing failure**: commit `7660a5c851` (the `test_skill_md_consistency.py` allowlist fix, made during the review pass) also has a non-`retro:` subject and touches the CFE path. The verdict of these two tests is unchanged by this (already red, still red) — but fixing it cleanly requires removing/rewriting a local commit (amend or non-interactive history rewrite), which this workflow's git-safety constraints reserve for an explicit user request. Flagging honestly rather than working around it silently.
+- Five pre-existing, unrelated `test_script_responds_to_help[...]` failures (`add_handoff.py`, `inventory_match.py`, `library_futures.py`, `recommend_2027.py`, `universe_sbom.py`) — a `ModuleNotFoundError: No module named '_sbom'` import bug, confirmed unrelated to the import-floor probe.
+- One pre-existing, unrelated `test_bmad_artifacts_integrity` failure — 3 "uncovered" findings against `pyforge-marshal` planning-artifact files (`spec-33-3`, `spec-33-8`, `spec-33-9`), confirmed via `git log` to predate this story's baseline commit; nothing to do with mason or the CFE import floor.
