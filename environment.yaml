@@ -1,3 +1,4 @@
+ WARN Using local manifest /home/rxm7706/.bmad-loops/pyforge-mason/.bmad-loop/runs/20260910-100021-1dbc/worktrees/16-1-mason-s-own-env-satisfies-the-cfe-import-floor/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
 name: build
 channels:
 - conda-forge

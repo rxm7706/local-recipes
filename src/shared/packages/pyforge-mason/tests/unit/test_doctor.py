@@ -22,6 +22,7 @@ report`'s own new blockers computation distinguishes.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from unittest.mock import patch
@@ -331,3 +332,26 @@ def test_build_report_never_raises_against_a_real_unresolved_environment(tmp_pat
     assert report.unavailable_verbs == ("recipe",)
     assert len(report.engines) == 5  # pixi, twine, conda-lock, build, gh (Story 3.7)
     assert all(not status.available for status in report.engines)
+
+
+# --- Story 16.1: mason's own env must satisfy cfe.py's CFE_IMPORT_FLOOR -----
+
+def test_real_environment_satisfies_the_cfe_import_floor():
+    """Regression pin (Story 16.1): `[feature.pyforge-mason.dependencies]`
+    must declare every distribution `cfe.CFE_IMPORT_FLOOR` requires (pyyaml,
+    requests, packaging, truststore, ruamel.yaml, conda-forge-metadata) --
+    `truststore` and `conda-forge-metadata` were the two gaps that made
+    `mason doctor` report `unavailable_verbs: ('recipe',)` in mason's own
+    pixi env even though nothing about CFE itself was unresolved.
+
+    Runs the real, unmocked probe (AD-16 -- no CFE installation required)
+    against `sys.executable`, the interpreter running this suite, so it can
+    only pass when THIS environment's installed packages satisfy the floor.
+    A future dependency edit that drops either package must fail this test
+    rather than silently re-disabling the `recipe` verb family via
+    `unavailable_verbs`."""
+    from pyforge.mason import cfe
+
+    result = cfe.probe_import_floor(sys.executable)
+
+    assert result.missing == ()
