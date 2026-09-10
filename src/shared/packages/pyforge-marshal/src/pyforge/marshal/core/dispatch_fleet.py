@@ -107,6 +107,21 @@ def parse_campaign_mode(raw: str | None) -> FleetCampaignMode:
         ) from exc
 
 
+class FleetBlockClass(StrEnum):
+    """Whether a derived fleet block is infrastructure or story work (Story 34.3)."""
+
+    ENVIRONMENT = "environment"
+    STORY = "story"
+
+
+@dataclass(frozen=True)
+class StationBlockEvidence:
+    """One derived block with its environment/story classification."""
+
+    reason: str
+    block_class: FleetBlockClass
+
+
 class StationQueueOutcome(StrEnum):
     """What this cycle's queue walk decided for one station."""
 
@@ -592,6 +607,33 @@ def explicit_story_backlog(
     return tuple(backlog)
 
 
+def has_review_verify_cycle_evidence(
+    *,
+    verification_verdict: str | None,
+    verification_failed_gate: str | None,
+    completion_stop_reason: str | None,
+) -> bool:
+    """True when the last dispatch left review/verify-cycle evidence (Story 34.3)."""
+    if verification_failed_gate:
+        return True
+    if verification_verdict in {"verified", "failed", "refused"}:
+        return True
+    if completion_stop_reason and "escalation" in completion_stop_reason.lower():
+        return True
+    return False
+
+
+def classify_fleet_block(
+    *,
+    changed_path_count: int,
+    has_review_verify_evidence: bool,
+) -> FleetBlockClass:
+    """Pure: environment when the session died before real story work began."""
+    if changed_path_count == 0 and not has_review_verify_evidence:
+        return FleetBlockClass.ENVIRONMENT
+    return FleetBlockClass.STORY
+
+
 def plan_station_queue(
     *,
     slug: str,
@@ -599,6 +641,8 @@ def plan_station_queue(
     mode: FleetCampaignMode,
     leave_remaining: int = 1,
     blocked: Mapping[str, str] | None = None,
+    block_classes: Mapping[str, FleetBlockClass] | None = None,
+    retry_environment_blocks: bool = False,
     declared_skips: Mapping[str, str] | None = None,
 ) -> StationQueuePlan:
     """Decide this cycle's story for one station (pure).
@@ -616,9 +660,13 @@ def plan_station_queue(
       impossible in its own mode.
     * ``blocked`` -- DERIVED evidence that a story may not be dispatched:
       CAP-2 git/process facts showing its last dispatch ended ``failed``, or
-      a non-liveness refusal this campaign already recorded. That is what the
-      campaign mode governs: ``skip_on_blocked`` steps past it (reporting
-      it), the other two modes stop the station there.
+      a non-liveness refusal this campaign already recorded. Story 34.3
+      classifies each derived block as ``environment`` (zero git progress and
+      zero review/verify-cycle evidence) or ``story`` (everything else).
+      ``skip_on_blocked`` steps past **environment** blocks only; genuine
+      story failures still halt the station. ``retry_environment_blocks``
+      applies the same environment-only skip under ``drain_to_zero`` /
+      ``leave_one``.
     * ``MRS-DISP-040`` (harness-done, CAP-4 land-only) is recorded as a
       campaign block so the same story is never relaunched, but it is
       skipped under every mode the way a declared skip is: remaining
@@ -630,6 +678,7 @@ def plan_station_queue(
     """
     ordered = tuple(backlog)
     blocked = dict(blocked or {})
+    classes = dict(block_classes or {})
     declared = dict(declared_skips or {})
     if not ordered:
         return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.DRAINED)
@@ -652,9 +701,14 @@ def plan_station_queue(
                 next_story=story,
                 skipped=tuple(skipped),
             )
-        if mode is FleetCampaignMode.SKIP_ON_BLOCKED or is_harness_done_advance_reason(
-            reason
-        ):
+        if is_harness_done_advance_reason(reason):
+            skipped.append((story, reason))
+            continue
+        block_class = classes.get(story, FleetBlockClass.STORY)
+        environment_retry = block_class is FleetBlockClass.ENVIRONMENT and (
+            mode is FleetCampaignMode.SKIP_ON_BLOCKED or retry_environment_blocks
+        )
+        if environment_retry:
             skipped.append((story, reason))
             continue
         return StationQueuePlan(
