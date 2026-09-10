@@ -23,6 +23,15 @@
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
+# harness_preference (Story 22.8, FR-193 CAP-8): cursor-only while Claude Code
+# is spend-limited (2026-09-01 Epic 28 + atlas drain on composer-2.5-fast).
+# Mirrors pyforge-marshal's and pyforge-atlas's own override -- this station
+# never got it, so its dispatches inherited the repo-default `harness_preference`
+# (claude-first) while still resolving `model_tier_map`'s composer-2.5-fast (a
+# Cursor-only model name), a pairing Claude Code's CLI refuses outright. Found
+# live 2026-09-10 when 12.1's dispatch failed identically at launch.
+harness_preference = ["cursor"]
+
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
