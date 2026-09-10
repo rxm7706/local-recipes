@@ -148,12 +148,12 @@ development_status:
   43-4-golden-path-cd-by-digest: done
   43-5-one-interpreter-story: done
   43-6-platform-image-moves-to-python-3-14: done
-  43-7-sidecar-runtime-validation-on-python-3-14: backlog
+  43-7-sidecar-runtime-validation-on-python-3-14: done
   44-1-the-move-list-manifest: blocked
   44-10-archive-local-recipes: blocked
   44-11-windows-native-estate: blocked
   44-12-cutover-flag-and-replay-harness: blocked
-  44-13-memlog-fidelity: backlog
+  44-13-memlog-fidelity: done
   44-14-rebuild-harness-and-oracle-gate: blocked
   44-15-actions-minutes-metering: blocked
   44-2-the-red-team-document-fixes: blocked
