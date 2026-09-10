@@ -2,7 +2,8 @@
 title: "The ATTENTION-block's own refused-verdict check gets the same test coverage its station_state() sibling has"
 type: 'chore'
 created: '2026-09-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'be8c100c055b201a0083d0cc1be729e458f1a515'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -77,4 +78,22 @@ change; this story is test-coverage-only.
 
 - 2026-09-10: added the missing `## Verification` -> `**Commands:**` section before dispatch, to avoid the `core.gate.check_spec_binding` (Story 2.7, MRS-GATE-010) refusal `spec-34-2`'s own dispatch run hit for the identical omission.
 
+## Auto Run Result
+
+- **Summary:** Added two meta-tests that drive `fleet_picture.main()`'s ATTENTION-block refused-verdict branch via mocked `running_stations()`, pinning genuine refusal (line present) and stale refusal (`dispatch_phase=None`, line absent).
+- **Files changed:**
+  - `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_attention_dispatch_refused.py` — new ATTENTION-block coverage for story 34.4
+- **Review:** 4 findings triaged — 0 patched, 0 deferred, 4 rejected (3 false, 1 low rejected as not worth fixing)
+- **Follow-up review recommended:** false
+- **Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 7766 passed, 12 deselected (includes 2 new tests)
+- **Residual risks:** None identified; coverage-only chore, no production code touched
+
 ## Review Triage Log
+
+### 2026-09-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Tests mock `running_stations()` instead of `subprocess.run` for marshal status — matches established `test_fleet_picture_baseline_drift_attention.py` main() isolation pattern; isolation goal met
+  - `[false]` `[reject]` Code Map cited conda-forge-expert test path but test landed under pyforge-marshal — correct for spec's `pyforge-marshal-test` verification command
+  - `[low]` `[reject]` Genuine-refusal test only uses `dispatch_phase="building"`, not other non-None phases — production gate is `is not None`; extra phases would be redundant for this chore
+  - `[false]` `[reject]` `_stub_fleet_main_ambient` duplicates baseline_drift helper — acceptable local duplication in meta-test files per repo convention
