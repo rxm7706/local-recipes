@@ -526,3 +526,87 @@ return no auth headers, so JFrog/GitHub tokens never attach to known-public
 endpoints. Resolvers for public-only APIs pass `skip_auth=True` at their call
 sites. The shell-scoping mitigations remain the right tool for the CLI entry
 points listed in § 2.
+
+---
+
+## 7. Secrets profile (R-20 / red-team X-7)
+
+The platform chart (canopy:AD-12 / AD-19) never renders a Kubernetes
+`Secret` or embeds credential values in Pod specs. Every workload reads
+credentials from a **pre-created** Secret (`values.existingSecret`, default
+`platform-secrets`) via `secretKeyRef`. Story 48.4 documents **who creates
+that Secret** and **how keys rotate** for two deployment profiles.
+
+Full rotation procedures (ordered steps, dual-key assertion overlap, DB role
+coordination) live in
+`src/shared/packages/pyforge-steward/docs/keys-runbook.md`. Platform deploy
+details and the manual `kubectl create secret` quick-start are in
+`src/platform/deploy/README.md`.
+
+### 7.1 Developer profile — age + steward keys
+
+**Custody.** The age identity that decrypts local SOPS-encrypted files is
+**never committed**. Typical custody:
+
+| Holder | Storage | Rotation trigger |
+|--------|---------|------------------|
+| Individual developer | `~/.config/sops/age/keys.txt` or `SOPS_AGE_KEY_FILE` | Compromise suspicion, offboarding, or annual hygiene |
+| CI deploy job | GitHub Actions / OpenShift secret `SOPS_AGE_KEY` (one line, `AGE-SECRET-KEY-…`) | Same, plus whenever the job's scope changes |
+| Shared ops laptop | OS keychain or hardware token export path recorded in `.steward/keys-inventory.yaml` | `steward keys rotate --scope <name>` on calendar or incident |
+
+**Inventory.** Steward records metadata (never values) in
+`.steward/keys-inventory.yaml` — scope, provenance (`issued` vs `observed`),
+status, and `last_rotated`. Issue a new age identity with
+`steward keys rotate --scope <name>`; retire without re-encryption via
+`steward keys revoke --scope <name>` (see the keys runbook).
+
+**Platform bootstrap (dev).** For local CRC/kind installs, operators still
+create `platform-secrets` manually (see deploy README). Age decrypts
+*repository-side* encrypted files at deploy time; the Kubernetes Secret is
+populated by whoever runs `kubectl create secret` or `helm` with
+`--set-file` — the chart does not bridge those two steps automatically in
+this profile.
+
+### 7.2 Enterprise profile — Vault + External Secrets Operator
+
+**Custody.** HashiCorp Vault (or compatible) holds authoritative secret
+material. The **External Secrets Operator (ESO)** syncs Vault paths into the
+in-cluster `platform-secrets` Secret on a refresh interval. The platform
+image performs **no Vault HTTP** — ESO is cluster infrastructure, not an
+application dependency (canopy:AD-19).
+
+**Overlay example.** Copy and edit the manifests under
+`src/platform/deploy/overlays/eso/`:
+
+1. `secretstore-vault.example.yaml` — `SecretStore` pointing at your Vault
+   mount (TLS, auth method, and namespace are site-specific).
+2. `externalsecret-platform-secrets.example.yaml` — `ExternalSecret` that
+   materializes the chart's required keys:
+
+   | Kubernetes key | Purpose |
+   |---|---|
+   | `DJANGO_SECRET_KEY` | Django `SECRET_KEY` |
+   | `DATABASE_URL` | App-role DML URL |
+   | `MIGRATION_DATABASE_URL` | Migration-role DDL URL (Liquibase Job) |
+   | `POSTGRES_PASSWORD` | Postgres container bootstrap password |
+   | `REDIS_PASSWORD` | Redis AUTH (Story 12.6) |
+   | `PYFORGE_ASSERTION_PRIVATE_KEY` | RS256 assertion minter (optional env; inject when mint path is live) |
+   | `PYFORGE_ASSERTION_PUBLIC_KEY` | RS256 assertion verifier (optional env) |
+
+   Remote Vault paths in the example are placeholders (`secret/data/platform/…`);
+   replace them with your mount layout before apply.
+
+**Apply order.** Install ESO → configure Vault auth → apply `SecretStore` →
+apply `ExternalSecret` → verify `platform-secrets` exists → `helm install`
+the core chart. See `overlays/eso/README.md`.
+
+### 7.3 Rotation summary
+
+| Secret | Profile | High-level action |
+|--------|---------|-------------------|
+| `DJANGO_SECRET_KEY` | Both | Update Secret → rolling restart web/worker/beat/consumers; sessions invalidate |
+| `REDIS_PASSWORD` | Both | Update Secret → restart redis Deployments → rolling restart platform pods |
+| DB roles (`DATABASE_URL`, `MIGRATION_DATABASE_URL`, `POSTGRES_PASSWORD`) | Both | Rotate password in Postgres → update all three keys atomically → migrate Job if schema tools need DDL role → rollout |
+| Assertion PEM pair | Both | Dual-key window: publish new public PEM to verifiers, wait ≥5 minutes (assertion TTL), switch minter to new private PEM, remove old public PEM; verify with runbook one-liners |
+
+Detailed commands and ordering constraints are in the steward keys runbook.
