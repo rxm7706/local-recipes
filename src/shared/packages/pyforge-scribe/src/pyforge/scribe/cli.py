@@ -22,7 +22,11 @@ import typer
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
-from pyforge.scribe.compile import CompileInProgressError, compile_graph, default_store_path
+from pyforge.scribe.compile import (
+    CompileInProgressError,
+    compile_graph,
+    default_store_path,
+)
 from pyforge.scribe.extras.cocoindex_flow import (
     CocoindexUnavailableError,
     DerivedArtifact,
@@ -138,7 +142,9 @@ def capture_cmd(
 
     if transcripts:
         if capture_type is not None or text is not None:
-            typer.echo("--transcripts is mutually exclusive with --type/--text", err=True)
+            typer.echo(
+                "--transcripts is mutually exclusive with --type/--text", err=True
+            )
             raise typer.Exit(code=2)
         _run_transcripts(source)
         return
@@ -152,7 +158,8 @@ def capture_cmd(
 
     if capture_type is None or text is None:
         typer.echo(
-            "--type and --text are required unless --promote/--transcripts is set", err=True
+            "--type and --text are required unless --promote/--transcripts is set",
+            err=True,
         )
         raise typer.Exit(code=2)
 
@@ -173,7 +180,9 @@ def _run_promote(source: Path | None) -> None:
     """
     source_root = source if source is not None else default_user_local_root()
     try:
-        proposal = classify_and_draft(source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd())
+        proposal = classify_and_draft(
+            source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd()
+        )
     except ValueError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
@@ -202,7 +211,9 @@ def _render_proposal(proposal: PromotionProposal) -> str:
     counts: dict[str, int] = {}
     for entry in proposal.entries:
         counts[entry.classification] = counts.get(entry.classification, 0) + 1
-        lines.append(f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}")
+        lines.append(
+            f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}"
+        )
         if entry.classification == "team-relevant":
             lines.append(f"      -> {entry.target_path}")
             lines.append(f"      MEMORY.md line: {entry.memory_index_line}")
@@ -211,7 +222,9 @@ def _render_proposal(proposal: PromotionProposal) -> str:
                 lines.append(f"      {content_line}")
             lines.append("      --------------------------")
 
-    summary = ", ".join(f"{count} {classification}" for classification, count in sorted(counts.items()))
+    summary = ", ".join(
+        f"{count} {classification}" for classification, count in sorted(counts.items())
+    )
     noun = "entry" if len(proposal.entries) == 1 else "entries"
     lines.append(f"{len(proposal.entries)} {noun} scanned: {summary or 'none'}.")
     return "\n".join(lines)
@@ -282,7 +295,9 @@ def _render_transcript_proposal(proposal: TranscriptScanProposal) -> str:
 
 @graph_app.command("compile")
 def graph_compile(
-    nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
+    nightly: bool = typer.Option(
+        False, "--nightly", help="Run in unattended nightly mode."
+    ),
 ) -> None:
     """Rebuild the compiled knowledge graph from `.claude/memory/`,
     `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
@@ -292,7 +307,9 @@ def graph_compile(
     `docs/cli-runbooks.md`). An overlapping run against the same store skips
     cleanly with exit 0 rather than double-writing."""
     try:
-        result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
+        result = compile_graph(
+            memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly
+        )
     except CompileInProgressError as exc:
         # Benign under a scheduler (Story 3.3): an overlapping cron firing
         # must not produce a non-zero exit / red cron mail -- mirror the
@@ -312,7 +329,9 @@ def graph_compile(
 
 @app.command("recall")
 def recall_cmd(
-    query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
+    query: str = typer.Argument(
+        ..., help="Natural-language question to recall an answer for."
+    ),
     semantic: bool = typer.Option(
         False,
         "--semantic",
@@ -352,6 +371,17 @@ _TARGET_OPTION = typer.Option(
     None,
     "--target",
     help="Folder to ingest, repo-relative (default: src/shared/packages).",
+)
+
+_DECLARE_OPTION = typer.Option(
+    None,
+    "--declare",
+    help=(
+        "Path to a caller-declared artifact manifest "
+        '({"artifacts": [{"name", "sources", "output"}, ...]}) -- fingerprints '
+        "each declared artifact's sources instead of scribe's own two "
+        "graph/move-list registrations (Story 6.2 design)."
+    ),
 )
 
 
@@ -396,7 +426,9 @@ def index_move_list() -> None:
     Does not require graphifyy or `SCRIBE_GRAPHIFY_EXTRA`."""
     repo_root = Path.cwd()
     count = _write_move_list(repo_root)
-    typer.echo(f"wrote {_index_artifact_path(repo_root, 'move-list.json')} ({count} finding(s))")
+    typer.echo(
+        f"wrote {_index_artifact_path(repo_root, 'move-list.json')} ({count} finding(s))"
+    )
 
 
 def _write_move_list(repo_root: Path) -> int:
@@ -405,16 +437,25 @@ def _write_move_list(repo_root: Path) -> int:
     findings = scan_move_list(repo_root)
     document = {
         "findings": [
-            {"category": f.category, "path": f.path, "line": f.line, "snippet": f.snippet}
+            {
+                "category": f.category,
+                "path": f.path,
+                "line": f.line,
+                "snippet": f.snippet,
+            }
             for f in findings
         ]
     }
     move_list_path = _index_artifact_path(repo_root, "move-list.json")
-    atomic_write_text(move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    atomic_write_text(
+        move_list_path, json.dumps(document, indent=2, sort_keys=True) + "\n"
+    )
     return len(findings)
 
 
-def _write_graph_index(repo_root: Path, target: Path | None, warnings: list[str]) -> int:
+def _write_graph_index(
+    repo_root: Path, target: Path | None, warnings: list[str]
+) -> int:
     """Ingest `target` with graphifyy and upsert through the persist port --
     shared by `index build` and `index refresh`'s cocoindex-gated derive
     step (Story 6.2). Raises `GraphifyUnavailableError` unchanged; callers
@@ -428,7 +469,9 @@ def _write_graph_index(repo_root: Path, target: Path | None, warnings: list[str]
 
 
 @index_app.command("refresh")
-def index_refresh(target: Path | None = _TARGET_OPTION) -> None:
+def index_refresh(
+    target: Path | None = _TARGET_OPTION, declare: Path | None = _DECLARE_OPTION
+) -> None:
     """Incrementally refresh Story 6.1's two derived artifacts -- the
     graphify-ingested code graph and the foundry-cutover move list -- via
     the cocoindex `compile_surface` extra (Story 6.2): an artifact whose
@@ -436,9 +479,25 @@ def index_refresh(target: Path | None = _TARGET_OPTION) -> None:
     skipped entirely (AC2). Off by default (`SCRIBE_COCOINDEX_EXTRA` unset)
     this behaves exactly like running `index build` then `index move-list`
     -- both artifacts recomputed every time, no fingerprint index read or
-    written (AC1)."""
+    written (AC1).
+
+    `--declare <manifest>` (marshal Story 28.28/CAP-5) bypasses both of the
+    above entirely -- a caller hands its OWN "sources -> artifact"
+    registrations instead of scribe's built-in two. Explicit invocation is
+    already the opt-in (`cocoindex_extra_enabled`'s own contract), so this
+    path never consults `SCRIBE_COCOINDEX_EXTRA`. Scribe does not know how
+    to regenerate a caller's content -- that is the calling agent's own
+    job -- so each declared artifact's `derive()` is a no-op: this verb
+    only ever answers "did the declared sources change", tracked in a
+    caller-namespaced index file (`_index_artifact_path`, alongside
+    `graph.json`) that never shares state with the graph/move-list index
+    `default_cocoindex_index_path` owns."""
     repo_root = Path.cwd()
     warnings: list[str] = []
+
+    if declare is not None:
+        _index_refresh_declared(repo_root, declare, warnings)
+        return
 
     if not cocoindex_extra_enabled():
         try:
@@ -466,7 +525,9 @@ def index_refresh(target: Path | None = _TARGET_OPTION) -> None:
         counts["move-list"] = f"{_write_move_list(repo_root)} finding(s)"
 
     def _derive_graph_index() -> None:
-        counts["graphify-ingest"] = f"{_write_graph_index(repo_root, target, warnings)} node(s)"
+        counts["graphify-ingest"] = (
+            f"{_write_graph_index(repo_root, target, warnings)} node(s)"
+        )
 
     artifacts = [
         DerivedArtifact(
@@ -488,10 +549,82 @@ def index_refresh(target: Path | None = _TARGET_OPTION) -> None:
     for warning in warnings:
         typer.echo(f"warning: {warning}", err=True)
     refreshed_desc = ", ".join(
-        f"{name} ({counts[name]})" if name in counts else name for name in result.refreshed
+        f"{name} ({counts[name]})" if name in counts else name
+        for name in result.refreshed
     )
     typer.echo(
         f"refreshed: {refreshed_desc or '(none)'}; "
+        f"skipped (unchanged): {', '.join(result.skipped) or '(none)'} "
+        f"-> {result.index_path}"
+    )
+
+
+def _declared_artifacts_index_path(repo_root: Path) -> Path:
+    """The `--declare` path's own fingerprint index -- namespaced apart
+    from `default_cocoindex_index_path` (the graph/move-list index) so the
+    two never read or clobber each other's entries."""
+    return _index_artifact_path(repo_root, "declared-artifacts-index.json")
+
+
+def _index_refresh_declared(
+    repo_root: Path, manifest_path: Path, warnings: list[str]
+) -> None:
+    """`index refresh --declare <manifest_path>` -- see `index_refresh`'s
+    own docstring for the contract. Never raises past this function: a
+    malformed manifest or an unavailable cocoindex both exit(2) with a
+    message, matching the plain-refresh path's own failure shape."""
+    try:
+        document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        typer.echo(f"could not read declare manifest {manifest_path}: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    except ValueError as exc:
+        typer.echo(
+            f"declare manifest {manifest_path} is not valid JSON: {exc}", err=True
+        )
+        raise typer.Exit(code=2) from exc
+
+    raw_artifacts = document.get("artifacts") if isinstance(document, dict) else None
+    if not isinstance(raw_artifacts, list) or not raw_artifacts:
+        typer.echo(
+            f"declare manifest {manifest_path} has no non-empty 'artifacts' list",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    artifacts: list[DerivedArtifact] = []
+    for entry in raw_artifacts:
+        name = entry.get("name") if isinstance(entry, dict) else None
+        sources = entry.get("sources") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name or not isinstance(sources, list):
+            typer.echo(
+                f"declare manifest {manifest_path} has a malformed artifact entry "
+                f"(needs a non-empty 'name' string and a 'sources' list): {entry!r}",
+                err=True,
+            )
+            raise typer.Exit(code=2)
+        artifacts.append(
+            DerivedArtifact(
+                name=name,
+                sources=tuple(Path(source) for source in sources),
+                derive=lambda: None,
+            )
+        )
+
+    try:
+        result = refresh_incremental(
+            repo_root,
+            artifacts,
+            index_path=_declared_artifacts_index_path(repo_root),
+            warnings=warnings,
+        )
+    except CocoindexUnavailableError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(
+        f"refreshed: {', '.join(result.refreshed) or '(none)'}; "
         f"skipped (unchanged): {', '.join(result.skipped) or '(none)'} "
         f"-> {result.index_path}"
     )

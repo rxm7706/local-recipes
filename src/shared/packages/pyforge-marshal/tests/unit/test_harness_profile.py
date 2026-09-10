@@ -582,6 +582,24 @@ def test_enabled_layer_without_a_declared_wrapper_degrades_with_a_reason(tmp_pat
     assert wire.aggressiveness == "high"
 
 
+def test_enabled_layer_names_cursor_s_structural_incompatibility(tmp_path: Path):
+    """Story 28.29: `cursor`'s absent [wrapper] gets a specific reason
+    naming the real, permanent cause -- not the generic "declares no
+    [wrapper]" wording every other unwrapped profile still gets."""
+    cursor = load_packaged_profiles()["cursor"]
+
+    wire = resolve_wire_wrap(
+        cursor,
+        wire_layer={"enabled": True, "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path=None,
+    )
+
+    assert wire.applied is False
+    assert "cursor-agent has no headless wire-compression path" in wire.reason
+    assert "Cursor-IDE-only" in wire.reason
+
+
 def test_enabled_layer_with_an_unresolved_wrapper_binary_degrades(tmp_path: Path):
     """The spec's graceful-degradation AC: instrument absent (not
     installed, platform gap) -> the layer disables with a NAMED finding and
