@@ -21,6 +21,7 @@ from pyforge.core.atomic_write import atomic_write_text
 
 from ..adapters.harness_bmadloop import BmadLoopHarness
 from ..core import policy
+from ..core import structure_graph_dispatch_benchmark as sg_bench
 from ..core import token_economy_benchmark as bench
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
@@ -97,6 +98,83 @@ def add_benchmark_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Stdout format (default: text).",
     )
     compare.set_defaults(handler=run_benchmark_compare)
+
+    measure_sg = benchmark_sub.add_parser(
+        "structure-graph-dispatch",
+        help="Measure dispatch structure-graph provisioning vs navigation (Story 28.31).",
+    )
+    measure_sg.add_argument(
+        "--project",
+        required=True,
+        metavar="SLUG",
+        help="BMAD project slug (e.g. pyforge-marshal).",
+    )
+    measure_sg.add_argument(
+        "--index-build-seconds",
+        type=float,
+        required=True,
+        metavar="SECS",
+        help="Measured wall-clock seconds for ``codegraph init -y``.",
+    )
+    measure_sg.add_argument(
+        "--index-bytes",
+        type=int,
+        required=True,
+        metavar="BYTES",
+        help="Measured ``.codegraph/codegraph.db`` size in bytes.",
+    )
+    measure_sg.add_argument(
+        "--sync-seconds",
+        type=float,
+        default=None,
+        metavar="SECS",
+        help="Optional measured wall-clock seconds for ``codegraph sync -q``.",
+    )
+    measure_sg.add_argument(
+        "--codegraph-reported-seconds",
+        type=float,
+        default=None,
+        metavar="SECS",
+        help="Optional seconds reported by codegraph init stdout.",
+    )
+    measure_sg.add_argument(
+        "--files-indexed",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Optional files-indexed count from codegraph init stdout.",
+    )
+    measure_sg.add_argument(
+        "--nodes",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Optional node count from codegraph init stdout.",
+    )
+    measure_sg.add_argument(
+        "--edges",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Optional edge count from codegraph init stdout.",
+    )
+    measure_sg.add_argument(
+        "--output",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Artifact output path (default: "
+            "_bmad-output/projects/<slug>/planning-artifacts/benchmarks/"
+            "structure-graph-dispatch-28-31.json)."
+        ),
+    )
+    measure_sg.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Stdout format (default: text).",
+    )
+    measure_sg.set_defaults(handler=run_structure_graph_dispatch_measure)
 
 
 def default_artifact_path(project_root: Path, project_slug: str) -> Path:
@@ -211,6 +289,118 @@ def _load_leg(
         harness=harness,
         policy_digest=policy_digest,
     )
+
+
+def run_structure_graph_dispatch_measure(args: argparse.Namespace) -> int:
+    """Materialize the Story 28.31 spike benchmark artifact from live measurements."""
+    findings: list[Finding] = []
+    root = repo_root()
+    slug = str(args.project).strip()
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-BENCH-001",
+                severity=Severity.HARD,
+                message=f"invalid project slug: {slug!r}",
+            )
+        )
+        return _emit_sg(args, findings, {})
+
+    index_build = sg_bench.IndexBuildMeasurement(
+        wall_clock_seconds=float(args.index_build_seconds),
+        index_bytes=int(args.index_bytes),
+        codegraph_reported_seconds=args.codegraph_reported_seconds,
+        files_indexed=args.files_indexed,
+        nodes=args.nodes,
+        edges=args.edges,
+    )
+    navigation = sg_bench.measure_navigation_without_graph(root)
+    sync_from_base = (
+        sg_bench.SyncMeasurement(wall_clock_seconds=float(args.sync_seconds))
+        if args.sync_seconds is not None
+        else None
+    )
+    environment: dict[str, object] = {
+        "repo_root": str(root),
+        "project_slug": slug,
+        "representative_story_key": sg_bench.REPRESENTATIVE_STORY_KEY,
+        "navigation_manifest_paths": list(sg_bench.REPRESENTATIVE_NAVIGATION_PATHS),
+        "chars_per_token": sg_bench.CHARS_PER_TOKEN,
+        "navigation_overhead_factor": sg_bench.NAVIGATION_OVERHEAD_FACTOR,
+    }
+    loop_home_reference = {
+        "source": "marshal preflight pyforge-marshal (2026-09-10 live reference)",
+        "wall_clock_seconds": 21,
+        "index_bytes": 229 * 1024 * 1024,
+        "note": "Loop-home index amortizes across many stories; dispatch is one story.",
+    }
+    artifact = sg_bench.build_artifact(
+        index_build=index_build,
+        navigation=navigation,
+        sync_from_base=sync_from_base,
+        environment=environment,
+        loop_home_reference=loop_home_reference,
+    )
+    output = (
+        Path(args.output).resolve()
+        if args.output
+        else sg_bench.default_artifact_path(root, slug)
+    )
+    try:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(
+            output,
+            json.dumps(artifact.to_json_dict(), indent=2, sort_keys=True),
+        )
+    except OSError as exc:
+        findings.append(
+            Finding(
+                code="MRS-BENCH-003",
+                severity=Severity.HARD,
+                message=f"could not write benchmark artifact to {output}: {exc}",
+            )
+        )
+        return _emit_sg(args, findings, {})
+
+    data: dict[str, object] = {
+        "artifact_path": str(output),
+        "recommendation": artifact.recommendation,
+        "recommendation_rationale": artifact.recommendation_rationale,
+        "index_build_seconds": artifact.index_build.wall_clock_seconds,
+        "navigation_estimated_tokens": artifact.navigation_without_graph.estimated_tokens,
+    }
+    return _emit_sg(args, findings, data)
+
+
+def _emit_sg(args: argparse.Namespace, findings: list[Finding], data: dict[str, object]) -> int:
+    verdict = compute_verdict(findings)
+    envelope = build_envelope(
+        command="benchmark structure-graph-dispatch",
+        verdict=verdict,
+        data=data,
+        findings=tuple(findings),
+    )
+    try:
+        if args.format == "json":
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
+        else:
+            print(
+                f"structure-graph-dispatch recommendation={data.get('recommendation')} "
+                f"verdict={envelope.verdict}"
+            )
+            if data.get("artifact_path"):
+                print(f"artifact: {data['artifact_path']}")
+            if data.get("recommendation_rationale"):
+                print(f"rationale: {data['recommendation_rationale']}")
+            for finding in findings:
+                print(f"{finding.code} {finding.severity.value}: {finding.message}")
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
 
 
 def run_benchmark_compare(
