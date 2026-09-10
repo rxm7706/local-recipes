@@ -3097,6 +3097,13 @@ index rows only — steward tracks, and never edits another station's surface**,
 **Given** scribe's scheduled compile is `done` and not in effect — the store was last written 2026-08-27 and the "nightly" schedule is a hand-installed crontab line, not a declared, reproducible surface **When** scribe lands the effect story (a declared schedule the estate can see and a recorded run) **Then** this row flips `done`
 **And** steward records the placement question only: a scheduled compile that must survive the cutover is a Foundry-side surface, not a workstation crontab
 
+### Story 49.14: CAP-10 in effect — the resilience primitives get a real caller, or the criterion says test-only
+**Type:** feat+decision • **Effort:** M • **Deps:** S-49.1 • **FR/AD:** CAP-10 (`SPEC.md` success) • `resilience-invariants.md` BS-4 / BS-8
+**Surface:** `src/platform/config/` (the inter-station HTTP client, the PyBreaker async wrapper's call site), `pyforge-mason/src/pyforge/mason/boot.py` (confirm the reconciliation path is live on the real boot sequence, not only its own test), `spec-pyforge-unifying-strategy/SPEC.md` (CAP-10's own success text, if tightened)
+**Given** the circuit breaker (`django_pyforge.circuits`, BS-4) and boot reconciliation (`reconcile_boot`, BS-8) each pass their own dedicated meta-test (`test_circuits_trip_on_async_too.py::test_removing_wrapper_makes_the_test_fail`, `test_restarts_reconcile.py::test_removing_reconciliation_makes_the_test_fail`) — satisfying CAP-10's own written bar, "an invariant with no test that fails in its absence is not implemented, however much code exists" — but `grep -rln "django_pyforge.circuits" src/` and a search for `reconcile_boot` callers both return zero hits outside their own test files, so neither mechanism protects anything in a real failure today, the identical shipped-but-inert shape CAP-4/7/11/12/14/17 were each given a story to close
+**When** this story runs **Then** either a real call site is wired to each (the inter-station HTTP client for the breaker; confirmed live on Mason's actual boot path for reconciliation, not only its test) and CAP-10's own success criterion is tightened to require a production caller, matching its five siblings, **or** the criterion is formally kept test-only with a dated, stated reason why CAP-10 is deliberately held to a different bar than the other six
+**And** whichever branch is taken, `resilience-invariants.md`'s BS-4/BS-8 rows and `SPEC.md`'s own CAP-10 text are updated to match — the two must never read differently again
+
 
 ## Currency validation note — 2026-09-05
 

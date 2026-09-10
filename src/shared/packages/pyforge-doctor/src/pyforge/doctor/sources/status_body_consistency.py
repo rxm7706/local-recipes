@@ -14,6 +14,10 @@ Story 21.14 (CAP-3): bounded forward-looking-language patterns measured against
 the full live tier before joining ``gather``. Fires on the herald Dream+Spec pair
 and stays quiet elsewhere; see ``PROMISSORY_LANGUAGE_ACCEPTED`` and
 ``measure_promissory_language_precision``.
+
+Story 21.15 (CAP-4): reconcile a frontmatter ``status:`` comment naming an epic or
+story key against that key's live row in every tracked ``sprint-status-ledger.yaml``.
+Warn-only, read-only, fail-open.
 """
 
 from __future__ import annotations
@@ -33,20 +37,27 @@ __all__ = (
     "OpenQuestionsScanStats",
     "PromissoryLanguageMatch",
     "PromissoryLanguageMeasurement",
+    "StatusCommentRef",
+    "StatusCommentScanStats",
     "TierScanStats",
     "PROMISSORY_LANGUAGE_ACCEPTED",
     "gather",
     "gather_open_questions_reconcile",
     "gather_progress_phrase",
     "gather_promissory_language",
+    "gather_status_comment_reconcile",
+    "iter_frontmatter_documents",
     "iter_promissory_section_surfaces",
     "iter_spec_documents",
     "iter_terminal_tier_documents",
     "last_unclosed_memlog_question",
+    "load_ledger_status_index",
     "measure_promissory_language_precision",
     "open_questions_frontmatter_count",
+    "parse_status_comment_references",
     "scan_body_for_incomplete_progress",
     "scan_body_for_promissory_language",
+    "status_comment_text",
 )
 
 TERMINAL_STATUSES = frozenset({"realized", "shipped", "done"})
@@ -54,7 +65,29 @@ TERMINAL_STATUSES = frozenset({"realized", "shipped", "done"})
 _CHECK_PROGRESS = "status-body-progress-phrase"
 _CHECK_OPEN_QUESTIONS = "status-body-open-questions"
 _CHECK_PROMISSORY = "status-body-promissory-language"
+_CHECK_STATUS_COMMENT = "status-body-status-comment"
+_CHECK_STATUS_COMMENT_UNRESOLVABLE = "status-body-status-comment-unresolvable"
 _CHECK_UNPARSEABLE = "status-body-unparseable"
+
+_LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_STATUS_WORDS = (
+    "backlog",
+    "done",
+    "in-progress",
+    "in-review",
+    "blocked",
+    "ready-for-dev",
+    "ready",
+    "review",
+    "optional",
+)
+_LEDGER_STATUS_ALT = "|".join(re.escape(word) for word in _LEDGER_STATUS_WORDS)
+_EPIC_STATUS_COMMENT_RE = re.compile(
+    rf"(?i)(?:\b|→\s*|\->\s*)epic\s+(\d+)\s+({_LEDGER_STATUS_ALT})\b"
+)
+_STORY_STATUS_COMMENT_RE = re.compile(
+    rf"(?i)\bstory\s+(\d+)[.\-](\d+)[a-z]?\s+({_LEDGER_STATUS_ALT})\b"
+)
 
 _HEADING_LINE_RE = re.compile(r"^#{1,6}\s")
 
@@ -475,6 +508,341 @@ def iter_spec_documents(target: Path) -> tuple[Path, ...]:
     return tuple(docs)
 
 
+@dataclass(frozen=True)
+class StatusCommentRef:
+    kind: str  # "epic" | "story"
+    ledger_key: str
+    claimed_status: str
+    matched_text: str
+
+
+@dataclass(frozen=True)
+class StatusCommentScanStats:
+    scanned_documents: int = 0
+    silent: int = 0
+    fired: int = 0
+    unresolvable: int = 0
+
+
+def _parse_ledger_statuses(text: str) -> dict[str, str]:
+    """``key: value`` pairs under ``development_status:`` (Story 21.15 / CAP-4)."""
+    out: dict[str, str] = {}
+    in_block = False
+    for raw in text.splitlines():
+        if raw.startswith("development_status:"):
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        if raw and not raw.startswith((" ", "\t")):
+            break
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, sep, value = line.partition(":")
+        if sep:
+            out[key.strip()] = value.strip()
+    return out
+
+
+def load_ledger_status_index(target: Path) -> dict[str, tuple[str, str]]:
+    """Map ledger keys to ``(project_slug, live_status)`` across every tracked ledger."""
+    index: dict[str, tuple[str, str]] = {}
+    projects_root = target / "_bmad-output" / "projects"
+    if not projects_root.is_dir():
+        return index
+    for project_dir in sorted(projects_root.iterdir()):
+        if not project_dir.is_dir():
+            continue
+        ledger_path = project_dir / _LEDGER_SUFFIX
+        if not ledger_path.is_file():
+            continue
+        try:
+            statuses = _parse_ledger_statuses(ledger_path.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        project_slug = project_dir.name
+        for key, status in statuses.items():
+            index.setdefault(key, (project_slug, status))
+    return index
+
+
+def _frontmatter_lines(text: str) -> tuple[list[str], bool]:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return [], True
+    end = next(
+        (index for index in range(1, len(lines)) if lines[index].strip() == "---"),
+        -1,
+    )
+    if end < 0:
+        return [], True
+    return lines[1:end], False
+
+
+def status_comment_text(text: str) -> tuple[str | None, int | None]:
+    """Concatenated ``status:`` comment text and its 1-based file line number."""
+    fm_lines, unparseable = _frontmatter_lines(text)
+    if unparseable:
+        return None, None
+    status_idx = next(
+        (index for index, line in enumerate(fm_lines) if line.startswith("status:")),
+        -1,
+    )
+    if status_idx < 0:
+        return None, None
+
+    status_line = fm_lines[status_idx]
+    comment_parts: list[str] = []
+    if "#" in status_line:
+        comment_parts.append(status_line.split("#", 1)[1].strip())
+
+    for continuation in fm_lines[status_idx + 1 :]:
+        stripped = continuation.strip()
+        if stripped.startswith("#"):
+            comment_parts.append(stripped.lstrip("#").strip())
+            continue
+        break
+
+    if not comment_parts:
+        return None, None
+    return " ".join(comment_parts), status_idx + 2
+
+
+def parse_status_comment_references(comment: str) -> tuple[StatusCommentRef, ...]:
+    """Every epic/story + claimed-status pair named in a status comment."""
+    refs: list[StatusCommentRef] = []
+    seen: set[tuple[str, str]] = set()
+    for match in _EPIC_STATUS_COMMENT_RE.finditer(comment):
+        epic = match.group(1)
+        claimed = match.group(2).lower()
+        ledger_key = f"epic-{epic}"
+        token = ("epic", ledger_key)
+        if token in seen:
+            continue
+        seen.add(token)
+        refs.append(
+            StatusCommentRef(
+                kind="epic",
+                ledger_key=ledger_key,
+                claimed_status=claimed,
+                matched_text=match.group(0).strip(),
+            )
+        )
+    for match in _STORY_STATUS_COMMENT_RE.finditer(comment):
+        epic, story, claimed = match.group(1), match.group(2), match.group(3).lower()
+        ledger_key = f"{epic}-{story}"
+        token = ("story", ledger_key)
+        if token in seen:
+            continue
+        seen.add(token)
+        refs.append(
+            StatusCommentRef(
+                kind="story",
+                ledger_key=ledger_key,
+                claimed_status=claimed,
+                matched_text=match.group(0).strip(),
+            )
+        )
+    return tuple(refs)
+
+
+def iter_frontmatter_documents(target: Path) -> tuple[Path, ...]:
+    """Dreams, ``SPEC.md`` files, and tracked story specs with frontmatter."""
+    docs: list[Path] = []
+
+    dreams_dir = target / "docs" / "dreams"
+    if dreams_dir.is_dir():
+        for path in sorted(dreams_dir.glob("*.md")):
+            if path.name != "README.md":
+                docs.append(path)
+
+    for spec_md in iter_spec_documents(target):
+        docs.append(spec_md)
+
+    specs_root = target / "_bmad-output" / "projects"
+    if specs_root.is_dir():
+        for project_dir in sorted(specs_root.iterdir()):
+            story_specs = project_dir / "planning-artifacts" / "specs"
+            if not story_specs.is_dir():
+                continue
+            for path in sorted(story_specs.glob("spec-*.md")):
+                docs.append(path)
+
+    return tuple(dict.fromkeys(docs))
+
+
+def _resolve_story_ledger_key(prefix: str, ledger_index: dict[str, tuple[str, str]]) -> str | None:
+    matches = [key for key in ledger_index if key.startswith(f"{prefix}-")]
+    if len(matches) == 1:
+        return matches[0]
+    if prefix in ledger_index:
+        return prefix
+    return matches[0] if matches else None
+
+
+def _status_comment_message(
+    *,
+    rel: str,
+    line_no: int,
+    ref: StatusCommentRef,
+    ledger_key: str,
+    ledger_status: str,
+    project_slug: str,
+) -> str:
+    return (
+        f"{rel}:{line_no} status comment names {ref.matched_text!r} while "
+        f"{project_slug} sprint-status-ledger.yaml row {ledger_key!r} reads "
+        f"{ledger_status!r}"
+    )
+
+
+def _status_comment_unresolvable_message(
+    *,
+    rel: str,
+    line_no: int,
+    ref: StatusCommentRef,
+) -> str:
+    return (
+        f"{rel}:{line_no} status comment names {ref.matched_text!r} but no "
+        f"tracked ledger row matches {ref.ledger_key!r}"
+    )
+
+
+def gather_status_comment_reconcile(target: Path) -> tuple[Finding, ...]:
+    """CAP-4: frontmatter status comments vs live sprint ledger rows."""
+    ledger_index = load_ledger_status_index(target)
+    findings: list[Finding] = []
+    scanned_documents = 0
+    silent = 0
+    fired = 0
+    unresolvable = 0
+
+    for path in iter_frontmatter_documents(target):
+        rel = _rel_path(path, target)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            findings.append(
+                Finding(
+                    source=Source.STATUS_BODY_CONSISTENCY,
+                    check=_CHECK_UNPARSEABLE,
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{rel} could not be read — "
+                        f"{exc.__class__.__name__}: {exc}"
+                    ),
+                    evidence={"path": rel},
+                )
+            )
+            continue
+
+        comment, line_no = status_comment_text(text)
+        if comment is None:
+            continue
+
+        refs = parse_status_comment_references(comment)
+        if not refs:
+            continue
+
+        scanned_documents += 1
+        doc_fired = False
+        for ref in refs:
+            if ref.kind == "story":
+                resolved_key = _resolve_story_ledger_key(ref.ledger_key, ledger_index)
+            else:
+                resolved_key = ref.ledger_key
+
+            if resolved_key is None or resolved_key not in ledger_index:
+                unresolvable += 1
+                doc_fired = True
+                findings.append(
+                    Finding(
+                        source=Source.STATUS_BODY_CONSISTENCY,
+                        check=_CHECK_STATUS_COMMENT_UNRESOLVABLE,
+                        status=DoctorStatus.WARN,
+                        message=_status_comment_unresolvable_message(
+                            rel=rel,
+                            line_no=line_no or 1,
+                            ref=ref,
+                        ),
+                        evidence={
+                            "path": rel,
+                            "line": line_no,
+                            "comment": comment,
+                            "ledger_key": ref.ledger_key,
+                            "claimed_status": ref.claimed_status,
+                            "matched_text": ref.matched_text,
+                        },
+                    )
+                )
+                continue
+
+            project_slug, ledger_status = ledger_index[resolved_key]
+            if ref.claimed_status != ledger_status:
+                fired += 1
+                doc_fired = True
+                findings.append(
+                    Finding(
+                        source=Source.STATUS_BODY_CONSISTENCY,
+                        check=_CHECK_STATUS_COMMENT,
+                        status=DoctorStatus.WARN,
+                        message=_status_comment_message(
+                            rel=rel,
+                            line_no=line_no or 1,
+                            ref=ref,
+                            ledger_key=resolved_key,
+                            ledger_status=ledger_status,
+                            project_slug=project_slug,
+                        ),
+                        evidence={
+                            "path": rel,
+                            "line": line_no,
+                            "comment": comment,
+                            "ledger_key": resolved_key,
+                            "claimed_status": ref.claimed_status,
+                            "ledger_status": ledger_status,
+                            "ledger_project": project_slug,
+                            "matched_text": ref.matched_text,
+                        },
+                    )
+                )
+
+        if not doc_fired:
+            silent += 1
+
+    tier_stats = {
+        "scanned_documents": scanned_documents,
+        "silent": silent,
+        "fired": fired,
+        "unresolvable": unresolvable,
+    }
+    if not findings:
+        return (
+            Finding(
+                source=Source.STATUS_BODY_CONSISTENCY,
+                check=_CHECK_STATUS_COMMENT,
+                status=DoctorStatus.OK,
+                message=(
+                    "no status-comment/ledger contradictions across "
+                    f"{scanned_documents} document(s) with named keys"
+                ),
+                evidence=tier_stats,
+            ),
+        )
+
+    return tuple(
+        Finding(
+            source=f.source,
+            check=f.check,
+            status=f.status,
+            message=f.message,
+            evidence={**f.evidence, **tier_stats},
+        )
+        for f in findings
+    )
+
+
 def _append_spec_if_terminal(spec_md: Path, docs: list[tuple[Path, str]]) -> None:
     try:
         text = spec_md.read_text(encoding="utf-8")
@@ -887,17 +1255,19 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     cap1 = gather_progress_phrase(target)
     cap2 = gather_open_questions_reconcile(target)
     cap3 = gather_promissory_language(target)
+    cap4 = gather_status_comment_reconcile(target)
     cap1_warns = [f for f in cap1 if f.status != DoctorStatus.OK]
     cap2_warns = [f for f in cap2 if f.status != DoctorStatus.OK]
     cap3_warns = [f for f in cap3 if f.status != DoctorStatus.OK]
+    cap4_warns = [f for f in cap4 if f.status != DoctorStatus.OK]
     cap3_rejected = [
         f
         for f in cap3
         if f.status == DoctorStatus.OK and f.evidence.get("accepted") is False
     ]
-    if cap1_warns or cap2_warns or cap3_warns:
+    if cap1_warns or cap2_warns or cap3_warns or cap4_warns:
         return _dedupe_unparseable_findings(
-            tuple(cap1_warns + cap2_warns + cap3_warns)
+            tuple(cap1_warns + cap2_warns + cap3_warns + cap4_warns)
         )
     if cap3_rejected:
         return tuple(cap3_rejected)
@@ -911,13 +1281,14 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
                 **cap1[0].evidence,
                 **cap2[0].evidence,
                 **cap3[0].evidence,
+                **cap4[0].evidence,
             },
         ),
     )
 
 
 def gather(target: Path) -> tuple[Finding, ...]:
-    """Status/body consistency gather — CAP-1, CAP-2, and accepted CAP-3 promissory language."""
+    """Status/body consistency gather — CAP-1..CAP-4 (CAP-3 when accepted)."""
     return degrade_on_exception(
         Source.STATUS_BODY_CONSISTENCY,
         "status-body-consistency",

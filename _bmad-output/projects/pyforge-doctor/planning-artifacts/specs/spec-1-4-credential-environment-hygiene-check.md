@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Credential/environment-hygiene check (FR-3)'
 type: 'feature'
@@ -160,7 +159,8 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (station policy verify command; reconciled 2026-08-30 after policy drifted from this spec's original declaration).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- expected: full unit + meta suite passes, including the updated registry tripwire tests and the new `env_hygiene` unit + meta tests.
+- `PYTHONPATH=src/shared/packages/pyforge-doctor/src:src/shared/packages/pyforge-warden/src python3 -m pytest src/shared/packages/pyforge-doctor/tests -q` -- substitute verification if the pixi task cannot run.
 
 **Actual results (2026-07-30):**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` -- **135 passed** (implementation pass), **147 passed** (post-review, 12 new regression tests added for the review pass's 10 patches). No `pixi-build-python` panic in this worktree.
