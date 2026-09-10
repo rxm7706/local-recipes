@@ -1,8 +1,7 @@
 ---
 spec: atlas-query-dashboards
-status: in-progress   # HELD deliberately 2026-09-09 (batch C1): CAP-1..CAP-4 are superseded at
-                      # capability grain, but CAP-5..CAP-7 are live. The Spec is NOT superseded
-                      # whole; it flips to `shipped` when atlas Story 25.1 (the retirement) lands.
+status: shipped   # Story 25.1 (2026-09-10): CAP-1..CAP-4 superseded by the live Vizro/BSL board;
+                  # CAP-5..CAP-7 are the live contract. The second Lane-3 runtime is retired.
 updated: "2026-09-09"
 owner-dream: docs/dreams/atlas-query-dashboards.md
 surface:

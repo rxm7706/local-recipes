@@ -517,7 +517,7 @@ trigger. A hypothesis until 33.1 reports a measured baseline.
 `webhook.py:183-184` path literals · `chain.py:96` CONSTITUTIVE hardcode · warden spine memlog absent
 (9 spines, 8 memlogs) · steward ledger `epic-44..49: backlog` · `AGENTS.md:49` `--repair-feed` ·
 `pixi.lock:17510` `bmad-suite-2026.9.5` · `_http.py:508` host-gated header · eval-quality Spec `:47-51,:68-69`
-still `0.2.0` · `pyforge.atlas.views` imported only by its own tests · `[feature.pyforge-mason.dependencies]`
+still `0.2.0` · `views/` imported only by its own tests (retired Story 25.1) · `[feature.pyforge-mason.dependencies]`
 two lines, no floor deps · root `Containerfile` unreferenced (platform-ci builds `src/platform/Containerfile`
 + dbgpt sidecar) · `pyforge.steward.dashboard` absent from `base.py` · `gh variable list` =
 `ACTIONS_ENABLED=false`; secrets = `ANACONDA_API_TOKEN`, `HERALD_WEBHOOK_SECRET` · verify-promotion

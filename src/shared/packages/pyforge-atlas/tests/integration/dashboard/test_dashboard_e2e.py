@@ -174,14 +174,15 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
         browser.close()
 
 
-def test_dashboard_28_pages_semantic_nav_and_aria(dashboard_server):
+def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
     """DW-D2-3 residual (Story 20.5): the §2.1 semantic-HTML/ARIA browser-agent
-    navigation check — a browser-agent must be able to enumerate every one of the
-    28 pages via real, accessible-name-bearing anchors and land on a deterministic,
-    agent-legible heading + content region for each, with NO client-side error.
+    navigation check — a browser-agent must be able to enumerate every page in
+    ``PAGE_INVENTORY`` via real, accessible-name-bearing anchors and land on a
+    deterministic, agent-legible heading + content region for each, with NO
+    client-side error.
 
     What this asserts as REAL (verified against the rendered DOM, never assumed):
-      * exactly 28 real ``<a href>`` navigation links exist (one per
+      * exactly one real ``<a href>`` navigation link per ``PAGE_INVENTORY`` entry
         ``PAGE_INVENTORY`` entry, in its deterministic order) — genuine semantic
         HTML anchors, not JS-only click handlers a scraper/browser-agent could miss;
       * each link's accessible name (its text content) equals that page's title
