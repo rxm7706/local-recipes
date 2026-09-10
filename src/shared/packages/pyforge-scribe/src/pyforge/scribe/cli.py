@@ -318,13 +318,23 @@ def recall_cmd(
         "--semantic",
         help="Rank by embedding similarity (durable GraphStore / pgvector).",
     ),
+    scope: str = typer.Option(
+        None,
+        "--scope",
+        help=(
+            "Restrict candidates to one project's own citation tree "
+            "(_bmad-output/projects/<scope>/) before scoring -- lexical "
+            "token-overlap alone has no notion of project (marshal Story "
+            "28.27)."
+        ),
+    ),
 ) -> None:
     """Answer from the compiled graph with a resolvable citation, or report
     no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
     repo_root = Path.cwd()
     store = open_graph_store(default_store_path(repo_root))
     mode = "semantic" if semantic else "lexical"
-    result = recall_answer(query, store, repo_root=repo_root, mode=mode)
+    result = recall_answer(query, store, repo_root=repo_root, mode=mode, scope=scope)
     if result.grounded:
         typer.echo(result.text)
         typer.echo(f"[source: {result.citation}]")

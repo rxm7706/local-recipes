@@ -93,9 +93,23 @@ def build_routing_query(
     return base
 
 
-def render_scribe_recall_argv(binary_path: str, query: str) -> tuple[str, ...]:
-    """The one place the recall grammar's argv is spelled."""
-    return (binary_path, *SCRIBE_RECALL_ARGV, query)
+def render_scribe_recall_argv(
+    binary_path: str, query: str, *, scope: str | None = None
+) -> tuple[str, ...]:
+    """The one place the recall grammar's argv is spelled.
+
+    ``scope`` (Story 28.27, live incident 2026-09-10): binds ``--scope
+    <project_slug>`` so scribe's own lexical/semantic candidate filtering
+    excludes other projects' citations before scoring -- without it, a
+    generic-vocabulary query naming a project slug can still be outscored
+    by another project's more lexically-dense document (``pyforge`` alone
+    matches every project; the slug's own discriminating suffix is one
+    token among several). Always passed when the caller has a resolved
+    project slug -- ``run_context_retrieve`` never calls this unscoped."""
+    argv = (binary_path, *SCRIBE_RECALL_ARGV, query)
+    if scope:
+        argv = (*argv, "--scope", scope)
+    return argv
 
 
 def parse_recall_output(text: str) -> ParsedRecallAnswer:

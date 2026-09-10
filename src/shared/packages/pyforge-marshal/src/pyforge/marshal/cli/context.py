@@ -412,7 +412,7 @@ def run_context_retrieve(
     data["query"] = query
 
     outcome = (scribe if scribe is not None else ScribeCli()).recall(
-        repo_root=root, query=query
+        repo_root=root, query=query, scope=slug
     )
     if not outcome.ok:
         findings.append(

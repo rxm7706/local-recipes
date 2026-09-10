@@ -83,3 +83,17 @@ class TestTokenSavings:
             )
             is None
         )
+
+
+class TestRecallArgvScope:
+    def test_scope_appends_flag(self):
+        argv = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="pyforge-warden")
+        assert argv == ("/bin/scribe", "recall", "a query", "--scope", "pyforge-warden")
+
+    def test_no_scope_omits_flag(self):
+        argv = planning.render_scribe_recall_argv("/bin/scribe", "a query")
+        assert argv == ("/bin/scribe", "recall", "a query")
+
+    def test_empty_scope_omits_flag(self):
+        argv = planning.render_scribe_recall_argv("/bin/scribe", "a query", scope="")
+        assert argv == ("/bin/scribe", "recall", "a query")
