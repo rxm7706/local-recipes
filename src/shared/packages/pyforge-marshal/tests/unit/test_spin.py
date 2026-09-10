@@ -306,12 +306,21 @@ class FakeProcess:
     convention -- ``run_spin`` never calls ``ProcessPort.run``, so this
     fake implements only what it needs."""
 
-    def __init__(self, *, events: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        events: list[str] | None = None,
+        alive_pids: set[int] | None = None,
+    ) -> None:
         self._events = events if events is not None else []
         self.calls: list[str] = []
         self.spawn_result: int = 424242
         self.fail_spawn: Exception | None = None
         self.spawn_calls: list[dict[str, object]] = []
+        self.alive_pids: set[int] = set(alive_pids or ())
+
+    def is_alive(self, pid: int) -> bool:
+        return pid in self.alive_pids
 
     def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
         self.calls.append("spawn_detached")
@@ -337,6 +346,9 @@ class _StubProcess:
 
     def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
         return 999999
+
+    def is_alive(self, pid: int) -> bool:
+        return False
 
 
 @pytest.fixture(autouse=True)
@@ -3908,3 +3920,139 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     parsed_easy = tomllib.loads(rendered_easy)
     assert parsed_easy["adapter"]["dev"]["model"] == "composer-2.5-fast"
     assert parsed_easy["adapter"]["review"]["model"] == "opus"
+
+
+# =============================================================================
+# Story 34.1: refuse a second spin against a live loop home
+# =============================================================================
+
+
+def _seed_live_spin_run(
+    home: Path,
+    slug: str,
+    fs: FakeFs,
+    *,
+    run_id: str = "acme-20260910T120000000Z-live01",
+    launch_pid: int = 9001,
+    harness_run_id: str = "acme-harness-live",
+) -> Path:
+    prior_dir = _seed_prior_run(home, slug, run_id)
+    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
+        _outcome_line(run_id, harness_run_id=harness_run_id, watched_pid=launch_pid) + "\n"
+    )
+    return prior_dir
+
+
+def test_spin_refuses_a_second_launch_when_prior_run_is_still_live(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    run_id = "acme-20260910T120000000Z-live01"
+    _seed_live_spin_run(home, slug, fs, run_id=run_id, launch_pid=9001)
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=False,
+        tasks=(),
+    )
+    process = FakeProcess(alive_pids={9001})
+
+    first_code = run_spin(_spin_namespace(slug), fs=fs, harness=harness, process=process)
+    assert first_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-DISP-021" in out
+    assert run_id in out
+    assert "9001" in out
+    assert harness.spin_calls == []
+
+
+def test_spin_allows_launch_when_prior_run_is_terminal(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_live_spin_run(home, slug, fs, launch_pid=9001)
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=True,
+        tasks=(),
+    )
+    process = FakeProcess(alive_pids={9001})
+
+    exit_code = run_spin(_spin_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert len(harness.spin_calls) == 1
+    assert "MRS-DISP-021" not in capsys.readouterr().out
+
+
+def test_spin_allows_launch_when_live_run_belongs_to_a_different_station(home, capsys):
+    slug = "acme"
+    other_home = home.parent / "mason"
+    fs = FakeFs(dirs={home, other_home})
+    _seed_live_spin_run(
+        other_home,
+        "mason",
+        fs,
+        run_id="mason-20260910T120000000Z-live01",
+        launch_pid=9001,
+    )
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=False,
+        tasks=(),
+    )
+    process = FakeProcess(alive_pids={9001})
+
+    exit_code = run_spin(_spin_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert len(harness.spin_calls) == 1
+    assert "MRS-DISP-021" not in capsys.readouterr().out
+
+
+def test_spin_rapid_second_call_refuses_like_the_2026_09_10_race(home, capsys):
+    """Reproduces the live incident: two spin calls in quick succession."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    run_id = "acme-20260910T120000000Z-live01"
+    _seed_live_spin_run(home, slug, fs, run_id=run_id, launch_pid=9001)
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=False,
+        tasks=(),
+    )
+    process = FakeProcess(alive_pids={9001})
+
+    run_spin(_spin_namespace(slug), fs=fs, harness=harness, process=process)
+    second_code = run_spin(_spin_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert second_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-DISP-021" in out
+    assert run_id in out
+    assert len(harness.spin_calls) == 0
